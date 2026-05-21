@@ -1,0 +1,30 @@
+{
+	"arrowParens": "always",
+	"bracketSameLine": false,
+	"bracketSpacing": true,
+	"embeddedLanguageFormatting": "auto",
+	"insertPragma": false,
+	"jsxSingleQuote": false,
+	"printWidth": 100,
+	"proseWrap": "preserve",
+	"quoteProps": "as-needed",
+	"requirePragma": false,
+	"semi": false,
+	"singleQuote": false,
+	"tabWidth": 2,
+	"trailingComma": "all",
+	"useTabs": false,
+	"vueIndentScriptAndStyle": false,
+
+	"plugins": ["prettier-plugin-tailwindcss", "@trivago/prettier-plugin-sort-imports"],
+	"importOrder": [
+		"^(react|react-dom)$",
+		"^@?\\w",
+		"^~/(assets|styles)/.*$",
+		"^~/.+$",
+		"^[./]",
+		"^type .*"
+	],
+	"importOrderSeparation": true,
+	"importOrderSortSpecifiers": true
+}

@@ -1,0 +1,86 @@
+{
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  // Editor config
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  "files.eol": "\n",
+  // Must use Alias (non-relative) instead of ../..
+  "js/ts.preferences.importModuleSpecifier": "non-relative",
+
+  // Update path automatically when move file
+  "js/ts.updateImportsOnFileMove.enabled": "always",
+
+  // Smart suggesting path
+  "js/ts.suggest.paths": true,
+
+  // Optimize TypeScript performance
+  "js/ts.tsserver.maxMemory": 4096,
+  "js/ts.tsserver.automaticTypeAcquisition.enabled": false,
+
+  // Optimize editor performance
+  "editor.quickSuggestions": {
+    "other": true,
+    "comments": false,
+    "strings": false
+  },
+  "editor.suggest.snippetsPreventQuickSuggestions": false,
+  "editor.suggestOnTriggerCharacters": true,
+  "editor.acceptSuggestionOnEnter": "on",
+  "editor.snippetSuggestions": "top",
+
+  // File watching optimization
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/.next/**": true,
+    "**/dist/**": true,
+    "**/out/**": true,
+    "**/.turbo/**": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/dist": true,
+    "**/coverage": true,
+    "**/out": true,
+    "**/.turbo": true,
+    "**/bun.lockb": true,
+    "**/package-lock.json": true,
+    "**/pnpm-lock.yaml": true
+  },
+
+  // Prettier config
+  "prettier.tabWidth": 2,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  },
+  "prettier.enable": true,
+  "scss.validate": false,
+  "css.validate": false,
+  "less.validate": false,
+
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "js/ts.format.insertSpaceAfterCommaDelimiter": true,
+  "js/ts.tsdk.path": "",
+  "js/ts.tsdk.promptToUseWorkspaceVersion": true,
+  "js/ts.tsserver.web.projectWideIntellisense.suppressSemanticErrors": true,
+  "editor.definitionLinkOpensInPeek": false,
+  "js/ts.tsserver.watchOptions": "vscode",
+  "C_Cpp.intelliSenseMemoryLimit": 8192,
+  "editor.autoIndent": "advanced",
+  "editor.wordWrapColumn": 120
+}
