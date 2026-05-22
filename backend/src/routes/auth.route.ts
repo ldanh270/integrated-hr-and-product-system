@@ -1,5 +1,5 @@
-import { AuthController } from "@/controller/auth.controller.ts"
-import { AuthService } from "@/service/auth.service.ts"
+import { AuthController } from "@/controllers/auth.controller.ts"
+import { AuthService } from "@/services/auth.service.ts"
 
 import express from "express"
 

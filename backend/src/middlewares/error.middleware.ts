@@ -1,5 +1,5 @@
-import { HttpStatusCode } from "@/config/constant/http.config.ts"
-import { AppError } from "@/util/error.util.ts"
+import { HttpStatusCode } from "@/configs/constants/http.config.ts"
+import { AppError } from "@/utils/error.util.ts"
 
 import { NextFunction, Request, Response } from "express"
 
