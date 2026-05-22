@@ -1,0 +1,134 @@
+# GEMINI.md - HR Management System (SWP391 Project)
+
+This document provides technical context, architecture overview, and development guidelines for the HRM project.
+
+## Project Overview
+
+A Human Resource Management (HRM) system built with a modern full-stack TypeScript architecture. The project is split into a monolithic backend and a React-based frontend.
+
+### Tech Stack
+
+- **Runtime:** [Bun](https://bun.sh/) (Primary runtime and package manager)
+- **Backend:** Node.js with [Express 5](https://expressjs.com/) (using `@types/express` for Type Safety)
+- **Frontend:** [React 19](https://react.dev/) + [Vite](https://vitejs.dev/) + [TypeScript](https://www.typescriptlang.org/)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/) (configured via root Prettier plugin)
+- **Database:** TBD (Structure suggests a Repository pattern, likely SQL-based)
+
+## Directory Structure
+
+```text
+.
+├── backend/            # Express server (TS + Bun)
+│   ├── src/
+│   │   ├── config/     # Environment and static configurations
+│   │   ├── controller/ # Request handlers
+│   │   ├── lib/        # Shared libraries (DB connection, etc.)
+│   │   ├── middleware/ # Express middlewares
+│   │   ├── repository/ # Data access layer
+│   │   ├── route/      # API route definitions
+│   │   ├── service/    # Business logic layer
+│   │   └── util/       # Helper functions
+├── frontend/           # React application (Vite)
+│   ├── src/
+│   │   ├── assets/     # Static assets
+│   │   └── ...         # Standard React structure
+├── AGENTS.md           # Sub-agent specialized instructions
+├── CLAUDE.md           # Engineering principles and coding standards
+└── GEMINI.md           # This file (Project context for AI)
+```
+
+## Getting Started
+
+### Prerequisites
+
+- [Bun](https://bun.sh/) installed locally.
+
+### Installation
+
+```bash
+# Install dependencies for both parts
+cd backend && bun install
+cd ../frontend && bun install
+```
+
+### Running Development Servers
+
+```bash
+# Backend
+cd backend && bun run dev
+
+# Frontend
+cd frontend && bun run dev
+```
+
+## Development Guidelines
+
+### Coding Standards
+
+- **S.O.L.I.D. Principles:** Strictly enforced. Full reference: [`docs/solid-principles.md`](docs/solid-principles.md)
+- **Design Patterns:** Factory, Strategy, Decorator, Repository, Facade, Observer. Full reference: [`docs/design-patterns.md`](docs/design-patterns.md)
+- **Interface Contracts:** All interfaces defined before implementation. Full reference: [`docs/interface-contracts.md`](docs/interface-contracts.md)
+- **Agent Directives:** Mandatory per-layer rules (route/controller/service/repository). Full reference: [`docs/agent-directives.md`](docs/agent-directives.md)
+- **Type Safety:** No `any`. Interfaces for every service and repository. DTOs for all inputs.
+- **Naming Conventions:**
+  - Variables: `camelCase`
+  - Functions: `verbNoun` (e.g., `fetchUser`)
+  - Classes: `PascalCase`
+  - Constants: `UPPER_SNAKE_CASE`
+  - Interfaces: `I` prefix (e.g., `IAuthRepository`)
+
+### Backend Architecture
+
+```
+Route (concrete wiring only)
+  → Controller (HTTP adapter, depends on IService)
+  → Service (business logic, depends on IRepository)
+  → Repository (DB queries, implements IRepository)
+```
+
+- **Controllers:** HTTP in/out only. No business logic, no SQL, no hashing.
+- **Services:** Business logic only. Depend on `IRepository` interface, not concrete class.
+- **Repositories:** SQL only. Parameterized queries always. Implement `I*Repository` interface.
+- **Dependencies:** Constructor injection everywhere. Route file is the only place with `new ConcreteClass()`.
+- **Errors:** Throw `AppError(message, statusCode, layer)` — never raw strings.
+- **Utils:** Pure functions only. `jwt.util.ts` (sign/verify), `hash.util.ts` (bcrypt).
+
+### Frontend Architecture
+
+- **React 19:** React Compiler enabled (`babel-plugin-react-compiler`).
+- **Component hierarchy:** Page → Feature → UI Component → Primitive
+- **State:** Server data → React Query. Shared UI → Context + Reducer. Local → useState.
+- **Styling:** Tailwind CSS utility classes.
+
+## Documentation Index
+
+| Doc | Contents |
+|-----|----------|
+| [`docs/solid-principles.md`](docs/solid-principles.md) | All 5 SOLID rules, codebase examples, checklist |
+| [`docs/design-patterns.md`](docs/design-patterns.md) | 10 patterns with TS code (Factory, Strategy, Decorator, etc.) |
+| [`docs/interface-contracts.md`](docs/interface-contracts.md) | All interfaces: `IAuthRepository`, `IAuthService`, DTOs, `ApiResponse<T>` |
+| [`docs/agent-directives.md`](docs/agent-directives.md) | Per-layer rules, pattern decision tree, naming reference |
+| [`docs/system-architecture.md`](docs/system-architecture.md) | Architecture diagram, request lifecycle, auth flow |
+| [`docs/code-standards.md`](docs/code-standards.md) | Naming, conventions, gap analysis |
+| [`docs/codebase-summary.md`](docs/codebase-summary.md) | All files, module breakdown, known bugs |
+| [`docs/project-overview-pdr.md`](docs/project-overview-pdr.md) | Feature requirements, tech stack, missing deps |
+
+## TODOs & Missing Implementations
+
+- [ ] Install missing deps: `jsonwebtoken`, `bcryptjs`, `zod`, `cors`, `pg` or `mysql2`
+- [ ] `backend/src/config/env.ts` — typed env wrapper, fail-fast on startup
+- [ ] `backend/src/types/` — `IAuthRepository`, `IAuthService`, DTOs, `ApiResponse<T>`
+- [ ] `backend/src/lib/database.ts` — real DB driver connection
+- [ ] `backend/src/util/jwt.util.ts` — `signAccessToken`, `verifyAccessToken`
+- [ ] `backend/src/util/hash.util.ts` — `hashPassword`, `comparePassword`
+- [ ] `backend/src/middleware/auth.middleware.ts` — JWT guard
+- [ ] `backend/src/middleware/validate.middleware.ts` — Zod input validation
+- [ ] `backend/src/middleware/cors.middleware.ts` — CORS for frontend dev
+- [ ] Implement `AuthService.signup/login/logout/refresh`
+- [ ] Implement `PgAuthRepository` methods
+- [ ] Frontend routing (TanStack Router or React Router)
+- [ ] `backend/.env.example`
+
+---
+
+_Note: This file is used by Gemini CLI to understand the project context. Update when significant architectural changes occur._
