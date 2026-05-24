@@ -1,12 +1,11 @@
+import { connectDB } from "@/libs/database.ts"
+import authRoutes from "@/routes/auth.route.ts"
+
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
 import express, { NextFunction, Request, Response } from "express"
 
-import { connectDB } from "./lib/database.ts"
-import authRoutes from "./route/auth.route.ts"
-
 /**
-import { connectDB } from "./libs/database.ts";
  * Server configurations
  */
 dotenv.config() // Create config for using .env variables

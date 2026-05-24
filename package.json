@@ -1,6 +1,14 @@
 {
+  "scripts": {
+    "dev": "concurrently \"bun run dev:backend\" \"bun run dev:frontend\"",
+    "dev:backend": "cd backend && bun --watch src/index.ts",
+    "dev:frontend": "cd frontend && bun run dev"
+  },
   "dependencies": {
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "prettier-plugin-tailwindcss": "^0.8.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }
