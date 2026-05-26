@@ -1,5 +1,6 @@
 import { connectDB } from "@/libs/database.ts"
 import authRoutes from "@/routes/auth.route.ts"
+import employeeRoutes from "@/routes/employee.route.ts"
 
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
@@ -29,6 +30,7 @@ app.get("/", async (req, res) =>
 )
 
 app.use("/api/auth", authRoutes)
+app.use("/api/employees", employeeRoutes)
 
 // Private routes
 
