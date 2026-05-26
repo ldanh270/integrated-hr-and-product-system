@@ -82,5 +82,10 @@
   "js/ts.tsserver.watchOptions": "vscode",
   "C_Cpp.intelliSenseMemoryLimit": 8192,
   "editor.autoIndent": "advanced",
-  "editor.wordWrapColumn": 120
+  "editor.wordWrapColumn": 120,
+  "workbench.externalUriOpeners": {
+    "*.localhost": "default",
+    "http://*": "default",
+    "https://*": "default"
+  }
 }
