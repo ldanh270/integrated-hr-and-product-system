@@ -1,6 +1,9 @@
 {
   "scripts": {
     "dev": "concurrently \"bun run dev:backend\" \"bun run dev:frontend\"",
+    "install:dev": "concurrently \"bun run install:backend\" \"bun run install:frontend\"",
+    "install:backend": "cd backend && bun install",
+    "install:frontend": "cd frontend && bun install",
     "dev:backend": "cd backend && bun --watch src/index.ts",
     "dev:frontend": "cd frontend && bun run dev"
   },
