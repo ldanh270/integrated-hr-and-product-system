@@ -8,13 +8,13 @@ Human Resource Management system. University project, Summer 2026.
 
 ## Tech Stack
 
-| Layer    | Technology                        |
-|----------|-----------------------------------|
-| Runtime  | Bun                               |
-| Backend  | Express 5 + TypeScript            |
-| Frontend | React 19 + Vite 8 + TypeScript    |
+| Layer    | Technology                                      |
+| -------- | ----------------------------------------------- |
+| Runtime  | Bun                                             |
+| Backend  | Express 5 + TypeScript                          |
+| Frontend | React 19 + Vite 8 + TypeScript                  |
 | Auth     | JWT (access 15m) + httpOnly cookie (refresh 7d) |
-| Database | TBD (driver not yet connected)    |
+| Database | TBD (driver not yet connected)                  |
 
 ---
 
@@ -51,24 +51,53 @@ Human Resource Management system. University project, Summer 2026.
 ## Setup
 
 ### Prerequisites
-- [Bun](https://bun.sh) >= 1.0
-- Node.js >= 20 (for frontend)
 
-### Backend
+- [Bun](https://bun.sh) >= 1.0
+
+### Install dependencies
 
 ```bash
-cd backend
-cp .env.example .env        # create from example (see env vars below)
+# Root
 bun install
-bun dev                     # hot-reload on :5000
+
+# Backend
+cd backend && bun install && cd ..
+
+# Frontend
+cd frontend && bun install && cd ..
 ```
 
-### Frontend
+### Run (both FE + BE)
 
 ```bash
-cd frontend
-bun install                 # or npm install
-bun dev                     # vite dev server on :5173
+bun run dev
+```
+
+| Service  | URL                   |
+| -------- | --------------------- |
+| Backend  | http://localhost:5000 |
+| Frontend | http://localhost:5173 |
+
+### Run separately
+
+```bash
+bun run dev:backend    # BE only — hot-reload on :5000
+bun run dev:frontend   # FE only — Vite on :5173
+```
+
+### Environment Variables
+
+> Create `backend/.env` before starting BE.
+
+```env
+PORT=5000
+ACCESS_TOKEN_SECRET=your_jwt_secret_here
+# DB vars (when driver added):
+# DB_HOST=
+# DB_PORT=
+# DB_NAME=
+# DB_USER=
+# DB_PASS=
 ```
 
 ### Environment Variables
@@ -91,10 +120,10 @@ ACCESS_TOKEN_SECRET=your_jwt_secret_here
 
 Base URL: `http://localhost:5000`
 
-| Method | Path               | Description          | Status      |
-|--------|--------------------|----------------------|-------------|
-| GET    | `/`                | Health check         | ✅ Working  |
-| POST   | `/api/auth/signup` | Register new user    | ⚠️ Stub    |
+| Method | Path               | Description       | Status     |
+| ------ | ------------------ | ----------------- | ---------- |
+| GET    | `/`                | Health check      | ✅ Working |
+| POST   | `/api/auth/signup` | Register new user | ⚠️ Stub    |
 
 > See `docs/system-architecture.md` for planned endpoints.
 
@@ -102,12 +131,12 @@ Base URL: `http://localhost:5000`
 
 ## Documentation
 
-| Doc | Contents |
-|-----|----------|
+| Doc                                                            | Contents                             |
+| -------------------------------------------------------------- | ------------------------------------ |
 | [`docs/project-overview-pdr.md`](docs/project-overview-pdr.md) | Feature requirements, tech decisions |
-| [`docs/codebase-summary.md`](docs/codebase-summary.md) | Module breakdown, known bugs |
-| [`docs/code-standards.md`](docs/code-standards.md) | Naming, patterns, what's missing |
-| [`docs/system-architecture.md`](docs/system-architecture.md) | Architecture diagram, request flow |
+| [`docs/codebase-summary.md`](docs/codebase-summary.md)         | Module breakdown, known bugs         |
+| [`docs/code-standards.md`](docs/code-standards.md)             | Naming, patterns, what's missing     |
+| [`docs/system-architecture.md`](docs/system-architecture.md)   | Architecture diagram, request flow   |
 
 ---
 

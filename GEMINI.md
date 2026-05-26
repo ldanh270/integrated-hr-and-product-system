@@ -102,16 +102,16 @@ Route (concrete wiring only)
 
 ## Documentation Index
 
-| Doc | Contents |
-|-----|----------|
-| [`docs/solid-principles.md`](docs/solid-principles.md) | All 5 SOLID rules, codebase examples, checklist |
-| [`docs/design-patterns.md`](docs/design-patterns.md) | 10 patterns with TS code (Factory, Strategy, Decorator, etc.) |
-| [`docs/interface-contracts.md`](docs/interface-contracts.md) | All interfaces: `IAuthRepository`, `IAuthService`, DTOs, `ApiResponse<T>` |
-| [`docs/agent-directives.md`](docs/agent-directives.md) | Per-layer rules, pattern decision tree, naming reference |
-| [`docs/system-architecture.md`](docs/system-architecture.md) | Architecture diagram, request lifecycle, auth flow |
-| [`docs/code-standards.md`](docs/code-standards.md) | Naming, conventions, gap analysis |
-| [`docs/codebase-summary.md`](docs/codebase-summary.md) | All files, module breakdown, known bugs |
-| [`docs/project-overview-pdr.md`](docs/project-overview-pdr.md) | Feature requirements, tech stack, missing deps |
+| Doc                                                            | Contents                                                                  |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [`docs/solid-principles.md`](docs/solid-principles.md)         | All 5 SOLID rules, codebase examples, checklist                           |
+| [`docs/design-patterns.md`](docs/design-patterns.md)           | 10 patterns with TS code (Factory, Strategy, Decorator, etc.)             |
+| [`docs/interface-contracts.md`](docs/interface-contracts.md)   | All interfaces: `IAuthRepository`, `IAuthService`, DTOs, `ApiResponse<T>` |
+| [`docs/agent-directives.md`](docs/agent-directives.md)         | Per-layer rules, pattern decision tree, naming reference                  |
+| [`docs/system-architecture.md`](docs/system-architecture.md)   | Architecture diagram, request lifecycle, auth flow                        |
+| [`docs/code-standards.md`](docs/code-standards.md)             | Naming, conventions, gap analysis                                         |
+| [`docs/codebase-summary.md`](docs/codebase-summary.md)         | All files, module breakdown, known bugs                                   |
+| [`docs/project-overview-pdr.md`](docs/project-overview-pdr.md) | Feature requirements, tech stack, missing deps                            |
 
 ## TODOs & Missing Implementations
 
