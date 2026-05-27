@@ -1,10 +1,10 @@
-import "./App.css"
+import HRMPrototype from './HRMPrototype'
 
 function App() {
   return (
-    <>
-      <h1>GM</h1>
-    </>
+    <div className="App">
+      <HRMPrototype />
+    </div>
   )
 }
 

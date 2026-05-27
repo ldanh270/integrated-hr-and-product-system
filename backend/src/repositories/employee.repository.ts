@@ -15,6 +15,7 @@ export class MongoEmployeeRepository implements IEmployeeRepository {
       id: employee._id.toString(),
       fullName: employee.fullName,
       email: employee.email,
+      role: employee.role,
       phone: employee.phone ?? null,
       position: employee.position ?? null,
       employeeType: employee.employeeType,

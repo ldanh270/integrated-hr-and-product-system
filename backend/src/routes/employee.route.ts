@@ -7,7 +7,7 @@ import express from "express"
 
 const employeeRoutes = express.Router()
 
-const repository = new MongoEmployeeRepository(Employee)
+const repository = new MongoEmployeeRepository(Employee as any)
 const service = new EmployeeService(repository)
 const controller = new EmployeeController(service)
 
