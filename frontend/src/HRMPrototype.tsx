@@ -1,210 +1,236 @@
-import React, { useState } from 'react';
-import { Eye, EyeOff, LogOut, User, Shield, Lock, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  Eye, EyeOff, LogOut, User, Shield, Lock, 
+  Loader2, ChevronRight, LayoutDashboard, 
+  Users, Briefcase, Settings, ShieldAlert, CheckCircle2
+} from 'lucide-react';
 
 /**
- * CORE DESIGN SYSTEM (Minimalist Enterprise)
- * Colors: 
- * - Primary: #0F172A (Slate 900) - Deep, professional
- * - Accent: #2563EB (Blue 600) - Action oriented
- * - Error: #DC2626 (Red 600)
- * - Warning: #D97706 (Amber 600)
- * Typography:
- * - Sans-serif (Geist or Inter preferred)
+ * REUSABLE COMPONENTS
  */
 
+const Toast = ({ toast }: { toast: { message: string; type: 'error' | 'warning' | 'success' } | null }) => (
+  <div className={`fixed bottom-10 right-10 z-[100] flex items-center gap-4 px-6 py-4 rounded-2xl border backdrop-blur-xl shadow-2xl transition-all duration-500 transform ${toast ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'} ${
+    toast?.type === 'error' ? 'bg-red-500/20 border-red-500/30 text-red-400' : 
+    toast?.type === 'warning' ? 'bg-amber-500/20 border-amber-500/30 text-amber-400' :
+    'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
+  }`}>
+    {toast?.type === 'success' ? <CheckCircle2 size={20} className="animate-bounce" /> : <ShieldAlert size={20} className="animate-pulse" />}
+    <span className="font-black uppercase tracking-widest text-[11px]">{toast?.message}</span>
+  </div>
+);
+
+const InputField = ({ label, type, placeholder, icon: Icon, id, value, onChange, error, showPassword, setShowPassword }: any) => (
+  <div className="space-y-2">
+    <div className="flex justify-between items-center px-1">
+      <label htmlFor={id} className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+        {label}
+      </label>
+    </div>
+    <div className="relative group">
+      <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${error ? 'text-red-500' : 'text-slate-600 group-focus-within:text-blue-500'}`}>
+        <Icon size={18} />
+      </div>
+      <input
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        type={type === 'password' && showPassword ? 'text' : type}
+        autoComplete="off"
+        className={`w-full pl-12 pr-12 py-4 bg-slate-950/40 border-2 rounded-2xl focus:outline-none transition-all text-sm font-bold tracking-wide text-white placeholder:text-slate-800 ${
+          error ? 'border-red-500/20 focus:border-red-500' : 'border-slate-900 focus:border-blue-600/50'
+        }`}
+        placeholder={placeholder}
+      />
+      {type === 'password' && (
+        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400">
+          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
+      )}
+    </div>
+  </div>
+);
+
 const HRMPrototype = () => {
-  const [view, setView] = useState('login'); // 'login' | 'dashboard'
-  const [status, setStatus] = useState('normal'); // 'normal' | 'loading' | 'error' | 'locked'
+  const [view, setView] = useState('login'); 
+  const [status, setStatus] = useState('normal'); 
   const [showPassword, setShowPassword] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [userRole, setUserRole] = useState('Admin'); // Simulated role
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isShake, setIsShake] = useState(false);
 
-  // Simulation Handlers
-  const handleLogin = (e) => {
+  // Form states
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState<{ email?: boolean; password?: boolean }>({});
+  const [toast, setToast] = useState<{ message: string; type: 'error' | 'warning' | 'success' } | null>(null);
+
+  useEffect(() => {
+    setIsLoaded(true);
+  }, []);
+
+  // Auto-hide toast
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  const triggerShake = () => {
+    setIsShake(true);
+    setTimeout(() => setIsShake(false), 500);
+  };
+
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+    
+    // Validation
+    if (!email || !password) {
+      setErrors({ email: !email, password: !password });
+      setToast({ message: 'Error: Identity and Access Key are required.', type: 'error' });
+      triggerShake();
+      return;
+    }
+
     setStatus('loading');
+    
+    // Simulation Logic
     setTimeout(() => {
-      // Logic simulation
-      // setStatus('error'); // Toggle these to see different states
-      // setStatus('locked');
-      setView('dashboard');
-      setStatus('normal');
+      if (email === 'error@corp.com') {
+        setToast({ message: 'Access Denied: Invalid credentials.', type: 'error' });
+        triggerShake();
+        setStatus('normal');
+      } else if (email === 'lock@corp.com') {
+        setToast({ message: 'Terminal Locked: Too many attempts.', type: 'warning' });
+        triggerShake();
+        setStatus('normal');
+      } else {
+        setToast({ message: 'Success: Authentication verified. Welcome.', type: 'success' });
+        setTimeout(() => {
+          setView('dashboard');
+          setStatus('normal');
+        }, 1000);
+      }
     }, 1500);
   };
 
   const confirmLogout = () => {
     setShowLogoutConfirm(false);
     setView('login');
+    setToast({ message: 'System: Session terminated successfully.', type: 'success' });
+    setEmail('');
+    setPassword('');
+    setErrors({});
   };
-
-  // --- COMPONENTS ---
-
-  const InputField = ({ label, type, placeholder, icon: Icon }) => (
-    <div className="space-y-1.5">
-      <label className="text-sm font-medium text-slate-700">{label}</label>
-      <div className="relative group">
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors">
-          <Icon size={18} />
-        </div>
-        <input
-          type={type === 'password' && showPassword ? 'text' : type}
-          className="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 placeholder:text-slate-400"
-          placeholder={placeholder}
-        />
-        {type === 'password' && (
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-          >
-            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
-        )}
-      </div>
-    </div>
-  );
-
-  // --- VIEWS ---
 
   if (view === 'login') {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 font-sans">
-        {/* State Selection for Demo Review */}
-        <div className="absolute top-4 right-4 flex gap-2">
-          <button onClick={() => setStatus('normal')} className="px-3 py-1 text-xs bg-slate-200 rounded hover:bg-slate-300">Normal</button>
-          <button onClick={() => setStatus('error')} className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200">Error</button>
-          <button onClick={() => setStatus('locked')} className="px-3 py-1 text-xs bg-amber-100 text-amber-700 rounded hover:bg-amber-200">Locked</button>
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 font-sans selection:bg-blue-600/30 overflow-hidden">
+        <Toast toast={toast} />
+        
+        {/* Background FX */}
+        <div className="fixed inset-0 pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 blur-[120px] rounded-full animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-600/10 blur-[120px] rounded-full animate-pulse" />
         </div>
 
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
-          <div className="p-8 space-y-8">
-            {/* Header */}
-            <div className="text-center space-y-2">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-50 text-blue-600 rounded-xl mb-2">
-                <Shield size={28} />
-              </div>
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Enterprise HRM</h1>
-              <p className="text-slate-500 text-sm">Sign in to manage your workspace</p>
+        <div 
+          className={`w-full max-w-[420px] transition-all duration-1000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`} 
+          style={isShake ? { animation: 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both' } : {}}
+        >
+          <style>{`
+            @keyframes shake {
+              10%, 90% { transform: translate3d(-1px, 0, 0); }
+              20%, 80% { transform: translate3d(2px, 0, 0); }
+              30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+              40%, 60% { transform: translate3d(4px, 0, 0); }
+            }
+          `}</style>
+          
+          <div className="text-center mb-12 space-y-4">
+            <div className="inline-flex w-20 h-20 bg-gradient-to-tr from-blue-700 to-blue-400 rounded-[2.5rem] items-center justify-center shadow-2xl shadow-blue-600/30 rotate-3">
+              <Shield size={40} className="text-white" />
             </div>
+            <h1 className="text-5xl font-black text-white tracking-tighter">SECURE.</h1>
+            <p className="text-slate-600 font-black uppercase tracking-[0.4em] text-[10px]">Authorization Terminal</p>
+          </div>
 
-            {/* Form */}
-            <form onSubmit={handleLogin} className="space-y-5">
-              <InputField label="Email Address" type="email" placeholder="name@company.com" icon={User} />
-              <InputField label="Password" type="password" placeholder="••••••••" icon={Lock} />
+          <div className="relative bg-slate-900/40 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-10 shadow-2xl overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent pointer-events-none" />
+            <form onSubmit={handleLogin} className="space-y-8 relative z-10">
+              <InputField 
+                id="email" 
+                label="Identity" 
+                type="email" 
+                placeholder="EMAIL@CORP.COM" 
+                icon={User} 
+                value={email} 
+                onChange={setEmail} 
+                error={errors.email} 
+              />
+              <InputField 
+                id="password" 
+                label="Access Key" 
+                type="password" 
+                placeholder="••••••••" 
+                icon={Lock} 
+                value={password} 
+                onChange={setPassword} 
+                error={errors.password} 
+                showPassword={showPassword}
+                setShowPassword={setShowPassword}
+              />
 
-              {/* Status Messages */}
-              {status === 'error' && (
-                <div className="p-3 bg-red-50 border border-red-100 rounded-lg flex items-start gap-3 text-red-700 animate-in fade-in slide-in-from-top-1">
-                  <AlertCircle size={18} className="shrink-0 mt-0.5" />
-                  <p className="text-sm font-medium">Invalid email or password. Please try again.</p>
-                </div>
-              )}
-
-              {status === 'locked' && (
-                <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg flex items-start gap-3 text-amber-700 animate-in fade-in slide-in-from-top-1">
-                  <AlertCircle size={18} className="shrink-0 mt-0.5" />
-                  <div className="space-y-1">
-                    <p className="text-sm font-bold">Account Locked</p>
-                    <p className="text-xs">Too many failed attempts. Locked for 15 minutes.</p>
-                  </div>
-                </div>
-              )}
-
-              <button
-                disabled={status === 'loading'}
-                type="submit"
-                className="w-full py-3 bg-slate-900 text-white rounded-lg font-semibold hover:bg-slate-800 focus:ring-4 focus:ring-slate-900/10 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              <button 
+                disabled={status === 'loading'} 
+                type="submit" 
+                className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-600/20 active:scale-[0.98] disabled:opacity-50"
               >
-                {status === 'loading' ? (
-                  <>
-                    <Loader2 size={20} className="animate-spin" />
-                    Authenticating...
-                  </>
-                ) : 'Sign In'}
+                {status === 'loading' ? <Loader2 size={20} className="animate-spin" /> : <>Sign In <ChevronRight size={18} /></>}
               </button>
             </form>
           </div>
           
-          <div className="px-8 py-4 bg-slate-50 border-t border-slate-100 text-center">
-            <p className="text-xs text-slate-400">
-              Admin-assigned accounts only. Contact IT for access issues.
-            </p>
-          </div>
+          <p className="mt-10 text-center text-slate-700 font-black text-[9px] uppercase tracking-[0.3em]">
+            Strict Monitoring Enabled &copy; 2026
+          </p>
         </div>
       </div>
     );
   }
 
-  // Dashboard View
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-600 text-white rounded flex items-center justify-center">
-              <Shield size={18} />
-            </div>
-            <span className="font-bold text-slate-900 tracking-tight">HRM Portal</span>
+    <div className="min-h-screen bg-[#020617] text-slate-200 flex font-sans">
+      <Toast toast={toast} />
+      <aside className="w-72 border-r border-white/5 flex flex-col p-8">
+        <div className="flex items-center gap-3 mb-16">
+          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+            <Shield size={20} className="text-white" />
           </div>
-
-          <div className="flex items-center gap-4">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-semibold text-slate-900 leading-tight">Alex Rivera</p>
-              <p className="text-xs font-medium text-blue-600 uppercase tracking-wider">{userRole}</p>
-            </div>
-            <div className="w-10 h-10 bg-slate-100 border border-slate-200 rounded-full flex items-center justify-center text-slate-600 font-bold overflow-hidden">
-               AR
-            </div>
-            <div className="h-6 w-px bg-slate-200 mx-2" />
-            <button 
-              onClick={() => setShowLogoutConfirm(true)}
-              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-              title="Sign Out"
-            >
-              <LogOut size={20} />
-            </button>
-          </div>
+          <span className="font-black text-xl tracking-tighter">HRM.PRO</span>
         </div>
-      </header>
-
-      {/* Main Content Placeholder */}
-      <main className="max-w-7xl mx-auto p-12 text-center">
-        <div className="bg-white border border-slate-200 border-dashed rounded-3xl p-24">
-          <h2 className="text-3xl font-bold text-slate-900 mb-4">Welcome back, Alex.</h2>
-          <p className="text-slate-500 max-w-md mx-auto">
-            You are currently signed in as an {userRole}. Use the navigation to manage employees and projects.
-          </p>
-        </div>
+        <nav className="flex-1 space-y-4">
+          {['Dashboard', 'Employees', 'Projects', 'Settings'].map((l, i) => (
+            <div key={l} className={`p-4 rounded-xl font-black uppercase tracking-widest text-[10px] ${i === 0 ? 'bg-blue-600/10 text-blue-500' : 'text-slate-600'}`}>{l}</div>
+          ))}
+        </nav>
+        <button onClick={() => setShowLogoutConfirm(true)} className="p-4 bg-red-500/10 text-red-500 rounded-xl font-black uppercase tracking-widest text-[10px]">Logout</button>
+      </aside>
+      <main className="flex-1 p-20">
+        <h2 className="text-6xl font-black tracking-tighter mb-4">Dashboard.</h2>
+        <p className="text-slate-500 font-black uppercase tracking-widest text-xs">Active User: Rivera, Alex</p>
       </main>
 
-      {/* Logout Confirmation Dialog (Modal Overlay) */}
       {showLogoutConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowLogoutConfirm(false)} />
-          <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 space-y-6 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center gap-4 text-slate-900">
-              <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center shrink-0">
-                <LogOut size={24} />
-              </div>
-              <div className="space-y-1">
-                <h3 className="font-bold text-lg">Sign Out</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">Are you sure you want to end your session?</p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setShowLogoutConfirm(false)}
-                className="flex-1 py-2.5 px-4 bg-slate-100 text-slate-700 font-semibold rounded-lg hover:bg-slate-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={confirmLogout}
-                className="flex-1 py-2.5 px-4 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/10"
-              >
-                Sign Out
-              </button>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
+          <div className="bg-slate-900 border border-white/10 p-12 rounded-[3rem] max-w-sm w-full text-center space-y-8">
+            <div className="w-20 h-20 bg-red-500/10 text-red-500 rounded-3xl mx-auto flex items-center justify-center"><LogOut size={40} /></div>
+            <h3 className="text-3xl font-black tracking-tighter uppercase">Exit?</h3>
+            <div className="flex gap-4">
+              <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 py-4 bg-slate-800 rounded-2xl font-black uppercase tracking-widest text-[10px]">No</button>
+              <button onClick={confirmLogout} className="flex-1 py-4 bg-red-600 rounded-2xl font-black uppercase tracking-widest text-[10px]">Yes</button>
             </div>
           </div>
         </div>
