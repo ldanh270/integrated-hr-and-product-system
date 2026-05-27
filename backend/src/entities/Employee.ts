@@ -3,6 +3,7 @@ import mongoose, { InferSchemaType } from "mongoose"
 // Định nghĩa Enums với 'as const' để TypeScript nhận diện Literal Types thay vì String chung chung
 const EMPLOYEE_TYPES = ["full_time", "part_time", "contractor", "intern"] as const
 const EMPLOYEE_STATUSES = ["active", "inactive", "on_leave", "terminated"] as const
+const EMPLOYEE_ROLES = ["admin", "manager", "employee"] as const
 
 const employeeSchema = new mongoose.Schema(
   {
@@ -24,6 +25,13 @@ const employeeSchema = new mongoose.Schema(
       type: String,
       required: true,
       select: false, // Bảo mật: Không tự động trả về khi query
+    },
+
+    role: {
+      type: String,
+      enum: EMPLOYEE_ROLES,
+      default: "employee",
+      required: true,
     },
 
     phone: {
