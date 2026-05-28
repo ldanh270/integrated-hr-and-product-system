@@ -114,6 +114,135 @@ paths:
                     nullable: true
                     example: null
 
+  /api/profile/me:
+    get:
+      tags:
+        - Profile
+      summary: Get my profile
+      description: Returns the full profile of the currently authenticated employee.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/ProfileDto'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      tags:
+        - Profile
+      summary: Update my profile
+      description: |
+        Updates editable fields on the authenticated user's profile.
+        Only provided fields are updated (partial update).
+        Read-only fields (username, email, role, status, employeeType) cannot be changed here.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileDto'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/ProfileDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/profile/me/avatar:
+    post:
+      tags:
+        - Profile
+      summary: Upload avatar
+      description: |
+        Uploads a new profile avatar image using multipart/form-data.
+        - Field name: **avatar**
+        - Accepted types: JPEG, PNG, WEBP, GIF
+        - Max size: 5 MB
+        - Image is resized to 400×400 and converted to WebP via Cloudinary.
+        - Previous avatar is automatically deleted from Cloudinary.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - avatar
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+                  description: Image file (JPEG / PNG / WEBP / GIF, max 5 MB)
+      responses:
+        '200':
+          description: Avatar uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/ProfileDto'
+        '400':
+          description: No file provided or invalid file type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -208,3 +337,95 @@ components:
           type: array
           items:
             type: object
+
+    ProfileDto:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 6650a1b2c3d4e5f6a7b8c9d0
+        fullName:
+          type: string
+          example: Nguyễn Văn An
+        username:
+          type: string
+          example: an.nguyen
+        email:
+          type: string
+          format: email
+          example: an.nguyen@company.com
+        phone:
+          type: string
+          nullable: true
+          example: '0901234567'
+        dateOfBirth:
+          type: string
+          format: date
+          nullable: true
+          example: '1995-06-15'
+        nationalId:
+          type: string
+          nullable: true
+          example: '001095012345'
+        address:
+          type: string
+          nullable: true
+          example: 123 Đường Lê Lợi, Q1, TP.HCM
+        position:
+          type: string
+          nullable: true
+          example: Senior Developer
+        role:
+          $ref: '#/components/schemas/EmployeeRole'
+        employeeType:
+          $ref: '#/components/schemas/EmployeeType'
+        status:
+          $ref: '#/components/schemas/EmployeeStatus'
+        startDate:
+          type: string
+          format: date
+          nullable: true
+          example: '2023-01-15'
+        avatar:
+          type: object
+          properties:
+            url:
+              type: string
+              nullable: true
+              example: 'https://res.cloudinary.com/xxx/image/upload/v1/hrp/avatars/avatar_abc.webp'
+            id:
+              type: string
+              nullable: true
+              example: hrp/avatars/avatar_abc
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UpdateProfileDto:
+      type: object
+      description: All fields are optional. Only provided fields will be updated.
+      properties:
+        fullName:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: Nguyễn Văn An
+        phone:
+          type: string
+          example: '0901234567'
+        dateOfBirth:
+          type: string
+          format: date
+          example: '1995-06-15'
+        nationalId:
+          type: string
+          minLength: 9
+          maxLength: 20
+          example: '001095012345'
+        address:
+          type: string
+          maxLength: 500
+          example: 123 Đường Lê Lợi, Q1, TP.HCM

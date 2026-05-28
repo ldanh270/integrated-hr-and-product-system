@@ -1,15 +1,18 @@
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { useNavigate } from "react-router-dom"
+import { Button } from "@/components/ui/button.tsx"
+import { Input } from "@/components/ui/input.tsx"
+import { Label } from "@/components/ui/label.tsx"
 import { useAuth } from "@/hooks/use-auth.ts"
 import { loginSchema } from "@/schemas/auth.schema.ts"
 import type { LoginSchemaType } from "@/schemas/auth.schema.ts"
-import { Input } from "@/components/ui/input.tsx"
-import { Label } from "@/components/ui/label.tsx"
-import { Button } from "@/components/ui/button.tsx"
+
+import { useState } from "react"
+
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Eye, EyeOff, KeyRound } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { useNavigate } from "react-router-dom"
+
 import MockSpreadsheetCard from "./mock-spreadsheet.tsx"
-import { KeyRound, Eye, EyeOff } from "lucide-react"
 
 const GeometricBackground = () => (
   <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-35">
@@ -31,9 +34,21 @@ const GeometricBackground = () => (
 )
 
 const BrandLogo = () => (
-  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-primary shadow-lg transition-transform hover:scale-105">
-    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="currentColor" className="text-primary/10" />
+  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-primary shadow-lg transition-transform hover:scale-105">
+    <svg
+      viewBox="0 0 24 24"
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path
+        d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+        fill="currentColor"
+        className="text-primary/10"
+      />
       <path d="M8 10h.01M12 10h.01M16 10h.01" stroke="currentColor" />
     </svg>
   </div>
@@ -60,7 +75,7 @@ export default function Login() {
   const onSubmit = async (data: LoginSchemaType) => {
     try {
       await login(data)
-      navigate("/dashboard")
+      navigate("/hrm/dashboard")
     } catch (error: any) {
       setError("root", {
         message: error.response?.data?.message || "Login failed. Please try again.",
@@ -71,13 +86,13 @@ export default function Login() {
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
       {/* Left Column: Visual branding and mockup (Only on lg screens) */}
-      <div className="relative hidden w-1/2 flex-col justify-between bg-gradient-to-br from-login-grad-start via-login-grad-mid to-login-grad-end p-12 text-white overflow-hidden lg:flex">
+      <div className="relative hidden w-1/2 flex-col justify-between bg-linear-to-br from-login-grad-start via-login-grad-mid to-login-grad-end p-12 text-white overflow-hidden lg:flex">
         <GeometricBackground />
 
         {/* Brand Header */}
         <div className="relative z-10 flex items-center gap-3">
           <BrandLogo />
-          <span className="text-xl font-bold tracking-wide">Antigravity HR</span>
+          <span className="text-xl font-bold tracking-wide">HRP</span>
         </div>
 
         {/* Feature Teaser */}
@@ -111,7 +126,7 @@ export default function Login() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Global Error Banner */}
             {errors.root && (
-              <div className="rounded-3xl bg-destructive/10 p-4 text-center text-sm font-medium text-destructive">
+              <div className="rounded-xl bg-destructive/10 p-4 text-center text-sm font-medium text-destructive">
                 {errors.root.message}
               </div>
             )}
@@ -126,10 +141,14 @@ export default function Login() {
                 type="text"
                 placeholder="admin.hr"
                 {...register("username")}
-                className={errors.username ? "border-destructive focus-visible:ring-destructive" : ""}
+                className={
+                  errors.username ? "border-destructive focus-visible:ring-destructive" : ""
+                }
               />
               {errors.username && (
-                <p className="ml-5 text-xs font-medium text-destructive">{errors.username.message}</p>
+                <p className="ml-5 text-xs font-medium text-destructive">
+                  {errors.username.message}
+                </p>
               )}
             </div>
 
@@ -157,7 +176,9 @@ export default function Login() {
                 </button>
               </div>
               {errors.password && (
-                <p className="ml-5 text-xs font-medium text-destructive">{errors.password.message}</p>
+                <p className="ml-5 text-xs font-medium text-destructive">
+                  {errors.password.message}
+                </p>
               )}
             </div>
 
@@ -168,7 +189,10 @@ export default function Login() {
                 type="checkbox"
                 className="h-4 w-4 rounded border-border text-primary focus:ring-primary focus:ring-offset-background"
               />
-              <Label htmlFor="remember" className="text-sm font-medium text-muted-foreground select-none cursor-pointer">
+              <Label
+                htmlFor="remember"
+                className="text-sm font-medium text-muted-foreground select-none cursor-pointer"
+              >
                 Remember Password
               </Label>
             </div>
@@ -176,7 +200,7 @@ export default function Login() {
             {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full h-12 text-base font-semibold transition-all active:scale-[0.98]"
+              className="w-full h-12 text-base font-semibold"
               disabled={isLoggingIn}
             >
               {isLoggingIn ? "Logging in..." : "Login"}
@@ -197,7 +221,7 @@ export default function Login() {
           <Button
             type="button"
             variant="outline"
-            className="w-full h-12 text-sm font-semibold flex items-center justify-center gap-2 border-border shadow-sm hover:bg-secondary/40 active:scale-[0.98] transition-all"
+            className="w-full h-12 text-sm font-semibold flex items-center justify-center gap-2 border-border shadow-sm hover:bg-secondary/40"
           >
             <KeyRound size={16} />
             <span>Reset Password</span>

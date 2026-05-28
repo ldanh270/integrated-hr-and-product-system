@@ -38,8 +38,10 @@ The system uses a mixed-radius strategy to balance friendliness with structure.
 
 - **Interactive Components (Pill):** `rounded-full` (9999px).
   - *Applied to:* Buttons, Badges, Input fields, Avatars, Search bars.
-- **Container Components (Soft-Square):** `rounded-3xl` (1rem / 16px).
+- **Container Components (Soft-Square):** `rounded-xl` (~8px).
   - *Applied to:* Cards, Dialogs, Modals, Popovers, Dashboard Widgets.
+- **Sub-containers / inner wrappers:** `rounded-lg` (~6px).
+  - *Applied to:* Table wrappers, inner sections within a card.
 - **Focus Rings:** 2px offset with `ring-primary`.
 
 ## 4. Layout & Spacing

@@ -2,6 +2,7 @@ import { connectDB } from "@/libs/database.ts"
 import { cors } from "@/middlewares/cors.middleware.ts"
 import authRoutes from "@/routes/auth.route.ts"
 import employeeRoutes from "@/routes/employee.route.ts"
+import profileRoutes from "@/routes/profile.route.ts"
 
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
@@ -42,6 +43,7 @@ app.get("/", async (req, res) =>
 
 app.use("/api/auth", authRoutes)
 app.use("/api/employees", employeeRoutes)
+app.use("/api/profile", profileRoutes)
 
 // Private routes
 

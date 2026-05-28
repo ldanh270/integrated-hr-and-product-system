@@ -56,7 +56,7 @@ export default function MockSpreadsheetCard() {
         <CollaboratorAvatar />
       </div>
 
-      <div className="flex overflow-hidden rounded-3xl border border-border/40 bg-card text-card-foreground shadow-2xl backdrop-blur-sm">
+      <div className="flex overflow-hidden rounded-xl border border-border/40 bg-card text-card-foreground shadow-2xl backdrop-blur-sm">
         {/* Mock App Sidebar */}
         <div className="flex w-16 flex-col items-center justify-between bg-primary/95 py-5 text-primary-foreground/80 dark:bg-primary/90">
           <div className="flex flex-col items-center gap-6">
@@ -115,7 +115,7 @@ export default function MockSpreadsheetCard() {
           </div>
 
           {/* Data Table */}
-          <div className="overflow-hidden rounded-2xl border border-border/80">
+          <div className="overflow-hidden rounded-lg border border-border/80">
             <div className="grid grid-cols-12 bg-secondary/40 border-b border-border/80 py-2 px-3 text-xs font-semibold text-muted-foreground">
               <div className="col-span-1 text-center">#</div>
               <div className="col-span-3 flex items-center gap-1">

@@ -3,6 +3,7 @@ import { useAuthStore } from "@/store/auth-store.ts"
 
 import { Fragment, Suspense, lazy } from "react"
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom"
+import { Toaster } from "sonner"
 
 const NotFound = lazy(() => import("@/pages/NotFound.tsx"))
 
@@ -21,12 +22,22 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
  */
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <>{children}</>
+  return isAuthenticated ? <Navigate to="/hrm/dashboard" replace /> : <>{children}</>
+}
+
+/**
+ * RootRedirect component
+ * Redirects to /hrm/dashboard if authenticated, otherwise to /login
+ */
+const RootRedirect = () => {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  return <Navigate to={isAuthenticated ? "/hrm/dashboard" : "/login"} replace />
 }
 
 const App = () => {
   return (
     <Router>
+      <Toaster position="top-right" richColors />
       <Suspense
         fallback={
           <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -75,6 +86,7 @@ const App = () => {
             )
           })}
 
+          <Route path="/" element={<RootRedirect />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
