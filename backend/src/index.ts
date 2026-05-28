@@ -1,4 +1,5 @@
 import { connectDB } from "@/libs/database.ts"
+import { cors } from "@/middlewares/cors.middleware.ts"
 import authRoutes from "@/routes/auth.route.ts"
 import employeeRoutes from "@/routes/employee.route.ts"
 
@@ -26,6 +27,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument))
  * Middleware
  */
 
+app.use(cors)
 app.use(express.json())
 app.use(cookieParser())
 

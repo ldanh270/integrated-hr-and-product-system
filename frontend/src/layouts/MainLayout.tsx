@@ -1,6 +1,6 @@
-import Footer from "@/components/ui/layouts/Footer.tsx"
-import Header from "@/components/ui/layouts/Header.tsx"
-import { ReactNode } from "react"
+import Footer from "@/components/layouts/Footer.tsx"
+import Header from "@/components/layouts/Header.tsx"
+import type { ReactNode } from "react"
 
 const MainLayout = ({ children }: { children: ReactNode }) => {
   return (

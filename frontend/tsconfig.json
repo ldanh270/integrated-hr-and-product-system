@@ -6,5 +6,4 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "db.json"]
 }

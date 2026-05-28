@@ -1,24 +1,53 @@
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { useNavigate } from "react-router-dom"
-import { LogIn } from "lucide-react"
-
-import { Button } from "@/components/ui/button.tsx"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.tsx"
+import { useAuth } from "@/hooks/use-auth.ts"
+import { loginSchema } from "@/schemas/auth.schema.ts"
+import type { LoginSchemaType } from "@/schemas/auth.schema.ts"
 import { Input } from "@/components/ui/input.tsx"
 import { Label } from "@/components/ui/label.tsx"
-import { useAuth } from "@/hooks/use-auth.ts"
-import { loginSchema, LoginSchemaType } from "@/schemas/auth.schema.ts"
+import { Button } from "@/components/ui/button.tsx"
+import MockSpreadsheetCard from "./mock-spreadsheet.tsx"
+import { KeyRound, Eye, EyeOff } from "lucide-react"
+
+const GeometricBackground = () => (
+  <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-35">
+    <svg className="h-full w-full" viewBox="0 0 800 800" preserveAspectRatio="none" fill="none">
+      <path d="M-100,-100 L450,150 L250,650 L-100,550 Z" fill="url(#geom-grad)" />
+      <path d="M350,50 L950,350 L650,850 L250,750 Z" fill="url(#geom-grad-2)" />
+      <defs>
+        <linearGradient id="geom-grad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.12" />
+          <stop offset="100%" stopColor="#2563eb" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="geom-grad-2" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="#1d4ed8" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+)
+
+const BrandLogo = () => (
+  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-primary shadow-lg transition-transform hover:scale-105">
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="currentColor" className="text-primary/10" />
+      <path d="M8 10h.01M12 10h.01M16 10h.01" stroke="currentColor" />
+    </svg>
+  </div>
+)
 
 /**
  * Login page component
- * Implements a modern, centered card layout with Pill aesthetic
+ * Implements a modern split-panel layout: brand identity on the left, login form on the right
  */
 export default function Login() {
   const navigate = useNavigate()
   const { login, isLoggingIn } = useAuth()
+  const [showPassword, setShowPassword] = useState(false)
 
-  // 1. Initialize form with Zod validation
   const {
     register,
     handleSubmit,
@@ -28,15 +57,11 @@ export default function Login() {
     resolver: zodResolver(loginSchema),
   })
 
-  /**
-   * Form submission handler
-   */
   const onSubmit = async (data: LoginSchemaType) => {
     try {
       await login(data)
       navigate("/dashboard")
     } catch (error: any) {
-      // Handle API errors (e.g., invalid credentials)
       setError("root", {
         message: error.response?.data?.message || "Login failed. Please try again.",
       })
@@ -44,86 +69,141 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-8">
-      <Card className="w-full max-w-md shadow-lg transition-all hover:scale-[1.01]">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <LogIn size={24} />
+    <div className="flex min-h-screen w-full bg-background text-foreground">
+      {/* Left Column: Visual branding and mockup (Only on lg screens) */}
+      <div className="relative hidden w-1/2 flex-col justify-between bg-gradient-to-br from-login-grad-start via-login-grad-mid to-login-grad-end p-12 text-white overflow-hidden lg:flex">
+        <GeometricBackground />
+
+        {/* Brand Header */}
+        <div className="relative z-10 flex items-center gap-3">
+          <BrandLogo />
+          <span className="text-xl font-bold tracking-wide">Antigravity HR</span>
+        </div>
+
+        {/* Feature Teaser */}
+        <div className="relative z-10 my-auto flex flex-col items-start space-y-6 max-w-md">
+          <h1 className="text-4xl font-bold leading-tight">Designed for Individuals</h1>
+          <p className="text-white/80 text-base leading-relaxed">
+            See the analytics and grow your data remotely, from anywhere!
+          </p>
+          {/* Slider Pagination Dots */}
+          <div className="flex items-center gap-2 pt-2">
+            <span className="h-2.5 w-6 rounded-full bg-white transition-all" />
+            <span className="h-2.5 w-2.5 rounded-full bg-white/40 hover:bg-white/60 cursor-pointer transition-all" />
+            <span className="h-2.5 w-2.5 rounded-full bg-white/40 hover:bg-white/60 cursor-pointer transition-all" />
           </div>
-          <CardTitle className="text-3xl font-bold text-foreground">Welcome Back</CardTitle>
-          <CardDescription className="text-muted-foreground mt-2">
-            Enter your credentials to access your HRM dashboard
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        </div>
+
+        {/* Floating Mock Spreadsheet Card */}
+        <div className="relative z-10 flex justify-center pb-8">
+          <MockSpreadsheetCard />
+        </div>
+      </div>
+
+      {/* Right Column: Authentication Form */}
+      <div className="flex w-full flex-col justify-center px-6 py-12 lg:w-1/2 lg:px-24 xl:px-32">
+        <div className="mx-auto w-full max-w-md space-y-8">
+          {/* Form Header */}
+          <div className="space-y-2">
+            <h2 className="text-3xl font-semibold tracking-tight text-foreground">Login</h2>
+          </div>
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* Error Message */}
+            {/* Global Error Banner */}
             {errors.root && (
-              <div className="rounded-2xl bg-destructive/10 p-4 text-center text-sm font-medium text-destructive">
+              <div className="rounded-3xl bg-destructive/10 p-4 text-center text-sm font-medium text-destructive">
                 {errors.root.message}
               </div>
             )}
 
-            {/* Email Field */}
+            {/* Username */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="ml-4">
-                Email Address
+              <Label htmlFor="username" className="ml-5 text-sm font-medium text-foreground">
+                Username
               </Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="name@company.com"
-                {...register("email")}
-                className={errors.email ? "border-destructive focus-visible:ring-destructive" : ""}
+                id="username"
+                type="text"
+                placeholder="admin.hr"
+                {...register("username")}
+                className={errors.username ? "border-destructive focus-visible:ring-destructive" : ""}
               />
-              {errors.email && (
-                <p className="ml-4 text-xs font-medium text-destructive">{errors.email.message}</p>
+              {errors.username && (
+                <p className="ml-5 text-xs font-medium text-destructive">{errors.username.message}</p>
               )}
             </div>
 
-            {/* Password Field */}
+            {/* Password */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between px-4">
-                <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="ml-5 text-sm font-medium text-foreground">
+                Password
+              </Label>
+              <div className="relative flex items-center">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  {...register("password")}
+                  className={`pr-12 ${errors.password ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                />
                 <button
                   type="button"
-                  className="text-xs font-medium text-primary hover:underline"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-4 text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                   tabIndex={-1}
                 >
-                  Forgot password?
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                {...register("password")}
-                className={errors.password ? "border-destructive focus-visible:ring-destructive" : ""}
-              />
               {errors.password && (
-                <p className="ml-4 text-xs font-medium text-destructive">{errors.password.message}</p>
+                <p className="ml-5 text-xs font-medium text-destructive">{errors.password.message}</p>
               )}
+            </div>
+
+            {/* Remember Password Checkbox */}
+            <div className="flex items-center gap-3 px-1">
+              <input
+                id="remember"
+                type="checkbox"
+                className="h-4 w-4 rounded border-border text-primary focus:ring-primary focus:ring-offset-background"
+              />
+              <Label htmlFor="remember" className="text-sm font-medium text-muted-foreground select-none cursor-pointer">
+                Remember Password
+              </Label>
             </div>
 
             {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full h-12 text-base font-semibold transition-all active:scale-95"
+              className="w-full h-12 text-base font-semibold transition-all active:scale-[0.98]"
               disabled={isLoggingIn}
             >
-              {isLoggingIn ? "Authenticating..." : "Sign In"}
+              {isLoggingIn ? "Logging in..." : "Login"}
             </Button>
           </form>
-        </CardContent>
-        <div className="pb-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <button type="button" className="font-semibold text-primary hover:underline">
-              Contact HR
-            </button>
-          </p>
+
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+              <div className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-3 text-muted-foreground">or</span>
+            </div>
+          </div>
+
+          {/* Reset Password Button */}
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-12 text-sm font-semibold flex items-center justify-center gap-2 border-border shadow-sm hover:bg-secondary/40 active:scale-[0.98] transition-all"
+          >
+            <KeyRound size={16} />
+            <span>Reset Password</span>
+          </Button>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }

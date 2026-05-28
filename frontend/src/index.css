@@ -1,8 +1,8 @@
+@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
-@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap");
 
 @custom-variant dark (&:is(.dark *));
 
@@ -77,6 +77,11 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  --color-login-grad-start: var(--login-grad-start);
+  --color-login-grad-mid: var(--login-grad-mid);
+  --color-login-grad-end: var(--login-grad-end);
+  --animate-float: float 6s ease-in-out infinite;
 }
 
 :root {
@@ -123,6 +128,10 @@
   --sidebar-accent-foreground: #0f172a;
   --sidebar-border: #e2e8f0;
   --sidebar-ring: #2563eb;
+
+  --login-grad-start: #1e40af;
+  --login-grad-mid: #3b82f6;
+  --login-grad-end: #1e1b4b;
 }
 
 .dark {
@@ -168,4 +177,17 @@
   --sidebar-accent-foreground: #f8fafc;
   --sidebar-border: #1e293b;
   --sidebar-ring: #1d4ed8;
+
+  --login-grad-start: #020617;
+  --login-grad-mid: #1e293b;
+  --login-grad-end: #020817;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
 }

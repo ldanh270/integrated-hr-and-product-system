@@ -1,7 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
 import apiClient from "@/lib/api-client.ts"
 import { useAuthStore } from "@/store/auth-store.ts"
-import { LoginDto, AuthResponseDto, LogoutResponseDto } from "@/types/auth.types.ts" // Need to copy types to frontend or use common
 
 /**
  * Hook for authentication operations
