@@ -98,7 +98,11 @@ Route (concrete wiring only)
 - **React 19:** React Compiler enabled (`babel-plugin-react-compiler`).
 - **Component hierarchy:** Page → Feature → UI Component → Primitive
 - **State:** Server data → React Query. Shared UI → Context + Reducer. Local → useState.
-- **Styling:** Tailwind CSS utility classes.
+- **Styling:** Tailwind CSS semantic utility classes backed by global design tokens.
+- **Color policy (mandatory):**
+  - Never hardcode colors in frontend components/styles (`#hex`, `rgb()`, `hsl()`, inline style color literals).
+  - Always use semantic token utilities (`bg-background`, `text-foreground`, `border-border`, `bg-primary`, etc.).
+  - Keep all color definitions centralized in global theme variables (light as default, dark mode via `.dark` token overrides).
 
 ## Documentation Index
 
@@ -115,17 +119,17 @@ Route (concrete wiring only)
 
 ## TODOs & Missing Implementations
 
-- [ ] Install missing deps: `jsonwebtoken`, `bcryptjs`, `zod`, `cors`, `pg` or `mysql2`
+- [ ] Install missing deps: `jsonwebtoken`, `bcryptjs`, `zod`, `cors`, `mongodb` or `mongoose`
 - [ ] `backend/src/config/env.ts` — typed env wrapper, fail-fast on startup
 - [ ] `backend/src/types/` — `IAuthRepository`, `IAuthService`, DTOs, `ApiResponse<T>`
-- [ ] `backend/src/lib/database.ts` — real DB driver connection
+- [ ] `backend/src/lib/database.ts` — MongoDB connection
 - [ ] `backend/src/util/jwt.util.ts` — `signAccessToken`, `verifyAccessToken`
 - [ ] `backend/src/util/hash.util.ts` — `hashPassword`, `comparePassword`
 - [ ] `backend/src/middleware/auth.middleware.ts` — JWT guard
 - [ ] `backend/src/middleware/validate.middleware.ts` — Zod input validation
 - [ ] `backend/src/middleware/cors.middleware.ts` — CORS for frontend dev
 - [ ] Implement `AuthService.signup/login/logout/refresh`
-- [ ] Implement `PgAuthRepository` methods
+- [ ] Implement `MongoAuthRepository` methods
 - [ ] Frontend routing (TanStack Router or React Router)
 - [ ] `backend/.env.example`
 

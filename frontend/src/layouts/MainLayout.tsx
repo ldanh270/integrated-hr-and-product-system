@@ -1,15 +1,14 @@
 import Footer from "@/components/ui/layouts/Footer.tsx"
 import Header from "@/components/ui/layouts/Header.tsx"
+import { ReactNode } from "react"
 
-import { Outlet } from "react-router-dom"
-
-const MainLayout = () => {
+const MainLayout = ({ children }: { children: ReactNode }) => {
   return (
-    <div className="min-h-screen">
-      {/* TODO: Add Header */}
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <Outlet />
-      {/* TODO: Add Footer */}
+      <main className="flex-1">
+        {children}
+      </main>
       <Footer />
     </div>
   )

@@ -5,26 +5,21 @@
 
 ---
 
-## 0 · Caveman Rules (Non-Negotiable)
+## 0 · Core Directives (CRITICAL)
 
 ```
-LESS OUTPUT > MORE OUTPUT
-SHOW CODE > EXPLAIN CODE
-FIX > APOLOGIZE
-ASK ONCE > ASSUME WRONG TWICE
-REUSE > REWRITE
+1. COMMUNICATION:   Speak like smart caveman. Terse. Accurate. No fluff.
+2. PACKAGE MANAGER: Use Bun. Always.
+3. PLANNING:        Complex task? Make plan first. No code without plan.
+4. VERIFICATION:    Build must pass. Fix bugs via Playwright tests. Mark DONE only after green.
+5. CODE QUALITY:    Strict SOLID. Use Design Patterns (docs/*.md). No hacks.
+6. SURGICAL EDITS:  No redundant files. No unnecessary refactors. Edit only what is needed.
+7. TOOLS OVER GEN:  Prefer download/run tool over generating large code blocks when possible.
 ```
-
-- **Never** repeat the user's question back.
-- **Never** add filler ("Great question!", "Certainly!", "Of course!").
-- **Never** over-explain obvious steps.
-- Use **caveman** skills if this skill are available.
-- Output only what changes. Omit unchanged code blocks — use `// ... unchanged` marker.
-- If a task is clear → do it. If ambiguous → ask **one** clarifying question, then stop.
 
 ---
 
-## 1 · Shared Constants & Config (DRY §0)
+## 1 · Communication Rules (Caveman Mode)
 
 > All magic values live in ONE place. Never scatter literals.
 
@@ -44,6 +39,9 @@ src/
 - No raw string URLs, colors, numbers in components or services.
 - `env.ts` validates at startup — fail fast, fail loud.
 - `theme.ts` is the single source of truth for any design token.
+- Frontend color usage is **token-only**: never use hardcoded color literals (`#hex`, `rgb()`, `hsl()`) in React/Tailwind files.
+- Use semantic utilities mapped from tokens (`bg-background`, `text-foreground`, `border-border`, `bg-primary`, `text-muted-foreground`).
+- Dark mode must be implemented by token overrides (`.dark`) only, not by per-component hardcoded dark colors.
 
 ```ts
 // ✅ DO
@@ -90,7 +88,7 @@ class OrderService {
 
 // ❌ DON'T — concrete coupling
 class OrderService {
-  private repo = new PostgresOrderRepository() // coupled, untestable
+  private repo = new MongoOrderRepository() // coupled, untestable
 }
 ```
 
@@ -342,3 +340,4 @@ When writing explanations, the agent **MUST**:
 | Naming / conventions | `docs/code-standards.md` |
 | Feature scope / requirements | `docs/project-overview-pdr.md` |
 | What exists / what's missing | `docs/codebase-summary.md` |
+`docs/codebase-summary.md` |

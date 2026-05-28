@@ -5,6 +5,9 @@ import employeeRoutes from "@/routes/employee.route.ts"
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
 import express, { NextFunction, Request, Response } from "express"
+import path from "path"
+import swaggerUi from "swagger-ui-express"
+import YAML from "yamljs"
 
 /**
  * Server configurations
@@ -12,6 +15,12 @@ import express, { NextFunction, Request, Response } from "express"
 dotenv.config() // Create config for using .env variables
 const PORT = process.env.PORT || 5000 // Port where server runing on
 const app = express()
+
+/**
+ * Swagger Setup
+ */
+const swaggerDocument = YAML.load(path.join(process.cwd(), "swagger.yaml"))
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 
 /**
  * Middleware

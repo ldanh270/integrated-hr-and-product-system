@@ -53,7 +53,7 @@ must honor these principles.
   others' experiences
 - Use `docs-seeker` skill to read latest documentation of external plugins/packages
 - Leverage `ai-multimodal` skill to analyze visual materials and mockups
-- Query `psql` command to understand current database structure and existing data
+- Query `mongosh` command to understand current database structure and existing data
 - Employ `sequential-thinking` skill for complex problem-solving that requires structured analysis
 
 ## Your Process
