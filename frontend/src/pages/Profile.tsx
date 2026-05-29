@@ -21,6 +21,7 @@ import { PageCard, SectionHeader, StatusPill, IconBox } from "@/components/commo
 import { Button } from "@/components/ui/button.tsx"
 import { Input } from "@/components/ui/input.tsx"
 import { Label } from "@/components/ui/label.tsx"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs.tsx"
 import { toast } from "sonner"
 
 // Translate enums for labels
@@ -239,36 +240,19 @@ export default function Profile() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex border-b border-border/40 gap-6 text-sm">
-        <button
-          onClick={() => {
-            setActiveTab("profile")
-            setIsEditing(false)
-          }}
-          className={`pb-2.5 font-bold transition-all cursor-pointer border-b-2 -mb-[2px] ${
-            activeTab === "profile"
-              ? "text-primary border-primary"
-              : "text-muted-foreground border-transparent hover:text-foreground hover:border-border"
-          }`}
-        >
-          Hồ sơ cá nhân
-        </button>
-        <button
-          onClick={() => {
-            setActiveTab("password")
-            setIsEditing(false)
-            setPasswordSuccessMsg(null)
-            setPasswordErrorMsg(null)
-          }}
-          className={`pb-2.5 font-bold transition-all cursor-pointer border-b-2 -mb-[2px] ${
-            activeTab === "password"
-              ? "text-primary border-primary"
-              : "text-muted-foreground border-transparent hover:text-foreground hover:border-border"
-          }`}
-        >
-          Đổi mật khẩu
-        </button>
-      </div>
+      <Tabs value={activeTab} onValueChange={(v) => {
+        setActiveTab(v as "profile" | "password");
+        setIsEditing(false);
+        if (v === "password") {
+          setPasswordSuccessMsg(null);
+          setPasswordErrorMsg(null);
+        }
+      }} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="profile">Hồ sơ cá nhân</TabsTrigger>
+          <TabsTrigger value="password">Đổi mật khẩu</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {activeTab === "profile" ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">

@@ -5,12 +5,19 @@ export type EmployeeRole = "admin" | "manager" | "employee"
 export interface Employee {
   id: string
   fullName: string
+  username: string
   email: string
   role: EmployeeRole
   phone: string | null
   position: string | null
   employeeType: EmployeeType
   status: EmployeeStatus
+  dateOfBirth: Date | null
+  nationalId: string | null
+  address: string | null
+  startDate: Date | null
+  endDate: Date | null
+  avatar: { url: string | null; id: string | null } | null
   createdAt: Date
   updatedAt: Date
 }
@@ -18,20 +25,87 @@ export interface Employee {
 export interface EmployeeDb {
   _id: { toString(): string }
   fullName: string
+  username: string
   email: string
+  passwordHash: string
   role: EmployeeRole
   phone?: string
   position?: string
   employeeType: EmployeeType
   status: EmployeeStatus
+  dateOfBirth?: Date
+  nationalId?: string
+  address?: string
+  startDate?: Date
+  endDate?: Date
+  avatar?: { url?: string; id?: string }
   createdAt: Date
   updatedAt: Date
+  save?: () => Promise<any>
+}
+
+export interface CreateEmployeeDto {
+  fullName: string
+  email: string
+  username: string
+  passwordHash?: string // Hash is passed from service, not controller DTO ideally, but for now we'll accept password in service and hash it there
+  role?: EmployeeRole
+  phone?: string
+  position?: string
+  employeeType?: EmployeeType
+  status?: EmployeeStatus
+  dateOfBirth?: Date
+  nationalId?: string
+  address?: string
+  startDate?: Date
+}
+
+export interface UpdateEmployeeDto {
+  fullName?: string
+  phone?: string
+  position?: string
+  employeeType?: EmployeeType
+  status?: EmployeeStatus
+  dateOfBirth?: Date
+  nationalId?: string
+  address?: string
+  startDate?: Date
+  endDate?: Date
+}
+
+export interface EmployeeListQuery {
+  page?: number
+  limit?: number
+  search?: string
+  status?: EmployeeStatus
+  role?: EmployeeRole
+  employeeType?: EmployeeType
+  sortBy?: string
+  sortOrder?: "asc" | "desc"
+}
+
+export interface PaginatedEmployeesDto {
+  data: Employee[]
+  meta: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }
 }
 
 export interface IEmployeeRepository {
-  listEmployees(): Promise<Employee[]>
+  listEmployeesPaginated(query: EmployeeListQuery): Promise<PaginatedEmployeesDto>
+  findById(id: string): Promise<Employee | null>
+  createEmployee(data: CreateEmployeeDto & { passwordHash: string }): Promise<Employee>
+  updateEmployee(id: string, data: UpdateEmployeeDto): Promise<Employee | null>
+  updateStatus(id: string, status: EmployeeStatus): Promise<Employee | null>
 }
 
 export interface IEmployeeService {
-  listEmployees(): Promise<Employee[]>
+  listEmployees(query: EmployeeListQuery): Promise<PaginatedEmployeesDto>
+  getEmployee(id: string): Promise<Employee | null>
+  createEmployee(data: CreateEmployeeDto & { password?: string }): Promise<Employee>
+  updateEmployee(id: string, data: UpdateEmployeeDto): Promise<Employee | null>
+  updateStatus(id: string, status: EmployeeStatus): Promise<Employee | null>
 }

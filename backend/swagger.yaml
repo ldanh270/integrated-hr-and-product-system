@@ -96,7 +96,46 @@ paths:
       tags:
         - Employees
       summary: List Employees
-      description: Retrieve a list of all employees.
+      description: Retrieve a paginated list of all employees.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: Number of items per page
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search by name, email, or username
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/EmployeeStatus'
+        - in: query
+          name: role
+          schema:
+            $ref: '#/components/schemas/EmployeeRole'
+        - in: query
+          name: employeeType
+          schema:
+            $ref: '#/components/schemas/EmployeeType'
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+        - in: query
+          name: sortOrder
+          schema:
+            type: string
+            enum: [asc, desc]
       responses:
         '200':
           description: List of employees
@@ -106,13 +145,181 @@ paths:
                 type: object
                 properties:
                   data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Employee'
+                    $ref: '#/components/schemas/PaginatedEmployeesResponse'
                   error:
                     type: string
                     nullable: true
                     example: null
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Employees
+      summary: Create Employee
+      description: Create a new employee (admin, manager only).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEmployeeDto'
+      responses:
+        '201':
+          description: Employee created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Employee'
+                  error:
+                    type: string
+                    nullable: true
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/employees/{id}:
+    get:
+      tags:
+        - Employees
+      summary: Get Employee
+      description: Get an employee by ID.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Employee found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Employee'
+                  error:
+                    type: string
+                    nullable: true
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      tags:
+        - Employees
+      summary: Update Employee
+      description: Partially update an employee (admin, manager only).
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEmployeeDto'
+      responses:
+        '200':
+          description: Employee updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Employee'
+                  error:
+                    type: string
+                    nullable: true
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/employees/{id}/status:
+    patch:
+      tags:
+        - Employees
+      summary: Update Employee Status
+      description: Update just the status of an employee, e.g. for soft delete to 'terminated' (admin, manager only).
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStatusDto'
+      responses:
+        '200':
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Employee'
+                  error:
+                    type: string
+                    nullable: true
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/profile/me:
     get:
@@ -306,12 +513,132 @@ components:
           $ref: '#/components/schemas/EmployeeType'
         status:
           $ref: '#/components/schemas/EmployeeStatus'
+        dateOfBirth:
+          type: string
+          format: date
+          nullable: true
+        nationalId:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        avatar:
+          type: object
+          properties:
+            url:
+              type: string
+              nullable: true
+            id:
+              type: string
+              nullable: true
+          nullable: true
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
+
+    PaginatedEmployeesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Employee'
+        meta:
+          type: object
+          properties:
+            total:
+              type: integer
+            page:
+              type: integer
+            limit:
+              type: integer
+            totalPages:
+              type: integer
+
+    CreateEmployeeDto:
+      type: object
+      required:
+        - fullName
+        - email
+        - username
+        - password
+      properties:
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        password:
+          type: string
+        role:
+          $ref: '#/components/schemas/EmployeeRole'
+        phone:
+          type: string
+        position:
+          type: string
+        employeeType:
+          $ref: '#/components/schemas/EmployeeType'
+        status:
+          $ref: '#/components/schemas/EmployeeStatus'
+        dateOfBirth:
+          type: string
+          format: date
+        nationalId:
+          type: string
+        address:
+          type: string
+        startDate:
+          type: string
+          format: date
+
+    UpdateEmployeeDto:
+      type: object
+      properties:
+        fullName:
+          type: string
+        phone:
+          type: string
+        position:
+          type: string
+        employeeType:
+          $ref: '#/components/schemas/EmployeeType'
+        status:
+          $ref: '#/components/schemas/EmployeeStatus'
+        dateOfBirth:
+          type: string
+          format: date
+        nationalId:
+          type: string
+        address:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+
+    UpdateStatusDto:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          $ref: '#/components/schemas/EmployeeStatus'
 
     EmployeeRole:
       type: string
