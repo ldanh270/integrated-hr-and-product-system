@@ -48,29 +48,29 @@ export interface CreateEmployeeDto {
   fullName: string
   email: string
   username: string
-  passwordHash?: string // Hash is passed from service, not controller DTO ideally, but for now we'll accept password in service and hash it there
+  passwordHash?: string
   role?: EmployeeRole
-  phone?: string
-  position?: string
+  phone?: string | null
+  position?: string | null
   employeeType?: EmployeeType
   status?: EmployeeStatus
-  dateOfBirth?: Date
-  nationalId?: string
-  address?: string
-  startDate?: Date
+  dateOfBirth?: Date | string | null
+  nationalId?: string | null
+  address?: string | null
+  startDate?: Date | string | null
 }
 
 export interface UpdateEmployeeDto {
   fullName?: string
-  phone?: string
-  position?: string
+  phone?: string | null
+  position?: string | null
   employeeType?: EmployeeType
   status?: EmployeeStatus
-  dateOfBirth?: Date
-  nationalId?: string
-  address?: string
-  startDate?: Date
-  endDate?: Date
+  dateOfBirth?: Date | string | null
+  nationalId?: string | null
+  address?: string | null
+  startDate?: Date | string | null
+  endDate?: Date | string | null
 }
 
 export interface EmployeeListQuery {

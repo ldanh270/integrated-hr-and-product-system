@@ -1,9 +1,10 @@
-import mongoose, { InferSchemaType } from "mongoose"
+import {
+  EMPLOYEE_ROLES,
+  EMPLOYEE_STATUSES,
+  EMPLOYEE_TYPES,
+} from "@/configs/constants/entities.config.ts"
 
-// Định nghĩa Enums với 'as const' để TypeScript nhận diện Literal Types thay vì String chung chung
-const EMPLOYEE_TYPES = ["full_time", "part_time", "contractor", "intern"] as const
-const EMPLOYEE_STATUSES = ["active", "inactive", "on_leave", "terminated"] as const
-const EMPLOYEE_ROLES = ["admin", "manager", "employee"] as const
+import mongoose, { InferSchemaType } from "mongoose"
 
 const employeeSchema = new mongoose.Schema(
   {
@@ -44,7 +45,7 @@ const employeeSchema = new mongoose.Schema(
 
     phone: {
       type: String,
-      sparse: true, // Có thể rỗng, nhưng nếu có phải là unique (nếu thêm unique: true)
+      sparse: true, // Can be null but must be unique if provided
     },
 
     dateOfBirth: {

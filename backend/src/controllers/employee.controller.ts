@@ -31,7 +31,7 @@ export class EmployeeController {
   }
 
   getOne = async (req: Request, res: Response<ApiResponse<Employee>>) => {
-    const employee = await this.service.getEmployee(req.params.id)
+    const employee = await this.service.getEmployee(String(req.params.id))
     if (!employee) {
       return res.status(HttpStatusCode.NOT_FOUND).json({
         data: null,
@@ -50,7 +50,7 @@ export class EmployeeController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.errors as any },
+          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
         })
       }
       throw error
@@ -60,7 +60,7 @@ export class EmployeeController {
   update = async (req: Request, res: Response<ApiResponse<Employee>>) => {
     try {
       const data = updateEmployeeSchema.parse(req.body)
-      const employee = await this.service.updateEmployee(req.params.id, data)
+      const employee = await this.service.updateEmployee(String(req.params.id), data)
       if (!employee) {
         return res.status(HttpStatusCode.NOT_FOUND).json({
           data: null,
@@ -72,7 +72,7 @@ export class EmployeeController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.errors as any },
+          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
         })
       }
       throw error
@@ -82,7 +82,7 @@ export class EmployeeController {
   updateStatus = async (req: Request, res: Response<ApiResponse<Employee>>) => {
     try {
       const { status } = updateEmployeeStatusSchema.parse(req.body)
-      const employee = await this.service.updateStatus(req.params.id, status)
+      const employee = await this.service.updateStatus(String(req.params.id), status)
       if (!employee) {
         return res.status(HttpStatusCode.NOT_FOUND).json({
           data: null,
@@ -94,10 +94,11 @@ export class EmployeeController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.errors as any },
+          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
         })
       }
       throw error
     }
   }
+
 }

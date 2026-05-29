@@ -1,5 +1,5 @@
-import ActivityLog from "@/entities/ActivityLog.ts"
 import Employee from "@/entities/Employee.ts"
+import ActivityLog from "@/entities/auth/ActivityLog.ts"
 import { AuthEmployeeDocument, IAuthRepository } from "@/types/auth.types.ts"
 
 /**
