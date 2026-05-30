@@ -4,7 +4,7 @@ const ACTION_TYPES = ["login", "logout", "failed-login"] as const
 
 const activityLogSchema = new mongoose.Schema(
   {
-    empId: {
+    employeeId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Employee",
       required: false, // May be null if login fails for unknown user
@@ -14,17 +14,17 @@ const activityLogSchema = new mongoose.Schema(
       enum: ACTION_TYPES,
       required: true,
     },
-    timestamp: {
-      type: Date,
-      default: Date.now,
-      required: true,
-    },
     ipAddress: {
       type: String,
       required: false,
     },
     details: {
-      type: String, // Optional additional info
+      type: mongoose.Schema.Types.Mixed, // Structured JSON log metadata
+    },
+    expiresAt: {
+      type: Date,
+      default: () => new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // Auto-delete logs after 90 days
+      required: true,
     },
   },
   {
@@ -32,8 +32,13 @@ const activityLogSchema = new mongoose.Schema(
   },
 )
 
+// Indexing for performance and data lifecycle
+activityLogSchema.index({ employeeId: 1, createdAt: -1 })
+activityLogSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
+
 const ActivityLog = mongoose.model("ActivityLog", activityLogSchema)
 
 export default ActivityLog
 
 export type ActivityLogType = InferSchemaType<typeof activityLogSchema>
+

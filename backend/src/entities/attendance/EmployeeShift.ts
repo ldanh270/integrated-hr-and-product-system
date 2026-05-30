@@ -17,6 +17,11 @@ const employeeShiftSchema = new mongoose.Schema(
     assignedDate: {
       type: Date,
       required: true,
+      set: (value: Date) => {
+        const date = new Date(value)
+        date.setHours(0, 0, 0, 0)
+        return date
+      },
     },
   },
   { timestamps: true },
@@ -26,7 +31,9 @@ const employeeShiftSchema = new mongoose.Schema(
 employeeShiftSchema.index({ employeeId: 1, assignedDate: 1 }, { unique: true })
 employeeShiftSchema.index({ shiftId: 1, assignedDate: 1 }) // Query ca theo ngày
 
-export const EmployeeShift = mongoose.model("EmployeeShift", employeeShiftSchema)
+const EmployeeShift = mongoose.model("EmployeeShift", employeeShiftSchema)
+
+export default EmployeeShift
 export type EmployeeShiftType = InferSchemaType<typeof employeeShiftSchema>
 export type EmployeeShiftDocument = Document & EmployeeShiftType
 export type EmployeeShiftModel = Model<EmployeeShiftDocument>

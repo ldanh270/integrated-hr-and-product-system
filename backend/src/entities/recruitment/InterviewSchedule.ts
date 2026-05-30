@@ -77,7 +77,9 @@ interviewScheduleSchema.index({ candidateId: 1, scheduledAt: -1 })
 interviewScheduleSchema.index({ interviewerId: 1, scheduledAt: -1 }) // Lịch của interviewer
 interviewScheduleSchema.index({ status: 1, scheduledAt: 1 }) // Reminder job
 
-export const InterviewSchedule = mongoose.model("InterviewSchedule", interviewScheduleSchema)
+const InterviewSchedule = mongoose.model("InterviewSchedule", interviewScheduleSchema)
+
+export default InterviewSchedule
 export type InterviewScheduleType = InferSchemaType<typeof interviewScheduleSchema>
 export type InterviewScheduleDocument = Document & InterviewScheduleType
 export type InterviewScheduleModel = Model<InterviewScheduleDocument>

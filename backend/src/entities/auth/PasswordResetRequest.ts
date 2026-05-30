@@ -35,11 +35,6 @@ const passwordResetRequestSchema = new mongoose.Schema(
       trim: true,
     },
 
-    modifiedAt: {
-      type: Date,
-      default: null,
-    },
-
     // TTL field: document tự xóa sau 7 ngày kể từ createdAt
     // MongoDB TTL index sẽ dùng field này
     expiresAt: {

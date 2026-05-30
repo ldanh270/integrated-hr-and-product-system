@@ -62,7 +62,9 @@ const recruitmentProposalSchema = new mongoose.Schema(
 recruitmentProposalSchema.index({ status: 1, createdAt: -1 })
 recruitmentProposalSchema.index({ requestedBy: 1 })
 
-export const RecruitmentProposal = mongoose.model("RecruitmentProposal", recruitmentProposalSchema)
+const RecruitmentProposal = mongoose.model("RecruitmentProposal", recruitmentProposalSchema)
+
+export default RecruitmentProposal
 export type RecruitmentProposalType = InferSchemaType<typeof recruitmentProposalSchema>
 export type RecruitmentProposalDocument = Document & RecruitmentProposalType
 export type RecruitmentProposalModel = Model<RecruitmentProposalDocument>

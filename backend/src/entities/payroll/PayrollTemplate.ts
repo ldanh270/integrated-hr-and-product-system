@@ -1,3 +1,5 @@
+import { PAYROLL_COMPONENT_TYPES } from "@/configs/constants/entities.config.ts"
+
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 
 const templateComponentSubSchema = new mongoose.Schema(
@@ -6,6 +8,21 @@ const templateComponentSubSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "PayrollComponent",
       required: true,
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    type: {
+      type: String,
+      enum: PAYROLL_COMPONENT_TYPES,
+      required: true,
+    },
+    value: {
+      type: Number,
+      required: true,
+      min: 0,
     },
     // Override giá trị default của component cho template này
     overrideValue: {
@@ -36,7 +53,7 @@ const payrollTemplateSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Embed components thay vì collection trung gian — tránh $lookup khi tính lương
+    // Embed component snapshot để tính lương mà không cần $lookup
     components: {
       type: [templateComponentSubSchema],
       default: [],
@@ -52,10 +69,10 @@ const payrollTemplateSchema = new mongoose.Schema(
 )
 
 payrollTemplateSchema.index({ isActive: 1 })
-// Index cho lookup từ Employee.payrollTemplateId
-payrollTemplateSchema.index({ _id: 1, isActive: 1 })
 
-export const PayrollTemplate = mongoose.model("PayrollTemplate", payrollTemplateSchema)
+const PayrollTemplate = mongoose.model("PayrollTemplate", payrollTemplateSchema)
+
+export default PayrollTemplate
 export type PayrollTemplateType = InferSchemaType<typeof payrollTemplateSchema>
 export type PayrollTemplateDocument = Document & PayrollTemplateType
 export type PayrollTemplateModel = Model<PayrollTemplateDocument>

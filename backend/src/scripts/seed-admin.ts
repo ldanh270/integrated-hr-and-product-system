@@ -20,7 +20,7 @@ const seedAdmin = async () => {
 
     // Check if admin already exists
     const existingAdmin = await Employee.findOne({ 
-      $or: [{ email: "admin@example.com" }, { username: "admin" }]
+      $or: [{ email: "admin@hr.com" }, { username: "admin" }]
     })
 
     if (existingAdmin) {
@@ -31,9 +31,9 @@ const seedAdmin = async () => {
     } else {
       console.log("Creating new admin...")
       await Employee.create({
-        fullName: "System Administrator",
+        fullName: "System Admin",
         username: "admin",
-        email: "admin@example.com",
+        email: "admin@hr.com",
         passwordHash: await HashUtil.hash("Admin@123"),
         role: "admin",
         status: "active",
@@ -42,9 +42,11 @@ const seedAdmin = async () => {
     }
 
     console.log("Seeding complete: username: admin / password: Admin@123")
+    await mongoose.disconnect()
     process.exit(0)
   } catch (error) {
     console.error("Seeding error:", error)
+    await mongoose.disconnect()
     process.exit(1)
   }
 }

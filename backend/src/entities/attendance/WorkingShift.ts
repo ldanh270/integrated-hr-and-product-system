@@ -53,7 +53,9 @@ const workingShiftSchema = new mongoose.Schema(
 
 workingShiftSchema.index({ repeatType: 1, applyFrom: 1, applyTo: 1 })
 
-export const WorkingShift = mongoose.model("WorkingShift", workingShiftSchema)
+const WorkingShift = mongoose.model("WorkingShift", workingShiftSchema)
+
+export default WorkingShift
 export type WorkingShiftType = InferSchemaType<typeof workingShiftSchema>
 export type WorkingShiftDocument = Document & WorkingShiftType
 export type WorkingShiftModel = Model<WorkingShiftDocument>

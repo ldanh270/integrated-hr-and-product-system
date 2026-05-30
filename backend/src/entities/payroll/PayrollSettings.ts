@@ -16,15 +16,24 @@ const payrollSettingsSchema = new mongoose.Schema(
       ref: "Employee",
       required: true,
     },
+
+    // Enforce singleton design at the database level
+    _singleton: {
+      type: String,
+      default: "GLOBAL",
+      unique: true,
+      immutable: true,
+    },
   },
   {
     timestamps: true,
-    // Không cần _id mặc định vì là singleton
     // Dùng upsert với filter {} để đảm bảo chỉ có 1 document
   },
 )
 
-export const PayrollSettings = mongoose.model("PayrollSettings", payrollSettingsSchema)
+const PayrollSettings = mongoose.model("PayrollSettings", payrollSettingsSchema)
+
+export default PayrollSettings
 export type PayrollSettingsType = InferSchemaType<typeof payrollSettingsSchema>
 export type PayrollSettingsDocument = Document & PayrollSettingsType
 export type PayrollSettingsModel = Model<PayrollSettingsDocument>

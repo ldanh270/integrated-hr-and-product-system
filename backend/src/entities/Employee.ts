@@ -45,6 +45,8 @@ const employeeSchema = new mongoose.Schema(
 
     phone: {
       type: String,
+      trim: true,
+      unique: true,
       sparse: true, // Can be null but must be unique if provided
     },
 
@@ -122,9 +124,10 @@ const employeeSchema = new mongoose.Schema(
   },
 )
 
-// Indexing để tối ưu hóa truy vấn
-// Thường xuyên tìm kiếm nhân viên theo email, trạng thái hoặc loại nhân viên
 employeeSchema.index({ status: 1, employeeType: 1 })
+employeeSchema.index({ fullName: "text" })
+employeeSchema.index({ role: 1 })
+employeeSchema.index({ payrollTemplateId: 1 })
 
 const Employee = mongoose.model("Employee", employeeSchema)
 

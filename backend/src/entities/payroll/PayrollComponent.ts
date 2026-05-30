@@ -55,7 +55,9 @@ const payrollComponentSchema = new mongoose.Schema(
 
 payrollComponentSchema.index({ type: 1, isActive: 1 })
 
-export const PayrollComponent = mongoose.model("PayrollComponent", payrollComponentSchema)
+const PayrollComponent = mongoose.model("PayrollComponent", payrollComponentSchema)
+
+export default PayrollComponent
 export type PayrollComponentType = InferSchemaType<typeof payrollComponentSchema>
 export type PayrollComponentDocument = Document & PayrollComponentType
 export type PayrollComponentModel = Model<PayrollComponentDocument>

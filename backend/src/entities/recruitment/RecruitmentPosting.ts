@@ -48,7 +48,9 @@ const recruitmentPostingSchema = new mongoose.Schema(
 recruitmentPostingSchema.index({ status: 1, deadline: 1 })
 recruitmentPostingSchema.index({ createdBy: 1 })
 
-export const RecruitmentPosting = mongoose.model("RecruitmentPosting", recruitmentPostingSchema)
+const RecruitmentPosting = mongoose.model("RecruitmentPosting", recruitmentPostingSchema)
+
+export default RecruitmentPosting
 export type RecruitmentPostingType = InferSchemaType<typeof recruitmentPostingSchema>
 export type RecruitmentPostingDocument = Document & RecruitmentPostingType
 export type RecruitmentPostingModel = Model<RecruitmentPostingDocument>

@@ -89,11 +89,28 @@ const applicationSchema = new mongoose.Schema(
   { timestamps: true },
 )
 
+export type ApplicationType = InferSchemaType<typeof applicationSchema>
+
+// Validate date range and polymorphic fields based on application type
+applicationSchema.pre("validate", function (this: mongoose.HydratedDocument<ApplicationType>) {
+  if (this.startDate && this.endDate && this.startDate >= this.endDate) {
+    this.invalidate("endDate", "endDate must be after startDate")
+  }
+  if (this.type !== "shift_swap") {
+    this.set("swapWith", { employeeId: null, shiftId: null })
+  } else {
+    if (!this.swapWith || !this.swapWith.employeeId || !this.swapWith.shiftId) {
+      this.invalidate("swapWith", "swapWith employeeId and shiftId are required for shift_swap type")
+    }
+  }
+})
+
 applicationSchema.index({ employeeId: 1, status: 1 })
 applicationSchema.index({ employeeId: 1, startDate: -1 })
 applicationSchema.index({ status: 1, type: 1 }) // HR duyệt đơn theo loại
 
-export const Application = mongoose.model("Application", applicationSchema)
-export type ApplicationType = InferSchemaType<typeof applicationSchema>
+const Application = mongoose.model("Application", applicationSchema)
+
+export default Application
 export type ApplicationDocument = Document & ApplicationType
 export type ApplicationModel = Model<ApplicationDocument>

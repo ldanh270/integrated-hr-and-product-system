@@ -28,6 +28,10 @@ export class MongoAuthRepository implements IAuthRepository {
     timestamp: Date
     details?: string
   }): Promise<void> {
-    await ActivityLog.create(data)
+    const { empId, timestamp, ...rest } = data
+    await ActivityLog.create({
+      employeeId: empId,
+      ...rest,
+    })
   }
 }

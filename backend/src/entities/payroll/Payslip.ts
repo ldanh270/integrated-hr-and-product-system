@@ -86,7 +86,9 @@ payslipSchema.index({ payrollId: 1, employeeId: 1 }, { unique: true })
 // Query lịch sử lương của nhân viên
 payslipSchema.index({ employeeId: 1, payrollId: -1 })
 
-export const Payslip = mongoose.model("Payslip", payslipSchema)
+const Payslip = mongoose.model("Payslip", payslipSchema)
+
+export default Payslip
 export type PayslipType = InferSchemaType<typeof payslipSchema>
 export type PayslipDocument = Document & PayslipType
 export type PayslipModel = Model<PayslipDocument>

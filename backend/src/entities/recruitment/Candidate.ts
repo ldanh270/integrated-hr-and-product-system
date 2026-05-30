@@ -63,10 +63,13 @@ const candidateSchema = new mongoose.Schema(
 
 candidateSchema.index({ postingId: 1, status: 1 })
 candidateSchema.index({ email: 1 }) // Tìm nhanh ứng viên theo email
+candidateSchema.index({ postingId: 1, email: 1 }, { unique: true }) // Ngăn chặn một email ứng tuyển trùng lặp vào cùng một tin tuyển dụng
 // Sparse index: không phải lúc nào cũng có createdBy (self-apply)
 candidateSchema.index({ createdBy: 1 }, { sparse: true })
 
-export const Candidate = mongoose.model("Candidate", candidateSchema)
+const Candidate = mongoose.model("Candidate", candidateSchema)
+
+export default Candidate
 export type CandidateType = InferSchemaType<typeof candidateSchema>
 export type CandidateDocument = Document & CandidateType
 export type CandidateModel = Model<CandidateDocument>

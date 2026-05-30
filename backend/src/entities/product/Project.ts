@@ -22,6 +22,8 @@ const projectMemberSubSchema = new mongoose.Schema(
   { _id: false },
 )
 
+type ProjectMemberType = InferSchemaType<typeof projectMemberSubSchema>
+
 const projectSchema = new mongoose.Schema(
   {
     name: {
@@ -78,6 +80,12 @@ const projectSchema = new mongoose.Schema(
     members: {
       type: [projectMemberSubSchema],
       default: [],
+      validate: {
+        validator: function (val: ProjectMemberType[]) {
+          return val.length <= 200
+        },
+        message: "Project members array cannot exceed 200 entries to prevent document bloating.",
+      },
     },
   },
   { timestamps: true },
@@ -89,17 +97,7 @@ projectSchema.index({ status: 1 })
 // Optimize queries that filter projects by team leader and status
 projectSchema.index({ teamLeaderId: 1, status: 1 })
 
-// Optimize queries that filter projects by member employeeId
-projectSchema.index({ "members.employeeId": 1 })
-
-// Partial index: chỉ index active members
-projectSchema.index(
-  { "members.employeeId": 1 },
-  {
-    name: "idx_active_members",
-    partialFilterExpression: { "members.removedAt": null },
-  },
-)
+projectSchema.index({ "members.employeeId": 1 }, { name: "idx_project_members" })
 
 const Project = mongoose.model("Project", projectSchema)
 

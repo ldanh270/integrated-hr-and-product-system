@@ -41,7 +41,9 @@ const socialPostLogSchema = new mongoose.Schema(
 
 socialPostLogSchema.index({ postingId: 1, platform: 1 })
 
-export const SocialPostLog = mongoose.model("SocialPostLog", socialPostLogSchema)
+const SocialPostLog = mongoose.model("SocialPostLog", socialPostLogSchema)
+
+export default SocialPostLog
 export type SocialPostLogType = InferSchemaType<typeof socialPostLogSchema>
 export type SocialPostLogDocument = Document & SocialPostLogType
 export type SocialPostLogModel = Model<SocialPostLogDocument>

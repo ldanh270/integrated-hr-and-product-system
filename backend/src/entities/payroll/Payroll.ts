@@ -54,7 +54,9 @@ const payrollSchema = new mongoose.Schema(
 payrollSchema.index({ periodYear: 1, periodMonth: 1 }, { unique: true })
 payrollSchema.index({ status: 1 })
 
-export const Payroll = mongoose.model("Payroll", payrollSchema)
+const Payroll = mongoose.model("Payroll", payrollSchema)
+
+export default Payroll
 export type PayrollType = InferSchemaType<typeof payrollSchema>
 export type PayrollDocument = Document & PayrollType
 export type PayrollModel = Model<PayrollDocument>

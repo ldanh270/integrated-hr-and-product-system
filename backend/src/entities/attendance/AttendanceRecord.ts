@@ -52,7 +52,9 @@ attendanceRecordSchema.index(
   { partialFilterExpression: { status: { $in: ["late", "absent", "early_leave"] } } },
 )
 
-export const AttendanceRecord = mongoose.model("AttendanceRecord", attendanceRecordSchema)
+const AttendanceRecord = mongoose.model("AttendanceRecord", attendanceRecordSchema)
+
+export default AttendanceRecord
 export type AttendanceRecordType = InferSchemaType<typeof attendanceRecordSchema>
 export type AttendanceRecordDocument = Document & AttendanceRecordType
 export type AttendanceRecordModel = Model<AttendanceRecordDocument>
