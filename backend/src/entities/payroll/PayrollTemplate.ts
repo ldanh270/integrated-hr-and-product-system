@@ -24,13 +24,13 @@ const templateComponentSubSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
-    // Override giá trị default của component cho template này
+    // Override default component value for this template
     overrideValue: {
       type: Number,
       default: null,
     },
   },
-  { _id: false }, // Không cần _id cho embedded array item
+  { _id: false }, // Prevent generating _id for embedded array items
 )
 
 const payrollTemplateSchema = new mongoose.Schema(
@@ -53,7 +53,7 @@ const payrollTemplateSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Embed component snapshot để tính lương mà không cần $lookup
+    // Embed component snapshot for calculation without $lookup
     components: {
       type: [templateComponentSubSchema],
       default: [],

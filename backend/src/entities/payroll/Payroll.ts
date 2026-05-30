@@ -50,7 +50,7 @@ const payrollSchema = new mongoose.Schema(
   { timestamps: true },
 )
 
-// Compound unique: mỗi tháng chỉ có 1 đợt lương
+// Compound unique: One payroll per month
 payrollSchema.index({ periodYear: 1, periodMonth: 1 }, { unique: true })
 payrollSchema.index({ status: 1 })
 

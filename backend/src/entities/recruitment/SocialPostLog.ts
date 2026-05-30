@@ -35,7 +35,7 @@ const socialPostLogSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    // Log không cần update — chỉ insert
+    // Logs are insert-only, no updates required
   },
 )
 

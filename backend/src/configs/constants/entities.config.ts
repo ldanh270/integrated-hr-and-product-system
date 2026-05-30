@@ -1,5 +1,5 @@
 // ─── EMPLOYEE ─────────────────────────────────────────────────
-export const EMPLOYEE_TYPES = ["full_time", "part_time", "contractor", "intern"] as const
+export const EMPLOYEE_TYPES = ["full_time", "part_time", "intern"] as const
 export const EMPLOYEE_STATUSES = ["active", "inactive", "on_leave", "terminated"] as const
 export const EMPLOYEE_ROLES = [
   "employee",
@@ -10,7 +10,13 @@ export const EMPLOYEE_ROLES = [
 ] as const
 
 // ─── ATTENDANCE ───────────────────────────────────────────────
-export const SHIFT_REPEAT_TYPES = ["daily", "weekly", "custom"] as const
+export const EMPLOYEE_SHIFT_STATUSES = [
+  "scheduled",
+  "holiday_pending",
+  "confirmed",
+  "cancelled",
+] as const
+export const HOLIDAY_TYPES = ["national", "company"] as const
 export const ATTENDANCE_STATUSES = ["on_time", "late", "early_leave", "absent", "overtime"] as const
 
 export const APPLICATION_TYPES = [

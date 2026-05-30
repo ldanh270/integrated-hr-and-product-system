@@ -55,16 +55,16 @@ const candidateSchema = new mongoose.Schema(
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Employee",
-      default: null, // null nếu ứng viên tự apply qua form công khai
+      default: null, // null if candidate self-applied via public form
     },
   },
   { timestamps: true },
 )
 
 candidateSchema.index({ postingId: 1, status: 1 })
-candidateSchema.index({ email: 1 }) // Tìm nhanh ứng viên theo email
-candidateSchema.index({ postingId: 1, email: 1 }, { unique: true }) // Ngăn chặn một email ứng tuyển trùng lặp vào cùng một tin tuyển dụng
-// Sparse index: không phải lúc nào cũng có createdBy (self-apply)
+candidateSchema.index({ email: 1 }) // Quick lookup by email
+candidateSchema.index({ postingId: 1, email: 1 }, { unique: true }) // Prevent duplicate applications for the same posting
+// Sparse index: createdBy may be null for self-applied candidates
 candidateSchema.index({ createdBy: 1 }, { sparse: true })
 
 const Candidate = mongoose.model("Candidate", candidateSchema)

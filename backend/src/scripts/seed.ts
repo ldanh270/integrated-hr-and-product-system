@@ -1,39 +1,34 @@
-import { faker } from "@faker-js/faker"
-import dotenv from "dotenv"
-import mongoose from "mongoose"
-
-// --- Auth Domain ---
-import ActivityLog from "@/entities/auth/ActivityLog.ts"
-import PasswordResetRequest from "@/entities/auth/PasswordResetRequest.ts"
-
+// --- Core ---
+import Employee from "@/entities/Employee.ts"
 // --- Attendance Domain ---
 import Application from "@/entities/attendance/Application.ts"
 import AttendanceRecord from "@/entities/attendance/AttendanceRecord.ts"
 import EmployeeShift from "@/entities/attendance/EmployeeShift.ts"
 import WorkingShift from "@/entities/attendance/WorkingShift.ts"
-
+// --- Auth Domain ---
+import ActivityLog from "@/entities/auth/ActivityLog.ts"
+import PasswordResetRequest from "@/entities/auth/PasswordResetRequest.ts"
 // --- Payroll Domain ---
 import Payroll from "@/entities/payroll/Payroll.ts"
 import PayrollComponent from "@/entities/payroll/PayrollComponent.ts"
 import PayrollSettings from "@/entities/payroll/PayrollSettings.ts"
 import PayrollTemplate from "@/entities/payroll/PayrollTemplate.ts"
 import Payslip from "@/entities/payroll/Payslip.ts"
-
 // --- Product Domain ---
 import Project from "@/entities/product/Project.ts"
 import Task from "@/entities/product/Task.ts"
-
 // --- Recruitment Domain ---
 import Candidate from "@/entities/recruitment/Candidate.ts"
 import InterviewSchedule from "@/entities/recruitment/InterviewSchedule.ts"
 import RecruitmentPosting from "@/entities/recruitment/RecruitmentPosting.ts"
 import RecruitmentProposal from "@/entities/recruitment/RecruitmentProposal.ts"
 import SocialPostLog from "@/entities/recruitment/SocialPostLog.ts"
-
-// --- Core ---
-import Employee from "@/entities/Employee.ts"
-import { HashUtil } from "@/utils/hash.util.ts"
 import { clearDatabase } from "@/scripts/clear-db.ts"
+import { HashUtil } from "@/utils/hash.util.ts"
+
+import { faker } from "@faker-js/faker"
+import dotenv from "dotenv"
+import mongoose from "mongoose"
 
 dotenv.config()
 
@@ -61,9 +56,33 @@ const dbSeed = async () => {
     // 1. Initial Admin & Managers
     console.log("👤 Seeding Core Employees...")
     const baseEmployeesData = [
-      { fullName: "System Admin", username: "admin", email: "admin@hr.com", passwordHash, role: "admin", status: "active", employeeType: "full_time" },
-      { fullName: "HR Manager", username: "hrmanager", email: "hr@hr.com", passwordHash, role: "hr_manager", status: "active", employeeType: "full_time" },
-      { fullName: "General Manager", username: "gm", email: "gm@hr.com", passwordHash, role: "general_manager", status: "active", employeeType: "full_time" },
+      {
+        fullName: "System Admin",
+        username: "admin",
+        email: "admin@hr.com",
+        passwordHash,
+        role: "admin",
+        status: "active",
+        employeeType: "full_time",
+      },
+      {
+        fullName: "HR Manager",
+        username: "hrmanager",
+        email: "hr@hr.com",
+        passwordHash,
+        role: "hr_manager",
+        status: "active",
+        employeeType: "full_time",
+      },
+      {
+        fullName: "General Manager",
+        username: "gm",
+        email: "gm@hr.com",
+        passwordHash,
+        role: "general_manager",
+        status: "active",
+        employeeType: "full_time",
+      },
     ]
     const coreEmployees = await Employee.insertMany(baseEmployeesData)
     const admin = coreEmployees[0]
@@ -72,14 +91,32 @@ const dbSeed = async () => {
     // 2. Payroll Foundations
     console.log("💰 Seeding Payroll Foundations...")
     const components = await PayrollComponent.insertMany([
-      { name: "Base Salary", type: "addition", valueType: "fixed", value: 5000, createdBy: admin._id },
-      { name: "Overtime Pay", type: "addition", valueType: "formula", value: 1.5, createdBy: admin._id },
-      { name: "Health Insurance", type: "deduction", valueType: "percentage", value: 1.5, createdBy: admin._id },
+      {
+        name: "Base Salary",
+        type: "addition",
+        valueType: "fixed",
+        value: 5000,
+        createdBy: admin._id,
+      },
+      {
+        name: "Overtime Pay",
+        type: "addition",
+        valueType: "formula",
+        value: 1.5,
+        createdBy: admin._id,
+      },
+      {
+        name: "Health Insurance",
+        type: "deduction",
+        valueType: "percentage",
+        value: 1.5,
+        createdBy: admin._id,
+      },
     ])
     await PayrollSettings.create({ triggerDay: 25, updatedBy: admin._id })
     const template = await PayrollTemplate.create({
       name: "Standard Template",
-      components: components.map(c => ({
+      components: components.map((c) => ({
         componentId: c._id,
         name: c.name,
         type: c.type,
@@ -95,35 +132,62 @@ const dbSeed = async () => {
       { name: "Afternoon", startTime: "13:00", endTime: "22:00", createdBy: admin._id },
     ])
 
-    const moreEmployeesData = Array.from({ length: SEED_CONFIG.EMPLOYEES_COUNT - 3 }).map((_, i) => ({
-      fullName: faker.person.fullName(),
-      username: faker.internet.username().toLowerCase() + i,
-      email: `employee-${i + 1}@hr.local`,
-      passwordHash,
-      role: i < 3 ? "team_leader" : "employee",
-      status: "active",
-      employeeType: "full_time",
-      payrollTemplateId: template._id,
-    }))
+    const moreEmployeesData = Array.from({ length: SEED_CONFIG.EMPLOYEES_COUNT - 3 }).map(
+      (_, i) => ({
+        fullName: faker.person.fullName(),
+        username: faker.internet.username().toLowerCase() + i,
+        email: `employee-${i + 1}@hr.local`,
+        passwordHash,
+        role: i < 3 ? "team_leader" : "employee",
+        status: "active",
+        employeeType: "full_time",
+      }),
+    )
     const otherEmployees = await Employee.insertMany(moreEmployeesData)
     const allEmployees = [...coreEmployees, ...otherEmployees]
-    const leaders = allEmployees.filter(e => e.role === "team_leader")
-    const regularStaff = allEmployees.filter(e => e.role === "employee")
+    const leaders = allEmployees.filter((e) => e.role === "team_leader")
+    const regularStaff = allEmployees.filter((e) => e.role === "employee")
 
     // 4. Attendance Data
     console.log("📅 Seeding Attendance...")
     for (const emp of allEmployees) {
-      await EmployeeShift.create({ employeeId: emp._id, shiftId: faker.helpers.arrayElement(shifts)._id, assignedDate: new Date() })
+      const shiftId = faker.helpers.arrayElement(shifts)._id
+      const date = new Date()
+      date.setHours(0,0,0,0)
+
+      const employeeShift = await EmployeeShift.create({
+        employeeId: emp._id,
+        shiftId: shiftId,
+        assignedDate: date,
+        status: "confirmed",
+        createdBy: admin._id,
+      })
       for (let i = 0; i < 3; i++) {
-        const date = faker.date.recent({ days: 10 })
-        const shiftId = faker.helpers.arrayElement(shifts)._id
-        await AttendanceRecord.create({ employeeId: emp._id, shiftId, fingerprintAt: new Date(date.setHours(8, 0)), status: "on_time" })
-        await AttendanceRecord.create({ employeeId: emp._id, shiftId, fingerprintAt: new Date(date.setHours(17, 0)), status: "on_time" })
+        const histDate = faker.date.recent({ days: 10 })
+        const inTime = new Date(histDate.setHours(8, 0))
+        const outTime = new Date(histDate.setHours(17, 0))
+        await AttendanceRecord.create({
+          employeeId: emp._id,
+          employeeShiftId: employeeShift._id,
+          shiftId,
+          date: histDate,
+          checkIn: { at: inTime },
+          checkOut: { at: outTime },
+          status: "on_time",
+        })
       }
       const startDate = new Date()
       const endDate = new Date(startDate)
       endDate.setDate(endDate.getDate() + 1)
-      await Application.create({ employeeId: emp._id, type: "leave", status: "approved", reason: "Vacation", startDate, endDate, approvedBy: hrManager._id })
+      await Application.create({
+        employeeId: emp._id,
+        type: "leave",
+        status: "approved",
+        reason: "Vacation",
+        startDate,
+        endDate,
+        approvedBy: hrManager._id,
+      })
     }
 
     // 5. Recruitment Data
@@ -166,7 +230,13 @@ const dbSeed = async () => {
           })
         }
       }
-      await SocialPostLog.create({ postingId: posting._id, platform: "linkedin", postUrl: faker.internet.url(), postedAt: new Date(), postedBy: hrManager._id })
+      await SocialPostLog.create({
+        postingId: posting._id,
+        platform: "linkedin",
+        postUrl: faker.internet.url(),
+        postedAt: new Date(),
+        postedBy: hrManager._id,
+      })
     }
 
     // 6. Product Data
@@ -179,7 +249,7 @@ const dbSeed = async () => {
         status: "active",
         teamLeaderId: leader._id,
         createdBy: admin._id,
-        members: projectMembers.map(m => ({ employeeId: m._id, joinedAt: new Date() }))
+        members: projectMembers.map((m) => ({ employeeId: m._id, joinedAt: new Date() })),
       })
       for (let j = 0; j < SEED_CONFIG.TASKS_PER_PROJECT; j++) {
         await Task.create({
@@ -195,7 +265,12 @@ const dbSeed = async () => {
 
     // 7. Payroll Run
     console.log("💸 Seeding Payroll Run...")
-    const payroll = await Payroll.create({ periodMonth: 5, periodYear: 2026, status: "approved", totalAmount: 100000 })
+    const payroll = await Payroll.create({
+      periodMonth: 5,
+      periodYear: 2026,
+      status: "approved",
+      totalAmount: 100000,
+    })
     for (const emp of allEmployees) {
       await Payslip.create({
         payrollId: payroll._id,
@@ -203,7 +278,12 @@ const dbSeed = async () => {
         baseSalary: 5000,
         netSalary: 4800,
         workingDays: 22,
-        details: components.map(c => ({ componentId: c._id, name: c.name, type: c.type, value: c.value }))
+        details: components.map((c) => ({
+          componentId: c._id,
+          name: c.name,
+          type: c.type,
+          value: c.value,
+        })),
       })
     }
 
@@ -218,7 +298,11 @@ const dbSeed = async () => {
     }
 
     for (let i = 0; i < SEED_CONFIG.ACTIVITY_LOGS_COUNT; i++) {
-      await ActivityLog.create({ employeeId: faker.helpers.arrayElement(allEmployees)._id, actionType: "login", ipAddress: faker.internet.ip() })
+      await ActivityLog.create({
+        employeeId: faker.helpers.arrayElement(allEmployees)._id,
+        actionType: "login",
+        ipAddress: faker.internet.ip(),
+      })
     }
 
     console.log("✨ FULL SEED COMPLETED!")

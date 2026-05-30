@@ -60,13 +60,13 @@ const taskSchema = new mongoose.Schema(
   { timestamps: true },
 )
 
-// Kanban board: load tasks theo project + status
+// Kanban board: load tasks by project and status
 taskSchema.index({ projectId: 1, status: 1 })
 
-// My tasks: tasks được assign cho một employee
+// My tasks: tasks assigned to a specific employee
 taskSchema.index({ assigneeId: 1, status: 1 }, { sparse: true })
 
-// Tìm task quá hạn
+// Find overdue tasks
 taskSchema.index(
   { dueDate: 1, status: 1 },
   {
@@ -78,13 +78,13 @@ taskSchema.index(
   },
 )
 
-// Pre-save hook: tự động set completedAt khi status = "done"
+// Pre-save hook: auto-set completedAt when status is "done"
 taskSchema.pre<TaskDocument>("save", async function () {
   if (this.isModified("status")) {
     if (this.status === "done" && this.completedAt == null) {
       this.completedAt = new Date()
     } else if (this.status !== "done") {
-      this.completedAt = null // Reset nếu reopen task
+      this.completedAt = null // Reset if task is reopened
     }
   }
 })
@@ -93,7 +93,7 @@ const Task = mongoose.model("Task", taskSchema)
 
 export default Task
 
-// Xuất type để tái sử dụng trong các Service/Controller
+// Export types for reuse in Services/Controllers
 export type TaskType = InferSchemaType<typeof taskSchema>
 export type TaskDocument = Document & TaskType
 export type TaskModel = Model<TaskDocument>

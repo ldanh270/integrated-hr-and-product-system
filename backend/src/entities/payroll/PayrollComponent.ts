@@ -26,7 +26,7 @@ const payrollComponentSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Giá trị mặc định — có thể override ở template level
+    // Default value — can be overridden at template level
     value: {
       type: Number,
       required: true,

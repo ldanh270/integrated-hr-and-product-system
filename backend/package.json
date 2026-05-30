@@ -7,9 +7,10 @@
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "clear-db": "bun src/scripts/clear-db.ts",
-    "seed": "bun src/scripts/seed.ts",
+    "seed": "bun src/scripts/seeder/index.ts",
+    "seed:all": "bun src/scripts/seeder/index.ts --all",
     "seed-admin": "bun src/scripts/seed-admin.ts",
-    "seed:reset": "bun run clear-db && bun run seed"
+    "seed:reset": "bun src/scripts/seeder/index.ts --clear --all"
   },
   "type": "module",
   "author": "ldanh270",

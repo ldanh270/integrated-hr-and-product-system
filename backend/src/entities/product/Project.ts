@@ -103,7 +103,7 @@ const Project = mongoose.model("Project", projectSchema)
 
 export default Project
 
-// Xuất type để tái sử dụng trong các Service/Controller
+// Export types for reuse in Services/Controllers
 export type ProjectType = InferSchemaType<typeof projectSchema>
 export type ProjectDocument = Document & ProjectType
 export type ProjectModel = Model<ProjectDocument>

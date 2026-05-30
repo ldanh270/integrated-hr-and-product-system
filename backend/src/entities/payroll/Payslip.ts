@@ -71,8 +71,8 @@ const payslipSchema = new mongoose.Schema(
       min: 0,
     },
 
-    // Snapshot chi tiết từng thành phần lương — immutable sau khi tạo
-    // Đây là audit trail: lưu lại ĐÚNG những gì đã tính tại thời điểm đó
+    // Snapshot of payroll components — immutable after creation
+    // Acts as an audit trail for exact values used during calculation
     details: {
       type: [payslipDetailItemSubSchema],
       default: [],
@@ -81,9 +81,9 @@ const payslipSchema = new mongoose.Schema(
   { timestamps: true },
 )
 
-// Compound unique: mỗi nhân viên chỉ có 1 payslip mỗi đợt
+// Compound unique: one payslip per employee per payroll period
 payslipSchema.index({ payrollId: 1, employeeId: 1 }, { unique: true })
-// Query lịch sử lương của nhân viên
+// Query employee's payslip history
 payslipSchema.index({ employeeId: 1, payrollId: -1 })
 
 const Payslip = mongoose.model("Payslip", payslipSchema)

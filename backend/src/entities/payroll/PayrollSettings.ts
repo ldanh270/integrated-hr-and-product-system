@@ -2,8 +2,8 @@ import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 
 const payrollSettingsSchema = new mongoose.Schema(
   {
-    // Ngày trigger tính lương trong tháng (1-28)
-    // Dùng max 28 để tránh issue với tháng 2
+    // Monthly trigger day for payroll calculation (1-28)
+    // Capped at 28 to avoid issues with February
     triggerDay: {
       type: Number,
       required: true,
@@ -27,7 +27,7 @@ const payrollSettingsSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    // Dùng upsert với filter {} để đảm bảo chỉ có 1 document
+    // Use upsert with empty filter {} to ensure only 1 document exists
   },
 )
 

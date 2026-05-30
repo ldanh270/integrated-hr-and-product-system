@@ -6,6 +6,15 @@ import {
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 
+/**
+ * Application Entity
+ * 
+ * Central entity for all employee requests (Leaves, Overtime, Shift Swap, etc.).
+ * 
+ * - For "shift_swap", `swapWith` maps to a specific `EmployeeShift` record (employeeShiftId),
+ *   allowing employees to swap shifts on a specific day.
+ * - Managed by HR/Admin who can approve or reject the application.
+ */
 const applicationSchema = new mongoose.Schema(
   {
     employeeId: {
@@ -61,9 +70,9 @@ const applicationSchema = new mongoose.Schema(
         ref: "Employee",
         default: null,
       },
-      shiftId: {
+      employeeShiftId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "WorkingShift",
+        ref: "EmployeeShift",
         default: null,
       },
     },
@@ -97,10 +106,13 @@ applicationSchema.pre("validate", function (this: mongoose.HydratedDocument<Appl
     this.invalidate("endDate", "endDate must be after startDate")
   }
   if (this.type !== "shift_swap") {
-    this.set("swapWith", { employeeId: null, shiftId: null })
+    this.set("swapWith", { employeeId: null, employeeShiftId: null })
   } else {
-    if (!this.swapWith || !this.swapWith.employeeId || !this.swapWith.shiftId) {
-      this.invalidate("swapWith", "swapWith employeeId and shiftId are required for shift_swap type")
+    if (!this.swapWith || !this.swapWith.employeeId || !this.swapWith.employeeShiftId) {
+      this.invalidate(
+        "swapWith",
+        "swapWith employeeId and employeeShiftId are required for shift_swap type",
+      )
     }
   }
 })

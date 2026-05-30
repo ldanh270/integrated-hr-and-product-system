@@ -22,18 +22,10 @@ const employeeSchema = new mongoose.Schema(
       lowercase: true,
     },
 
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-      lowercase: true,
-    },
-
     passwordHash: {
       type: String,
       required: true,
-      select: false, // Bảo mật: Không tự động trả về khi query
+      select: false, // Don't return password hash by default
     },
 
     role: {
@@ -41,6 +33,14 @@ const employeeSchema = new mongoose.Schema(
       enum: EMPLOYEE_ROLES,
       default: "employee",
       required: true,
+    },
+
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
     },
 
     phone: {
@@ -85,24 +85,11 @@ const employeeSchema = new mongoose.Schema(
       required: true,
     },
 
-    startDate: {
-      type: Date,
-    },
-
-    endDate: {
-      type: Date,
-    },
-
     status: {
       type: String,
       enum: EMPLOYEE_STATUSES,
       default: "active",
       required: true,
-    },
-
-    payrollTemplateId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "PayrollTemplate", // Liên kết tới model PayrollTemplate
     },
 
     failedLoginCount: {
@@ -114,10 +101,6 @@ const employeeSchema = new mongoose.Schema(
     lockedUntil: {
       type: Date,
     },
-
-    lastLoginAt: {
-      type: Date,
-    },
   },
   {
     timestamps: true,
@@ -127,11 +110,10 @@ const employeeSchema = new mongoose.Schema(
 employeeSchema.index({ status: 1, employeeType: 1 })
 employeeSchema.index({ fullName: "text" })
 employeeSchema.index({ role: 1 })
-employeeSchema.index({ payrollTemplateId: 1 })
 
 const Employee = mongoose.model("Employee", employeeSchema)
 
 export default Employee
 
-// Xuất type để tái sử dụng trong các Service/Controller
+// Export types for reuse in Services/Controllers
 export type EmployeeType = InferSchemaType<typeof employeeSchema>

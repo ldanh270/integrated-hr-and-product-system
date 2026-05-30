@@ -25,7 +25,7 @@ const interviewScheduleSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Địa điểm (in-person) hoặc link meeting (video_call/phone)
+    // Location (in-person) or meeting link (video_call/phone)
     locationOrLink: {
       type: String,
       trim: true,
@@ -74,7 +74,7 @@ const interviewScheduleSchema = new mongoose.Schema(
 )
 
 interviewScheduleSchema.index({ candidateId: 1, scheduledAt: -1 })
-interviewScheduleSchema.index({ interviewerId: 1, scheduledAt: -1 }) // Lịch của interviewer
+interviewScheduleSchema.index({ interviewerId: 1, scheduledAt: -1 }) // Interviewer's schedule
 interviewScheduleSchema.index({ status: 1, scheduledAt: 1 }) // Reminder job
 
 const InterviewSchedule = mongoose.model("InterviewSchedule", interviewScheduleSchema)
