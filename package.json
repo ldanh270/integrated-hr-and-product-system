@@ -5,13 +5,19 @@
     "install:backend": "cd backend && bun install",
     "install:frontend": "cd frontend && bun install",
     "dev:backend": "cd backend && bun --watch src/index.ts",
-    "dev:frontend": "cd frontend && bun run dev"
+    "dev:frontend": "cd frontend && bun run dev",
+    "hash-password": "cd backend && bun run src/scripts/hash-password.ts",
+    "clear-db": "cd backend && bun run src/scripts/clear-db.ts",
+    "seed": "cd backend && bun run src/scripts/seed.ts",
+    "seed-admin": "cd backend && bun run src/scripts/seed-admin.ts",
+    "seed:reset": "bun run clear-db && bun run seed"
   },
   "dependencies": {
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "prettier-plugin-tailwindcss": "^0.8.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "concurrently": "^9.2.1"
   }
 }

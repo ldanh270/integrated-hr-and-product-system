@@ -1,0 +1,77 @@
+export type EmployeeStatus = "active" | "inactive" | "on_leave" | "terminated"
+export type EmployeeType = "full_time" | "part_time" | "contractor" | "intern"
+export type EmployeeRole = "admin" | "manager" | "employee"
+
+export interface Employee {
+  id: string
+  fullName: string
+  username: string
+  email: string
+  role: EmployeeRole
+  phone: string | null
+  position: string | null
+  employeeType: EmployeeType
+  status: EmployeeStatus
+  dateOfBirth: string | null // ISO string
+  nationalId: string | null
+  address: string | null
+  startDate: string | null
+  endDate: string | null
+  avatar: { url: string | null; id: string | null } | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PaginatedEmployees {
+  data: Employee[]
+  meta: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }
+}
+
+export interface EmployeeListQuery {
+  page?: number
+  limit?: number
+  search?: string
+  status?: EmployeeStatus
+  role?: EmployeeRole
+  employeeType?: EmployeeType
+  sortBy?: string
+  sortOrder?: "asc" | "desc"
+}
+
+export interface CreateEmployeeDto {
+  fullName: string
+  email: string
+  username: string
+  password?: string
+  role?: EmployeeRole
+  phone?: string
+  position?: string
+  employeeType?: EmployeeType
+  status?: EmployeeStatus
+  dateOfBirth?: string
+  nationalId?: string
+  address?: string
+  startDate?: string
+}
+
+export interface UpdateEmployeeDto {
+  fullName?: string
+  phone?: string
+  position?: string
+  employeeType?: EmployeeType
+  status?: EmployeeStatus
+  dateOfBirth?: string
+  nationalId?: string
+  address?: string
+  startDate?: string
+  endDate?: string
+}
+
+export interface UpdateStatusDto {
+  status: EmployeeStatus
+}

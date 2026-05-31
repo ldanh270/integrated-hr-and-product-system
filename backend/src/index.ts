@@ -1,10 +1,21 @@
 import { connectDB } from "@/libs/database.ts"
+import { cors } from "@/middlewares/cors.middleware.ts"
 import authRoutes from "@/routes/auth.route.ts"
 import employeeRoutes from "@/routes/employee.route.ts"
+import profileRoutes from "@/routes/profile.route.ts"
+import shiftRoutes from "@/routes/shift.route.ts"
+import scheduleRoutes from "@/routes/schedule.route.ts"
+import attendanceRoutes from "@/routes/attendance.route.ts"
+import applicationRoutes from "@/routes/application.route.ts"
+import holidayRoutes from "@/routes/holiday.route.ts"
+import approvalRoutes from "@/routes/approval.route.ts"
 
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
 import express, { NextFunction, Request, Response } from "express"
+import path from "path"
+import swaggerUi from "swagger-ui-express"
+import YAML from "yamljs"
 
 /**
  * Server configurations
@@ -14,9 +25,16 @@ const PORT = process.env.PORT || 5000 // Port where server runing on
 const app = express()
 
 /**
+ * Swagger Setup
+ */
+const swaggerDocument = YAML.load(path.join(process.cwd(), "swagger.yaml"))
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument))
+
+/**
  * Middleware
  */
 
+app.use(cors)
 app.use(express.json())
 app.use(cookieParser())
 
@@ -31,6 +49,15 @@ app.get("/", async (req, res) =>
 
 app.use("/api/auth", authRoutes)
 app.use("/api/employees", employeeRoutes)
+app.use("/api/profile", profileRoutes)
+
+// Attendance & Scheduling routes
+app.use("/api/shifts", shiftRoutes)
+app.use("/api/schedules", scheduleRoutes)
+app.use("/api/attendance", attendanceRoutes)
+app.use("/api/applications", applicationRoutes)
+app.use("/api/holidays", holidayRoutes)
+app.use("/api/approvals", approvalRoutes)
 
 // Private routes
 
@@ -44,8 +71,25 @@ app.use((req, res) => {
 
 // Global error
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  if (err?.name === "AppError" || err?.statusCode) {
+    res.status(err.statusCode || 500).json({
+      data: null,
+      error: {
+        message: err.message,
+        code: err.errorCode || (err.layer ? err.layer.toUpperCase() + "_ERROR" : "APP_ERROR"),
+      },
+    })
+    return
+  }
+
   console.error("GLOBAL ERROR:", err)
-  res.status(500).send("Internal Server Error")
+  res.status(500).json({
+    data: null,
+    error: {
+      message: "Internal Server Error",
+      code: "INTERNAL_SERVER_ERROR",
+    },
+  })
 })
 
 /**

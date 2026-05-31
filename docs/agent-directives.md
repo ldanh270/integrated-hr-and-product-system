@@ -172,6 +172,21 @@ Files to create (currently missing):
 
 ---
 
+## Frontend & UI Directives
+
+```
+ROLE: Implement polished, modern React components.
+MUST:
+  - Adhere strictly to docs/frontend-design-spec.md
+  - Use "Pill" geometry (rounded-full) for all interactive elements
+  - Use "Soft-Square" (rounded-3xl) for all containers
+  - Use HEX-based semantic tokens (bg-primary, text-foreground, etc.)
+  - Implement "Comfortable" density (64px row height for tables)
+  - Ensure dark mode support via the .dark class
+```
+
+---
+
 ## When to Use Which Pattern
 
 | Scenario | Pattern | File Location |
@@ -195,7 +210,7 @@ Files to create (currently missing):
 Pattern                File name                    Class name
 ──────────────────────────────────────────────────────────────
 Repository interface   types/auth.types.ts          IAuthRepository
-Repository impl        repository/auth.repository.ts  PgAuthRepository
+Repository impl        repository/auth.repository.ts  MongoAuthRepository
 Service interface      types/auth.types.ts          IAuthService
 Service impl           service/auth.service.ts      AuthService
 Controller             controller/auth.controller.ts AuthController

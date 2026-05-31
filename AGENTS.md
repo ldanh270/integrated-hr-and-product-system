@@ -7,7 +7,18 @@
 
 ---
 
-## 0 · The Hierarchical Roster (Agent Role Definitions)
+## 0 · Core Agent Mandates
+
+1. **Package Manager:** Use **Bun** for all installs and scripts.
+2. **Planning:** Every complex task MUST have a plan file in `plans/` or a task plan in the topic summary.
+3. **Verification:** Use **Playwright** to verify behavior. Task not DONE until tests green.
+4. **Code Standards:** Strictly follow **SOLID** and **Design Patterns**. Reference `docs/solid-principles.md` and `docs/design-patterns.md`.
+5. **Efficiency:** Surgical edits only. No redundant refactors. Prefer running tools over generating repetitive code.
+6. **Communication:** Terse caveman speak. No fluff.
+
+---
+
+## 1 · The Hierarchical Roster (Agent Role Definitions)
 
 Our development team operates on a strict **Hierarchical Delegation** model. The `Tech-Lead-Coordinator` acts as the single point of entry and decision-making authority, orchestrating specialized sub-agents.
 
@@ -31,7 +42,7 @@ Our development team operates on a strict **Hierarchical Delegation** model. The
 - **Authority:** Integrity of the data layer and API contract performance.
 - **MCP Access:**
   - `GitHub`: Reading/Writing to `backend/` directory.
-  - `Database (TBD)`: Schema migrations and query optimization.
+  - `Database (MongoDB)`: Schema management (via ODM/validation) and query optimization.
 
 ### 4. `QA-Review-Agent`
 - **Responsibilities:** Automated testing (Unit, Integration, E2E), security audits, and performance profiling.
@@ -118,9 +129,14 @@ A task is not complete until the `QA-Review-Agent` verifies the following:
 - **Errors:** Throw `AppError(message, statusCode, layer)`.
 
 ### Frontend (React 19)
+- **Design Truth:** All UI work MUST follow [docs/frontend-design-spec.md](docs/frontend-design-spec.md).
 - **Hierarchy:** Page → Feature → UI Component → Primitive.
 - **State:** Server (React Query), Global (Zustand/Context), Local (useState).
-- **Styling:** Tailwind CSS utility-first.
+- **Styling:** Tailwind CSS utility-first with semantic design tokens.
+- **No hardcoded colors:** Never use raw color literals in frontend code (`#hex`, `rgb()`, `hsl()`, inline `style={{ color: ... }}`).
+- **Token-only rule:** Colors must come from HEX variables/design tokens mapped to semantic utilities (`bg-background`, `text-foreground`, `border-border`, `bg-primary`, etc.).
+- **The Pill Rule:** Buttons/Inputs/Badges MUST use `rounded-full`. Containers MUST use `rounded-xl`. Inner sub-containers (table wrappers, inner card sections) use `rounded-lg`.
+- **shadcn alignment:** Any new UI must consume the same token system as shadcn defined in the spec.
 
 ---
 

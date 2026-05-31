@@ -19,7 +19,7 @@ export interface SignupDto {
 }
 
 export interface LoginDto {
-  email: string
+  username: string
   password: string
 }
 
@@ -27,8 +27,9 @@ export interface LoginDto {
 
 export interface User {
   id: string
+  username: string
   email: string
-  name: string
+  fullName: string
   role: UserRole
   createdAt: Date
   updatedAt: Date

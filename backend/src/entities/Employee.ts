@@ -1,9 +1,10 @@
-import mongoose, { InferSchemaType } from "mongoose"
+import {
+  EMPLOYEE_ROLES,
+  EMPLOYEE_STATUSES,
+  EMPLOYEE_TYPES,
+} from "@/configs/constants/entities.config.ts"
 
-// Định nghĩa Enums với 'as const' để TypeScript nhận diện Literal Types thay vì String chung chung
-const EMPLOYEE_TYPES = ["full_time", "part_time", "contractor", "intern"] as const
-const EMPLOYEE_STATUSES = ["active", "inactive", "on_leave", "terminated"] as const
-const EMPLOYEE_ROLES = ["admin", "manager", "employee"] as const
+import mongoose, { InferSchemaType } from "mongoose"
 
 const employeeSchema = new mongoose.Schema(
   {
@@ -13,7 +14,7 @@ const employeeSchema = new mongoose.Schema(
       trim: true,
     },
 
-    email: {
+    username: {
       type: String,
       required: true,
       unique: true,
@@ -24,7 +25,7 @@ const employeeSchema = new mongoose.Schema(
     passwordHash: {
       type: String,
       required: true,
-      select: false, // Bảo mật: Không tự động trả về khi query
+      select: false, // Don't return password hash by default
     },
 
     role: {
@@ -34,9 +35,19 @@ const employeeSchema = new mongoose.Schema(
       required: true,
     },
 
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
+    },
+
     phone: {
       type: String,
-      sparse: true, // Có thể rỗng, nhưng nếu có phải là unique (nếu thêm unique: true)
+      trim: true,
+      unique: true,
+      sparse: true, // Can be null but must be unique if provided
     },
 
     dateOfBirth: {
@@ -74,24 +85,11 @@ const employeeSchema = new mongoose.Schema(
       required: true,
     },
 
-    startDate: {
-      type: Date,
-    },
-
-    endDate: {
-      type: Date,
-    },
-
     status: {
       type: String,
       enum: EMPLOYEE_STATUSES,
       default: "active",
       required: true,
-    },
-
-    payrollTemplateId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "PayrollTemplate", // Liên kết tới model PayrollTemplate
     },
 
     failedLoginCount: {
@@ -103,23 +101,19 @@ const employeeSchema = new mongoose.Schema(
     lockedUntil: {
       type: Date,
     },
-
-    lastLoginAt: {
-      type: Date,
-    },
   },
   {
     timestamps: true,
   },
 )
 
-// Indexing để tối ưu hóa truy vấn
-// Thường xuyên tìm kiếm nhân viên theo email, trạng thái hoặc loại nhân viên
 employeeSchema.index({ status: 1, employeeType: 1 })
+employeeSchema.index({ fullName: "text" })
+employeeSchema.index({ role: 1 })
 
 const Employee = mongoose.model("Employee", employeeSchema)
 
 export default Employee
 
-// Xuất type để tái sử dụng trong các Service/Controller
+// Export types for reuse in Services/Controllers
 export type EmployeeType = InferSchemaType<typeof employeeSchema>
