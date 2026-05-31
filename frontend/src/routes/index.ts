@@ -29,6 +29,32 @@ const privateRoutes = [
     component: lazy(() => import("@/pages/Profile.tsx")),
     layout: MainLayout,
   },
+  // Attendance Module
+  {
+    path: "/hrm/attendance",
+    component: lazy(() => import("@/pages/attendance/AttendanceDashboard.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/hrm/attendance/my-schedule",
+    component: lazy(() => import("@/pages/attendance/MySchedule.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/hrm/attendance/applications",
+    component: lazy(() => import("@/pages/attendance/Applications.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/hrm/attendance/shifts",
+    component: lazy(() => import("@/pages/attendance/ShiftManagement.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/hrm/attendance/holidays",
+    component: lazy(() => import("@/pages/attendance/Holidays.tsx")),
+    layout: MainLayout,
+  },
 ]
 
 export { privateRoutes, publicRoutes }

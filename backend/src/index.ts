@@ -3,6 +3,11 @@ import { cors } from "@/middlewares/cors.middleware.ts"
 import authRoutes from "@/routes/auth.route.ts"
 import employeeRoutes from "@/routes/employee.route.ts"
 import profileRoutes from "@/routes/profile.route.ts"
+import shiftRoutes from "@/routes/shift.route.ts"
+import scheduleRoutes from "@/routes/schedule.route.ts"
+import attendanceRoutes from "@/routes/attendance.route.ts"
+import applicationRoutes from "@/routes/application.route.ts"
+import holidayRoutes from "@/routes/holiday.route.ts"
 
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
@@ -44,6 +49,13 @@ app.get("/", async (req, res) =>
 app.use("/api/auth", authRoutes)
 app.use("/api/employees", employeeRoutes)
 app.use("/api/profile", profileRoutes)
+
+// Attendance & Scheduling routes
+app.use("/api/shifts", shiftRoutes)
+app.use("/api/schedules", scheduleRoutes)
+app.use("/api/attendance", attendanceRoutes)
+app.use("/api/applications", applicationRoutes)
+app.use("/api/holidays", holidayRoutes)
 
 // Private routes
 

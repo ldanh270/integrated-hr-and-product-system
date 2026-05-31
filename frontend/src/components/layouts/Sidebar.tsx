@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Briefcase,
+  CalendarClock,
 } from "lucide-react"
 
 interface NavItem {
@@ -28,6 +29,7 @@ export default function Sidebar() {
   const navItems: NavItem[] = [
     { name: "Tổng quan", path: "/hrm/dashboard", icon: LayoutDashboard },
     { name: "Nhân sự", path: "/hrm/employees", icon: Users },
+    { name: "Chấm công", path: "/hrm/attendance", icon: CalendarClock },
     { name: "Tuyển dụng", path: "/hrm/applications", icon: Briefcase },
     { name: "Tính lương", path: "/hrm/payroll", icon: CircleDollarSign },
     { name: "Cấu hình", path: "/hrm/settings", icon: Settings },

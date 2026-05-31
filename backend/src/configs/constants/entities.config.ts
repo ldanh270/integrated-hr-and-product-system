@@ -16,8 +16,13 @@ export const EMPLOYEE_SHIFT_STATUSES = [
   "confirmed",
   "cancelled",
 ] as const
+export type IEmployeeShiftStatus = (typeof EMPLOYEE_SHIFT_STATUSES)[number]
+
 export const HOLIDAY_TYPES = ["national", "company"] as const
+export type IHolidayType = (typeof HOLIDAY_TYPES)[number]
+
 export const ATTENDANCE_STATUSES = ["on_time", "late", "early_leave", "absent", "overtime"] as const
+export type IAttendanceStatus = (typeof ATTENDANCE_STATUSES)[number]
 
 export const APPLICATION_TYPES = [
   "leave",
@@ -29,9 +34,13 @@ export const APPLICATION_TYPES = [
   "paternity",
   "sick",
 ] as const
+export type IApplicationType = (typeof APPLICATION_TYPES)[number]
 
 export const APPLICATION_STATUSES = ["pending", "approved", "rejected", "cancelled"] as const
+export type IApplicationStatus = (typeof APPLICATION_STATUSES)[number]
+
 export const REGIME_TYPES = ["paid", "unpaid"] as const
+export type IRegimeType = (typeof REGIME_TYPES)[number]
 
 // ─── PAYROLL ──────────────────────────────────────────────────
 export const PAYROLL_COMPONENT_TYPES = ["addition", "deduction"] as const
