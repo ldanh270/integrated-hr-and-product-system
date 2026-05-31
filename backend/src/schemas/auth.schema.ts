@@ -30,3 +30,17 @@ export const loginSchema = z.object({
  * Type inferred from the login schema
  */
 export type LoginSchemaType = z.infer<typeof loginSchema>
+
+/**
+ * Zod schema for forgot password request body validation
+ */
+export const forgotPasswordSchema = z.object({
+  username: z
+    .string()
+    .min(3, "Username must at least 3 characters")
+    .max(30, "Username must not exceed 30 characters")
+    .trim()
+    .toLowerCase(),
+})
+
+export type ForgotPasswordSchemaType = z.infer<typeof forgotPasswordSchema>

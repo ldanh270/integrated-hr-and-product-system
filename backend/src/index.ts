@@ -8,6 +8,7 @@ import scheduleRoutes from "@/routes/schedule.route.ts"
 import attendanceRoutes from "@/routes/attendance.route.ts"
 import applicationRoutes from "@/routes/application.route.ts"
 import holidayRoutes from "@/routes/holiday.route.ts"
+import approvalRoutes from "@/routes/approval.route.ts"
 
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
@@ -56,6 +57,7 @@ app.use("/api/schedules", scheduleRoutes)
 app.use("/api/attendance", attendanceRoutes)
 app.use("/api/applications", applicationRoutes)
 app.use("/api/holidays", holidayRoutes)
+app.use("/api/approvals", approvalRoutes)
 
 // Private routes
 
@@ -69,8 +71,25 @@ app.use((req, res) => {
 
 // Global error
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  if (err?.name === "AppError" || err?.statusCode) {
+    res.status(err.statusCode || 500).json({
+      data: null,
+      error: {
+        message: err.message,
+        code: err.errorCode || (err.layer ? err.layer.toUpperCase() + "_ERROR" : "APP_ERROR"),
+      },
+    })
+    return
+  }
+
   console.error("GLOBAL ERROR:", err)
-  res.status(500).send("Internal Server Error")
+  res.status(500).json({
+    data: null,
+    error: {
+      message: "Internal Server Error",
+      code: "INTERNAL_SERVER_ERROR",
+    },
+  })
 })
 
 /**

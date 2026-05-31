@@ -55,6 +55,24 @@ const recruitmentProposalSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+
+    // ── Approval audit ────────────────────────────────────────
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Employee",
+      default: null,
+    },
+
+    approvedAt: {
+      type: Date,
+      default: null,
+    },
+
+    rejectReason: {
+      type: String,
+      trim: true,
+      default: null,
+    },
   },
   { timestamps: true },
 )

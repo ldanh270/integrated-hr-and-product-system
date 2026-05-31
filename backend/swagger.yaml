@@ -615,6 +615,74 @@ paths:
         '200':
           description: True if holiday
 
+  /api/approvals:
+    get:
+      tags: [Approvals]
+      summary: List pending approvals
+      description: Retrieve all pending requests (applications, password resets, proposals) that the current user has the authority to approve.
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: List of pending approvals retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApprovalItem'
+                  error:
+                    type: string
+                    nullable: true
+
+  /api/approvals/{category}/{id}:
+    patch:
+      tags: [Approvals]
+      summary: Process an approval request
+      description: Approve or reject a specific request by its category and ID.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: category
+          required: true
+          schema:
+            type: string
+            enum: [application, password_reset, recruitment_proposal]
+          description: The category of the request
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: The request document ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessApprovalDto'
+      responses:
+        '200':
+          description: Request approved or rejected successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                  error:
+                    type: string
+                    nullable: true
+        '400':
+          description: Validation error or request already processed.
+        '403':
+          description: Forbidden - User does not have permission to approve this request.
+        '404':
+          description: Request not found.
+
 components:
   securitySchemes:
     bearerAuth:
@@ -996,3 +1064,36 @@ components:
               overrideFormula:
                 type: string
                 nullable: true
+
+    ApprovalItem:
+      type: object
+      properties:
+        id:
+          type: string
+        category:
+          type: string
+          enum: [application, password_reset, recruitment_proposal]
+        employeeId:
+          type: string
+        employeeName:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        details:
+          type: object
+
+    ProcessApprovalDto:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [approved, rejected]
+        rejectReason:
+          type: string
+          nullable: true
+          example: "Không đúng quy trình hoặc lý do chưa thuyết phục"

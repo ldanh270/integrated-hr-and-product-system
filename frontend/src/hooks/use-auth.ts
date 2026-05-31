@@ -37,6 +37,15 @@ export const useAuth = () => {
       clearAuth() // Always clear state even if API fails
     },
   })
+  /**
+   * Forgot password mutation
+   */
+  const forgotPasswordMutation = useMutation({
+    mutationFn: async (data: { username: string }) => {
+      const response = await apiClient.post("/auth/forgot-password", data)
+      return response.data
+    },
+  })
 
   return {
     login: loginMutation.mutateAsync,
@@ -44,5 +53,8 @@ export const useAuth = () => {
     loginError: loginMutation.error,
     logout: logoutMutation.mutateAsync,
     isLoggingOut: logoutMutation.isPending,
+    forgotPassword: forgotPasswordMutation.mutateAsync,
+    isSendingForgotPassword: forgotPasswordMutation.isPending,
   }
 }
+

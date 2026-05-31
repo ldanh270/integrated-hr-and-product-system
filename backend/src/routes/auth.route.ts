@@ -34,4 +34,12 @@ authRoutes.post("/login", controller.login)
  */
 authRoutes.post("/logout", authenticate, controller.logout as any)
 
+/**
+ * @route POST /api/auth/forgot-password
+ * @desc Request a password reset
+ * @access Public
+ */
+authRoutes.post("/forgot-password", controller.forgotPassword)
+
 export default authRoutes
+

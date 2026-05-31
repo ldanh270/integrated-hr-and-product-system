@@ -11,6 +11,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Eye, EyeOff, KeyRound } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { useNavigate } from "react-router-dom"
+import { toast } from "sonner"
 
 import MockSpreadsheetCard from "./mock-spreadsheet.tsx"
 
@@ -60,8 +61,10 @@ const BrandLogo = () => (
  */
 export default function Login() {
   const navigate = useNavigate()
-  const { login, isLoggingIn } = useAuth()
+  const { login, isLoggingIn, forgotPassword, isSendingForgotPassword } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
+  const [showForgotModal, setShowForgotModal] = useState(false)
+  const [forgotUsername, setForgotUsername] = useState("")
 
   const {
     register,
@@ -80,6 +83,23 @@ export default function Login() {
       setError("root", {
         message: error.response?.data?.message || "Login failed. Please try again.",
       })
+    }
+  }
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!forgotUsername.trim()) {
+      toast.error("Vui lòng nhập username")
+      return
+    }
+
+    try {
+      await forgotPassword({ username: forgotUsername })
+      toast.success("Yêu cầu reset mật khẩu đã được gửi cho admin duyệt.")
+      setShowForgotModal(false)
+      setForgotUsername("")
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Có lỗi xảy ra khi gửi yêu cầu")
     }
   }
 
@@ -221,6 +241,7 @@ export default function Login() {
           <Button
             type="button"
             variant="outline"
+            onClick={() => setShowForgotModal(true)}
             className="w-full h-12 text-sm font-semibold flex items-center justify-center gap-2 border-border shadow-sm hover:bg-secondary/40"
           >
             <KeyRound size={16} />
@@ -228,6 +249,59 @@ export default function Login() {
           </Button>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotModal && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <form
+            onSubmit={handleForgotPassword}
+            className="bg-card border border-border w-full max-w-md rounded-xl shadow-lg p-6 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200"
+          >
+            <div>
+              <h3 className="text-lg font-bold text-foreground">Quên Mật Khẩu</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Vui lòng nhập tên đăng nhập (username) của bạn. Hệ thống sẽ gửi yêu cầu reset mật khẩu đến Admin phê duyệt.
+              </p>
+            </div>
+
+            <div className="space-y-2 mt-2">
+              <Label htmlFor="forgot-username" className="text-sm font-medium text-foreground">
+                Username
+              </Label>
+              <Input
+                id="forgot-username"
+                type="text"
+                placeholder="Nhập username của bạn..."
+                required
+                value={forgotUsername}
+                onChange={(e) => setForgotUsername(e.target.value)}
+                className="w-full"
+              />
+            </div>
+
+            <div className="flex gap-2 justify-end mt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForgotModal(false)
+                  setForgotUsername("")
+                }}
+                className="px-4 py-2 border border-border text-foreground hover:bg-secondary rounded-full text-xs font-semibold cursor-pointer transition-colors"
+              >
+                Hủy bỏ
+              </button>
+
+              <button
+                type="submit"
+                disabled={isSendingForgotPassword || !forgotUsername.trim()}
+                className="px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-full text-xs font-semibold shadow-sm cursor-pointer transition-colors"
+              >
+                {isSendingForgotPassword ? "Đang gửi..." : "Gửi yêu cầu"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   )
 }

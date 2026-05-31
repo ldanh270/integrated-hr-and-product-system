@@ -1,6 +1,6 @@
 import { HttpStatusCode } from "@/configs/constants/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
-import { loginSchema } from "@/schemas/auth.schema.ts"
+import { forgotPasswordSchema, loginSchema } from "@/schemas/auth.schema.ts"
 import { IAuthService } from "@/types/auth.types.ts"
 
 import { Request, Response } from "express"
@@ -74,4 +74,35 @@ export class AuthController {
       })
     }
   }
+
+  /**
+   * Handles the forgot password request
+   */
+  forgotPassword = async (req: Request, res: Response) => {
+    try {
+      // 1. Validate request body
+      const validatedData = forgotPasswordSchema.parse(req.body)
+
+      // 2. Delegate to service
+      const result = await this.service.forgotPassword(validatedData)
+
+      // 3. Return successful response
+      res.status(HttpStatusCode.OK).json({
+        status: "success",
+        message: result.message,
+      })
+    } catch (error: any) {
+      const statusCode =
+        error.name === "ZodError"
+          ? HttpStatusCode.BAD_REQUEST
+          : error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
+
+      res.status(statusCode).json({
+        status: "error",
+        message: error.message || "Request failed",
+        errors: error.errors,
+      })
+    }
+  }
 }
+

@@ -7,4 +7,8 @@ export declare const useAuth: () => {
     loginError: Error | null;
     logout: import("@tanstack/react-query").UseMutateAsyncFunction<any, Error, void, unknown>;
     isLoggingOut: boolean;
+    forgotPassword: import("@tanstack/react-query").UseMutateAsyncFunction<any, Error, {
+        username: string;
+    }, unknown>;
+    isSendingForgotPassword: boolean;
 };

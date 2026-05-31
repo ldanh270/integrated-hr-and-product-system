@@ -31,28 +31,79 @@ const privateRoutes = [
   },
   // Attendance Module
   {
-    path: "/hrm/attendance",
+    path: "/attendance",
     component: lazy(() => import("@/pages/attendance/AttendanceDashboard.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/hrm/attendance/my-schedule",
+    path: "/attendance/my-schedule",
     component: lazy(() => import("@/pages/attendance/MySchedule.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/hrm/attendance/applications",
+    path: "/attendance/applications",
     component: lazy(() => import("@/pages/attendance/Applications.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/hrm/attendance/shifts",
+    path: "/attendance/shifts",
     component: lazy(() => import("@/pages/attendance/ShiftManagement.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/hrm/attendance/holidays",
+    path: "/attendance/holidays",
     component: lazy(() => import("@/pages/attendance/Holidays.tsx")),
+    layout: MainLayout,
+  },
+  // New Placeholder Modules
+  {
+    path: "/application/dashboard",
+    component: lazy(() => import("@/pages/application/ApplicationDashboard.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/payroll/dashboard",
+    component: lazy(() => import("@/pages/payroll/PayrollDashboard.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/asset/dashboard",
+    component: lazy(() => import("@/pages/asset/AssetDashboard.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/recruitment/dashboard",
+    component: lazy(() => import("@/pages/recruitment/RecruitmentDashboard.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/training/dashboard",
+    component: lazy(() => import("@/pages/training/TrainingDashboard.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/security/dashboard",
+    component: lazy(() => import("@/pages/security/SecurityDashboard.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/security/roles",
+    component: lazy(() => import("@/pages/security/RolesManagement.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/security/users",
+    component: lazy(() => import("@/pages/security/UsersManagement.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/security/activity-logs",
+    component: lazy(() => import("@/pages/security/ActivityLogs.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/settings/dashboard",
+    component: lazy(() => import("@/pages/settings/SettingsDashboard.tsx")),
     layout: MainLayout,
   },
 ]

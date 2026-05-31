@@ -1,6 +1,8 @@
 import { HttpStatusCode } from "@/configs/constants/http.config.ts"
 import {
   AuthResponseDto,
+  ForgotPasswordDto,
+  ForgotPasswordResponseDto,
   IAuthRepository,
   IAuthService,
   LoginDto,
@@ -9,6 +11,8 @@ import {
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
 import { JwtUtil } from "@/utils/jwt.util.ts"
+import PasswordResetRequest from "@/entities/auth/PasswordResetRequest.ts"
+import crypto from "crypto"
 
 /**
  * Authentication Service implementing the business logic for login and logout
@@ -123,4 +127,46 @@ export class AuthService implements IAuthService {
 
     return { message: "Logged out successfully" }
   }
+
+  /**
+   * Handles forgot password logic
+   */
+  async forgotPassword(data: ForgotPasswordDto): Promise<ForgotPasswordResponseDto> {
+    const { username } = data
+
+    // 1. Fetch user through repository
+    const employee = await this.repo.findAuthByUsername(username)
+
+    if (!employee) {
+      // Don't leak if the user exists or not
+      return { message: "If an account with that username exists, a reset request has been created." }
+    }
+
+    if (employee.status !== "active") {
+      return { message: "If an account with that username exists, a reset request has been created." }
+    }
+
+    // 2. Check if a pending request already exists
+    const existingRequest = await PasswordResetRequest.findOne({
+      employeeId: employee._id,
+      status: "pending",
+    })
+
+    if (existingRequest) {
+      return { message: "If an account with that username exists, a reset request has been created." }
+    }
+
+    // 3. Generate a secure token
+    const token = crypto.randomBytes(32).toString("hex")
+
+    // 4. Create the request
+    await PasswordResetRequest.create({
+      employeeId: employee._id,
+      token,
+      status: "pending",
+    })
+
+    return { message: "If an account with that username exists, a reset request has been created." }
+  }
 }
+

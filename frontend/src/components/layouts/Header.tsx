@@ -3,8 +3,10 @@ import { useAuthStore } from "@/store/auth-store.ts"
 
 import { useState } from "react"
 
-import { Bell, History, LogOut, MessageSquare, User } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
+import SubsystemDropdown from "./SubsystemDropdown"
+import { useSubsystemStore } from "@/store/subsystem-store"
+import { Bell, History, LogOut, MessageSquare, User } from "lucide-react"
 
 /**
  * Header component
@@ -14,8 +16,11 @@ export default function Header() {
   const navigate = useNavigate()
   const { logout, isLoggingOut } = useAuth()
   const { user, isAuthenticated } = useAuthStore()
+  const { getActiveSubsystemConfig } = useSubsystemStore()
   const [activeTab, setActiveTab] = useState<"personal" | "summary">("personal")
   const [showDropdown, setShowDropdown] = useState(false)
+  
+  const activeSubsystemConfig = getActiveSubsystemConfig()
 
   const handleLogout = async () => {
     try {
@@ -34,7 +39,9 @@ export default function Header() {
         {/* Left: title + sub-tabs */}
         <div className="flex items-center gap-6">
           <div className="flex flex-col">
-            <h1 className="text-sm font-bold tracking-tight leading-none">Tổng quan nhân sự</h1>
+            <h1 className="text-sm font-bold tracking-tight leading-none">
+              {activeSubsystemConfig?.name || "Hệ thống HRP"}
+            </h1>
           </div>
           {/* Sub-tabs */}
           <div className="flex items-center gap-4 text-xs">
@@ -56,6 +63,8 @@ export default function Header() {
 
         {/* Right: notifications + profile */}
         <div className="flex items-center gap-3">
+          <SubsystemDropdown />
+          
           {/* Notification bell */}
           <button
             className="relative flex h-8 w-8 items-center justify-center rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-all cursor-pointer"

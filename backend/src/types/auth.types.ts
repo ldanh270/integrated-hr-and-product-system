@@ -8,6 +8,11 @@ export interface LoginDto {
   password: string
 }
 
+export interface ForgotPasswordDto {
+  username: string
+}
+
+
 /**
  * Data Transfer Object for successful authentication response
  */
@@ -28,6 +33,11 @@ export interface AuthResponseDto {
 export interface LogoutResponseDto {
   message: string
 }
+
+export interface ForgotPasswordResponseDto {
+  message: string
+}
+
 
 /**
  * Internal interface for Employee document used in auth logic
@@ -80,4 +90,10 @@ export interface IAuthService {
    * Processes a logout for a user
    */
   logout(empId: string, ipAddress?: string): Promise<LogoutResponseDto>
+
+  /**
+   * Processes a forgot password request
+   */
+  forgotPassword(data: ForgotPasswordDto): Promise<ForgotPasswordResponseDto>
 }
+

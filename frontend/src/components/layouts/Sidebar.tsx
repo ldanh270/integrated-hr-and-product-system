@@ -1,15 +1,11 @@
 import { useState } from "react"
-import { Link, useLocation } from "react-router-dom"
+
 import {
-  LayoutDashboard,
-  Users,
-  CircleDollarSign,
-  Settings,
   ChevronLeft,
   ChevronRight,
-  Briefcase,
-  CalendarClock,
 } from "lucide-react"
+import { Link, useLocation } from "react-router-dom"
+import { useSubsystemStore } from "@/store/subsystem-store"
 
 interface NavItem {
   name: string
@@ -25,20 +21,16 @@ interface NavItem {
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const location = useLocation()
-
-  const navItems: NavItem[] = [
-    { name: "Tổng quan", path: "/hrm/dashboard", icon: LayoutDashboard },
-    { name: "Nhân sự", path: "/hrm/employees", icon: Users },
-    { name: "Chấm công", path: "/hrm/attendance", icon: CalendarClock },
-    { name: "Tuyển dụng", path: "/hrm/applications", icon: Briefcase },
-    { name: "Tính lương", path: "/hrm/payroll", icon: CircleDollarSign },
-    { name: "Cấu hình", path: "/hrm/settings", icon: Settings },
-  ]
+  
+  const { getActiveSubsystemConfig } = useSubsystemStore()
+  const activeSubsystemConfig = getActiveSubsystemConfig()
+  
+  const navItems: NavItem[] = activeSubsystemConfig?.sidebarItems || []
 
   return (
     <aside
       className={`relative flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ${
-        isCollapsed ? "w-[60px]" : "w-60"
+        isCollapsed ? "w-15" : "w-60"
       }`}
     >
       {/* Brand header */}
@@ -50,7 +42,7 @@ export default function Sidebar() {
           </div>
           {!isCollapsed && (
             <span className="text-sm font-bold tracking-tight whitespace-nowrap animate-fade-in">
-              HR Platform
+              HRP
             </span>
           )}
         </div>
@@ -61,7 +53,9 @@ export default function Sidebar() {
         {navItems.map((item) => {
           const isActive =
             location.pathname === item.path ||
-            (item.path !== "/hrm/dashboard" && location.pathname.startsWith(item.path))
+            (item.path !== `${activeSubsystemConfig?.routePrefix}/dashboard` && 
+             location.pathname.startsWith(item.path) &&
+             item.path !== activeSubsystemConfig?.routePrefix)
           const Icon = item.icon
 
           return (
@@ -87,7 +81,7 @@ export default function Sidebar() {
       {/* Collapse toggle */}
       <button
         onClick={() => setIsCollapsed((p) => !p)}
-        className="absolute -right-3 top-[52px] flex h-5.5 w-5.5 items-center justify-center rounded-full border border-sidebar-border bg-sidebar text-sidebar-foreground shadow-sm hover:bg-sidebar-accent transition-colors cursor-pointer"
+        className="absolute -right-3 top-13 flex h-5.5 w-5.5 items-center justify-center rounded-full border border-sidebar-border bg-sidebar text-sidebar-foreground shadow-sm hover:bg-sidebar-accent transition-colors cursor-pointer"
         aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {isCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}

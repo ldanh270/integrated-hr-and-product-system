@@ -20,15 +20,18 @@ export interface AuthRequest extends Request {
  * Validates the 'Authorization: Bearer <token>' header
  * Populates req.user if the token is valid, otherwise returns 401 Unauthorized
  */
-export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
+import Employee from "@/entities/Employee.ts"
+
+export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization
 
   // Verify Authorization header presence and format
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(HttpStatusCode.UNAUTHORIZED).json({
+    res.status(HttpStatusCode.UNAUTHORIZED).json({
       status: "error",
       message: "Authorization header missing or invalid",
     })
+    return
   }
 
   // Extract and verify token
@@ -37,10 +40,29 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
 
   // Reject if verification fails
   if (!decoded) {
-    return res.status(HttpStatusCode.UNAUTHORIZED).json({
+    res.status(HttpStatusCode.UNAUTHORIZED).json({
       status: "error",
       message: "Token is invalid or expired",
     })
+    return
+  }
+
+  // Verify that the user still exists in the database and is active
+  try {
+    const employee = await Employee.findById(decoded.empId).lean()
+    if (!employee || employee.status !== "active") {
+      res.status(HttpStatusCode.UNAUTHORIZED).json({
+        status: "error",
+        message: "User no longer exists or is inactive",
+      })
+      return
+    }
+  } catch (error) {
+    res.status(HttpStatusCode.UNAUTHORIZED).json({
+      status: "error",
+      message: "Invalid user token",
+    })
+    return
   }
 
   // Attach decoded user info to the request object for use in controllers

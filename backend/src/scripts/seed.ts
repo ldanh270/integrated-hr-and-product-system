@@ -149,20 +149,27 @@ const dbSeed = async () => {
     console.log("📅 Seeding Attendance...")
     for (const emp of allEmployees) {
       const shiftId = faker.helpers.arrayElement(shifts)._id
-      const date = new Date()
-      date.setHours(0,0,0,0)
 
-      const employeeShift = await EmployeeShift.create({
-        employeeId: emp._id,
-        shiftId: shiftId,
-        assignedDate: date,
-        status: "confirmed",
-        createdBy: admin._id,
-      })
-      for (let i = 0; i < 3; i++) {
-        const histDate = faker.date.recent({ days: 10 })
-        const inTime = new Date(histDate.setHours(8, 0))
-        const outTime = new Date(histDate.setHours(17, 0))
+      // employeeShiftId is unique per AttendanceRecord → create a separate EmployeeShift per day
+      // Use deterministic offsets so (employeeId, assignedDate) is never duplicated
+      for (let i = 1; i <= 3; i++) {
+        const histDate = new Date()
+        histDate.setDate(histDate.getDate() - i)
+        histDate.setHours(0, 0, 0, 0)
+
+        const employeeShift = await EmployeeShift.create({
+          employeeId: emp._id,
+          shiftId,
+          assignedDate: histDate,
+          status: "confirmed",
+          createdBy: admin._id,
+        })
+
+        const inTime = new Date(histDate)
+        inTime.setHours(8, 0, 0, 0)
+        const outTime = new Date(histDate)
+        outTime.setHours(17, 0, 0, 0)
+
         await AttendanceRecord.create({
           employeeId: emp._id,
           employeeShiftId: employeeShift._id,
@@ -173,6 +180,7 @@ const dbSeed = async () => {
           status: "on_time",
         })
       }
+
       const startDate = new Date()
       const endDate = new Date(startDate)
       endDate.setDate(endDate.getDate() + 1)
@@ -275,12 +283,27 @@ const dbSeed = async () => {
         baseSalary: 5000,
         netSalary: 4800,
         workingDays: 22,
-        details: components.map((c) => ({
-          componentId: c._id,
-          name: c.name,
-          type: c.type,
-          value: c.value,
-        })),
+        details: components.map((c) => {
+          // PayrollComponent stores a formula string, not a pre-computed value.
+          // Compute a mock numeric value so the required `value` field is satisfied.
+          const BASE = 5000
+          let monetaryValue = 0
+          if (c.formula === "contract_salary") {
+            monetaryValue = BASE
+          } else if (c.formula?.includes("overtime_hours")) {
+            monetaryValue = parseFloat((5 * (BASE / 176) * 1.5).toFixed(2))
+          } else if (c.formula?.includes("0.015")) {
+            monetaryValue = parseFloat((BASE * 0.015).toFixed(2))
+          } else {
+            monetaryValue = 0
+          }
+          return {
+            componentId: c._id,
+            name: c.name,
+            type: c.type,
+            value: monetaryValue,
+          }
+        }),
       })
     }
 
