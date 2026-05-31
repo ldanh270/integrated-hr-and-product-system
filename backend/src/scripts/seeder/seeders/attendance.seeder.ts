@@ -146,10 +146,28 @@ export const seedAttendance = async (passedEmployees?: any[]): Promise<{ shifts:
         totalWorkMinutes,
       })
       recordCount++
+
+      // Seed an OT application for the first past shift
+      if (i === 1) {
+        await Application.create({
+          employeeId: emp._id,
+          type: "overtime",
+          status: "approved",
+          startDate: fingerprintIn,
+          endDate: fingerprintOut,
+          employeeShiftId: employeeShift._id,
+          workingShiftId: shift._id,
+          reason: "Urgent project deadline",
+          approvedBy: hrManager._id,
+          approvedAt: new Date(),
+        })
+        appCount++
+      }
     }
 
-    // Seed a leave application
+    // Seed a leave application for the future
     const appStartDate = faker.date.soon({ days: 5 })
+    appStartDate.setHours(0, 0, 0, 0)
     const appEndDate = new Date(appStartDate)
     appEndDate.setDate(appEndDate.getDate() + faker.number.int({ min: 1, max: 3 }))
 
@@ -160,6 +178,7 @@ export const seedAttendance = async (passedEmployees?: any[]): Promise<{ shifts:
       reason: faker.helpers.arrayElement(LEAVE_REASONS),
       startDate: appStartDate,
       endDate: appEndDate,
+      workingShiftId: shift._id, // Link to the shift template the employee usually works
       regimeType: "paid",
       approvedBy: hrManager._id,
       approvedAt: new Date(),

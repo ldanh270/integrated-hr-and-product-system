@@ -19,14 +19,14 @@ const templateComponentSubSchema = new mongoose.Schema(
       enum: PAYROLL_COMPONENT_TYPES,
       required: true,
     },
-    value: {
-      type: Number,
+    formula: {
+      type: String,
       required: true,
-      min: 0,
+      trim: true,
     },
-    // Override default component value for this template
-    overrideValue: {
-      type: Number,
+    // Override default component formula for this template
+    overrideFormula: {
+      type: String,
       default: null,
     },
   },

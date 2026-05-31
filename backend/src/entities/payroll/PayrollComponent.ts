@@ -1,7 +1,4 @@
-import {
-  PAYROLL_COMPONENT_TYPES,
-  PAYROLL_VALUE_TYPES,
-} from "@/configs/constants/entities.config.ts"
+import { PAYROLL_COMPONENT_TYPES } from "@/configs/constants/entities.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 
@@ -20,17 +17,11 @@ const payrollComponentSchema = new mongoose.Schema(
       required: true,
     },
 
-    valueType: {
+    // Unified formula template for calculation
+    formula: {
       type: String,
-      enum: PAYROLL_VALUE_TYPES, // "fixed" | "percentage" | "formula"
       required: true,
-    },
-
-    // Default value — can be overridden at template level
-    value: {
-      type: Number,
-      required: true,
-      min: 0,
+      trim: true,
     },
 
     description: {

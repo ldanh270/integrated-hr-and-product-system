@@ -44,7 +44,6 @@ export type IRegimeType = (typeof REGIME_TYPES)[number]
 
 // ─── PAYROLL ──────────────────────────────────────────────────
 export const PAYROLL_COMPONENT_TYPES = ["addition", "deduction"] as const
-export const PAYROLL_VALUE_TYPES = ["fixed", "percentage", "formula"] as const
 export const PAYROLL_STATUSES = [
   "draft",
   "pending_approval",

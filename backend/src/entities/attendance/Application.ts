@@ -62,6 +62,21 @@ const applicationSchema = new mongoose.Schema(
       default: null, // Chỉ áp dụng cho đơn nghỉ phép
     },
 
+    // ── Shift/Operational Mapping ──────────────────────────────
+    // Gắn trực tiếp vào ca làm việc cụ thể (nếu đã generate)
+    employeeShiftId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "EmployeeShift",
+      default: null,
+    },
+
+    // Gắn vào loại ca (Template)
+    workingShiftId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "WorkingShift",
+      default: null,
+    },
+
     // ── Shift swap specific ───────────────────────────────────
     // Chỉ có giá trị khi type === "shift_swap"
     swapWith: {

@@ -921,3 +921,78 @@ components:
           type: string
           maxLength: 500
           example: 123 Đường Lê Lợi, Q1, TP.HCM
+
+    Application:
+      type: object
+      properties:
+        id:
+          type: string
+        employeeId:
+          type: string
+        type:
+          type: string
+          enum: [leave, overtime, work_from_home, shift_swap, business_trip, maternity, paternity, sick]
+        status:
+          type: string
+          enum: [pending, approved, rejected, cancelled]
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        reason:
+          type: string
+        employeeShiftId:
+          type: string
+          nullable: true
+          description: Linked to a specific generated shift
+        workingShiftId:
+          type: string
+          nullable: true
+          description: Linked to a shift template
+        regimeType:
+          type: string
+          enum: [paid, unpaid]
+          nullable: true
+
+    PayrollComponent:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [addition, deduction]
+        formula:
+          type: string
+          example: "contract_salary"
+        description:
+          type: string
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    PayrollTemplate:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        components:
+          type: array
+          items:
+            type: object
+            properties:
+              componentId:
+                type: string
+              formula:
+                type: string
+              overrideFormula:
+                type: string
+                nullable: true

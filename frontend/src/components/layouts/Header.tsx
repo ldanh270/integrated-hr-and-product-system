@@ -1,8 +1,10 @@
-import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
-import { LogOut, Bell, User, History, MessageSquare } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth.ts"
 import { useAuthStore } from "@/store/auth-store.ts"
+
+import { useState } from "react"
+
+import { Bell, History, LogOut, MessageSquare, User } from "lucide-react"
+import { Link, useNavigate } from "react-router-dom"
 
 /**
  * Header component
@@ -29,7 +31,6 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-40 w-full h-14 border-b border-border bg-card text-foreground px-5 flex items-center shadow-sm">
       <div className="flex w-full items-center justify-between">
-
         {/* Left: title + sub-tabs */}
         <div className="flex items-center gap-6">
           <div className="flex flex-col">
@@ -91,7 +92,7 @@ export default function Header() {
                   <p className="text-xs font-bold truncate mt-0.5">{user?.fullName}</p>
                   <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
                 </div>
-                
+
                 <div className="py-1">
                   <Link
                     to="/hrm/profile"

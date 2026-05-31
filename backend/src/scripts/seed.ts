@@ -94,22 +94,19 @@ const dbSeed = async () => {
       {
         name: "Base Salary",
         type: "addition",
-        valueType: "fixed",
-        value: 5000,
+        formula: "contract_salary",
         createdBy: admin._id,
       },
       {
         name: "Overtime Pay",
         type: "addition",
-        valueType: "formula",
-        value: 1.5,
+        formula: "hourly_rate * 1.5 * overtime_hours",
         createdBy: admin._id,
       },
       {
         name: "Health Insurance",
         type: "deduction",
-        valueType: "percentage",
-        value: 1.5,
+        formula: "base_salary * 0.015",
         createdBy: admin._id,
       },
     ])
@@ -120,7 +117,7 @@ const dbSeed = async () => {
         componentId: c._id,
         name: c.name,
         type: c.type,
-        value: c.value,
+        formula: c.formula,
       })),
       createdBy: admin._id,
     })

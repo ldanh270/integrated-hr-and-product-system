@@ -57,8 +57,8 @@ export const seedPayroll = async (passedEmployees?: any[]): Promise<{ components
         componentId: c._id,
         name: c.name,
         type: c.type,
-        value: isIntern && c.name === "Base Salary" ? 1500 : c.value,
-        overrideValue: null,
+        formula: isIntern && c.name === "Base Salary" ? "1500" : c.formula,
+        overrideFormula: null,
       }))
 
     const template = await PayrollTemplate.create({
@@ -110,28 +110,27 @@ export const seedPayroll = async (passedEmployees?: any[]): Promise<{ components
       let totalDeductions = 0
 
       const payslipDetails = templateComponents.map((c: any) => {
-        let actualValue = c.value
-        
-        // Base value mapping
-        if (c.name === "Base Salary") {
-          actualValue = baseSalary
-        }
-        
+        const formula = c.overrideFormula || c.formula
         let monetaryAmount = 0
+        
+        // Simple mock "interpreter" for seed data formulas
+        if (formula === "contract_salary") {
+          monetaryAmount = baseSalary
+        } else if (formula.includes("overtime_hours")) {
+          monetaryAmount = 5 * (baseSalary / 176) * 1.5 // 5 hours OT, 1.5x
+        } else if (formula === "300") {
+          monetaryAmount = 300
+        } else if (formula.includes("0.015")) {
+          monetaryAmount = baseSalary * 0.015
+        } else if (formula.includes("0.08")) {
+          monetaryAmount = baseSalary * 0.08
+        } else if (formula === "1500") {
+          monetaryAmount = 1500
+        }
+
         if (c.type === "addition") {
-          if (c.valueType === "fixed") {
-            monetaryAmount = actualValue
-          } else if (c.valueType === "formula") {
-            // e.g. overtime hours * rate
-            monetaryAmount = 5 * (baseSalary / 176) * actualValue // 5 hours OT
-          }
           totalAdditions += monetaryAmount
-        } else { // deduction
-          if (c.valueType === "percentage") {
-            monetaryAmount = (baseSalary * actualValue) / 100
-          } else if (c.valueType === "fixed") {
-            monetaryAmount = actualValue
-          }
+        } else {
           totalDeductions += monetaryAmount
         }
 
