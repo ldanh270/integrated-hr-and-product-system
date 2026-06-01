@@ -1,4 +1,5 @@
 // --- Core ---
+import { ROLE } from "@/configs/role.config.ts"
 import Employee from "@/entities/Employee.ts"
 // --- Attendance Domain ---
 import Application from "@/entities/attendance/Application.ts"
@@ -61,7 +62,7 @@ const dbSeed = async () => {
         username: "admin",
         email: "admin@hr.com",
         passwordHash,
-        role: "admin",
+        role: ROLE.ADMIN,
         status: "active",
         employeeType: "full_time",
       },
@@ -70,7 +71,7 @@ const dbSeed = async () => {
         username: "hrmanager",
         email: "hr@hr.com",
         passwordHash,
-        role: "hr_manager",
+        role: ROLE.HR_MANAGER,
         status: "active",
         employeeType: "full_time",
       },
@@ -79,7 +80,7 @@ const dbSeed = async () => {
         username: "gm",
         email: "gm@hr.com",
         passwordHash,
-        role: "general_manager",
+        role: ROLE.GENERAL_MANAGER,
         status: "active",
         employeeType: "full_time",
       },
@@ -135,7 +136,7 @@ const dbSeed = async () => {
         username: faker.internet.username().toLowerCase() + i,
         email: `employee-${i + 1}@hr.local`,
         passwordHash,
-        role: i < 3 ? "team_leader" : "employee",
+        role: i < 3 ? ROLE.TEAM_LEADER : ROLE.EMPLOYEE,
         status: "active",
         employeeType: "full_time",
       }),

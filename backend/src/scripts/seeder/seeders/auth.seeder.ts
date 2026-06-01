@@ -1,3 +1,4 @@
+import { ROLE } from "@/configs/role.config.ts"
 import Employee from "@/entities/Employee.ts"
 import PasswordResetRequest from "@/entities/auth/PasswordResetRequest.ts"
 import ActivityLog from "@/entities/auth/ActivityLog.ts"
@@ -15,7 +16,8 @@ export const seedAuth = async (passedEmployees?: any[]): Promise<void> => {
     employees = await seedEmployees()
   }
 
-  const hrManager = employees.find(e => e.role === "hr_manager" || e.role === "admin") || employees[0]
+  const hrManager = employees.find(e => e.role === ROLE.HR_MANAGER || e.role === ROLE.ADMIN) || employees[0]
+
 
   // 1.5. Clear existing auth logs and requests
   await PasswordResetRequest.deleteMany({})

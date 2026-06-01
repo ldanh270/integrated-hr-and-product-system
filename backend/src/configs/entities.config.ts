@@ -1,12 +1,14 @@
+import { ROLE } from "./role.config.ts"
+
 // ─── EMPLOYEE ─────────────────────────────────────────────────
 export const EMPLOYEE_TYPES = ["full_time", "part_time", "intern"] as const
 export const EMPLOYEE_STATUSES = ["active", "inactive", "on_leave", "terminated"] as const
 export const EMPLOYEE_ROLES = [
-  "employee",
-  "team_leader",
-  "hr_manager",
-  "general_manager",
-  "admin",
+  ROLE.EMPLOYEE,
+  ROLE.TEAM_LEADER,
+  ROLE.HR_MANAGER,
+  ROLE.GENERAL_MANAGER,
+  ROLE.ADMIN,
 ] as const
 
 // ─── ATTENDANCE ───────────────────────────────────────────────

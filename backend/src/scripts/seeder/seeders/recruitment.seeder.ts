@@ -1,3 +1,4 @@
+import { ROLE } from "@/configs/role.config.ts"
 import Employee from "@/entities/Employee.ts"
 import RecruitmentProposal from "@/entities/recruitment/RecruitmentProposal.ts"
 import RecruitmentPosting from "@/entities/recruitment/RecruitmentPosting.ts"
@@ -19,8 +20,9 @@ export const seedRecruitment = async (passedEmployees?: any[]): Promise<{ postin
     employees = await seedEmployees()
   }
 
-  const hrManager = employees.find(e => e.role === "hr_manager") || employees[0]
-  const leaders = employees.filter(e => e.role === "team_leader" || e.role === "general_manager")
+  const hrManager = employees.find(e => e.role === ROLE.HR_MANAGER) || employees[0]
+  const leaders = employees.filter(e => e.role === ROLE.TEAM_LEADER || e.role === ROLE.GENERAL_MANAGER)
+
 
   // 1.5. Clear existing recruitment database setup
   await RecruitmentProposal.deleteMany({})

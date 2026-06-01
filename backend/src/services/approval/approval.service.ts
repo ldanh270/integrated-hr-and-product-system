@@ -1,4 +1,5 @@
 import { APPROVAL_CONFIG } from "@/configs/approval.config.ts"
+import { ROLE } from "@/configs/role.config.ts"
 import Employee from "@/entities/Employee.ts"
 import Application from "@/entities/attendance/Application.ts"
 import PasswordResetRequest from "@/entities/auth/PasswordResetRequest.ts"
@@ -31,7 +32,7 @@ export class ApprovalService implements IApprovalService {
         p.members.filter((m) => m.removedAt === null).map((m) => m.employeeId.toString()),
       )
       applicationQuery.employeeId = { $in: memberIds }
-    } else if (role !== "admin" && role !== "general_manager" && role !== "hr_manager") {
+    } else if (role !== ROLE.ADMIN && role !== ROLE.GENERAL_MANAGER && role !== ROLE.HR_MANAGER) {
       // Other roles cannot see any applications to approve
       applicationQuery = null
     }
@@ -67,7 +68,7 @@ export class ApprovalService implements IApprovalService {
     }
 
     // 2. Fetch Password Reset Requests (admin and general_manager only)
-    if (role === "admin" || role === "general_manager") {
+    if (role === ROLE.ADMIN || role === ROLE.GENERAL_MANAGER) {
       const resetRequests = await PasswordResetRequest.find({ status: "pending" })
         .populate("employeeId", "fullName")
         .sort({ createdAt: -1 })
@@ -94,7 +95,7 @@ export class ApprovalService implements IApprovalService {
     }
 
     // 3. Fetch Recruitment Proposals (admin, general_manager, hr_manager only)
-    if (role === "admin" || role === "general_manager" || role === "hr_manager") {
+    if (role === ROLE.ADMIN || role === ROLE.GENERAL_MANAGER || role === ROLE.HR_MANAGER) {
       const proposals = await RecruitmentProposal.find({ status: "pending" })
         .populate("requestedBy", "fullName")
         .sort({ createdAt: -1 })

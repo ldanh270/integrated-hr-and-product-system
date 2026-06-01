@@ -1,3 +1,4 @@
+import { ROLE } from "@/configs/role.config.ts"
 import { ScheduleController } from "@/controllers/schedule.controller.ts"
 import EmployeeShift from "@/entities/attendance/EmployeeShift.ts"
 import ShiftSchedule from "@/entities/attendance/ShiftSchedule.ts"
@@ -22,12 +23,12 @@ scheduleRoutes.get("/employee/:employeeId", controller.getEmployeeSchedule)
 
 scheduleRoutes.post(
   "/assign",
-  authorizeRoles("admin", "hr_manager", "manager"),
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
   controller.assignSchedule,
 )
 scheduleRoutes.post(
   "/override",
-  authorizeRoles("admin", "hr_manager", "manager"),
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
   controller.overrideShift,
 )
 

@@ -1,4 +1,5 @@
 import { APPROVAL_CONFIG, RequestCategory } from "@/configs/approval.config.ts"
+import { ROLE } from "@/configs/role.config.ts"
 import Project from "@/entities/product/Project.ts"
 
 export interface IApprovalStrategy {
@@ -33,7 +34,7 @@ export class HRApprovalStrategy implements IApprovalStrategy {
 
     // Check if HR is configured for this request category
     const allowedRoles = APPROVAL_CONFIG[category]?.roles || []
-    return allowedRoles.includes("hr_manager" as any)
+    return allowedRoles.includes(ROLE.HR_MANAGER as any)
   }
 }
 
@@ -50,7 +51,7 @@ export class TeamLeaderApprovalStrategy implements IApprovalStrategy {
 
     // Team Leader is only configured for applications (Leave, OT, etc.)
     const allowedRoles = APPROVAL_CONFIG[category]?.roles || []
-    if (!allowedRoles.includes("team_leader" as any)) return false
+    if (!allowedRoles.includes(ROLE.TEAM_LEADER as any)) return false
 
     // Verify if applicant is an active member in any active project led by the TL
     const activeProject = await Project.findOne({
@@ -87,12 +88,12 @@ export class DefaultApprovalStrategy implements IApprovalStrategy {
 export class ApprovalStrategyFactory {
   static getStrategy(role: string): IApprovalStrategy {
     switch (role) {
-      case "admin":
-      case "general_manager":
+      case ROLE.ADMIN:
+      case ROLE.GENERAL_MANAGER:
         return new AdminGMApprovalStrategy()
-      case "hr_manager":
+      case ROLE.HR_MANAGER:
         return new HRApprovalStrategy()
-      case "team_leader":
+      case ROLE.TEAM_LEADER:
         return new TeamLeaderApprovalStrategy()
       default:
         return new DefaultApprovalStrategy()

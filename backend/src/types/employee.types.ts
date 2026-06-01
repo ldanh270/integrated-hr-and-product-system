@@ -1,6 +1,8 @@
+import { ROLE } from "@/configs/role.config.ts"
+
 export type EmployeeStatus = "active" | "inactive" | "on_leave" | "terminated"
 export type EmployeeType = "full_time" | "part_time" | "contractor" | "intern"
-export type EmployeeRole = "admin" | "manager" | "employee"
+export type EmployeeRole = (typeof ROLE)[keyof typeof ROLE]
 
 export interface Employee {
   id: string

@@ -1,3 +1,4 @@
+import { ROLE } from "@/configs/role.config.ts"
 import { ApplicationController } from "@/controllers/application.controller.ts"
 import Application from "@/entities/attendance/Application.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
@@ -25,7 +26,7 @@ applicationRoutes.post("/", controller.submit)
 // In a real app, processorId would come from req.user, not the request body
 applicationRoutes.patch(
   "/:id/approve",
-  authorizeRoles("admin", "hr_manager", "manager"),
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
   controller.approve,
 )
 

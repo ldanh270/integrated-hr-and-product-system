@@ -1,3 +1,4 @@
+import { ROLE } from "@/configs/role.config.ts"
 import { HolidayController } from "@/controllers/holiday.controller.ts"
 import HolidayCalendar from "@/entities/attendance/HolidayCalendar.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
@@ -17,6 +18,6 @@ holidayRoutes.use(authenticate)
 
 holidayRoutes.get("/check", controller.checkHoliday)
 
-holidayRoutes.post("/", authorizeRoles("admin", "hr_manager"), controller.create)
+holidayRoutes.post("/", authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER), controller.create)
 
 export default holidayRoutes

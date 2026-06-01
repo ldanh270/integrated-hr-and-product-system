@@ -1,3 +1,4 @@
+import { ROLE } from "@/configs/role.config.ts"
 import { AttendanceController } from "@/controllers/attendance.controller.ts"
 import AttendanceRecord from "@/entities/attendance/AttendanceRecord.ts"
 import EmployeeShift from "@/entities/attendance/EmployeeShift.ts"
@@ -34,7 +35,11 @@ const controller = new AttendanceController(service)
 
 attendanceRoutes.use(authenticate)
 
-attendanceRoutes.get("/", authorizeRoles("admin", "hr_manager", "manager"), controller.queryRecords)
+attendanceRoutes.get(
+  "/",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  controller.queryRecords,
+)
 
 attendanceRoutes.post("/check-in", controller.checkIn)
 attendanceRoutes.post("/check-out", controller.checkOut)

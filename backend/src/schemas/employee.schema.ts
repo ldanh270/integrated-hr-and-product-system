@@ -1,3 +1,5 @@
+import { EMPLOYEE_ROLES } from "@/configs/entities.config.ts"
+
 import { z } from "zod"
 
 export const createEmployeeSchema = z
@@ -25,7 +27,7 @@ export const createEmployeeSchema = z
         "Password must contain at least one uppercase, one lowercase, one number and one special character",
       ),
 
-    role: z.enum(["admin", "manager", "employee"]).optional(),
+    role: z.enum(EMPLOYEE_ROLES).optional(),
 
     employeeType: z.enum(["full_time", "part_time", "contractor", "intern"]).optional(),
 
@@ -129,7 +131,7 @@ export const listEmployeesQuerySchema = z.object({
   limit: z.string().regex(/^\d+$/).transform(Number).optional(),
   search: z.string().optional(),
   status: z.enum(["active", "inactive", "on_leave", "terminated"]).optional(),
-  role: z.enum(["admin", "manager", "employee"]).optional(),
+  role: z.enum(EMPLOYEE_ROLES).optional(),
   employeeType: z.enum(["full_time", "part_time", "contractor", "intern"]).optional(),
   sortBy: z.string().optional(),
   sortOrder: z.enum(["asc", "desc"]).optional(),

@@ -1,3 +1,4 @@
+import { ROLE } from "@/configs/role.config.ts"
 import Employee from "@/entities/Employee.ts"
 import WorkingShift from "@/entities/attendance/WorkingShift.ts"
 import ShiftSchedule from "@/entities/attendance/ShiftSchedule.ts"
@@ -28,8 +29,9 @@ export const seedAttendance = async (passedEmployees?: any[]): Promise<{ shifts:
   await AttendanceRecord.deleteMany({})
   await Application.deleteMany({})
 
-  const creator = employees.find(e => e.role === "admin" || e.role === "hr_manager") || employees[0]
-  const hrManager = employees.find(e => e.role === "hr_manager") || creator
+  const creator = employees.find(e => e.role === ROLE.ADMIN || e.role === ROLE.HR_MANAGER) || employees[0]
+  const hrManager = employees.find(e => e.role === ROLE.HR_MANAGER) || creator
+
 
   // 2. Seed Holidays
   const holidaysToInsert = HOLIDAYS_DATA.map(h => {
@@ -97,7 +99,7 @@ export const seedAttendance = async (passedEmployees?: any[]): Promise<{ shifts:
       
       const weekdayNames = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
       const weekday = weekdayNames[date.getDay()] as keyof typeof schedule.weekdays
-      const assignedShiftId = schedule.weekdays[weekday]
+      const assignedShiftId = schedule.weekdays?.[weekday]
       
       // If employee doesn't have a shift on this day, skip
       if (!assignedShiftId) continue

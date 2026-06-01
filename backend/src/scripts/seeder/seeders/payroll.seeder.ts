@@ -1,3 +1,4 @@
+import { ROLE } from "@/configs/role.config.ts"
 import Employee from "@/entities/Employee.ts"
 import Payroll from "@/entities/payroll/Payroll.ts"
 import PayrollComponent from "@/entities/payroll/PayrollComponent.ts"
@@ -19,7 +20,8 @@ export const seedPayroll = async (passedEmployees?: any[]): Promise<{ components
     employees = await seedEmployees()
   }
 
-  const admin = employees.find(e => e.role === "admin") || employees[0]
+  const admin = employees.find(e => e.role === ROLE.ADMIN) || employees[0]
+
 
   // 1.5. Clear existing payroll database setup
   await PayrollComponent.deleteMany({})
@@ -96,7 +98,7 @@ export const seedPayroll = async (passedEmployees?: any[]): Promise<{ components
     let totalPayrollAmount = 0
 
     for (const emp of employees) {
-      const baseSalary = emp.role === "team_leader" ? 6500 : 4500
+      const baseSalary = emp.role === ROLE.TEAM_LEADER ? 6500 : 4500
       const isIntern = emp.employeeType === "intern"
       
       const empTemplate = isIntern 

@@ -1,8 +1,10 @@
+import { CONNECTION_STRING } from "@/configs/database.config.ts"
+import { ROLE } from "@/configs/role.config.ts"
+import Employee from "@/entities/Employee.ts"
+import { HashUtil } from "@/utils/hash.util.ts"
+
 import dotenv from "dotenv"
 import mongoose from "mongoose"
-
-import Employee from "../entities/Employee.ts"
-import { HashUtil } from "../utils/hash.util.ts"
 
 dotenv.config()
 
@@ -11,16 +13,16 @@ dotenv.config()
  */
 const seedAdmin = async () => {
   try {
-    if (!process.env.MONGODB_CONNECTION_STRING) {
+    if (!CONNECTION_STRING) {
       throw new Error("Missing MONGODB_CONNECTION_STRING")
     }
 
-    await mongoose.connect(process.env.MONGODB_CONNECTION_STRING)
+    await mongoose.connect(CONNECTION_STRING)
     console.log("Connected to MongoDB for seeding")
 
     // Check if admin already exists
-    const existingAdmin = await Employee.findOne({ 
-      $or: [{ email: "admin@hr.com" }, { username: "admin" }]
+    const existingAdmin = await Employee.findOne({
+      $or: [{ email: "admin@hr.com" }, { username: "admin" }],
     })
 
     if (existingAdmin) {
@@ -35,7 +37,7 @@ const seedAdmin = async () => {
         username: "admin",
         email: "admin@hr.com",
         passwordHash: await HashUtil.hash("Admin@123"),
-        role: "admin",
+        role: ROLE.ADMIN,
         status: "active",
         employeeType: "full_time",
       })

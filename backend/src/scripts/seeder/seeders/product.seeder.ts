@@ -1,3 +1,4 @@
+import { ROLE } from "@/configs/role.config.ts"
 import Employee from "@/entities/Employee.ts"
 import Project from "@/entities/product/Project.ts"
 import Task from "@/entities/product/Task.ts"
@@ -16,9 +17,10 @@ export const seedProduct = async (passedEmployees?: any[]): Promise<{ projects: 
     employees = await seedEmployees()
   }
 
-  const admin = employees.find(e => e.role === "admin") || employees[0]
-  const leaders = employees.filter(e => e.role === "team_leader" || e.role === "general_manager")
-  const staff = employees.filter(e => e.role === "employee")
+  const admin = employees.find(e => e.role === ROLE.ADMIN) || employees[0]
+  const leaders = employees.filter(e => e.role === ROLE.TEAM_LEADER || e.role === ROLE.GENERAL_MANAGER)
+  const staff = employees.filter(e => e.role === ROLE.EMPLOYEE)
+
 
   // 1.5. Clear existing projects and tasks
   await Project.deleteMany({})

@@ -1,3 +1,5 @@
+import { ROLE } from "@/configs/role.config.ts"
+
 import { faker } from "@faker-js/faker"
 
 export const CORE_EMPLOYEES = [
@@ -5,7 +7,7 @@ export const CORE_EMPLOYEES = [
     fullName: "System Admin",
     username: "admin",
     email: "admin@hr.com",
-    role: "admin",
+    role: ROLE.ADMIN,
     status: "active",
     employeeType: "full_time",
     phone: "0901234567",
@@ -26,7 +28,7 @@ export const CORE_EMPLOYEES = [
     fullName: "HR Manager",
     username: "hrmanager",
     email: "hr@hr.com",
-    role: "hr_manager",
+    role: ROLE.HR_MANAGER,
     status: "active",
     employeeType: "full_time",
     phone: "0907654321",
@@ -47,7 +49,7 @@ export const CORE_EMPLOYEES = [
     fullName: "General Manager",
     username: "gm",
     email: "gm@hr.com",
-    role: "general_manager",
+    role: ROLE.GENERAL_MANAGER,
     status: "active",
     employeeType: "full_time",
     phone: "0905555555",
@@ -72,7 +74,7 @@ export const generateEmployeeData = (index: number) => {
     fullName: faker.person.fullName(),
     username: `${faker.internet.username().toLowerCase()}${index}`,
     email: `employee-${index + 1}@hr.local`,
-    role: isTeamLeader ? ("team_leader" as const) : ("employee" as const),
+    role: isTeamLeader ? ROLE.TEAM_LEADER : ROLE.EMPLOYEE,
     status: "active" as const,
     employeeType: "full_time" as const,
     phone: `091${faker.string.numeric(7)}`,
