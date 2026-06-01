@@ -1,3 +1,4 @@
+import { ROUTES } from "@/config/routes.config"
 import { SUBSYSTEMS } from "@/config/subsystem"
 import { useSubsystemStore } from "@/store/subsystem-store"
 
@@ -34,7 +35,7 @@ export default function SubsystemDropdown() {
     setIsOpen(false)
     // Default navigate to the dashboard of that subsystem
     if (subsystemId === "attendance") {
-      navigate("/attendance")
+      navigate(ROUTES.SUBSYSTEMS.ATTENDANCE)
     } else {
       navigate(`${routePrefix}/dashboard`)
     }

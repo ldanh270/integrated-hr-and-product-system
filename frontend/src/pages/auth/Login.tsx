@@ -1,7 +1,9 @@
 import { Button } from "@/components/ui/button.tsx"
 import { Input } from "@/components/ui/input.tsx"
 import { Label } from "@/components/ui/label.tsx"
+import { ROUTES } from "@/config/routes.config"
 import { useAuth } from "@/hooks/use-auth.ts"
+import MockSpreadsheetCard from "@/pages/auth/mock-spreadsheet"
 import { loginSchema } from "@/schemas/auth.schema.ts"
 import type { LoginSchemaType } from "@/schemas/auth.schema.ts"
 
@@ -12,8 +14,6 @@ import { Eye, EyeOff, KeyRound } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
-
-import MockSpreadsheetCard from "./mock-spreadsheet.tsx"
 
 const GeometricBackground = () => (
   <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-35">
@@ -78,7 +78,7 @@ export default function Login() {
   const onSubmit = async (data: LoginSchemaType) => {
     try {
       await login(data)
-      navigate("/hrm/dashboard")
+      navigate(ROUTES.HRM.DASHBOARD)
     } catch (error: any) {
       setError("root", {
         message: error.response?.data?.message || "Login failed. Please try again.",

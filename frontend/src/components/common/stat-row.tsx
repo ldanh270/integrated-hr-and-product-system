@@ -1,8 +1,7 @@
+import { IconBox } from "@/components/common/icon-box"
 import { cn } from "@/lib/utils"
 
 import type { LucideIcon } from "lucide-react"
-
-import { IconBox } from "./icon-box"
 
 interface StatRowProps {
   label: string

@@ -1,5 +1,6 @@
-import apiClient from "@/lib/api-client.ts"
-import { useAuthStore } from "@/store/auth-store.ts"
+import { API_ENDPOINTS } from "@/config/api.config"
+import apiClient from "@/lib/api-client"
+import { useAuthStore } from "@/store/auth-store"
 
 import { useMutation } from "@tanstack/react-query"
 
@@ -15,7 +16,7 @@ export const useAuth = () => {
    */
   const loginMutation = useMutation({
     mutationFn: async (credentials: any) => {
-      const { data } = await apiClient.post("/auth/login", credentials)
+      const { data } = await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, credentials)
       return data.data // Following ApiResponse envelope
     },
     onSuccess: (data: any) => {
@@ -28,7 +29,7 @@ export const useAuth = () => {
    */
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const { data } = await apiClient.post("/auth/logout")
+      const { data } = await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT)
       return data
     },
     onSuccess: () => {
@@ -43,7 +44,7 @@ export const useAuth = () => {
    */
   const forgotPasswordMutation = useMutation({
     mutationFn: async (data: { username: string }) => {
-      const response = await apiClient.post("/auth/forgot-password", data)
+      const response = await apiClient.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, data)
       return response.data
     },
   })

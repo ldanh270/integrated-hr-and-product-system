@@ -7,7 +7,8 @@ import { useState } from "react"
 import { Bell, History, LogOut, MessageSquare, User } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 
-import SubsystemDropdown from "./SubsystemDropdown"
+import { ROUTES } from "@/config/routes.config"
+import SubsystemDropdown from "@/components/layouts/SubsystemDropdown"
 
 /**
  * Header component
@@ -26,7 +27,7 @@ export default function Header() {
   const handleLogout = async () => {
     try {
       await logout()
-      navigate("/login")
+      navigate(ROUTES.AUTH.LOGIN)
     } catch (error) {
       console.error("Logout failed", error)
     }
@@ -105,7 +106,7 @@ export default function Header() {
 
                 <div className="py-1">
                   <Link
-                    to="/hrm/profile"
+                    to={ROUTES.HRM.PROFILE}
                     onClick={() => setShowDropdown(false)}
                     className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold text-foreground hover:bg-secondary rounded-lg transition-colors cursor-pointer"
                   >

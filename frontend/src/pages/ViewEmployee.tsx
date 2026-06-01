@@ -2,6 +2,7 @@ import { PageCard, SectionHeader, StatusPill } from "@/components/common"
 import { EmployeeEditModal } from "@/components/features/employees/EmployeeEditModal"
 import { Button } from "@/components/ui/button"
 import { EMPLOYEE_STATUS, EMPLOYEE_TYPES, ROLE } from "@/config/entities/employee.config"
+import { ROUTES } from "@/config/routes.config"
 import { useEmployee } from "@/hooks/useEmployees"
 import { useAuthStore } from "@/store/auth-store"
 
@@ -46,7 +47,7 @@ export default function ViewEmployee() {
       <div className="container max-w-5xl px-6 py-12 text-center">
         <h2 className="text-xl font-bold text-destructive mb-2">Lỗi tải dữ liệu</h2>
         <p className="text-muted-foreground mb-4">Không tìm thấy thông tin nhân sự này.</p>
-        <Button onClick={() => navigate("/hrm/employees")} variant="outline">
+        <Button onClick={() => navigate(ROUTES.HRM.EMPLOYEES)} variant="outline">
           Quay lại danh sách
         </Button>
       </div>
@@ -96,7 +97,7 @@ export default function ViewEmployee() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate("/hrm/employees")}
+            onClick={() => navigate(ROUTES.HRM.EMPLOYEES)}
             className="h-8 px-2"
           >
             <ArrowLeft size={16} />

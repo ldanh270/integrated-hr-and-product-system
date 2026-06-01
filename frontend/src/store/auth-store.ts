@@ -1,3 +1,5 @@
+import { SYSTEM_CONFIG } from "@/config/system.config"
+
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
@@ -27,11 +29,11 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isAuthenticated: false,
       setAuth: (user, token) => {
-        localStorage.setItem("auth_token", token)
+        localStorage.setItem(SYSTEM_CONFIG.STORAGE_KEYS.AUTH_TOKEN, token)
         set({ user, token, isAuthenticated: true })
       },
       clearAuth: () => {
-        localStorage.removeItem("auth_token")
+        localStorage.removeItem(SYSTEM_CONFIG.STORAGE_KEYS.AUTH_TOKEN)
         set({ user: null, token: null, isAuthenticated: false })
       },
     }),
