@@ -3,12 +3,14 @@ import { EmployeeCreateModal } from "@/components/features/employees/EmployeeCre
 import { EmployeeEditModal } from "@/components/features/employees/EmployeeEditModal"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { EMPLOYEE_STATUS, EMPLOYEE_TYPES, ROLE } from "@/config/entities/employee.config"
-import { useEmployees, useUpdateEmployeeStatus } from "@/hooks/useEmployees"
-import { useAuthStore } from "@/store/auth-store"
-import type { Employee, EmployeeListQuery, EmployeeType } from "@/types/employee.types"
-
-import { useState } from "react"
+import {
+  EMPLOYEE_STATUS,
+  EMPLOYEE_STATUS_LABELS,
+  EMPLOYEE_TYPES,
+  EMPLOYEE_TYPE_LABELS,
+} from "@/config/entities/employee.config"
+import { useEmployeeMaster } from "@/hooks/employees/useEmployeeMaster"
+import type { EmployeeType } from "@/types/employee.types"
 
 import {
   Edit,
@@ -21,88 +23,53 @@ import {
   Trash2,
   User,
 } from "lucide-react"
-import { useNavigate } from "react-router-dom"
 
 export default function EmployeeList() {
-  const user = useAuthStore((state) => state.user)
-  const isAdminOrManager =
-    user?.role === ROLE.ADMIN ||
-    user?.role === ROLE.HR_MANAGER ||
-    user?.role === ROLE.GENERAL_MANAGER
-  const navigate = useNavigate()
-
-  const [query, setQuery] = useState<EmployeeListQuery>({
-    page: 1,
-    limit: 50,
-  })
-
-  const [activeTab, setActiveTab] = useState<"all" | EmployeeType>("all")
-
-  const { data, isLoading } = useEmployees(query)
-  const updateStatusMutation = useUpdateEmployeeStatus()
-
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [editEmployee, setEditEmployee] = useState<Employee | null>(null)
-  const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null)
-
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery((prev) => ({ ...prev, search: e.target.value, page: 1 }))
-  }
-
-  const handleTabChange = (tab: "all" | EmployeeType) => {
-    setActiveTab(tab)
-    if (tab === "all") {
-      const newQuery = { ...query, page: 1 }
-      delete newQuery.employeeType
-      setQuery(newQuery)
-    } else {
-      setQuery((prev) => ({ ...prev, employeeType: tab, page: 1 }))
-    }
-  }
-
-  const handleDelete = async (id: string) => {
-    if (confirm("Bạn có chắc chắn muốn cho nghỉ việc nhân sự này?")) {
-      await updateStatusMutation.mutateAsync({ id, data: { status: EMPLOYEE_STATUS.TERMINATED } })
-      setActiveActionMenu(null)
-    }
-  }
+  const {
+    query,
+    setQuery,
+    activeTab,
+    isCreateModalOpen,
+    setIsCreateModalOpen,
+    editEmployee,
+    setEditEmployee,
+    activeActionMenu,
+    setActiveActionMenu,
+    data,
+    isLoading,
+    handleSearch,
+    handleTabChange,
+    handleDelete,
+    isAdminOrManager,
+    navigate,
+  } = useEmployeeMaster()
 
   const tabs = [
     { id: "all", label: "Tất cả", count: data?.meta.total || 0 },
-    { id: EMPLOYEE_TYPES[0], label: "Chính thức", count: "-" },
-    { id: EMPLOYEE_TYPES[1], label: "Bán thời gian", count: "-" },
-    { id: EMPLOYEE_TYPES[3], label: "Thực tập", count: "-" },
-    { id: EMPLOYEE_TYPES[2], label: "Hợp đồng", count: "-" },
+    { id: EMPLOYEE_TYPES[0], label: EMPLOYEE_TYPE_LABELS[EMPLOYEE_TYPES[0]], count: "-" },
+    { id: EMPLOYEE_TYPES[1], label: EMPLOYEE_TYPE_LABELS[EMPLOYEE_TYPES[1]], count: "-" },
+    { id: EMPLOYEE_TYPES[3], label: EMPLOYEE_TYPE_LABELS[EMPLOYEE_TYPES[3]], count: "-" },
+    { id: EMPLOYEE_TYPES[2], label: EMPLOYEE_TYPE_LABELS[EMPLOYEE_TYPES[2]], count: "-" },
   ]
 
   const getStatusDisplay = (status: string) => {
+    const label = EMPLOYEE_STATUS_LABELS[status] || status
     switch (status) {
       case EMPLOYEE_STATUS.ACTIVE:
-        return <StatusPill label="Đang làm" variant="success" />
+        return <StatusPill label={label} variant="success" />
       case EMPLOYEE_STATUS.INACTIVE:
-        return <StatusPill label="Tạm nghỉ" variant="neutral" />
+        return <StatusPill label={label} variant="neutral" />
       case EMPLOYEE_STATUS.ON_LEAVE:
-        return <StatusPill label="Nghỉ phép" variant="warning" />
+        return <StatusPill label={label} variant="warning" />
       case EMPLOYEE_STATUS.TERMINATED:
-        return <StatusPill label="Đã nghỉ" variant="danger" />
+        return <StatusPill label={label} variant="danger" />
       default:
-        return <StatusPill label={status} variant="neutral" />
+        return <StatusPill label={label} variant="neutral" />
     }
   }
 
   const getTypeDisplay = (type: string) => {
-    switch (type) {
-      case EMPLOYEE_TYPES[0]:
-        return "Chính thức"
-      case EMPLOYEE_TYPES[1]:
-        return "Bán thời gian"
-      case EMPLOYEE_TYPES[2]:
-        return "Hợp đồng"
-      case EMPLOYEE_TYPES[3]:
-        return "Thực tập"
-      default:
-        return type
-    }
+    return EMPLOYEE_TYPE_LABELS[type] || type
   }
 
   return (

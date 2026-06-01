@@ -3,17 +3,14 @@ import { Button } from "@/components/ui/button.tsx"
 import { Input } from "@/components/ui/input.tsx"
 import { Label } from "@/components/ui/label.tsx"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs.tsx"
-import { EMPLOYEE_STATUS, EMPLOYEE_TYPES, ROLE } from "@/config/entities/employee.config"
 import {
-  useChangePassword,
-  useProfile,
-  useUpdateProfile,
-  useUploadAvatar,
-} from "@/hooks/use-profile.ts"
+  EMPLOYEE_STATUS,
+  EMPLOYEE_STATUS_LABELS,
+  EMPLOYEE_TYPE_LABELS,
+  ROLE_LABELS,
+} from "@/config/entities/employee.config"
+import { useProfileMaster } from "@/hooks/profile/useProfileMaster"
 
-import { useRef, useState } from "react"
-
-import { zodResolver } from "@hookform/resolvers/zod"
 import {
   Briefcase,
   Calendar,
@@ -27,180 +24,41 @@ import {
   User,
   X,
 } from "lucide-react"
-import { useForm } from "react-hook-form"
-import { toast } from "sonner"
-import { z } from "zod"
-
-// Translate enums for labels
-const employeeTypeLabels: Record<string, string> = {
-  [EMPLOYEE_TYPES[0]]: "Toàn thời gian",
-  [EMPLOYEE_TYPES[1]]: "Bán thời gian",
-  [EMPLOYEE_TYPES[2]]: "Hợp đồng",
-  [EMPLOYEE_TYPES[3]]: "Thực tập sinh",
-}
-
-const employeeStatusLabels: Record<string, string> = {
-  [EMPLOYEE_STATUS.ACTIVE]: "Đang làm việc",
-  [EMPLOYEE_STATUS.INACTIVE]: "Ngưng hoạt động",
-  [EMPLOYEE_STATUS.ON_LEAVE]: "Nghỉ phép",
-  [EMPLOYEE_STATUS.TERMINATED]: "Đã thôi việc",
-}
-
-const employeeRoleLabels: Record<string, string> = {
-  [ROLE.ADMIN]: "Quản trị viên",
-  [ROLE.GENERAL_MANAGER]: "Tổng quản lý",
-  [ROLE.HR_MANAGER]: "Quản lý nhân sự",
-  [ROLE.TEAM_LEADER]: "Trưởng nhóm",
-  [ROLE.EMPLOYEE]: "Nhân viên",
-}
-
-// Validation schema for profile form
-const profileFormSchema = z.object({
-  fullName: z.string().min(2, "Họ và tên tối thiểu 2 ký tự").max(100),
-  phone: z
-    .string()
-    .regex(/^[0-9+\-\s()]{7,20}$/, "Số điện thoại không hợp lệ")
-    .optional()
-    .or(z.literal("")),
-  dateOfBirth: z.string().optional().or(z.literal("")),
-  nationalId: z.string().min(9, "CCCD/CMND tối thiểu 9 ký tự").max(20).optional().or(z.literal("")),
-  address: z.string().max(500).optional().or(z.literal("")),
-})
-
-type ProfileFormValues = z.infer<typeof profileFormSchema>
-
-// Validation schema for change password form
-const passwordFormSchema = z
-  .object({
-    oldPassword: z.string().min(1, "Mật khẩu hiện tại là bắt buộc"),
-    newPassword: z
-      .string()
-      .min(8, "Mật khẩu mới phải có tối thiểu 8 ký tự")
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-        "Mật khẩu phải gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 chữ số và 1 ký tự đặc biệt",
-      ),
-    confirmPassword: z.string().min(1, "Vui lòng nhập lại mật khẩu mới"),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Mật khẩu xác nhận không trùng khớp",
-    path: ["confirmPassword"],
-  })
-
-type PasswordFormValues = z.infer<typeof passwordFormSchema>
 
 export default function Profile() {
-  const { data: profile, isLoading, isError } = useProfile()
-  const updateProfile = useUpdateProfile()
-  const uploadAvatar = useUploadAvatar()
-  const changePasswordMut = useChangePassword()
-
-  const [activeTab, setActiveTab] = useState<"profile" | "password">("profile")
-  const [isEditing, setIsEditing] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const [passwordSuccessMsg, setPasswordSuccessMsg] = useState<string | null>(null)
-  const [passwordErrorMsg, setPasswordErrorMsg] = useState<string | null>(null)
+  const {
+    profile,
+    isLoading,
+    isError,
+    activeTab,
+    isEditing,
+    fileInputRef,
+    passwordSuccessMsg,
+    passwordErrorMsg,
+    profileForm,
+    passwordForm,
+    handleEditClick,
+    handleCancelClick,
+    onProfileSubmit,
+    onPasswordSubmit,
+    handleAvatarChange,
+    handleTabChange,
+    updateProfile,
+    uploadAvatar,
+    changePasswordMut,
+  } = useProfileMaster()
 
   const {
     register: registerProfile,
     handleSubmit: handleProfileSubmit,
-    reset: resetProfile,
     formState: { errors: profileErrors },
-  } = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema),
-  })
+  } = profileForm
 
   const {
     register: registerPassword,
     handleSubmit: handlePasswordSubmit,
-    reset: resetPassword,
     formState: { errors: passwordErrors },
-  } = useForm<PasswordFormValues>({
-    resolver: zodResolver(passwordFormSchema),
-  })
-
-  // Set default values when entering edit mode
-  const handleEditClick = () => {
-    if (profile) {
-      resetProfile({
-        fullName: profile.fullName || "",
-        phone: profile.phone || "",
-        dateOfBirth: profile.dateOfBirth || "",
-        nationalId: profile.nationalId || "",
-        address: profile.address || "",
-      })
-    }
-    setIsEditing(true)
-  }
-
-  const handleCancelClick = () => {
-    setIsEditing(false)
-    resetProfile()
-  }
-
-  const onProfileSubmit = (data: ProfileFormValues) => {
-    const updateData = {
-      fullName: data.fullName,
-      phone: data.phone || undefined,
-      dateOfBirth: data.dateOfBirth || undefined,
-      nationalId: data.nationalId || undefined,
-      address: data.address || undefined,
-    }
-
-    updateProfile.mutate(updateData, {
-      onSuccess: () => {
-        setIsEditing(false)
-        toast.success("Cập nhật thông tin hồ sơ thành công!")
-      },
-      onError: (err: any) => {
-        const errorMsg = err?.response?.data?.message || "Không thể cập nhật thông tin hồ sơ"
-        toast.error(errorMsg)
-        console.error("Update failed", err)
-      },
-    })
-  }
-
-  const onPasswordSubmit = (data: PasswordFormValues) => {
-    setPasswordSuccessMsg(null)
-    setPasswordErrorMsg(null)
-    changePasswordMut.mutate(
-      {
-        oldPassword: data.oldPassword,
-        newPassword: data.newPassword,
-      },
-      {
-        onSuccess: () => {
-          setPasswordSuccessMsg("Thay đổi mật khẩu thành công!")
-          toast.success("Thay đổi mật khẩu thành công!")
-          resetPassword()
-        },
-        onError: (err: any) => {
-          const errorMsg =
-            err?.response?.data?.message || "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại."
-          setPasswordErrorMsg(errorMsg)
-          toast.error(errorMsg)
-        },
-      },
-    )
-  }
-
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    uploadAvatar.mutate(file, {
-      onSuccess: () => {
-        if (fileInputRef.current) fileInputRef.current.value = ""
-        toast.success("Cập nhật ảnh đại diện thành công!")
-      },
-      onError: (err: any) => {
-        const errorMsg = err?.response?.data?.message || "Không thể upload ảnh đại diện"
-        toast.error(errorMsg)
-        console.error("Avatar upload failed", err)
-      },
-    })
-  }
+  } = passwordForm
 
   if (isLoading) {
     return (
@@ -254,18 +112,7 @@ export default function Profile() {
       </div>
 
       {/* Tab Navigation */}
-      <Tabs
-        value={activeTab}
-        onValueChange={(v) => {
-          setActiveTab(v as "profile" | "password")
-          setIsEditing(false)
-          if (v === "password") {
-            setPasswordSuccessMsg(null)
-            setPasswordErrorMsg(null)
-          }
-        }}
-        className="w-full"
-      >
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="profile">Hồ sơ cá nhân</TabsTrigger>
           <TabsTrigger value="password">Đổi mật khẩu</TabsTrigger>
@@ -544,7 +391,7 @@ export default function Profile() {
                           Vai trò hệ thống
                         </p>
                         <p className="text-sm font-semibold text-foreground mt-0.5 capitalize">
-                          {employeeRoleLabels[profile.role] || profile.role}
+                          {ROLE_LABELS[profile.role] || profile.role}
                         </p>
                       </div>
                     </div>
@@ -560,7 +407,7 @@ export default function Profile() {
                           Loại hợp đồng
                         </p>
                         <p className="text-sm font-semibold text-foreground mt-0.5">
-                          {employeeTypeLabels[profile.employeeType] || profile.employeeType}
+                          {EMPLOYEE_TYPE_LABELS[profile.employeeType] || profile.employeeType}
                         </p>
                       </div>
                     </div>
@@ -602,7 +449,7 @@ export default function Profile() {
                                   ? "warning"
                                   : "neutral"
                             }
-                            label={employeeStatusLabels[profile.status] || profile.status}
+                            label={EMPLOYEE_STATUS_LABELS[profile.status] || profile.status}
                           />
                         </div>
                       </div>
@@ -775,9 +622,8 @@ export default function Profile() {
                   type="button"
                   variant="ghost"
                   onClick={() => {
-                    resetPassword()
-                    setPasswordSuccessMsg(null)
-                    setPasswordErrorMsg(null)
+                    passwordForm.reset()
+                    handleTabChange("password")
                   }}
                   disabled={changePasswordMut.isPending}
                   className="rounded-full cursor-pointer"

@@ -3,7 +3,7 @@ import { SYSTEM_CONFIG } from "@/config/system.config"
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
-interface User {
+export interface User {
   id: string
   email: string
   fullName: string

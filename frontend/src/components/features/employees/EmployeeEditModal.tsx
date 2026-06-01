@@ -2,30 +2,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  EMPLOYEE_STATUS,
   EMPLOYEE_STATUSES,
+  EMPLOYEE_STATUS_LABELS,
   EMPLOYEE_TYPES,
+  EMPLOYEE_TYPE_LABELS,
 } from "@/config/entities/employee.config"
-import { useUpdateEmployee } from "@/hooks/useEmployees"
-
-import { useEffect } from "react"
-
-import { zodResolver } from "@hookform/resolvers/zod"
+import { useEmployeeEditModal } from "@/hooks/employees/useEmployeeEditModal"
 import { X } from "lucide-react"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-
 import type { Employee } from "../../../types/employee.types"
-
-const editSchema = z.object({
-  fullName: z.string().min(2, "Full name must be at least 2 characters").optional(),
-  phone: z.string().optional(),
-  position: z.string().optional(),
-  employeeType: z.enum(EMPLOYEE_TYPES).optional(),
-  status: z.enum(EMPLOYEE_STATUSES).optional(),
-})
-
-type EditFormValues = z.infer<typeof editSchema>
 
 interface Props {
   isOpen: boolean
@@ -34,38 +18,9 @@ interface Props {
 }
 
 export function EmployeeEditModal({ isOpen, onClose, employee }: Props) {
-  const updateMutation = useUpdateEmployee()
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm<EditFormValues>({
-    resolver: zodResolver(editSchema),
-  })
-
-  useEffect(() => {
-    if (employee && isOpen) {
-      reset({
-        fullName: employee.fullName,
-        phone: employee.phone || undefined,
-        position: employee.position || undefined,
-        employeeType: employee.employeeType,
-        status: employee.status,
-      })
-    }
-  }, [employee, isOpen, reset])
+  const { register, handleSubmit, errors, isPending } = useEmployeeEditModal(employee, isOpen, onClose)
 
   if (!isOpen || !employee) return null
-
-  const onSubmit = async (data: EditFormValues) => {
-    try {
-      await updateMutation.mutateAsync({ id: employee.id, data })
-      onClose()
-    } catch (error) {
-      console.error(error)
-    }
-  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
@@ -81,7 +36,7 @@ export function EmployeeEditModal({ isOpen, onClose, employee }: Props) {
         </div>
 
         <div className="p-5 overflow-y-auto">
-          <form id="edit-employee-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form id="edit-employee-form" onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="fullName">Họ và tên</Label>
               <Input
@@ -114,10 +69,11 @@ export function EmployeeEditModal({ isOpen, onClose, employee }: Props) {
                   {...register("status")}
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
-                  <option value={EMPLOYEE_STATUS.ACTIVE}>Đang làm việc</option>
-                  <option value={EMPLOYEE_STATUS.INACTIVE}>Tạm nghỉ</option>
-                  <option value={EMPLOYEE_STATUS.ON_LEAVE}>Nghỉ phép</option>
-                  <option value={EMPLOYEE_STATUS.TERMINATED}>Đã nghỉ việc</option>
+                  {EMPLOYEE_STATUSES.map((statusKey) => (
+                    <option key={statusKey} value={statusKey}>
+                      {EMPLOYEE_STATUS_LABELS[statusKey]}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -128,10 +84,11 @@ export function EmployeeEditModal({ isOpen, onClose, employee }: Props) {
                   {...register("employeeType")}
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
-                  <option value={EMPLOYEE_TYPES[0]}>Chính thức</option>
-                  <option value={EMPLOYEE_TYPES[1]}>Bán thời gian</option>
-                  <option value={EMPLOYEE_TYPES[2]}>Hợp đồng</option>
-                  <option value={EMPLOYEE_TYPES[3]}>Thực tập</option>
+                  {EMPLOYEE_TYPES.map((typeKey) => (
+                    <option key={typeKey} value={typeKey}>
+                      {EMPLOYEE_TYPE_LABELS[typeKey]}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -142,8 +99,8 @@ export function EmployeeEditModal({ isOpen, onClose, employee }: Props) {
           <Button variant="outline" onClick={onClose} type="button">
             Hủy
           </Button>
-          <Button type="submit" form="edit-employee-form" disabled={updateMutation.isPending}>
-            {updateMutation.isPending ? "Đang lưu..." : "Cập nhật"}
+          <Button type="submit" form="edit-employee-form" disabled={isPending}>
+            {isPending ? "Đang lưu..." : "Cập nhật"}
           </Button>
         </div>
       </div>

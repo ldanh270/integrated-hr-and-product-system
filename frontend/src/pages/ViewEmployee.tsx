@@ -1,12 +1,13 @@
 import { PageCard, SectionHeader, StatusPill } from "@/components/common"
 import { EmployeeEditModal } from "@/components/features/employees/EmployeeEditModal"
 import { Button } from "@/components/ui/button"
-import { EMPLOYEE_STATUS, EMPLOYEE_TYPES, ROLE } from "@/config/entities/employee.config"
-import { ROUTES } from "@/config/routes.config"
-import { useEmployee } from "@/hooks/useEmployees"
-import { useAuthStore } from "@/store/auth-store"
-
-import { useState } from "react"
+import {
+  EMPLOYEE_STATUS,
+  EMPLOYEE_STATUS_LABELS,
+  EMPLOYEE_TYPE_LABELS,
+  ROLE_LABELS,
+} from "@/config/entities/employee.config"
+import { useEmployeeDetails } from "@/hooks/employees/useEmployeeDetails"
 
 import {
   ArrowLeft,
@@ -20,19 +21,17 @@ import {
   Phone,
   User,
 } from "lucide-react"
-import { useNavigate, useParams } from "react-router-dom"
 
 export default function ViewEmployee() {
-  const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
-  const { data: employee, isLoading, error } = useEmployee(id!)
-  const user = useAuthStore((state) => state.user)
-  const isAdminOrManager =
-    user?.role === ROLE.ADMIN ||
-    user?.role === ROLE.HR_MANAGER ||
-    user?.role === ROLE.GENERAL_MANAGER
-
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const {
+    employee,
+    isLoading,
+    error,
+    isAdminOrManager,
+    isEditModalOpen,
+    setIsEditModalOpen,
+    handleBackToList,
+  } = useEmployeeDetails()
 
   if (isLoading) {
     return (
@@ -47,7 +46,7 @@ export default function ViewEmployee() {
       <div className="container max-w-5xl px-6 py-12 text-center">
         <h2 className="text-xl font-bold text-destructive mb-2">Lỗi tải dữ liệu</h2>
         <p className="text-muted-foreground mb-4">Không tìm thấy thông tin nhân sự này.</p>
-        <Button onClick={() => navigate(ROUTES.HRM.EMPLOYEES)} variant="outline">
+        <Button onClick={handleBackToList} variant="outline">
           Quay lại danh sách
         </Button>
       </div>
@@ -55,33 +54,23 @@ export default function ViewEmployee() {
   }
 
   const getStatusDisplay = (status: string) => {
+    const label = EMPLOYEE_STATUS_LABELS[status] || status
     switch (status) {
       case EMPLOYEE_STATUS.ACTIVE:
-        return <StatusPill label="Đang làm việc" variant="success" />
+        return <StatusPill label={label} variant="success" />
       case EMPLOYEE_STATUS.INACTIVE:
-        return <StatusPill label="Tạm nghỉ" variant="neutral" />
+        return <StatusPill label={label} variant="neutral" />
       case EMPLOYEE_STATUS.ON_LEAVE:
-        return <StatusPill label="Nghỉ phép" variant="warning" />
+        return <StatusPill label={label} variant="warning" />
       case EMPLOYEE_STATUS.TERMINATED:
-        return <StatusPill label="Đã nghỉ việc" variant="danger" />
+        return <StatusPill label={label} variant="danger" />
       default:
-        return <StatusPill label={status} variant="neutral" />
+        return <StatusPill label={label} variant="neutral" />
     }
   }
 
   const getTypeDisplay = (type: string) => {
-    switch (type) {
-      case EMPLOYEE_TYPES[0]:
-        return "Chính thức"
-      case EMPLOYEE_TYPES[1]:
-        return "Bán thời gian"
-      case EMPLOYEE_TYPES[2]:
-        return "Hợp đồng"
-      case EMPLOYEE_TYPES[3]:
-        return "Thực tập"
-      default:
-        return type
-    }
+    return EMPLOYEE_TYPE_LABELS[type] || type
   }
 
   const formatDate = (dateStr?: string | null) => {
@@ -94,12 +83,7 @@ export default function ViewEmployee() {
     <div className="container max-w-5xl px-6 py-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(ROUTES.HRM.EMPLOYEES)}
-            className="h-8 px-2"
-          >
+          <Button variant="outline" size="sm" onClick={handleBackToList} className="h-8 px-2">
             <ArrowLeft size={16} />
           </Button>
           <h1 className="text-2xl font-bold tracking-tight">Hồ sơ nhân sự</h1>
@@ -143,7 +127,9 @@ export default function ViewEmployee() {
               </div>
               <div className="flex items-center gap-3 text-muted-foreground">
                 <User size={16} />
-                <span className="text-foreground capitalize">{employee.role}</span>
+                <span className="text-foreground capitalize">
+                  {ROLE_LABELS[employee.role] || employee.role}
+                </span>
               </div>
             </div>
           </PageCard>

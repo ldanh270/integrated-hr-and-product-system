@@ -1,19 +1,10 @@
 import { Button } from "@/components/ui/button.tsx"
 import { Input } from "@/components/ui/input.tsx"
 import { Label } from "@/components/ui/label.tsx"
-import { ROUTES } from "@/config/routes.config"
-import { useAuth } from "@/hooks/use-auth.ts"
+import { useLogin } from "@/hooks/auth/useLogin"
 import MockSpreadsheetCard from "@/pages/auth/mock-spreadsheet"
-import { loginSchema } from "@/schemas/auth.schema.ts"
-import type { LoginSchemaType } from "@/schemas/auth.schema.ts"
 
-import { useState } from "react"
-
-import { zodResolver } from "@hookform/resolvers/zod"
 import { Eye, EyeOff, KeyRound } from "lucide-react"
-import { useForm } from "react-hook-form"
-import { useNavigate } from "react-router-dom"
-import { toast } from "sonner"
 
 const GeometricBackground = () => (
   <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-35">
@@ -60,48 +51,24 @@ const BrandLogo = () => (
  * Implements a modern split-panel layout: brand identity on the left, login form on the right
  */
 export default function Login() {
-  const navigate = useNavigate()
-  const { login, isLoggingIn, forgotPassword, isSendingForgotPassword } = useAuth()
-  const [showPassword, setShowPassword] = useState(false)
-  const [showForgotModal, setShowForgotModal] = useState(false)
-  const [forgotUsername, setForgotUsername] = useState("")
+  const {
+    loginForm,
+    showPassword,
+    setShowPassword,
+    showForgotModal,
+    setShowForgotModal,
+    forgotUsername,
+    setForgotUsername,
+    isLoggingIn,
+    isSendingForgotPassword,
+    onSubmit,
+    handleForgotPassword,
+  } = useLogin()
 
   const {
     register,
-    handleSubmit,
     formState: { errors },
-    setError,
-  } = useForm<LoginSchemaType>({
-    resolver: zodResolver(loginSchema),
-  })
-
-  const onSubmit = async (data: LoginSchemaType) => {
-    try {
-      await login(data)
-      navigate(ROUTES.HRM.DASHBOARD)
-    } catch (error: any) {
-      setError("root", {
-        message: error.response?.data?.message || "Login failed. Please try again.",
-      })
-    }
-  }
-
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!forgotUsername.trim()) {
-      toast.error("Vui lòng nhập username")
-      return
-    }
-
-    try {
-      await forgotPassword({ username: forgotUsername })
-      toast.success("Yêu cầu reset mật khẩu đã được gửi cho admin duyệt.")
-      setShowForgotModal(false)
-      setForgotUsername("")
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Có lỗi xảy ra khi gửi yêu cầu")
-    }
-  }
+  } = loginForm
 
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
@@ -143,7 +110,7 @@ export default function Login() {
             <h2 className="text-3xl font-semibold tracking-tight text-foreground">Login</h2>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={onSubmit} className="space-y-6">
             {/* Global Error Banner */}
             {errors.root && (
               <div className="rounded-xl bg-destructive/10 p-4 text-center text-sm font-medium text-destructive">

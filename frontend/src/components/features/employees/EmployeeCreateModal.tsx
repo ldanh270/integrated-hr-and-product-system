@@ -1,26 +1,14 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { EMPLOYEE_ROLES, EMPLOYEE_TYPES, ROLE } from "@/config/entities/employee.config"
-import { useCreateEmployee } from "@/hooks/useEmployees"
-
-import { zodResolver } from "@hookform/resolvers/zod"
+import {
+  EMPLOYEE_ROLES,
+  EMPLOYEE_TYPES,
+  EMPLOYEE_TYPE_LABELS,
+  ROLE_LABELS,
+} from "@/config/entities/employee.config"
+import { useEmployeeCreateModal } from "@/hooks/employees/useEmployeeCreateModal"
 import { X } from "lucide-react"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-
-const createSchema = z.object({
-  fullName: z.string().min(2, "Full name must be at least 2 characters"),
-  username: z.string().min(3, "Username must be at least 3 characters"),
-  email: z.string().email("Invalid email format"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  role: z.enum(EMPLOYEE_ROLES),
-  employeeType: z.enum(EMPLOYEE_TYPES),
-  phone: z.string().optional(),
-  position: z.string().optional(),
-})
-
-type CreateFormValues = z.infer<typeof createSchema>
 
 interface Props {
   isOpen: boolean
@@ -28,31 +16,9 @@ interface Props {
 }
 
 export function EmployeeCreateModal({ isOpen, onClose }: Props) {
-  const createMutation = useCreateEmployee()
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm<CreateFormValues>({
-    resolver: zodResolver(createSchema),
-    defaultValues: {
-      role: ROLE.EMPLOYEE,
-      employeeType: EMPLOYEE_TYPES[0],
-    },
-  })
+  const { register, handleSubmit, errors, isPending, handleClose } = useEmployeeCreateModal(onClose)
 
   if (!isOpen) return null
-
-  const onSubmit = async (data: CreateFormValues) => {
-    try {
-      await createMutation.mutateAsync(data)
-      reset()
-      onClose()
-    } catch (error) {
-      console.error(error)
-    }
-  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
@@ -60,7 +26,7 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h2 className="text-lg font-semibold">Thêm nhân sự mới</h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-1 rounded-full hover:bg-muted text-muted-foreground transition-colors"
           >
             <X size={18} />
@@ -68,7 +34,7 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
         </div>
 
         <div className="p-5 overflow-y-auto">
-          <form id="create-employee-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form id="create-employee-form" onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="fullName">Họ và tên *</Label>
@@ -145,11 +111,11 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                   {...register("role")}
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
-                  <option value={ROLE.EMPLOYEE}>Nhân viên (Employee)</option>
-                  <option value={ROLE.TEAM_LEADER}>Trưởng nhóm (Team Leader)</option>
-                  <option value={ROLE.HR_MANAGER}>Quản lý nhân sự (HR Manager)</option>
-                  <option value={ROLE.GENERAL_MANAGER}>Tổng quản lý (General Manager)</option>
-                  <option value={ROLE.ADMIN}>Quản trị viên (Admin)</option>
+                  {EMPLOYEE_ROLES.map((roleKey) => (
+                    <option key={roleKey} value={roleKey}>
+                      {ROLE_LABELS[roleKey]}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -160,10 +126,11 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                   {...register("employeeType")}
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
-                  <option value={EMPLOYEE_TYPES[0]}>Chính thức</option>
-                  <option value={EMPLOYEE_TYPES[1]}>Bán thời gian</option>
-                  <option value={EMPLOYEE_TYPES[2]}>Hợp đồng</option>
-                  <option value={EMPLOYEE_TYPES[3]}>Thực tập</option>
+                  {EMPLOYEE_TYPES.map((typeKey) => (
+                    <option key={typeKey} value={typeKey}>
+                      {EMPLOYEE_TYPE_LABELS[typeKey]}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -171,11 +138,11 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
         </div>
 
         <div className="p-4 border-t border-border bg-muted/30 flex justify-end gap-3 mt-auto">
-          <Button variant="outline" onClick={onClose} type="button">
+          <Button variant="outline" onClick={handleClose} type="button">
             Hủy
           </Button>
-          <Button type="submit" form="create-employee-form" disabled={createMutation.isPending}>
-            {createMutation.isPending ? "Đang lưu..." : "Lưu nhân sự"}
+          <Button type="submit" form="create-employee-form" disabled={isPending}>
+            {isPending ? "Đang lưu..." : "Lưu nhân sự"}
           </Button>
         </div>
       </div>

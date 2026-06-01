@@ -1,64 +1,16 @@
-import { attendanceApi } from "@/lib/api/attendance.api"
-import { useAuthStore } from "@/store/auth-store"
-
-import { useEffect, useState } from "react"
-
+import { useVirtualScanner } from "@/hooks/attendance/useVirtualScanner"
 import { AlertCircle, CheckCircle2, Clock, Fingerprint, MapPin } from "lucide-react"
-import { toast } from "sonner"
 
 export default function VirtualScanner() {
-  const { user } = useAuthStore()
-  const [currentTime, setCurrentTime] = useState(new Date())
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
-  const [locating, setLocating] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
-
-  // Update clock
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000)
-    return () => clearInterval(timer)
-  }, [])
-
-  // Get location
-  const getLocation = () => {
-    setLocating(true)
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          })
-          setLocating(false)
-        },
-        (error) => {
-          console.error(error)
-          toast.error("Không thể lấy vị trí. Vui lòng cấp quyền truy cập vị trí.")
-          setLocating(false)
-        },
-      )
-    } else {
-      toast.error("Trình duyệt của bạn không hỗ trợ Geolocation.")
-      setLocating(false)
-    }
-  }
-
-  const handleScan = async () => {
-    if (!location) {
-      toast.error("Vui lòng cho phép lấy vị trí trước khi chấm công.")
-      return getLocation()
-    }
-
-    setIsProcessing(true)
-    try {
-      await attendanceApi.scan({ location })
-      toast.success("Chấm công thành công!")
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Lỗi khi chấm công")
-    } finally {
-      setIsProcessing(false)
-    }
-  }
+  const {
+    user,
+    currentTime,
+    location,
+    locating,
+    isProcessing,
+    getLocation,
+    handleScan,
+  } = useVirtualScanner()
 
   return (
     <div className="bg-card text-card-foreground rounded-xl border shadow-sm p-6 flex flex-col items-center max-w-sm mx-auto">
