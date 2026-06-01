@@ -1,16 +1,23 @@
-import { ROLE } from "@/configs/role.config.ts"
+import { ROLE } from "@/configs/entities/employee.config.ts"
 import Employee from "@/entities/Employee.ts"
-import RecruitmentProposal from "@/entities/recruitment/RecruitmentProposal.ts"
-import RecruitmentPosting from "@/entities/recruitment/RecruitmentPosting.ts"
 import Candidate from "@/entities/recruitment/Candidate.ts"
 import InterviewSchedule from "@/entities/recruitment/InterviewSchedule.ts"
+import RecruitmentPosting from "@/entities/recruitment/RecruitmentPosting.ts"
+import RecruitmentProposal from "@/entities/recruitment/RecruitmentProposal.ts"
 import SocialPostLog from "@/entities/recruitment/SocialPostLog.ts"
-import { RECRUITMENT_PROPOSAL_TEMPLATES, POSTINGS_MOCK, INTERVIEW_FEEDBACK_TEMPLATES } from "../data/recruitment.data.ts"
+
 import { faker } from "@faker-js/faker"
 
+import {
+  INTERVIEW_FEEDBACK_TEMPLATES,
+  POSTINGS_MOCK,
+  RECRUITMENT_PROPOSAL_TEMPLATES,
+} from "../data/recruitment.data.ts"
 import { seedEmployees } from "./employee.seeder.ts"
 
-export const seedRecruitment = async (passedEmployees?: any[]): Promise<{ postings: any[]; candidates: any[] }> => {
+export const seedRecruitment = async (
+  passedEmployees?: any[],
+): Promise<{ postings: any[]; candidates: any[] }> => {
   console.log("🤝 Seeding Recruitment...")
 
   // 1. Get employees or auto-seed if none exist
@@ -20,9 +27,10 @@ export const seedRecruitment = async (passedEmployees?: any[]): Promise<{ postin
     employees = await seedEmployees()
   }
 
-  const hrManager = employees.find(e => e.role === ROLE.HR_MANAGER) || employees[0]
-  const leaders = employees.filter(e => e.role === ROLE.TEAM_LEADER || e.role === ROLE.GENERAL_MANAGER)
-
+  const hrManager = employees.find((e) => e.role === ROLE.HR_MANAGER) || employees[0]
+  const leaders = employees.filter(
+    (e) => e.role === ROLE.TEAM_LEADER || e.role === ROLE.GENERAL_MANAGER,
+  )
 
   // 1.5. Clear existing recruitment database setup
   await RecruitmentProposal.deleteMany({})
@@ -35,7 +43,7 @@ export const seedRecruitment = async (passedEmployees?: any[]): Promise<{ postin
   const proposalsToInsert = RECRUITMENT_PROPOSAL_TEMPLATES.map((prop, i) => ({
     ...prop,
     requestedBy: hrManager._id,
-    status: i === 0 ? "approved" as const : "pending" as const,
+    status: i === 0 ? ("approved" as const) : ("pending" as const),
   }))
   const createdProposals = await RecruitmentProposal.insertMany(proposalsToInsert)
   console.log(`✅ Seeded ${createdProposals.length} recruitment proposals`)
@@ -43,7 +51,7 @@ export const seedRecruitment = async (passedEmployees?: any[]): Promise<{ postin
   // 3. Seed RecruitmentPostings and Candidates
   const createdPostings: any[] = []
   const createdCandidates: any[] = []
-  
+
   let candidateCount = 0
   let interviewCount = 0
   let logCount = 0
@@ -129,6 +137,8 @@ export const seedRecruitment = async (passedEmployees?: any[]): Promise<{ postin
     logCount++
   }
 
-  console.log(`✅ Seeded ${createdPostings.length} postings, ${candidateCount} candidates, ${interviewCount} interview schedules, and ${logCount} social logs`)
+  console.log(
+    `✅ Seeded ${createdPostings.length} postings, ${candidateCount} candidates, ${interviewCount} interview schedules, and ${logCount} social logs`,
+  )
   return { postings: createdPostings, candidates: createdCandidates }
 }

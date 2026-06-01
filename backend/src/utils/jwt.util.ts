@@ -1,4 +1,4 @@
-import { ACCESS_TOKEN_SECRET, ACCESS_TOKEN_TTL } from "@/configs/auth.config.ts"
+import { ACCESS_TOKEN_SECRET, ACCESS_TOKEN_TTL } from "@/configs/auth/auth.config.ts"
 
 import jwt from "jsonwebtoken"
 

@@ -1,4 +1,4 @@
-import { HttpStatusCode } from "@/configs/http.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
   CreateEmployeeDto,
   Employee,

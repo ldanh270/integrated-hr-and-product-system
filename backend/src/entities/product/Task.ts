@@ -1,4 +1,4 @@
-import { TASK_PRIORITIES, TASK_STATUSES } from "@/configs/entities.config.ts"
+import { TASK_PRIORITIES, TASK_STATUSES } from "@/configs/entities/project.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 
@@ -31,7 +31,7 @@ const taskSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: TASK_STATUSES,
-      default: "todo",
+      default: TASK_STATUSES[0],
       required: true,
     },
 

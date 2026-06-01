@@ -1,4 +1,4 @@
-import { IAttendanceStatus } from "@/configs/entities.config.ts"
+import { IAttendanceStatus } from "@/configs/entities/attendance.config.ts"
 import { AttendanceRecordDocument } from "@/entities/attendance/AttendanceRecord.ts"
 import {
   IAttendanceRecordQueryDTO,

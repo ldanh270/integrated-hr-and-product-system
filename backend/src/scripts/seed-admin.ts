@@ -1,5 +1,5 @@
-import { CONNECTION_STRING } from "@/configs/database.config.ts"
-import { ROLE } from "@/configs/role.config.ts"
+import { EMPLOYEE_STATUS, EMPLOYEE_TYPES, ROLE } from "@/configs/entities/employee.config.ts"
+import { CONNECTION_STRING } from "@/configs/system/server.config.ts"
 import Employee from "@/entities/Employee.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
 
@@ -38,8 +38,8 @@ const seedAdmin = async () => {
         email: "admin@hr.com",
         passwordHash: await HashUtil.hash("Admin@123"),
         role: ROLE.ADMIN,
-        status: "active",
-        employeeType: "full_time",
+        status: EMPLOYEE_STATUS.ACTIVE,
+        employeeType: EMPLOYEE_TYPES[0],
       })
     }
 

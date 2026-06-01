@@ -43,7 +43,7 @@ export const OVERTIME_REASONS = [
 export const generateAttendanceLocation = () => {
   // Coords near District 1, HCMC with minor variations
   return {
-    lat: 10.7769 + (faker.number.float({ min: -5, max: 5 }) / 10000),
-    lng: 106.7009 + (faker.number.float({ min: -5, max: 5 }) / 10000),
+    lat: 10.7769 + faker.number.float({ min: -5, max: 5 }) / 10000,
+    lng: 106.7009 + faker.number.float({ min: -5, max: 5 }) / 10000,
   }
 }

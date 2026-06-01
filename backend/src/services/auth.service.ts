@@ -1,4 +1,6 @@
-import { HttpStatusCode } from "@/configs/http.config.ts"
+import { PASSWORD_RESET_STATUS } from "@/configs/auth/auth.config.ts"
+import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import PasswordResetRequest from "@/entities/auth/PasswordResetRequest.ts"
 import {
   AuthResponseDto,
@@ -40,7 +42,7 @@ export class AuthService implements IAuthService {
     }
 
     // 2. Status Check
-    if (employee.status !== "active") {
+    if (employee.status !== EMPLOYEE_STATUS.ACTIVE) {
       throw new AppError(
         "Account is disabled or inactive",
         HttpStatusCode.FORBIDDEN,
@@ -145,7 +147,7 @@ export class AuthService implements IAuthService {
       }
     }
 
-    if (employee.status !== "active") {
+    if (employee.status !== EMPLOYEE_STATUS.ACTIVE) {
       return {
         message: "If an account with that username exists, a reset request has been created.",
       }
@@ -154,7 +156,7 @@ export class AuthService implements IAuthService {
     // 2. Check if a pending request already exists
     const existingRequest = await PasswordResetRequest.findOne({
       employeeId: employee._id,
-      status: "pending",
+      status: PASSWORD_RESET_STATUS.PENDING,
     })
 
     if (existingRequest) {
@@ -170,7 +172,7 @@ export class AuthService implements IAuthService {
     await PasswordResetRequest.create({
       employeeId: employee._id,
       token,
-      status: "pending",
+      status: PASSWORD_RESET_STATUS.PENDING,
     })
 
     return { message: "If an account with that username exists, a reset request has been created." }

@@ -1,4 +1,5 @@
-import { PROJECT_STATUSES } from "@/configs/entities.config.ts"
+import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
+import { PROJECT_STATUSES } from "@/configs/entities/project.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 
@@ -47,7 +48,7 @@ const projectSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: PROJECT_STATUSES,
-      default: "planning",
+      default: PROJECT_STATUS.PLANNING,
       required: true,
     },
 

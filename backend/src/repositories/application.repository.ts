@@ -1,4 +1,5 @@
-import { IApplicationStatus } from "@/configs/entities.config.ts"
+import { APPLICATION_STATUS } from "@/configs/entities/attendance.config.ts"
+import { IApplicationStatus } from "@/configs/entities/attendance.config.ts"
 import { ApplicationDocument } from "@/entities/attendance/Application.ts"
 import { IApplicationRepository, ISubmitApplicationDTO } from "@/types/attendance.types.ts"
 
@@ -10,7 +11,7 @@ export class MongoApplicationRepository implements IApplicationRepository {
   async submit(data: ISubmitApplicationDTO): Promise<any> {
     const app = new this.applicationModel({
       ...data,
-      status: "pending",
+      status: APPLICATION_STATUS.PENDING,
     })
     const saved = await app.save()
     return saved.toObject()

@@ -71,13 +71,16 @@ Fields: `message`, `statusCode`, `layer`
 
 ## Config & Constants Rules
 
-All literals in `config/constant/`:
+All literals in `configs/` structured by feature/responsibility:
+- `@/configs/entities/` — Domain enums & validation lists (roles, employee status, project status, etc.)
+- `@/configs/auth/` — JWT credentials, token lifetimes, regex validation, and password reset statuses
+- `@/configs/system/` — App ports, database connection string, HTTP status codes, and Cloudinary settings
+- `@/configs/rules/` — Business rules configurations (e.g. approval workflow mappings)
 
-- `auth.config.ts` — JWT secrets, TTLs
-- `http.config.ts` — HTTP status codes (use `HttpStatusCode.OK` not `200`)
-- No raw numbers or strings in handlers
-
-> ⚠️ `regex.config.ts` is a duplicate of `auth.config.ts` — delete or repurpose.
+Rules:
+- No hardcoded business values (such as roles, statuses, and HTTP codes).
+- All literals and constants must be imported from the centralized, feature-organized config directories.
+- No raw numbers or strings in handlers.
 
 ---
 

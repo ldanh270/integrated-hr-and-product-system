@@ -1,5 +1,5 @@
-import { RequestCategory } from "@/configs/approval.config.ts"
-import { HttpStatusCode } from "@/configs/http.config.ts"
+import { RequestCategory } from "@/configs/rules/approval.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import { processApprovalSchema } from "@/schemas/approval.schema.ts"
 import { ApiResponse } from "@/types"

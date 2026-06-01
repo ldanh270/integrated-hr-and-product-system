@@ -1,4 +1,4 @@
-import { HOLIDAY_TYPES } from "@/configs/entities.config.ts"
+import { HOLIDAY_TYPES } from "@/configs/entities/attendance.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 

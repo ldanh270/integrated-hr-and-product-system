@@ -1,4 +1,5 @@
-import { IApplicationStatus } from "@/configs/entities.config.ts"
+import { IApplicationStatus } from "@/configs/entities/attendance.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
   IApplicationRepository,
   IApplicationService,
@@ -21,7 +22,7 @@ export class ApplicationService implements IApplicationService {
   ): Promise<any | null> {
     const updated = await this.applicationRepo.approve(id, status, processorId)
     if (!updated) {
-      throw new AppError("Application not found", 404, "Service")
+      throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, "Service")
     }
     return updated
   }

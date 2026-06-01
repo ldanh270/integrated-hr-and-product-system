@@ -1,5 +1,10 @@
-import { APPROVAL_CONFIG } from "@/configs/approval.config.ts"
-import { ROLE } from "@/configs/role.config.ts"
+import { PASSWORD_RESET_STATUS } from "@/configs/auth/auth.config.ts"
+import { APPLICATION_STATUS } from "@/configs/entities/attendance.config.ts"
+import { ROLE } from "@/configs/entities/employee.config.ts"
+import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
+import { PROPOSAL_STATUS } from "@/configs/entities/recruitment.config.ts"
+import { APPROVAL_CONFIG } from "@/configs/rules/approval.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import Employee from "@/entities/Employee.ts"
 import Application from "@/entities/attendance/Application.ts"
 import PasswordResetRequest from "@/entities/auth/PasswordResetRequest.ts"
@@ -19,13 +24,13 @@ export class ApprovalService implements IApprovalService {
     const strategy = ApprovalStrategyFactory.getStrategy(role)
 
     // 1. Fetch Applications (Leaves, OT, etc.)
-    let applicationQuery: any = { status: "pending" }
+    let applicationQuery: any = { status: APPLICATION_STATUS.PENDING }
 
     if (role === "team_leader") {
       // Find active projects where processor is the team leader
       const ledProjects = await Project.find({
         teamLeaderId: processorId,
-        status: "active",
+        status: PROJECT_STATUS.ACTIVE,
       }).lean()
 
       const memberIds = ledProjects.flatMap((p) =>
@@ -69,7 +74,9 @@ export class ApprovalService implements IApprovalService {
 
     // 2. Fetch Password Reset Requests (admin and general_manager only)
     if (role === ROLE.ADMIN || role === ROLE.GENERAL_MANAGER) {
-      const resetRequests = await PasswordResetRequest.find({ status: "pending" })
+      const resetRequests = await PasswordResetRequest.find({
+        status: PASSWORD_RESET_STATUS.PENDING,
+      })
         .populate("employeeId", "fullName")
         .sort({ createdAt: -1 })
         .lean()
@@ -96,7 +103,7 @@ export class ApprovalService implements IApprovalService {
 
     // 3. Fetch Recruitment Proposals (admin, general_manager, hr_manager only)
     if (role === ROLE.ADMIN || role === ROLE.GENERAL_MANAGER || role === ROLE.HR_MANAGER) {
-      const proposals = await RecruitmentProposal.find({ status: "pending" })
+      const proposals = await RecruitmentProposal.find({ status: PROPOSAL_STATUS.PENDING })
         .populate("requestedBy", "fullName")
         .sort({ createdAt: -1 })
         .lean()
@@ -143,23 +150,30 @@ export class ApprovalService implements IApprovalService {
     // Fetch details based on categories
     if (dto.category === "application") {
       targetDoc = await Application.findById(dto.id)
-      if (!targetDoc) throw new AppError("Application not found", 404, "Service")
+      if (!targetDoc)
+        throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, "Service")
       applicantId = targetDoc.employeeId.toString()
     } else if (dto.category === "password_reset") {
       targetDoc = await PasswordResetRequest.findById(dto.id)
-      if (!targetDoc) throw new AppError("Password Reset Request not found", 404, "Service")
+      if (!targetDoc)
+        throw new AppError("Password Reset Request not found", HttpStatusCode.NOT_FOUND, "Service")
       applicantId = targetDoc.employeeId.toString()
     } else if (dto.category === "recruitment_proposal") {
       targetDoc = await RecruitmentProposal.findById(dto.id)
-      if (!targetDoc) throw new AppError("Recruitment Proposal not found", 404, "Service")
+      if (!targetDoc)
+        throw new AppError("Recruitment Proposal not found", HttpStatusCode.NOT_FOUND, "Service")
       applicantId = targetDoc.requestedBy.toString()
     } else {
-      throw new AppError("Invalid request category", 400, "Service")
+      throw new AppError("Invalid request category", HttpStatusCode.BAD_REQUEST, "Service")
     }
 
     // Verify current status is pending
-    if (targetDoc.status !== "pending") {
-      throw new AppError("Request has already been processed", 400, "Service")
+    if (targetDoc.status !== APPLICATION_STATUS.PENDING) {
+      throw new AppError(
+        "Request has already been processed",
+        HttpStatusCode.BAD_REQUEST,
+        "Service",
+      )
     }
 
     // Check authority using the loaded Strategy
@@ -167,12 +181,15 @@ export class ApprovalService implements IApprovalService {
     if (!canApprove) {
       throw new AppError(
         "Forbidden: You do not have permission to approve this request",
-        403,
+        HttpStatusCode.FORBIDDEN,
         "Service",
       )
     }
 
-    const updatedStatus = dto.status === "approved" ? "approved" : "rejected"
+    const updatedStatus =
+      dto.status === APPLICATION_STATUS.APPROVED
+        ? APPLICATION_STATUS.APPROVED
+        : APPLICATION_STATUS.REJECTED
 
     let tempPassword = ""
 
@@ -181,22 +198,22 @@ export class ApprovalService implements IApprovalService {
       targetDoc.status = updatedStatus
       targetDoc.approvedBy = dto.processorId
       targetDoc.approvedAt = new Date()
-      if (dto.rejectReason && updatedStatus === "rejected") {
+      if (dto.rejectReason && updatedStatus === APPLICATION_STATUS.REJECTED) {
         targetDoc.rejectReason = dto.rejectReason
       }
       await targetDoc.save()
     } else if (dto.category === "password_reset") {
       targetDoc.status = updatedStatus
       targetDoc.approvedBy = dto.processorId
-      if (dto.rejectReason && updatedStatus === "rejected") {
+      if (dto.rejectReason && updatedStatus === APPLICATION_STATUS.REJECTED) {
         targetDoc.note = dto.rejectReason
       }
       await targetDoc.save()
 
-      if (updatedStatus === "approved") {
+      if (updatedStatus === APPLICATION_STATUS.APPROVED) {
         const employee = await Employee.findById(targetDoc.employeeId)
         if (!employee) {
-          throw new AppError("Associated employee not found", 404, "Service")
+          throw new AppError("Associated employee not found", HttpStatusCode.NOT_FOUND, "Service")
         }
 
         tempPassword = this.generateSecureTempPassword()
@@ -207,7 +224,7 @@ export class ApprovalService implements IApprovalService {
       targetDoc.status = updatedStatus
       targetDoc.approvedBy = dto.processorId
       targetDoc.approvedAt = new Date()
-      if (dto.rejectReason && updatedStatus === "rejected") {
+      if (dto.rejectReason && updatedStatus === APPLICATION_STATUS.REJECTED) {
         targetDoc.rejectReason = dto.rejectReason
       }
       await targetDoc.save()
@@ -244,7 +261,8 @@ export class ApprovalService implements IApprovalService {
 
   private async getEmployeeRole(employeeId: string): Promise<string> {
     const emp = await Employee.findById(employeeId).select("role").lean()
-    if (!emp) throw new AppError("Processor employee not found", 404, "Service")
+    if (!emp)
+      throw new AppError("Processor employee not found", HttpStatusCode.NOT_FOUND, "Service")
     return emp.role
   }
 }

@@ -1,5 +1,5 @@
-import { assertCloudinaryConfigured, cloudinary } from "@/configs/cloudinary.config.ts"
-import { HttpStatusCode } from "@/configs/http.config.ts"
+import { assertCloudinaryConfigured, cloudinary } from "@/configs/system/cloudinary.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import type {
   IProfileRepository,
   IProfileService,

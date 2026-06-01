@@ -1,5 +1,5 @@
-import { PORT } from "@/configs/base.config.ts"
-import { HttpStatusCode } from "@/configs/http.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { PORT } from "@/configs/system/server.config.ts"
 import { connectDB } from "@/libs/database.ts"
 import { cors } from "@/middlewares/cors.middleware.ts"
 import applicationRoutes from "@/routes/application.route.ts"

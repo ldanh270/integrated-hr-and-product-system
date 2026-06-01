@@ -1,12 +1,13 @@
 import dotenv from "dotenv"
 import mongoose from "mongoose"
+
 import { clearDatabase } from "../clear-db.ts"
-import { seedEmployees } from "./seeders/employee.seeder.ts"
 import { seedAttendance } from "./seeders/attendance.seeder.ts"
-import { seedPayroll } from "./seeders/payroll.seeder.ts"
-import { seedRecruitment } from "./seeders/recruitment.seeder.ts"
-import { seedProduct } from "./seeders/product.seeder.ts"
 import { seedAuth } from "./seeders/auth.seeder.ts"
+import { seedEmployees } from "./seeders/employee.seeder.ts"
+import { seedPayroll } from "./seeders/payroll.seeder.ts"
+import { seedProduct } from "./seeders/product.seeder.ts"
+import { seedRecruitment } from "./seeders/recruitment.seeder.ts"
 
 dotenv.config()
 
@@ -53,7 +54,7 @@ const run = async () => {
 
   const isClear = args.includes("--clear")
   const isAll = args.includes("--all")
-  
+
   const entityIndex = args.indexOf("--entity")
   const entityArg = entityIndex !== -1 ? args[entityIndex + 1] : null
 
@@ -84,12 +85,14 @@ const run = async () => {
     if (isAll) {
       domainsToSeed = ["employee", "attendance", "payroll", "recruitment", "product", "auth"]
     } else if (entityArg) {
-      domainsToSeed = entityArg.split(",").map(name => name.trim().toLowerCase())
-      
+      domainsToSeed = entityArg.split(",").map((name) => name.trim().toLowerCase())
+
       // Validate domains
       for (const domain of domainsToSeed) {
         if (!SEEDERS[domain]) {
-          console.error(`❌ Error: Unknown entity domain "${domain}". Available: ${Object.keys(SEEDERS).join(", ")}`)
+          console.error(
+            `❌ Error: Unknown entity domain "${domain}". Available: ${Object.keys(SEEDERS).join(", ")}`,
+          )
           await mongoose.disconnect()
           process.exit(1)
         }
@@ -109,10 +112,10 @@ const run = async () => {
     for (const domain of sortedDomains) {
       console.log(`\n🏁 Starting seeder for domain: [${domain.toUpperCase()}]`)
       const seedFunc = SEEDERS[domain]
-      
+
       // If we just seeded employees in this run, pass them to next seeders to avoid database hits
       const result = await seedFunc(currentEmployees)
-      
+
       if (domain === "employee") {
         currentEmployees = result
       }

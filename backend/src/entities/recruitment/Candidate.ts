@@ -1,4 +1,4 @@
-import { CANDIDATE_SOURCES, CANDIDATE_STATUSES } from "@/configs/entities.config.ts"
+import { CANDIDATE_SOURCES, CANDIDATE_STATUSES } from "@/configs/entities/recruitment.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 
@@ -31,7 +31,7 @@ const candidateSchema = new mongoose.Schema(
     source: {
       type: String,
       enum: CANDIDATE_SOURCES,
-      default: "website",
+      default: CANDIDATE_SOURCES[0],
       required: true,
     },
 
@@ -43,7 +43,7 @@ const candidateSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: CANDIDATE_STATUSES,
-      default: "new",
+      default: CANDIDATE_STATUSES[0],
       required: true,
     },
 

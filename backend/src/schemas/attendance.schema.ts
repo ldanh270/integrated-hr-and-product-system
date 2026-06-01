@@ -2,8 +2,9 @@ import {
   APPLICATION_STATUSES,
   APPLICATION_TYPES,
   ATTENDANCE_STATUSES,
+  HOLIDAY_TYPES,
   REGIME_TYPES,
-} from "@/configs/entities.config.ts"
+} from "@/configs/entities/attendance.config.ts"
 
 import { z } from "zod"
 
@@ -81,7 +82,7 @@ export const createHolidaySchema = z
   .object({
     name: z.string().min(2).max(100),
     date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }),
-    type: z.enum(["national", "company"]),
+    type: z.enum(HOLIDAY_TYPES),
   })
   .strict()
 

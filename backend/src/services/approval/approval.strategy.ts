@@ -1,5 +1,6 @@
-import { APPROVAL_CONFIG, RequestCategory } from "@/configs/approval.config.ts"
-import { ROLE } from "@/configs/role.config.ts"
+import { ROLE } from "@/configs/entities/employee.config.ts"
+import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
+import { APPROVAL_CONFIG, RequestCategory } from "@/configs/rules/approval.config.ts"
 import Project from "@/entities/product/Project.ts"
 
 export interface IApprovalStrategy {
@@ -56,7 +57,7 @@ export class TeamLeaderApprovalStrategy implements IApprovalStrategy {
     // Verify if applicant is an active member in any active project led by the TL
     const activeProject = await Project.findOne({
       teamLeaderId: processorId,
-      status: "active",
+      status: PROJECT_STATUS.ACTIVE,
       members: {
         $elemMatch: {
           employeeId: applicantId,

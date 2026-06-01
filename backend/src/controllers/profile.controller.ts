@@ -1,4 +1,4 @@
-import { HttpStatusCode } from "@/configs/http.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import { changePasswordSchema, updateProfileSchema } from "@/schemas/profile.schema.ts"
 import type { IProfileService } from "@/types/profile.types.ts"

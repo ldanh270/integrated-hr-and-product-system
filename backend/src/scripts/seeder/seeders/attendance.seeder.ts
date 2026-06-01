@@ -1,14 +1,20 @@
-import { ROLE } from "@/configs/role.config.ts"
+import { ROLE } from "@/configs/entities/employee.config.ts"
 import Employee from "@/entities/Employee.ts"
-import WorkingShift from "@/entities/attendance/WorkingShift.ts"
-import ShiftSchedule from "@/entities/attendance/ShiftSchedule.ts"
-import HolidayCalendar from "@/entities/attendance/HolidayCalendar.ts"
-import EmployeeShift from "@/entities/attendance/EmployeeShift.ts"
-import AttendanceRecord from "@/entities/attendance/AttendanceRecord.ts"
 import Application from "@/entities/attendance/Application.ts"
-import { SHIFTS_DATA, HOLIDAYS_DATA, LEAVE_REASONS, generateAttendanceLocation } from "../data/attendance.data.ts"
+import AttendanceRecord from "@/entities/attendance/AttendanceRecord.ts"
+import EmployeeShift from "@/entities/attendance/EmployeeShift.ts"
+import HolidayCalendar from "@/entities/attendance/HolidayCalendar.ts"
+import ShiftSchedule from "@/entities/attendance/ShiftSchedule.ts"
+import WorkingShift from "@/entities/attendance/WorkingShift.ts"
+
 import { faker } from "@faker-js/faker"
 
+import {
+  HOLIDAYS_DATA,
+  LEAVE_REASONS,
+  SHIFTS_DATA,
+  generateAttendanceLocation,
+} from "../data/attendance.data.ts"
 import { seedEmployees } from "./employee.seeder.ts"
 
 export const seedAttendance = async (passedEmployees?: any[]): Promise<{ shifts: any[] }> => {
@@ -29,12 +35,12 @@ export const seedAttendance = async (passedEmployees?: any[]): Promise<{ shifts:
   await AttendanceRecord.deleteMany({})
   await Application.deleteMany({})
 
-  const creator = employees.find(e => e.role === ROLE.ADMIN || e.role === ROLE.HR_MANAGER) || employees[0]
-  const hrManager = employees.find(e => e.role === ROLE.HR_MANAGER) || creator
-
+  const creator =
+    employees.find((e) => e.role === ROLE.ADMIN || e.role === ROLE.HR_MANAGER) || employees[0]
+  const hrManager = employees.find((e) => e.role === ROLE.HR_MANAGER) || creator
 
   // 2. Seed Holidays
-  const holidaysToInsert = HOLIDAYS_DATA.map(h => {
+  const holidaysToInsert = HOLIDAYS_DATA.map((h) => {
     const d = new Date()
     d.setDate(d.getDate() + h.offsetDays)
     d.setHours(0, 0, 0, 0)
@@ -49,7 +55,7 @@ export const seedAttendance = async (passedEmployees?: any[]): Promise<{ shifts:
   console.log(`✅ Seeded ${holidaysToInsert.length} holidays`)
 
   // 3. Seed WorkingShifts
-  const shiftsToInsert = SHIFTS_DATA.map(shift => ({
+  const shiftsToInsert = SHIFTS_DATA.map((shift) => ({
     ...shift,
     createdBy: creator._id,
   }))
@@ -62,14 +68,14 @@ export const seedAttendance = async (passedEmployees?: any[]): Promise<{ shifts:
   let appCount = 0
 
   // Pre-process holidays into a map by date string for easy lookup
-  const holidayMap = new Map<string, typeof holidaysToInsert[0]>()
-  holidaysToInsert.forEach(h => {
+  const holidayMap = new Map<string, (typeof holidaysToInsert)[0]>()
+  holidaysToInsert.forEach((h) => {
     holidayMap.set(h.date.toDateString(), h)
   })
 
   for (const emp of employees) {
     const shift = faker.helpers.arrayElement(createdShifts)
-    
+
     // Create a schedule for this employee
     const validFrom = new Date()
     validFrom.setDate(validFrom.getDate() - 30) // valid from 30 days ago
@@ -96,21 +102,21 @@ export const seedAttendance = async (passedEmployees?: any[]): Promise<{ shifts:
       const date = new Date()
       date.setDate(date.getDate() - i)
       date.setHours(0, 0, 0, 0)
-      
+
       const weekdayNames = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
       const weekday = weekdayNames[date.getDay()] as keyof typeof schedule.weekdays
       const assignedShiftId = schedule.weekdays?.[weekday]
-      
+
       // If employee doesn't have a shift on this day, skip
       if (!assignedShiftId) continue
-      
+
       const holiday = holidayMap.get(date.toDateString())
-      
+
       // If it's a national holiday, skip generating shift entirely (per schema rules)
       if (holiday && holiday.type === "national") {
         continue
       }
-      
+
       // If it's a company holiday, generate a shift with "holiday_pending" status
       if (holiday && holiday.type === "company") {
         await EmployeeShift.create({
@@ -144,7 +150,7 @@ export const seedAttendance = async (passedEmployees?: any[]): Promise<{ shifts:
 
       const fingerprintIn = new Date(date)
       fingerprintIn.setHours(startHour, startMin + faker.number.int({ min: -10, max: 10 }), 0, 0)
-      
+
       const fingerprintOut = new Date(date)
       fingerprintOut.setHours(endHour, endMin + faker.number.int({ min: -5, max: 30 }), 0, 0)
 
@@ -223,6 +229,8 @@ export const seedAttendance = async (passedEmployees?: any[]): Promise<{ shifts:
     appCount++
   }
 
-  console.log(`✅ Seeded ${employees.length} schedules, ${shiftCount} employee shifts, ${recordCount} attendance records, and ${appCount} applications`)
+  console.log(
+    `✅ Seeded ${employees.length} schedules, ${shiftCount} employee shifts, ${recordCount} attendance records, and ${appCount} applications`,
+  )
   return { shifts: createdShifts }
 }

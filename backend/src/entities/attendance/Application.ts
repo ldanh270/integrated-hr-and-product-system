@@ -1,4 +1,9 @@
-import { APPLICATION_STATUSES, APPLICATION_TYPES, REGIME_TYPES } from "@/configs/entities.config.ts"
+import {
+  APPLICATION_STATUS,
+  APPLICATION_STATUSES,
+  APPLICATION_TYPES,
+  REGIME_TYPES,
+} from "@/configs/entities/attendance.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 
@@ -28,7 +33,7 @@ const applicationSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: APPLICATION_STATUSES,
-      default: "pending",
+      default: APPLICATION_STATUS.PENDING,
       required: true,
     },
 

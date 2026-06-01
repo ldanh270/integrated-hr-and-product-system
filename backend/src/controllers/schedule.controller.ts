@@ -1,4 +1,4 @@
-import { HttpStatusCode } from "@/configs/http.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { assignShiftScheduleSchema, overrideEmployeeShiftSchema } from "@/schemas/shift.schema.ts"
 import { ApiResponse } from "@/types"
 import { IScheduleService } from "@/types/shift.types.ts"

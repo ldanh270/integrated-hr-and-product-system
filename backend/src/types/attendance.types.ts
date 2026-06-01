@@ -3,7 +3,7 @@ import {
   IApplicationType,
   IAttendanceStatus,
   IRegimeType,
-} from "@/configs/entities.config.ts"
+} from "@/configs/entities/attendance.config.ts"
 
 import { Types } from "mongoose"
 

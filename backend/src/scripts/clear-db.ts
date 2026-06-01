@@ -35,5 +35,5 @@ const main = async () => {
 const isMain = process.argv[1]?.includes("clear-db.ts") || process.argv[1]?.includes("clear-db.js")
 
 if (isMain) {
- main()
+  main()
 }

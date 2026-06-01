@@ -1,7 +1,7 @@
 /**
  * Connect to database
  */
-import { CONNECTION_STRING } from "@/configs/database.config.ts"
+import { CONNECTION_STRING } from "@/configs/system/server.config.ts"
 
 import mongoose from "mongoose"
 

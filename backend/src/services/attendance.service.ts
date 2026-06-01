@@ -1,3 +1,4 @@
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
   IAttendanceRecordQueryDTO,
   IAttendanceRepository,
@@ -48,7 +49,7 @@ export class AttendanceService implements IAttendanceService {
       if (shift && shift.gps && shift.gps.radiusMeters) {
         // Here we could calculate distance between `location` and `shift.gps`
         // const distance = calculateDistance(location, shift.gps)
-        // if (distance > shift.gps.radiusMeters) throw new AppError("Out of valid range", 400)
+        // if (distance > shift.gps.radiusMeters) throw new AppError("Out of valid range", HttpStatusCode.BAD_REQUEST)
       }
     }
 

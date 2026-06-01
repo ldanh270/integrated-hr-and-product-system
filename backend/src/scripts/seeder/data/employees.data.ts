@@ -1,4 +1,4 @@
-import { ROLE } from "@/configs/role.config.ts"
+import { EMPLOYEE_STATUS, EMPLOYEE_TYPES, ROLE } from "@/configs/entities/employee.config.ts"
 
 import { faker } from "@faker-js/faker"
 
@@ -8,8 +8,8 @@ export const CORE_EMPLOYEES = [
     username: "admin",
     email: "admin@hr.com",
     role: ROLE.ADMIN,
-    status: "active",
-    employeeType: "full_time",
+    status: EMPLOYEE_STATUS.ACTIVE,
+    employeeType: EMPLOYEE_TYPES[0],
     phone: "0901234567",
     dateOfBirth: new Date("1990-01-01"),
     nationalId: "030123456789",
@@ -29,8 +29,8 @@ export const CORE_EMPLOYEES = [
     username: "hrmanager",
     email: "hr@hr.com",
     role: ROLE.HR_MANAGER,
-    status: "active",
-    employeeType: "full_time",
+    status: EMPLOYEE_STATUS.ACTIVE,
+    employeeType: EMPLOYEE_TYPES[0],
     phone: "0907654321",
     dateOfBirth: new Date("1992-05-10"),
     nationalId: "030987654321",
@@ -50,8 +50,8 @@ export const CORE_EMPLOYEES = [
     username: "gm",
     email: "gm@hr.com",
     role: ROLE.GENERAL_MANAGER,
-    status: "active",
-    employeeType: "full_time",
+    status: EMPLOYEE_STATUS.ACTIVE,
+    employeeType: EMPLOYEE_TYPES[0],
     phone: "0905555555",
     dateOfBirth: new Date("1985-08-20"),
     nationalId: "030555555555",
@@ -75,8 +75,8 @@ export const generateEmployeeData = (index: number) => {
     username: `${faker.internet.username().toLowerCase()}${index}`,
     email: `employee-${index + 1}@hr.local`,
     role: isTeamLeader ? ROLE.TEAM_LEADER : ROLE.EMPLOYEE,
-    status: "active" as const,
-    employeeType: "full_time" as const,
+    status: EMPLOYEE_STATUS.ACTIVE,
+    employeeType: EMPLOYEE_TYPES[0],
     phone: `091${faker.string.numeric(7)}`,
     dateOfBirth: faker.date.birthdate({ min: 22, max: 55, mode: "age" }),
     nationalId: `030${faker.string.numeric(9)}`,

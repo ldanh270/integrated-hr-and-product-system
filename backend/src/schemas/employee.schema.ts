@@ -1,4 +1,8 @@
-import { EMPLOYEE_ROLES } from "@/configs/entities.config.ts"
+import {
+  EMPLOYEE_ROLES,
+  EMPLOYEE_STATUSES,
+  EMPLOYEE_TYPES,
+} from "@/configs/entities/employee.config.ts"
 
 import { z } from "zod"
 
@@ -29,7 +33,7 @@ export const createEmployeeSchema = z
 
     role: z.enum(EMPLOYEE_ROLES).optional(),
 
-    employeeType: z.enum(["full_time", "part_time", "contractor", "intern"]).optional(),
+    employeeType: z.enum(EMPLOYEE_TYPES).optional(),
 
     phone: z
       .string()
@@ -39,7 +43,7 @@ export const createEmployeeSchema = z
 
     position: z.string().max(100, "Position too long").trim().optional().nullable(),
 
-    status: z.enum(["active", "inactive", "on_leave", "terminated"]).optional(),
+    status: z.enum(EMPLOYEE_STATUSES).optional(),
 
     dateOfBirth: z
       .string()
@@ -83,9 +87,9 @@ export const updateEmployeeSchema = z
 
     position: z.string().max(100, "Position too long").trim().optional().nullable(),
 
-    employeeType: z.enum(["full_time", "part_time", "contractor", "intern"]).optional(),
+    employeeType: z.enum(EMPLOYEE_TYPES).optional(),
 
-    status: z.enum(["active", "inactive", "on_leave", "terminated"]).optional(),
+    status: z.enum(EMPLOYEE_STATUSES).optional(),
 
     dateOfBirth: z
       .string()
@@ -120,7 +124,7 @@ export type UpdateEmployeeSchemaType = z.infer<typeof updateEmployeeSchema>
 
 export const updateEmployeeStatusSchema = z
   .object({
-    status: z.enum(["active", "inactive", "on_leave", "terminated"]),
+    status: z.enum(EMPLOYEE_STATUSES),
   })
   .strict()
 
@@ -130,9 +134,9 @@ export const listEmployeesQuerySchema = z.object({
   page: z.string().regex(/^\d+$/).transform(Number).optional(),
   limit: z.string().regex(/^\d+$/).transform(Number).optional(),
   search: z.string().optional(),
-  status: z.enum(["active", "inactive", "on_leave", "terminated"]).optional(),
+  status: z.enum(EMPLOYEE_STATUSES).optional(),
   role: z.enum(EMPLOYEE_ROLES).optional(),
-  employeeType: z.enum(["full_time", "part_time", "contractor", "intern"]).optional(),
+  employeeType: z.enum(EMPLOYEE_TYPES).optional(),
   sortBy: z.string().optional(),
   sortOrder: z.enum(["asc", "desc"]).optional(),
 })

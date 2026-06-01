@@ -1,4 +1,4 @@
-import { ROLE } from "@/configs/role.config.ts"
+import { ROLE } from "@/configs/entities/employee.config.ts"
 import { EmployeeController } from "@/controllers/employee.controller.ts"
 import Employee from "@/entities/Employee.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"

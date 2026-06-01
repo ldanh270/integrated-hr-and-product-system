@@ -1,4 +1,4 @@
-import { HttpStatusCode } from "@/configs/http.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import { forgotPasswordSchema, loginSchema } from "@/schemas/auth.schema.ts"
 import { IAuthService } from "@/types/auth.types.ts"

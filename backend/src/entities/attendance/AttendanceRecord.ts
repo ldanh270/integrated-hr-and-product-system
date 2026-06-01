@@ -1,4 +1,4 @@
-import { ATTENDANCE_STATUSES } from "@/configs/entities.config.ts"
+import { ATTENDANCE_STATUSES } from "@/configs/entities/attendance.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 

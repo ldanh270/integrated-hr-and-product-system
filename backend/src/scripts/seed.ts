@@ -1,5 +1,6 @@
 // --- Core ---
-import { ROLE } from "@/configs/role.config.ts"
+import { APPLICATION_STATUS } from "@/configs/entities/attendance.config.ts"
+import { EMPLOYEE_STATUS, EMPLOYEE_TYPES, ROLE } from "@/configs/entities/employee.config.ts"
 import Employee from "@/entities/Employee.ts"
 // --- Attendance Domain ---
 import Application from "@/entities/attendance/Application.ts"
@@ -63,8 +64,8 @@ const dbSeed = async () => {
         email: "admin@hr.com",
         passwordHash,
         role: ROLE.ADMIN,
-        status: "active",
-        employeeType: "full_time",
+        status: EMPLOYEE_STATUS.ACTIVE,
+        employeeType: EMPLOYEE_TYPES[0],
       },
       {
         fullName: "HR Manager",
@@ -72,8 +73,8 @@ const dbSeed = async () => {
         email: "hr@hr.com",
         passwordHash,
         role: ROLE.HR_MANAGER,
-        status: "active",
-        employeeType: "full_time",
+        status: EMPLOYEE_STATUS.ACTIVE,
+        employeeType: EMPLOYEE_TYPES[0],
       },
       {
         fullName: "General Manager",
@@ -81,8 +82,8 @@ const dbSeed = async () => {
         email: "gm@hr.com",
         passwordHash,
         role: ROLE.GENERAL_MANAGER,
-        status: "active",
-        employeeType: "full_time",
+        status: EMPLOYEE_STATUS.ACTIVE,
+        employeeType: EMPLOYEE_TYPES[0],
       },
     ]
     const coreEmployees = await Employee.insertMany(baseEmployeesData)
@@ -137,8 +138,8 @@ const dbSeed = async () => {
         email: `employee-${i + 1}@hr.local`,
         passwordHash,
         role: i < 3 ? ROLE.TEAM_LEADER : ROLE.EMPLOYEE,
-        status: "active",
-        employeeType: "full_time",
+        status: EMPLOYEE_STATUS.ACTIVE,
+        employeeType: EMPLOYEE_TYPES[0],
       }),
     )
     const otherEmployees = await Employee.insertMany(moreEmployeesData)
@@ -188,7 +189,7 @@ const dbSeed = async () => {
       await Application.create({
         employeeId: emp._id,
         type: "leave",
-        status: "approved",
+        status: APPLICATION_STATUS.APPROVED,
         reason: "Vacation",
         startDate,
         endDate,
@@ -205,7 +206,7 @@ const dbSeed = async () => {
         position: faker.person.jobTitle(),
         headcount: faker.number.int({ min: 1, max: 5 }),
         reason: "Need more hands on deck",
-        status: i === 0 ? "approved" : "pending",
+        status: i === 0 ? APPLICATION_STATUS.APPROVED : APPLICATION_STATUS.PENDING,
       })
     }
 
@@ -252,7 +253,7 @@ const dbSeed = async () => {
       const projectMembers = faker.helpers.arrayElements(regularStaff, 3)
       const project = await Project.create({
         name: `${faker.company.name()} Project ${i + 1}`,
-        status: "active",
+        status: EMPLOYEE_STATUS.ACTIVE,
         teamLeaderId: leader._id,
         createdBy: admin._id,
         members: projectMembers.map((m) => ({ employeeId: m._id, joinedAt: new Date() })),
@@ -274,7 +275,7 @@ const dbSeed = async () => {
     const payroll = await Payroll.create({
       periodMonth: 5,
       periodYear: 2026,
-      status: "approved",
+      status: APPLICATION_STATUS.APPROVED,
       totalAmount: 100000,
     })
     for (const emp of allEmployees) {
@@ -314,7 +315,7 @@ const dbSeed = async () => {
       await PasswordResetRequest.create({
         employeeId: emp._id,
         token: faker.string.uuid(),
-        status: "pending",
+        status: APPLICATION_STATUS.PENDING,
       })
     }
 

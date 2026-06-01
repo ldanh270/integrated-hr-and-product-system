@@ -1,4 +1,4 @@
-import { EMPLOYEE_SHIFT_STATUSES } from "@/configs/entities.config.ts"
+import { EMPLOYEE_SHIFT_STATUSES } from "@/configs/entities/attendance.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 
@@ -46,7 +46,7 @@ const employeeShiftSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: EMPLOYEE_SHIFT_STATUSES,
-      default: "scheduled",
+      default: EMPLOYEE_SHIFT_STATUSES[0],
       required: true,
     },
 

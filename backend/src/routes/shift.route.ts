@@ -1,4 +1,4 @@
-import { ROLE } from "@/configs/role.config.ts"
+import { ROLE } from "@/configs/entities/employee.config.ts"
 import { ShiftController } from "@/controllers/shift.controller.ts"
 import WorkingShift from "@/entities/attendance/WorkingShift.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"

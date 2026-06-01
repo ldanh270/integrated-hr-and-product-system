@@ -1,9 +1,10 @@
-import { HttpStatusCode } from "@/configs/http.config.ts"
 /**
  * Middleware to authenticate requests using JWT
  * Validates the 'Authorization: Bearer <token>' header
  * Populates req.user if the token is valid, otherwise returns 401 Unauthorized
  */
+import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import Employee from "@/entities/Employee.ts"
 import { JwtUtil } from "@/utils/jwt.util.ts"
 
@@ -49,7 +50,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   // Verify that the user still exists in the database and is active
   try {
     const employee = await Employee.findById(decoded.empId).lean()
-    if (!employee || employee.status !== "active") {
+    if (!employee || employee.status !== EMPLOYEE_STATUS.ACTIVE) {
       res.status(HttpStatusCode.UNAUTHORIZED).json({
         status: "error",
         message: "User no longer exists or is inactive",
