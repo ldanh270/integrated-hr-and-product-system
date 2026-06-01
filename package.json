@@ -6,6 +6,8 @@
     "install:frontend": "cd frontend && bun install",
     "dev:backend": "cd backend && bun --watch src/index.ts",
     "dev:frontend": "cd frontend && bun run dev",
+    "build": "bun run build:frontend",
+    "build:frontend": "cd frontend && bun run build",
     "hash-password": "cd backend && bun run src/scripts/hash-password.ts",
     "clear-db": "cd backend && bun run src/scripts/clear-db.ts",
     "seed": "cd backend && bun run src/scripts/seed.ts",
