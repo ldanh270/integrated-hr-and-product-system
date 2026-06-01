@@ -1,4 +1,4 @@
-import { APPROVAL_CONFIG } from "@/configs/constants/approval.config.ts"
+import { APPROVAL_CONFIG } from "@/configs/approval.config.ts"
 import Employee from "@/entities/Employee.ts"
 import Application from "@/entities/attendance/Application.ts"
 import PasswordResetRequest from "@/entities/auth/PasswordResetRequest.ts"
@@ -28,9 +28,7 @@ export class ApprovalService implements IApprovalService {
       }).lean()
 
       const memberIds = ledProjects.flatMap((p) =>
-        p.members
-          .filter((m) => m.removedAt === null)
-          .map((m) => m.employeeId.toString()),
+        p.members.filter((m) => m.removedAt === null).map((m) => m.employeeId.toString()),
       )
       applicationQuery.employeeId = { $in: memberIds }
     } else if (role !== "admin" && role !== "general_manager" && role !== "hr_manager") {
@@ -104,7 +102,11 @@ export class ApprovalService implements IApprovalService {
 
       for (const prop of proposals) {
         const requesterId = prop.requestedBy?._id?.toString() || ""
-        const canApprove = await strategy.canApprove("recruitment_proposal", requesterId, processorId)
+        const canApprove = await strategy.canApprove(
+          "recruitment_proposal",
+          requesterId,
+          processorId,
+        )
         if (canApprove) {
           list.push({
             id: prop._id.toString(),
@@ -162,7 +164,11 @@ export class ApprovalService implements IApprovalService {
     // Check authority using the loaded Strategy
     const canApprove = await strategy.canApprove(dto.category, applicantId, dto.processorId)
     if (!canApprove) {
-      throw new AppError("Forbidden: You do not have permission to approve this request", 403, "Service")
+      throw new AppError(
+        "Forbidden: You do not have permission to approve this request",
+        403,
+        "Service",
+      )
     }
 
     const updatedStatus = dto.status === "approved" ? "approved" : "rejected"

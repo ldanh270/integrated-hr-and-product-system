@@ -1,19 +1,20 @@
 /**
  * Connect to database
- * Using environment variables in .env file
  */
+import { CONNECTION_STRING } from "@/configs/database.config.ts"
+
 import mongoose from "mongoose"
 
 /**
  * Connect to database
  * - Using environment variables in .env file
  */
-const connectDB = async () => {
+export const connectDB = async () => {
   try {
-    if (!process.env.MONGODB_CONNECTION_STRING) {
+    if (!CONNECTION_STRING) {
       throw new Error("Missing MONGODB_CONNECTION_STRING in .env file")
     }
-    await mongoose.connect(process.env.MONGODB_CONNECTION_STRING)
+    await mongoose.connect(CONNECTION_STRING)
 
     console.log("Connect to database successfully")
   } catch (error) {
@@ -21,5 +22,3 @@ const connectDB = async () => {
     process.exit(1)
   }
 }
-
-export { connectDB }

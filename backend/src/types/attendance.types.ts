@@ -1,5 +1,11 @@
+import {
+  IApplicationStatus,
+  IApplicationType,
+  IAttendanceStatus,
+  IRegimeType,
+} from "@/configs/entities.config.ts"
+
 import { Types } from "mongoose"
-import { IAttendanceStatus, IApplicationType, IApplicationStatus, IRegimeType } from "@/configs/constants/entities.config.ts"
 
 export interface IGpsScanDTO {
   lat: number
@@ -66,7 +72,11 @@ export interface IAttendanceService {
 
 export interface IApplicationService {
   submitApplication(data: ISubmitApplicationDTO): Promise<any>
-  processApplication(id: string, status: IApplicationStatus, processorId: string): Promise<any | null>
+  processApplication(
+    id: string,
+    status: IApplicationStatus,
+    processorId: string,
+  ): Promise<any | null>
   getEmployeeApplications(employeeId: string): Promise<any[]>
 }
 
@@ -74,4 +84,3 @@ export interface IHolidayService {
   createHoliday(name: string, date: string | Date, type: string): Promise<any>
   isHoliday(date: string | Date): Promise<boolean>
 }
-

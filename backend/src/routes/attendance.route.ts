@@ -1,16 +1,15 @@
 import { AttendanceController } from "@/controllers/attendance.controller.ts"
 import AttendanceRecord from "@/entities/attendance/AttendanceRecord.ts"
 import EmployeeShift from "@/entities/attendance/EmployeeShift.ts"
-import ShiftSchedule from "@/entities/attendance/ShiftSchedule.ts"
 import HolidayCalendar from "@/entities/attendance/HolidayCalendar.ts"
+import ShiftSchedule from "@/entities/attendance/ShiftSchedule.ts"
 import WorkingShift from "@/entities/attendance/WorkingShift.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
 import { authorizeRoles } from "@/middlewares/role.middleware.ts"
-
 import { MongoAttendanceRepository } from "@/repositories/attendance.repository.ts"
 import { MongoEmployeeShiftRepository } from "@/repositories/employee-shift.repository.ts"
-import { MongoShiftScheduleRepository } from "@/repositories/schedule.repository.ts"
 import { MongoHolidayRepository } from "@/repositories/holiday.repository.ts"
+import { MongoShiftScheduleRepository } from "@/repositories/schedule.repository.ts"
 import { MongoWorkingShiftRepository } from "@/repositories/shift.repository.ts"
 import { AttendanceService } from "@/services/attendance.service.ts"
 
@@ -29,7 +28,7 @@ const service = new AttendanceService(
   employeeShiftRepo,
   scheduleRepo,
   holidayRepo,
-  workingShiftRepo
+  workingShiftRepo,
 )
 const controller = new AttendanceController(service)
 

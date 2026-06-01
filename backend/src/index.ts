@@ -1,14 +1,16 @@
+import { PORT } from "@/configs/base.config.ts"
+import { HttpStatusCode } from "@/configs/http.config.ts"
 import { connectDB } from "@/libs/database.ts"
 import { cors } from "@/middlewares/cors.middleware.ts"
+import applicationRoutes from "@/routes/application.route.ts"
+import approvalRoutes from "@/routes/approval.route.ts"
+import attendanceRoutes from "@/routes/attendance.route.ts"
 import authRoutes from "@/routes/auth.route.ts"
 import employeeRoutes from "@/routes/employee.route.ts"
-import profileRoutes from "@/routes/profile.route.ts"
-import shiftRoutes from "@/routes/shift.route.ts"
-import scheduleRoutes from "@/routes/schedule.route.ts"
-import attendanceRoutes from "@/routes/attendance.route.ts"
-import applicationRoutes from "@/routes/application.route.ts"
 import holidayRoutes from "@/routes/holiday.route.ts"
-import approvalRoutes from "@/routes/approval.route.ts"
+import profileRoutes from "@/routes/profile.route.ts"
+import scheduleRoutes from "@/routes/schedule.route.ts"
+import shiftRoutes from "@/routes/shift.route.ts"
 
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
@@ -21,7 +23,6 @@ import YAML from "yamljs"
  * Server configurations
  */
 dotenv.config() // Create config for using .env variables
-const PORT = process.env.PORT || 5000 // Port where server runing on
 const app = express()
 
 /**
@@ -63,7 +64,7 @@ app.use("/api/approvals", approvalRoutes)
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({
+  res.status(HttpStatusCode.NOT_FOUND).json({
     status: "error",
     message: "Route not found",
   })
@@ -72,7 +73,7 @@ app.use((req, res) => {
 // Global error
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   if (err?.name === "AppError" || err?.statusCode) {
-    res.status(err.statusCode || 500).json({
+    res.status(err.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
       data: null,
       error: {
         message: err.message,
@@ -83,7 +84,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   }
 
   console.error("GLOBAL ERROR:", err)
-  res.status(500).json({
+  res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
     data: null,
     error: {
       message: "Internal Server Error",

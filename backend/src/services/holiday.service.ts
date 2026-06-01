@@ -1,8 +1,4 @@
-import {
-  IHolidayService,
-  IHolidayRepository,
-} from "@/types/attendance.types.ts"
-import { AppError } from "@/utils/error.util.ts"
+import { IHolidayRepository, IHolidayService } from "@/types/attendance.types.ts"
 
 export class HolidayService implements IHolidayService {
   constructor(private holidayRepo: IHolidayRepository) {}

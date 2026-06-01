@@ -1,16 +1,12 @@
-import {
-  APPLICATION_STATUSES,
-  APPLICATION_TYPES,
-  REGIME_TYPES,
-} from "@/configs/constants/entities.config.ts"
+import { APPLICATION_STATUSES, APPLICATION_TYPES, REGIME_TYPES } from "@/configs/entities.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 
 /**
  * Application Entity
- * 
+ *
  * Central entity for all employee requests (Leaves, Overtime, Shift Swap, etc.).
- * 
+ *
  * - For "shift_swap", `swapWith` maps to a specific `EmployeeShift` record (employeeShiftId),
  *   allowing employees to swap shifts on a specific day.
  * - Managed by HR/Admin who can approve or reject the application.

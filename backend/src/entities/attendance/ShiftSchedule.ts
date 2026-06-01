@@ -2,11 +2,11 @@ import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 
 /**
  * ShiftSchedule Entity
- * 
- * Represents an employee's weekly work pattern. It maps each day of the week 
+ *
+ * Represents an employee's weekly work pattern. It maps each day of the week
  * (mon-sun) to a specific WorkingShift template or null (if it's a day off).
- * 
- * This acts as the "source of truth" to auto-generate daily `EmployeeShift` 
+ *
+ * This acts as the "source of truth" to auto-generate daily `EmployeeShift`
  * records for the employee over a given validity period (`validFrom` to `validTo`).
  */
 const shiftScheduleSchema = new mongoose.Schema(
@@ -66,20 +66,17 @@ export type ShiftScheduleDocument = Document & ShiftScheduleType
 export type ShiftScheduleModel = Model<ShiftScheduleDocument>
 
 // Pre-validate hook
-shiftScheduleSchema.pre(
-  "validate",
-  function (this: any) {
-    if (this.validFrom && this.validTo && this.validFrom >= this.validTo) {
-      this.invalidate("validTo", "validTo must be after validFrom")
-    }
+shiftScheduleSchema.pre("validate", function (this: any) {
+  if (this.validFrom && this.validTo && this.validFrom >= this.validTo) {
+    this.invalidate("validTo", "validTo must be after validFrom")
+  }
 
-    // Validate at least one weekday must have a working shift assigned
-    const wk = this.weekdays
-    if (wk && !wk.mon && !wk.tue && !wk.wed && !wk.thu && !wk.fri && !wk.sat && !wk.sun) {
-      this.invalidate("weekdays", "At least one weekday must have a shift assigned")
-    }
-  },
-)
+  // Validate at least one weekday must have a working shift assigned
+  const wk = this.weekdays
+  if (wk && !wk.mon && !wk.tue && !wk.wed && !wk.thu && !wk.fri && !wk.sat && !wk.sun) {
+    this.invalidate("weekdays", "At least one weekday must have a shift assigned")
+  }
+})
 
 const ShiftSchedule = mongoose.model("ShiftSchedule", shiftScheduleSchema)
 

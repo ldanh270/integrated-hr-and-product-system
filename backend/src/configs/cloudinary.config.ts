@@ -19,7 +19,7 @@ if (isConfigured) {
   })
 } else {
   console.warn(
-    "⚠️  WARNING: Cloudinary credentials (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) are not set in .env. Avatar upload will fail."
+    "⚠️  WARNING: Cloudinary credentials (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) are not set in .env. Avatar upload will fail.",
   )
 }
 
@@ -29,10 +29,9 @@ if (isConfigured) {
 export function assertCloudinaryConfigured() {
   if (!isConfigured) {
     throw new Error(
-      "Cloudinary is not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in your .env file."
+      "Cloudinary is not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in your .env file.",
     )
   }
 }
 
 export { cloudinary }
-

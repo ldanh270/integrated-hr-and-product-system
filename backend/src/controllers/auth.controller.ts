@@ -1,4 +1,4 @@
-import { HttpStatusCode } from "@/configs/constants/http.config.ts"
+import { HttpStatusCode } from "@/configs/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import { forgotPasswordSchema, loginSchema } from "@/schemas/auth.schema.ts"
 import { IAuthService } from "@/types/auth.types.ts"
@@ -20,19 +20,19 @@ export class AuthController {
    */
   login = async (req: Request, res: Response) => {
     try {
-      // 1. Validate request body using Zod schema
+      // Validate request body using Zod schema
       const validatedData = loginSchema.parse(req.body)
 
-      // 2. Delegate to service
+      // Delegate to service
       const result = await this.service.login(validatedData, req.ip)
 
-      // 3. Return successful response
+      // Return successful response
       res.status(HttpStatusCode.OK).json({
         status: "success",
         data: result,
       })
     } catch (error: any) {
-      // 4. Handle validation errors (Zod) or business errors (AppError)
+      // Handle validation errors (Zod) or business errors (AppError)
       const statusCode =
         error.name === "ZodError"
           ? HttpStatusCode.BAD_REQUEST
@@ -59,10 +59,10 @@ export class AuthController {
         })
       }
 
-      // 1. Delegate to service
+      // Delegate to service
       const result = await this.service.logout(req.user.empId, req.ip)
 
-      // 2. Return successful response
+      // Return successful response
       res.status(HttpStatusCode.OK).json({
         status: "success",
         message: result.message,
@@ -80,13 +80,13 @@ export class AuthController {
    */
   forgotPassword = async (req: Request, res: Response) => {
     try {
-      // 1. Validate request body
+      // Validate request body
       const validatedData = forgotPasswordSchema.parse(req.body)
 
-      // 2. Delegate to service
+      // Delegate to service
       const result = await this.service.forgotPassword(validatedData)
 
-      // 3. Return successful response
+      // Return successful response
       res.status(HttpStatusCode.OK).json({
         status: "success",
         message: result.message,
@@ -105,4 +105,3 @@ export class AuthController {
     }
   }
 }
-

@@ -1,17 +1,17 @@
-import { ATTENDANCE_STATUSES } from "@/configs/constants/entities.config.ts"
+import { ATTENDANCE_STATUSES } from "@/configs/entities.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 
 /**
  * AttendanceRecord Entity
- * 
+ *
  * Represents the actual time-tracking events for an employee on a specific day.
- * It links to a specific `EmployeeShift` and records the exact time/GPS when 
+ * It links to a specific `EmployeeShift` and records the exact time/GPS when
  * the employee checked in and out.
- * 
+ *
  * - Check-in/out logic is handled automatically: first scan of the day is Check-In,
  *   subsequent scans update the Check-Out time.
- * - This entity stores calculated values (late minutes, early leave, overtime) 
+ * - This entity stores calculated values (late minutes, early leave, overtime)
  *   for easy consumption by the Payroll module.
  */
 const attendanceRecordSchema = new mongoose.Schema(

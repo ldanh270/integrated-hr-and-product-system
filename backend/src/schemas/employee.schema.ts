@@ -22,11 +22,11 @@ export const createEmployeeSchema = z
       .min(8, "Password must be at least 8 characters")
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-        "Password must contain at least one uppercase, one lowercase, one number and one special character"
+        "Password must contain at least one uppercase, one lowercase, one number and one special character",
       ),
 
     role: z.enum(["admin", "manager", "employee"]).optional(),
-    
+
     employeeType: z.enum(["full_time", "part_time", "contractor", "intern"]).optional(),
 
     phone: z
@@ -36,7 +36,7 @@ export const createEmployeeSchema = z
       .nullable(),
 
     position: z.string().max(100, "Position too long").trim().optional().nullable(),
-    
+
     status: z.enum(["active", "inactive", "on_leave", "terminated"]).optional(),
 
     dateOfBirth: z
@@ -80,7 +80,7 @@ export const updateEmployeeSchema = z
       .nullable(),
 
     position: z.string().max(100, "Position too long").trim().optional().nullable(),
-    
+
     employeeType: z.enum(["full_time", "part_time", "contractor", "intern"]).optional(),
 
     status: z.enum(["active", "inactive", "on_leave", "terminated"]).optional(),
@@ -105,7 +105,7 @@ export const updateEmployeeSchema = z
       .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
       .optional()
       .nullable(),
-      
+
     endDate: z
       .string()
       .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })

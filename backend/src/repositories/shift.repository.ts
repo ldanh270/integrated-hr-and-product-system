@@ -1,6 +1,11 @@
-import { Model } from "mongoose"
 import { WorkingShiftDocument } from "@/entities/attendance/WorkingShift.ts"
-import { IWorkingShiftRepository, ICreateWorkingShiftDTO, IUpdateWorkingShiftDTO } from "@/types/shift.types.ts"
+import {
+  ICreateWorkingShiftDTO,
+  IUpdateWorkingShiftDTO,
+  IWorkingShiftRepository,
+} from "@/types/shift.types.ts"
+
+import { Model } from "mongoose"
 
 export class MongoWorkingShiftRepository implements IWorkingShiftRepository {
   constructor(private workingShiftModel: Model<WorkingShiftDocument>) {}
@@ -15,7 +20,7 @@ export class MongoWorkingShiftRepository implements IWorkingShiftRepository {
     const updated = await this.workingShiftModel
       .findByIdAndUpdate(id, { $set: data }, { new: true })
       .lean()
-    
+
     return updated
   }
 

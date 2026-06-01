@@ -2,7 +2,7 @@ import {
   INTERVIEW_FORMATS,
   INTERVIEW_RESULTS,
   INTERVIEW_STATUSES,
-} from "@/configs/constants/entities.config.ts"
+} from "@/configs/entities.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 

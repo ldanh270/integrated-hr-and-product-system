@@ -12,7 +12,6 @@ export interface ForgotPasswordDto {
   username: string
 }
 
-
 /**
  * Data Transfer Object for successful authentication response
  */
@@ -37,7 +36,6 @@ export interface LogoutResponseDto {
 export interface ForgotPasswordResponseDto {
   message: string
 }
-
 
 /**
  * Internal interface for Employee document used in auth logic
@@ -96,4 +94,3 @@ export interface IAuthService {
    */
   forgotPassword(data: ForgotPasswordDto): Promise<ForgotPasswordResponseDto>
 }
-

@@ -1,7 +1,8 @@
-import { HttpStatusCode } from "@/configs/constants/http.config.ts"
+import { HttpStatusCode } from "@/configs/http.config.ts"
 import { createHolidaySchema } from "@/schemas/attendance.schema.ts"
-import { IHolidayService } from "@/types/attendance.types.ts"
 import { ApiResponse } from "@/types"
+import { IHolidayService } from "@/types/attendance.types.ts"
+
 import { Request, Response } from "express"
 import { z } from "zod"
 
@@ -27,7 +28,7 @@ export class HolidayController {
   checkHoliday = async (req: Request, res: Response<ApiResponse<boolean>>) => {
     const { date } = req.query
     const checkDate = date ? new Date(String(date)) : new Date()
-    
+
     const isHoliday = await this.service.isHoliday(checkDate)
     res.status(HttpStatusCode.OK).json({ data: isHoliday, error: null })
   }

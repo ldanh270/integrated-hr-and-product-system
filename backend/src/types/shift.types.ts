@@ -72,5 +72,3 @@ export interface IScheduleService {
   getScheduleForEmployee(employeeId: string, date: string | Date): Promise<any | null>
   overrideEmployeeShift(data: IOverrideEmployeeShiftDTO): Promise<any>
 }
-
-

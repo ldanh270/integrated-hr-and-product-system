@@ -1,0 +1,1 @@
+export const CONNECTION_STRING = process.env.MONGODB_CONNECTION_STRING || ""

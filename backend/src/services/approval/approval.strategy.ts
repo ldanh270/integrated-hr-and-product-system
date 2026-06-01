@@ -1,4 +1,4 @@
-import { APPROVAL_CONFIG, RequestCategory } from "@/configs/constants/approval.config.ts"
+import { APPROVAL_CONFIG, RequestCategory } from "@/configs/approval.config.ts"
 import Project from "@/entities/product/Project.ts"
 
 export interface IApprovalStrategy {
@@ -9,7 +9,11 @@ export interface IApprovalStrategy {
  * Admin & General Manager: Approve all types of requests for everyone (except self).
  */
 export class AdminGMApprovalStrategy implements IApprovalStrategy {
-  async canApprove(category: RequestCategory, applicantId: string, processorId: string): Promise<boolean> {
+  async canApprove(
+    category: RequestCategory,
+    applicantId: string,
+    processorId: string,
+  ): Promise<boolean> {
     // Cannot approve self-requests
     if (applicantId === processorId) return false
     return true
@@ -20,7 +24,11 @@ export class AdminGMApprovalStrategy implements IApprovalStrategy {
  * HR Manager: Approve Application & Recruitment Proposals for everyone (except self).
  */
 export class HRApprovalStrategy implements IApprovalStrategy {
-  async canApprove(category: RequestCategory, applicantId: string, processorId: string): Promise<boolean> {
+  async canApprove(
+    category: RequestCategory,
+    applicantId: string,
+    processorId: string,
+  ): Promise<boolean> {
     if (applicantId === processorId) return false
 
     // Check if HR is configured for this request category
@@ -33,7 +41,11 @@ export class HRApprovalStrategy implements IApprovalStrategy {
  * Team Leader: Approve Application only, for members active in their projects.
  */
 export class TeamLeaderApprovalStrategy implements IApprovalStrategy {
-  async canApprove(category: RequestCategory, applicantId: string, processorId: string): Promise<boolean> {
+  async canApprove(
+    category: RequestCategory,
+    applicantId: string,
+    processorId: string,
+  ): Promise<boolean> {
     if (applicantId === processorId) return false
 
     // Team Leader is only configured for applications (Leave, OT, etc.)
@@ -60,7 +72,11 @@ export class TeamLeaderApprovalStrategy implements IApprovalStrategy {
  * Default fallback strategy (e.g. for regular employee trying to approve)
  */
 export class DefaultApprovalStrategy implements IApprovalStrategy {
-  async canApprove(category: RequestCategory, applicantId: string, processorId: string): Promise<boolean> {
+  async canApprove(
+    category: RequestCategory,
+    applicantId: string,
+    processorId: string,
+  ): Promise<boolean> {
     return false
   }
 }

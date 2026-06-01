@@ -1,6 +1,6 @@
 import {
-  IShiftService,
   ICreateWorkingShiftDTO,
+  IShiftService,
   IUpdateWorkingShiftDTO,
   IWorkingShiftRepository,
 } from "@/types/shift.types.ts"

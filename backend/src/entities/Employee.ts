@@ -1,8 +1,4 @@
-import {
-  EMPLOYEE_ROLES,
-  EMPLOYEE_STATUSES,
-  EMPLOYEE_TYPES,
-} from "@/configs/constants/entities.config.ts"
+import { EMPLOYEE_ROLES, EMPLOYEE_STATUSES, EMPLOYEE_TYPES } from "@/configs/entities.config.ts"
 
 import mongoose, { InferSchemaType } from "mongoose"
 

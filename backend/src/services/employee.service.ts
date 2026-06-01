@@ -1,4 +1,4 @@
-import { HttpStatusCode } from "@/configs/constants/http.config.ts"
+import { HttpStatusCode } from "@/configs/http.config.ts"
 import {
   CreateEmployeeDto,
   Employee,
@@ -29,11 +29,15 @@ export class EmployeeService implements IEmployeeService {
 
   async createEmployee(data: CreateEmployeeDto & { password?: string }): Promise<Employee> {
     if (!data.password) {
-      throw new AppError("Password is required to create employee", HttpStatusCode.BAD_REQUEST, "EmployeeService")
+      throw new AppError(
+        "Password is required to create employee",
+        HttpStatusCode.BAD_REQUEST,
+        "EmployeeService",
+      )
     }
 
     const passwordHash = await HashUtil.hash(data.password)
-    
+
     // Remove password from data before passing to repo
     const { password, ...repoData } = data
 
@@ -44,7 +48,11 @@ export class EmployeeService implements IEmployeeService {
       })
     } catch (error: any) {
       if (error.code === 11000) {
-        throw new AppError("Username or email already exists", HttpStatusCode.CONFLICT, "EmployeeService")
+        throw new AppError(
+          "Username or email already exists",
+          HttpStatusCode.CONFLICT,
+          "EmployeeService",
+        )
       }
       throw error
     }

@@ -105,7 +105,9 @@ export class MongoEmployeeRepository implements IEmployeeRepository {
       address: employee.address ?? null,
       startDate: employee.startDate ?? null,
       endDate: employee.endDate ?? null,
-      avatar: employee.avatar ? { url: employee.avatar.url ?? null, id: employee.avatar.id ?? null } : null,
+      avatar: employee.avatar
+        ? { url: employee.avatar.url ?? null, id: employee.avatar.id ?? null }
+        : null,
       createdAt: employee.createdAt,
       updatedAt: employee.updatedAt,
     }

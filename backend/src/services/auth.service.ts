@@ -1,4 +1,5 @@
-import { HttpStatusCode } from "@/configs/constants/http.config.ts"
+import { HttpStatusCode } from "@/configs/http.config.ts"
+import PasswordResetRequest from "@/entities/auth/PasswordResetRequest.ts"
 import {
   AuthResponseDto,
   ForgotPasswordDto,
@@ -11,7 +12,7 @@ import {
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
 import { JwtUtil } from "@/utils/jwt.util.ts"
-import PasswordResetRequest from "@/entities/auth/PasswordResetRequest.ts"
+
 import crypto from "crypto"
 
 /**
@@ -139,11 +140,15 @@ export class AuthService implements IAuthService {
 
     if (!employee) {
       // Don't leak if the user exists or not
-      return { message: "If an account with that username exists, a reset request has been created." }
+      return {
+        message: "If an account with that username exists, a reset request has been created.",
+      }
     }
 
     if (employee.status !== "active") {
-      return { message: "If an account with that username exists, a reset request has been created." }
+      return {
+        message: "If an account with that username exists, a reset request has been created.",
+      }
     }
 
     // 2. Check if a pending request already exists
@@ -153,7 +158,9 @@ export class AuthService implements IAuthService {
     })
 
     if (existingRequest) {
-      return { message: "If an account with that username exists, a reset request has been created." }
+      return {
+        message: "If an account with that username exists, a reset request has been created.",
+      }
     }
 
     // 3. Generate a secure token
@@ -169,4 +176,3 @@ export class AuthService implements IAuthService {
     return { message: "If an account with that username exists, a reset request has been created." }
   }
 }
-

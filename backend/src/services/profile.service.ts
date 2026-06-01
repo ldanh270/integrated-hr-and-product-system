@@ -1,4 +1,5 @@
-import { HttpStatusCode } from "@/configs/constants/http.config.ts"
+import { assertCloudinaryConfigured, cloudinary } from "@/configs/cloudinary.config.ts"
+import { HttpStatusCode } from "@/configs/http.config.ts"
 import type {
   IProfileRepository,
   IProfileService,
@@ -7,9 +8,9 @@ import type {
   UpdateProfileDto,
 } from "@/types/profile.types.ts"
 import { AppError } from "@/utils/error.util.ts"
-import { cloudinary, assertCloudinaryConfigured } from "@/configs/cloudinary.config.ts"
-import { Readable } from "stream"
 import { HashUtil } from "@/utils/hash.util.ts"
+
+import { Readable } from "stream"
 
 /**
  * Maps a Mongoose employee document to a clean ProfileDto
@@ -139,7 +140,11 @@ export class ProfileService implements IProfileService {
     const updated = await this.repo.updateAvatar(empId, { url, id })
 
     if (!updated) {
-      throw new AppError("Failed to save avatar", HttpStatusCode.INTERNAL_SERVER_ERROR, "ProfileService")
+      throw new AppError(
+        "Failed to save avatar",
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
+        "ProfileService",
+      )
     }
 
     return toProfileDto(updated)
@@ -162,7 +167,7 @@ export class ProfileService implements IProfileService {
         "Mật khẩu hiện tại không chính xác",
         HttpStatusCode.BAD_REQUEST,
         "ProfileService",
-        "INVALID_CURRENT_PASSWORD"
+        "INVALID_CURRENT_PASSWORD",
       )
     }
 

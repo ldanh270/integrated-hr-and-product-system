@@ -1,4 +1,4 @@
-import { PAYROLL_COMPONENT_TYPES } from "@/configs/constants/entities.config.ts"
+import { PAYROLL_COMPONENT_TYPES } from "@/configs/entities.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 

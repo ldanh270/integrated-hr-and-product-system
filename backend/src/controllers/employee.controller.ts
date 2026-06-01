@@ -1,4 +1,4 @@
-import { HttpStatusCode } from "@/configs/constants/http.config.ts"
+import { HttpStatusCode } from "@/configs/http.config.ts"
 import {
   createEmployeeSchema,
   listEmployeesQuerySchema,
@@ -100,5 +100,4 @@ export class EmployeeController {
       throw error
     }
   }
-
 }

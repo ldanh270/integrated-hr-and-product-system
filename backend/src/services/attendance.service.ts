@@ -1,7 +1,7 @@
 import {
-  IAttendanceService,
-  IAttendanceRepository,
   IAttendanceRecordQueryDTO,
+  IAttendanceRepository,
+  IAttendanceService,
   IHolidayRepository,
 } from "@/types/attendance.types.ts"
 import {
@@ -17,7 +17,7 @@ export class AttendanceService implements IAttendanceService {
     private employeeShiftRepo: IEmployeeShiftRepository,
     private scheduleRepo: IShiftScheduleRepository,
     private holidayRepo: IHolidayRepository,
-    private workingShiftRepo: IWorkingShiftRepository
+    private workingShiftRepo: IWorkingShiftRepository,
   ) {}
 
   async checkIn(employeeId: string, location: { lat: number; lng: number }): Promise<any> {
@@ -35,7 +35,7 @@ export class AttendanceService implements IAttendanceService {
         const days = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
         const dayName = days[today.getDay()] as keyof typeof schedule.weekdays
         const scheduledShiftId = schedule.weekdays[dayName]
-        
+
         if (scheduledShiftId) {
           shiftId = scheduledShiftId.toString()
         }

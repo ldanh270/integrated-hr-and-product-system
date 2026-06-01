@@ -1,11 +1,12 @@
-import { HttpStatusCode } from "@/configs/constants/http.config.ts"
+import { RequestCategory } from "@/configs/approval.config.ts"
+import { HttpStatusCode } from "@/configs/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import { processApprovalSchema } from "@/schemas/approval.schema.ts"
-import { IApprovalService } from "@/types/approval.types.ts"
 import { ApiResponse } from "@/types"
+import { IApprovalService } from "@/types/approval.types.ts"
+
 import { Request, Response } from "express"
 import { z } from "zod"
-import { RequestCategory } from "@/configs/constants/approval.config.ts"
 
 export class ApprovalController {
   constructor(private service: IApprovalService) {}

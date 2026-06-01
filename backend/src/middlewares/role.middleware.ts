@@ -1,4 +1,4 @@
-import { HttpStatusCode } from "@/configs/constants/http.config.ts"
+import { HttpStatusCode } from "@/configs/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 
 import { NextFunction, Response } from "express"

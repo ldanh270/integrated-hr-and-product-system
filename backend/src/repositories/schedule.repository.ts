@@ -1,6 +1,7 @@
-import { Model } from "mongoose"
 import { ShiftScheduleDocument } from "@/entities/attendance/ShiftSchedule.ts"
-import { IShiftScheduleRepository, IAssignShiftScheduleDTO } from "@/types/shift.types.ts"
+import { IAssignShiftScheduleDTO, IShiftScheduleRepository } from "@/types/shift.types.ts"
+
+import { Model } from "mongoose"
 
 export class MongoShiftScheduleRepository implements IShiftScheduleRepository {
   constructor(private scheduleModel: Model<ShiftScheduleDocument>) {}

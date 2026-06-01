@@ -11,13 +11,13 @@ import express from "express"
  */
 const authRoutes = express.Router()
 
-// 1. Instantiate the Repository (Data Access)
+// Instantiate the Repository (Data Access Layer)
 const repository = new MongoAuthRepository()
 
-// 2. Instantiate the Service and inject the Repository (Business Logic)
+// Instantiate the Service and inject the Repository (Business Logic)
 const service = new AuthService(repository)
 
-// 3. Instantiate the Controller and inject the Service (HTTP Adapter)
+// Instantiate the Controller and inject the Service (HTTP Adapter)
 const controller = new AuthController(service)
 
 /**
@@ -42,4 +42,3 @@ authRoutes.post("/logout", authenticate, controller.logout as any)
 authRoutes.post("/forgot-password", controller.forgotPassword)
 
 export default authRoutes
-

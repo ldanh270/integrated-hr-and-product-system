@@ -1,4 +1,4 @@
-import { SOCIAL_PLATFORMS } from "@/configs/constants/entities.config.ts"
+import { SOCIAL_PLATFORMS } from "@/configs/entities.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 

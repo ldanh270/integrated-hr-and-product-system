@@ -1,4 +1,4 @@
-import { PASSWORD_RESET_STATUSES } from "@/configs/constants/entities.config.ts"
+import { PASSWORD_RESET_STATUSES } from "@/configs/entities.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 

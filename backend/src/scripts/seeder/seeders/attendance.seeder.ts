@@ -59,6 +59,12 @@ export const seedAttendance = async (passedEmployees?: any[]): Promise<{ shifts:
   let recordCount = 0
   let appCount = 0
 
+  // Pre-process holidays into a map by date string for easy lookup
+  const holidayMap = new Map<string, typeof holidaysToInsert[0]>()
+  holidaysToInsert.forEach(h => {
+    holidayMap.set(h.date.toDateString(), h)
+  })
+
   for (const emp of employees) {
     const shift = faker.helpers.arrayElement(createdShifts)
     
@@ -75,24 +81,53 @@ export const seedAttendance = async (passedEmployees?: any[]): Promise<{ shifts:
         wed: shift._id,
         thu: shift._id,
         fri: shift._id,
-        sat: null,
-        sun: null,
+        sat: null, // Weekend off
+        sun: null, // Weekend off
       },
       validFrom,
       validTo: null,
       createdBy: creator._id,
     })
 
-    // Simulate 3 past days of work
-    for (let i = 1; i <= 3; i++) {
+    // Simulate past 10 days of work
+    for (let i = 1; i <= 10; i++) {
       const date = new Date()
       date.setDate(date.getDate() - i)
       date.setHours(0, 0, 0, 0)
       
-      // Assign shift for this day
+      const weekdayNames = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
+      const weekday = weekdayNames[date.getDay()] as keyof typeof schedule.weekdays
+      const assignedShiftId = schedule.weekdays[weekday]
+      
+      // If employee doesn't have a shift on this day, skip
+      if (!assignedShiftId) continue
+      
+      const holiday = holidayMap.get(date.toDateString())
+      
+      // If it's a national holiday, skip generating shift entirely (per schema rules)
+      if (holiday && holiday.type === "national") {
+        continue
+      }
+      
+      // If it's a company holiday, generate a shift with "holiday_pending" status
+      if (holiday && holiday.type === "company") {
+        await EmployeeShift.create({
+          employeeId: emp._id,
+          shiftId: assignedShiftId,
+          assignedDate: date,
+          scheduleId: schedule._id,
+          status: "holiday_pending",
+          isOverride: false,
+          createdBy: creator._id,
+        })
+        shiftCount++
+        continue // No attendance record for pending holidays
+      }
+
+      // Normal workday shift
       const employeeShift = await EmployeeShift.create({
         employeeId: emp._id,
-        shiftId: shift._id,
+        shiftId: assignedShiftId,
         assignedDate: date,
         scheduleId: schedule._id,
         status: "confirmed",
@@ -147,7 +182,7 @@ export const seedAttendance = async (passedEmployees?: any[]): Promise<{ shifts:
       })
       recordCount++
 
-      // Seed an OT application for the first past shift
+      // Seed an OT application for one specific past shift
       if (i === 1) {
         await Application.create({
           employeeId: emp._id,

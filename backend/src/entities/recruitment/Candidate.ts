@@ -1,4 +1,4 @@
-import { CANDIDATE_SOURCES, CANDIDATE_STATUSES } from "@/configs/constants/entities.config.ts"
+import { CANDIDATE_SOURCES, CANDIDATE_STATUSES } from "@/configs/entities.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 

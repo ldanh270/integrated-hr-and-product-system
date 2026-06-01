@@ -46,7 +46,7 @@ export const changePasswordSchema = z
       .min(8, "Mật khẩu mới phải có tối thiểu 8 ký tự")
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-        "Mật khẩu phải bao gồm ít nhất một chữ hoa, một chữ thường, một chữ số và một ký tự đặc biệt"
+        "Mật khẩu phải bao gồm ít nhất một chữ hoa, một chữ thường, một chữ số và một ký tự đặc biệt",
       ),
   })
   .strict()

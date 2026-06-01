@@ -59,11 +59,7 @@ export class MongoProfileRepository implements IProfileRepository {
     empId: string,
     avatar: { url: string; id: string },
   ): Promise<ProfileEmployeeDocument | null> {
-    const employee = await Employee.findByIdAndUpdate(
-      empId,
-      { $set: { avatar } },
-      { new: true },
-    )
+    const employee = await Employee.findByIdAndUpdate(empId, { $set: { avatar } }, { new: true })
 
     return employee as unknown as ProfileEmployeeDocument | null
   }
