@@ -1,5 +1,5 @@
 import apiClient from "@/lib/api-client"
-import type { IWorkingShift, IShiftSchedule } from "@/types/attendance.types"
+import type { IShiftSchedule, IWorkingShift } from "@/types/attendance.types"
 
 interface ApiResponse<T> {
   data: T
@@ -13,7 +13,7 @@ export const shiftApi = {
     const response = await apiClient.get<ApiResponse<IWorkingShift[]>>("/shifts")
     return response.data.data
   },
-  
+
   createShift: async (data: Partial<IWorkingShift>): Promise<IWorkingShift> => {
     const response = await apiClient.post<ApiResponse<IWorkingShift>>("/shifts", data)
     return response.data.data
@@ -21,7 +21,10 @@ export const shiftApi = {
 
   // Schedules
   getEmployeeSchedule: async (employeeId: string, date?: string): Promise<IShiftSchedule> => {
-    const response = await apiClient.get<ApiResponse<IShiftSchedule>>(`/schedules/employee/${employeeId}`, { params: { date } })
+    const response = await apiClient.get<ApiResponse<IShiftSchedule>>(
+      `/schedules/employee/${employeeId}`,
+      { params: { date } },
+    )
     return response.data.data
   },
 

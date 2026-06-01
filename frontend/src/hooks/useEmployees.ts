@@ -1,5 +1,3 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-
 import { employeeApi } from "@/lib/api/employee.api"
 import type {
   CreateEmployeeDto,
@@ -7,6 +5,8 @@ import type {
   UpdateEmployeeDto,
   UpdateStatusDto,
 } from "@/types/employee.types"
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 export const employeeKeys = {
   all: ["employees"] as const,
@@ -47,7 +47,8 @@ export function useUpdateEmployee() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateEmployeeDto }) => employeeApi.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateEmployeeDto }) =>
+      employeeApi.update(id, data),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: employeeKeys.lists() })
       queryClient.setQueryData(employeeKeys.detail(variables.id), data)
@@ -59,7 +60,8 @@ export function useUpdateEmployeeStatus() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateStatusDto }) => employeeApi.updateStatus(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateStatusDto }) =>
+      employeeApi.updateStatus(id, data),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: employeeKeys.lists() })
       queryClient.setQueryData(employeeKeys.detail(variables.id), data)

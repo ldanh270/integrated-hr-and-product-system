@@ -1,3 +1,10 @@
+import {
+  APPLICATION_STATUS,
+  APPLICATION_TYPES,
+  REGIME_TYPES,
+} from "@/config/entities/attendance.config"
+import { ROLE } from "@/config/entities/employee.config"
+import { APPROVAL_CATEGORY } from "@/config/rules/approval.config"
 import { type IApprovalItem, approvalApi } from "@/lib/api/approval.api"
 import { useAuthStore } from "@/store/auth-store"
 
@@ -53,15 +60,19 @@ export default function ApplicationDashboard() {
   const handleApprove = async (item: IApprovalItem) => {
     try {
       setIsProcessing(true)
-      const result = await approvalApi.processApproval(item.category, item.id, "approved")
-      
-      if (item.category === "password_reset" && result?.tempPassword) {
+      const result = await approvalApi.processApproval(
+        item.category,
+        item.id,
+        APPLICATION_STATUS.APPROVED,
+      )
+
+      if (item.category === APPROVAL_CATEGORY.PASSWORD_RESET && result?.tempPassword) {
         setNewTempPassword(result.tempPassword)
         setApprovedEmployeeName(item.employeeName)
       } else {
         toast.success("Đã phê duyệt đơn thành công!")
       }
-      
+
       setSelectedApproval(null)
       fetchApprovals()
     } catch (error: any) {
@@ -84,7 +95,7 @@ export default function ApplicationDashboard() {
       await approvalApi.processApproval(
         rejectingItem.category,
         rejectingItem.id,
-        "rejected",
+        APPLICATION_STATUS.REJECTED,
         rejectReason,
       )
       toast.success("Đã từ chối đơn thành công!")
@@ -108,25 +119,27 @@ export default function ApplicationDashboard() {
 
   // Group stats
   const pendingCount = approvals.length
-  const appCount = approvals.filter((a) => a.category === "application").length
-  const pwCount = approvals.filter((a) => a.category === "password_reset").length
-  const recruitmentCount = approvals.filter((a) => a.category === "recruitment_proposal").length
+  const appCount = approvals.filter((a) => a.category === APPROVAL_CATEGORY.APPLICATION).length
+  const pwCount = approvals.filter((a) => a.category === APPROVAL_CATEGORY.PASSWORD_RESET).length
+  const recruitmentCount = approvals.filter(
+    (a) => a.category === APPROVAL_CATEGORY.RECRUITMENT_PROPOSAL,
+  ).length
 
   const getCategoryDetails = (category: string) => {
     switch (category) {
-      case "application":
+      case APPROVAL_CATEGORY.APPLICATION:
         return {
           label: "Đơn ứng dụng",
           icon: FileText,
           color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
         }
-      case "password_reset":
+      case APPROVAL_CATEGORY.PASSWORD_RESET:
         return {
           label: "Reset mật khẩu",
           icon: KeyRound,
           color: "text-blue-500 bg-blue-500/10 border-blue-500/20",
         }
-      case "recruitment_proposal":
+      case APPROVAL_CATEGORY.RECRUITMENT_PROPOSAL:
         return {
           label: "Tuyển dụng",
           icon: UserPlus,
@@ -143,23 +156,23 @@ export default function ApplicationDashboard() {
 
   const formatDetails = (item: IApprovalItem) => {
     const { details, category } = item
-    if (category === "application") {
+    if (category === APPROVAL_CATEGORY.APPLICATION) {
       const typeLabels: Record<string, string> = {
-        leave: "Xin nghỉ phép",
-        overtime: "Làm thêm giờ (OT)",
-        work_from_home: "Làm việc từ xa (WFH)",
-        shift_swap: "Đổi ca làm việc",
-        business_trip: "Công tác",
-        maternity: "Nghỉ thai sản",
-        paternity: "Nghỉ thai sản (nam)",
-        sick: "Nghỉ ốm",
+        [APPLICATION_TYPES[0]]: "Xin nghỉ phép",
+        [APPLICATION_TYPES[1]]: "Làm thêm giờ (OT)",
+        [APPLICATION_TYPES[2]]: "Làm việc từ xa (WFH)",
+        [APPLICATION_TYPES[3]]: "Đổi ca làm việc",
+        [APPLICATION_TYPES[4]]: "Công tác",
+        [APPLICATION_TYPES[5]]: "Nghỉ thai sản",
+        [APPLICATION_TYPES[6]]: "Nghỉ thai sản (nam)",
+        [APPLICATION_TYPES[7]]: "Nghỉ ốm",
       }
       return `${typeLabels[details.type] || "Yêu cầu"} từ ${new Date(details.startDate).toLocaleDateString("vi-VN")} đến ${new Date(details.endDate).toLocaleDateString("vi-VN")}`
     }
-    if (category === "password_reset") {
-      return "Yêu cầu cấp lại mật khẩu cho tài khoản"
+    if (category === APPROVAL_CATEGORY.PASSWORD_RESET) {
+      return "Yêu cầu cấp lại mật khẩu cho tài khẩu"
     }
-    if (category === "recruitment_proposal") {
+    if (category === APPROVAL_CATEGORY.RECRUITMENT_PROPOSAL) {
       return `Yêu cầu tuyển dụng vị trí ${details.position} (Số lượng: ${details.headcount})`
     }
     return "Chi tiết yêu cầu"
@@ -173,11 +186,11 @@ export default function ApplicationDashboard() {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Duyệt đơn từ</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Quản lý và phê duyệt các đơn từ của nhân viên dựa theo vai trò{" "}
-            {user?.role === "admin"
+            {user?.role === ROLE.ADMIN
               ? "Admin"
-              : user?.role === "general_manager"
+              : user?.role === ROLE.GENERAL_MANAGER
                 ? "General Manager"
-                : user?.role === "hr_manager"
+                : user?.role === ROLE.HR_MANAGER
                   ? "HR Manager"
                   : "Team Leader"}
           </p>
@@ -213,9 +226,9 @@ export default function ApplicationDashboard() {
               </button>
 
               <button
-                onClick={() => setActiveCategory("application")}
+                onClick={() => setActiveCategory(APPROVAL_CATEGORY.APPLICATION)}
                 className={`flex justify-between items-center px-3 py-2 rounded-lg text-sm transition-all cursor-pointer ${
-                  activeCategory === "application"
+                  activeCategory === APPROVAL_CATEGORY.APPLICATION
                     ? "bg-primary text-primary-foreground font-medium"
                     : "hover:bg-secondary text-muted-foreground hover:text-foreground"
                 }`}
@@ -225,16 +238,16 @@ export default function ApplicationDashboard() {
                   <span>Đơn ứng dụng</span>
                 </div>
                 <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${activeCategory === "application" ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+                  className={`text-xs px-2 py-0.5 rounded-full ${activeCategory === APPROVAL_CATEGORY.APPLICATION ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"}`}
                 >
                   {appCount}
                 </span>
               </button>
 
               <button
-                onClick={() => setActiveCategory("password_reset")}
+                onClick={() => setActiveCategory(APPROVAL_CATEGORY.PASSWORD_RESET)}
                 className={`flex justify-between items-center px-3 py-2 rounded-lg text-sm transition-all cursor-pointer ${
-                  activeCategory === "password_reset"
+                  activeCategory === APPROVAL_CATEGORY.PASSWORD_RESET
                     ? "bg-primary text-primary-foreground font-medium"
                     : "hover:bg-secondary text-muted-foreground hover:text-foreground"
                 }`}
@@ -244,16 +257,16 @@ export default function ApplicationDashboard() {
                   <span>Reset mật khẩu</span>
                 </div>
                 <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${activeCategory === "password_reset" ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+                  className={`text-xs px-2 py-0.5 rounded-full ${activeCategory === APPROVAL_CATEGORY.PASSWORD_RESET ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"}`}
                 >
                   {pwCount}
                 </span>
               </button>
 
               <button
-                onClick={() => setActiveCategory("recruitment_proposal")}
+                onClick={() => setActiveCategory(APPROVAL_CATEGORY.RECRUITMENT_PROPOSAL)}
                 className={`flex justify-between items-center px-3 py-2 rounded-lg text-sm transition-all cursor-pointer ${
-                  activeCategory === "recruitment_proposal"
+                  activeCategory === APPROVAL_CATEGORY.RECRUITMENT_PROPOSAL
                     ? "bg-primary text-primary-foreground font-medium"
                     : "hover:bg-secondary text-muted-foreground hover:text-foreground"
                 }`}
@@ -263,7 +276,7 @@ export default function ApplicationDashboard() {
                   <span>Tuyển dụng</span>
                 </div>
                 <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${activeCategory === "recruitment_proposal" ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+                  className={`text-xs px-2 py-0.5 rounded-full ${activeCategory === APPROVAL_CATEGORY.RECRUITMENT_PROPOSAL ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"}`}
                 >
                   {recruitmentCount}
                 </span>
@@ -391,9 +404,9 @@ export default function ApplicationDashboard() {
                 <span
                   className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full border ${getCategoryDetails(selectedApproval.category).color}`}
                 >
-                  {selectedApproval.category === "application"
+                  {selectedApproval.category === APPROVAL_CATEGORY.APPLICATION
                     ? "Đơn ứng dụng"
-                    : selectedApproval.category === "password_reset"
+                    : selectedApproval.category === APPROVAL_CATEGORY.PASSWORD_RESET
                       ? "Reset mật khẩu"
                       : "Tuyển dụng"}
                 </span>
@@ -425,7 +438,7 @@ export default function ApplicationDashboard() {
                 </span>
               </div>
 
-              {selectedApproval.category === "application" && (
+              {selectedApproval.category === APPROVAL_CATEGORY.APPLICATION && (
                 <>
                   <div className="grid grid-cols-3 border-b border-border/30 pb-2">
                     <span className="text-muted-foreground font-medium">Loại đơn:</span>
@@ -444,7 +457,7 @@ export default function ApplicationDashboard() {
                     <div className="grid grid-cols-3 border-b border-border/30 pb-2">
                       <span className="text-muted-foreground font-medium">Chế độ:</span>
                       <span className="col-span-2 text-foreground font-semibold">
-                        {selectedApproval.details.regimeType === "paid"
+                        {selectedApproval.details.regimeType === REGIME_TYPES[0]
                           ? "Có lương"
                           : "Nghỉ không lương"}
                       </span>
@@ -453,7 +466,7 @@ export default function ApplicationDashboard() {
                 </>
               )}
 
-              {selectedApproval.category === "recruitment_proposal" && (
+              {selectedApproval.category === APPROVAL_CATEGORY.RECRUITMENT_PROPOSAL && (
                 <>
                   <div className="grid grid-cols-3 border-b border-border/30 pb-2">
                     <span className="text-muted-foreground font-medium">Vị trí tuyển:</span>
@@ -575,12 +588,15 @@ export default function ApplicationDashboard() {
               </div>
               <h3 className="text-lg font-bold text-foreground">Phê duyệt cấp lại mật khẩu</h3>
               <p className="text-xs text-muted-foreground mt-1 px-4">
-                Yêu cầu reset mật khẩu của <strong>{approvedEmployeeName}</strong> đã được phê duyệt. Hệ thống đã tự động tạo một mật khẩu tạm thời mới.
+                Yêu cầu reset mật khẩu của <strong>{approvedEmployeeName}</strong> đã được phê
+                duyệt. Hệ thống đã tự động tạo một mật khẩu tạm thời mới.
               </p>
             </div>
 
             <div className="flex flex-col gap-2 p-3 bg-secondary/35 border border-border rounded-lg text-center relative group">
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Mật khẩu tạm thời mới</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                Mật khẩu tạm thời mới
+              </span>
               <div className="text-lg font-mono font-bold text-primary select-all tracking-wide py-1">
                 {newTempPassword}
               </div>
@@ -597,7 +613,9 @@ export default function ApplicationDashboard() {
             </div>
 
             <div className="bg-amber-500/15 border border-amber-500/20 text-amber-700 dark:text-amber-500 rounded-lg p-3 text-xs leading-relaxed">
-              <strong>Lưu ý:</strong> Mật khẩu này chỉ được hiển thị <strong>một lần duy nhất</strong>. Hãy lưu lại hoặc sao chép và gửi trực tiếp cho nhân viên để họ đăng nhập và đổi mật khẩu mới.
+              <strong>Lưu ý:</strong> Mật khẩu này chỉ được hiển thị{" "}
+              <strong>một lần duy nhất</strong>. Hãy lưu lại hoặc sao chép và gửi trực tiếp cho nhân
+              viên để họ đăng nhập và đổi mật khẩu mới.
             </div>
 
             <button

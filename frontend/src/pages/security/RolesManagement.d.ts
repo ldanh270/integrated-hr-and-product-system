@@ -1,1 +1,1 @@
-export default function RolesManagement(): import("react/jsx-runtime").JSX.Element;
+export default function RolesManagement(): import("react/jsx-runtime").JSX.Element

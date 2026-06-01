@@ -1,12 +1,13 @@
 import { useAuth } from "@/hooks/use-auth.ts"
 import { useAuthStore } from "@/store/auth-store.ts"
+import { useSubsystemStore } from "@/store/subsystem-store"
 
 import { useState } from "react"
 
-import { Link, useNavigate } from "react-router-dom"
-import SubsystemDropdown from "./SubsystemDropdown"
-import { useSubsystemStore } from "@/store/subsystem-store"
 import { Bell, History, LogOut, MessageSquare, User } from "lucide-react"
+import { Link, useNavigate } from "react-router-dom"
+
+import SubsystemDropdown from "./SubsystemDropdown"
 
 /**
  * Header component
@@ -19,7 +20,7 @@ export default function Header() {
   const { getActiveSubsystemConfig } = useSubsystemStore()
   const [activeTab, setActiveTab] = useState<"personal" | "summary">("personal")
   const [showDropdown, setShowDropdown] = useState(false)
-  
+
   const activeSubsystemConfig = getActiveSubsystemConfig()
 
   const handleLogout = async () => {
@@ -64,7 +65,7 @@ export default function Header() {
         {/* Right: notifications + profile */}
         <div className="flex items-center gap-3">
           <SubsystemDropdown />
-          
+
           {/* Notification bell */}
           <button
             className="relative flex h-8 w-8 items-center justify-center rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-all cursor-pointer"

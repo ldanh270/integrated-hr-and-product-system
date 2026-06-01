@@ -1,6 +1,7 @@
-import { useMutation } from "@tanstack/react-query"
 import apiClient from "@/lib/api-client.ts"
 import { useAuthStore } from "@/store/auth-store.ts"
+
+import { useMutation } from "@tanstack/react-query"
 
 /**
  * Hook for authentication operations
@@ -57,4 +58,3 @@ export const useAuth = () => {
     isSendingForgotPassword: forgotPasswordMutation.isPending,
   }
 }
-

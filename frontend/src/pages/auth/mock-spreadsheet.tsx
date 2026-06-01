@@ -1,4 +1,4 @@
-import { Folder, Play, Database, Settings, FileText, Search, Filter, AlignLeft } from "lucide-react"
+import { AlignLeft, Database, FileText, Filter, Folder, Play, Search, Settings } from "lucide-react"
 
 /**
  * Render a high-quality, crisp vector SVG collaborator avatar.
@@ -15,7 +15,13 @@ const CollaboratorAvatar = () => (
       <circle cx="57" cy="45" r="2" fill="#1e293b" />
       <circle cx="38" cy="49" r="3" fill="#fca5a5" opacity="0.6" />
       <circle cx="62" cy="49" r="3" fill="#fca5a5" opacity="0.6" />
-      <path d="M47,52 Q50,55 53,52" fill="none" stroke="#e11d48" strokeWidth="2.5" strokeLinecap="round" />
+      <path
+        d="M47,52 Q50,55 53,52"
+        fill="none"
+        stroke="#e11d48"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
       <path d="M42,65 L58,65 L68,90 L32,90 Z" fill="#4f46e5" />
     </svg>
   </div>
@@ -30,12 +36,36 @@ const UserAvatar = () => (
       <rect width="100" height="100" fill="#dbeafe" />
       <circle cx="50" cy="48" r="24" fill="#ffedd5" />
       <path d="M25,35 Q50,15 75,35 Q78,25 70,20 Q50,5 30,20 Q22,25 25,35 Z" fill="#172554" />
-      <rect x="34" y="42" width="12" height="8" rx="2" fill="none" stroke="#172554" strokeWidth="3" />
-      <rect x="54" y="42" width="12" height="8" rx="2" fill="none" stroke="#172554" strokeWidth="3" />
+      <rect
+        x="34"
+        y="42"
+        width="12"
+        height="8"
+        rx="2"
+        fill="none"
+        stroke="#172554"
+        strokeWidth="3"
+      />
+      <rect
+        x="54"
+        y="42"
+        width="12"
+        height="8"
+        rx="2"
+        fill="none"
+        stroke="#172554"
+        strokeWidth="3"
+      />
       <line x1="46" y1="46" x2="54" y2="46" stroke="#172554" strokeWidth="3" />
       <circle cx="40" cy="46" r="1.5" fill="#172554" />
       <circle cx="60" cy="46" r="1.5" fill="#172554" />
-      <path d="M47,56 Q50,59 53,56" fill="none" stroke="#172554" strokeWidth="2.5" strokeLinecap="round" />
+      <path
+        d="M47,56 Q50,59 53,56"
+        fill="none"
+        stroke="#172554"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
       <path d="M38,70 L62,70 L72,95 L28,95 Z" fill="#2563eb" />
     </svg>
   </div>
@@ -65,19 +95,31 @@ export default function MockSpreadsheetCard() {
               Q
             </div>
             {/* Sidebar Navigation */}
-            <button className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/25 text-white" aria-label="Folder tab">
+            <button
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/25 text-white"
+              aria-label="Folder tab"
+            >
               <Folder size={18} />
             </button>
-            <button className="flex h-9 w-9 items-center justify-center rounded-xl hover:bg-white/10 hover:text-white" aria-label="Play tab">
+            <button
+              className="flex h-9 w-9 items-center justify-center rounded-xl hover:bg-white/10 hover:text-white"
+              aria-label="Play tab"
+            >
               <Play size={18} />
             </button>
-            <button className="flex h-9 w-9 items-center justify-center rounded-xl hover:bg-white/10 hover:text-white" aria-label="Database tab">
+            <button
+              className="flex h-9 w-9 items-center justify-center rounded-xl hover:bg-white/10 hover:text-white"
+              aria-label="Database tab"
+            >
               <Database size={18} />
             </button>
           </div>
 
           <div className="flex flex-col items-center gap-4">
-            <button className="flex h-9 w-9 items-center justify-center rounded-xl hover:bg-white/10 hover:text-white" aria-label="Settings">
+            <button
+              className="flex h-9 w-9 items-center justify-center rounded-xl hover:bg-white/10 hover:text-white"
+              aria-label="Settings"
+            >
               <Settings size={18} />
             </button>
             <UserAvatar />
@@ -109,7 +151,10 @@ export default function MockSpreadsheetCard() {
               <Search className="absolute top-2.5 left-3 text-muted-foreground" size={14} />
               <div className="h-8 w-full rounded-full border border-border bg-secondary/20 pl-9" />
             </div>
-            <button className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground" aria-label="Filter">
+            <button
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground"
+              aria-label="Filter"
+            >
               <Filter size={14} />
             </button>
           </div>
@@ -128,10 +173,15 @@ export default function MockSpreadsheetCard() {
             {/* Table Rows (Skeleton styling) */}
             <div className="divide-y divide-border/60">
               {tableRows.map((_, idx) => (
-                <div key={idx} className="grid grid-cols-12 items-center py-2.5 px-3 text-xs text-muted-foreground hover:bg-secondary/20">
+                <div
+                  key={idx}
+                  className="grid grid-cols-12 items-center py-2.5 px-3 text-xs text-muted-foreground hover:bg-secondary/20"
+                >
                   <div className="col-span-1 text-center font-mono font-medium">{idx + 1}</div>
                   <div className="col-span-3 flex items-center gap-2">
-                    <div className={`h-2.5 w-2.5 rounded-full ${idx % 2 === 0 ? "bg-emerald-500" : "bg-blue-500"}`} />
+                    <div
+                      className={`h-2.5 w-2.5 rounded-full ${idx % 2 === 0 ? "bg-emerald-500" : "bg-blue-500"}`}
+                    />
                     <div className="h-3 w-12 rounded bg-secondary/80 animate-pulse" />
                   </div>
                   <div className="col-span-4 px-2">

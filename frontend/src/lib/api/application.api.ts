@@ -14,12 +14,17 @@ export const applicationApi = {
   },
 
   getEmployeeApplications: async (employeeId: string): Promise<IApplication[]> => {
-    const response = await apiClient.get<ApiResponse<IApplication[]>>(`/applications/employee/${employeeId}`)
+    const response = await apiClient.get<ApiResponse<IApplication[]>>(
+      `/applications/employee/${employeeId}`,
+    )
     return response.data.data
   },
 
   approveApplication: async (id: string, status: string): Promise<IApplication> => {
-    const response = await apiClient.patch<ApiResponse<IApplication>>(`/applications/${id}/approve`, { status })
+    const response = await apiClient.patch<ApiResponse<IApplication>>(
+      `/applications/${id}/approve`,
+      { status },
+    )
     return response.data.data
   },
 }

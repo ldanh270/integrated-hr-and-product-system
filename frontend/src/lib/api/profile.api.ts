@@ -54,4 +54,3 @@ export const changePassword = async (oldPassword: string, newPassword: string): 
     throw new Error(response.data.message || "Failed to change password")
   }
 }
-

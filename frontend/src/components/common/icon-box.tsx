@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils"
+
 import type { LucideIcon } from "lucide-react"
 
 interface IconBoxProps {
@@ -25,7 +26,7 @@ export function IconBox({ icon: Icon, colorClass, size = "sm", className }: Icon
         "flex shrink-0 items-center justify-center rounded-lg",
         box,
         colorClass,
-        className
+        className,
       )}
     >
       <Icon size={icon} />

@@ -2,6 +2,7 @@ import { privateRoutes, publicRoutes } from "@/routes"
 import { useAuthStore } from "@/store/auth-store.ts"
 
 import { Fragment, Suspense, lazy } from "react"
+
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom"
 import { Toaster } from "sonner"
 

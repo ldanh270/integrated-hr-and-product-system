@@ -1,3 +1,9 @@
+import type {
+  IApplicationStatus,
+  IApplicationType,
+  IRegimeType,
+} from "@/config/entities/attendance.config"
+
 export interface IGpsLocation {
   lat: number
   lng: number
@@ -63,12 +69,12 @@ export interface IShiftSchedule {
 export interface IApplication {
   _id: string
   employeeId: string | any
-  type: "leave" | "overtime"
-  status: "pending" | "approved" | "rejected" | "cancelled"
+  type: IApplicationType
+  status: IApplicationStatus
   reason: string
   startDate: string
   endDate: string
-  regimeType?: "paid" | "unpaid"
+  regimeType?: IRegimeType
 }
 
 export interface IHoliday {

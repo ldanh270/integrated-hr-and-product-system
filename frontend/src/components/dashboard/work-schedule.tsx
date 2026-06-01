@@ -1,5 +1,6 @@
+import { EmptyState, PageCard, SectionHeader } from "@/components/common"
+
 import { Calendar } from "lucide-react"
-import { PageCard, SectionHeader, EmptyState } from "@/components/common"
 
 /**
  * WorkSchedule component
@@ -59,7 +60,7 @@ export default function WorkSchedule() {
 
         {/* Weekly Grid */}
         <div className="overflow-x-auto rounded-lg border border-border/70">
-          <div className="min-w-[640px] divide-y divide-border/60">
+          <div className="min-w-160 divide-y divide-border/60">
             {/* Header row */}
             <div className="grid grid-cols-8 bg-secondary/40 py-1.5 px-2 text-[11px] font-bold text-muted-foreground text-center">
               <div className="text-left font-medium text-xs">Giờ</div>
@@ -74,7 +75,7 @@ export default function WorkSchedule() {
             {/* Time slot rows */}
             <div className="divide-y divide-border/40 bg-card">
               {hours.map((hour, hIdx) => (
-                <div key={hIdx} className="grid grid-cols-8 items-stretch min-h-[40px] text-xs">
+                <div key={hIdx} className="grid grid-cols-8 items-stretch min-h-10 text-xs">
                   {/* Time label */}
                   <div className="flex items-center justify-start px-2 text-[10px] font-semibold text-muted-foreground border-r border-border/45">
                     {hour}

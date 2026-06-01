@@ -260,7 +260,8 @@ export default function Login() {
             <div>
               <h3 className="text-lg font-bold text-foreground">Quên Mật Khẩu</h3>
               <p className="text-xs text-muted-foreground mt-1">
-                Vui lòng nhập tên đăng nhập (username) của bạn. Hệ thống sẽ gửi yêu cầu reset mật khẩu đến Admin phê duyệt.
+                Vui lòng nhập tên đăng nhập (username) của bạn. Hệ thống sẽ gửi yêu cầu reset mật
+                khẩu đến Admin phê duyệt.
               </p>
             </div>
 

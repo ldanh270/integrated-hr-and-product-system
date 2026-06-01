@@ -1,30 +1,46 @@
-import { useState } from "react"
-import { useAuthStore } from "@/store/auth-store"
-import { useEmployees, useUpdateEmployeeStatus } from "@/hooks/useEmployees"
-import type { EmployeeListQuery, EmployeeType, Employee } from "@/types/employee.types"
 import { PageCard, StatusPill } from "@/components/common"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Search, Plus, Filter, FileDown, MoreHorizontal, User, Eye, Edit, Trash2 } from "lucide-react"
 import { EmployeeCreateModal } from "@/components/features/employees/EmployeeCreateModal"
 import { EmployeeEditModal } from "@/components/features/employees/EmployeeEditModal"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { EMPLOYEE_STATUS, EMPLOYEE_TYPES, ROLE } from "@/config/entities/employee.config"
+import { useEmployees, useUpdateEmployeeStatus } from "@/hooks/useEmployees"
+import { useAuthStore } from "@/store/auth-store"
+import type { Employee, EmployeeListQuery, EmployeeType } from "@/types/employee.types"
+
+import { useState } from "react"
+
+import {
+  Edit,
+  Eye,
+  FileDown,
+  Filter,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Trash2,
+  User,
+} from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 export default function EmployeeList() {
   const user = useAuthStore((state) => state.user)
-  const isAdminOrManager = user?.role === "admin" || user?.role === "manager"
+  const isAdminOrManager =
+    user?.role === ROLE.ADMIN ||
+    user?.role === ROLE.HR_MANAGER ||
+    user?.role === ROLE.GENERAL_MANAGER
   const navigate = useNavigate()
 
   const [query, setQuery] = useState<EmployeeListQuery>({
     page: 1,
     limit: 50,
   })
-  
+
   const [activeTab, setActiveTab] = useState<"all" | EmployeeType>("all")
-  
+
   const { data, isLoading } = useEmployees(query)
   const updateStatusMutation = useUpdateEmployeeStatus()
-  
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [editEmployee, setEditEmployee] = useState<Employee | null>(null)
   const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null)
@@ -46,45 +62,57 @@ export default function EmployeeList() {
 
   const handleDelete = async (id: string) => {
     if (confirm("Bạn có chắc chắn muốn cho nghỉ việc nhân sự này?")) {
-      await updateStatusMutation.mutateAsync({ id, data: { status: "terminated" } })
+      await updateStatusMutation.mutateAsync({ id, data: { status: EMPLOYEE_STATUS.TERMINATED } })
       setActiveActionMenu(null)
     }
   }
 
   const tabs = [
     { id: "all", label: "Tất cả", count: data?.meta.total || 0 },
-    { id: "full_time", label: "Chính thức", count: "-" },
-    { id: "part_time", label: "Bán thời gian", count: "-" },
-    { id: "intern", label: "Thực tập", count: "-" },
-    { id: "contractor", label: "Hợp đồng", count: "-" },
+    { id: EMPLOYEE_TYPES[0], label: "Chính thức", count: "-" },
+    { id: EMPLOYEE_TYPES[1], label: "Bán thời gian", count: "-" },
+    { id: EMPLOYEE_TYPES[3], label: "Thực tập", count: "-" },
+    { id: EMPLOYEE_TYPES[2], label: "Hợp đồng", count: "-" },
   ]
 
   const getStatusDisplay = (status: string) => {
-    switch(status) {
-      case 'active': return <StatusPill label="Đang làm" variant="success" />
-      case 'inactive': return <StatusPill label="Tạm nghỉ" variant="neutral" />
-      case 'on_leave': return <StatusPill label="Nghỉ phép" variant="warning" />
-      case 'terminated': return <StatusPill label="Đã nghỉ" variant="danger" />
-      default: return <StatusPill label={status} variant="neutral" />
+    switch (status) {
+      case EMPLOYEE_STATUS.ACTIVE:
+        return <StatusPill label="Đang làm" variant="success" />
+      case EMPLOYEE_STATUS.INACTIVE:
+        return <StatusPill label="Tạm nghỉ" variant="neutral" />
+      case EMPLOYEE_STATUS.ON_LEAVE:
+        return <StatusPill label="Nghỉ phép" variant="warning" />
+      case EMPLOYEE_STATUS.TERMINATED:
+        return <StatusPill label="Đã nghỉ" variant="danger" />
+      default:
+        return <StatusPill label={status} variant="neutral" />
     }
   }
 
   const getTypeDisplay = (type: string) => {
-    switch(type) {
-      case 'full_time': return "Chính thức"
-      case 'part_time': return "Bán thời gian"
-      case 'contractor': return "Hợp đồng"
-      case 'intern': return "Thực tập"
-      default: return type
+    switch (type) {
+      case EMPLOYEE_TYPES[0]:
+        return "Chính thức"
+      case EMPLOYEE_TYPES[1]:
+        return "Bán thời gian"
+      case EMPLOYEE_TYPES[2]:
+        return "Hợp đồng"
+      case EMPLOYEE_TYPES[3]:
+        return "Thực tập"
+      default:
+        return type
     }
   }
 
   return (
-    <div className="container max-w-[1400px] px-6 py-6">
+    <div className="container max-w-350 px-6 py-6">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Danh sách nhân sự</h1>
-          <p className="text-sm text-muted-foreground mt-1">Quản lý hồ sơ và danh sách toàn bộ nhân sự công ty.</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Quản lý hồ sơ và danh sách toàn bộ nhân sự công ty.
+          </p>
         </div>
         {isAdminOrManager && (
           <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
@@ -101,13 +129,19 @@ export default function EmployeeList() {
               key={tab.id}
               onClick={() => handleTabChange(tab.id as "all" | EmployeeType)}
               className={`pb-4 text-sm font-medium transition-colors relative whitespace-nowrap flex items-center gap-2 ${
-                activeTab === tab.id ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                activeTab === tab.id
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {tab.label}
-              <span className={`px-2 py-0.5 rounded-full text-[10px] ${
-                activeTab === tab.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-              }`}>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] ${
+                  activeTab === tab.id
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
                 {tab.count}
               </span>
               {activeTab === tab.id && (
@@ -173,7 +207,11 @@ export default function EmployeeList() {
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary overflow-hidden border border-primary/20 shrink-0">
                           {employee.avatar?.url ? (
-                            <img src={employee.avatar.url} alt={employee.fullName} className="w-full h-full object-cover" />
+                            <img
+                              src={employee.avatar.url}
+                              alt={employee.fullName}
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
                             <User size={16} />
                           )}
@@ -195,25 +233,26 @@ export default function EmployeeList() {
                       <div className="text-foreground">{employee.position || "-"}</div>
                       <div className="text-xs text-muted-foreground uppercase">{employee.role}</div>
                     </td>
-                    <td className="px-6 py-3">
-                      {getTypeDisplay(employee.employeeType)}
-                    </td>
-                    <td className="px-6 py-3">
-                      {getStatusDisplay(employee.status)}
-                    </td>
+                    <td className="px-6 py-3">{getTypeDisplay(employee.employeeType)}</td>
+                    <td className="px-6 py-3">{getStatusDisplay(employee.status)}</td>
                     <td className="px-6 py-3 text-right relative">
-                      <button 
-                        onClick={() => setActiveActionMenu(activeActionMenu === employee.id ? null : employee.id)}
+                      <button
+                        onClick={() =>
+                          setActiveActionMenu(activeActionMenu === employee.id ? null : employee.id)
+                        }
                         className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                       >
                         <MoreHorizontal size={16} />
                       </button>
-                      
+
                       {activeActionMenu === employee.id && (
                         <>
-                          <div className="fixed inset-0 z-10" onClick={() => setActiveActionMenu(null)} />
+                          <div
+                            className="fixed inset-0 z-10"
+                            onClick={() => setActiveActionMenu(null)}
+                          />
                           <div className="absolute right-6 top-10 w-40 bg-background rounded-lg shadow-lg border border-border py-1 z-20 overflow-hidden text-left animate-in fade-in zoom-in-95 duration-100">
-                            <button 
+                            <button
                               onClick={() => navigate(`/employees/${employee.id}`)}
                               className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center gap-2"
                             >
@@ -221,17 +260,17 @@ export default function EmployeeList() {
                             </button>
                             {isAdminOrManager && (
                               <>
-                                <button 
+                                <button
                                   onClick={() => {
-                                    setEditEmployee(employee);
-                                    setActiveActionMenu(null);
+                                    setEditEmployee(employee)
+                                    setActiveActionMenu(null)
                                   }}
                                   className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center gap-2"
                                 >
                                   <Edit size={14} className="text-blue-500" /> Sửa thông tin
                                 </button>
-                                {employee.status !== "terminated" && (
-                                  <button 
+                                {employee.status !== EMPLOYEE_STATUS.TERMINATED && (
+                                  <button
                                     onClick={() => handleDelete(employee.id)}
                                     className="w-full text-left px-3 py-2 text-sm hover:bg-red-50/50 text-red-600 flex items-center gap-2"
                                   >
@@ -254,24 +293,35 @@ export default function EmployeeList() {
         {/* Pagination */}
         <div className="p-4 border-t border-border flex items-center justify-between text-sm text-muted-foreground">
           <div>
-            Hiển thị <span className="font-medium text-foreground">{(query.page! - 1) * query.limit! + (data?.data.length ? 1 : 0)}</span> đến <span className="font-medium text-foreground">{(query.page! - 1) * query.limit! + (data?.data.length || 0)}</span> trong tổng số <span className="font-medium text-foreground">{data?.meta.total || 0}</span>
+            Hiển thị{" "}
+            <span className="font-medium text-foreground">
+              {(query.page! - 1) * query.limit! + (data?.data.length ? 1 : 0)}
+            </span>{" "}
+            đến{" "}
+            <span className="font-medium text-foreground">
+              {(query.page! - 1) * query.limit! + (data?.data.length || 0)}
+            </span>{" "}
+            trong tổng số{" "}
+            <span className="font-medium text-foreground">{data?.meta.total || 0}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               disabled={query.page === 1}
-              onClick={() => setQuery(prev => ({ ...prev, page: Math.max(1, (prev.page || 1) - 1) }))}
+              onClick={() =>
+                setQuery((prev) => ({ ...prev, page: Math.max(1, (prev.page || 1) - 1) }))
+              }
             >
               Trước
             </Button>
             <div className="flex items-center gap-1">
               {Array.from({ length: Math.min(5, data?.meta.totalPages || 0) }).map((_, i) => {
-                const p = i + 1;
+                const p = i + 1
                 return (
-                  <button 
+                  <button
                     key={p}
-                    onClick={() => setQuery(prev => ({ ...prev, page: p }))}
+                    onClick={() => setQuery((prev) => ({ ...prev, page: p }))}
                     className={`w-8 h-8 rounded-md flex items-center justify-center transition-colors ${query.page === p ? "bg-primary text-primary-foreground font-medium" : "hover:bg-muted text-muted-foreground"}`}
                   >
                     {p}
@@ -279,11 +329,11 @@ export default function EmployeeList() {
                 )
               })}
             </div>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               disabled={!data || query.page === data.meta.totalPages || data.meta.totalPages === 0}
-              onClick={() => setQuery(prev => ({ ...prev, page: (prev.page || 1) + 1 }))}
+              onClick={() => setQuery((prev) => ({ ...prev, page: (prev.page || 1) + 1 }))}
             >
               Sau
             </Button>
@@ -292,7 +342,11 @@ export default function EmployeeList() {
       </PageCard>
 
       <EmployeeCreateModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
-      <EmployeeEditModal isOpen={!!editEmployee} onClose={() => setEditEmployee(null)} employee={editEmployee} />
+      <EmployeeEditModal
+        isOpen={!!editEmployee}
+        onClose={() => setEditEmployee(null)}
+        employee={editEmployee}
+      />
     </div>
   )
 }

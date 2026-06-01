@@ -6,14 +6,16 @@ export default function MySchedule() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Lịch Trình & Chấm Công</h1>
-          <p className="text-muted-foreground mt-1">Xem lịch làm việc và thực hiện chấm công hằng ngày.</p>
+          <p className="text-muted-foreground mt-1">
+            Xem lịch làm việc và thực hiện chấm công hằng ngày.
+          </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 space-y-6">
           <VirtualScanner />
-          
+
           <div className="bg-card text-card-foreground rounded-xl border shadow-sm p-6">
             <h3 className="font-semibold mb-4">Lưu ý</h3>
             <ul className="text-sm space-y-2 text-muted-foreground list-disc pl-4">
@@ -23,9 +25,9 @@ export default function MySchedule() {
             </ul>
           </div>
         </div>
-        
+
         <div className="lg:col-span-2">
-          <div className="bg-card text-card-foreground rounded-xl border shadow-sm p-6 h-full min-h-[500px] flex items-center justify-center">
+          <div className="bg-card text-card-foreground rounded-xl border shadow-sm p-6 h-full min-h-125 flex items-center justify-center">
             {/* Placeholder for Attendance Calendar Component */}
             <div className="text-center text-muted-foreground">
               <p>Phần Lịch Làm Việc sẽ được hiển thị tại đây.</p>
