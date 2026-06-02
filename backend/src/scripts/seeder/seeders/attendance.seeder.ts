@@ -1,3 +1,4 @@
+import { APPLICATION_TYPES } from "@/configs/entities/attendance.config.ts"
 import { ROLE } from "@/configs/entities/employee.config.ts"
 import Employee from "@/entities/Employee.ts"
 import Application from "@/entities/attendance/Application.ts"
@@ -194,7 +195,7 @@ export const seedAttendance = async (passedEmployees?: any[]): Promise<{ shifts:
       if (i === 1) {
         await Application.create({
           employeeId: emp._id,
-          type: "overtime",
+          type: APPLICATION_TYPES.OVERTIME.LABEL,
           status: "approved",
           startDate: fingerprintIn,
           endDate: fingerprintOut,
@@ -216,7 +217,7 @@ export const seedAttendance = async (passedEmployees?: any[]): Promise<{ shifts:
 
     await Application.create({
       employeeId: emp._id,
-      type: "leave",
+      type: APPLICATION_TYPES.LEAVE.LABEL,
       status: "approved",
       reason: faker.helpers.arrayElement(LEAVE_REASONS),
       startDate: appStartDate,

@@ -2,6 +2,7 @@ import {
   APPLICATION_STATUS,
   APPLICATION_STATUSES,
   APPLICATION_TYPES,
+  APPLICATION_TYPE_VALUES,
   REGIME_TYPES,
 } from "@/configs/entities/attendance.config.ts"
 
@@ -26,7 +27,7 @@ const applicationSchema = new mongoose.Schema(
 
     type: {
       type: String,
-      enum: APPLICATION_TYPES,
+      enum: APPLICATION_TYPE_VALUES,
       required: true,
     },
 
@@ -121,7 +122,7 @@ applicationSchema.pre("validate", function (this: mongoose.HydratedDocument<Appl
   if (this.startDate && this.endDate && this.startDate >= this.endDate) {
     this.invalidate("endDate", "endDate must be after startDate")
   }
-  if (this.type !== "shift_swap") {
+  if (this.type !== APPLICATION_TYPES.SHIFT_SWAP.LABEL) {
     this.set("swapWith", { employeeId: null, employeeShiftId: null })
   } else {
     if (!this.swapWith || !this.swapWith.employeeId || !this.swapWith.employeeShiftId) {

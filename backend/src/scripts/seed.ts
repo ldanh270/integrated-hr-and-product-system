@@ -1,5 +1,5 @@
 // --- Core ---
-import { APPLICATION_STATUS } from "@/configs/entities/attendance.config.ts"
+import { APPLICATION_STATUS, APPLICATION_TYPES } from "@/configs/entities/attendance.config.ts"
 import { EMPLOYEE_STATUS, EMPLOYEE_TYPES, ROLE } from "@/configs/entities/employee.config.ts"
 import Employee from "@/entities/Employee.ts"
 // --- Attendance Domain ---
@@ -188,7 +188,7 @@ const dbSeed = async () => {
       endDate.setDate(endDate.getDate() + 1)
       await Application.create({
         employeeId: emp._id,
-        type: "leave",
+        type: APPLICATION_TYPES.LEAVE.LABEL,
         status: APPLICATION_STATUS.APPROVED,
         reason: "Vacation",
         startDate,

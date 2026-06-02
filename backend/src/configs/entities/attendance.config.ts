@@ -12,17 +12,28 @@ export type IHolidayType = (typeof HOLIDAY_TYPES)[number]
 export const ATTENDANCE_STATUSES = ["on_time", "late", "early_leave", "absent", "overtime"] as const
 export type IAttendanceStatus = (typeof ATTENDANCE_STATUSES)[number]
 
-export const APPLICATION_TYPES = [
-  "leave",
-  "overtime",
-  "work_from_home",
-  "shift_swap",
-  "business_trip",
-  "maternity",
-  "paternity",
-  "sick",
+export const APPLICATION_TYPES = {
+  LEAVE: { LABEL: "leave", DESCRIPTION: "Xin nghỉ phép" },
+  OVERTIME: { LABEL: "overtime", DESCRIPTION: "Làm thêm giờ (OT)" },
+  WORK_FROM_HOME: { LABEL: "work_from_home", DESCRIPTION: "Làm việc từ xa (WFH)" },
+  SHIFT_SWAP: { LABEL: "shift_swap", DESCRIPTION: "Đổi ca làm việc" },
+  BUSINESS_TRIP: { LABEL: "business_trip", DESCRIPTION: "Công tác" },
+  MATERNITY: { LABEL: "maternity", DESCRIPTION: "Nghỉ thai sản" },
+  PATERNITY: { LABEL: "paternity", DESCRIPTION: "Nghỉ thai sản (nam)" },
+  SICK: { LABEL: "sick", DESCRIPTION: "Nghỉ ốm" },
+} as const
+export type IApplicationType = (typeof APPLICATION_TYPES)[keyof typeof APPLICATION_TYPES]["LABEL"]
+
+export const APPLICATION_TYPE_VALUES = [
+  APPLICATION_TYPES.LEAVE.LABEL,
+  APPLICATION_TYPES.OVERTIME.LABEL,
+  APPLICATION_TYPES.WORK_FROM_HOME.LABEL,
+  APPLICATION_TYPES.SHIFT_SWAP.LABEL,
+  APPLICATION_TYPES.BUSINESS_TRIP.LABEL,
+  APPLICATION_TYPES.MATERNITY.LABEL,
+  APPLICATION_TYPES.PATERNITY.LABEL,
+  APPLICATION_TYPES.SICK.LABEL,
 ] as const
-export type IApplicationType = (typeof APPLICATION_TYPES)[number]
 
 export const APPLICATION_STATUS = {
   PENDING: "pending",
