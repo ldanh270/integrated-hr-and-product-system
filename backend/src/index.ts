@@ -12,7 +12,6 @@ import profileRoutes from "@/routes/profile.route.ts"
 import scheduleRoutes from "@/routes/schedule.route.ts"
 import shiftRoutes from "@/routes/shift.route.ts"
 
-import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
 import express, { NextFunction, Request, Response } from "express"
 import path from "path"
@@ -37,7 +36,6 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 
 app.use(cors)
 app.use(express.json())
-app.use(cookieParser())
 
 /**
  * Main routers
