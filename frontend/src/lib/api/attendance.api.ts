@@ -3,7 +3,7 @@ import type { IAttendanceRecord, ICheckInOutRequest } from "@/types/attendance.t
 
 interface ApiResponse<T> {
   data: T
-  error: any
+  error: { message: string; code?: string } | null
   status?: string
 }
 

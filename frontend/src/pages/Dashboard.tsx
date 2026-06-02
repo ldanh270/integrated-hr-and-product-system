@@ -1,7 +1,7 @@
 import { PageCard, SectionHeader, StatusPill } from "@/components/common"
 import AttendanceStats from "@/components/dashboard/attendance-stats.tsx"
 import WorkSchedule from "@/components/dashboard/work-schedule.tsx"
-import { useAuthStore } from "@/store/auth-store.ts"
+import { useDashboard } from "@/hooks/dashboard/useDashboard"
 
 /**
  * WelcomeIllustration — minimal developer SVG, scaled down for compact layout.
@@ -59,7 +59,7 @@ const WelcomeIllustration = () => (
  * Composes visual cards, time-clock, attendance, and weekly calendar widgets.
  */
 export default function Dashboard() {
-  const user = useAuthStore((state) => state.user)
+  const { user, todayFormatted, shiftInfo } = useDashboard()
 
   return (
     <div className="container max-w-7xl px-6 py-6">
@@ -86,7 +86,7 @@ export default function Dashboard() {
               title="Ca làm việc hôm nay"
               action={
                 <span className="text-[10px] font-semibold text-muted-foreground">
-                  Thứ 5, 28/05/2026
+                  {todayFormatted}
                 </span>
               }
             />
@@ -96,7 +96,9 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">Giờ Vào</span>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm font-bold text-foreground">08:33</span>
+                  <span className="font-mono text-sm font-bold text-foreground">
+                    {shiftInfo.checkInTime}
+                  </span>
                   <StatusPill label="Đã vào ca" variant="success" />
                 </div>
               </div>
@@ -105,9 +107,11 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">Giờ Ra</span>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm font-bold text-foreground">12:07</span>
+                  <span className="font-mono text-sm font-bold text-foreground">
+                    {shiftInfo.checkOutTime}
+                  </span>
                   <StatusPill label="Về sớm 233ph" variant="danger" />
-                  <StatusPill label="Đã ra ca" variant="neutral" />
+                  <StatusPill label={shiftInfo.status} variant="neutral" />
                 </div>
               </div>
 
@@ -115,10 +119,15 @@ export default function Dashboard() {
               <div className="pt-2 border-t border-border/40">
                 <div className="flex items-center justify-between text-xs font-medium text-muted-foreground mb-1.5">
                   <span>Giờ Làm</span>
-                  <span className="font-mono font-bold text-foreground">02:34 / 08:00</span>
+                  <span className="font-mono font-bold text-foreground">
+                    {shiftInfo.hoursWorked} / {shiftInfo.totalHours}
+                  </span>
                 </div>
                 <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
-                  <div className="h-full w-[30%] bg-primary rounded-full transition-all" />
+                  <div
+                    className="h-full bg-primary rounded-full transition-all"
+                    style={{ width: `${shiftInfo.progressPercentage}%` }}
+                  />
                 </div>
               </div>
             </div>

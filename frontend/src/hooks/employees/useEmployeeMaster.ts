@@ -1,10 +1,13 @@
-import { useState } from "react"
-import { toast } from "sonner"
-import { useEmployees, useUpdateEmployeeStatus } from "./queries/useEmployeeQuery"
 import { EMPLOYEE_STATUS, ROLE } from "@/config/entities/employee.config"
-import type { Employee, EmployeeListQuery, EmployeeType } from "@/types/employee.types"
 import { useAuthStore } from "@/store/auth-store"
+import type { Employee, EmployeeListQuery, EmployeeType } from "@/types/employee.types"
+
+import { useState } from "react"
+
 import { useNavigate } from "react-router-dom"
+import { toast } from "sonner"
+
+import { useEmployees, useUpdateEmployeeStatus } from "./queries/useEmployeeQuery"
 
 export const useEmployeeMaster = () => {
   const [query, setQuery] = useState<EmployeeListQuery>({
@@ -48,7 +51,7 @@ export const useEmployeeMaster = () => {
         await updateStatusMutation.mutateAsync({ id, data: { status: EMPLOYEE_STATUS.TERMINATED } })
         toast.success("Đã cập nhật trạng thái nhân sự thành công.")
         setActiveActionMenu(null)
-      } catch (error) {
+      } catch {
         toast.error("Có lỗi xảy ra khi cập nhật trạng thái nhân sự.")
       }
     }

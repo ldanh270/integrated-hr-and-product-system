@@ -1,7 +1,9 @@
 import { attendanceApi } from "@/lib/api/attendance.api"
 import { useAuthStore } from "@/store/auth-store"
 import type { User } from "@/store/auth-store"
+
 import { useEffect, useState } from "react"
+
 import { toast } from "sonner"
 
 export function useVirtualScanner(): {
@@ -59,8 +61,9 @@ export function useVirtualScanner(): {
     try {
       await attendanceApi.scan({ location })
       toast.success("Chấm công thành công!")
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Lỗi khi chấm công")
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || "Lỗi khi chấm công")
     } finally {
       setIsProcessing(false)
     }

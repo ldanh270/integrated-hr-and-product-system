@@ -28,9 +28,10 @@ export const useLogin = () => {
     try {
       await login(data)
       navigate(ROUTES.HRM.DASHBOARD)
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } } }
       setError("root", {
-        message: error.response?.data?.message || "Login failed. Please try again.",
+        message: err.response?.data?.message || "Login failed. Please try again.",
       })
     }
   }
@@ -47,8 +48,9 @@ export const useLogin = () => {
       toast.success("Yêu cầu reset mật khẩu đã được gửi cho admin duyệt.")
       setShowForgotModal(false)
       setForgotUsername("")
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Có lỗi xảy ra khi gửi yêu cầu")
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || "Có lỗi xảy ra khi gửi yêu cầu")
     }
   }
 

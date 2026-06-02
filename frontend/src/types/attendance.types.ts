@@ -15,8 +15,8 @@ export interface ICheckInOutRequest {
 
 export interface IAttendanceRecord {
   _id: string
-  employeeId: string | any
-  shiftId: string | any
+  employeeId: string
+  shiftId: string
   date: string
   checkIn: {
     at: string
@@ -52,7 +52,7 @@ export interface IWorkingShift {
 
 export interface IShiftSchedule {
   _id: string
-  employeeId: string | any
+  employeeId: string
   weekdays: {
     mon?: string
     tue?: string
@@ -68,7 +68,7 @@ export interface IShiftSchedule {
 
 export interface IApplication {
   _id: string
-  employeeId: string | any
+  employeeId: string
   type: IApplicationType
   status: IApplicationStatus
   reason: string

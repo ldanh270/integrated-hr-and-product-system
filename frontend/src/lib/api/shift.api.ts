@@ -3,7 +3,7 @@ import type { IShiftSchedule, IWorkingShift } from "@/types/attendance.types"
 
 interface ApiResponse<T> {
   data: T
-  error: any
+  error: { message: string; code?: string } | null
   status?: string
 }
 
@@ -28,7 +28,7 @@ export const shiftApi = {
     return response.data.data
   },
 
-  assignSchedule: async (data: any): Promise<IShiftSchedule> => {
+  assignSchedule: async (data: Record<string, unknown>): Promise<IShiftSchedule> => {
     const response = await apiClient.post<ApiResponse<IShiftSchedule>>("/schedules/assign", data)
     return response.data.data
   },

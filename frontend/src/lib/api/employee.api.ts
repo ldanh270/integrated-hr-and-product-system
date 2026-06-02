@@ -10,7 +10,7 @@ import type {
 
 interface ApiResponse<T> {
   data: T
-  error: any
+  error: { message: string; code?: string } | null
   status?: string
 }
 
