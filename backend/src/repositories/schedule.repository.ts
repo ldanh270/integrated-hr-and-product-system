@@ -3,18 +3,23 @@ import { IAssignShiftScheduleDTO, IShiftScheduleRepository } from "@/types/shift
 
 import { Model } from "mongoose"
 
-export class MongoShiftScheduleRepository implements IShiftScheduleRepository {
-  constructor(private scheduleModel: Model<ShiftScheduleDocument>) {}
+import { BaseRepository } from "./base.repository.ts"
+
+export class MongoShiftScheduleRepository
+  extends BaseRepository<ShiftScheduleDocument>
+  implements IShiftScheduleRepository
+{
+  constructor(scheduleModel: Model<ShiftScheduleDocument>) {
+    super(scheduleModel)
+  }
 
   async assignSchedule(data: IAssignShiftScheduleDTO): Promise<any> {
-    const schedule = new this.scheduleModel(data)
-    const saved = await schedule.save()
-    return saved.toObject()
+    return this.create(data)
   }
 
   async getScheduleByEmployee(employeeId: string, date: string | Date): Promise<any | null> {
     // Find active schedule for the given date
-    return this.scheduleModel
+    return this.model
       .findOne({
         employeeId,
         validFrom: { $lte: new Date(date) },

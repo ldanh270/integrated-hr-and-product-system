@@ -4,7 +4,7 @@ export class HolidayService implements IHolidayService {
   constructor(private holidayRepo: IHolidayRepository) {}
 
   async createHoliday(name: string, date: string | Date, type: string): Promise<any> {
-    return this.holidayRepo.create(name, date, type)
+    return this.holidayRepo.createHoliday(name, date, type)
   }
 
   async isHoliday(date: string | Date): Promise<boolean> {

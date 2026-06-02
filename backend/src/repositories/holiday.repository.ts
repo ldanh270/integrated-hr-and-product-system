@@ -3,15 +3,22 @@ import { IHolidayRepository } from "@/types/attendance.types.ts"
 
 import { Model } from "mongoose"
 
-export class MongoHolidayRepository implements IHolidayRepository {
-  constructor(private holidayModel: Model<HolidayCalendarDocument>) {}
+import { BaseRepository } from "./base.repository.ts"
 
-  async create(name: string, date: string | Date, type: string): Promise<any> {
+export class MongoHolidayRepository
+  extends BaseRepository<HolidayCalendarDocument>
+  implements IHolidayRepository
+{
+  constructor(holidayModel: Model<HolidayCalendarDocument>) {
+    super(holidayModel)
+  }
+
+  async createHoliday(name: string, date: string | Date, type: string): Promise<any> {
     const holidayDate = new Date(date)
     holidayDate.setHours(0, 0, 0, 0)
 
     // Upsert holiday
-    const holiday = await this.holidayModel
+    const holiday = await this.model
       .findOneAndUpdate(
         { date: holidayDate },
         { $set: { name, type } },
@@ -26,7 +33,7 @@ export class MongoHolidayRepository implements IHolidayRepository {
     const checkDate = new Date(date)
     checkDate.setHours(0, 0, 0, 0)
 
-    const holiday = await this.holidayModel.exists({ date: checkDate })
+    const holiday = await this.model.exists({ date: checkDate })
     return holiday !== null
   }
 }

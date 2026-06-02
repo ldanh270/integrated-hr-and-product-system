@@ -7,28 +7,17 @@ import {
 
 import { Model } from "mongoose"
 
-export class MongoWorkingShiftRepository implements IWorkingShiftRepository {
-  constructor(private workingShiftModel: Model<WorkingShiftDocument>) {}
+import { BaseRepository } from "./base.repository.ts"
 
-  async create(data: ICreateWorkingShiftDTO): Promise<any> {
-    const shift = new this.workingShiftModel(data)
-    const saved = await shift.save()
-    return saved.toObject()
-  }
-
-  async update(id: string, data: IUpdateWorkingShiftDTO): Promise<any | null> {
-    const updated = await this.workingShiftModel
-      .findByIdAndUpdate(id, { $set: data }, { new: true })
-      .lean()
-
-    return updated
-  }
-
-  async findById(id: string): Promise<any | null> {
-    return this.workingShiftModel.findById(id).lean()
+export class MongoWorkingShiftRepository
+  extends BaseRepository<WorkingShiftDocument>
+  implements IWorkingShiftRepository
+{
+  constructor(workingShiftModel: Model<WorkingShiftDocument>) {
+    super(workingShiftModel)
   }
 
   async listAll(): Promise<any[]> {
-    return this.workingShiftModel.find().lean()
+    return this.findAll()
   }
 }

@@ -59,7 +59,7 @@ export interface IApplicationRepository {
 }
 
 export interface IHolidayRepository {
-  create(name: string, date: string | Date, type: string): Promise<any>
+  createHoliday(name: string, date: string | Date, type: string): Promise<any>
   checkIsHoliday(date: string | Date): Promise<boolean>
 }
 

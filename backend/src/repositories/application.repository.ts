@@ -5,11 +5,18 @@ import { IApplicationRepository, ISubmitApplicationDTO } from "@/types/attendanc
 
 import { Model } from "mongoose"
 
-export class MongoApplicationRepository implements IApplicationRepository {
-  constructor(private applicationModel: Model<ApplicationDocument>) {}
+import { BaseRepository } from "./base.repository.ts"
+
+export class MongoApplicationRepository
+  extends BaseRepository<ApplicationDocument>
+  implements IApplicationRepository
+{
+  constructor(applicationModel: Model<ApplicationDocument>) {
+    super(applicationModel)
+  }
 
   async submit(data: ISubmitApplicationDTO): Promise<any> {
-    const app = new this.applicationModel({
+    const app = new this.model({
       ...data,
       status: APPLICATION_STATUS.PENDING,
     })
@@ -18,7 +25,7 @@ export class MongoApplicationRepository implements IApplicationRepository {
   }
 
   async approve(id: string, status: IApplicationStatus, approvedBy: string): Promise<any | null> {
-    const updated = await this.applicationModel
+    const updated = await this.model
       .findByIdAndUpdate(
         id,
         {
@@ -36,6 +43,6 @@ export class MongoApplicationRepository implements IApplicationRepository {
   }
 
   async findByEmployee(employeeId: string): Promise<any[]> {
-    return this.applicationModel.find({ employeeId }).sort({ createdAt: -1 }).lean()
+    return this.model.find({ employeeId }).sort({ createdAt: -1 }).lean()
   }
 }

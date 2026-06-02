@@ -1,4 +1,3 @@
-import { IAttendanceStatus } from "@/configs/entities/attendance.config.ts"
 import { AttendanceRecordDocument } from "@/entities/attendance/AttendanceRecord.ts"
 import {
   IAttendanceRecordQueryDTO,
@@ -8,15 +7,22 @@ import {
 
 import { Model } from "mongoose"
 
-export class MongoAttendanceRepository implements IAttendanceRepository {
-  constructor(private attendanceModel: Model<AttendanceRecordDocument>) {}
+import { BaseRepository } from "./base.repository.ts"
+
+export class MongoAttendanceRepository
+  extends BaseRepository<AttendanceRecordDocument>
+  implements IAttendanceRepository
+{
+  constructor(attendanceModel: Model<AttendanceRecordDocument>) {
+    super(attendanceModel)
+  }
 
   async checkIn(employeeId: string, location: IGpsScanDTO, shiftId?: string): Promise<any> {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
     // Find if record already exists for today, else create
-    const record = await this.attendanceModel
+    const record = await this.model
       .findOneAndUpdate(
         {
           employeeId,
@@ -41,7 +47,7 @@ export class MongoAttendanceRepository implements IAttendanceRepository {
     today.setHours(0, 0, 0, 0)
 
     // Update existing record
-    const record = await this.attendanceModel
+    const record = await this.model
       .findOneAndUpdate(
         {
           employeeId,
@@ -72,6 +78,6 @@ export class MongoAttendanceRepository implements IAttendanceRepository {
       if (query.endDate) filter.date.$lte = new Date(query.endDate)
     }
 
-    return this.attendanceModel.find(filter).sort({ date: -1 }).lean()
+    return this.model.find(filter).sort({ date: -1 }).lean()
   }
 }

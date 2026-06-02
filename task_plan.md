@@ -1,19 +1,54 @@
-# Frontend Hardcode Audit Plan
+# Task Plan: Refactor Backend Repositories to use BaseRepository
 
 ## Goal
-Scan the entire frontend codebase for hardcoded links, route paths, and reusable variables. Move them into centralized constants, and enforce the import rule (`../` for `.d.ts`, `@/` for `.ts` / `.tsx`).
+
+Centralize common Mongoose repository operations into a `BaseRepository` class to follow SOLID principles and reduce code duplication across the backend.
+
+## Current Phase
+
+Phase 2
 
 ## Phases
-- [x] Phase 1: Identify all files in `frontend/src` for scanning (components, pages, services).
-- [x] Phase 2: Audit files, identifying hardcoded strings to centralize.
-- [x] Phase 3: Create or update centralized configuration files.
-- [x] Phase 4: Refactor components to use constants and fix import paths.
-- [x] Phase 5: Build and verify.
 
-## Current Status
-- Current Phase: All Phases Complete
-- Status: complete
+### Phase 1: Requirements & Discovery
 
-## Errors Encountered
-| Error | Attempt | Resolution |
-|-------|---------|------------|
+- [x] Understand user intent
+- [x] Identify constraints and requirements
+- [x] Document findings in findings.md
+- **Status:** complete
+
+### Phase 2: Planning & Structure
+
+- [x] Define technical approach (BaseRepository and IBaseRepository)
+- [x] Create implementation plan artifact
+- [x] Present plan to user for approval
+- **Status:** complete
+
+### Phase 3: Implementation
+
+- [x] Implement `IBaseRepository<T>` interface
+- [x] Implement `BaseRepository<T>` class with Mongoose generics
+- [x] Refactor `MongoWorkingShiftRepository` to extend `BaseRepository`
+- [x] Refactor `MongoEmployeeRepository` to extend `BaseRepository`
+- [x] Refactor other repositories (Attendance, Auth, etc. where applicable)
+- **Status:** complete
+
+### Phase 4: Testing & Verification
+
+- [x] Verify TypeScript compiles without errors
+- [x] Verify standard Repository methods function correctly
+- **Status:** complete
+
+### Phase 5: Delivery
+
+- [x] Review all output files
+- [x] Ensure deliverables are complete
+- [x] Deliver to user
+- **Status:** complete
+
+## Decisions Made
+
+| Decision                              | Rationale                                                                |
+| ------------------------------------- | ------------------------------------------------------------------------ |
+| Create `IBaseRepository<T>` interface | Adheres to Interface Segregation and Dependency Inversion.               |
+| Create `BaseRepository<T>` class      | Follows DRY and Single Responsibility by handling common Mongoose logic. |

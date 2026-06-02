@@ -3,8 +3,15 @@ import { IEmployeeShiftRepository, IOverrideEmployeeShiftDTO } from "@/types/shi
 
 import { Model } from "mongoose"
 
-export class MongoEmployeeShiftRepository implements IEmployeeShiftRepository {
-  constructor(private employeeShiftModel: Model<EmployeeShiftDocument>) {}
+import { BaseRepository } from "./base.repository.ts"
+
+export class MongoEmployeeShiftRepository
+  extends BaseRepository<EmployeeShiftDocument>
+  implements IEmployeeShiftRepository
+{
+  constructor(employeeShiftModel: Model<EmployeeShiftDocument>) {
+    super(employeeShiftModel)
+  }
 
   async overrideShift(data: IOverrideEmployeeShiftDTO): Promise<any> {
     // Find if already exists, else create
@@ -17,7 +24,7 @@ export class MongoEmployeeShiftRepository implements IEmployeeShiftRepository {
     const endOfDay = new Date(assignedDate)
     endOfDay.setHours(23, 59, 59, 999)
 
-    const updated = await this.employeeShiftModel
+    const updated = await this.model
       .findOneAndUpdate(
         {
           employeeId,
@@ -45,7 +52,7 @@ export class MongoEmployeeShiftRepository implements IEmployeeShiftRepository {
     const endOfDay = new Date(date)
     endOfDay.setHours(23, 59, 59, 999)
 
-    return this.employeeShiftModel
+    return this.model
       .findOne({
         employeeId,
         assignedDate: { $gte: startOfDay, $lte: endOfDay },
