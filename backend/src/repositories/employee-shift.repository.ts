@@ -38,7 +38,7 @@ export class MongoEmployeeShiftRepository
             status: "scheduled",
           },
         },
-        { new: true, upsert: true },
+        { returnDocument: 'after', upsert: true },
       )
       .lean()
 

@@ -35,7 +35,7 @@ export class MongoAttendanceRepository
             "checkIn.location": location,
           },
         },
-        { new: true, upsert: true },
+        { returnDocument: 'after', upsert: true },
       )
       .lean()
 
@@ -59,7 +59,7 @@ export class MongoAttendanceRepository
             "checkOut.location": location,
           },
         },
-        { new: true },
+        { returnDocument: 'after' },
       )
       .lean()
 

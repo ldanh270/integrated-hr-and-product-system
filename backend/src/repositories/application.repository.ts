@@ -35,7 +35,7 @@ export class MongoApplicationRepository
             approvedAt: new Date(),
           },
         },
-        { new: true },
+        { returnDocument: 'after' },
       )
       .lean()
 

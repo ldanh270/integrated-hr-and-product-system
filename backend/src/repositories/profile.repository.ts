@@ -48,7 +48,7 @@ export class MongoProfileRepository
     const employee = await this.model.findByIdAndUpdate(
       empId,
       { $set: updateFields },
-      { new: true, runValidators: true },
+      { returnDocument: 'after', runValidators: true },
     )
 
     return employee as unknown as ProfileEmployeeDocument | null
@@ -61,7 +61,7 @@ export class MongoProfileRepository
     empId: string,
     avatar: { url: string; id: string },
   ): Promise<ProfileEmployeeDocument | null> {
-    const employee = await this.model.findByIdAndUpdate(empId, { $set: { avatar } }, { new: true })
+    const employee = await this.model.findByIdAndUpdate(empId, { $set: { avatar } }, { returnDocument: 'after' })
 
     return employee as unknown as ProfileEmployeeDocument | null
   }

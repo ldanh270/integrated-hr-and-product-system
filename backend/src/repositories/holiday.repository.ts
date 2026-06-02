@@ -22,7 +22,7 @@ export class MongoHolidayRepository
       .findOneAndUpdate(
         { date: holidayDate },
         { $set: { name, type } },
-        { new: true, upsert: true },
+        { returnDocument: 'after', upsert: true },
       )
       .lean()
 

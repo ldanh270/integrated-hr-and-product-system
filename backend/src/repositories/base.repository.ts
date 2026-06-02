@@ -66,7 +66,7 @@ export abstract class BaseRepository<TDb, TDomain = TDb> implements IBaseReposit
    * Update a document by its database ID
    */
   async update(id: string, data: any, lean = true): Promise<TDomain | null> {
-    const query = this.model.findByIdAndUpdate(id, { $set: data }, { new: true })
+    const query = this.model.findByIdAndUpdate(id, { $set: data }, { returnDocument: 'after' })
     const updated = await (lean ? query.lean<TDb>() : query)
     if (!updated) return null
     return this.mapToDomain(updated as unknown as TDb)
