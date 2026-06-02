@@ -1,1 +1,1 @@
-export default function TrainingDashboard(): import("react/jsx-runtime").JSX.Element;
+export default function TrainingDashboard(): import("react/jsx-runtime").JSX.Element

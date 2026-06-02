@@ -1,6 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { getMyProfile, updateMyProfile, uploadAvatar, changePassword } from "@/lib/api/profile.api.ts"
+import {
+  changePassword,
+  getMyProfile,
+  updateMyProfile,
+  uploadAvatar,
+} from "@/lib/api/profile.api.ts"
 import type { ProfileDto, UpdateProfileDto } from "@/types/profile.types.ts"
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 const PROFILE_QUERY_KEY = ["profile", "me"]
 
@@ -41,4 +47,3 @@ export const useChangePassword = () => {
       changePassword(oldPassword, newPassword),
   })
 }
-

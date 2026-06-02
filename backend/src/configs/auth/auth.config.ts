@@ -1,6 +1,6 @@
-/**
- * Fields regex
- */
+export const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET || ""
+export const ACCESS_TOKEN_TTL = 24 * 60 * 60 * 1000 // 1 day
+
 export const REGEX = {
   // MongoDB ObjectId (_id). 24 characters hex string
   MONGO_ID: /^[0-9a-fA-F]{24}$/,
@@ -14,3 +14,19 @@ export const REGEX = {
   // Can include + at first character, length from 10 to 15 characters
   PHONE: /^\+?[0-9]{10,15}$/,
 }
+
+export const PASSWORD_RESET_STATUS = {
+  PENDING: "pending",
+  APPROVED: "approved",
+  REJECTED: "rejected",
+  USED: "used",
+  EXPIRED: "expired",
+} as const
+
+export const PASSWORD_RESET_STATUSES = [
+  PASSWORD_RESET_STATUS.PENDING,
+  PASSWORD_RESET_STATUS.APPROVED,
+  PASSWORD_RESET_STATUS.REJECTED,
+  PASSWORD_RESET_STATUS.USED,
+  PASSWORD_RESET_STATUS.EXPIRED,
+] as const

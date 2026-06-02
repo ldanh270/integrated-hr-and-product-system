@@ -127,6 +127,7 @@ A task is not complete until the `QA-Review-Agent` verifies the following:
 - **Layering:** Route → Controller → Service → Repository.
 - **DI:** Constructor injection only.
 - **Errors:** Throw `AppError(message, statusCode, layer)`.
+- **No Hardcoded Constants:** No hardcoded business constants (e.g., roles, statuses, and HTTP codes). All such values must be imported from the centralized, feature-organized config directories under `@/configs/` (`configs/entities/`, `configs/auth/`, `configs/system/`, `configs/rules/`).
 
 ### Frontend (React 19)
 - **Design Truth:** All UI work MUST follow [docs/frontend-design-spec.md](docs/frontend-design-spec.md).

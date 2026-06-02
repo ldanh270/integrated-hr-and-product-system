@@ -8,18 +8,30 @@ interface ApiResponse<T> {
 }
 
 export const attendanceApi = {
-  getRecords: async (query?: { employeeId?: string; startDate?: string; endDate?: string }): Promise<IAttendanceRecord[]> => {
-    const response = await apiClient.get<ApiResponse<IAttendanceRecord[]>>("/attendance", { params: query })
+  getRecords: async (query?: {
+    employeeId?: string
+    startDate?: string
+    endDate?: string
+  }): Promise<IAttendanceRecord[]> => {
+    const response = await apiClient.get<ApiResponse<IAttendanceRecord[]>>("/attendance", {
+      params: query,
+    })
     return response.data.data
   },
 
   checkIn: async (data: ICheckInOutRequest): Promise<IAttendanceRecord> => {
-    const response = await apiClient.post<ApiResponse<IAttendanceRecord>>("/attendance/check-in", data)
+    const response = await apiClient.post<ApiResponse<IAttendanceRecord>>(
+      "/attendance/check-in",
+      data,
+    )
     return response.data.data
   },
 
   checkOut: async (data: ICheckInOutRequest): Promise<IAttendanceRecord> => {
-    const response = await apiClient.post<ApiResponse<IAttendanceRecord>>("/attendance/check-out", data)
+    const response = await apiClient.post<ApiResponse<IAttendanceRecord>>(
+      "/attendance/check-out",
+      data,
+    )
     return response.data.data
   },
 

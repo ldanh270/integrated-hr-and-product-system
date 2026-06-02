@@ -18,7 +18,9 @@ const hashPassword = async () => {
     console.log("Password to hash:", password)
     console.log("Generated Hash  :", hash)
     console.log("--------------------------------------------------\n")
-    console.log("You can now copy this hash and paste it into the 'passwordHash' field in your database.")
+    console.log(
+      "You can now copy this hash and paste it into the 'passwordHash' field in your database.",
+    )
   } catch (error) {
     console.error("Error hashing password:", error)
     process.exit(1)

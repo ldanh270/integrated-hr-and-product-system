@@ -1,11 +1,12 @@
-import { HttpStatusCode } from "@/configs/constants/http.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
+  attendanceRecordQuerySchema,
   checkInSchema,
   checkOutSchema,
-  attendanceRecordQuerySchema,
 } from "@/schemas/attendance.schema.ts"
-import { IAttendanceService } from "@/types/attendance.types.ts"
 import { ApiResponse } from "@/types"
+import { IAttendanceService } from "@/types/attendance.types.ts"
+
 import { Request, Response } from "express"
 import { z } from "zod"
 
@@ -16,9 +17,9 @@ export class AttendanceController {
     try {
       // In a real app, employeeId comes from req.user!
       // Here we assume it's passed in body or req.user.id
-      const { employeeId } = req.body
+      const { employeeId } = z.object({ employeeId: z.string().min(1) }).parse(req.body)
       const { location } = checkInSchema.parse(req.body)
-      
+
       const record = await this.service.checkIn(employeeId, location)
       res.status(HttpStatusCode.OK).json({ data: record, error: null })
     } catch (error) {
@@ -34,9 +35,9 @@ export class AttendanceController {
 
   checkOut = async (req: Request, res: Response<ApiResponse<any>>) => {
     try {
-      const { employeeId } = req.body
+      const { employeeId } = z.object({ employeeId: z.string().min(1) }).parse(req.body)
       const { location } = checkOutSchema.parse(req.body)
-      
+
       const record = await this.service.checkOut(employeeId, location)
       res.status(HttpStatusCode.OK).json({ data: record, error: null })
     } catch (error) {
@@ -54,13 +55,17 @@ export class AttendanceController {
     try {
       // Auto-detect Check In vs Check Out based on existing record
       // In a real app employeeId comes from req.user
-      const { employeeId } = req.body
+      const { employeeId } = z.object({ employeeId: z.string().min(1) }).parse(req.body)
       const { location } = checkInSchema.parse(req.body)
 
       const today = new Date()
       today.setHours(0, 0, 0, 0)
-      
-      const records = await this.service.getAttendanceRecords({ employeeId, startDate: today.toISOString(), endDate: today.toISOString() })
+
+      const records = await this.service.getAttendanceRecords({
+        employeeId,
+        startDate: today.toISOString(),
+        endDate: today.toISOString(),
+      })
       const todayRecord = records[0]
 
       let result

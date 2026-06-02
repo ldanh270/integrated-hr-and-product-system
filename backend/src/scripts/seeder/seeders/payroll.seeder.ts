@@ -1,15 +1,24 @@
+import { ROLE } from "@/configs/entities/employee.config.ts"
 import Employee from "@/entities/Employee.ts"
 import Payroll from "@/entities/payroll/Payroll.ts"
 import PayrollComponent from "@/entities/payroll/PayrollComponent.ts"
 import PayrollSettings from "@/entities/payroll/PayrollSettings.ts"
 import PayrollTemplate from "@/entities/payroll/PayrollTemplate.ts"
 import Payslip from "@/entities/payroll/Payslip.ts"
-import { BASE_PAYROLL_COMPONENTS, PAYROLL_TEMPLATES, DEFAULT_PAYROLL_SETTINGS, PAYROLL_PERIODS } from "../data/payroll.data.ts"
+
 import { faker } from "@faker-js/faker"
 
+import {
+  BASE_PAYROLL_COMPONENTS,
+  DEFAULT_PAYROLL_SETTINGS,
+  PAYROLL_PERIODS,
+  PAYROLL_TEMPLATES,
+} from "../data/payroll.data.ts"
 import { seedEmployees } from "./employee.seeder.ts"
 
-export const seedPayroll = async (passedEmployees?: any[]): Promise<{ components: any[]; templates: any[]; payrolls: any[] }> => {
+export const seedPayroll = async (
+  passedEmployees?: any[],
+): Promise<{ components: any[]; templates: any[]; payrolls: any[] }> => {
   console.log("💰 Seeding Payroll Setup...")
 
   // 1. Get employees or auto-seed if none exist
@@ -19,7 +28,7 @@ export const seedPayroll = async (passedEmployees?: any[]): Promise<{ components
     employees = await seedEmployees()
   }
 
-  const admin = employees.find(e => e.role === "admin") || employees[0]
+  const admin = employees.find((e) => e.role === ROLE.ADMIN) || employees[0]
 
   // 1.5. Clear existing payroll database setup
   await PayrollComponent.deleteMany({})
@@ -29,7 +38,7 @@ export const seedPayroll = async (passedEmployees?: any[]): Promise<{ components
   await Payslip.deleteMany({})
 
   // 2. Seed PayrollComponents
-  const componentsToInsert = BASE_PAYROLL_COMPONENTS.map(comp => ({
+  const componentsToInsert = BASE_PAYROLL_COMPONENTS.map((comp) => ({
     ...comp,
     createdBy: admin._id,
   }))
@@ -49,11 +58,11 @@ export const seedPayroll = async (passedEmployees?: any[]): Promise<{ components
   const createdTemplates: any[] = []
   for (const templateData of PAYROLL_TEMPLATES) {
     const isIntern = templateData.name.includes("Intern")
-    
+
     // Standard template has all components, Intern has base & health only
     const templateComponents = createdComponents
-      .filter(c => !isIntern || c.name === "Base Salary" || c.name === "Health Insurance")
-      .map(c => ({
+      .filter((c) => !isIntern || c.name === "Base Salary" || c.name === "Health Insurance")
+      .map((c) => ({
         componentId: c._id,
         name: c.name,
         type: c.type,
@@ -77,7 +86,7 @@ export const seedPayroll = async (passedEmployees?: any[]): Promise<{ components
   for (const period of PAYROLL_PERIODS) {
     // Delete any existing period with same year/month to avoid index collision
     await Payroll.deleteOne({ periodMonth: period.month, periodYear: period.year })
-    
+
     const payroll = await Payroll.create({
       periodMonth: period.month,
       periodYear: period.year,
@@ -96,15 +105,15 @@ export const seedPayroll = async (passedEmployees?: any[]): Promise<{ components
     let totalPayrollAmount = 0
 
     for (const emp of employees) {
-      const baseSalary = emp.role === "team_leader" ? 6500 : 4500
+      const baseSalary = emp.role === ROLE.TEAM_LEADER ? 6500 : 4500
       const isIntern = emp.employeeType === "intern"
-      
-      const empTemplate = isIntern 
-        ? createdTemplates.find(t => t.name.includes("Intern"))
-        : createdTemplates.find(t => t.name.includes("Standard"))
+
+      const empTemplate = isIntern
+        ? createdTemplates.find((t) => t.name.includes("Intern"))
+        : createdTemplates.find((t) => t.name.includes("Standard"))
 
       const templateComponents = empTemplate ? empTemplate.components : []
-      
+
       // Calculate totals
       let totalAdditions = 0
       let totalDeductions = 0
@@ -112,7 +121,7 @@ export const seedPayroll = async (passedEmployees?: any[]): Promise<{ components
       const payslipDetails = templateComponents.map((c: any) => {
         const formula = c.overrideFormula || c.formula
         let monetaryAmount = 0
-        
+
         // Simple mock "interpreter" for seed data formulas
         if (formula === "contract_salary") {
           monetaryAmount = baseSalary

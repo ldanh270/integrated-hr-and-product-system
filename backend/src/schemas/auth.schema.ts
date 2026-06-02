@@ -1,4 +1,4 @@
-import { REGEX } from "@/configs/constants/regex.config.ts"
+import { REGEX } from "@/configs/auth/auth.config.ts"
 
 import { z } from "zod"
 

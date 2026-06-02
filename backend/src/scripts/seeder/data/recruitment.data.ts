@@ -22,12 +22,14 @@ export const POSTINGS_MOCK = [
   {
     title: "Senior Software Engineer (Node.js/TypeScript)",
     description: "Looking for an expert backend engineer to lead the SWP391 HRM system deployment.",
-    requirements: "3+ years Node.js, experience with Mongoose, clean architecture, and SOLID design patterns.",
+    requirements:
+      "3+ years Node.js, experience with Mongoose, clean architecture, and SOLID design patterns.",
     benefits: "Competitive salary, private health insurance, flex-hours, premium workspace access.",
   },
   {
     title: "Product Designer (Figma / React)",
-    description: "Translate beautiful high-fidelity Figma components into premium styled React views.",
+    description:
+      "Translate beautiful high-fidelity Figma components into premium styled React views.",
     requirements: "Strong UI design principles, Tailwind CSS expertise, and React 19 knowledge.",
     benefits: "Remote flexibility, top-tier hardware, continuous learning training stipend.",
   },

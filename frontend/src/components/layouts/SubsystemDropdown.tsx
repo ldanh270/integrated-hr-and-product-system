@@ -1,15 +1,17 @@
-import { useEffect, useRef, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { LayoutGrid, ChevronRight } from "lucide-react"
-
+import { ROUTES } from "@/config/routes.config"
 import { SUBSYSTEMS } from "@/config/subsystem"
 import { useSubsystemStore } from "@/store/subsystem-store"
+
+import { useEffect, useRef, useState } from "react"
+
+import { ChevronRight, LayoutGrid } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 export default function SubsystemDropdown() {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
-  
+
   const { activeSubsystem, setActiveSubsystem } = useSubsystemStore()
 
   // Close dropdown when clicking outside
@@ -33,9 +35,9 @@ export default function SubsystemDropdown() {
     setIsOpen(false)
     // Default navigate to the dashboard of that subsystem
     if (subsystemId === "attendance") {
-       navigate("/attendance")
+      navigate(ROUTES.SUBSYSTEMS.ATTENDANCE)
     } else {
-       navigate(`${routePrefix}/dashboard`)
+      navigate(`${routePrefix}/dashboard`)
     }
   }
 
@@ -55,7 +57,7 @@ export default function SubsystemDropdown() {
             {SUBSYSTEMS.map((subsystem) => {
               const Icon = subsystem.icon
               const isActive = activeSubsystem === subsystem.id
-              
+
               return (
                 <button
                   key={subsystem.id}
@@ -66,23 +68,36 @@ export default function SubsystemDropdown() {
                       : "hover:bg-secondary border border-transparent"
                   }`}
                 >
-                  <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${
-                    isActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover:text-foreground"
-                  }`}>
+                  <div
+                    className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground group-hover:text-foreground"
+                    }`}
+                  >
                     <Icon size={16} />
                   </div>
-                  
+
                   <div className="flex-1 flex flex-col overflow-hidden">
-                    <span className={`text-sm font-bold leading-none mb-1 ${isActive ? "text-primary" : "text-foreground"}`}>
+                    <span
+                      className={`text-sm font-bold leading-none mb-1 ${isActive ? "text-primary" : "text-foreground"}`}
+                    >
                       {subsystem.name}
                     </span>
                     <span className="text-xs text-muted-foreground line-clamp-1">
                       {subsystem.description}
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center h-8 shrink-0">
-                    <ChevronRight size={16} className={isActive ? "text-primary" : "text-muted-foreground/50 group-hover:text-foreground"} />
+                    <ChevronRight
+                      size={16}
+                      className={
+                        isActive
+                          ? "text-primary"
+                          : "text-muted-foreground/50 group-hover:text-foreground"
+                      }
+                    />
                   </div>
                 </button>
               )

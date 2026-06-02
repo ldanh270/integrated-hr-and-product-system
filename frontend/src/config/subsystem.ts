@@ -55,9 +55,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     description: "Tạo đơn từ và duyệt đơn trực tuyến",
     icon: FileText,
     routePrefix: "/application",
-    sidebarItems: [
-      { name: "Tổng quan", path: "/application/dashboard", icon: FileText },
-    ],
+    sidebarItems: [{ name: "Tổng quan", path: "/application/dashboard", icon: FileText }],
   },
   {
     id: "attendance",
@@ -79,9 +77,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     description: "Tự động việc tính và chi trả bảng lương",
     icon: CircleDollarSign,
     routePrefix: "/payroll",
-    sidebarItems: [
-      { name: "Tổng quan", path: "/payroll/dashboard", icon: CircleDollarSign },
-    ],
+    sidebarItems: [{ name: "Tổng quan", path: "/payroll/dashboard", icon: CircleDollarSign }],
   },
   {
     id: "asset",
@@ -89,9 +85,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     description: "Quản lý tài sản và thông tin bàn giao",
     icon: Package,
     routePrefix: "/asset",
-    sidebarItems: [
-      { name: "Tổng quan", path: "/asset/dashboard", icon: Package },
-    ],
+    sidebarItems: [{ name: "Tổng quan", path: "/asset/dashboard", icon: Package }],
   },
   {
     id: "recruitment",
@@ -99,9 +93,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     description: "Quản lý hồ sơ ứng viên và lịch phỏng vấn",
     icon: Briefcase,
     routePrefix: "/recruitment",
-    sidebarItems: [
-      { name: "Tổng quan", path: "/recruitment/dashboard", icon: Briefcase },
-    ],
+    sidebarItems: [{ name: "Tổng quan", path: "/recruitment/dashboard", icon: Briefcase }],
   },
   {
     id: "training",
@@ -109,9 +101,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     description: "Quản lý các khóa đào tạo nội bộ",
     icon: BookOpen,
     routePrefix: "/training",
-    sidebarItems: [
-      { name: "Tổng quan", path: "/training/dashboard", icon: BookOpen },
-    ],
+    sidebarItems: [{ name: "Tổng quan", path: "/training/dashboard", icon: BookOpen }],
   },
   {
     id: "security",
@@ -132,8 +122,6 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     description: "Cài đặt hệ thống",
     icon: Settings,
     routePrefix: "/settings",
-    sidebarItems: [
-      { name: "Tổng quan", path: "/settings/dashboard", icon: Settings },
-    ],
+    sidebarItems: [{ name: "Tổng quan", path: "/settings/dashboard", icon: Settings }],
   },
 ]

@@ -1,13 +1,13 @@
-import { HOLIDAY_TYPES } from "@/configs/constants/entities.config.ts"
+import { HOLIDAY_TYPES } from "@/configs/entities/attendance.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 
 /**
  * HolidayCalendar Entity
- * 
- * Manages holidays globally across the system. 
+ *
+ * Manages holidays globally across the system.
  * Holidays can be "national" (applies to everyone) or "company" (custom company days off).
- * 
+ *
  * - During auto-generation of EmployeeShift records, national holidays will be skipped entirely.
  * - Company holidays will generate an EmployeeShift with "holiday_pending" status, requiring HR review.
  * - Also used by Payroll to calculate holiday pay.

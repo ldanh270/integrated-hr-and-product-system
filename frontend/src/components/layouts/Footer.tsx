@@ -9,9 +9,15 @@ export default function Footer() {
           &copy; 2026 HRM System. All rights reserved. Built for modern enterprises.
         </p>
         <div className="flex items-center gap-4 text-sm font-medium text-muted-foreground">
-          <a href="#" className="hover:text-primary transition-colors">Privacy Policy</a>
-          <a href="#" className="hover:text-primary transition-colors">Terms of Service</a>
-          <a href="#" className="hover:text-primary transition-colors">Support</a>
+          <a href="#" className="hover:text-primary transition-colors">
+            Privacy Policy
+          </a>
+          <a href="#" className="hover:text-primary transition-colors">
+            Terms of Service
+          </a>
+          <a href="#" className="hover:text-primary transition-colors">
+            Support
+          </a>
         </div>
       </div>
     </footer>

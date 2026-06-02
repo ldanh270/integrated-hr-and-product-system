@@ -1,4 +1,6 @@
-import { APPROVAL_CONFIG, RequestCategory } from "@/configs/constants/approval.config.ts"
+import { ROLE } from "@/configs/entities/employee.config.ts"
+import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
+import { APPROVAL_CONFIG, RequestCategory } from "@/configs/rules/approval.config.ts"
 import Project from "@/entities/product/Project.ts"
 
 export interface IApprovalStrategy {
@@ -9,7 +11,11 @@ export interface IApprovalStrategy {
  * Admin & General Manager: Approve all types of requests for everyone (except self).
  */
 export class AdminGMApprovalStrategy implements IApprovalStrategy {
-  async canApprove(category: RequestCategory, applicantId: string, processorId: string): Promise<boolean> {
+  async canApprove(
+    category: RequestCategory,
+    applicantId: string,
+    processorId: string,
+  ): Promise<boolean> {
     // Cannot approve self-requests
     if (applicantId === processorId) return false
     return true
@@ -20,12 +26,16 @@ export class AdminGMApprovalStrategy implements IApprovalStrategy {
  * HR Manager: Approve Application & Recruitment Proposals for everyone (except self).
  */
 export class HRApprovalStrategy implements IApprovalStrategy {
-  async canApprove(category: RequestCategory, applicantId: string, processorId: string): Promise<boolean> {
+  async canApprove(
+    category: RequestCategory,
+    applicantId: string,
+    processorId: string,
+  ): Promise<boolean> {
     if (applicantId === processorId) return false
 
     // Check if HR is configured for this request category
     const allowedRoles = APPROVAL_CONFIG[category]?.roles || []
-    return allowedRoles.includes("hr_manager" as any)
+    return allowedRoles.includes(ROLE.HR_MANAGER as any)
   }
 }
 
@@ -33,17 +43,21 @@ export class HRApprovalStrategy implements IApprovalStrategy {
  * Team Leader: Approve Application only, for members active in their projects.
  */
 export class TeamLeaderApprovalStrategy implements IApprovalStrategy {
-  async canApprove(category: RequestCategory, applicantId: string, processorId: string): Promise<boolean> {
+  async canApprove(
+    category: RequestCategory,
+    applicantId: string,
+    processorId: string,
+  ): Promise<boolean> {
     if (applicantId === processorId) return false
 
     // Team Leader is only configured for applications (Leave, OT, etc.)
     const allowedRoles = APPROVAL_CONFIG[category]?.roles || []
-    if (!allowedRoles.includes("team_leader" as any)) return false
+    if (!allowedRoles.includes(ROLE.TEAM_LEADER as any)) return false
 
     // Verify if applicant is an active member in any active project led by the TL
     const activeProject = await Project.findOne({
       teamLeaderId: processorId,
-      status: "active",
+      status: PROJECT_STATUS.ACTIVE,
       members: {
         $elemMatch: {
           employeeId: applicantId,
@@ -60,7 +74,11 @@ export class TeamLeaderApprovalStrategy implements IApprovalStrategy {
  * Default fallback strategy (e.g. for regular employee trying to approve)
  */
 export class DefaultApprovalStrategy implements IApprovalStrategy {
-  async canApprove(category: RequestCategory, applicantId: string, processorId: string): Promise<boolean> {
+  async canApprove(
+    category: RequestCategory,
+    applicantId: string,
+    processorId: string,
+  ): Promise<boolean> {
     return false
   }
 }
@@ -71,12 +89,12 @@ export class DefaultApprovalStrategy implements IApprovalStrategy {
 export class ApprovalStrategyFactory {
   static getStrategy(role: string): IApprovalStrategy {
     switch (role) {
-      case "admin":
-      case "general_manager":
+      case ROLE.ADMIN:
+      case ROLE.GENERAL_MANAGER:
         return new AdminGMApprovalStrategy()
-      case "hr_manager":
+      case ROLE.HR_MANAGER:
         return new HRApprovalStrategy()
-      case "team_leader":
+      case ROLE.TEAM_LEADER:
         return new TeamLeaderApprovalStrategy()
       default:
         return new DefaultApprovalStrategy()

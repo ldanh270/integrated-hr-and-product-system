@@ -1,10 +1,8 @@
-import { HttpStatusCode } from "@/configs/constants/http.config.ts"
-import {
-  submitApplicationSchema,
-  approveApplicationSchema,
-} from "@/schemas/attendance.schema.ts"
-import { IApplicationService } from "@/types/attendance.types.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { approveApplicationSchema, submitApplicationSchema } from "@/schemas/attendance.schema.ts"
 import { ApiResponse } from "@/types"
+import { IApplicationService } from "@/types/attendance.types.ts"
+
 import { Request, Response } from "express"
 import { z } from "zod"
 
@@ -33,7 +31,7 @@ export class ApplicationController {
       // In a real app, processorId comes from req.user
       const { processorId } = req.body
       const { status } = approveApplicationSchema.parse(req.body)
-      
+
       const app = await this.service.processApplication(String(req.params.id), status, processorId)
       res.status(HttpStatusCode.OK).json({ data: app, error: null })
     } catch (error) {

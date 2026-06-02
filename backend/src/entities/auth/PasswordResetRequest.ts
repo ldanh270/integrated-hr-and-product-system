@@ -1,4 +1,4 @@
-import { PASSWORD_RESET_STATUSES } from "@/configs/constants/entities.config.ts"
+import { PASSWORD_RESET_STATUS, PASSWORD_RESET_STATUSES } from "@/configs/auth/auth.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 
@@ -20,7 +20,7 @@ const passwordResetRequestSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: PASSWORD_RESET_STATUSES,
-      default: "pending",
+      default: PASSWORD_RESET_STATUS.PENDING,
       required: true,
     },
 

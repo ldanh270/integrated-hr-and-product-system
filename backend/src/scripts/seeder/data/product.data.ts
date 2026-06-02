@@ -27,11 +27,13 @@ export const TASK_MOCKS = [
   },
   {
     title: "Write E2E Login Regression Test",
-    description: "Configure Playwright to sign in with seeded admin credentials and check profile redirects.",
+    description:
+      "Configure Playwright to sign in with seeded admin credentials and check profile redirects.",
   },
   {
     title: "Design Payroll Component Schema",
-    description: "Create Mongoose schema, validate unique indexes, and configure references to components.",
+    description:
+      "Create Mongoose schema, validate unique indexes, and configure references to components.",
   },
   {
     title: "Build Responsive Layout Wrapper",

@@ -1,10 +1,8 @@
-import { HttpStatusCode } from "@/configs/constants/http.config.ts"
-import {
-  createWorkingShiftSchema,
-  updateWorkingShiftSchema,
-} from "@/schemas/shift.schema.ts"
-import { IShiftService } from "@/types/shift.types.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { createWorkingShiftSchema, updateWorkingShiftSchema } from "@/schemas/shift.schema.ts"
 import { ApiResponse } from "@/types"
+import { IShiftService } from "@/types/shift.types.ts"
+
 import { Request, Response } from "express"
 import { z } from "zod"
 

@@ -1,7 +1,8 @@
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
-  IAttendanceService,
-  IAttendanceRepository,
   IAttendanceRecordQueryDTO,
+  IAttendanceRepository,
+  IAttendanceService,
   IHolidayRepository,
 } from "@/types/attendance.types.ts"
 import {
@@ -17,7 +18,7 @@ export class AttendanceService implements IAttendanceService {
     private employeeShiftRepo: IEmployeeShiftRepository,
     private scheduleRepo: IShiftScheduleRepository,
     private holidayRepo: IHolidayRepository,
-    private workingShiftRepo: IWorkingShiftRepository
+    private workingShiftRepo: IWorkingShiftRepository,
   ) {}
 
   async checkIn(employeeId: string, location: { lat: number; lng: number }): Promise<any> {
@@ -35,7 +36,7 @@ export class AttendanceService implements IAttendanceService {
         const days = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
         const dayName = days[today.getDay()] as keyof typeof schedule.weekdays
         const scheduledShiftId = schedule.weekdays[dayName]
-        
+
         if (scheduledShiftId) {
           shiftId = scheduledShiftId.toString()
         }
@@ -48,7 +49,7 @@ export class AttendanceService implements IAttendanceService {
       if (shift && shift.gps && shift.gps.radiusMeters) {
         // Here we could calculate distance between `location` and `shift.gps`
         // const distance = calculateDistance(location, shift.gps)
-        // if (distance > shift.gps.radiusMeters) throw new AppError("Out of valid range", 400)
+        // if (distance > shift.gps.radiusMeters) throw new AppError("Out of valid range", HttpStatusCode.BAD_REQUEST)
       }
     }
 

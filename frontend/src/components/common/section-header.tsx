@@ -15,7 +15,7 @@ export function SectionHeader({ title, action, className }: SectionHeaderProps) 
     <div
       className={cn(
         "flex items-center justify-between border-b border-border/40 pb-2.5 mb-4",
-        className
+        className,
       )}
     >
       <h3 className="text-sm font-bold text-foreground">{title}</h3>

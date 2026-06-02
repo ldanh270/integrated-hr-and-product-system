@@ -41,4 +41,3 @@ const ActivityLog = mongoose.model("ActivityLog", activityLogSchema)
 export default ActivityLog
 
 export type ActivityLogType = InferSchemaType<typeof activityLogSchema>
-

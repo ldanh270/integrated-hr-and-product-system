@@ -1,7 +1,9 @@
+import { ROUTES } from "@/config/routes.config"
 import { privateRoutes, publicRoutes } from "@/routes"
 import { useAuthStore } from "@/store/auth-store.ts"
 
 import { Fragment, Suspense, lazy } from "react"
+
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom"
 import { Toaster } from "sonner"
 
@@ -13,7 +15,7 @@ const NotFound = lazy(() => import("@/pages/NotFound.tsx"))
  */
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />
+  return isAuthenticated ? <>{children}</> : <Navigate to={ROUTES.AUTH.LOGIN} replace />
 }
 
 /**
@@ -22,7 +24,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
  */
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  return isAuthenticated ? <Navigate to="/hrm/dashboard" replace /> : <>{children}</>
+  return isAuthenticated ? <Navigate to={ROUTES.HRM.DASHBOARD} replace /> : <>{children}</>
 }
 
 /**

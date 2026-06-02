@@ -1,12 +1,12 @@
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import fs from "fs"
+import path from "path"
+import { fileURLToPath } from "url"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const swaggerPath = path.join(__dirname, '..', '..', 'swagger.yaml')
-let content = fs.readFileSync(swaggerPath, 'utf8')
+const swaggerPath = path.join(__dirname, "..", "..", "swagger.yaml")
+let content = fs.readFileSync(swaggerPath, "utf8")
 
 const newPaths = `
   # ─── ATTENDANCE MODULE ──────────────────────────────
@@ -175,7 +175,7 @@ const newPaths = `
 `
 
 // Insert newPaths right before "components:"
-content = content.replace(/^components:/m, newPaths + '\ncomponents:')
+content = content.replace(/^components:/m, newPaths + "\ncomponents:")
 
-fs.writeFileSync(swaggerPath, content, 'utf8')
-console.log('Swagger updated successfully.')
+fs.writeFileSync(swaggerPath, content, "utf8")
+console.log("Swagger updated successfully.")

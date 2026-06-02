@@ -1,4 +1,4 @@
-import { PROPOSAL_STATUSES } from "@/configs/constants/entities.config.ts"
+import { PROPOSAL_STATUS, PROPOSAL_STATUSES } from "@/configs/entities/recruitment.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 
@@ -34,7 +34,7 @@ const recruitmentProposalSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: PROPOSAL_STATUSES,
-      default: "pending",
+      default: PROPOSAL_STATUS.PENDING,
       required: true,
     },
 

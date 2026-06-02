@@ -1,10 +1,12 @@
 import Header from "@/components/layouts/Header.tsx"
 import Sidebar from "@/components/layouts/Sidebar.tsx"
+import { SUBSYSTEMS } from "@/config/subsystem"
+import { useSubsystemStore } from "@/store/subsystem-store"
+
 import type { ReactNode } from "react"
 import { useEffect } from "react"
+
 import { useLocation } from "react-router-dom"
-import { useSubsystemStore } from "@/store/subsystem-store"
-import { SUBSYSTEMS } from "@/config/subsystem"
 
 /**
  * MainLayout component
@@ -18,9 +20,7 @@ const MainLayout = ({ children }: { children: ReactNode }) => {
     // Sync URL with activeSubsystem store
     const path = location.pathname
     // Find matching subsystem by routePrefix
-    const matchingSubsystem = SUBSYSTEMS.find(
-      (sub) => path.startsWith(sub.routePrefix)
-    )
+    const matchingSubsystem = SUBSYSTEMS.find((sub) => path.startsWith(sub.routePrefix))
     if (matchingSubsystem) {
       setActiveSubsystem(matchingSubsystem.id)
     }
@@ -31,9 +31,7 @@ const MainLayout = ({ children }: { children: ReactNode }) => {
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto bg-secondary/30">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto bg-secondary/30">{children}</main>
       </div>
     </div>
   )

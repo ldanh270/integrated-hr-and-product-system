@@ -1,3 +1,5 @@
+import { SYSTEM_CONFIG } from "@/config/system.config"
+
 import axios from "axios"
 
 /**
@@ -16,7 +18,7 @@ const apiClient = axios.create({
  */
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("auth_token")
+    const token = localStorage.getItem(SYSTEM_CONFIG.STORAGE_KEYS.AUTH_TOKEN)
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -35,7 +37,7 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Handle unauthorized (e.g., clear store and redirect to login)
-      localStorage.removeItem("auth_token")
+      localStorage.removeItem(SYSTEM_CONFIG.STORAGE_KEYS.AUTH_TOKEN)
       // We'll handle redirection in the UI layer/store
     }
     return Promise.reject(error)

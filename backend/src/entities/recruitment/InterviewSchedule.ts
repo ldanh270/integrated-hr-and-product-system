@@ -2,7 +2,7 @@ import {
   INTERVIEW_FORMATS,
   INTERVIEW_RESULTS,
   INTERVIEW_STATUSES,
-} from "@/configs/constants/entities.config.ts"
+} from "@/configs/entities/recruitment.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 
@@ -40,7 +40,7 @@ const interviewScheduleSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: INTERVIEW_STATUSES,
-      default: "scheduled",
+      default: INTERVIEW_STATUSES[0],
       required: true,
     },
 
@@ -48,7 +48,7 @@ const interviewScheduleSchema = new mongoose.Schema(
     result: {
       type: String,
       enum: INTERVIEW_RESULTS,
-      default: "pending",
+      default: INTERVIEW_RESULTS[2],
     },
 
     score: {

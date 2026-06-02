@@ -1,1 +1,1 @@
-export default function PayrollDashboard(): import("react/jsx-runtime").JSX.Element;
+export default function PayrollDashboard(): import("react/jsx-runtime").JSX.Element

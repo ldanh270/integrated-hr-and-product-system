@@ -1,4 +1,5 @@
 import apiClient from "@/lib/api-client"
+import type { IApplicationStatus } from "@/config/entities/attendance.config.ts"
 
 export interface IApprovalItem {
   id: string
@@ -25,7 +26,7 @@ export const approvalApi = {
   processApproval: async (
     category: string,
     id: string,
-    status: "approved" | "rejected",
+    status: IApplicationStatus,
     rejectReason?: string,
   ): Promise<any> => {
     const response = await apiClient.patch<ApiResponse<any>>(`/approvals/${category}/${id}`, {

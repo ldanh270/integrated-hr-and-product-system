@@ -1,16 +1,16 @@
 import {
-  IScheduleService,
   IAssignShiftScheduleDTO,
-  IOverrideEmployeeShiftDTO,
-  IShiftScheduleRepository,
   IEmployeeShiftRepository,
+  IOverrideEmployeeShiftDTO,
+  IScheduleService,
+  IShiftScheduleRepository,
 } from "@/types/shift.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 
 export class ScheduleService implements IScheduleService {
   constructor(
     private scheduleRepo: IShiftScheduleRepository,
-    private employeeShiftRepo: IEmployeeShiftRepository
+    private employeeShiftRepo: IEmployeeShiftRepository,
   ) {}
 
   async assignSchedule(data: IAssignShiftScheduleDTO): Promise<any> {

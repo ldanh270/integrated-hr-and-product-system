@@ -1,13 +1,15 @@
-import { Users, UserCheck, Clock, CalendarX2 } from "lucide-react"
-
 import VirtualScanner from "@/components/features/attendance/VirtualScanner"
+
+import { CalendarX2, Clock, UserCheck, Users } from "lucide-react"
 
 export default function AttendanceDashboard() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Tổng Quan Chấm Công</h1>
-        <p className="text-muted-foreground mt-1">Dữ liệu chấm công hôm nay của toàn bộ nhân sự và cá nhân bạn.</p>
+        <p className="text-muted-foreground mt-1">
+          Dữ liệu chấm công hôm nay của toàn bộ nhân sự và cá nhân bạn.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -63,7 +65,7 @@ export default function AttendanceDashboard() {
           <div className="p-6 border-b">
             <h3 className="font-semibold text-lg">Hoạt Động Chấm Công Gần Đây</h3>
           </div>
-          <div className="p-6 flex-1 flex items-center justify-center text-muted-foreground min-h-[400px]">
+          <div className="p-6 flex-1 flex items-center justify-center text-muted-foreground min-h-100">
             Bảng danh sách các lượt Check-In/Check-Out mới nhất sẽ hiển thị ở đây.
           </div>
         </div>
@@ -76,7 +78,7 @@ export default function AttendanceDashboard() {
             <div className="p-6 border-b">
               <h3 className="font-semibold text-lg">Đơn Từ Cần Duyệt</h3>
             </div>
-            <div className="p-6 min-h-[250px] flex items-center justify-center text-muted-foreground">
+            <div className="p-6 min-h-62.5 flex items-center justify-center text-muted-foreground">
               Danh sách đơn xin phép chờ HR/Admin phê duyệt.
             </div>
           </div>

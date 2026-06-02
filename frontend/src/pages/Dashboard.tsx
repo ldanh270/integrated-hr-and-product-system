@@ -1,7 +1,7 @@
-import { useAuthStore } from "@/store/auth-store.ts"
+import { PageCard, SectionHeader, StatusPill } from "@/components/common"
 import AttendanceStats from "@/components/dashboard/attendance-stats.tsx"
 import WorkSchedule from "@/components/dashboard/work-schedule.tsx"
-import { PageCard, SectionHeader, StatusPill } from "@/components/common"
+import { useAuthStore } from "@/store/auth-store.ts"
 
 /**
  * WelcomeIllustration — minimal developer SVG, scaled down for compact layout.
@@ -9,14 +9,46 @@ import { PageCard, SectionHeader, StatusPill } from "@/components/common"
 const WelcomeIllustration = () => (
   <svg viewBox="0 0 160 120" className="h-24 w-24 text-white select-none hidden sm:block shrink-0">
     <rect x="20" y="95" width="120" height="4" rx="2" fill="#ffffff" opacity="0.25" />
-    <rect x="45" y="45" width="70" height="45" rx="3" fill="#0f172a" stroke="#ffffff" strokeWidth="2" />
-    <path d="M52,52 h14 M52,59 h28 M52,66 h18 M52,73 h34" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" />
+    <rect
+      x="45"
+      y="45"
+      width="70"
+      height="45"
+      rx="3"
+      fill="#0f172a"
+      stroke="#ffffff"
+      strokeWidth="2"
+    />
+    <path
+      d="M52,52 h14 M52,59 h28 M52,66 h18 M52,73 h34"
+      stroke="#3b82f6"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+    />
     <path d="M52,80 h10" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" />
     <polygon points="72,90 88,90 84,95 76,95" fill="#475569" stroke="#ffffff" strokeWidth="2" />
     <circle cx="110" cy="38" r="14" fill="#fed7aa" />
     <path d="M110,24 Q105,24 100,28 Q94,36 102,42 Q108,44 110,38 Z" fill="#1e293b" />
-    <rect x="103" y="34" width="7" height="5" rx="1" fill="none" stroke="#1e293b" strokeWidth="1.5" />
-    <rect x="112" y="34" width="7" height="5" rx="1" fill="none" stroke="#1e293b" strokeWidth="1.5" />
+    <rect
+      x="103"
+      y="34"
+      width="7"
+      height="5"
+      rx="1"
+      fill="none"
+      stroke="#1e293b"
+      strokeWidth="1.5"
+    />
+    <rect
+      x="112"
+      y="34"
+      width="7"
+      height="5"
+      rx="1"
+      fill="none"
+      stroke="#1e293b"
+      strokeWidth="1.5"
+    />
     <line x1="110" y1="36" x2="112" y2="36" stroke="#1e293b" strokeWidth="1.5" />
     <path d="M96,52 L124,52 L132,95 L88,95 Z" fill="#2563eb" />
   </svg>
@@ -32,12 +64,10 @@ export default function Dashboard() {
   return (
     <div className="container max-w-7xl px-6 py-6">
       <div className="grid grid-cols-12 gap-5">
-
         {/* Left column — welcome banner, shift tracker, attendance stats */}
         <div className="col-span-12 lg:col-span-5 xl:col-span-4 space-y-4">
-
           {/* Welcome Banner */}
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-indigo-700 p-5 text-white shadow-md flex items-center justify-between gap-3">
+          <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-blue-600 via-indigo-600 to-indigo-700 p-5 text-white shadow-md flex items-center justify-between gap-3">
             <div className="space-y-1 min-w-0">
               <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">
                 Dashboard Overview
@@ -102,7 +132,6 @@ export default function Dashboard() {
         <div className="col-span-12 lg:col-span-7 xl:col-span-8 space-y-4">
           <WorkSchedule />
         </div>
-
       </div>
     </div>
   )

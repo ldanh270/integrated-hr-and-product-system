@@ -1,4 +1,4 @@
-import { RequestCategory } from "@/configs/constants/approval.config.ts"
+import { RequestCategory } from "@/configs/rules/approval.config.ts"
 
 export interface IProcessApprovalDTO {
   id: string

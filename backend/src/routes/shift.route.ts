@@ -1,3 +1,4 @@
+import { ROLE } from "@/configs/entities/employee.config.ts"
 import { ShiftController } from "@/controllers/shift.controller.ts"
 import WorkingShift from "@/entities/attendance/WorkingShift.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
@@ -18,7 +19,15 @@ shiftRoutes.use(authenticate)
 shiftRoutes.get("/", controller.list)
 shiftRoutes.get("/:id", controller.getOne)
 
-shiftRoutes.post("/", authorizeRoles("admin", "hr_manager", "manager"), controller.create)
-shiftRoutes.patch("/:id", authorizeRoles("admin", "hr_manager", "manager"), controller.update)
+shiftRoutes.post(
+  "/",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  controller.create,
+)
+shiftRoutes.patch(
+  "/:id",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  controller.update,
+)
 
 export default shiftRoutes

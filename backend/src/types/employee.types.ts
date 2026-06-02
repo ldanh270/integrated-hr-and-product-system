@@ -1,6 +1,8 @@
-export type EmployeeStatus = "active" | "inactive" | "on_leave" | "terminated"
-export type EmployeeType = "full_time" | "part_time" | "contractor" | "intern"
-export type EmployeeRole = "admin" | "manager" | "employee"
+import { IEmployeeStatus, IEmployeeType, ROLE } from "@/configs/entities/employee.config.ts"
+
+export type EmployeeStatus = IEmployeeStatus
+export type EmployeeType = IEmployeeType
+export type EmployeeRole = (typeof ROLE)[keyof typeof ROLE]
 
 export interface Employee {
   id: string

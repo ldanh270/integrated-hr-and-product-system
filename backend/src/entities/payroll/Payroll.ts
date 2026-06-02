@@ -1,4 +1,4 @@
-import { PAYROLL_STATUSES } from "@/configs/constants/entities.config.ts"
+import { PAYROLL_STATUSES } from "@/configs/entities/payroll.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 
@@ -20,7 +20,7 @@ const payrollSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: PAYROLL_STATUSES,
-      default: "draft",
+      default: PAYROLL_STATUSES[0],
       required: true,
     },
 

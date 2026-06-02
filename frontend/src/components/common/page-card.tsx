@@ -29,7 +29,7 @@ export function PageCard({
         "rounded-xl bg-card shadow-sm",
         !noBorder && "border border-border",
         paddingMap[padding],
-        className
+        className,
       )}
       {...props}
     >

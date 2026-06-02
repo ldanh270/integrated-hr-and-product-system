@@ -1,6 +1,7 @@
+import { IconBox } from "@/components/common/icon-box"
 import { cn } from "@/lib/utils"
+
 import type { LucideIcon } from "lucide-react"
-import { IconBox } from "./icon-box"
 
 interface StatRowProps {
   label: string
@@ -21,7 +22,7 @@ export function StatRow({ label, value, icon, colorClass, isLast, className }: S
       className={cn(
         "flex items-center justify-between py-1.5",
         !isLast && "border-b border-border/20",
-        className
+        className,
       )}
     >
       <div className="flex items-center gap-2.5">

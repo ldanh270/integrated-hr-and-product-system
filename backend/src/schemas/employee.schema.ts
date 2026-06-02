@@ -1,3 +1,9 @@
+import {
+  EMPLOYEE_ROLES,
+  EMPLOYEE_STATUSES,
+  EMPLOYEE_TYPES,
+} from "@/configs/entities/employee.config.ts"
+
 import { z } from "zod"
 
 export const createEmployeeSchema = z
@@ -22,12 +28,12 @@ export const createEmployeeSchema = z
       .min(8, "Password must be at least 8 characters")
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-        "Password must contain at least one uppercase, one lowercase, one number and one special character"
+        "Password must contain at least one uppercase, one lowercase, one number and one special character",
       ),
 
-    role: z.enum(["admin", "manager", "employee"]).optional(),
-    
-    employeeType: z.enum(["full_time", "part_time", "contractor", "intern"]).optional(),
+    role: z.enum(EMPLOYEE_ROLES).optional(),
+
+    employeeType: z.enum(EMPLOYEE_TYPES).optional(),
 
     phone: z
       .string()
@@ -36,8 +42,8 @@ export const createEmployeeSchema = z
       .nullable(),
 
     position: z.string().max(100, "Position too long").trim().optional().nullable(),
-    
-    status: z.enum(["active", "inactive", "on_leave", "terminated"]).optional(),
+
+    status: z.enum(EMPLOYEE_STATUSES).optional(),
 
     dateOfBirth: z
       .string()
@@ -80,10 +86,10 @@ export const updateEmployeeSchema = z
       .nullable(),
 
     position: z.string().max(100, "Position too long").trim().optional().nullable(),
-    
-    employeeType: z.enum(["full_time", "part_time", "contractor", "intern"]).optional(),
 
-    status: z.enum(["active", "inactive", "on_leave", "terminated"]).optional(),
+    employeeType: z.enum(EMPLOYEE_TYPES).optional(),
+
+    status: z.enum(EMPLOYEE_STATUSES).optional(),
 
     dateOfBirth: z
       .string()
@@ -105,7 +111,7 @@ export const updateEmployeeSchema = z
       .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
       .optional()
       .nullable(),
-      
+
     endDate: z
       .string()
       .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
@@ -118,7 +124,7 @@ export type UpdateEmployeeSchemaType = z.infer<typeof updateEmployeeSchema>
 
 export const updateEmployeeStatusSchema = z
   .object({
-    status: z.enum(["active", "inactive", "on_leave", "terminated"]),
+    status: z.enum(EMPLOYEE_STATUSES),
   })
   .strict()
 
@@ -128,9 +134,9 @@ export const listEmployeesQuerySchema = z.object({
   page: z.string().regex(/^\d+$/).transform(Number).optional(),
   limit: z.string().regex(/^\d+$/).transform(Number).optional(),
   search: z.string().optional(),
-  status: z.enum(["active", "inactive", "on_leave", "terminated"]).optional(),
-  role: z.enum(["admin", "manager", "employee"]).optional(),
-  employeeType: z.enum(["full_time", "part_time", "contractor", "intern"]).optional(),
+  status: z.enum(EMPLOYEE_STATUSES).optional(),
+  role: z.enum(EMPLOYEE_ROLES).optional(),
+  employeeType: z.enum(EMPLOYEE_TYPES).optional(),
   sortBy: z.string().optional(),
   sortOrder: z.enum(["asc", "desc"]).optional(),
 })

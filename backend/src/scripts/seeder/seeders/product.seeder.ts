@@ -1,9 +1,11 @@
+import { ROLE } from "@/configs/entities/employee.config.ts"
 import Employee from "@/entities/Employee.ts"
 import Project from "@/entities/product/Project.ts"
 import Task from "@/entities/product/Task.ts"
-import { PROJECT_TEMPLATES, TASK_MOCKS, TECH_STACKS } from "../data/product.data.ts"
+
 import { faker } from "@faker-js/faker"
 
+import { PROJECT_TEMPLATES, TASK_MOCKS, TECH_STACKS } from "../data/product.data.ts"
 import { seedEmployees } from "./employee.seeder.ts"
 
 export const seedProduct = async (passedEmployees?: any[]): Promise<{ projects: any[] }> => {
@@ -16,9 +18,11 @@ export const seedProduct = async (passedEmployees?: any[]): Promise<{ projects: 
     employees = await seedEmployees()
   }
 
-  const admin = employees.find(e => e.role === "admin") || employees[0]
-  const leaders = employees.filter(e => e.role === "team_leader" || e.role === "general_manager")
-  const staff = employees.filter(e => e.role === "employee")
+  const admin = employees.find((e) => e.role === ROLE.ADMIN) || employees[0]
+  const leaders = employees.filter(
+    (e) => e.role === ROLE.TEAM_LEADER || e.role === ROLE.GENERAL_MANAGER,
+  )
+  const staff = employees.filter((e) => e.role === ROLE.EMPLOYEE)
 
   // 1.5. Clear existing projects and tasks
   await Project.deleteMany({})
@@ -31,10 +35,10 @@ export const seedProduct = async (passedEmployees?: any[]): Promise<{ projects: 
   for (let i = 0; i < PROJECT_TEMPLATES.length; i++) {
     const template = PROJECT_TEMPLATES[i]
     const leader = faker.helpers.arrayElement(leaders)
-    
+
     // Pick 3 random members
     const membersList = faker.helpers.arrayElements(staff, 3)
-    const membersData = membersList.map(m => ({
+    const membersData = membersList.map((m) => ({
       employeeId: m._id,
       joinedAt: faker.date.past({ years: 1 }),
       removedAt: null,
@@ -57,7 +61,7 @@ export const seedProduct = async (passedEmployees?: any[]): Promise<{ projects: 
     // Seed Tasks for this project
     for (const mockTask of TASK_MOCKS) {
       const assignee = faker.helpers.arrayElement(membersList)
-      
+
       await Task.create({
         projectId: project._id,
         title: mockTask.title,

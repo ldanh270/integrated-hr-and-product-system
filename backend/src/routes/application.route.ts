@@ -1,3 +1,4 @@
+import { ROLE } from "@/configs/entities/employee.config.ts"
 import { ApplicationController } from "@/controllers/application.controller.ts"
 import Application from "@/entities/attendance/Application.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
@@ -13,11 +14,20 @@ const repository = new MongoApplicationRepository(Application as any)
 const service = new ApplicationService(repository)
 const controller = new ApplicationController(service)
 
+// All routes in this file require authentication
 applicationRoutes.use(authenticate)
 
+// Employees can submit applications and view their own applications
 applicationRoutes.get("/employee/:employeeId", controller.listEmployeeApplications)
+
+// Only admins, HR managers, and managers can approve applications
 applicationRoutes.post("/", controller.submit)
 
-applicationRoutes.patch("/:id/approve", authorizeRoles("admin", "hr_manager", "manager"), controller.approve)
+// In a real app, processorId would come from req.user, not the request body
+applicationRoutes.patch(
+  "/:id/approve",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  controller.approve,
+)
 
 export default applicationRoutes

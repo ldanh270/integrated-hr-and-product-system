@@ -1,11 +1,9 @@
+import { useSubsystemStore } from "@/store/subsystem-store"
+
 import { useState } from "react"
 
-import {
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
-import { useSubsystemStore } from "@/store/subsystem-store"
 
 interface NavItem {
   name: string
@@ -21,10 +19,10 @@ interface NavItem {
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const location = useLocation()
-  
+
   const { getActiveSubsystemConfig } = useSubsystemStore()
   const activeSubsystemConfig = getActiveSubsystemConfig()
-  
+
   const navItems: NavItem[] = activeSubsystemConfig?.sidebarItems || []
 
   return (
@@ -53,9 +51,9 @@ export default function Sidebar() {
         {navItems.map((item) => {
           const isActive =
             location.pathname === item.path ||
-            (item.path !== `${activeSubsystemConfig?.routePrefix}/dashboard` && 
-             location.pathname.startsWith(item.path) &&
-             item.path !== activeSubsystemConfig?.routePrefix)
+            (item.path !== `${activeSubsystemConfig?.routePrefix}/dashboard` &&
+              location.pathname.startsWith(item.path) &&
+              item.path !== activeSubsystemConfig?.routePrefix)
           const Icon = item.icon
 
           return (

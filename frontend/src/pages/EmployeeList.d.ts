@@ -1,1 +1,1 @@
-export default function EmployeeList(): import("react/jsx-runtime").JSX.Element;
+export default function EmployeeList(): import("react/jsx-runtime").JSX.Element

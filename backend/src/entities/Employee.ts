@@ -1,8 +1,10 @@
 import {
   EMPLOYEE_ROLES,
+  EMPLOYEE_STATUS,
   EMPLOYEE_STATUSES,
   EMPLOYEE_TYPES,
-} from "@/configs/constants/entities.config.ts"
+  ROLE,
+} from "@/configs/entities/employee.config.ts"
 
 import mongoose, { InferSchemaType } from "mongoose"
 
@@ -31,7 +33,7 @@ const employeeSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: EMPLOYEE_ROLES,
-      default: "employee",
+      default: ROLE.EMPLOYEE,
       required: true,
     },
 
@@ -81,14 +83,14 @@ const employeeSchema = new mongoose.Schema(
     employeeType: {
       type: String,
       enum: EMPLOYEE_TYPES,
-      default: "full_time",
+      default: EMPLOYEE_TYPES[0],
       required: true,
     },
 
     status: {
       type: String,
       enum: EMPLOYEE_STATUSES,
-      default: "active",
+      default: EMPLOYEE_STATUS.ACTIVE,
       required: true,
     },
 

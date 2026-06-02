@@ -16,7 +16,9 @@ interface ApiResponse<T> {
 
 export const employeeApi = {
   list: async (query?: EmployeeListQuery): Promise<PaginatedEmployees> => {
-    const response = await apiClient.get<ApiResponse<PaginatedEmployees>>("/employees", { params: query })
+    const response = await apiClient.get<ApiResponse<PaginatedEmployees>>("/employees", {
+      params: query,
+    })
     return response.data.data
   },
 

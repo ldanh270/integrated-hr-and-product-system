@@ -1,1 +1,1 @@
-export default function RecruitmentDashboard(): import("react/jsx-runtime").JSX.Element;
+export default function RecruitmentDashboard(): import("react/jsx-runtime").JSX.Element

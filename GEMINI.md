@@ -20,7 +20,11 @@ A Human Resource Management (HRM) system built with a modern full-stack TypeScri
 .
 ├── backend/            # Express server (TS + Bun)
 │   ├── src/
-│   │   ├── config/     # Environment and static configurations
+│   │   ├── configs/    # Centralized configurations grouped by feature:
+│   │   │   ├── entities/ # Domain enums (employee, attendance, payroll, etc.)
+│   │   │   ├── auth/     # Security and token configurations
+│   │   │   ├── system/   # Server, HTTP, and Cloudinary configurations
+│   │   │   ├── rules/    # Workflow and approval rules
 │   │   ├── controller/ # Request handlers
 │   │   ├── lib/        # Shared libraries (DB connection, etc.)
 │   │   ├── middleware/ # Express middlewares

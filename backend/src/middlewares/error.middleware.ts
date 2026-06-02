@@ -1,4 +1,4 @@
-import { HttpStatusCode } from "@/configs/constants/http.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AppError } from "@/utils/error.util.ts"
 
 import { NextFunction, Request, Response } from "express"
@@ -6,10 +6,10 @@ import { NextFunction, Request, Response } from "express"
 export const globalErrorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
   if (err instanceof AppError) {
     console.error(`[ERROR - ${err.layer}] : ${err.message}`)
-    return res.status(err.statusCode).json({ 
-      message: err.message, 
+    return res.status(err.statusCode).json({
+      message: err.message,
       type: err.errorCode || "APP_ERROR",
-      layer: err.layer 
+      layer: err.layer,
     })
   }
 

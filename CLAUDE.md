@@ -25,11 +25,11 @@
 
 ```
 src/
-  config/
-    constants.ts     ← app-wide literals (timeouts, limits, keys)
-    env.ts           ← typed process.env wrapper
-    routes.ts        ← route name → path map
-    theme.ts         ← design tokens (colors, spacing, fonts)
+  configs/
+    entities/        ← domain enums and enums arrays (employee, attendance, payroll, etc.)
+    auth/            ← auth secrets, regex, and reset status configs
+    system/          ← server port, database connections, and HTTP status codes
+    rules/           ← business rule setups (e.g. approval.config.ts)
   types/
     index.ts         ← re-exports all shared types
 ```
@@ -135,7 +135,7 @@ Use the **simplest pattern** that solves the problem. Never pattern-for-pattern'
 .
 ├── backend/            # Express server (TS + Bun)
 │   ├── src/
-│   │   ├── config/     # Environment and static configurations
+│   │   ├── configs/    # Central configurations (entities/, auth/, system/, rules/)
 │   │   ├── controller/ # Request handlers
 │   │   ├── lib/        # Shared libraries (DB connection, etc.)
 │   │   ├── middleware/ # Express middlewares
@@ -306,7 +306,7 @@ When generating code, the agent **MUST**:
 
 1. **Reuse before creating** — check existing utils, hooks, constants first.
 2. **Output minimal diffs** — show only what changes, use `// ... unchanged`.
-3. **Extract shared values** — any repeated literal goes to `config/constants.ts`.
+3. **Extract shared values** — any repeated business logic literal (roles, statuses, HTTP codes, etc.) must go to centralized config folders under `@/configs/` (`entities/`, `auth/`, `system/`, `rules/`) and never be hardcoded.
 4. **Apply the right pattern** — don't force patterns; solve the actual problem.
 5. **Type everything** — no `any`. Use `unknown` + narrowing when type is genuinely unknown.
 6. **Validate at boundaries** — never assume data shape from external sources.

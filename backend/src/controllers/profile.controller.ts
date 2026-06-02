@@ -1,7 +1,8 @@
-import { HttpStatusCode } from "@/configs/constants/http.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
-import { updateProfileSchema, changePasswordSchema } from "@/schemas/profile.schema.ts"
+import { changePasswordSchema, updateProfileSchema } from "@/schemas/profile.schema.ts"
 import type { IProfileService } from "@/types/profile.types.ts"
+
 import { Response } from "express"
 
 /**
@@ -97,11 +98,7 @@ export class ProfileController {
         })
       }
 
-      const profile = await this.service.uploadAvatar(
-        req.user.empId,
-        file.buffer,
-        file.mimetype,
-      )
+      const profile = await this.service.uploadAvatar(req.user.empId, file.buffer, file.mimetype)
 
       return res.status(HttpStatusCode.OK).json({
         status: "success",
@@ -134,7 +131,7 @@ export class ProfileController {
       await this.service.changePassword(
         req.user.empId,
         validatedData.oldPassword,
-        validatedData.newPassword
+        validatedData.newPassword,
       )
 
       return res.status(HttpStatusCode.OK).json({
@@ -150,7 +147,8 @@ export class ProfileController {
       return res.status(statusCode).json({
         status: "error",
         message: error.message || "Failed to change password",
-        type: error.errorCode || (error.name === "ZodError" ? "VALIDATION_ERROR" : "INTERNAL_ERROR"),
+        type:
+          error.errorCode || (error.name === "ZodError" ? "VALIDATION_ERROR" : "INTERNAL_ERROR"),
         errors: error.errors,
       })
     }

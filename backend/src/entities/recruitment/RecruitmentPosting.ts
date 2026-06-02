@@ -1,4 +1,4 @@
-import { POSTING_STATUSES } from "@/configs/constants/entities.config.ts"
+import { POSTING_STATUSES } from "@/configs/entities/recruitment.config.ts"
 
 import mongoose, { Document, InferSchemaType, Model } from "mongoose"
 
@@ -28,7 +28,7 @@ const recruitmentPostingSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: POSTING_STATUSES,
-      default: "draft",
+      default: POSTING_STATUSES[0],
       required: true,
     },
 

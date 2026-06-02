@@ -1,10 +1,8 @@
-import { HttpStatusCode } from "@/configs/constants/http.config.ts"
-import {
-  assignShiftScheduleSchema,
-  overrideEmployeeShiftSchema,
-} from "@/schemas/shift.schema.ts"
-import { IScheduleService } from "@/types/shift.types.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { assignShiftScheduleSchema, overrideEmployeeShiftSchema } from "@/schemas/shift.schema.ts"
 import { ApiResponse } from "@/types"
+import { IScheduleService } from "@/types/shift.types.ts"
+
 import { Request, Response } from "express"
 import { z } from "zod"
 
@@ -31,7 +29,7 @@ export class ScheduleController {
     const { employeeId } = req.params
     const dateQuery = req.query.date as string | undefined
     const scheduleDate = dateQuery ? new Date(dateQuery) : new Date()
-    
+
     const schedule = await this.service.getScheduleForEmployee(String(employeeId), scheduleDate)
     res.status(HttpStatusCode.OK).json({ data: schedule, error: null })
   }

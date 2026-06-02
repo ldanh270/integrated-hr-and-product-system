@@ -1,6 +1,12 @@
-export type EmployeeStatus = "active" | "inactive" | "on_leave" | "terminated"
-export type EmployeeType = "full_time" | "part_time" | "contractor" | "intern"
-export type EmployeeRole = "admin" | "manager" | "employee"
+import type {
+  IEmployeeRole,
+  IEmployeeStatus,
+  IEmployeeType,
+} from "@/config/entities/employee.config"
+
+export type EmployeeStatus = IEmployeeStatus
+export type EmployeeType = IEmployeeType
+export type EmployeeRole = IEmployeeRole
 
 export interface Employee {
   id: string
