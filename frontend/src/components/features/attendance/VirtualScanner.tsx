@@ -1,16 +1,10 @@
 import { useVirtualScanner } from "@/hooks/attendance/useVirtualScanner"
+
 import { AlertCircle, CheckCircle2, Clock, Fingerprint, MapPin } from "lucide-react"
 
 export default function VirtualScanner() {
-  const {
-    user,
-    currentTime,
-    location,
-    locating,
-    isProcessing,
-    getLocation,
-    handleScan,
-  } = useVirtualScanner()
+  const { user, currentTime, location, locating, isProcessing, getLocation, handleScan } =
+    useVirtualScanner()
 
   return (
     <div className="bg-card text-card-foreground rounded-xl border shadow-sm p-6 flex flex-col items-center max-w-sm mx-auto">

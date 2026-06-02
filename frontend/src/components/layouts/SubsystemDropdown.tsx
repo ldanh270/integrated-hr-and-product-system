@@ -1,5 +1,6 @@
 import { ROUTES } from "@/config/routes.config"
 import { SUBSYSTEMS } from "@/config/subsystem"
+import type { SubsystemId } from "@/config/subsystem"
 import { useSubsystemStore } from "@/store/subsystem-store"
 
 import { useEffect, useRef, useState } from "react"
@@ -31,7 +32,7 @@ export default function SubsystemDropdown() {
   }, [isOpen])
 
   const handleSelectSubsystem = (subsystemId: string, routePrefix: string) => {
-    setActiveSubsystem(subsystemId as any)
+    setActiveSubsystem(subsystemId as SubsystemId)
     setIsOpen(false)
     // Default navigate to the dashboard of that subsystem
     if (subsystemId === "attendance") {

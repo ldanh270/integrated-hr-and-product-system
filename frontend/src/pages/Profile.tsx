@@ -511,7 +511,8 @@ export default function Profile() {
 
               {uploadAvatar.isError && (
                 <p className="text-xs text-destructive font-medium mt-3 px-3 py-1.5 bg-destructive/10 rounded-lg">
-                  {(uploadAvatar.error as any)?.message || "Không thể upload ảnh đại diện"}
+                  {(uploadAvatar.error as { message?: string })?.message ||
+                    "Không thể upload ảnh đại diện"}
                 </p>
               )}
             </PageCard>

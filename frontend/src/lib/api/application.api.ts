@@ -3,7 +3,7 @@ import type { IApplication } from "@/types/attendance.types"
 
 interface ApiResponse<T> {
   data: T
-  error: any
+  error: { message: string; code?: string } | null
   status?: string
 }
 

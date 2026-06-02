@@ -1,6 +1,7 @@
 import { API_ENDPOINTS } from "@/config/api.config"
 import apiClient from "@/lib/api-client"
 import { useAuthStore } from "@/store/auth-store"
+import type { User } from "@/store/auth-store"
 
 import { useMutation } from "@tanstack/react-query"
 
@@ -15,11 +16,11 @@ export const useAuth = () => {
    * Login mutation
    */
   const loginMutation = useMutation({
-    mutationFn: async (credentials: any) => {
+    mutationFn: async (credentials: Record<string, unknown>) => {
       const { data } = await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, credentials)
       return data.data // Following ApiResponse envelope
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: { employee: User; token: string }) => {
       setAuth(data.employee, data.token)
     },
   })

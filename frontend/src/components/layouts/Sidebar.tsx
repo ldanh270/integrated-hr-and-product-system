@@ -8,7 +8,7 @@ import { Link, useLocation } from "react-router-dom"
 interface NavItem {
   name: string
   path: string
-  icon: React.ComponentType<any>
+  icon: React.ComponentType<{ size?: number; className?: string }>
 }
 
 /**

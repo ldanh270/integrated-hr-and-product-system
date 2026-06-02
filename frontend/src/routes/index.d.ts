@@ -5,7 +5,7 @@ declare const publicRoutes: {
 }[]
 declare const privateRoutes: {
   path: string
-  component: import("react").LazyExoticComponent<typeof import("../pages/Dashboard.tsx").default>
+  component: import("react").LazyExoticComponent<typeof import("../pages/EmployeeList.tsx").default>
   layout: import("react").LazyExoticComponent<
     ({
       children,

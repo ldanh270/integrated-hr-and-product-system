@@ -98,8 +98,9 @@ export const useProfileMaster = () => {
         setIsEditing(false)
         toast.success("Cập nhật thông tin hồ sơ thành công!")
       },
-      onError: (err: any) => {
-        const errorMsg = err?.response?.data?.message || "Không thể cập nhật thông tin hồ sơ"
+      onError: (err) => {
+        const errorObj = err as { response?: { data?: { message?: string } } }
+        const errorMsg = errorObj.response?.data?.message || "Không thể cập nhật thông tin hồ sơ"
         toast.error(errorMsg)
       },
     })
@@ -119,9 +120,10 @@ export const useProfileMaster = () => {
           toast.success("Thay đổi mật khẩu thành công!")
           passwordForm.reset()
         },
-        onError: (err: any) => {
+        onError: (err) => {
+          const errorObj = err as { response?: { data?: { message?: string } } }
           const errorMsg =
-            err?.response?.data?.message || "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại."
+            errorObj.response?.data?.message || "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại."
           setPasswordErrorMsg(errorMsg)
           toast.error(errorMsg)
         },
@@ -138,8 +140,9 @@ export const useProfileMaster = () => {
         if (fileInputRef.current) fileInputRef.current.value = ""
         toast.success("Cập nhật ảnh đại diện thành công!")
       },
-      onError: (err: any) => {
-        const errorMsg = err?.response?.data?.message || "Không thể upload ảnh đại diện"
+      onError: (err) => {
+        const errorObj = err as { response?: { data?: { message?: string } } }
+        const errorMsg = errorObj.response?.data?.message || "Không thể upload ảnh đại diện"
         toast.error(errorMsg)
       },
     })
