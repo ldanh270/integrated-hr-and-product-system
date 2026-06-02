@@ -25,7 +25,7 @@ export class MongoAttendanceRepository
     const record = await this.model
       .findOneAndUpdate(
         {
-          employeeId,
+          employeeId: { $eq: employeeId },
           date: today,
         },
         {
@@ -50,7 +50,7 @@ export class MongoAttendanceRepository
     const record = await this.model
       .findOneAndUpdate(
         {
-          employeeId,
+          employeeId: { $eq: employeeId },
           date: today,
         },
         {
@@ -69,13 +69,19 @@ export class MongoAttendanceRepository
   async queryRecords(query: IAttendanceRecordQueryDTO): Promise<any[]> {
     const filter: any = {}
 
-    if (query.employeeId) filter.employeeId = query.employeeId
-    if (query.status) filter.status = query.status
+    if (query.employeeId) filter.employeeId = { $eq: query.employeeId }
+    if (query.status) filter.status = { $eq: query.status }
 
     if (query.startDate || query.endDate) {
       filter.date = {}
-      if (query.startDate) filter.date.$gte = new Date(query.startDate)
-      if (query.endDate) filter.date.$lte = new Date(query.endDate)
+      if (query.startDate) {
+        const startDate = new Date(query.startDate)
+        if (!Number.isNaN(startDate.getTime())) filter.date.$gte = startDate
+      }
+      if (query.endDate) {
+        const endDate = new Date(query.endDate)
+        if (!Number.isNaN(endDate.getTime())) filter.date.$lte = endDate
+      }
     }
 
     return this.model.find(filter).sort({ date: -1 }).lean()

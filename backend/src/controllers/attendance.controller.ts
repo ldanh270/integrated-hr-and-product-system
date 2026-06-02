@@ -17,7 +17,7 @@ export class AttendanceController {
     try {
       // In a real app, employeeId comes from req.user!
       // Here we assume it's passed in body or req.user.id
-      const { employeeId } = req.body
+      const { employeeId } = z.object({ employeeId: z.string().min(1) }).parse(req.body)
       const { location } = checkInSchema.parse(req.body)
 
       const record = await this.service.checkIn(employeeId, location)
@@ -35,7 +35,7 @@ export class AttendanceController {
 
   checkOut = async (req: Request, res: Response<ApiResponse<any>>) => {
     try {
-      const { employeeId } = req.body
+      const { employeeId } = z.object({ employeeId: z.string().min(1) }).parse(req.body)
       const { location } = checkOutSchema.parse(req.body)
 
       const record = await this.service.checkOut(employeeId, location)
@@ -55,7 +55,7 @@ export class AttendanceController {
     try {
       // Auto-detect Check In vs Check Out based on existing record
       // In a real app employeeId comes from req.user
-      const { employeeId } = req.body
+      const { employeeId } = z.object({ employeeId: z.string().min(1) }).parse(req.body)
       const { location } = checkInSchema.parse(req.body)
 
       const today = new Date()
