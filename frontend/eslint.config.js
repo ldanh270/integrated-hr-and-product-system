@@ -1,34 +1,34 @@
 import js from "@eslint/js"
 import reactHooks from "eslint-plugin-react-hooks"
 import reactRefresh from "eslint-plugin-react-refresh"
-import pluginSort from "eslint-plugin-simple-import-sort"
-import { defineConfig, globalIgnores } from "eslint/config"
+import tseslint from "typescript-eslint"
 import globals from "globals"
 
-export default defineConfig([
-  globalIgnores(["dist"]),
+export default tseslint.config(
+  { ignores: ["dist"] },
   {
-    files: ["**/*.{js,jsx}"],
+    files: ["**/*.{ts,tsx,js,jsx}"],
+    extends: [
+      js.configs.recommended,
+      ...tseslint.configs.recommended,
+    ],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
-      parserOptions: {
-        ecmaFeatures: { jsx: true },
-      },
       globals: globals.browser,
     },
     plugins: {
-      "simple-import-sort": pluginSort,
+      "react-hooks": reactHooks,
+      "react-refresh": reactRefresh,
     },
     rules: {
-      "no-unused-vars": ["error", { varsIgnorePattern: "^[A-Z_]" }],
-      "simple-import-sort/imports": "warn",
-      "simple-import-sort/exports": "warn",
+      ...reactHooks.configs.recommended.rules,
+      "react-refresh/only-export-components": [
+        "warn",
+        { allowConstantExport: true },
+      ],
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": ["error", { varsIgnorePattern: "^[A-Z_]" }],
     },
-    extends: [
-      js.configs.recommended,
-      reactHooks.configs["recommended-latest"],
-      reactRefresh.configs.vite,
-    ],
-  },
-])
+  }
+)

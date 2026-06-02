@@ -1,5 +1,5 @@
 import { EMPLOYEE_ROLES, EMPLOYEE_TYPES, ROLE } from "@/config/entities/employee.config"
-import { useCreateEmployee } from "@/hooks/useEmployees"
+import { useCreateEmployee } from "./queries/useEmployeeQuery"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"

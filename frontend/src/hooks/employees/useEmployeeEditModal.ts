@@ -1,5 +1,5 @@
 import { EMPLOYEE_STATUSES, EMPLOYEE_TYPES } from "@/config/entities/employee.config"
-import { useUpdateEmployee } from "@/hooks/useEmployees"
+import { useUpdateEmployee } from "./queries/useEmployeeQuery"
 import type { Employee } from "@/types/employee.types"
 
 import { useEffect } from "react"
