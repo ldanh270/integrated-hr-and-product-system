@@ -1,22 +1,17 @@
-/**
- * Connect to database
- */
-import { CONNECTION_STRING } from "@/configs/system/server.config.ts"
+import { PrismaClient } from "@prisma/client"
 
-import mongoose from "mongoose"
+const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
-/**
- * Connect to database
- * - Using environment variables in .env file
- */
+export const prisma = globalForPrisma.prisma ?? new PrismaClient()
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma
+}
+
 export const connectDB = async () => {
   try {
-    if (!CONNECTION_STRING) {
-      throw new Error("Missing MONGODB_CONNECTION_STRING in .env file")
-    }
-    await mongoose.connect(CONNECTION_STRING)
-
-    console.log("Connect to database successfully")
+    await prisma.$connect()
+    console.log("Connect to PostgreSQL database successfully via Prisma")
   } catch (error) {
     console.error("Connect to database error:", error)
     process.exit(1)

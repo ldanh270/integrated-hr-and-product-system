@@ -1,153 +1,131 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/nXoHondQ)
-
 # SWP391 — HRM System · Team 7
 
-Human Resource Management system. University project, Summer 2026.
+Hệ thống quản lý nhân sự (Human Resource Management). Dự án môn học SWP391, Học kỳ Summer 2026.
 
 ---
 
-## Tech Stack
+## 🛠️ Công nghệ sử dụng (Tech Stack)
 
 | Layer    | Technology                                      |
 | -------- | ----------------------------------------------- |
-| Runtime  | Bun                                             |
-| Backend  | Express 5 + TypeScript                          |
-| Frontend | React 19 + Vite 8 + TypeScript                  |
+| Runtime  | **Bun** (Trình chạy & quản lý package chính)    |
+| Backend  | Express 5 + TypeScript + Prisma ORM             |
+| Frontend | React 19 + Vite 8 + TypeScript + Tailwind CSS   |
+| Database | PostgreSQL                                      |
 | Auth     | JWT (access 15m) + httpOnly cookie (refresh 7d) |
-| Database | TBD (driver not yet connected)                  |
 
 ---
 
-## Project Structure
+## 📁 Cấu trúc thư mục (Project Structure)
 
-```
+```text
 .
-├── backend/            # Express REST API
+├── backend/            # Express REST API (TypeScript + Bun)
+│   ├── src/
+│   │   ├── configs/    # Centralized configurations (entities, auth, system, rules)
+│   │   ├── controllers/# Request handlers (chỉ xử lý HTTP adapter)
+│   │   ├── libs/       # Thư viện dùng chung (kết nối DB, Prisma client,...)
+│   │   ├── middlewares/# Express Middlewares (CORS, Validate, Auth guard)
+│   │   ├── repositories/# Data access layer (Nơi chạy query SQL/Prisma)
+│   │   ├── routes/     # Định nghĩa APIs route
+│   │   ├── services/   # Business logic layer (Xử lý nghiệp vụ chính)
+│   │   ├── utils/      # Helpers & các class lỗi (AppError)
+│   │   └── scripts/    # Các script độc lập (Seed, Clear DB, Hash password)
+│   └── prisma/         # Prisma Schema & Migrations
+├── frontend/           # React SPA (Vite + TypeScript)
 │   └── src/
-│       ├── index.ts        # Server entry point
-│       ├── config/         # Constants, env, DB config
-│       ├── controller/     # HTTP request handlers
-│       ├── lib/            # Shared libs (DB connection)
-│       ├── middleware/     # Express middleware
-│       ├── repository/     # Data access layer
-│       ├── route/          # Route definitions
-│       ├── service/        # Business logic
-│       └── util/           # Helpers & error classes
-├── frontend/           # React SPA
-│   └── src/
-│       ├── App.tsx
-│       └── main.tsx
-├── docs/               # Architecture & standards docs
-│   ├── project-overview-pdr.md
-│   ├── codebase-summary.md
-│   ├── code-standards.md
-│   └── system-architecture.md
-├── CLAUDE.md           # AI engineering constitution
-└── AGENTS.md           # Sub-agent instructions
+│       ├── components/ # UI Components / Primitives
+│       ├── features/   # Feature-sliced modules
+│       ├── pages/      # Route pages
+│       └── App.tsx
+└── docs/               # Tài liệu thiết kế hệ thống & Quy chuẩn coding
 ```
 
 ---
 
-## Setup
+## 🚀 Hướng dẫn Cài đặt & Khởi chạy
 
-### Prerequisites
+### 1. Yêu cầu hệ thống
 
-- [Bun](https://bun.sh) >= 1.0
+- Yêu cầu cài đặt **[Bun](https://bun.sh)** (phiên bản `>= 1.0`).
 
-### Install dependencies
+### 2. Cài đặt Dependencies
 
-```bash
-# Root
-bun install
-
-# Backend
-cd backend && bun install && cd ..
-
-# Frontend
-cd frontend && bun install && cd ..
-```
-
-### Run (both FE + BE)
+Chạy lệnh sau tại thư mục **ROOT** để cài đặt thư viện cho toàn bộ dự án (cả Frontend và Backend):
 
 ```bash
-bun run dev
+bun run install:dev
 ```
 
-| Service  | URL                   |
-| -------- | --------------------- |
-| Backend  | http://localhost:5000 |
-| Frontend | http://localhost:5173 |
+_(Lệnh này sử dụng `concurrently` để tự động chạy cài đặt song song ở cả 2 thư mục)._
 
-### Run separately
+### 3. Cấu hình biến môi trường (Environment Variables)
+
+Tạo file `backend/.env` bằng cách sao chép từ file mẫu:
 
 ```bash
-bun run dev:backend    # BE only — hot-reload on :5000
-bun run dev:frontend   # FE only — Vite on :5173
+cp backend/.env.example backend/.env
 ```
 
-### Environment Variables
-
-> Create `backend/.env` before starting BE.
+Cấu hình các giá trị trong `backend/.env` phù hợp với database PostgreSQL của bạn:
 
 ```env
 PORT=5000
+DATABASE_URL="postgresql://user:password@localhost:5432/hrm_db?schema=public"
 ACCESS_TOKEN_SECRET=your_jwt_secret_here
-# DB vars (when driver added):
-# DB_HOST=
-# DB_PORT=
-# DB_NAME=
-# DB_USER=
-# DB_PASS=
-```
-
-### Environment Variables
-
-```env
-# backend/.env
-PORT=5000
-ACCESS_TOKEN_SECRET=your_jwt_secret_here
-# DB vars (when driver added):
-# DB_HOST=
-# DB_PORT=
-# DB_NAME=
-# DB_USER=
-# DB_PASS=
+REFRESH_TOKEN_SECRET=your_jwt_refresh_secret_here
 ```
 
 ---
 
-## API
+## 💻 Danh sách Lệnh CLI tại thư mục ROOT
 
-Base URL: `http://localhost:5000`
+Bạn có thể chạy toàn bộ các lệnh phát triển, tương tác DB trực tiếp từ thư mục **ROOT** mà không cần `cd` vào từng thư mục con.
 
-| Method | Path               | Description       | Status     |
-| ------ | ------------------ | ----------------- | ---------- |
-| GET    | `/`                | Health check      | ✅ Working |
-| POST   | `/api/auth/signup` | Register new user | ⚠️ Stub    |
+### 1. Khởi chạy môi trường Phát triển (Development)
 
-> See `docs/system-architecture.md` for planned endpoints.
+| Lệnh                   | Mô tả                                                                                                      |
+| :--------------------- | :--------------------------------------------------------------------------------------------------------- |
+| `bun run dev`          | Khởi chạy song song cả **Backend** (`:5000`) và **Frontend** (`:5173`)                                     |
+| `bun run dev:all`      | **(Khuyên dùng)** Chạy đồng thời **Frontend** + **Backend** + **Prisma Studio** (GUI quản lý DB trực quan) |
+| `bun run dev:backend`  | Chỉ chạy riêng Backend (có hot-reload tự động xem thay đổi code)                                           |
+| `bun run dev:frontend` | Chỉ chạy riêng Frontend (Vite Dev Server)                                                                  |
 
----
-
-## Documentation
-
-| Doc                                                            | Contents                             |
-| -------------------------------------------------------------- | ------------------------------------ |
-| [`docs/project-overview-pdr.md`](docs/project-overview-pdr.md) | Feature requirements, tech decisions |
-| [`docs/codebase-summary.md`](docs/codebase-summary.md)         | Module breakdown, known bugs         |
-| [`docs/code-standards.md`](docs/code-standards.md)             | Naming, patterns, what's missing     |
-| [`docs/system-architecture.md`](docs/system-architecture.md)   | Architecture diagram, request flow   |
+> [!TIP]
+> Sử dụng lệnh **`bun run dev:all`** để vừa lập trình vừa có sẵn giao diện quản trị cơ sở dữ liệu trực quan trên trình duyệt (mặc định tại `http://localhost:5555`).
 
 ---
 
-## What's Missing (Priority Order)
+### 2. Quản lý Cơ sở Dữ liệu (Database & Prisma)
 
-1. 🔴 DB driver (`pg` or `mysql2`) — nothing persists
-2. 🔴 Auth middleware — JWT guard for protected routes
-3. 🔴 `cors` middleware — frontend blocked from calling API
-4. 🔴 Auth service logic — signup/login/logout/refresh unimplemented
-5. 🟡 Zod input validation — all endpoints accept raw unvalidated body
-6. 🟡 `config/env.ts` — typed env wrapper with startup validation
-7. 🟡 `types/` directory — shared TypeScript interfaces
-8. 🟡 Tests — zero coverage
-9. 🟡 Rate limiting on auth endpoints
+| Lệnh                    | Mô tả                                                                        |
+| :---------------------- | :--------------------------------------------------------------------------- |
+| `bun run db:migrate`    | Tạo và chạy các file database migration mới dựa trên `schema.prisma`         |
+| `bun run db:generate`   | Biên dịch tạo lại Prisma Client (cần chạy sau khi sửa đổi schema)            |
+| `bun run db:studio`     | Khởi chạy Prisma Studio độc lập (Giao diện web để xem/sửa dữ liệu trực tiếp) |
+| `bun run db:seed`       | Nạp dữ liệu mẫu cơ bản vào database                                          |
+| `bun run db:seed:all`   | Nạp toàn bộ dữ liệu mẫu nâng cao                                             |
+| `bun run db:seed:reset` | Xóa sạch toàn bộ bảng DB cũ và tiến hành seed lại từ đầu                     |
+| `bun run db:clear`      | Xóa sạch hoàn toàn dữ liệu trong các bảng DB hiện tại                        |
+
+---
+
+### 3. Các lệnh bổ trợ khác (Helpers)
+
+| Lệnh                    | Mô tả                                                  |
+| :---------------------- | :----------------------------------------------------- |
+| `bun run hash-password` | Tiện ích băm nhanh một mật khẩu (phục vụ test)         |
+| `bun run seed-admin`    | Tạo nhanh tài khoản Administrator mặc định vào DB      |
+| `bun run build`         | Build dự án Frontend phục vụ cho môi trường Production |
+
+---
+
+## 📑 Tài liệu Hướng dẫn chi tiết (Documentation Index)
+
+Trước khi viết code mới hoặc thực hiện thay đổi, vui lòng đọc kỹ các tài liệu tiêu chuẩn thiết kế trong thư mục `docs/`:
+
+- 📜 **[Quy chuẩn coding (Code Standards)](file:///docs/code-standards.md)**: Quy tắc đặt tên, cấu trúc file, standard abstractions.
+- 📜 **[Nguyên lý SOLID (SOLID Principles)](file:///docs/solid-principles.md)**: Cách thiết kế class, layers lỏng lẻo & tái sử dụng.
+- 📜 **[Mẫu thiết kế (Design Patterns)](file:///docs/design-patterns.md)**: Hướng dẫn áp dụng Repository, Service, Strategy, Factory patterns.
+- 📜 **[Kiến trúc hệ thống (System Architecture)](file:///docs/system-architecture.md)**: Sơ đồ luồng xử lý Request/Response, Auth flow chi tiết.
+- 📜 **[Hợp đồng Interface (Interface Contracts)](file:///docs/interface-contracts.md)**: Danh sách các API contracts, DTOs & envelopes chuẩn hóa.
