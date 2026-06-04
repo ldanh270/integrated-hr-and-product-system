@@ -5,6 +5,7 @@ import type {
   IProfileService,
   ProfileDto,
   ProfileEmployeeDocument,
+  ProfileEmployeeDocumentWithPassword,
   UpdateProfileDto,
 } from "@/types/profile.types.ts"
 import { AppError } from "@/utils/error.util.ts"
@@ -18,7 +19,7 @@ import { Readable } from "stream"
  */
 function toProfileDto(emp: ProfileEmployeeDocument): ProfileDto {
   return {
-    id: emp._id.toString(),
+    id: emp.id,
     fullName: emp.fullName,
     username: emp.username,
     email: emp.email,
@@ -32,8 +33,8 @@ function toProfileDto(emp: ProfileEmployeeDocument): ProfileDto {
     status: emp.status,
     startDate: emp.startDate ? emp.startDate.toISOString().split("T")[0] : null,
     avatar: {
-      url: emp.avatar?.url ?? null,
-      id: emp.avatar?.id ?? null,
+      url: emp.avatarUrl ?? null,
+      id: emp.avatarId ?? null,
     },
     createdAt: emp.createdAt.toISOString(),
     updatedAt: emp.updatedAt.toISOString(),
@@ -125,10 +126,9 @@ export class ProfileService implements IProfileService {
     }
 
     // Delete old Cloudinary asset if it exists
-    if (current.avatar?.id) {
-      await cloudinary.uploader.destroy(current.avatar.id).catch(() => {
-        // Non-blocking: log but don't fail the upload
-        console.warn(`[ProfileService] Could not delete old avatar: ${current.avatar?.id}`)
+    if (current.avatarId) {
+      await cloudinary.uploader.destroy(current.avatarId).catch(() => {
+        console.warn(`[ProfileService] Could not delete old avatar: ${current.avatarId}`)
       })
     }
 
@@ -171,8 +171,7 @@ export class ProfileService implements IProfileService {
       )
     }
 
-    // Hash and save new password
-    employee.passwordHash = await HashUtil.hash(newPass)
-    await employee.save()
+    // Hash and save new password via repository
+    await this.repo.updatePassword(empId, await HashUtil.hash(newPass))
   }
 }

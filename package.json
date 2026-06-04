@@ -2,7 +2,7 @@
   "scripts": {
     "dev": "concurrently \"bun run dev:backend\" \"bun run dev:frontend\"",
     "dev:all": "concurrently \"bun run dev:backend\" \"bun run dev:frontend\" \"bun run db:studio\"",
-    "install:dev": "concurrently \"bun run install:backend\" \"bun run install:frontend\"",
+    "install:all": "concurrently \"bun run install:backend\" \"bun run install:frontend\"",
     "install:backend": "cd backend && bun install",
     "install:frontend": "cd frontend && bun install",
     "dev:backend": "cd backend && bun --watch src/index.ts",
@@ -12,12 +12,7 @@
     "db:migrate": "cd backend && bunx prisma migrate dev",
     "db:generate": "cd backend && bunx prisma generate",
     "db:studio": "cd backend && bunx prisma studio",
-    "db:seed": "cd backend && bun run seed",
-    "db:seed:all": "cd backend && bun run seed:all",
-    "db:seed:reset": "cd backend && bun run seed:reset",
-    "db:clear": "cd backend && bun run clear-db",
-    "hash-password": "cd backend && bun run src/scripts/hash-password.ts",
-    "seed-admin": "cd backend && bun run src/scripts/seed-admin.ts"
+    "hash-password": "cd backend && bun run src/scripts/hash-password.ts"
   },
   "dependencies": {
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",

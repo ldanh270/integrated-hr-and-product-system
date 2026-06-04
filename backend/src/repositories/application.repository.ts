@@ -1,48 +1,48 @@
-import { APPLICATION_STATUS } from "@/configs/entities/attendance.config.ts"
 import { IApplicationStatus } from "@/configs/entities/attendance.config.ts"
-import { ApplicationDocument } from "@/entities/attendance/Application.ts"
 import { IApplicationRepository, ISubmitApplicationDTO } from "@/types/attendance.types.ts"
 
-import { Model } from "mongoose"
+import { ApplicationStatus, PrismaClient } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
-export class MongoApplicationRepository
-  extends BaseRepository<ApplicationDocument>
-  implements IApplicationRepository
-{
-  constructor(applicationModel: Model<ApplicationDocument>) {
-    super(applicationModel)
+export class PrismaApplicationRepository extends BaseRepository implements IApplicationRepository {
+  constructor(prisma: PrismaClient) {
+    super(prisma)
   }
 
   async submit(data: ISubmitApplicationDTO): Promise<any> {
-    const app = new this.model({
-      ...data,
-      status: APPLICATION_STATUS.PENDING,
+    const { employeeId, type, reason, startDate, endDate } = data
+    return this.prisma.application.create({
+      data: {
+        employeeId,
+        type: type as any, // Needs to match Prisma ApplicationType enum
+        status: ApplicationStatus.pending,
+        reason,
+        startDate: new Date(startDate),
+        endDate: endDate ? new Date(endDate) : new Date(startDate),
+      },
     })
-    const saved = await app.save()
-    return saved.toObject()
   }
 
   async approve(id: string, status: IApplicationStatus, approvedBy: string): Promise<any | null> {
-    const updated = await this.model
-      .findByIdAndUpdate(
-        id,
-        {
-          $set: {
-            status,
-            approvedBy,
-            approvedAt: new Date(),
-          },
+    try {
+      return await this.prisma.application.update({
+        where: { id },
+        data: {
+          status: status as ApplicationStatus,
+          approvedById: approvedBy,
+          approvedAt: new Date(),
         },
-        { returnDocument: 'after' },
-      )
-      .lean()
-
-    return updated
+      })
+    } catch (error) {
+      return null
+    }
   }
 
   async findByEmployee(employeeId: string): Promise<any[]> {
-    return this.model.find({ employeeId }).sort({ createdAt: -1 }).lean()
+    return this.prisma.application.findMany({
+      where: { employeeId },
+      orderBy: { createdAt: "desc" },
+    })
   }
 }

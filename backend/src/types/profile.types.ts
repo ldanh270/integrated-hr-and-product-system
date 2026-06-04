@@ -43,26 +43,23 @@ export interface UpdateProfileDto {
  * Internal Employee document shape needed for profile operations
  */
 export interface ProfileEmployeeDocument {
-  _id: any
+  id: string
   fullName: string
   username: string
   email: string
-  phone?: string
-  dateOfBirth?: Date
-  nationalId?: string
-  address?: string
-  position?: string
+  phone: string | null
+  dateOfBirth: Date | null
+  nationalId: string | null
+  address: string | null
+  position: string | null
   role: EmployeeRole
   employeeType: EmployeeType
   status: EmployeeStatus
-  startDate?: Date
-  avatar?: {
-    url?: string
-    id?: string
-  }
+  startDate: Date | null
+  avatarUrl: string | null
+  avatarId: string | null
   createdAt: Date
   updatedAt: Date
-  save(): Promise<any>
 }
 
 export interface ProfileEmployeeDocumentWithPassword extends ProfileEmployeeDocument {
@@ -79,6 +76,7 @@ export interface IProfileRepository {
     empId: string,
     avatar: { url: string; id: string },
   ): Promise<ProfileEmployeeDocument | null>
+  updatePassword(empId: string, newPasswordHash: string): Promise<void>
 }
 
 // ─── Service Interface ───────────────────────────────────────────────────────

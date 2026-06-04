@@ -5,13 +5,15 @@ import { IScheduleService } from "@/types/shift.types.ts"
 
 import { Request, Response } from "express"
 import { z } from "zod"
+import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 
 export class ScheduleController {
   constructor(private service: IScheduleService) {}
 
   assignSchedule = async (req: Request, res: Response<ApiResponse<any>>) => {
     try {
-      const data = assignShiftScheduleSchema.parse(req.body)
+      const reqData = assignShiftScheduleSchema.parse(req.body)
+      const data = { ...reqData, createdById: (req as AuthRequest).user?.empId || "system" }
       const schedule = await this.service.assignSchedule(data)
       res.status(HttpStatusCode.CREATED).json({ data: schedule, error: null })
     } catch (error) {

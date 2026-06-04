@@ -6,7 +6,7 @@ const gpsSchema = z.object({
   radiusMeters: z.number().min(10).optional(),
 })
 
-const objectIdRegex = /^[0-9a-fA-F]{24}$/
+
 
 // ─── WORKING SHIFT ───────────────────────────────────────────
 export const createWorkingShiftSchema = z
@@ -29,16 +29,12 @@ export type UpdateWorkingShiftSchemaType = z.infer<typeof updateWorkingShiftSche
 // ─── SHIFT SCHEDULE ──────────────────────────────────────────
 export const assignShiftScheduleSchema = z
   .object({
-    employeeId: z.string().regex(objectIdRegex, "Invalid ObjectId"),
-    weekdays: z.object({
-      mon: z.string().regex(objectIdRegex).nullable().optional(),
-      tue: z.string().regex(objectIdRegex).nullable().optional(),
-      wed: z.string().regex(objectIdRegex).nullable().optional(),
-      thu: z.string().regex(objectIdRegex).nullable().optional(),
-      fri: z.string().regex(objectIdRegex).nullable().optional(),
-      sat: z.string().regex(objectIdRegex).nullable().optional(),
-      sun: z.string().regex(objectIdRegex).nullable().optional(),
-    }),
+    employeeId: z.string(), // Note: Use .uuid() if strict, or leave string
+    workingShiftId: z.string(),
+    days: z.array(z.object({
+      dayOfWeek: z.number().min(0).max(6),
+      shiftId: z.string()
+    })).optional(),
     validFrom: z
       .string()
       .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }),
@@ -55,8 +51,8 @@ export type AssignShiftScheduleSchemaType = z.infer<typeof assignShiftScheduleSc
 // ─── EMPLOYEE SHIFT OVERRIDE ─────────────────────────────────
 export const overrideEmployeeShiftSchema = z
   .object({
-    employeeId: z.string().regex(objectIdRegex, "Invalid ObjectId"),
-    shiftId: z.string().regex(objectIdRegex, "Invalid ObjectId"),
+    employeeId: z.string(),
+    shiftId: z.string(),
     assignedDate: z
       .string()
       .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }),

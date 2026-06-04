@@ -87,5 +87,9 @@
     "*.localhost": "default",
     "http://*": "default",
     "https://*": "default"
-  }
+  },
+  "[prisma]": {
+    "editor.defaultFormatter": "Prisma.prisma"
+  },
+  "prismaERDPreviewer.preferredTheme": "dark"
 }

@@ -54,7 +54,7 @@ Hệ thống quản lý nhân sự (Human Resource Management). Dự án môn h�
 Chạy lệnh sau tại thư mục **ROOT** để cài đặt thư viện cho toàn bộ dự án (cả Frontend và Backend):
 
 ```bash
-bun run install:dev
+bun run install:all
 ```
 
 _(Lệnh này sử dụng `concurrently` để tự động chạy cài đặt song song ở cả 2 thư mục)._

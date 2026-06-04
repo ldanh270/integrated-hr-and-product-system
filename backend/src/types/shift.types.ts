@@ -1,5 +1,3 @@
-import { Types } from "mongoose"
-
 export interface IGpsLocationDTO {
   lat: number
   lng: number
@@ -14,30 +12,28 @@ export interface ICreateWorkingShiftDTO {
   gracePeriodMinutes?: number
   gps?: IGpsLocationDTO
   isActive?: boolean
+  createdById: string
 }
 
 export interface IUpdateWorkingShiftDTO extends Partial<ICreateWorkingShiftDTO> {}
 
 // ─── SHIFT SCHEDULE (Weekly Pattern) ──────────────────────────
 export interface IAssignShiftScheduleDTO {
-  employeeId: string | Types.ObjectId
-  weekdays: {
-    mon?: string | Types.ObjectId | null
-    tue?: string | Types.ObjectId | null
-    wed?: string | Types.ObjectId | null
-    thu?: string | Types.ObjectId | null
-    fri?: string | Types.ObjectId | null
-    sat?: string | Types.ObjectId | null
-    sun?: string | Types.ObjectId | null
-  }
+  employeeId: string
+  workingShiftId: string
   validFrom: string | Date
   validTo?: string | Date | null
+  createdById: string
+  days?: {
+    dayOfWeek: number
+    shiftId: string
+  }[]
 }
 
 // ─── EMPLOYEE SHIFT (Daily Record Override) ───────────────────
 export interface IOverrideEmployeeShiftDTO {
-  employeeId: string | Types.ObjectId
-  shiftId: string | Types.ObjectId
+  employeeId: string
+  shiftId: string
   assignedDate: string | Date
 }
 

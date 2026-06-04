@@ -1,7 +1,7 @@
 import { PASSWORD_RESET_STATUS } from "@/configs/auth/auth.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
-import PasswordResetRequest from "@/entities/auth/PasswordResetRequest.ts"
+
 import {
   AuthResponseDto,
   ForgotPasswordDto,
@@ -70,12 +70,15 @@ export class AuthService implements IAuthService {
         employee.lockedUntil = new Date(Date.now() + 15 * 60 * 1000) // 15 mins lockout
       }
 
-      await employee.save()
+      await this.repo.updateAuthEmployee(employee.id, {
+        failedLoginCount: employee.failedLoginCount,
+        lockedUntil: employee.lockedUntil
+      })
 
       // Log failed attempt through repository
       await this.repo.logActivity({
-        empId: employee._id,
-        actionType: "failed-login",
+        empId: employee.id,
+        actionType: "failed_login",
         ipAddress,
         timestamp: new Date(),
       })
@@ -87,11 +90,15 @@ export class AuthService implements IAuthService {
     employee.failedLoginCount = 0
     employee.lockedUntil = undefined
     employee.lastLoginAt = new Date()
-    await employee.save()
+    await this.repo.updateAuthEmployee(employee.id, {
+      failedLoginCount: employee.failedLoginCount,
+      lockedUntil: employee.lockedUntil,
+      lastLoginAt: employee.lastLoginAt
+    })
 
     // Log success through repository
     await this.repo.logActivity({
-      empId: employee._id,
+      empId: employee.id,
       actionType: "login",
       ipAddress,
       timestamp: new Date(),
@@ -99,7 +106,7 @@ export class AuthService implements IAuthService {
 
     // 6. Generate Token
     const token = JwtUtil.generateToken({
-      empId: employee._id,
+      empId: employee.id,
       username: employee.username,
       role: employee.role,
     })
@@ -107,7 +114,7 @@ export class AuthService implements IAuthService {
     return {
       token,
       employee: {
-        id: employee._id,
+        id: employee.id,
         username: employee.username,
         email: employee.email,
         fullName: employee.fullName,
@@ -154,12 +161,9 @@ export class AuthService implements IAuthService {
     }
 
     // 2. Check if a pending request already exists
-    const existingRequest = await PasswordResetRequest.findOne({
-      employeeId: employee._id,
-      status: PASSWORD_RESET_STATUS.PENDING,
-    })
+    const hasPending = await this.repo.hasPendingPasswordResetRequest(employee.id)
 
-    if (existingRequest) {
+    if (hasPending) {
       return {
         message: "If an account with that username exists, a reset request has been created.",
       }
@@ -169,11 +173,7 @@ export class AuthService implements IAuthService {
     const token = crypto.randomBytes(32).toString("hex")
 
     // 4. Create the request
-    await PasswordResetRequest.create({
-      employeeId: employee._id,
-      token,
-      status: PASSWORD_RESET_STATUS.PENDING,
-    })
+    await this.repo.createPasswordResetRequest(employee.id, token)
 
     return { message: "If an account with that username exists, a reset request has been created." }
   }

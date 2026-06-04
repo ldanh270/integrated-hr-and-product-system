@@ -1,6 +1,7 @@
 import { ProfileController } from "@/controllers/profile.controller.ts"
+import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
-import { MongoProfileRepository } from "@/repositories/profile.repository.ts"
+import { PrismaProfileRepository } from "@/repositories/profile.repository.ts"
 import { ProfileService } from "@/services/profile.service.ts"
 
 import express from "express"
@@ -13,7 +14,7 @@ import multer from "multer"
 const profileRoutes = express.Router()
 
 // ─── DI Wiring ───────────────────────────────────────────────────────────────
-const repository = new MongoProfileRepository()
+const repository = new PrismaProfileRepository(prisma)
 const service = new ProfileService(repository)
 const controller = new ProfileController(service)
 

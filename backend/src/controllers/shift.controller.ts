@@ -5,13 +5,15 @@ import { IShiftService } from "@/types/shift.types.ts"
 
 import { Request, Response } from "express"
 import { z } from "zod"
+import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 
 export class ShiftController {
   constructor(private service: IShiftService) {}
 
   create = async (req: Request, res: Response<ApiResponse<any>>) => {
     try {
-      const data = createWorkingShiftSchema.parse(req.body)
+      const reqData = createWorkingShiftSchema.parse(req.body)
+      const data = { ...reqData, createdById: (req as AuthRequest).user?.empId || "system" }
       const shift = await this.service.createShift(data)
       res.status(HttpStatusCode.CREATED).json({ data: shift, error: null })
     } catch (error) {

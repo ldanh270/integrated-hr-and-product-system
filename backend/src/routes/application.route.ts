@@ -1,16 +1,17 @@
 import { ROLE } from "@/configs/entities/employee.config.ts"
 import { ApplicationController } from "@/controllers/application.controller.ts"
-import Application from "@/entities/attendance/Application.ts"
+import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
 import { authorizeRoles } from "@/middlewares/role.middleware.ts"
-import { MongoApplicationRepository } from "@/repositories/application.repository.ts"
+import { PrismaApplicationRepository } from "@/repositories/application.repository.ts"
 import { ApplicationService } from "@/services/application.service.ts"
 
+import { ApplicationType } from "@prisma/client"
 import express from "express"
 
 const applicationRoutes = express.Router()
 
-const repository = new MongoApplicationRepository(Application as any)
+const repository = new PrismaApplicationRepository(prisma)
 const service = new ApplicationService(repository)
 const controller = new ApplicationController(service)
 
