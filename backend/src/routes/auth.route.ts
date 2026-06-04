@@ -1,6 +1,7 @@
 import { AuthController } from "@/controllers/auth.controller.ts"
+import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
-import { MongoAuthRepository } from "@/repositories/auth.repository.ts"
+import { PrismaAuthRepository } from "@/repositories/auth.repository.ts"
 import { AuthService } from "@/services/auth.service.ts"
 
 import express from "express"
@@ -12,7 +13,7 @@ import express from "express"
 const authRoutes = express.Router()
 
 // Instantiate the Repository (Data Access Layer)
-const repository = new MongoAuthRepository()
+const repository = new PrismaAuthRepository(prisma)
 
 // Instantiate the Service and inject the Repository (Business Logic)
 const service = new AuthService(repository)

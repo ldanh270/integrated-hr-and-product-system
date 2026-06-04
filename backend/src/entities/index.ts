@@ -1,0 +1,23 @@
+// Re-export Prisma generated types for use across the codebase
+export type {
+  Employee,
+  WorkingShift,
+  ShiftSchedule,
+  ShiftScheduleDay,
+  EmployeeShift,
+  AttendanceRecord,
+  Application,
+  HolidayCalendar,
+  Payroll,
+  PayrollComponent,
+  PayrollTemplate,
+  PayrollTemplateComponent,
+  PayrollSettings,
+  Payslip,
+  PayslipDetail,
+  Project,
+  ProjectMember,
+  Task,
+  ActivityLog,
+  PasswordResetRequest,
+} from "@prisma/client"

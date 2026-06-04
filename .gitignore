@@ -146,3 +146,7 @@ package-lock.json
 yarn.lock
 pnpm-lock.yaml
 bun.lock
+
+# AI generated files
+.planning
+plans

@@ -1,4 +1,3 @@
-import Employee from "@/entities/Employee.ts"
 import type {
   IProfileRepository,
   ProfileEmployeeDocument,
@@ -6,27 +5,65 @@ import type {
   UpdateProfileDto,
 } from "@/types/profile.types.ts"
 
+import { PrismaClient, Employee as PrismaEmployee } from "@prisma/client"
+
 import { BaseRepository } from "./base.repository.ts"
 
 /**
- * MongoDB implementation of the Profile Repository
+ * Prisma implementation of the Profile Repository
  * Follows the Repository Pattern to isolate all DB operations
  */
-export class MongoProfileRepository
-  extends BaseRepository<any, ProfileEmployeeDocument>
-  implements IProfileRepository
-{
-  constructor() {
-    super(Employee)
+export class PrismaProfileRepository extends BaseRepository implements IProfileRepository {
+  constructor(prisma: PrismaClient) {
+    super(prisma)
+  }
+
+  private mapToProfile(employee: PrismaEmployee): ProfileEmployeeDocument {
+    return {
+      id: employee.id,
+      fullName: employee.fullName,
+      username: employee.username,
+      email: employee.email,
+      phone: employee.phone,
+      dateOfBirth: employee.dateOfBirth,
+      nationalId: employee.nationalId,
+      address: employee.address,
+      position: employee.position,
+      role: employee.role,
+      employeeType: employee.employeeType,
+      status: employee.status,
+      startDate: employee.startDate,
+      avatarUrl: employee.avatarUrl,
+      avatarId: employee.avatarId,
+      createdAt: employee.createdAt,
+      updatedAt: employee.updatedAt,
+    }
+  }
+
+  async findById(empId: string): Promise<ProfileEmployeeDocument | null> {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: empId },
+    })
+
+    if (!employee) return null
+
+    return this.mapToProfile(employee)
   }
 
   /**
-   * Finds an employee by their MongoDB ObjectId and explicitly selects the passwordHash field
-   * Returns a Mongoose Document (lean = false) so that we can call .save() on it
+   * Finds an employee by their ID and explicitly includes the passwordHash field
    */
   async findAuthById(empId: string): Promise<ProfileEmployeeDocumentWithPassword | null> {
-    const employee = await this.model.findById(empId).select("+passwordHash")
-    return employee as unknown as ProfileEmployeeDocumentWithPassword | null
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: empId },
+    })
+
+    if (!employee) return null
+
+    return {
+      ...this.mapToProfile(employee),
+      passwordHash: employee.passwordHash,
+    }
   }
 
   /**
@@ -36,8 +73,7 @@ export class MongoProfileRepository
     empId: string,
     data: UpdateProfileDto,
   ): Promise<ProfileEmployeeDocument | null> {
-    // Build an update object filtering out undefined values
-    const updateFields: Record<string, unknown> = {}
+    const updateFields: any = {}
 
     if (data.fullName !== undefined) updateFields.fullName = data.fullName
     if (data.phone !== undefined) updateFields.phone = data.phone
@@ -45,24 +81,47 @@ export class MongoProfileRepository
     if (data.nationalId !== undefined) updateFields.nationalId = data.nationalId
     if (data.address !== undefined) updateFields.address = data.address
 
-    const employee = await this.model.findByIdAndUpdate(
-      empId,
-      { $set: updateFields },
-      { new: true, runValidators: true },
-    )
+    try {
+      const employee = await this.prisma.employee.update({
+        where: { id: empId },
+        data: updateFields,
+      })
 
-    return employee as unknown as ProfileEmployeeDocument | null
+      return this.mapToProfile(employee)
+    } catch (error) {
+      return null
+    }
   }
 
   /**
-   * Updates only the avatar sub-document for a given employee
+   * Updates only the avatar for a given employee
    */
   async updateAvatar(
     empId: string,
     avatar: { url: string; id: string },
   ): Promise<ProfileEmployeeDocument | null> {
-    const employee = await this.model.findByIdAndUpdate(empId, { $set: { avatar } }, { new: true })
+    try {
+      const employee = await this.prisma.employee.update({
+        where: { id: empId },
+        data: {
+          avatarUrl: avatar.url,
+          avatarId: avatar.id,
+        },
+      })
 
-    return employee as unknown as ProfileEmployeeDocument | null
+      return this.mapToProfile(employee)
+    } catch (error) {
+      return null
+    }
+  }
+
+  /**
+   * Updates the password hash for an employee
+   */
+  async updatePassword(empId: string, newPasswordHash: string): Promise<void> {
+    await this.prisma.employee.update({
+      where: { id: empId },
+      data: { passwordHash: newPasswordHash },
+    })
   }
 }

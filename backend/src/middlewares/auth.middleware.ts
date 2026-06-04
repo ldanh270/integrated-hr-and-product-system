@@ -5,9 +5,9 @@
  */
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
-import Employee from "@/entities/Employee.ts"
 import { JwtUtil } from "@/utils/jwt.util.ts"
 
+import { prisma } from "@/libs/database.ts"
 import { NextFunction, Request, Response } from "express"
 
 /**
@@ -49,7 +49,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
 
   // Verify that the user still exists in the database and is active
   try {
-    const employee = await Employee.findById(decoded.empId).lean()
+    const employee = await prisma.employee.findUnique({ where: { id: decoded.empId } })
     if (!employee || employee.status !== EMPLOYEE_STATUS.ACTIVE) {
       res.status(HttpStatusCode.UNAUTHORIZED).json({
         status: "error",

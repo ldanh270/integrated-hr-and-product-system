@@ -24,28 +24,6 @@ export interface Employee {
   updatedAt: Date
 }
 
-export interface EmployeeDb {
-  _id: { toString(): string }
-  fullName: string
-  username: string
-  email: string
-  passwordHash: string
-  role: EmployeeRole
-  phone?: string
-  position?: string
-  employeeType: EmployeeType
-  status: EmployeeStatus
-  dateOfBirth?: Date
-  nationalId?: string
-  address?: string
-  startDate?: Date
-  endDate?: Date
-  avatar?: { url?: string; id?: string }
-  createdAt: Date
-  updatedAt: Date
-  save?: () => Promise<any>
-}
-
 export interface CreateEmployeeDto {
   fullName: string
   email: string

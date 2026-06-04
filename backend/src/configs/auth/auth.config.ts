@@ -2,8 +2,8 @@ export const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET || ""
 export const ACCESS_TOKEN_TTL = 24 * 60 * 60 * 1000 // 1 day
 
 export const REGEX = {
-  // MongoDB ObjectId (_id). 24 characters hex string
-  MONGO_ID: /^[0-9a-fA-F]{24}$/,
+  // MongoDB ObjectId is no longer used, we use Postgres UUID
+
 
   // Only contain lowercase letters, numbers, and underscores (_) and dots (.)
   USERNAME: /^[a-z0-9_.]+$/,

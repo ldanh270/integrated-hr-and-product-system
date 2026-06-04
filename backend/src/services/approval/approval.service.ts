@@ -1,19 +1,13 @@
-import { PASSWORD_RESET_STATUS } from "@/configs/auth/auth.config.ts"
 import { APPLICATION_STATUS } from "@/configs/entities/attendance.config.ts"
 import { ROLE } from "@/configs/entities/employee.config.ts"
-import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
-import { PROPOSAL_STATUS } from "@/configs/entities/recruitment.config.ts"
-import { APPROVAL_CONFIG } from "@/configs/rules/approval.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
-import Employee from "@/entities/Employee.ts"
-import Application from "@/entities/attendance/Application.ts"
-import PasswordResetRequest from "@/entities/auth/PasswordResetRequest.ts"
-import Project from "@/entities/product/Project.ts"
-import RecruitmentProposal from "@/entities/recruitment/RecruitmentProposal.ts"
+import { prisma } from "@/libs/database.ts"
 import { ApprovalStrategyFactory } from "@/services/approval/approval.strategy.ts"
 import { IApprovalItem, IApprovalService, IProcessApprovalDTO } from "@/types/approval.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
+
+import { ApplicationStatus, PasswordResetStatus, ProjectStatus } from "@prisma/client"
 
 export class ApprovalService implements IApprovalService {
   /**
@@ -24,39 +18,40 @@ export class ApprovalService implements IApprovalService {
     const strategy = ApprovalStrategyFactory.getStrategy(role)
 
     // 1. Fetch Applications (Leaves, OT, etc.)
-    let applicationQuery: any = { status: APPLICATION_STATUS.PENDING }
+    if (
+      role === ROLE.ADMIN ||
+      role === ROLE.GENERAL_MANAGER ||
+      role === ROLE.HR_MANAGER ||
+      role === ROLE.TEAM_LEADER
+    ) {
+      let employeeIdFilter: string[] | undefined = undefined
 
-    if (role === "team_leader") {
-      // Find active projects where processor is the team leader
-      const ledProjects = await Project.find({
-        teamLeaderId: processorId,
-        status: PROJECT_STATUS.ACTIVE,
-      }).lean()
+      if (role === ROLE.TEAM_LEADER) {
+        // Find members of active projects led by this TL
+        const ledProjects = await prisma.project.findMany({
+          where: { teamLeaderId: processorId, status: ProjectStatus.active },
+          include: { members: { where: { removedAt: null } } },
+        })
+        employeeIdFilter = ledProjects.flatMap((p) => p.members.map((m) => m.employeeId))
+      }
 
-      const memberIds = ledProjects.flatMap((p) =>
-        p.members.filter((m) => m.removedAt === null).map((m) => m.employeeId.toString()),
-      )
-      applicationQuery.employeeId = { $in: memberIds }
-    } else if (role !== ROLE.ADMIN && role !== ROLE.GENERAL_MANAGER && role !== ROLE.HR_MANAGER) {
-      // Other roles cannot see any applications to approve
-      applicationQuery = null
-    }
-
-    if (applicationQuery) {
-      const apps = await Application.find(applicationQuery)
-        .populate("employeeId", "fullName")
-        .sort({ createdAt: -1 })
-        .lean()
+      const apps = await prisma.application.findMany({
+        where: {
+          status: ApplicationStatus.pending,
+          ...(employeeIdFilter ? { employeeId: { in: employeeIdFilter } } : {}),
+        },
+        include: { employee: { select: { fullName: true } } },
+        orderBy: { createdAt: "desc" },
+      })
 
       for (const app of apps) {
-        const applicantId = app.employeeId?._id?.toString() || ""
-        const canApprove = await strategy.canApprove("application", applicantId, processorId)
+        const canApprove = await strategy.canApprove("application", app.employeeId, processorId)
         if (canApprove) {
           list.push({
-            id: app._id.toString(),
+            id: app.id,
             category: "application",
-            employeeId: applicantId,
-            employeeName: (app.employeeId as any)?.fullName || "N/A",
+            employeeId: app.employeeId,
+            employeeName: app.employee?.fullName || "N/A",
             createdAt: app.createdAt,
             status: app.status,
             details: {
@@ -65,7 +60,6 @@ export class ApprovalService implements IApprovalService {
               endDate: app.endDate,
               reason: app.reason,
               note: app.note,
-              regimeType: app.regimeType,
             },
           })
         }
@@ -74,60 +68,25 @@ export class ApprovalService implements IApprovalService {
 
     // 2. Fetch Password Reset Requests (admin and general_manager only)
     if (role === ROLE.ADMIN || role === ROLE.GENERAL_MANAGER) {
-      const resetRequests = await PasswordResetRequest.find({
-        status: PASSWORD_RESET_STATUS.PENDING,
+      const resetRequests = await prisma.passwordResetRequest.findMany({
+        where: { status: PasswordResetStatus.pending },
+        include: { employee: { select: { fullName: true } } },
+        orderBy: { createdAt: "desc" },
       })
-        .populate("employeeId", "fullName")
-        .sort({ createdAt: -1 })
-        .lean()
 
       for (const req of resetRequests) {
-        const applicantId = req.employeeId?._id?.toString() || ""
-        const canApprove = await strategy.canApprove("password_reset", applicantId, processorId)
+        const canApprove = await strategy.canApprove("password_reset", req.employeeId, processorId)
         if (canApprove) {
           list.push({
-            id: req._id.toString(),
+            id: req.id,
             category: "password_reset",
-            employeeId: applicantId,
-            employeeName: (req.employeeId as any)?.fullName || "N/A",
+            employeeId: req.employeeId,
+            employeeName: req.employee?.fullName || "N/A",
             createdAt: req.createdAt,
             status: req.status,
             details: {
               expiresAt: req.expiresAt,
               note: req.note,
-            },
-          })
-        }
-      }
-    }
-
-    // 3. Fetch Recruitment Proposals (admin, general_manager, hr_manager only)
-    if (role === ROLE.ADMIN || role === ROLE.GENERAL_MANAGER || role === ROLE.HR_MANAGER) {
-      const proposals = await RecruitmentProposal.find({ status: PROPOSAL_STATUS.PENDING })
-        .populate("requestedBy", "fullName")
-        .sort({ createdAt: -1 })
-        .lean()
-
-      for (const prop of proposals) {
-        const requesterId = prop.requestedBy?._id?.toString() || ""
-        const canApprove = await strategy.canApprove(
-          "recruitment_proposal",
-          requesterId,
-          processorId,
-        )
-        if (canApprove) {
-          list.push({
-            id: prop._id.toString(),
-            category: "recruitment_proposal",
-            employeeId: requesterId,
-            employeeName: (prop.requestedBy as any)?.fullName || "N/A",
-            createdAt: prop.createdAt,
-            status: prop.status,
-            details: {
-              position: prop.position,
-              headcount: prop.headcount,
-              reason: prop.reason,
-              expectedStart: prop.expectedStart,
             },
           })
         }
@@ -141,98 +100,97 @@ export class ApprovalService implements IApprovalService {
    * Approves or rejects a specific request
    */
   async processApproval(dto: IProcessApprovalDTO): Promise<any> {
-    const processorRole = await this.getEmployeeRole(dto.processorId)
-    const strategy = ApprovalStrategyFactory.getStrategy(processorRole)
+    const processorEmployee = await prisma.employee.findUnique({
+      where: { id: dto.processorId },
+      select: { role: true },
+    })
+    if (!processorEmployee) {
+      throw new AppError("Processor employee not found", HttpStatusCode.NOT_FOUND, "Service")
+    }
 
+    const strategy = ApprovalStrategyFactory.getStrategy(processorEmployee.role)
     let applicantId = ""
-    let targetDoc: any = null
 
-    // Fetch details based on categories
     if (dto.category === "application") {
-      targetDoc = await Application.findById(dto.id)
-      if (!targetDoc)
-        throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, "Service")
-      applicantId = targetDoc.employeeId.toString()
+      const app = await prisma.application.findUnique({ where: { id: dto.id } })
+      if (!app) throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, "Service")
+      applicantId = app.employeeId
+
+      if (app.status !== ApplicationStatus.pending) {
+        throw new AppError(
+          "Request has already been processed",
+          HttpStatusCode.BAD_REQUEST,
+          "Service",
+        )
+      }
+
+      const canApprove = await strategy.canApprove(dto.category, applicantId, dto.processorId)
+      if (!canApprove) {
+        throw new AppError(
+          "Forbidden: You do not have permission to approve this request",
+          HttpStatusCode.FORBIDDEN,
+          "Service",
+        )
+      }
+
+      return prisma.application.update({
+        where: { id: dto.id },
+        data: {
+          status:
+            dto.status === "approved" ? ApplicationStatus.approved : ApplicationStatus.rejected,
+          approvedById: dto.processorId,
+          approvedAt: new Date(),
+          ...(dto.rejectReason && dto.status === "rejected"
+            ? { rejectReason: dto.rejectReason }
+            : {}),
+        },
+      })
     } else if (dto.category === "password_reset") {
-      targetDoc = await PasswordResetRequest.findById(dto.id)
-      if (!targetDoc)
+      const req = await prisma.passwordResetRequest.findUnique({ where: { id: dto.id } })
+      if (!req)
         throw new AppError("Password Reset Request not found", HttpStatusCode.NOT_FOUND, "Service")
-      applicantId = targetDoc.employeeId.toString()
-    } else if (dto.category === "recruitment_proposal") {
-      targetDoc = await RecruitmentProposal.findById(dto.id)
-      if (!targetDoc)
-        throw new AppError("Recruitment Proposal not found", HttpStatusCode.NOT_FOUND, "Service")
-      applicantId = targetDoc.requestedBy.toString()
+      applicantId = req.employeeId
+
+      if (req.status !== PasswordResetStatus.pending) {
+        throw new AppError(
+          "Request has already been processed",
+          HttpStatusCode.BAD_REQUEST,
+          "Service",
+        )
+      }
+
+      const canApprove = await strategy.canApprove(dto.category, applicantId, dto.processorId)
+      if (!canApprove) {
+        throw new AppError(
+          "Forbidden: You do not have permission to approve this request",
+          HttpStatusCode.FORBIDDEN,
+          "Service",
+        )
+      }
+
+      const isApproved = dto.status === "approved"
+      let tempPassword = ""
+
+      const updatedReq = await prisma.passwordResetRequest.update({
+        where: { id: dto.id },
+        data: {
+          status: isApproved ? PasswordResetStatus.approved : PasswordResetStatus.rejected,
+          approvedById: dto.processorId,
+          ...(dto.rejectReason && !isApproved ? { note: dto.rejectReason } : {}),
+        },
+      })
+
+      if (isApproved) {
+        tempPassword = this.generateSecureTempPassword()
+        await prisma.employee.update({
+          where: { id: applicantId },
+          data: { passwordHash: await HashUtil.hash(tempPassword) },
+        })
+      }
+
+      return { ...updatedReq, tempPassword: tempPassword || undefined }
     } else {
       throw new AppError("Invalid request category", HttpStatusCode.BAD_REQUEST, "Service")
-    }
-
-    // Verify current status is pending
-    if (targetDoc.status !== APPLICATION_STATUS.PENDING) {
-      throw new AppError(
-        "Request has already been processed",
-        HttpStatusCode.BAD_REQUEST,
-        "Service",
-      )
-    }
-
-    // Check authority using the loaded Strategy
-    const canApprove = await strategy.canApprove(dto.category, applicantId, dto.processorId)
-    if (!canApprove) {
-      throw new AppError(
-        "Forbidden: You do not have permission to approve this request",
-        HttpStatusCode.FORBIDDEN,
-        "Service",
-      )
-    }
-
-    const updatedStatus =
-      dto.status === APPLICATION_STATUS.APPROVED
-        ? APPLICATION_STATUS.APPROVED
-        : APPLICATION_STATUS.REJECTED
-
-    let tempPassword = ""
-
-    // Perform DB updates
-    if (dto.category === "application") {
-      targetDoc.status = updatedStatus
-      targetDoc.approvedBy = dto.processorId
-      targetDoc.approvedAt = new Date()
-      if (dto.rejectReason && updatedStatus === APPLICATION_STATUS.REJECTED) {
-        targetDoc.rejectReason = dto.rejectReason
-      }
-      await targetDoc.save()
-    } else if (dto.category === "password_reset") {
-      targetDoc.status = updatedStatus
-      targetDoc.approvedBy = dto.processorId
-      if (dto.rejectReason && updatedStatus === APPLICATION_STATUS.REJECTED) {
-        targetDoc.note = dto.rejectReason
-      }
-      await targetDoc.save()
-
-      if (updatedStatus === APPLICATION_STATUS.APPROVED) {
-        const employee = await Employee.findById(targetDoc.employeeId)
-        if (!employee) {
-          throw new AppError("Associated employee not found", HttpStatusCode.NOT_FOUND, "Service")
-        }
-
-        tempPassword = this.generateSecureTempPassword()
-        employee.passwordHash = await HashUtil.hash(tempPassword)
-        await employee.save()
-      }
-    } else if (dto.category === "recruitment_proposal") {
-      targetDoc.status = updatedStatus
-      targetDoc.approvedBy = dto.processorId
-      targetDoc.approvedAt = new Date()
-      if (dto.rejectReason && updatedStatus === APPLICATION_STATUS.REJECTED) {
-        targetDoc.rejectReason = dto.rejectReason
-      }
-      await targetDoc.save()
-    }
-
-    return {
-      ...targetDoc.toObject(),
-      tempPassword: tempPassword || undefined,
     }
   }
 
@@ -257,12 +215,5 @@ export class ApprovalService implements IApprovalService {
       .split("")
       .sort(() => 0.5 - Math.random())
       .join("")
-  }
-
-  private async getEmployeeRole(employeeId: string): Promise<string> {
-    const emp = await Employee.findById(employeeId).select("role").lean()
-    if (!emp)
-      throw new AppError("Processor employee not found", HttpStatusCode.NOT_FOUND, "Service")
-    return emp.role
   }
 }

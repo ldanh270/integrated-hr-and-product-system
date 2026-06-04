@@ -1,6 +1,6 @@
 import {
   APPLICATION_STATUSES,
-  APPLICATION_TYPES,
+  APPLICATION_TYPE_VALUES,
   ATTENDANCE_STATUSES,
   HOLIDAY_TYPES,
   REGIME_TYPES,
@@ -53,7 +53,7 @@ export type AttendanceRecordQuerySchemaType = z.infer<typeof attendanceRecordQue
 // ─── APPLICATIONS (Leave, OT, Swap) ──────────────────────────
 export const submitApplicationSchema = z
   .object({
-    type: z.enum(APPLICATION_TYPES),
+    type: z.enum(APPLICATION_TYPE_VALUES),
     reason: z.string().min(5).max(500),
     startDate: z
       .string()

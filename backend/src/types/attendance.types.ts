@@ -5,8 +5,6 @@ import {
   IRegimeType,
 } from "@/configs/entities/attendance.config.ts"
 
-import { Types } from "mongoose"
-
 export interface IGpsScanDTO {
   lat: number
   lng: number
@@ -14,31 +12,31 @@ export interface IGpsScanDTO {
 
 // ─── ATTENDANCE RECORD ────────────────────────────────────────
 export interface ICheckInDTO {
-  employeeId: string | Types.ObjectId
+  employeeId: string
   location: IGpsScanDTO
 }
 
 export interface ICheckOutDTO {
-  employeeId: string | Types.ObjectId
+  employeeId: string
   location: IGpsScanDTO
 }
 
 export interface IAttendanceRecordQueryDTO {
   startDate?: string
   endDate?: string
-  employeeId?: string | Types.ObjectId
+  employeeId?: string
   status?: IAttendanceStatus
 }
 
 // ─── APPLICATIONS ─────────────────────────────────────────────
 export interface ISubmitApplicationDTO {
-  employeeId: string | Types.ObjectId
+  employeeId: string
   type: IApplicationType
   reason: string
   startDate: string | Date
   endDate?: string | Date
   regimeType?: IRegimeType
-  swapWith?: string | Types.ObjectId // References EmployeeShift ID
+  swapWith?: string // References EmployeeShift ID
 }
 
 export interface IApproveApplicationDTO {
@@ -47,7 +45,7 @@ export interface IApproveApplicationDTO {
 
 // ─── REPOSITORY INTERFACES ────────────────────────────────────
 export interface IAttendanceRepository {
-  checkIn(employeeId: string, location: IGpsScanDTO, shiftId?: string): Promise<any>
+  checkIn(employeeId: string, location: IGpsScanDTO, employeeShiftId?: string): Promise<any>
   checkOut(employeeId: string, location: IGpsScanDTO): Promise<any>
   queryRecords(query: IAttendanceRecordQueryDTO): Promise<any[]>
 }
