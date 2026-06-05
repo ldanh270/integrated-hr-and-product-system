@@ -128,13 +128,13 @@ enum ActivityAction {
 model Employee {
   id               String         @id @default(cuid())
   fullName         String
-  username         String         @unique
+  username         String
   passwordHash     String
   role             Role           @default(employee)
-  email            String         @unique
-  phone            String?        @unique
+  email            String
+  phone            String?
   dateOfBirth      DateTime?
-  nationalId       String?        @unique
+  nationalId       String?
   address          String?
   avatarUrl        String?
   avatarId         String?
@@ -227,7 +227,6 @@ model ShiftSchedule {
 
   days           ShiftScheduleDay[]
   employeeShifts EmployeeShift[]
-  workingShiftId String?
 
   @@index([employeeId, validFrom(sort: Desc)])
   @@index([validTo])
@@ -384,7 +383,7 @@ model ApplicationOvertimeDetail {
 model ApplicationRegimeDetail {
   applicationId        String      @id
   application          Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  regimeType           String
+  regimeType           RegimeType
   reducedMinutesPerDay Int         @default(0)
   applyToStart         Boolean     @default(false)
   applyToEnd           Boolean     @default(false)
@@ -529,7 +528,9 @@ model PayslipDetail {
   payslip     Payslip          @relation(fields: [payslipId], references: [id], onDelete: Cascade)
   componentId String
   component   PayrollComponent @relation(fields: [componentId], references: [id], onDelete: Restrict)
+  /// Snapshot: name of component at time of payroll calculation (component name may change later)
   name        String
+  /// Snapshot: type of component at time of payroll calculation
   type        ComponentType
   value       Decimal          @db.Decimal(15, 2)
 
