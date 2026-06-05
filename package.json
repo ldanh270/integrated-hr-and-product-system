@@ -12,6 +12,8 @@
     "db:migrate": "cd backend && bunx prisma migrate dev",
     "db:generate": "cd backend && bunx prisma generate",
     "db:studio": "cd backend && bunx prisma studio",
+    "db:seed": "cd backend && bun run seed",
+    "db:seed:admin": "cd backend && bun run seed:admin",
     "hash-password": "cd backend && bun run src/scripts/hash-password.ts"
   },
   "dependencies": {
