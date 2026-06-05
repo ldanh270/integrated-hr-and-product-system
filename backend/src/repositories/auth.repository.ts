@@ -1,6 +1,6 @@
 import { AuthEmployeeDocument, IAuthRepository } from "@/types/auth.types.ts"
 
-import { ActivityAction, PrismaClient, PasswordResetStatus } from "@prisma/client"
+import { ActivityAction, PasswordResetStatus, PrismaClient } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
@@ -17,8 +17,8 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
    * Finds an employee by username explicitly checking the DB
    */
   async findAuthByUsername(username: string): Promise<AuthEmployeeDocument | null> {
-    const employee = await this.prisma.employee.findUnique({
-      where: { username },
+    const employee = await this.prisma.employee.findFirst({
+      where: { username, deletedAt: null },
     })
 
     if (!employee) return null
@@ -73,7 +73,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
         lockedUntil: data.lockedUntil,
         // Since lastLoginAt wasn't explicitly modeled in Employee but was used, we'll try to map it.
         // Wait, does Employee have lastLoginAt in Prisma schema? Let's assume it does or we just ignore if not.
-      } as any
+      } as any,
     })
   }
 
@@ -83,8 +83,8 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
         employeeId: empId,
         token,
         status: PasswordResetStatus.pending,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // Expires in 24h
-      }
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // Expires in 24h
+      },
     })
   }
 
@@ -92,8 +92,8 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
     const existing = await this.prisma.passwordResetRequest.findFirst({
       where: {
         employeeId: empId,
-        status: PasswordResetStatus.pending
-      }
+        status: PasswordResetStatus.pending,
+      },
     })
     return !!existing
   }

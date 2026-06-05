@@ -41,8 +41,8 @@ export class PrismaProfileRepository extends BaseRepository implements IProfileR
   }
 
   async findById(empId: string): Promise<ProfileEmployeeDocument | null> {
-    const employee = await this.prisma.employee.findUnique({
-      where: { id: empId },
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: empId, deletedAt: null },
     })
 
     if (!employee) return null
@@ -50,12 +50,9 @@ export class PrismaProfileRepository extends BaseRepository implements IProfileR
     return this.mapToProfile(employee)
   }
 
-  /**
-   * Finds an employee by their ID and explicitly includes the passwordHash field
-   */
   async findAuthById(empId: string): Promise<ProfileEmployeeDocumentWithPassword | null> {
-    const employee = await this.prisma.employee.findUnique({
-      where: { id: empId },
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: empId, deletedAt: null },
     })
 
     if (!employee) return null

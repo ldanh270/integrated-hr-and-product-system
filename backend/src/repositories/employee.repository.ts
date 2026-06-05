@@ -55,7 +55,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     } = query
 
     const skip = (page - 1) * limit
-    const where: Prisma.EmployeeWhereInput = {}
+    const where: Prisma.EmployeeWhereInput = { deletedAt: null } as any
 
     if (search) {
       where.OR = [
@@ -95,8 +95,8 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
   }
 
   async findById(id: string): Promise<Employee | null> {
-    const employee = await this.prisma.employee.findUnique({
-      where: { id },
+    const employee = await this.prisma.employee.findFirst({
+      where: { id, deletedAt: null } as any,
     })
     if (!employee) return null
     return this.mapToDomain(employee)
@@ -158,6 +158,31 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       return this.mapToDomain(employee)
     } catch (error) {
       return null
+    }
+  }
+
+  async deleteEmployee(id: string): Promise<boolean> {
+    const record = await this.prisma.employee.findFirst({
+      where: { id, deletedAt: null } as any,
+    })
+    if (!record) return false
+
+    const timestamp = new Date().getTime()
+    try {
+      await this.prisma.employee.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+          status: "terminated",
+          email: `deleted_${timestamp}_${record.email}`,
+          username: `deleted_${timestamp}_${record.username}`,
+          phone: record.phone ? `deleted_${timestamp}_${record.phone}` : null,
+          nationalId: record.nationalId ? `deleted_${timestamp}_${record.nationalId}` : null,
+        },
+      })
+      return true
+    } catch (error) {
+      return false
     }
   }
 }

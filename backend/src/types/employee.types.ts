@@ -80,6 +80,7 @@ export interface IEmployeeRepository {
   createEmployee(data: CreateEmployeeDto & { passwordHash: string }): Promise<Employee>
   updateEmployee(id: string, data: UpdateEmployeeDto): Promise<Employee | null>
   updateStatus(id: string, status: EmployeeStatus): Promise<Employee | null>
+  deleteEmployee(id: string): Promise<boolean>
 }
 
 export interface IEmployeeService {
@@ -88,4 +89,5 @@ export interface IEmployeeService {
   createEmployee(data: CreateEmployeeDto & { password?: string }): Promise<Employee>
   updateEmployee(id: string, data: UpdateEmployeeDto): Promise<Employee | null>
   updateStatus(id: string, status: EmployeeStatus): Promise<Employee | null>
+  deleteEmployee(id: string): Promise<boolean>
 }

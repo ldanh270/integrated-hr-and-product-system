@@ -126,15 +126,15 @@ enum ActivityAction {
 
 // ── Employee ──
 model Employee {
-  id               String         @id @default(uuid())
+  id               String         @id @default(cuid())
   fullName         String
-  username         String         @unique
+  username         String
   passwordHash     String
   role             Role           @default(employee)
-  email            String         @unique
-  phone            String?        @unique
+  email            String
+  phone            String?
   dateOfBirth      DateTime?
-  nationalId       String?        @unique
+  nationalId       String?
   address          String?
   avatarUrl        String?
   avatarId         String?
@@ -146,8 +146,9 @@ model Employee {
   startDate        DateTime?      @db.Date
   endDate          DateTime?      @db.Date
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // For soft deletes
 
   // Relations
   attendanceRecords          AttendanceRecord[]
@@ -176,11 +177,12 @@ model Employee {
 
   @@index([status, employeeType])
   @@index([role])
+  @@index([deletedAt])
 }
 
 // ── Attendance ──
 model WorkingShift {
-  id                 String   @id @default(uuid())
+  id                 String   @id @default(cuid())
   name               String
   startTime          Int // "HH:mm" stored as total minutes from midnight (e.g., 540 for 09:00)
   endTime            Int // "HH:mm" stored as total minutes from midnight (e.g., 1020 for 17:00)
@@ -212,9 +214,9 @@ model WorkingShift {
 }
 
 model ShiftSchedule {
-  id          String    @id @default(uuid())
+  id          String    @id @default(cuid())
   employeeId  String
-  employee    Employee  @relation("ShiftScheduleEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  employee    Employee  @relation("ShiftScheduleEmployee", fields: [employeeId], references: [id], onDelete: Restrict)
   validFrom   DateTime
   validTo     DateTime?
   createdById String
@@ -225,7 +227,6 @@ model ShiftSchedule {
 
   days           ShiftScheduleDay[]
   employeeShifts EmployeeShift[]
-  workingShiftId String?
 
   @@index([employeeId, validFrom(sort: Desc)])
   @@index([validTo])
@@ -233,7 +234,7 @@ model ShiftSchedule {
 }
 
 model ShiftScheduleDay {
-  id         String        @id @default(uuid())
+  id         String        @id @default(cuid())
   scheduleId String
   schedule   ShiftSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
   dayOfWeek  Int // 0 = Sunday, 1 = Monday, ... 6 = Saturday
@@ -245,7 +246,7 @@ model ShiftScheduleDay {
 }
 
 model EmployeeShift {
-  id           String         @id @default(uuid())
+  id           String         @id @default(cuid())
   employeeId   String
   employee     Employee       @relation("EmployeeShiftEmployee", fields: [employeeId], references: [id], onDelete: Restrict)
   shiftId      String
@@ -275,7 +276,7 @@ model EmployeeShift {
 }
 
 model AttendanceRecord {
-  id              String        @id @default(uuid())
+  id              String        @id @default(cuid())
   employeeId      String
   employee        Employee      @relation(fields: [employeeId], references: [id], onDelete: Restrict)
   employeeShiftId String        @unique
@@ -306,7 +307,7 @@ model AttendanceRecord {
 }
 
 model Application {
-  id         String            @id @default(uuid())
+  id         String            @id @default(cuid())
   employeeId String
   employee   Employee          @relation("ApplicationEmployee", fields: [employeeId], references: [id], onDelete: Restrict)
   type       ApplicationType
@@ -349,15 +350,15 @@ model ApplicationShiftSwapDetail {
   applicationId String      @id
   application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
-  // Shift của người xin đổi
+  // Shift original want to swap (employee shift)
   employeeShiftId String
   employeeShift   EmployeeShift @relation("ApplicationEmployeeShift", fields: [employeeShiftId], references: [id], onDelete: Cascade)
 
-  // Shift muốn đổi sang (working shift template)
+  // Shift to swap with (working shift)
   workingShiftId String?
   workingShift   WorkingShift? @relation("ShiftSwapWorkingShift", fields: [workingShiftId], references: [id], onDelete: Cascade)
 
-  // Đối tác đổi ca
+  // If swap with specific employee and shift instead of any available shift
   swapWithEmployeeId String
   swapWithEmployee   Employee      @relation("ApplicationSwapWith", fields: [swapWithEmployeeId], references: [id], onDelete: Cascade)
   swapWithShiftId    String
@@ -382,7 +383,7 @@ model ApplicationOvertimeDetail {
 model ApplicationRegimeDetail {
   applicationId        String      @id
   application          Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  regimeType           String
+  regimeType           RegimeType
   reducedMinutesPerDay Int         @default(0)
   applyToStart         Boolean     @default(false)
   applyToEnd           Boolean     @default(false)
@@ -401,7 +402,7 @@ model ApplicationLateEarlyDetail {
 }
 
 model HolidayCalendar {
-  id          String      @id @default(uuid())
+  id          String      @id @default(cuid())
   date        DateTime    @unique @db.Date
   name        String
   type        HolidayType
@@ -417,7 +418,7 @@ model HolidayCalendar {
 
 // ── Payroll ──
 model PayrollComponent {
-  id          String        @id @default(uuid())
+  id          String        @id @default(cuid())
   name        String        @unique
   type        ComponentType
   formula     String
@@ -437,7 +438,7 @@ model PayrollComponent {
 }
 
 model PayrollTemplate {
-  id          String   @id @default(uuid())
+  id          String   @id @default(cuid())
   name        String   @unique
   description String?
   isActive    Boolean  @default(true)
@@ -477,7 +478,7 @@ model PayrollSettings {
 }
 
 model Payroll {
-  id           String        @id @default(uuid())
+  id           String        @id @default(cuid())
   periodMonth  Int
   periodYear   Int
   status       PayrollStatus @default(draft)
@@ -499,7 +500,7 @@ model Payroll {
 }
 
 model Payslip {
-  id              String   @id @default(uuid())
+  id              String   @id @default(cuid())
   payrollId       String
   payroll         Payroll  @relation(fields: [payrollId], references: [id], onDelete: Cascade)
   employeeId      String
@@ -508,9 +509,9 @@ model Payslip {
   totalAdditions  Decimal  @default(0) @db.Decimal(15, 2)
   totalDeductions Decimal  @default(0) @db.Decimal(15, 2)
   netSalary       Decimal  @db.Decimal(15, 2)
-  workingDays     Float    @default(0)
-  absentDays      Float    @default(0)
-  overtimeHours   Float    @default(0)
+  workingDays     Int      @default(0)
+  absentDays      Int      @default(0)
+  overtimeMinutes Int      @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -522,12 +523,14 @@ model Payslip {
 }
 
 model PayslipDetail {
-  id          String           @id @default(uuid())
+  id          String           @id @default(cuid())
   payslipId   String
   payslip     Payslip          @relation(fields: [payslipId], references: [id], onDelete: Cascade)
   componentId String
   component   PayrollComponent @relation(fields: [componentId], references: [id], onDelete: Restrict)
+  /// Snapshot: name of component at time of payroll calculation (component name may change later)
   name        String
+  /// Snapshot: type of component at time of payroll calculation
   type        ComponentType
   value       Decimal          @db.Decimal(15, 2)
 
@@ -537,7 +540,7 @@ model PayslipDetail {
 
 // ── Project & Product ──
 model Project {
-  id              String        @id @default(uuid())
+  id              String        @id @default(cuid())
   name            String        @unique
   description     String?
   techStack       String[] // Array of strings in PG
@@ -574,7 +577,7 @@ model ProjectMember {
 }
 
 model Task {
-  id          String       @id @default(uuid())
+  id          String       @id @default(cuid())
   projectId   String
   project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
   title       String
@@ -599,7 +602,7 @@ model Task {
 
 // ── Auth ──
 model ActivityLog {
-  id         String         @id @default(uuid())
+  id         String         @id @default(cuid())
   employeeId String?
   employee   Employee?      @relation(fields: [employeeId], references: [id], onDelete: SetNull)
   actionType ActivityAction
@@ -614,7 +617,7 @@ model ActivityLog {
 }
 
 model PasswordResetRequest {
-  id           String              @id @default(uuid())
+  id           String              @id @default(cuid())
   employeeId   String
   employee     Employee            @relation("PasswordResetRequestEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
   token        String              @unique
