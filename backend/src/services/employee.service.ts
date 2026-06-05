@@ -73,4 +73,11 @@ export class EmployeeService implements IEmployeeService {
     const updated = await this.repository.updateStatus(id, status)
     return updated
   }
+
+  async deleteEmployee(id: string): Promise<boolean> {
+    // Check if exists
+    await this.getEmployee(id)
+
+    return this.repository.deleteEmployee(id)
+  }
 }
