@@ -161,8 +161,10 @@ model Employee {
   shiftSchedulesCreated      ShiftSchedule[]              @relation("ShiftScheduleCreator")
   workingShiftsCreated       WorkingShift[]
   holidayCalendarsCreated    HolidayCalendar[]
-  payrollComponentsCreated   PayrollComponent[]
-  payrollTemplatesCreated    PayrollTemplate[]
+  salaryComponentsCreated    SalaryComponent[]
+  payslipTemplatesCreated    PayslipTemplate[]
+  salaryConfigs              EmployeeSalaryConfig[]
+  salaryConfigsCreated       EmployeeSalaryConfig[]       @relation("SalaryConfigCreator")
   payrollSettingsUpdated     PayrollSettings[]
   payrollsApproved           Payroll[]
   payslips                   Payslip[]
@@ -417,7 +419,7 @@ model HolidayCalendar {
 }
 
 // ── Payroll ──
-model PayrollComponent {
+model SalaryComponent {
   id          String        @id @default(cuid())
   name        String        @unique
   type        ComponentType
@@ -430,14 +432,14 @@ model PayrollComponent {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  payrollTemplateComponents PayrollTemplateComponent[]
+  payslipTemplateComponents PayslipTemplateComponent[]
   payslipDetails            PayslipDetail[]
 
   @@index([type, isActive])
   @@index([createdById])
 }
 
-model PayrollTemplate {
+model PayslipTemplate {
   id          String   @id @default(cuid())
   name        String   @unique
   description String?
@@ -448,28 +450,70 @@ model PayrollTemplate {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  components PayrollTemplateComponent[]
+  components    PayslipTemplateComponent[]
+  salaryConfigs EmployeeSalaryConfig[]
 
   @@index([isActive])
   @@index([createdById])
 }
 
-model PayrollTemplateComponent {
+model PayslipTemplateComponent {
   templateId      String
-  template        PayrollTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  template        PayslipTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
   componentId     String
-  component       PayrollComponent @relation(fields: [componentId], references: [id], onDelete: Restrict)
+  component       SalaryComponent  @relation(fields: [componentId], references: [id], onDelete: Restrict)
   overrideFormula String?
 
   @@id([templateId, componentId])
   @@index([componentId])
 }
 
+model EmployeeSalaryConfig {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  templateId String
+  template   PayslipTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+
+  // ── Lương chính ─────────────────────────────────
+  baseSalary              Decimal  @db.Decimal(15, 2)
+  // Lương cứng hàng tháng — NOT NULL
+
+  // ── Phụ cấp sinh hoạt ───────────────────────────
+  mealAllowance           Decimal? @db.Decimal(15, 2)
+  transportAllowance      Decimal? @db.Decimal(15, 2)
+  housingAllowance        Decimal? @db.Decimal(15, 2)
+  phoneAllowance          Decimal? @db.Decimal(15, 2)
+
+  // ── Phụ cấp theo vị trí ─────────────────────────
+  responsibilityAllowance Decimal? @db.Decimal(15, 2)
+  seniorityAllowance      Decimal? @db.Decimal(15, 2)
+
+  // ── Versioning ──────────────────────────────────
+  effectiveFrom           DateTime  @db.Date
+  effectiveTo             DateTime? @db.Date
+  note                    String?
+
+  createdById String
+  createdBy   Employee @relation("SalaryConfigCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payslips Payslip[]
+
+  @@index([employeeId, effectiveFrom(sort: Desc)])
+  @@index([templateId])
+  @@index([effectiveTo])
+  @@index([createdById])
+}
+
 model PayrollSettings {
-  id          String   @id @default("GLOBAL")
-  triggerDay  Int
-  updatedById String
-  updatedBy   Employee @relation(fields: [updatedById], references: [id], onDelete: Restrict)
+  id                  String   @id @default("GLOBAL")
+  triggerDay          Int
+  standardWorkingDays Int      @default(22)
+  updatedById         String
+  updatedBy           Employee @relation(fields: [updatedById], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -505,7 +549,10 @@ model Payslip {
   payroll         Payroll  @relation(fields: [payrollId], references: [id], onDelete: Cascade)
   employeeId      String
   employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
-  baseSalary      Decimal  @db.Decimal(15, 2)
+
+  salaryConfigId  String
+  salaryConfig    EmployeeSalaryConfig @relation(fields: [salaryConfigId], references: [id], onDelete: Restrict)
+
   totalAdditions  Decimal  @default(0) @db.Decimal(15, 2)
   totalDeductions Decimal  @default(0) @db.Decimal(15, 2)
   netSalary       Decimal  @db.Decimal(15, 2)
@@ -520,6 +567,7 @@ model Payslip {
 
   @@unique([payrollId, employeeId])
   @@index([employeeId, payrollId(sort: Desc)])
+  @@index([salaryConfigId])
 }
 
 model PayslipDetail {
@@ -527,7 +575,7 @@ model PayslipDetail {
   payslipId   String
   payslip     Payslip          @relation(fields: [payslipId], references: [id], onDelete: Cascade)
   componentId String
-  component   PayrollComponent @relation(fields: [componentId], references: [id], onDelete: Restrict)
+  component   SalaryComponent  @relation(fields: [componentId], references: [id], onDelete: Restrict)
   /// Snapshot: name of component at time of payroll calculation (component name may change later)
   name        String
   /// Snapshot: type of component at time of payroll calculation

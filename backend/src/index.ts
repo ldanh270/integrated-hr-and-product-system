@@ -7,8 +7,12 @@ import approvalRoutes from "@/routes/approval.route.ts"
 import attendanceRoutes from "@/routes/attendance.route.ts"
 import authRoutes from "@/routes/auth.route.ts"
 import employeeRoutes from "@/routes/employee.route.ts"
+import employeeSalaryConfigRoutes from "@/routes/employee-salary-config.route.ts"
 import holidayRoutes from "@/routes/holiday.route.ts"
+import payrollRoutes from "@/routes/payroll.route.ts"
+import payslipTemplateRoutes from "@/routes/payslip-template.route.ts"
 import profileRoutes from "@/routes/profile.route.ts"
+import salaryComponentRoutes from "@/routes/salary-component.route.ts"
 import scheduleRoutes from "@/routes/schedule.route.ts"
 import shiftRoutes from "@/routes/shift.route.ts"
 
@@ -58,6 +62,12 @@ app.use("/api/applications", applicationRoutes)
 app.use("/api/holidays", holidayRoutes)
 app.use("/api/approvals", approvalRoutes)
 
+// Payroll routes
+app.use("/api/salary-components", salaryComponentRoutes)
+app.use("/api/payslip-templates", payslipTemplateRoutes)
+app.use("/api/employees", employeeSalaryConfigRoutes)
+app.use("/api/payrolls", payrollRoutes)
+
 // Private routes
 
 // 404 handler
@@ -91,11 +101,14 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   })
 })
 
+import { initCronJobs } from "@/libs/payroll-cron.ts"
+
 /**
  * Must connect to database successfully before start server
  */
-connectDB().then(() =>
+connectDB().then(() => {
   app.listen(PORT, () => {
     console.log("Server start on port " + PORT)
-  }),
-)
+    initCronJobs()
+  })
+})

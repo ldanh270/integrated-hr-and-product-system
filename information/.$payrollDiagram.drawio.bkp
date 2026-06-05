@@ -1,0 +1,85 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/28.2.5 Chrome/138.0.7204.251 Electron/37.6.1 Safari/537.36" version="28.2.5">
+  <diagram name="Page-1" id="d3Bkw5FLA7M_z0s3mMSy">
+    <mxGraphModel dx="1426" dy="841" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="4681" pageHeight="3300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-1" style="edgeStyle=none;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=none;endFill=0;" edge="1" parent="1" source="uBqlM0qEdGbe8GgMkS05-9" target="uBqlM0qEdGbe8GgMkS05-14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-2" style="edgeStyle=none;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=none;endFill=0;" edge="1" parent="1" source="uBqlM0qEdGbe8GgMkS05-9" target="uBqlM0qEdGbe8GgMkS05-15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-3" style="edgeStyle=none;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=none;endFill=0;" edge="1" parent="1" source="uBqlM0qEdGbe8GgMkS05-9" target="uBqlM0qEdGbe8GgMkS05-18">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-4" style="edgeStyle=none;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=none;endFill=0;" edge="1" parent="1" source="uBqlM0qEdGbe8GgMkS05-9" target="uBqlM0qEdGbe8GgMkS05-19">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-5" style="edgeStyle=none;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=none;endFill=0;" edge="1" parent="1" source="uBqlM0qEdGbe8GgMkS05-9" target="uBqlM0qEdGbe8GgMkS05-20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-6" style="edgeStyle=none;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=none;endFill=0;" edge="1" parent="1" source="uBqlM0qEdGbe8GgMkS05-9" target="uBqlM0qEdGbe8GgMkS05-21">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-7" style="edgeStyle=none;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=none;endFill=0;" edge="1" parent="1" source="uBqlM0qEdGbe8GgMkS05-9" target="uBqlM0qEdGbe8GgMkS05-22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-8" style="edgeStyle=none;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=none;endFill=0;" edge="1" parent="1" source="uBqlM0qEdGbe8GgMkS05-9" target="uBqlM0qEdGbe8GgMkS05-16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-9" value="HR Manager" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" vertex="1" parent="1">
+          <mxGeometry x="640" y="574" width="30" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-10" style="edgeStyle=none;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=none;endFill=0;" edge="1" parent="1" source="uBqlM0qEdGbe8GgMkS05-12" target="uBqlM0qEdGbe8GgMkS05-17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-11" style="edgeStyle=none;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=none;endFill=0;" edge="1" parent="1" source="uBqlM0qEdGbe8GgMkS05-12" target="uBqlM0qEdGbe8GgMkS05-23">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-12" value="General Manager" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="430" width="30" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-13" value="Payroll Management" style="shape=umlFrame;whiteSpace=wrap;html=1;pointerEvents=0;recursiveResize=0;container=1;collapsible=0;width=160;" vertex="1" parent="1">
+          <mxGeometry x="740" y="260" width="480" height="600" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-14" value="View/Export Payroll Report" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="uBqlM0qEdGbe8GgMkS05-13">
+          <mxGeometry x="20" y="40" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-15" value="Create Payroll Component" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="uBqlM0qEdGbe8GgMkS05-13">
+          <mxGeometry x="160" y="20" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-16" value="Approve/Reject Payroll" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="uBqlM0qEdGbe8GgMkS05-13">
+          <mxGeometry x="220" y="250" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-17" value="View Payslip" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="uBqlM0qEdGbe8GgMkS05-13">
+          <mxGeometry x="310" y="380" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-18" value="Modify Payroll Component" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="uBqlM0qEdGbe8GgMkS05-13">
+          <mxGeometry x="160" y="130" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-19" value="Create Payroll Template" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="uBqlM0qEdGbe8GgMkS05-13">
+          <mxGeometry x="160" y="340" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-20" value="Modify Payroll Template" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="uBqlM0qEdGbe8GgMkS05-13">
+          <mxGeometry x="150" y="450" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-21" value="Delete&amp;nbsp;Payroll Component" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="uBqlM0qEdGbe8GgMkS05-13">
+          <mxGeometry x="310" y="130" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-22" value="Delete Payroll Template" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="uBqlM0qEdGbe8GgMkS05-13">
+          <mxGeometry x="20" y="500" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-23" value="Modify Trigger Generate Payroll" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="uBqlM0qEdGbe8GgMkS05-13">
+          <mxGeometry x="340" y="220" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-24" style="edgeStyle=none;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=none;endFill=0;" edge="1" parent="1" source="uBqlM0qEdGbe8GgMkS05-25" target="uBqlM0qEdGbe8GgMkS05-17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uBqlM0qEdGbe8GgMkS05-25" value="Employee" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="680" width="30" height="60" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
