@@ -170,6 +170,11 @@ payrollRoutes.delete(
 payrollRoutes.get("/", controller.listPayrolls)
 payrollRoutes.get("/:id", controller.getPayroll)
 payrollRoutes.get("/:id/payslips/:empId", controller.getPayslip)
+payrollRoutes.get(
+  "/employee/:empId/payslips",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER),
+  controller.getEmployeePayslips,
+)
 
 // Modifying routes for HR / Admin
 payrollRoutes.post(

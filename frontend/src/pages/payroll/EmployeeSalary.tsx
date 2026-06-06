@@ -1,3 +1,4 @@
+import EmployeePayslipHistoryDialog from "@/components/features/payroll/EmployeePayslipHistoryDialog"
 import EmployeeSalaryConfigDialog from "@/components/features/payroll/employee-salary-config-dialog"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,8 +22,10 @@ import {
   usePayslipTemplates,
 } from "@/hooks/payroll/use-employee-salary-config"
 import type { Employee } from "@/types/employee.types"
-import { Loader2, MoreHorizontal, Search, User, Users } from "lucide-react"
+
 import { useState } from "react"
+
+import { Loader2, MoreHorizontal, Search, User, Users } from "lucide-react"
 
 const formatCurrency = (val: number) => {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(val)
@@ -39,6 +42,8 @@ export default function EmployeeSalary() {
     position?: string
   } | null>(null)
 
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false)
+
   const { data: employeeData, isLoading: isEmployeesLoading } = useEmployees({
     page,
     limit: 10,
@@ -48,6 +53,11 @@ export default function EmployeeSalary() {
   const handleOpenConfigDialog = (emp: { id: string; fullName: string; position?: string }) => {
     setSelectedEmployee(emp)
     setConfigDialogOpen(true)
+  }
+
+  const handleOpenHistoryDialog = (emp: { id: string; fullName: string; position?: string }) => {
+    setSelectedEmployee(emp)
+    setHistoryDialogOpen(true)
   }
 
   return (
@@ -110,6 +120,7 @@ export default function EmployeeSalary() {
                       emp={emp}
                       index={(page - 1) * 10 + index + 1}
                       onConfigure={handleOpenConfigDialog}
+                      onViewHistory={handleOpenHistoryDialog}
                     />
                   ))
                 )}
@@ -121,9 +132,7 @@ export default function EmployeeSalary() {
             <div className="p-3 border-t flex items-center justify-between text-muted-foreground text-[10px]">
               <div>
                 Hiển thị{" "}
-                <span className="font-semibold text-foreground">
-                  {employeeData.data.length}
-                </span>{" "}
+                <span className="font-semibold text-foreground">{employeeData.data.length}</span>{" "}
                 trên{" "}
                 <span className="font-semibold text-foreground">{employeeData.meta.total}</span>{" "}
                 nhân sự.
@@ -173,6 +182,12 @@ export default function EmployeeSalary() {
         onOpenChange={setConfigDialogOpen}
         employee={selectedEmployee}
       />
+
+      <EmployeePayslipHistoryDialog
+        open={historyDialogOpen}
+        onOpenChange={setHistoryDialogOpen}
+        employee={selectedEmployee}
+      />
     </div>
   )
 }
@@ -181,9 +196,10 @@ interface RowProps {
   emp: Employee
   index: number
   onConfigure: (emp: { id: string; fullName: string; position?: string }) => void
+  onViewHistory: (emp: { id: string; fullName: string; position?: string }) => void
 }
 
-function EmployeeRow({ emp, index, onConfigure }: RowProps) {
+function EmployeeRow({ emp, index, onConfigure, onViewHistory }: RowProps) {
   const { data: config, isLoading } = useActiveSalaryConfig(emp.id)
   const { data: templates } = usePayslipTemplates()
 
@@ -260,6 +276,17 @@ function EmployeeRow({ emp, index, onConfigure }: RowProps) {
               }
             >
               Cấu hình lương
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                onViewHistory({
+                  id: emp.id,
+                  fullName: emp.fullName,
+                  position: emp.position || undefined,
+                })
+              }
+            >
+              Xem lịch sử phiếu lương
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

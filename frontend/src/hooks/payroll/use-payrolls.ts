@@ -1,9 +1,15 @@
 import { API_ENDPOINTS } from "@/config/api.config"
 import apiClient from "@/lib/api-client"
+import {
+  approvePayroll,
+  generatePayroll,
+  getPayrollDetails,
+  getPayrolls,
+  rejectPayroll,
+} from "@/lib/api/payroll.api"
 import type { IPayslip } from "@/types/payroll.types"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { approvePayroll, generatePayroll, getPayrollDetails, getPayrolls, rejectPayroll } from "@/lib/api/payroll.api"
 import { toast } from "sonner"
 
 export function usePayslip(payrollId: string | null, employeeId: string | null) {
@@ -76,5 +82,19 @@ export function useRejectPayroll() {
       const error = err as { response?: { data?: { message?: string } } }
       toast.error(error?.response?.data?.message || "Failed to reject payroll")
     },
+  })
+}
+
+export function useEmployeePayslipsHistory(employeeId: string | null) {
+  return useQuery({
+    queryKey: ["payslips-history", employeeId],
+    queryFn: async () => {
+      const response = await apiClient.get(
+        `${API_ENDPOINTS.PAYROLL.BASE}/employee/${employeeId}/payslips`,
+      )
+      // the endpoint might return an array if modified, but getMyPayslips returns an array. Let's cast it
+      return response.data.data as IPayslip[]
+    },
+    enabled: !!employeeId,
   })
 }

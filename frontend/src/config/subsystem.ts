@@ -114,7 +114,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
       },
       {
-        name: "Trường tùy chỉnh",
+        name: "Biến số tính lương",
         path: ROUTES.PAYROLL.CUSTOM_FIELDS,
         icon: Settings,
         roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
