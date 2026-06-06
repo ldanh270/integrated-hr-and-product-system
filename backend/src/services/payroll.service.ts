@@ -56,14 +56,14 @@ export class PayrollService implements IPayrollService {
 
     const payroll = await this.payrollRepo.create({ periodMonth: month, periodYear: year })
 
-    const customFieldsList = await this.prisma.customSalaryField.findMany({
-      where: { isActive: true },
+    // Fetch all active global salary variables
+    const globalVariables = await this.prisma.salaryVariable.findMany({
+      where: { isActive: true }
     })
-    const customFieldsMap = new Map<string, string>()
-    customFieldsList.forEach((cf) => {
-      customFieldsMap.set(cf.id, cf.code)
+    const variablesContext: Record<string, number> = {}
+    globalVariables.forEach((v: any) => {
+      variablesContext[v.code] = Number(v.value)
     })
-
     let totalAmount = new Prisma.Decimal(0)
 
     for (const employee of employees) {
@@ -113,22 +113,10 @@ export class PayrollService implements IPayrollService {
         holidayDays: attendance.holidayDays,
         MAX: Math.max,
         MIN: Math.min,
+        ...variablesContext,
       }
 
-      // Initialize all custom fields with their default values in formula context
-      customFieldsList.forEach((cf) => {
-        context[cf.code] = Number(cf.defaultValue)
-      })
 
-      // Apply employee specific overrides
-      if (Array.isArray(config.customFields)) {
-        for (const cf of config.customFields as any[]) {
-          const code = customFieldsMap.get(cf.fieldId)
-          if (code) {
-            context[code] = Number(cf.value || 0)
-          }
-        }
-      }
 
       const details = []
       let totalAdditions = new Prisma.Decimal(0)

@@ -61,7 +61,7 @@ export class PrismaEmployeeSalaryConfigRepository
         baseSalary: data.baseSalary,
         effectiveFrom: data.effectiveFrom,
         note: data.note,
-        customFields: data.customFields,
+
         createdById: data.createdById,
       },
     })

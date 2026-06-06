@@ -93,8 +93,10 @@ export default function EmployeePayslipHistoryDialog({ open, onOpenChange, emplo
                     >
                       <TableCell className="py-3 font-medium">
                         {/* Assuming the backend populates payroll.periodMonth and periodYear, if not we fallback */}
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {(payslip as any).payroll?.periodMonth
-                          ? `Tháng ${(payslip as any).payroll.periodMonth}/${(payslip as any).payroll.periodYear}`
+                          ? /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+                            `Tháng ${(payslip as any).payroll.periodMonth}/${(payslip as any).payroll.periodYear}`
                           : "Kỳ hiện tại"}
                       </TableCell>
                       <TableCell className="py-3 text-right text-success font-medium">

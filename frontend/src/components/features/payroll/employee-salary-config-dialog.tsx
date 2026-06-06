@@ -29,29 +29,21 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   useActiveSalaryConfig,
   useAssignSalaryConfig,
-  useCustomSalaryFields,
   usePayslipTemplates,
   useSalaryConfigHistory,
 } from "@/hooks/payroll/use-employee-salary-config"
-import type { ICustomSalaryFieldConfig } from "@/types/payroll.types"
 
 import { useEffect, useState } from "react"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Calendar, History, Loader2, Plus, Save, Trash2, User } from "lucide-react"
-import { useFieldArray, useForm, useWatch } from "react-hook-form"
+import { Calendar, History, Loader2, Save, User } from "lucide-react"
+import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
 
 const formSchema = z.object({
   templateId: z.string().min(1, "Vui lòng chọn mẫu bảng lương"),
   baseSalary: z.number().min(0, "Lương cơ bản không được âm"),
-  customFields: z.array(
-    z.object({
-      fieldId: z.string().min(1, "Vui lòng chọn khoản khác"),
-      value: z.number().min(0, "Giá trị không được âm"),
-    }),
-  ),
   effectiveFrom: z.string().min(1, "Vui lòng nhập ngày áp dụng"),
   note: z.string().optional(),
 })
@@ -77,7 +69,6 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
   const [activeTab, setActiveTab] = useState<string>("config")
 
   const { data: templates } = usePayslipTemplates()
-  const { data: globalCustomFields } = useCustomSalaryFields()
   const { data: activeConfig, isLoading: isActiveLoading } = useActiveSalaryConfig(
     employee?.id || "",
   )
@@ -89,17 +80,13 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
     defaultValues: {
       templateId: "",
       baseSalary: 0,
-      customFields: [],
       effectiveFrom: new Date().toISOString().split("T")[0],
       note: "",
     },
   })
 
-  const { reset, control } = form
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "customFields",
-  })
+  const { reset } = form
+
 
   const [prevOpen, setPrevOpen] = useState(false)
   if (open !== prevOpen) {
@@ -112,18 +99,9 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
   // Set default values when active config is loaded
   useEffect(() => {
     if (open && activeConfig) {
-      // Map customFields from JSON array if exists
-      const initialCustomFields = Array.isArray(activeConfig.customFields)
-        ? activeConfig.customFields.map((cf: ICustomSalaryFieldConfig) => ({
-            fieldId: cf.fieldId,
-            value: Number(cf.value || 0),
-          }))
-        : []
-
       reset({
         templateId: activeConfig.templateId,
         baseSalary: Number(activeConfig.baseSalary),
-        customFields: initialCustomFields,
         effectiveFrom: new Date(activeConfig.effectiveFrom).toISOString().split("T")[0],
         note: activeConfig.note || "",
       })
@@ -131,7 +109,6 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
       reset({
         templateId: "",
         baseSalary: 0,
-        customFields: [],
         effectiveFrom: new Date().toISOString().split("T")[0],
         note: "",
       })
@@ -146,7 +123,6 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
         employeeId: employee.id,
         templateId: values.templateId,
         baseSalary: values.baseSalary,
-        customFields: values.customFields,
         effectiveFrom: new Date(values.effectiveFrom).toISOString(),
         note: values.note,
       })
@@ -158,11 +134,7 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
     }
   }
 
-  const selectedFields =
-    useWatch({
-      control,
-      name: "customFields",
-    }) || []
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -188,13 +160,13 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
           onValueChange={setActiveTab}
           className="flex-1 flex flex-col min-h-0"
         >
-          <div className="px-6 py-2 border-b">
-            <TabsList className="rounded-full w-fit">
-              <TabsTrigger value="config" className="rounded-full gap-1.5 py-1 px-4 text-xs">
-                <Save className="h-3.5 w-3.5" /> Thiết lập lương
+          <div className="px-6 py-3 border-b border-border/50">
+            <TabsList className="bg-muted/50 rounded-lg p-1">
+              <TabsTrigger value="config" className="rounded-md gap-1.5 py-1.5 px-4 text-xs">
+                <Save className="h-3.5 w-3.5" /> Gán mẫu lương
               </TabsTrigger>
-              <TabsTrigger value="history" className="rounded-full gap-1.5 py-1 px-4 text-xs">
-                <History className="h-3.5 w-3.5" /> Lịch sử thay đổi
+              <TabsTrigger value="history" className="rounded-md gap-1.5 py-1.5 px-4 text-xs">
+                <History className="h-3.5 w-3.5" /> Lịch sử thiết lập
               </TabsTrigger>
             </TabsList>
           </div>
@@ -214,12 +186,17 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
                         control={form.control}
                         name="templateId"
                         render={({ field }) => (
-                          <FormItem className="col-span-2">
-                            <FormLabel className="font-semibold">Mẫu bảng lương áp dụng</FormLabel>
+                          <FormItem className="col-span-2 bg-muted/20 p-4 rounded-xl border border-border/50">
+                            <FormLabel className="text-sm font-semibold text-foreground">
+                              Mẫu bảng lương áp dụng
+                            </FormLabel>
+                            <FormDescription className="text-xs mb-2">
+                              Nhân sự sẽ được tính lương tự động dựa trên các thành phần (components) của mẫu này.
+                            </FormDescription>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
-                                <SelectTrigger className="rounded-full h-9">
-                                  <SelectValue placeholder="Chọn mẫu bảng lương" />
+                                <SelectTrigger className="rounded-md h-10 bg-background">
+                                  <SelectValue placeholder="-- Chọn mẫu bảng lương --" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
@@ -245,7 +222,7 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
                             <FormControl>
                               <Input
                                 type="number"
-                                className="rounded-full h-9"
+                                className="rounded-md h-9"
                                 placeholder="Nhập lương cơ bản..."
                                 {...field}
                                 onChange={(e) => field.onChange(Number(e.target.value))}
@@ -264,113 +241,12 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
                           <FormItem className="col-span-2 md:col-span-1">
                             <FormLabel className="font-semibold">Ngày áp dụng</FormLabel>
                             <FormControl>
-                              <Input type="date" className="rounded-full h-9" {...field} />
+                              <Input type="date" className="rounded-md h-9" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-
-                      {/* Allowances Section is now fully dynamic and handled by customFields list below */}
-
-                      {/* Dynamic Custom Fields Section */}
-                      <div className="col-span-2 border-t pt-4 mt-2">
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="font-bold text-foreground text-[13px]">
-                            Khoản khác tự định nghĩa
-                          </h3>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => append({ fieldId: "", value: 0 })}
-                            className="rounded-full h-7 text-[10px] gap-1 px-2.5"
-                          >
-                            <Plus className="h-3 w-3" /> Thêm khoản khác
-                          </Button>
-                        </div>
-
-                        <div className="space-y-3">
-                          {fields.map((item, index) => {
-                            const availableCustomFields =
-                              globalCustomFields?.filter(
-                                (cf) =>
-                                  !selectedFields.some(
-                                    (selected, sIdx) =>
-                                      sIdx !== index && selected.fieldId === cf.id,
-                                  ),
-                              ) || []
-
-                            return (
-                              <div
-                                key={item.id}
-                                className="flex items-end gap-3 bg-muted/20 p-2.5 rounded-lg border border-border/50"
-                              >
-                                <div className="flex-1 grid grid-cols-2 gap-3">
-                                  {/* Field Selector */}
-                                  <FormField
-                                    control={form.control}
-                                    name={`customFields.${index}.fieldId`}
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel className="text-[10px] font-medium text-muted-foreground">
-                                          Tên khoản
-                                        </FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value}>
-                                          <FormControl>
-                                            <SelectTrigger className="rounded-full h-8">
-                                              <SelectValue placeholder="Chọn khoản..." />
-                                            </SelectTrigger>
-                                          </FormControl>
-                                          <SelectContent>
-                                            {availableCustomFields.map((cf) => (
-                                              <SelectItem key={cf.id} value={cf.id}>
-                                                {cf.name}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                      </FormItem>
-                                    )}
-                                  />
-
-                                  {/* Field Value */}
-                                  <FormField
-                                    control={form.control}
-                                    name={`customFields.${index}.value`}
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel className="text-[10px] font-medium text-muted-foreground">
-                                          Số tiền (VND)
-                                        </FormLabel>
-                                        <FormControl>
-                                          <Input
-                                            type="number"
-                                            className="rounded-full h-8"
-                                            placeholder="0"
-                                            {...field}
-                                            onChange={(e) => field.onChange(Number(e.target.value))}
-                                          />
-                                        </FormControl>
-                                      </FormItem>
-                                    )}
-                                  />
-                                </div>
-
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => remove(index)}
-                                  className="h-8 w-8 p-0 rounded-full text-destructive hover:bg-destructive/10 shrink-0"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
 
                       {/* Note */}
                       <FormField
@@ -432,15 +308,7 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
               ) : (
                 <div className="relative pl-6 border-l border-muted space-y-6 text-xs">
                   {history.map((h) => {
-                    const customAllowancesSum = Array.isArray(h.customFields)
-                      ? h.customFields.reduce(
-                          (sum: number, cf: ICustomSalaryFieldConfig) =>
-                            sum + Number(cf.value || 0),
-                          0,
-                        )
-                      : 0
 
-                    const totalAllowances = customAllowancesSum
 
                     return (
                       <div key={h.id} className="relative">
@@ -472,37 +340,10 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
                                 {formatCurrency(Number(h.baseSalary))}
                               </span>
                             </div>
-                            <div>
-                              Tổng phụ cấp:{" "}
-                              <span className="font-semibold text-foreground">
-                                {formatCurrency(totalAllowances)}
-                              </span>
-                            </div>
+
                           </div>
 
-                          {/* Render custom fields details in history */}
-                          {Array.isArray(h.customFields) && h.customFields.length > 0 && (
-                            <div className="mt-2 pt-2 border-t border-dashed border-border/50 text-[11px] text-muted-foreground space-y-1">
-                              <span className="font-semibold text-foreground">
-                                Khoản tự định nghĩa:
-                              </span>
-                              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 pl-2">
-                                {h.customFields.map((cf: ICustomSalaryFieldConfig, idx: number) => {
-                                  const name =
-                                    globalCustomFields?.find((g) => g.id === cf.fieldId)?.name ||
-                                    "Khoản khác"
-                                  return (
-                                    <div key={idx}>
-                                      • {name}:{" "}
-                                      <span className="text-foreground">
-                                        {formatCurrency(Number(cf.value || 0))}
-                                      </span>
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                            </div>
-                          )}
+
 
                           {h.note && (
                             <div className="mt-2 text-[11px] text-muted-foreground italic bg-background p-1.5 rounded border border-border/30">

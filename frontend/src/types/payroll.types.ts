@@ -77,10 +77,6 @@ export interface IPayslipTemplate {
   updatedAt: string
 }
 
-export interface ICustomSalaryFieldConfig {
-  fieldId: string
-  value: number
-}
 
 export interface IEmployeeSalaryConfig {
   id: string
@@ -90,7 +86,7 @@ export interface IEmployeeSalaryConfig {
   effectiveFrom: string
   effectiveTo?: string
   note?: string
-  customFields?: ICustomSalaryFieldConfig[]
+
   createdAt: string
   updatedAt: string
 }

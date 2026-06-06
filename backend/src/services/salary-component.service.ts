@@ -47,7 +47,15 @@ export class SalaryComponentService implements ISalaryComponentService {
 
   async validateFormula(formula: string): Promise<{ valid: boolean; error?: string }> {
     try {
-      const testContext: IFormulaContext = {
+      const globalVariables = await prisma.salaryVariable.findMany({
+        where: { isActive: true }
+      })
+      const variablesContext: Record<string, number> = {}
+      globalVariables.forEach((v: any) => {
+        variablesContext[v.code] = Number(v.value)
+      })
+
+      const testContext: IFormulaContext | any = {
         baseSalary: 10_000_000,
         workingDays: 22,
         absentDays: 0,
@@ -55,15 +63,8 @@ export class SalaryComponentService implements ISalaryComponentService {
         lateMinutes: 0,
         earlyLeaveMinutes: 0,
         holidayDays: 0,
+        ...variablesContext,
       }
-
-      // Inject all active custom fields so they validate successfully
-      const customFields = await prisma.customSalaryField.findMany({
-        where: { isActive: true },
-      })
-      customFields.forEach((cf) => {
-        testContext[cf.code] = Number(cf.defaultValue)
-      })
 
       const result = math.evaluate(formula, testContext)
       if (typeof result !== "number" || isNaN(result)) {

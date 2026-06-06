@@ -5,7 +5,7 @@ export async function clearDatabase() {
   const tableNames = [
     "PasswordResetRequest",
     "ActivityLog",
-    "CustomSalaryField",
+
     "Task",
     "ProjectMember",
     "Project",

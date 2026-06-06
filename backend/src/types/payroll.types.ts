@@ -37,6 +37,38 @@ export type PayrollWithPayslips = Payroll & {
   payslips: PayslipWithDetails[]
 }
 
+import type { SalaryVariable } from "@prisma/client"
+
+// ── SalaryVariable ──────────────────────────────────────────────────────────
+
+export interface ISalaryVariableRepository {
+  findAll(filter?: { isActive?: boolean }): Promise<SalaryVariable[]>
+  findById(id: string): Promise<SalaryVariable | null>
+  findByCode(code: string): Promise<SalaryVariable | null>
+  create(data: ICreateSalaryVariableDTO & { createdById: string }): Promise<SalaryVariable>
+  update(id: string, data: IUpdateSalaryVariableDTO): Promise<SalaryVariable>
+  softDelete(id: string): Promise<void>
+}
+
+export interface ISalaryVariableService {
+  listVariables(filter?: { isActive?: boolean }): Promise<SalaryVariable[]>
+  getVariable(id: string): Promise<SalaryVariable>
+  createVariable(data: ICreateSalaryVariableDTO, createdById: string): Promise<SalaryVariable>
+  updateVariable(id: string, data: IUpdateSalaryVariableDTO): Promise<SalaryVariable>
+  deleteVariable(id: string): Promise<void>
+}
+
+export interface ICreateSalaryVariableDTO {
+  code: string
+  name: string
+  value: number
+  description?: string
+}
+
+export interface IUpdateSalaryVariableDTO extends Partial<ICreateSalaryVariableDTO> {
+  isActive?: boolean
+}
+
 // ── SalaryComponent ──────────────────────────────────────────────────────────
 
 export interface ISalaryComponentRepository {
@@ -126,7 +158,7 @@ export interface ICreateSalaryConfigDTO {
   baseSalary: number
   effectiveFrom: Date
   note?: string
-  customFields?: any
+
 }
 
 // ── Payroll Computation ──────────────────────────────────────────────────────

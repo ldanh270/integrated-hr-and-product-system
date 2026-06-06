@@ -13,6 +13,7 @@ import payrollRoutes from "@/routes/payroll.route.ts"
 import payslipTemplateRoutes from "@/routes/payslip-template.route.ts"
 import profileRoutes from "@/routes/profile.route.ts"
 import salaryComponentRoutes from "@/routes/salary-component.route.ts"
+import salaryVariableRoutes from "@/routes/salary-variable.route.ts"
 import scheduleRoutes from "@/routes/schedule.route.ts"
 import shiftRoutes from "@/routes/shift.route.ts"
 
@@ -64,6 +65,7 @@ app.use("/api/approvals", approvalRoutes)
 
 // Payroll routes
 app.use("/api/salary-components", salaryComponentRoutes)
+app.use("/api/salary-variables", salaryVariableRoutes)
 app.use("/api/payslip-templates", payslipTemplateRoutes)
 app.use("/api/employees", employeeSalaryConfigRoutes)
 app.use("/api/payrolls", payrollRoutes)

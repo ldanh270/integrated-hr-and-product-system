@@ -23,9 +23,7 @@ export class SalaryConfigsSeeder implements ISeeder {
     const templateId = payslipTemplateIds[0] // Use standard template
     const salaryConfigMap: Record<string, string> = {}
 
-    const customFields = await prisma.customSalaryField.findMany()
-    const fieldMap = new Map<string, string>()
-    customFields.forEach((cf) => fieldMap.set(cf.code, cf.id))
+
 
     const configs = await Promise.all(
       employees.map(async (emp) => {
@@ -38,26 +36,15 @@ export class SalaryConfigsSeeder implements ISeeder {
         // Add some randomness
         baseSalary += faker.number.int({ min: 0, max: 10 }) * 1000000
 
-        const overrides: Array<{ fieldId: string; value: number }> = []
-        const mealId = fieldMap.get("meal_allowance")
-        if (mealId) overrides.push({ fieldId: mealId, value: 1000000 })
-
-        const transportId = fieldMap.get("transport_allowance")
-        if (transportId) overrides.push({ fieldId: transportId, value: 500000 })
-
-        if (emp.role === "team_leader") {
-          const respId = fieldMap.get("responsibility_allowance")
-          if (respId) overrides.push({ fieldId: respId, value: 3000000 })
-        }
 
         const config = await prisma.employeeSalaryConfig.create({
           data: {
             employeeId: emp.id,
             templateId,
             baseSalary,
-            effectiveFrom: faker.date.past({ years: 1 }),
+            effectiveFrom: new Date(2025, 0, 1),
+            note: "Seeded initial config",
             createdById: adminId,
-            customFields: overrides,
           },
         })
 

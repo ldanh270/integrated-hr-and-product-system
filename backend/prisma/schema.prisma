@@ -161,6 +161,7 @@ model Employee {
   shiftSchedulesCreated      ShiftSchedule[]              @relation("ShiftScheduleCreator")
   workingShiftsCreated       WorkingShift[]
   holidayCalendarsCreated    HolidayCalendar[]
+  salaryVariablesCreated     SalaryVariable[]
   salaryComponentsCreated    SalaryComponent[]
   payslipTemplatesCreated    PayslipTemplate[]
   salaryConfigs              EmployeeSalaryConfig[]
@@ -483,7 +484,6 @@ model EmployeeSalaryConfig {
   effectiveFrom DateTime  @db.Date
   effectiveTo   DateTime? @db.Date
   note          String?
-  customFields  Json?
 
   createdById String
   createdBy   Employee @relation("SalaryConfigCreator", fields: [createdById], references: [id], onDelete: Restrict)
@@ -499,6 +499,24 @@ model EmployeeSalaryConfig {
   @@index([createdById])
 }
 
+model SalaryVariable {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  value       Decimal  @default(0) @db.Decimal(15, 2)
+  description String?
+  isActive    Boolean  @default(true)
+  
+  createdById String
+  createdBy   Employee @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([createdById])
+}
+
 model PayrollSettings {
   id                  String   @id @default("GLOBAL")
   triggerDay          Int
@@ -511,16 +529,6 @@ model PayrollSettings {
   @@index([updatedById])
 }
 
-model CustomSalaryField {
-  id           String   @id @default(cuid())
-  code         String   @unique
-  name         String
-  defaultValue Decimal  @default(0) @db.Decimal(15, 2)
-  description  String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
 
 model Payroll {
   id           String        @id @default(cuid())

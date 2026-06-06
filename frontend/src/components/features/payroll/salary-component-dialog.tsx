@@ -34,6 +34,7 @@ import {
   useCreateSalaryComponent,
   useUpdateSalaryComponent,
 } from "@/hooks/payroll/use-salary-components"
+import { useSalaryVariables } from "@/hooks/payroll/use-salary-variable"
 import type { ISalaryComponent } from "@/types/payroll.types"
 
 import { useEffect, useMemo, useState } from "react"
@@ -71,6 +72,7 @@ export default function SalaryComponentDialog({ open, onOpenChange, initialData 
 
   const { reset, control } = form
   const formulaValue = useWatch({ control, name: "formula" })
+  const { data: variables } = useSalaryVariables({ isActive: true })
 
   const [debouncedFormula, setDebouncedFormula] = useState("")
 
@@ -216,7 +218,18 @@ export default function SalaryComponentDialog({ open, onOpenChange, initialData 
                   </div>
                   <FormDescription className="text-xs">
                     Sử dụng các biến có sẵn: <code>baseSalary</code>, <code>workingDays</code>,{" "}
-                    <code>overtimeMinutes</code>...
+                    <code>overtimeMinutes</code>
+                    {variables && variables.length > 0 && (
+                      <>
+                        ,{" "}
+                        {variables.map((v, i) => (
+                          <span key={v.id}>
+                            <code>{v.code}</code>
+                            {i < variables.length - 1 ? ", " : ""}
+                          </span>
+                        ))}
+                      </>
+                    )}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

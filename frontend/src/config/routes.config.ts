@@ -15,10 +15,11 @@ export const ROUTES = {
     DASHBOARD: "/payroll/dashboard",
     LIST: "/payroll/list",
     SALARY_COMPONENTS: "/payroll/salary-components",
+    SALARY_VARIABLES: "/payroll/salary-variables",
     PAYSLIP_TEMPLATES: "/payroll/payslip-templates",
     CYCLE: "/payroll/cycle",
     EMPLOYEE_SALARY: "/payroll/employee-salary",
-    CUSTOM_FIELDS: "/payroll/custom-fields",
+
     MY_PAYSLIPS: "/payroll/my-payslips",
   },
 } as const

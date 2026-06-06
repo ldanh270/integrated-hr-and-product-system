@@ -50,7 +50,7 @@ export class EmployeeSalaryConfigService implements IEmployeeSalaryConfigService
           baseSalary: data.baseSalary,
           effectiveFrom: data.effectiveFrom,
           note: data.note,
-          customFields: data.customFields,
+
           createdById,
         },
       })

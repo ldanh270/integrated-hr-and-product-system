@@ -1,6 +1,6 @@
 import { API_ENDPOINTS } from "@/config/api.config"
 import apiClient from "@/lib/api-client"
-import type { IEmployeeSalaryConfig, IPayslipTemplate, ICustomSalaryField } from "@/types/payroll.types"
+import type { IEmployeeSalaryConfig, IPayslipTemplate } from "@/types/payroll.types"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
@@ -69,51 +69,3 @@ export function usePayslipTemplates() {
   })
 }
 
-export function useCustomSalaryFields() {
-  return useQuery({
-    queryKey: ["custom-salary-fields"],
-    queryFn: async () => {
-      const response = await apiClient.get(`${API_ENDPOINTS.PAYROLL.BASE}/custom-fields`)
-      return response.data.data as ICustomSalaryField[]
-    },
-  })
-}
-
-export function useCreateCustomSalaryField() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (data: Omit<ICustomSalaryField, "id" | "isActive" | "createdAt" | "updatedAt">) => {
-      const response = await apiClient.post(`${API_ENDPOINTS.PAYROLL.BASE}/custom-fields`, data)
-      return response.data.data as ICustomSalaryField
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["custom-salary-fields"] })
-    },
-  })
-}
-
-export function useUpdateCustomSalaryField() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async ({ id, ...data }: Partial<ICustomSalaryField> & { id: string }) => {
-      const response = await apiClient.put(`${API_ENDPOINTS.PAYROLL.BASE}/custom-fields/${id}`, data)
-      return response.data.data as ICustomSalaryField
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["custom-salary-fields"] })
-    },
-  })
-}
-
-export function useDeleteCustomSalaryField() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const response = await apiClient.delete(`${API_ENDPOINTS.PAYROLL.BASE}/custom-fields/${id}`)
-      return response.data.data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["custom-salary-fields"] })
-    },
-  })
-}

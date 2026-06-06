@@ -67,7 +67,7 @@ export default function EmployeeSalary() {
           <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center text-primary">
             <Users className="h-3.5 w-3.5" />
           </div>
-          Lương nhân sự
+          Thiết lập lương
         </div>
       </div>
 
@@ -275,7 +275,7 @@ function EmployeeRow({ emp, index, onConfigure, onViewHistory }: RowProps) {
                 })
               }
             >
-              Cấu hình lương
+              Gán mẫu lương
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() =>
