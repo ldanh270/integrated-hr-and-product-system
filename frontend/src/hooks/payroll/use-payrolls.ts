@@ -42,7 +42,8 @@ export function useGeneratePayroll() {
       queryClient.invalidateQueries({ queryKey: ["payrolls"] })
       toast.success("Payroll generated successfully.")
     },
-    onError: (error: any) => {
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { message?: string } } }
       toast.error(error?.response?.data?.message || "Failed to generate payroll")
     },
   })
@@ -56,7 +57,8 @@ export function useApprovePayroll() {
       queryClient.invalidateQueries({ queryKey: ["payrolls"] })
       toast.success("Payroll approved successfully.")
     },
-    onError: (error: any) => {
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { message?: string } } }
       toast.error(error?.response?.data?.message || "Failed to approve payroll")
     },
   })
@@ -70,7 +72,8 @@ export function useRejectPayroll() {
       queryClient.invalidateQueries({ queryKey: ["payrolls"] })
       toast.success("Payroll rejected.")
     },
-    onError: (error: any) => {
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { message?: string } } }
       toast.error(error?.response?.data?.message || "Failed to reject payroll")
     },
   })

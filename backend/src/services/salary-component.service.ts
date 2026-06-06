@@ -49,11 +49,11 @@ export class SalaryComponentService implements ISalaryComponentService {
     try {
       const testContext: IFormulaContext = {
         baseSalary: 10_000_000,
-        standardDays: 22,
         workingDays: 22,
         absentDays: 0,
         overtimeMinutes: 0,
         lateMinutes: 0,
+        earlyLeaveMinutes: 0,
         holidayDays: 0,
       }
 

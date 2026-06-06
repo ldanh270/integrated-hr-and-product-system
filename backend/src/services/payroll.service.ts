@@ -19,7 +19,7 @@ import * as math from "mathjs"
 
 // Need an interface for SettingsRepository
 interface IPayrollSettingsRepository {
-  findGlobal(): Promise<{ standardWorkingDays: number; triggerDay: number }>
+  findGlobal(): Promise<{ triggerDay: number }>
 }
 
 export class PayrollService implements IPayrollService {
@@ -105,8 +105,6 @@ export class PayrollService implements IPayrollService {
       // Build context
       const context: IFormulaContext | any = {
         baseSalary: Number(config.baseSalary),
-        standardDays: settings.standardWorkingDays,
-        standardWorkingDays: settings.standardWorkingDays,
         workingDays: attendance.workingDays,
         absentDays: attendance.absentDays,
         overtimeMinutes: attendance.overtimeMinutes,

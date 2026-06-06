@@ -502,7 +502,6 @@ model EmployeeSalaryConfig {
 model PayrollSettings {
   id                  String   @id @default("GLOBAL")
   triggerDay          Int
-  standardWorkingDays Int      @default(22)
   updatedById         String
   updatedBy           Employee @relation(fields: [updatedById], references: [id], onDelete: Restrict)
 

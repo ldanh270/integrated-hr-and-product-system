@@ -22,7 +22,7 @@ const employeeRepo = new PrismaEmployeeRepository(prisma)
 const settingsRepo = {
   findGlobal: async () => {
     const s = await prisma.payrollSettings.findUnique({ where: { id: "GLOBAL" } })
-    return s || { triggerDay: 1, standardWorkingDays: 22 }
+    return s || { triggerDay: 1 }
   },
 }
 
@@ -52,7 +52,7 @@ payrollRoutes.get(
   async (req, res, next) => {
     try {
       const s = await prisma.payrollSettings.findUnique({ where: { id: "GLOBAL" } })
-      res.json({ data: s || { triggerDay: 1, standardWorkingDays: 22 } })
+      res.json({ data: s || { triggerDay: 1 } })
     } catch (error) {
       next(error)
     }
@@ -64,8 +64,8 @@ payrollRoutes.put(
   authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER),
   async (req, res, next) => {
     try {
-      const { triggerDay, standardWorkingDays } = req.body
-      const updatedById = (req as any).user?.id
+      const { triggerDay } = req.body
+      const updatedById = (req as any).user?.empId
       if (!updatedById) throw new Error("Unauthorized")
 
       const s = await prisma.payrollSettings.upsert({
@@ -73,12 +73,10 @@ payrollRoutes.put(
         create: {
           id: "GLOBAL",
           triggerDay: Number(triggerDay),
-          standardWorkingDays: Number(standardWorkingDays),
           updatedById,
         },
         update: {
           triggerDay: Number(triggerDay),
-          standardWorkingDays: Number(standardWorkingDays),
           updatedById,
         },
       })

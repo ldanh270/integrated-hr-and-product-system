@@ -96,17 +96,30 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
       },
       {
-        name: "Cấu hình lương",
-        path: ROUTES.PAYROLL.SETTINGS,
-        icon: Settings,
-        roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
-      },
-      {
         name: "Mẫu bảng lương",
         path: ROUTES.PAYROLL.PAYSLIP_TEMPLATES,
         icon: FileText,
         roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
       },
+      {
+        name: "Chu kỳ lương",
+        path: ROUTES.PAYROLL.CYCLE,
+        icon: CalendarClock,
+        roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
+      },
+      {
+        name: "Lương nhân sự",
+        path: ROUTES.PAYROLL.EMPLOYEE_SALARY,
+        icon: Users,
+        roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
+      },
+      {
+        name: "Trường tùy chỉnh",
+        path: ROUTES.PAYROLL.CUSTOM_FIELDS,
+        icon: Settings,
+        roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
+      },
+
       { name: "Lương của tôi", path: ROUTES.PAYROLL.MY_PAYSLIPS, icon: CircleDollarSign },
     ],
   },

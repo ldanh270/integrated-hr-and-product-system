@@ -17,7 +17,7 @@ export function usePayrollSettings() {
 export function useUpdatePayrollSettings() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (data: Pick<IPayrollSettings, "triggerDay" | "standardWorkingDays">) => {
+    mutationFn: async (data: Pick<IPayrollSettings, "triggerDay">) => {
       const response = await apiClient.put(`${API_ENDPOINTS.PAYROLL.BASE}/settings`, data)
       return response.data.data as IPayrollSettings
     },

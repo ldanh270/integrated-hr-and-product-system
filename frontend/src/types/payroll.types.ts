@@ -98,7 +98,6 @@ export interface IEmployeeSalaryConfig {
 export interface IPayrollSettings {
   id: string
   triggerDay: number
-  standardWorkingDays: number
   updatedById?: string
   createdAt?: string
   updatedAt?: string

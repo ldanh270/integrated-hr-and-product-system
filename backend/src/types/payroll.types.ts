@@ -189,9 +189,7 @@ export interface IFormulaContext {
   [key: string]: number
   // From EmployeeSalaryConfig
   baseSalary: number
-  // From PayrollSettings
-  standardDays: number
-  standardWorkingDays: number
+
   // From AttendanceRecord aggregate
   workingDays: number
   absentDays: number

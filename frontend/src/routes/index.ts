@@ -72,8 +72,18 @@ const privateRoutes = [
     layout: MainLayout,
   },
   {
-    path: "/payroll/settings",
-    component: lazy(() => import("@/pages/payroll/PayrollSettings.tsx")),
+    path: "/payroll/cycle",
+    component: lazy(() => import("@/pages/payroll/PayrollCycle.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/payroll/employee-salary",
+    component: lazy(() => import("@/pages/payroll/EmployeeSalary.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/payroll/custom-fields",
+    component: lazy(() => import("@/pages/payroll/CustomSalaryFields.tsx")),
     layout: MainLayout,
   },
   {
