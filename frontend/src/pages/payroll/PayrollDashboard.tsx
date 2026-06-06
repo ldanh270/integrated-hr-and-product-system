@@ -8,7 +8,9 @@ export default function PayrollDashboard() {
           <AlertCircle className="h-10 w-10 text-primary" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-bold tracking-tight">Bảng lương - Đang phát triển</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">
+            Bảng lương - Đang phát triển
+          </h2>
           <p className="text-muted-foreground max-w-125">
             Tính năng tự động tính và chi trả bảng lương đang trong quá trình phát triển.
           </p>

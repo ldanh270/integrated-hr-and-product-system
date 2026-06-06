@@ -1,6 +1,7 @@
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { IPayrollService } from "@/types/payroll.types.ts"
-import { Request, Response, NextFunction } from "express"
+
+import { NextFunction, Request, Response } from "express"
 
 export class PayrollController {
   constructor(private service: IPayrollService) {
@@ -25,13 +26,9 @@ export class PayrollController {
 
   async getPayroll(req: Request, res: Response, next: NextFunction) {
     try {
-      // the route could be /api/payrolls/:month/:year or /api/payrolls/:id
-      // but plan specified /api/payrolls/:id is list payslips? Let's check plan.
-      // `GET /api/payrolls/:id -> getPayroll`
-      // Wait, getPayroll expects month and year... actually I will modify service to use ID or we can parse.
-      // Assuming plan meant to get by ID, or we just pass ID.
-      // But service interface has `getPayroll(month, year)`. Let's just use it via query for now or change route.
-      res.status(501).json({ message: "Use listPayrolls" })
+      const id = req.params.id as string
+      const payroll = await this.service.getPayrollById(id)
+      res.status(HttpStatusCode.OK).json({ data: payroll })
     } catch (error) {
       next(error)
     }
@@ -53,7 +50,7 @@ export class PayrollController {
   async approvePayroll(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
-      const approverId = (req as any).user?.id
+      const approverId = (req as any).user?.empId
       const payroll = await this.service.approvePayroll(id, approverId)
       res.status(HttpStatusCode.OK).json({ data: payroll })
     } catch (error) {
@@ -64,7 +61,7 @@ export class PayrollController {
   async rejectPayroll(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
-      const approverId = (req as any).user?.id
+      const approverId = (req as any).user?.empId
       const { reason } = req.body
       const payroll = await this.service.rejectPayroll(id, approverId, reason)
       res.status(HttpStatusCode.OK).json({ data: payroll })
@@ -86,7 +83,7 @@ export class PayrollController {
 
   async getMyPayslips(req: Request, res: Response, next: NextFunction) {
     try {
-      const employeeId = (req as any).user?.id
+      const employeeId = (req as any).user?.empId
       const payslips = await this.service.getMyPayslips(employeeId)
       res.status(HttpStatusCode.OK).json({ data: payslips })
     } catch (error) {

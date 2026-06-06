@@ -24,6 +24,17 @@ export type EmployeeSalaryConfigWithTemplate = EmployeeSalaryConfig & {
 
 export type PayslipWithDetails = Payslip & {
   details: PayslipDetail[]
+  employee?: {
+    id: string
+    userId: string
+    firstName: string
+    lastName: string
+    email: string
+  }
+}
+
+export type PayrollWithPayslips = Payroll & {
+  payslips: PayslipWithDetails[]
 }
 
 // ── SalaryComponent ──────────────────────────────────────────────────────────
@@ -122,6 +133,7 @@ export interface ICreateSalaryConfigDTO {
 
 export interface IPayrollRepository {
   findByPeriod(month: number, year: number): Promise<Payroll | null>
+  findById(id: string): Promise<Payroll | null>
   findAll(filter: { status?: PayrollStatus; year?: number }): Promise<Payroll[]>
   create(data: { periodMonth: number; periodYear: number }): Promise<Payroll>
   updateStatus(id: string, data: IUpdatePayrollStatusDTO): Promise<Payroll>
@@ -138,6 +150,7 @@ export interface IPayslipRepository {
 export interface IPayrollService {
   generatePayroll(month: number, year: number): Promise<Payroll>
   getPayroll(month: number, year: number): Promise<Payroll>
+  getPayrollById(id: string): Promise<PayrollWithPayslips>
   listPayrolls(filter: { status?: PayrollStatus; year?: number }): Promise<Payroll[]>
   approvePayroll(payrollId: string, approverId: string): Promise<Payroll>
   rejectPayroll(payrollId: string, approverId: string, reason: string): Promise<Payroll>
@@ -178,11 +191,13 @@ export interface IFormulaContext {
   baseSalary: number
   // From PayrollSettings
   standardDays: number
+  standardWorkingDays: number
   // From AttendanceRecord aggregate
   workingDays: number
   absentDays: number
   overtimeMinutes: number
   lateMinutes: number
+  earlyLeaveMinutes: number
   holidayDays: number
 }
 
@@ -191,5 +206,6 @@ export interface IAttendanceSummary {
   absentDays: number
   overtimeMinutes: number
   lateMinutes: number
+  earlyLeaveMinutes: number
   holidayDays: number
 }

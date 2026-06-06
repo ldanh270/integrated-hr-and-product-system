@@ -2,7 +2,9 @@ import { API_ENDPOINTS } from "@/config/api.config"
 import apiClient from "@/lib/api-client"
 import type { IPayslip } from "@/types/payroll.types"
 
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { approvePayroll, generatePayroll, getPayrollDetails, getPayrolls, rejectPayroll } from "@/lib/api/payroll.api"
+import { toast } from "sonner"
 
 export function usePayslip(payrollId: string | null, employeeId: string | null) {
   return useQuery({
@@ -17,5 +19,59 @@ export function usePayslip(payrollId: string | null, employeeId: string | null) 
   })
 }
 
-// Additional payroll hooks (usePayrolls, useGeneratePayroll, useApprovePayroll, useRejectPayroll)
-// will be added in Phase 5.
+export function usePayrolls(params?: { status?: string; year?: number }) {
+  return useQuery({
+    queryKey: ["payrolls", params],
+    queryFn: () => getPayrolls(params),
+  })
+}
+
+export function usePayrollDetails(id: string) {
+  return useQuery({
+    queryKey: ["payrollDetails", id],
+    queryFn: () => getPayrollDetails(id),
+    enabled: !!id,
+  })
+}
+
+export function useGeneratePayroll() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: generatePayroll,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payrolls"] })
+      toast.success("Payroll generated successfully.")
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to generate payroll")
+    },
+  })
+}
+
+export function useApprovePayroll() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: approvePayroll,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payrolls"] })
+      toast.success("Payroll approved successfully.")
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to approve payroll")
+    },
+  })
+}
+
+export function useRejectPayroll() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => rejectPayroll(id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payrolls"] })
+      toast.success("Payroll rejected.")
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to reject payroll")
+    },
+  })
+}

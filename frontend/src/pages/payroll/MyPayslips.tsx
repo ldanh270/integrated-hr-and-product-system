@@ -18,8 +18,10 @@ export default function MyPayslips() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Lương của tôi</h1>
-        <p className="text-muted-foreground mt-1">Lịch sử và chi tiết các phiếu lương của bạn.</p>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">Lương của tôi</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Lịch sử và chi tiết các phiếu lương của bạn.
+        </p>
       </div>
 
       {isLoading ? (

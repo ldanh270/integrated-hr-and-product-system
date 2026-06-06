@@ -38,6 +38,18 @@ export interface IPayslip {
   updatedAt: string
 }
 
+export interface IPayslipWithEmployee extends IPayslip {
+  employee?: {
+    id: string
+    fullName: string
+    email: string
+  }
+}
+
+export interface IPayrollWithPayslips extends IPayroll {
+  payslips: IPayslipWithEmployee[]
+}
+
 export interface ISalaryComponent {
   id: string
   name: string

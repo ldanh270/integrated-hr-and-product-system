@@ -1,6 +1,7 @@
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { IEmployeeSalaryConfigService } from "@/types/payroll.types.ts"
-import { Request, Response, NextFunction } from "express"
+
+import { NextFunction, Request, Response } from "express"
 
 export class EmployeeSalaryConfigController {
   constructor(private service: IEmployeeSalaryConfigService) {
@@ -32,7 +33,7 @@ export class EmployeeSalaryConfigController {
   async assignConfig(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
-      const createdById = (req as any).user?.id
+      const createdById = (req as any).user?.empId
       if (!createdById) throw new Error("Unauthorized")
 
       const config = await this.service.assignConfig(id, req.body, createdById)

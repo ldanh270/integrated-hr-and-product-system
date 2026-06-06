@@ -14,8 +14,15 @@ export class PrismaPayslipRepository extends BaseRepository implements IPayslipR
       where: { payrollId },
       include: {
         details: true,
+        employee: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          }
+        }
       },
-    })
+    }) as unknown as Promise<PayslipWithDetails[]>
   }
 
   async findByEmployee(employeeId: string): Promise<Payslip[]> {

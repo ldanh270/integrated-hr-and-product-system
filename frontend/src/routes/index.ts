@@ -78,12 +78,13 @@ const privateRoutes = [
   },
   {
     path: "/payroll/list",
-    component: lazy(() => import("@/pages/payroll/PayrollDashboard.tsx")), // Placeholder
+    component: lazy(() => import("@/pages/payroll/PayrollManagement.tsx")),
     layout: MainLayout,
   },
+
   {
     path: "/payroll/payslip-templates",
-    component: lazy(() => import("@/pages/payroll/PayrollDashboard.tsx")), // Placeholder
+    component: lazy(() => import("@/pages/payroll/PayslipTemplates.tsx")),
     layout: MainLayout,
   },
   {

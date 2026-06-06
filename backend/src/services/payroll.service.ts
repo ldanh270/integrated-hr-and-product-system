@@ -87,6 +87,7 @@ export class PayrollService implements IPayrollService {
         absentDays: 0,
         overtimeMinutes: 0,
         lateMinutes: 0,
+        earlyLeaveMinutes: 0,
         holidayDays: 0,
       }
       attendanceRecords.forEach((record) => {
@@ -102,14 +103,18 @@ export class PayrollService implements IPayrollService {
       })
 
       // Build context
-      const context: IFormulaContext = {
+      const context: IFormulaContext | any = {
         baseSalary: Number(config.baseSalary),
         standardDays: settings.standardWorkingDays,
+        standardWorkingDays: settings.standardWorkingDays,
         workingDays: attendance.workingDays,
         absentDays: attendance.absentDays,
         overtimeMinutes: attendance.overtimeMinutes,
         lateMinutes: attendance.lateMinutes,
+        earlyLeaveMinutes: attendance.earlyLeaveMinutes,
         holidayDays: attendance.holidayDays,
+        MAX: Math.max,
+        MIN: Math.min,
       }
 
       // Initialize all custom fields with their default values in formula context
@@ -133,8 +138,17 @@ export class PayrollService implements IPayrollService {
 
       const components = config.template.components
       for (const tc of components) {
+        context.totalAdditions = Number(totalAdditions)
+        context.totalDeductions = Number(totalDeductions)
+
         const formula = tc.overrideFormula ?? tc.component.formula
-        const rawValue = math.evaluate(formula, context)
+        let rawValue = 0
+        try {
+          rawValue = math.evaluate(formula, context)
+        } catch (err) {
+          console.error("Error evaluating formula:", formula, "Context:", context)
+          throw err
+        }
         const value = new Prisma.Decimal(Math.max(0, rawValue))
 
         details.push({
@@ -176,6 +190,18 @@ export class PayrollService implements IPayrollService {
     const payroll = await this.payrollRepo.findByPeriod(month, year)
     if (!payroll) throw new AppError("Payroll not found", HttpStatusCode.NOT_FOUND, "SERVICE")
     return payroll
+  }
+
+  async getPayrollById(id: string): Promise<any> {
+    const payroll = await this.payrollRepo.findById(id)
+    if (!payroll) throw new AppError("Payroll not found", HttpStatusCode.NOT_FOUND, "SERVICE")
+
+    const payslips = await this.payslipRepo.findByPayroll(id)
+    
+    return {
+      ...payroll,
+      payslips,
+    }
   }
 
   async listPayrolls(filter: { status?: PayrollStatus; year?: number }): Promise<Payroll[]> {

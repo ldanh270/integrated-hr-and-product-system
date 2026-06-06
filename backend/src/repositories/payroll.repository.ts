@@ -21,6 +21,12 @@ export class PrismaPayrollRepository extends BaseRepository implements IPayrollR
     })
   }
 
+  async findById(id: string): Promise<Payroll | null> {
+    return this.prisma.payroll.findUnique({
+      where: { id },
+    })
+  }
+
   async findAll(filter: { status?: PayrollStatus; year?: number }): Promise<Payroll[]> {
     const where: Prisma.PayrollWhereInput = {}
     if (filter.status) where.status = filter.status
