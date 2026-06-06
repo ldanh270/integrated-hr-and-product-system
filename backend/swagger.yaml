@@ -7,13 +7,16 @@ servers:
   - url: http://localhost:5000
     description: Local development server
 
+security:
+  - bearerAuth: []
+
 paths:
   /:
     get:
       summary: Health check
       description: Check if the server is running.
       responses:
-        '200':
+        "200":
           description: Server is running
           content:
             application/json:
@@ -30,14 +33,15 @@ paths:
         - Authentication
       summary: Login
       description: Authenticate a user and return a JWT token.
+      security: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginDto'
+              $ref: "#/components/schemas/LoginDto"
       responses:
-        '200':
+        "200":
           description: Login successful
           content:
             application/json:
@@ -48,19 +52,19 @@ paths:
                     type: string
                     example: success
                   data:
-                    $ref: '#/components/schemas/AuthResponseDto'
-        '400':
+                    $ref: "#/components/schemas/AuthResponseDto"
+        "400":
           description: Invalid input (validation error)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
           description: Unauthorized (invalid credentials)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/auth/logout:
     post:
@@ -71,7 +75,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: Logout successful
           content:
             application/json:
@@ -84,12 +88,12 @@ paths:
                   message:
                     type: string
                     example: Logout successful
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/employees:
     get:
@@ -118,15 +122,15 @@ paths:
         - in: query
           name: status
           schema:
-            $ref: '#/components/schemas/EmployeeStatus'
+            $ref: "#/components/schemas/EmployeeStatus"
         - in: query
           name: role
           schema:
-            $ref: '#/components/schemas/EmployeeRole'
+            $ref: "#/components/schemas/EmployeeRole"
         - in: query
           name: employeeType
           schema:
-            $ref: '#/components/schemas/EmployeeType'
+            $ref: "#/components/schemas/EmployeeType"
         - in: query
           name: sortBy
           schema:
@@ -137,7 +141,7 @@ paths:
             type: string
             enum: [asc, desc]
       responses:
-        '200':
+        "200":
           description: List of employees
           content:
             application/json:
@@ -145,17 +149,17 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/PaginatedEmployeesResponse'
+                    $ref: "#/components/schemas/PaginatedEmployeesResponse"
                   error:
                     type: string
                     nullable: true
                     example: null
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
     post:
       tags:
@@ -169,9 +173,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateEmployeeDto'
+              $ref: "#/components/schemas/CreateEmployeeDto"
       responses:
-        '201':
+        "201":
           description: Employee created
           content:
             application/json:
@@ -179,22 +183,22 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Employee'
+                    $ref: "#/components/schemas/Employee"
                   error:
                     type: string
                     nullable: true
-        '400':
+        "400":
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: Forbidden
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/employees/{id}:
     get:
@@ -211,7 +215,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Employee found
           content:
             application/json:
@@ -219,16 +223,16 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Employee'
+                    $ref: "#/components/schemas/Employee"
                   error:
                     type: string
                     nullable: true
-        '404':
+        "404":
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
     patch:
       tags:
@@ -248,9 +252,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateEmployeeDto'
+              $ref: "#/components/schemas/UpdateEmployeeDto"
       responses:
-        '200':
+        "200":
           description: Employee updated
           content:
             application/json:
@@ -258,22 +262,22 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Employee'
+                    $ref: "#/components/schemas/Employee"
                   error:
                     type: string
                     nullable: true
-        '400':
+        "400":
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: Forbidden
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/employees/{id}/status:
     patch:
@@ -294,9 +298,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateStatusDto'
+              $ref: "#/components/schemas/UpdateStatusDto"
       responses:
-        '200':
+        "200":
           description: Status updated
           content:
             application/json:
@@ -304,22 +308,22 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Employee'
+                    $ref: "#/components/schemas/Employee"
                   error:
                     type: string
                     nullable: true
-        '400':
+        "400":
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: Forbidden
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/profile/me:
     get:
@@ -330,7 +334,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: Profile fetched successfully
           content:
             application/json:
@@ -341,19 +345,19 @@ paths:
                     type: string
                     example: success
                   data:
-                    $ref: '#/components/schemas/ProfileDto'
-        '401':
+                    $ref: "#/components/schemas/ProfileDto"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Profile not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
     patch:
       tags:
@@ -370,9 +374,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateProfileDto'
+              $ref: "#/components/schemas/UpdateProfileDto"
       responses:
-        '200':
+        "200":
           description: Profile updated successfully
           content:
             application/json:
@@ -383,19 +387,19 @@ paths:
                     type: string
                     example: success
                   data:
-                    $ref: '#/components/schemas/ProfileDto'
-        '400':
+                    $ref: "#/components/schemas/ProfileDto"
+        "400":
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/profile/me/avatar:
     post:
@@ -425,7 +429,7 @@ paths:
                   format: binary
                   description: Image file (JPEG / PNG / WEBP / GIF, max 5 MB)
       responses:
-        '200':
+        "200":
           description: Avatar uploaded successfully
           content:
             application/json:
@@ -436,20 +440,19 @@ paths:
                     type: string
                     example: success
                   data:
-                    $ref: '#/components/schemas/ProfileDto'
-        '400':
+                    $ref: "#/components/schemas/ProfileDto"
+        "400":
           description: No file provided or invalid file type
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
+                $ref: "#/components/schemas/ErrorResponse"
 
   # ─── ATTENDANCE MODULE ──────────────────────────────
   /api/shifts:
@@ -458,14 +461,14 @@ paths:
       summary: List all working shifts
       security: [{ bearerAuth: [] }]
       responses:
-        '200':
+        "200":
           description: List of shifts
     post:
       tags: [Shifts]
       summary: Create a working shift
       security: [{ bearerAuth: [] }]
       responses:
-        '201':
+        "201":
           description: Shift created
 
   /api/shifts/{id}:
@@ -479,7 +482,7 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200':
+        "200":
           description: Shift data
     patch:
       tags: [Shifts]
@@ -491,7 +494,7 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200':
+        "200":
           description: Shift updated
 
   /api/schedules/employee/{employeeId}:
@@ -508,7 +511,7 @@ paths:
           name: date
           schema: { type: string, format: date }
       responses:
-        '200':
+        "200":
           description: Schedule data
 
   /api/schedules/assign:
@@ -517,7 +520,7 @@ paths:
       summary: Assign weekly schedule to employee
       security: [{ bearerAuth: [] }]
       responses:
-        '201':
+        "201":
           description: Schedule assigned
 
   /api/schedules/override:
@@ -526,7 +529,7 @@ paths:
       summary: Override shift for a specific date
       security: [{ bearerAuth: [] }]
       responses:
-        '201':
+        "201":
           description: Shift overridden
 
   /api/attendance:
@@ -535,7 +538,7 @@ paths:
       summary: Query attendance records
       security: [{ bearerAuth: [] }]
       responses:
-        '200':
+        "200":
           description: List of attendance records
 
   /api/attendance/check-in:
@@ -544,7 +547,7 @@ paths:
       summary: Check in
       security: [{ bearerAuth: [] }]
       responses:
-        '200':
+        "200":
           description: Checked in successfully
 
   /api/attendance/check-out:
@@ -553,7 +556,7 @@ paths:
       summary: Check out
       security: [{ bearerAuth: [] }]
       responses:
-        '200':
+        "200":
           description: Checked out successfully
 
   /api/applications:
@@ -562,7 +565,7 @@ paths:
       summary: Submit a leave/overtime application
       security: [{ bearerAuth: [] }]
       responses:
-        '201':
+        "201":
           description: Application submitted
 
   /api/applications/employee/{employeeId}:
@@ -576,7 +579,7 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200':
+        "200":
           description: List of applications
 
   /api/applications/{id}/approve:
@@ -590,7 +593,7 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200':
+        "200":
           description: Application processed
 
   /api/holidays:
@@ -599,7 +602,7 @@ paths:
       summary: Create a holiday
       security: [{ bearerAuth: [] }]
       responses:
-        '201':
+        "201":
           description: Holiday created
 
   /api/holidays/check:
@@ -612,7 +615,7 @@ paths:
           name: date
           schema: { type: string, format: date }
       responses:
-        '200':
+        "200":
           description: True if holiday
 
   /api/approvals:
@@ -622,7 +625,7 @@ paths:
       description: Retrieve all pending requests (applications, password resets, proposals) that the current user has the authority to approve.
       security: [{ bearerAuth: [] }]
       responses:
-        '200':
+        "200":
           description: List of pending approvals retrieved successfully.
           content:
             application/json:
@@ -632,7 +635,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/ApprovalItem'
+                      $ref: "#/components/schemas/ApprovalItem"
                   error:
                     type: string
                     nullable: true
@@ -662,9 +665,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ProcessApprovalDto'
+              $ref: "#/components/schemas/ProcessApprovalDto"
       responses:
-        '200':
+        "200":
           description: Request approved or rejected successfully.
           content:
             application/json:
@@ -676,11 +679,11 @@ paths:
                   error:
                     type: string
                     nullable: true
-        '400':
+        "400":
           description: Validation error or request already processed.
-        '403':
+        "403":
           description: Forbidden - User does not have permission to approve this request.
-        '404':
+        "404":
           description: Request not found.
 
   # ─── PAYROLL MODULE ──────────────────────────────
@@ -690,14 +693,14 @@ paths:
       summary: List salary components
       security: [{ bearerAuth: [] }]
       responses:
-        '200':
+        "200":
           description: List of salary components
     post:
       tags: [Payroll]
       summary: Create a salary component
       security: [{ bearerAuth: [] }]
       responses:
-        '201':
+        "201":
           description: Salary component created
 
   /api/salary-components/{id}:
@@ -711,7 +714,7 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200':
+        "200":
           description: Salary component updated
     delete:
       tags: [Payroll]
@@ -723,7 +726,7 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '204':
+        "204":
           description: Salary component deleted
 
   /api/salary-components/validate:
@@ -732,9 +735,9 @@ paths:
       summary: Validate a mathjs formula
       security: [{ bearerAuth: [] }]
       responses:
-        '200':
+        "200":
           description: Formula is valid
-        '400':
+        "400":
           description: Formula is invalid
 
   /api/payslip-templates:
@@ -743,14 +746,14 @@ paths:
       summary: List payslip templates
       security: [{ bearerAuth: [] }]
       responses:
-        '200':
+        "200":
           description: List of payslip templates
     post:
       tags: [Payroll]
       summary: Create a payslip template
       security: [{ bearerAuth: [] }]
       responses:
-        '201':
+        "201":
           description: Payslip template created
 
   /api/payslip-templates/{id}:
@@ -764,7 +767,7 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200':
+        "200":
           description: Payslip template updated
     delete:
       tags: [Payroll]
@@ -776,7 +779,7 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '204':
+        "204":
           description: Payslip template deleted
 
   /api/employees/{id}/salary-config:
@@ -790,7 +793,7 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200':
+        "200":
           description: Active salary config
     post:
       tags: [Payroll]
@@ -802,7 +805,7 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '201':
+        "201":
           description: Salary config assigned
 
   /api/employees/{id}/salary-config/history:
@@ -816,7 +819,7 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200':
+        "200":
           description: List of past salary configs
 
   /api/payrolls/my/payslips:
@@ -825,7 +828,7 @@ paths:
       summary: Get my payslips (Employee)
       security: [{ bearerAuth: [] }]
       responses:
-        '200':
+        "200":
           description: List of payslips for the authenticated user
 
   /api/payrolls:
@@ -834,7 +837,7 @@ paths:
       summary: List all payrolls
       security: [{ bearerAuth: [] }]
       responses:
-        '200':
+        "200":
           description: List of payrolls
 
   /api/payrolls/generate:
@@ -843,7 +846,7 @@ paths:
       summary: Generate payroll for a month
       security: [{ bearerAuth: [] }]
       responses:
-        '201':
+        "201":
           description: Payroll generated
 
   /api/payrolls/{id}/approve:
@@ -857,7 +860,7 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200':
+        "200":
           description: Payroll approved
 
   /api/payrolls/{id}/reject:
@@ -871,7 +874,7 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200':
+        "200":
           description: Payroll rejected
 
   /api/payrolls/{id}/payslips/{empId}:
@@ -889,7 +892,7 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200':
+        "200":
           description: Payslip details
 
 components:
@@ -930,7 +933,7 @@ components:
             fullName:
               type: string
             role:
-              $ref: '#/components/schemas/EmployeeRole'
+              $ref: "#/components/schemas/EmployeeRole"
 
     Employee:
       type: object
@@ -944,7 +947,7 @@ components:
         email:
           type: string
         role:
-          $ref: '#/components/schemas/EmployeeRole'
+          $ref: "#/components/schemas/EmployeeRole"
         phone:
           type: string
           nullable: true
@@ -952,9 +955,9 @@ components:
           type: string
           nullable: true
         employeeType:
-          $ref: '#/components/schemas/EmployeeType'
+          $ref: "#/components/schemas/EmployeeType"
         status:
-          $ref: '#/components/schemas/EmployeeStatus'
+          $ref: "#/components/schemas/EmployeeStatus"
         dateOfBirth:
           type: string
           format: date
@@ -996,7 +999,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Employee'
+            $ref: "#/components/schemas/Employee"
         meta:
           type: object
           properties:
@@ -1027,15 +1030,15 @@ components:
         password:
           type: string
         role:
-          $ref: '#/components/schemas/EmployeeRole'
+          $ref: "#/components/schemas/EmployeeRole"
         phone:
           type: string
         position:
           type: string
         employeeType:
-          $ref: '#/components/schemas/EmployeeType'
+          $ref: "#/components/schemas/EmployeeType"
         status:
-          $ref: '#/components/schemas/EmployeeStatus'
+          $ref: "#/components/schemas/EmployeeStatus"
         dateOfBirth:
           type: string
           format: date
@@ -1057,9 +1060,9 @@ components:
         position:
           type: string
         employeeType:
-          $ref: '#/components/schemas/EmployeeType'
+          $ref: "#/components/schemas/EmployeeType"
         status:
-          $ref: '#/components/schemas/EmployeeStatus'
+          $ref: "#/components/schemas/EmployeeStatus"
         dateOfBirth:
           type: string
           format: date
@@ -1080,7 +1083,7 @@ components:
         - status
       properties:
         status:
-          $ref: '#/components/schemas/EmployeeStatus'
+          $ref: "#/components/schemas/EmployeeStatus"
 
     EmployeeRole:
       type: string
@@ -1126,16 +1129,16 @@ components:
         phone:
           type: string
           nullable: true
-          example: '0901234567'
+          example: "0901234567"
         dateOfBirth:
           type: string
           format: date
           nullable: true
-          example: '1995-06-15'
+          example: "1995-06-15"
         nationalId:
           type: string
           nullable: true
-          example: '001095012345'
+          example: "001095012345"
         address:
           type: string
           nullable: true
@@ -1145,23 +1148,23 @@ components:
           nullable: true
           example: Senior Developer
         role:
-          $ref: '#/components/schemas/EmployeeRole'
+          $ref: "#/components/schemas/EmployeeRole"
         employeeType:
-          $ref: '#/components/schemas/EmployeeType'
+          $ref: "#/components/schemas/EmployeeType"
         status:
-          $ref: '#/components/schemas/EmployeeStatus'
+          $ref: "#/components/schemas/EmployeeStatus"
         startDate:
           type: string
           format: date
           nullable: true
-          example: '2023-01-15'
+          example: "2023-01-15"
         avatar:
           type: object
           properties:
             url:
               type: string
               nullable: true
-              example: 'https://res.cloudinary.com/xxx/image/upload/v1/hrp/avatars/avatar_abc.webp'
+              example: "https://res.cloudinary.com/xxx/image/upload/v1/hrp/avatars/avatar_abc.webp"
             id:
               type: string
               nullable: true
@@ -1184,16 +1187,16 @@ components:
           example: Nguyễn Văn An
         phone:
           type: string
-          example: '0901234567'
+          example: "0901234567"
         dateOfBirth:
           type: string
           format: date
-          example: '1995-06-15'
+          example: "1995-06-15"
         nationalId:
           type: string
           minLength: 9
           maxLength: 20
-          example: '001095012345'
+          example: "001095012345"
         address:
           type: string
           maxLength: 500
@@ -1208,7 +1211,8 @@ components:
           type: string
         type:
           type: string
-          enum: [leave, overtime, work_from_home, shift_swap, business_trip, maternity, paternity, sick]
+          enum:
+            [leave, overtime, work_from_home, shift_swap, business_trip, maternity, paternity, sick]
         status:
           type: string
           enum: [pending, approved, rejected, cancelled]
