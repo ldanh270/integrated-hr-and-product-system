@@ -1,3 +1,4 @@
+import { ROLE } from "@/config/entities/employee.config"
 import { ROUTES } from "@/config/routes.config"
 
 import {
@@ -28,6 +29,7 @@ export interface NavItem {
   name: string
   path: string
   icon: LucideIcon
+  roles?: string[]
 }
 
 export interface SubsystemConfig {
@@ -81,9 +83,24 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     routePrefix: "/payroll",
     sidebarItems: [
       { name: "Tổng quan", path: ROUTES.PAYROLL.DASHBOARD, icon: CircleDollarSign },
-      { name: "Kỳ lương", path: ROUTES.PAYROLL.LIST, icon: FileText },
-      { name: "Cấu hình lương", path: ROUTES.PAYROLL.SALARY_COMPONENTS, icon: Settings },
-      { name: "Mẫu bảng lương", path: ROUTES.PAYROLL.PAYSLIP_TEMPLATES, icon: FileText },
+      {
+        name: "Kỳ lương",
+        path: ROUTES.PAYROLL.LIST,
+        icon: FileText,
+        roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
+      },
+      {
+        name: "Cấu hình lương",
+        path: ROUTES.PAYROLL.SALARY_COMPONENTS,
+        icon: Settings,
+        roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
+      },
+      {
+        name: "Mẫu bảng lương",
+        path: ROUTES.PAYROLL.PAYSLIP_TEMPLATES,
+        icon: FileText,
+        roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
+      },
       { name: "Lương của tôi", path: ROUTES.PAYROLL.MY_PAYSLIPS, icon: CircleDollarSign },
     ],
   },

@@ -21,8 +21,12 @@ export class PrismaPayslipRepository extends BaseRepository implements IPayslipR
   async findByEmployee(employeeId: string): Promise<Payslip[]> {
     return this.prisma.payslip.findMany({
       where: { employeeId },
+      include: {
+        details: true,
+        payroll: true,
+      },
       orderBy: { createdAt: "desc" },
-    })
+    }) as unknown as Promise<Payslip[]>
   }
 
   async findOne(payrollId: string, employeeId: string): Promise<PayslipWithDetails | null> {

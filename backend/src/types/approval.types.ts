@@ -1,9 +1,10 @@
+import { APPLICATION_STATUS } from "@/configs/entities/attendance.config.ts"
 import { RequestCategory } from "@/configs/rules/approval.config.ts"
 
 export interface IProcessApprovalDTO {
   id: string
   category: RequestCategory
-  status: "approved" | "rejected"
+  status: typeof APPLICATION_STATUS.APPROVED | typeof APPLICATION_STATUS.REJECTED
   processorId: string
   rejectReason?: string
 }

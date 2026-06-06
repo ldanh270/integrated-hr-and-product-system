@@ -1,3 +1,4 @@
+import { useAuthStore } from "@/store/auth-store"
 import { useSubsystemStore } from "@/store/subsystem-store"
 
 import { useState } from "react"
@@ -9,6 +10,7 @@ interface NavItem {
   name: string
   path: string
   icon: React.ComponentType<{ size?: number; className?: string }>
+  roles?: string[]
 }
 
 /**
@@ -22,8 +24,11 @@ export default function Sidebar() {
 
   const { getActiveSubsystemConfig } = useSubsystemStore()
   const activeSubsystemConfig = getActiveSubsystemConfig()
+  const user = useAuthStore((s) => s.user)
 
-  const navItems: NavItem[] = activeSubsystemConfig?.sidebarItems || []
+  const navItems: NavItem[] = (activeSubsystemConfig?.sidebarItems || []).filter(
+    (item: any) => !item.roles || (user && item.roles.includes(user.role)),
+  )
 
   return (
     <aside

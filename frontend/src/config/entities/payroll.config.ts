@@ -1,18 +1,20 @@
 import { type IEmployeeRole, ROLE } from "@/config/entities/employee.config"
 
 export const PAYROLL_STATUS = {
-  DRAFT: "DRAFT",
-  PENDING: "PENDING",
-  APPROVED: "APPROVED",
-  REJECTED: "REJECTED",
+  DRAFT: "draft",
+  PENDING_APPROVAL: "pending_approval",
+  APPROVED: "approved",
+  REJECTED: "rejected",
+  PAID: "paid",
 } as const
 export type PayrollStatus = (typeof PAYROLL_STATUS)[keyof typeof PAYROLL_STATUS]
 
 export const PAYROLL_STATUS_LABELS: Record<PayrollStatus, string> = {
-  DRAFT: "Bản nháp",
-  PENDING: "Chờ duyệt",
-  APPROVED: "Đã duyệt",
-  REJECTED: "Từ chối",
+  draft: "Bản nháp",
+  pending_approval: "Chờ duyệt",
+  approved: "Đã duyệt",
+  rejected: "Từ chối",
+  paid: "Đã thanh toán",
 }
 
 // Maps to shadcn Badge variant
@@ -20,18 +22,21 @@ export const PAYROLL_STATUS_BADGE: Record<
   PayrollStatus,
   "default" | "secondary" | "outline" | "destructive"
 > = {
-  DRAFT: "secondary",
-  PENDING: "default",
-  APPROVED: "outline", // will override with success token via className
-  REJECTED: "destructive",
+  draft: "secondary",
+  pending_approval: "default",
+  approved: "outline", // will override with success token via className
+  rejected: "destructive",
+  paid: "outline",
 }
 
-export const COMPONENT_TYPE = { ADDITION: "ADDITION", DEDUCTION: "DEDUCTION" } as const
+export const SALARY_COMPONENT_TYPES = ["addition", "deduction"] as const
+
+export const COMPONENT_TYPE = { ADDITION: "addition", DEDUCTION: "deduction" } as const
 export type ComponentType = (typeof COMPONENT_TYPE)[keyof typeof COMPONENT_TYPE]
 
 export const COMPONENT_TYPE_LABELS: Record<ComponentType, string> = {
-  ADDITION: "Cộng vào",
-  DEDUCTION: "Khấu trừ",
+  addition: "Cộng vào",
+  deduction: "Khấu trừ",
 }
 
 // Role groups for use-role-guard

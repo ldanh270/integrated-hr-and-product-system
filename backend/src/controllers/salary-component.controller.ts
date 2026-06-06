@@ -1,6 +1,7 @@
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { ISalaryComponentService } from "@/types/payroll.types.ts"
-import { Request, Response, NextFunction } from "express"
+
+import { NextFunction, Request, Response } from "express"
 
 export class SalaryComponentController {
   constructor(private service: ISalaryComponentService) {
@@ -27,7 +28,7 @@ export class SalaryComponentController {
 
   async createComponent(req: Request, res: Response, next: NextFunction) {
     try {
-      const createdById = (req as any).user?.id
+      const createdById = (req as any).user?.empId
       if (!createdById) throw new Error("Unauthorized")
 
       const component = await this.service.createComponent(req.body, createdById)

@@ -24,6 +24,9 @@ export interface IPayslip {
   id: string
   payrollId: string
   employeeId: string
+  periodMonth?: number
+  periodYear?: number
+  status?: PayrollStatus
   netSalary: number
   totalAdditions: number
   totalDeductions: number

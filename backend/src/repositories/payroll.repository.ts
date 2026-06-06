@@ -1,3 +1,4 @@
+import { PAYROLL_STATUS } from "@/configs/entities/payroll.config.ts"
 import { IPayrollRepository, IUpdatePayrollStatusDTO } from "@/types/payroll.types.ts"
 
 import { Payroll, PayrollStatus, Prisma, PrismaClient } from "@prisma/client"
@@ -36,7 +37,7 @@ export class PrismaPayrollRepository extends BaseRepository implements IPayrollR
       data: {
         periodMonth: data.periodMonth,
         periodYear: data.periodYear,
-        status: "draft",
+        status: PAYROLL_STATUS.DRAFT,
         totalAmount: 0,
       },
     })

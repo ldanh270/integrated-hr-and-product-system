@@ -1,3 +1,6 @@
+import { ATTENDANCE_STATUS, EMPLOYEE_SHIFT_STATUS } from "@/configs/entities/attendance.config.ts"
+import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
+import { PAYROLL_STATUS, SALARY_COMPONENT_TYPES } from "@/configs/entities/payroll.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { IAttendanceRepository } from "@/types/attendance.types.ts"
 import { IEmployeeRepository } from "@/types/employee.types.ts"
@@ -11,7 +14,7 @@ import {
 } from "@/types/payroll.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 
-import { Payroll, PayrollStatus, PrismaClient, Prisma } from "@prisma/client"
+import { Payroll, PayrollStatus, Prisma, PrismaClient } from "@prisma/client"
 import * as math from "mathjs"
 
 // Need an interface for SettingsRepository
@@ -33,12 +36,16 @@ export class PayrollService implements IPayrollService {
   async generatePayroll(month: number, year: number): Promise<Payroll> {
     const existing = await this.payrollRepo.findByPeriod(month, year)
     if (existing) {
-      throw new AppError("Payroll already exists for this period", HttpStatusCode.CONFLICT, "SERVICE")
+      throw new AppError(
+        "Payroll already exists for this period",
+        HttpStatusCode.CONFLICT,
+        "SERVICE",
+      )
     }
 
     const settings = await this.settingsRepo.findGlobal()
     const employeeData = await this.employeeRepo.listEmployeesPaginated({
-      status: "active",
+      status: EMPLOYEE_STATUS.ACTIVE,
       limit: 100000,
     })
     const employees = employeeData.data
@@ -75,10 +82,12 @@ export class PayrollService implements IPayrollService {
         holidayDays: 0,
       }
       attendanceRecords.forEach((record) => {
-        if (record.status === "on_time" || record.status === "late") attendance.workingDays += 1
-        if (record.status === "absent") attendance.absentDays += 1
-        if (record.status === "overtime") attendance.workingDays += 1 // or separate counting
-        if (record.status === "holiday_pending") attendance.holidayDays += 1 // adjust based on actual logic
+        if (record.status === ATTENDANCE_STATUS.ON_TIME || record.status === ATTENDANCE_STATUS.LATE)
+          attendance.workingDays += 1
+        if (record.status === ATTENDANCE_STATUS.ABSENT) attendance.absentDays += 1
+        if (record.status === ATTENDANCE_STATUS.OVERTIME) attendance.workingDays += 1 // or separate counting
+        if (record.status === (EMPLOYEE_SHIFT_STATUS.HOLIDAY_PENDING as string))
+          attendance.holidayDays += 1 // adjust based on actual logic
 
         attendance.overtimeMinutes += record.overtimeMinutes || 0
         attendance.lateMinutes += record.lateMinutes || 0
@@ -118,7 +127,7 @@ export class PayrollService implements IPayrollService {
           value: Number(value.toFixed(2)),
         })
 
-        if (tc.component.type === "addition") {
+        if (tc.component.type === SALARY_COMPONENT_TYPES[0]) {
           totalAdditions = totalAdditions.add(value)
         } else {
           totalDeductions = totalDeductions.add(value)
@@ -158,7 +167,7 @@ export class PayrollService implements IPayrollService {
 
   async approvePayroll(payrollId: string, approverId: string): Promise<Payroll> {
     return this.payrollRepo.updateStatus(payrollId, {
-      status: "approved",
+      status: PAYROLL_STATUS.APPROVED,
       approvedById: approverId,
       approvedAt: new Date(),
     })
@@ -166,7 +175,7 @@ export class PayrollService implements IPayrollService {
 
   async rejectPayroll(payrollId: string, approverId: string, reason: string): Promise<Payroll> {
     return this.payrollRepo.updateStatus(payrollId, {
-      status: "rejected",
+      status: PAYROLL_STATUS.REJECTED,
       approvedById: approverId,
       approvedAt: new Date(),
       rejectReason: reason,
@@ -180,6 +189,13 @@ export class PayrollService implements IPayrollService {
   }
 
   async getMyPayslips(employeeId: string): Promise<any[]> {
-    return this.payslipRepo.findByEmployee(employeeId)
+    const rawPayslips = await this.payslipRepo.findByEmployee(employeeId)
+    // Map included payroll info to the top level for the frontend
+    return rawPayslips.map((p: any) => ({
+      ...p,
+      periodMonth: p.payroll?.periodMonth,
+      periodYear: p.payroll?.periodYear,
+      status: p.payroll?.status,
+    }))
   }
 }
