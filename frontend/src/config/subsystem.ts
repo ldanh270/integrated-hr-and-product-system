@@ -1,3 +1,5 @@
+import { ROUTES } from "@/config/routes.config"
+
 import {
   BookOpen,
   Briefcase,
@@ -77,7 +79,13 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     description: "Tự động việc tính và chi trả bảng lương",
     icon: CircleDollarSign,
     routePrefix: "/payroll",
-    sidebarItems: [{ name: "Tổng quan", path: "/payroll/dashboard", icon: CircleDollarSign }],
+    sidebarItems: [
+      { name: "Tổng quan", path: ROUTES.PAYROLL.DASHBOARD, icon: CircleDollarSign },
+      { name: "Kỳ lương", path: ROUTES.PAYROLL.LIST, icon: FileText },
+      { name: "Cấu hình lương", path: ROUTES.PAYROLL.SALARY_COMPONENTS, icon: Settings },
+      { name: "Mẫu bảng lương", path: ROUTES.PAYROLL.PAYSLIP_TEMPLATES, icon: FileText },
+      { name: "Lương của tôi", path: ROUTES.PAYROLL.MY_PAYSLIPS, icon: CircleDollarSign },
+    ],
   },
   {
     id: "asset",

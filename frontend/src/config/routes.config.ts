@@ -11,4 +11,11 @@ export const ROUTES = {
   SUBSYSTEMS: {
     ATTENDANCE: "/attendance",
   },
+  PAYROLL: {
+    DASHBOARD: "/payroll/dashboard",
+    LIST: "/payroll/list",
+    SALARY_COMPONENTS: "/payroll/salary-components",
+    PAYSLIP_TEMPLATES: "/payroll/payslip-templates",
+    MY_PAYSLIPS: "/payroll/my-payslips",
+  },
 } as const
