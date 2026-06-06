@@ -1,4 +1,5 @@
 import { prisma } from "../libs/database.ts"
+import { clearDatabase } from "./clear-db.ts"
 import { SeedContext, createEmptyContext, registry } from "./seeders/index.ts"
 
 async function main() {
@@ -12,6 +13,9 @@ async function main() {
       console.log("No seeders registered.")
       return
     }
+
+    // Clear the database before seeding
+    await clearDatabase()
 
     for (const seeder of sortedSeeders) {
       console.log(`\n[→] Running: ${seeder.name}`)

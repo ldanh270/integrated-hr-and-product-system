@@ -14,23 +14,52 @@ export class EmployeesSeeder implements ISeeder {
   async run(context: SeedContext): Promise<Partial<SeedContext>> {
     console.log("  Seeding employees...")
 
-    // Check if admin exists to grab its ID for context (or seed admin if not)
-    let admin = await prisma.employee.findFirst({ where: { username: "admin" } })
-    if (!admin) {
-      const passwordHash = await HashUtil.hash("Admin123@")
-      admin = await prisma.employee.create({
-        data: {
-          username: "admin",
-          passwordHash,
-          role: ROLE.ADMIN as any,
-          fullName: "System Admin",
-          email: "admin@example.com",
-          phone: "0123456789",
-          address: "System Generated",
-          position: "Admin",
-        },
-      })
-      console.log("  [!] Admin missing, created default admin account.")
+    // Ensure all 5 core role accounts exist (especially since seed-all clears the DB)
+    const rolesToSeed = [
+      ROLE.ADMIN,
+      ROLE.HR_MANAGER,
+      ROLE.GENERAL_MANAGER,
+      ROLE.TEAM_LEADER,
+      ROLE.EMPLOYEE,
+    ]
+    let adminId = ""
+    const passwordHashCore = await HashUtil.hash("Admin123@")
+
+    for (const role of rolesToSeed) {
+      const username = role === ROLE.ADMIN ? "admin" : role
+      const fullName = role
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ")
+
+      let existing = await prisma.employee.findFirst({ where: { username } })
+
+      if (!existing) {
+        let phoneSuffix = "0"
+        if (role === ROLE.ADMIN) phoneSuffix = "1"
+        else if (role === ROLE.HR_MANAGER) phoneSuffix = "2"
+        else if (role === ROLE.GENERAL_MANAGER) phoneSuffix = "3"
+        else if (role === ROLE.TEAM_LEADER) phoneSuffix = "4"
+        else if (role === ROLE.EMPLOYEE) phoneSuffix = "5"
+
+        existing = await prisma.employee.create({
+          data: {
+            username,
+            passwordHash: passwordHashCore,
+            role: role as any,
+            fullName: `${fullName} User`,
+            email: `${username}@example.com`,
+            phone: `012345678${phoneSuffix}`,
+            address: "System Generated",
+            position: fullName,
+          },
+        })
+        console.log(`  [!] Core account missing, created default account: ${username}`)
+      }
+
+      if (role === ROLE.ADMIN) {
+        adminId = existing.id
+      }
     }
 
     // Seed 15 random employees
@@ -80,7 +109,7 @@ export class EmployeesSeeder implements ISeeder {
     })
 
     return {
-      adminId: admin.id,
+      adminId,
       employees: allEmployees,
     }
   }

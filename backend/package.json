@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "seed": "bun run src/scripts/seed-all.ts",
-    "seed:admin": "bun run src/scripts/seed-admin.ts"
+    "seed:admin": "bun run src/scripts/seed-admin.ts",
+    "clear": "bun run src/scripts/clear-db.ts"
   },
   "type": "module",
   "author": "ldanh270",
