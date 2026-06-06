@@ -1,9 +1,10 @@
+import { prisma } from "@/libs/database.ts"
 import {
   ICreateSalaryComponentDTO,
+  IFormulaContext,
   ISalaryComponentRepository,
   ISalaryComponentService,
   IUpdateSalaryComponentDTO,
-  IFormulaContext,
 } from "@/types/payroll.types.ts"
 
 import { ComponentType, SalaryComponent } from "@prisma/client"
@@ -48,12 +49,6 @@ export class SalaryComponentService implements ISalaryComponentService {
     try {
       const testContext: IFormulaContext = {
         baseSalary: 10_000_000,
-        mealAllowance: 500_000,
-        transportAllowance: 0,
-        housingAllowance: 0,
-        phoneAllowance: 0,
-        responsibilityAllowance: 0,
-        seniorityAllowance: 0,
         standardDays: 22,
         workingDays: 22,
         absentDays: 0,
@@ -61,6 +56,15 @@ export class SalaryComponentService implements ISalaryComponentService {
         lateMinutes: 0,
         holidayDays: 0,
       }
+
+      // Inject all active custom fields so they validate successfully
+      const customFields = await prisma.customSalaryField.findMany({
+        where: { isActive: true },
+      })
+      customFields.forEach((cf) => {
+        testContext[cf.code] = Number(cf.defaultValue)
+      })
+
       const result = math.evaluate(formula, testContext)
       if (typeof result !== "number" || isNaN(result)) {
         throw new Error("Formula must return a number")

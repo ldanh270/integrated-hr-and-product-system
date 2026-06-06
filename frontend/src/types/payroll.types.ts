@@ -65,6 +65,11 @@ export interface IPayslipTemplate {
   updatedAt: string
 }
 
+export interface ICustomSalaryFieldConfig {
+  fieldId: string
+  value: number
+}
+
 export interface IEmployeeSalaryConfig {
   id: string
   employeeId: string
@@ -72,13 +77,28 @@ export interface IEmployeeSalaryConfig {
   baseSalary: number
   effectiveFrom: string
   effectiveTo?: string
-  mealAllowance: number
-  transportAllowance: number
-  housingAllowance: number
-  phoneAllowance: number
-  responsibilityAllowance: number
-  seniorityAllowance: number
   note?: string
+  customFields?: ICustomSalaryFieldConfig[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface IPayrollSettings {
+  id: string
+  triggerDay: number
+  standardWorkingDays: number
+  updatedById?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface ICustomSalaryField {
+  id: string
+  code: string
+  name: string
+  defaultValue: number
+  description?: string
+  isActive: boolean
   createdAt: string
   updatedAt: string
 }

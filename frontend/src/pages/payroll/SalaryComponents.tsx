@@ -105,10 +105,10 @@ export default function SalaryComponents() {
                     <TableCell className="py-2 text-muted-foreground">
                       {isNaN(Number(comp.formula)) ? "Công thức (Số)" : "Giá trị tĩnh (Tiền tệ)"}
                     </TableCell>
-                    <TableCell className="py-2 max-w-[200px] truncate" title={comp.formula}>
+                    <TableCell className="py-2 max-w-50 truncate" title={comp.formula}>
                       {comp.formula}
                     </TableCell>
-                    <TableCell className="py-2 hidden md:table-cell text-muted-foreground max-w-[250px] truncate">
+                    <TableCell className="py-2 hidden md:table-cell text-muted-foreground max-w-62.5 truncate">
                       {comp.description || "-"}
                     </TableCell>
                     <TableCell className="py-2">

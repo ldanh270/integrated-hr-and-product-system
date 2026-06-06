@@ -56,6 +56,14 @@ export class PayrollService implements IPayrollService {
 
     const payroll = await this.payrollRepo.create({ periodMonth: month, periodYear: year })
 
+    const customFieldsList = await this.prisma.customSalaryField.findMany({
+      where: { isActive: true },
+    })
+    const customFieldsMap = new Map<string, string>()
+    customFieldsList.forEach((cf) => {
+      customFieldsMap.set(cf.id, cf.code)
+    })
+
     let totalAmount = new Prisma.Decimal(0)
 
     for (const employee of employees) {
@@ -96,18 +104,27 @@ export class PayrollService implements IPayrollService {
       // Build context
       const context: IFormulaContext = {
         baseSalary: Number(config.baseSalary),
-        mealAllowance: Number(config.mealAllowance ?? 0),
-        transportAllowance: Number(config.transportAllowance ?? 0),
-        housingAllowance: Number(config.housingAllowance ?? 0),
-        phoneAllowance: Number(config.phoneAllowance ?? 0),
-        responsibilityAllowance: Number(config.responsibilityAllowance ?? 0),
-        seniorityAllowance: Number(config.seniorityAllowance ?? 0),
         standardDays: settings.standardWorkingDays,
         workingDays: attendance.workingDays,
         absentDays: attendance.absentDays,
         overtimeMinutes: attendance.overtimeMinutes,
         lateMinutes: attendance.lateMinutes,
         holidayDays: attendance.holidayDays,
+      }
+
+      // Initialize all custom fields with their default values in formula context
+      customFieldsList.forEach((cf) => {
+        context[cf.code] = Number(cf.defaultValue)
+      })
+
+      // Apply employee specific overrides
+      if (Array.isArray(config.customFields)) {
+        for (const cf of config.customFields as any[]) {
+          const code = customFieldsMap.get(cf.fieldId)
+          if (code) {
+            context[code] = Number(cf.value || 0)
+          }
+        }
       }
 
       const details = []

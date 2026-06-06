@@ -36,11 +36,11 @@ import {
 } from "@/hooks/payroll/use-salary-components"
 import type { ISalaryComponent } from "@/types/payroll.types"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2 } from "lucide-react"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { z } from "zod"
 
 const formSchema = z.object({
@@ -69,32 +69,29 @@ export default function SalaryComponentDialog({ open, onOpenChange, initialData 
     },
   })
 
-  const { reset, watch } = form
-  const formulaValue = watch("formula")
+  const { reset, control } = form
+  const formulaValue = useWatch({ control, name: "formula" })
 
-  const [formulaStatus, setFormulaStatus] = useState<"idle" | "validating" | "valid" | "invalid">(
-    "idle",
-  )
+  const [debouncedFormula, setDebouncedFormula] = useState("")
 
-  // Simulate Live Debounce validation
+  // Update debounced value after a delay, or immediately if empty to avoid synchronous updates inside effect body
   useEffect(() => {
-    if (!formulaValue) {
-      setFormulaStatus("idle")
-      return
-    }
-
-    setFormulaStatus("validating")
-    const timer = setTimeout(() => {
-      // Basic check: at least not starting with invalid chars
-      if (/^[/*+]/.test(formulaValue.trim())) {
-        setFormulaStatus("invalid")
-      } else {
-        setFormulaStatus("valid")
-      }
-    }, 500) // 500ms debounce
+    const timer = setTimeout(
+      () => {
+        setDebouncedFormula(formulaValue || "")
+      },
+      formulaValue ? 500 : 0,
+    )
 
     return () => clearTimeout(timer)
   }, [formulaValue])
+
+  // Derive formula validation status
+  const formulaStatus = useMemo((): "idle" | "validating" | "valid" | "invalid" => {
+    if (!formulaValue) return "idle"
+    if (formulaValue !== debouncedFormula) return "validating"
+    return /^[/*+]/.test(debouncedFormula.trim()) ? "invalid" : "valid"
+  }, [formulaValue, debouncedFormula])
 
   // Reset form when dialog opens or initialData changes
   useEffect(() => {
@@ -142,7 +139,7 @@ export default function SalaryComponentDialog({ open, onOpenChange, initialData 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-125">
         <DialogHeader>
           <DialogTitle>
             {initialData ? "Chỉnh sửa thành phần lương" : "Thêm thành phần lương mới"}

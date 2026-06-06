@@ -24,14 +24,14 @@ export class SalaryComponentsSeeder implements ISeeder {
       {
         name: "Meal Allowance",
         type: "addition" as any,
-        formula: "mealAllowance",
+        formula: "meal_allowance",
         description: "Phụ cấp ăn trưa",
         createdById: adminId,
       },
       {
         name: "Transport Allowance",
         type: "addition" as any,
-        formula: "transportAllowance",
+        formula: "transport_allowance",
         description: "Phụ cấp đi lại",
         createdById: adminId,
       },

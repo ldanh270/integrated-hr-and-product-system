@@ -114,13 +114,8 @@ export interface ICreateSalaryConfigDTO {
   templateId: string
   baseSalary: number
   effectiveFrom: Date
-  mealAllowance?: number
-  transportAllowance?: number
-  housingAllowance?: number
-  phoneAllowance?: number
-  responsibilityAllowance?: number
-  seniorityAllowance?: number
   note?: string
+  customFields?: any
 }
 
 // ── Payroll Computation ──────────────────────────────────────────────────────
@@ -178,14 +173,9 @@ export interface ICreatePayslipDTO {
 // ── Formula Context ──────────────────────────────────────────────────────────
 
 export interface IFormulaContext {
+  [key: string]: number
   // From EmployeeSalaryConfig
   baseSalary: number
-  mealAllowance: number
-  transportAllowance: number
-  housingAllowance: number
-  phoneAllowance: number
-  responsibilityAllowance: number
-  seniorityAllowance: number
   // From PayrollSettings
   standardDays: number
   // From AttendanceRecord aggregate

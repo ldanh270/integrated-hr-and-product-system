@@ -459,9 +459,9 @@ model PayslipTemplate {
 
 model PayslipTemplateComponent {
   templateId      String
-  template        PayslipTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  template        PayslipTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
   componentId     String
-  component       SalaryComponent  @relation(fields: [componentId], references: [id], onDelete: Restrict)
+  component       SalaryComponent @relation(fields: [componentId], references: [id], onDelete: Restrict)
   overrideFormula String?
 
   @@id([templateId, componentId])
@@ -469,30 +469,21 @@ model PayslipTemplateComponent {
 }
 
 model EmployeeSalaryConfig {
-  id         String   @id @default(cuid())
+  id         String          @id @default(cuid())
   employeeId String
-  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  employee   Employee        @relation(fields: [employeeId], references: [id], onDelete: Restrict)
   templateId String
   template   PayslipTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
 
   // ── Lương chính ─────────────────────────────────
-  baseSalary              Decimal  @db.Decimal(15, 2)
+  baseSalary Decimal @db.Decimal(15, 2)
   // Lương cứng hàng tháng — NOT NULL
 
-  // ── Phụ cấp sinh hoạt ───────────────────────────
-  mealAllowance           Decimal? @db.Decimal(15, 2)
-  transportAllowance      Decimal? @db.Decimal(15, 2)
-  housingAllowance        Decimal? @db.Decimal(15, 2)
-  phoneAllowance          Decimal? @db.Decimal(15, 2)
-
-  // ── Phụ cấp theo vị trí ─────────────────────────
-  responsibilityAllowance Decimal? @db.Decimal(15, 2)
-  seniorityAllowance      Decimal? @db.Decimal(15, 2)
-
   // ── Versioning ──────────────────────────────────
-  effectiveFrom           DateTime  @db.Date
-  effectiveTo             DateTime? @db.Date
-  note                    String?
+  effectiveFrom DateTime  @db.Date
+  effectiveTo   DateTime? @db.Date
+  note          String?
+  customFields  Json?
 
   createdById String
   createdBy   Employee @relation("SalaryConfigCreator", fields: [createdById], references: [id], onDelete: Restrict)
@@ -521,6 +512,17 @@ model PayrollSettings {
   @@index([updatedById])
 }
 
+model CustomSalaryField {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  name         String
+  defaultValue Decimal  @default(0) @db.Decimal(15, 2)
+  description  String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 model Payroll {
   id           String        @id @default(cuid())
   periodMonth  Int
@@ -544,21 +546,21 @@ model Payroll {
 }
 
 model Payslip {
-  id              String   @id @default(cuid())
-  payrollId       String
-  payroll         Payroll  @relation(fields: [payrollId], references: [id], onDelete: Cascade)
-  employeeId      String
-  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  id         String   @id @default(cuid())
+  payrollId  String
+  payroll    Payroll  @relation(fields: [payrollId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
 
-  salaryConfigId  String
-  salaryConfig    EmployeeSalaryConfig @relation(fields: [salaryConfigId], references: [id], onDelete: Restrict)
+  salaryConfigId String
+  salaryConfig   EmployeeSalaryConfig @relation(fields: [salaryConfigId], references: [id], onDelete: Restrict)
 
-  totalAdditions  Decimal  @default(0) @db.Decimal(15, 2)
-  totalDeductions Decimal  @default(0) @db.Decimal(15, 2)
-  netSalary       Decimal  @db.Decimal(15, 2)
-  workingDays     Int      @default(0)
-  absentDays      Int      @default(0)
-  overtimeMinutes Int      @default(0)
+  totalAdditions  Decimal @default(0) @db.Decimal(15, 2)
+  totalDeductions Decimal @default(0) @db.Decimal(15, 2)
+  netSalary       Decimal @db.Decimal(15, 2)
+  workingDays     Int     @default(0)
+  absentDays      Int     @default(0)
+  overtimeMinutes Int     @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -571,16 +573,16 @@ model Payslip {
 }
 
 model PayslipDetail {
-  id          String           @id @default(cuid())
+  id          String          @id @default(cuid())
   payslipId   String
-  payslip     Payslip          @relation(fields: [payslipId], references: [id], onDelete: Cascade)
+  payslip     Payslip         @relation(fields: [payslipId], references: [id], onDelete: Cascade)
   componentId String
-  component   SalaryComponent  @relation(fields: [componentId], references: [id], onDelete: Restrict)
+  component   SalaryComponent @relation(fields: [componentId], references: [id], onDelete: Restrict)
   /// Snapshot: name of component at time of payroll calculation (component name may change later)
   name        String
   /// Snapshot: type of component at time of payroll calculation
   type        ComponentType
-  value       Decimal          @db.Decimal(15, 2)
+  value       Decimal         @db.Decimal(15, 2)
 
   @@index([payslipId])
   @@index([componentId])

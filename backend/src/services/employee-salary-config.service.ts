@@ -3,6 +3,7 @@ import {
   IEmployeeSalaryConfigRepository,
   IEmployeeSalaryConfigService,
 } from "@/types/payroll.types.ts"
+
 import { EmployeeSalaryConfig } from "@prisma/client"
 import { PrismaClient } from "@prisma/client"
 
@@ -48,13 +49,8 @@ export class EmployeeSalaryConfigService implements IEmployeeSalaryConfigService
           templateId: data.templateId,
           baseSalary: data.baseSalary,
           effectiveFrom: data.effectiveFrom,
-          mealAllowance: data.mealAllowance,
-          transportAllowance: data.transportAllowance,
-          housingAllowance: data.housingAllowance,
-          phoneAllowance: data.phoneAllowance,
-          responsibilityAllowance: data.responsibilityAllowance,
-          seniorityAllowance: data.seniorityAllowance,
           note: data.note,
+          customFields: data.customFields,
           createdById,
         },
       })

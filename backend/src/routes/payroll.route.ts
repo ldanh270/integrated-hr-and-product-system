@@ -45,6 +45,130 @@ payrollRoutes.get("/my/payslips", controller.getMyPayslips)
 // HR / GM / Admin routes
 payrollRoutes.use(authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER))
 
+// Payroll Settings
+payrollRoutes.get(
+  "/settings",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER),
+  async (req, res, next) => {
+    try {
+      const s = await prisma.payrollSettings.findUnique({ where: { id: "GLOBAL" } })
+      res.json({ data: s || { triggerDay: 1, standardWorkingDays: 22 } })
+    } catch (error) {
+      next(error)
+    }
+  },
+)
+
+payrollRoutes.put(
+  "/settings",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER),
+  async (req, res, next) => {
+    try {
+      const { triggerDay, standardWorkingDays } = req.body
+      const updatedById = (req as any).user?.id
+      if (!updatedById) throw new Error("Unauthorized")
+
+      const s = await prisma.payrollSettings.upsert({
+        where: { id: "GLOBAL" },
+        create: {
+          id: "GLOBAL",
+          triggerDay: Number(triggerDay),
+          standardWorkingDays: Number(standardWorkingDays),
+          updatedById,
+        },
+        update: {
+          triggerDay: Number(triggerDay),
+          standardWorkingDays: Number(standardWorkingDays),
+          updatedById,
+        },
+      })
+      res.json({ data: s })
+    } catch (error) {
+      next(error)
+    }
+  },
+)
+
+// Custom Salary Fields
+payrollRoutes.get(
+  "/custom-fields",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER),
+  async (req, res, next) => {
+    try {
+      const fields = await prisma.customSalaryField.findMany({
+        where: { isActive: true },
+        orderBy: { createdAt: "asc" },
+      })
+      res.json({ data: fields })
+    } catch (error) {
+      next(error)
+    }
+  },
+)
+
+payrollRoutes.post(
+  "/custom-fields",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER),
+  async (req, res, next) => {
+    try {
+      const { name, code, defaultValue, description } = req.body
+      const field = await prisma.customSalaryField.create({
+        data: {
+          name,
+          code,
+          defaultValue: Number(defaultValue),
+          description,
+        },
+      })
+      res.json({ data: field })
+    } catch (error) {
+      next(error)
+    }
+  },
+)
+
+payrollRoutes.put(
+  "/custom-fields/:id",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER),
+  async (req, res, next) => {
+    try {
+      const id = req.params.id as string
+      const { name, code, defaultValue, description, isActive } = req.body
+      const field = await prisma.customSalaryField.update({
+        where: { id },
+        data: {
+          name,
+          code,
+          defaultValue: defaultValue !== undefined ? Number(defaultValue) : undefined,
+          description,
+          isActive,
+        },
+      })
+      res.json({ data: field })
+    } catch (error) {
+      next(error)
+    }
+  },
+)
+
+payrollRoutes.delete(
+  "/custom-fields/:id",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER),
+  async (req, res, next) => {
+    try {
+      const id = req.params.id as string
+      // Soft delete
+      const field = await prisma.customSalaryField.update({
+        where: { id },
+        data: { isActive: false },
+      })
+      res.json({ data: field })
+    } catch (error) {
+      next(error)
+    }
+  },
+)
+
 payrollRoutes.get("/", controller.listPayrolls)
 payrollRoutes.get("/:id", controller.getPayroll)
 payrollRoutes.get("/:id/payslips/:empId", controller.getPayslip)

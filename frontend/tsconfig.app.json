@@ -16,7 +16,7 @@
 
     /* Project Reference Rules */
     "composite": true,
-    "emitDeclarationOnly": true,
+    "noEmit": true,
 
     /* Linting */
     "noUnusedLocals": true,

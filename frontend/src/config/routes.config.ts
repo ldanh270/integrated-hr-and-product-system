@@ -16,6 +16,7 @@ export const ROUTES = {
     LIST: "/payroll/list",
     SALARY_COMPONENTS: "/payroll/salary-components",
     PAYSLIP_TEMPLATES: "/payroll/payslip-templates",
+    SETTINGS: "/payroll/settings",
     MY_PAYSLIPS: "/payroll/my-payslips",
   },
 } as const

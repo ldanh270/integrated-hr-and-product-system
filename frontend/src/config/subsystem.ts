@@ -90,8 +90,14 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
       },
       {
-        name: "Cấu hình lương",
+        name: "Thành phần lương",
         path: ROUTES.PAYROLL.SALARY_COMPONENTS,
+        icon: Settings,
+        roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
+      },
+      {
+        name: "Cấu hình lương",
+        path: ROUTES.PAYROLL.SETTINGS,
         icon: Settings,
         roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
       },

@@ -27,7 +27,7 @@ export default function Sidebar() {
   const user = useAuthStore((s) => s.user)
 
   const navItems: NavItem[] = (activeSubsystemConfig?.sidebarItems || []).filter(
-    (item: any) => !item.roles || (user && item.roles.includes(user.role)),
+    (item: NavItem) => !item.roles || (user && item.roles.includes(user.role)),
   )
 
   return (
