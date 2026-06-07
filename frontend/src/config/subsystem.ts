@@ -82,7 +82,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     icon: CircleDollarSign,
     routePrefix: "/payroll",
     sidebarItems: [
-      { name: "Tổng quan", path: ROUTES.PAYROLL.DASHBOARD, icon: CircleDollarSign },
+      { name: "Tổng quan", path: ROUTES.PAYROLL.LIST, icon: CircleDollarSign },
       {
         name: "Kỳ lương",
         path: ROUTES.PAYROLL.LIST,
@@ -119,7 +119,6 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         icon: Users,
         roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
       },
-
 
       { name: "Lương của tôi", path: ROUTES.PAYROLL.MY_PAYSLIPS, icon: CircleDollarSign },
     ],

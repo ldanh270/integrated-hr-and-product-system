@@ -55,15 +55,9 @@ const privateRoutes = [
     component: lazy(() => import("@/pages/attendance/Holidays.tsx")),
     layout: MainLayout,
   },
-  // New Placeholder Modules
   {
     path: "/application/dashboard",
     component: lazy(() => import("@/pages/application/ApplicationDashboard.tsx")),
-    layout: MainLayout,
-  },
-  {
-    path: "/payroll/dashboard",
-    component: lazy(() => import("@/pages/payroll/PayrollDashboard.tsx")),
     layout: MainLayout,
   },
   {

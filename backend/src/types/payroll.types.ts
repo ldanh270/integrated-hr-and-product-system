@@ -8,6 +8,7 @@ import type {
   PayslipTemplate,
   Prisma,
   SalaryComponent,
+  ComponentValueType,
 } from "@prisma/client"
 
 export type PayslipTemplateWithComponents = PayslipTemplate & {
@@ -88,8 +89,10 @@ export interface ISalaryComponentService {
 }
 
 export interface ICreateSalaryComponentDTO {
+  code?: string
   name: string
   type: ComponentType
+  valueType?: ComponentValueType
   formula: string
   description?: string
 }

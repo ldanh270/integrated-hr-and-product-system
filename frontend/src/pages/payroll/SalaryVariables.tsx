@@ -1,9 +1,4 @@
-import { useState } from "react"
-
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -23,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form-ui"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"
 import {
   Table,
   TableBody,
@@ -32,16 +27,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
-import { Loader2, Plus, Pencil, Trash2 } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
 import {
-  useSalaryVariables,
   useCreateSalaryVariable,
-  useUpdateSalaryVariable,
   useDeleteSalaryVariable,
+  useSalaryVariables,
+  useUpdateSalaryVariable,
 } from "@/hooks/payroll/use-salary-variable"
 import type { ISalaryVariable } from "@/hooks/payroll/use-salary-variable"
+
+import { useState } from "react"
+
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Loader2, Pencil, Plus, Trash2 } from "lucide-react"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
 
 const formSchema = z.object({
   code: z.string().min(1, "Code is required").max(50),
@@ -125,7 +125,6 @@ type VariableRow = Omit<ISalaryVariable, "value"> & {
   isSystem?: boolean
 }
 
-
 export default function SalaryVariablesPage() {
   const { data: variables, isLoading } = useSalaryVariables()
   const createMutation = useCreateSalaryVariable()
@@ -203,7 +202,12 @@ export default function SalaryVariablesPage() {
           Biến hệ thống
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="h-8 px-3 text-xs" onClick={handleOpenCreate}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-3 text-xs"
+            onClick={handleOpenCreate}
+          >
             <Plus className="mr-1 h-3 w-3" /> Thêm biến mới
           </Button>
         </div>
@@ -230,8 +234,13 @@ export default function SalaryVariablesPage() {
                 </TableRow>
               ) : (
                 ([...SYSTEM_VARIABLES, ...(variables || [])] as VariableRow[]).map((variable) => (
-                  <TableRow key={variable.id} className={`hover:bg-muted/30 ${variable.isSystem ? "bg-muted/10" : ""}`}>
-                    <TableCell className="py-2 font-mono font-medium text-primary/80">{variable.code}</TableCell>
+                  <TableRow
+                    key={variable.id}
+                    className={`hover:bg-muted/30 ${variable.isSystem ? "bg-muted/10" : ""}`}
+                  >
+                    <TableCell className="py-2 font-mono font-medium text-primary/80">
+                      {variable.code}
+                    </TableCell>
                     <TableCell className="py-2">
                       <div className="font-medium">{variable.name}</div>
                       {variable.description && (
@@ -240,10 +249,21 @@ export default function SalaryVariablesPage() {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="py-2">{typeof variable.value === "number" ? variable.value.toLocaleString() : variable.value}</TableCell>
                     <TableCell className="py-2">
-                      <Badge variant={variable.isActive ? "default" : "secondary"} className="h-5 text-[10px]">
-                        {variable.isSystem ? "Hệ thống" : variable.isActive ? "Hoạt động" : "Vô hiệu"}
+                      {typeof variable.value === "number"
+                        ? variable.value.toLocaleString()
+                        : variable.value}
+                    </TableCell>
+                    <TableCell className="py-2">
+                      <Badge
+                        variant={variable.isActive ? "default" : "secondary"}
+                        className="h-5 text-[10px]"
+                      >
+                        {variable.isSystem
+                          ? "Hệ thống"
+                          : variable.isActive
+                            ? "Hoạt động"
+                            : "Vô hiệu"}
                       </Badge>
                     </TableCell>
                     <TableCell className="py-2 text-right">
@@ -267,7 +287,9 @@ export default function SalaryVariablesPage() {
                           </Button>
                         </div>
                       ) : (
-                        <span className="text-[10px] text-muted-foreground italic px-2">Mặc định</span>
+                        <span className="text-[10px] text-muted-foreground italic px-2">
+                          Mặc định
+                        </span>
                       )}
                     </TableCell>
                   </TableRow>
@@ -325,7 +347,9 @@ export default function SalaryVariablesPage() {
                       <Input
                         type="number"
                         {...field}
-                        onChange={(e) => field.onChange(e.target.value === "" ? 0 : Number(e.target.value))}
+                        onChange={(e) =>
+                          field.onChange(e.target.value === "" ? 0 : Number(e.target.value))
+                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -365,7 +389,10 @@ export default function SalaryVariablesPage() {
                 />
               )}
               <DialogFooter>
-                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                <Button
+                  type="submit"
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                >
                   {editingVariable ? "Save changes" : "Create"}
                 </Button>
               </DialogFooter>

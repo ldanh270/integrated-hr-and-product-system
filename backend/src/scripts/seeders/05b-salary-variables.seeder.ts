@@ -12,7 +12,7 @@ export class SalaryVariablesSeeder implements ISeeder {
 
     if (!adminId) {
       console.log("No admin employee found to create salary variables. Skipping.")
-      return
+      return {}
     }
 
     const variables = [

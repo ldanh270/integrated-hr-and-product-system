@@ -12,7 +12,6 @@ export const ROUTES = {
     ATTENDANCE: "/attendance",
   },
   PAYROLL: {
-    DASHBOARD: "/payroll/dashboard",
     LIST: "/payroll/list",
     SALARY_COMPONENTS: "/payroll/salary-components",
     SALARY_VARIABLES: "/payroll/salary-variables",

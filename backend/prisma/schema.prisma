@@ -85,6 +85,12 @@ enum ComponentType {
   deduction
 }
 
+enum ComponentValueType {
+  currency
+  number
+  percentage
+}
+
 enum ProjectStatus {
   planning
   active
@@ -421,14 +427,16 @@ model HolidayCalendar {
 
 // ── Payroll ──
 model SalaryComponent {
-  id          String        @id @default(cuid())
-  name        String        @unique
+  id          String             @id @default(cuid())
+  code        String             @unique @default(cuid())
+  name        String             @unique
   type        ComponentType
+  valueType   ComponentValueType @default(currency)
   formula     String
   description String?
-  isActive    Boolean       @default(true)
+  isActive    Boolean            @default(true)
   createdById String
-  createdBy   Employee      @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy   Employee           @relation(fields: [createdById], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -500,35 +508,34 @@ model EmployeeSalaryConfig {
 }
 
 model SalaryVariable {
-  id          String   @id @default(cuid())
-  code        String   @unique
+  id          String  @id @default(cuid())
+  code        String  @unique
   name        String
-  value       Decimal  @default(0) @db.Decimal(15, 2)
+  value       Decimal @default(0) @db.Decimal(15, 2)
   description String?
-  isActive    Boolean  @default(true)
-  
+  isActive    Boolean @default(true)
+
   createdById String
   createdBy   Employee @relation(fields: [createdById], references: [id], onDelete: Restrict)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([isActive])
   @@index([createdById])
 }
 
 model PayrollSettings {
-  id                  String   @id @default("GLOBAL")
-  triggerDay          Int
-  updatedById         String
-  updatedBy           Employee @relation(fields: [updatedById], references: [id], onDelete: Restrict)
+  id          String   @id @default("GLOBAL")
+  triggerDay  Int
+  updatedById String
+  updatedBy   Employee @relation(fields: [updatedById], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([updatedById])
 }
-
 
 model Payroll {
   id           String        @id @default(cuid())

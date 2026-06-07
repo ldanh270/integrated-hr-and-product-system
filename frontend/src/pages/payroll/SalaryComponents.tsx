@@ -1,4 +1,4 @@
-import SalaryComponentDialog from "@/components/features/payroll/salary-component-dialog"
+import SalaryComponentSheet from "@/components/features/payroll/salary-component-sheet"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { COMPONENT_TYPE_LABELS } from "@/config/entities/payroll.config"
+import { COMPONENT_TYPE_LABELS, COMPONENT_VALUE_TYPE_LABELS } from "@/config/entities/payroll.config"
 import { useSalaryComponents } from "@/hooks/payroll/use-salary-components"
 import type { ISalaryComponent } from "@/types/payroll.types"
 
@@ -96,16 +96,16 @@ export default function SalaryComponents() {
                   <TableRow key={comp.id} className="cursor-pointer hover:bg-muted/30">
                     <TableCell className="py-2 text-muted-foreground">{index + 1}</TableCell>
                     <TableCell className="py-2 font-medium text-primary/80">
-                      {comp.id.split("-")[0].toUpperCase()}
+                      {comp.code || comp.id.split("-")[0].toUpperCase()}
                     </TableCell>
                     <TableCell className="py-2 font-medium">{comp.name}</TableCell>
                     <TableCell className="py-2 text-muted-foreground">
                       {COMPONENT_TYPE_LABELS[comp.type]}
                     </TableCell>
                     <TableCell className="py-2 text-muted-foreground">
-                      {isNaN(Number(comp.formula)) ? "Công thức (Số)" : "Giá trị tĩnh (Tiền tệ)"}
+                      {COMPONENT_VALUE_TYPE_LABELS[comp.valueType]}
                     </TableCell>
-                    <TableCell className="py-2 max-w-50 truncate" title={comp.formula}>
+                    <TableCell className="py-2 max-w-50 truncate font-mono text-xs" title={comp.formula}>
                       {comp.formula}
                     </TableCell>
                     <TableCell className="py-2 hidden md:table-cell text-muted-foreground max-w-62.5 truncate">
@@ -134,7 +134,7 @@ export default function SalaryComponents() {
         </div>
       </div>
 
-      <SalaryComponentDialog
+      <SalaryComponentSheet
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         initialData={editingComponent}

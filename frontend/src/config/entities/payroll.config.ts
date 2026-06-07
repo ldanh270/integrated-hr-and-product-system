@@ -39,6 +39,17 @@ export const COMPONENT_TYPE_LABELS: Record<ComponentType, string> = {
   deduction: "Khấu trừ",
 }
 
+export const SALARY_COMPONENT_VALUE_TYPES = ["currency", "number", "percentage"] as const
+
+export const COMPONENT_VALUE_TYPE = { CURRENCY: "currency", NUMBER: "number", PERCENTAGE: "percentage" } as const
+export type ComponentValueType = (typeof COMPONENT_VALUE_TYPE)[keyof typeof COMPONENT_VALUE_TYPE]
+
+export const COMPONENT_VALUE_TYPE_LABELS: Record<ComponentValueType, string> = {
+  currency: "Tiền tệ",
+  number: "Số",
+  percentage: "Phần trăm",
+}
+
 // Role groups for use-role-guard
 export const PAYROLL_MANAGER_ROLES: readonly IEmployeeRole[] = [
   ROLE.ADMIN,

@@ -1,4 +1,4 @@
-import type { ComponentType, PayrollStatus } from "@/config/entities/payroll.config"
+import type { ComponentType, ComponentValueType, PayrollStatus } from "@/config/entities/payroll.config"
 
 export interface IPayroll {
   id: string
@@ -52,8 +52,10 @@ export interface IPayrollWithPayslips extends IPayroll {
 
 export interface ISalaryComponent {
   id: string
+  code: string
   name: string
   type: ComponentType
+  valueType: ComponentValueType
   formula: string
   description?: string
   isActive: boolean

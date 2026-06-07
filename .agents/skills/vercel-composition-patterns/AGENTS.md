@@ -939,6 +939,18 @@ const value = use(MyContext)
 
 ---
 
+## 5. Definition of Done (DoD)
+
+**Impact: HIGH**
+
+### 5.1 Frontend Verification
+
+**Impact: CRITICAL**
+
+- **Luôn phải rebuild trước khi done**: Ở frontend, sau khi hoàn thành các thay đổi code, agent phải luôn chạy lệnh build (ví dụ: `bun run build` hoặc `npm run build`) để xác minh rằng ứng dụng build thành công, không có lỗi type hoặc lỗi cú pháp nào gây gián đoạn quá trình triển khai. Task sẽ không được coi là "Done" nếu bước build này chưa passed.
+
+---
+
 ## References
 
 1. [https://react.dev](https://react.dev)
