@@ -1,4 +1,8 @@
-import type { ComponentType, ComponentValueType, PayrollStatus } from "@/config/entities/payroll.config"
+import type {
+  ComponentType,
+  ComponentValueType,
+  PayrollStatus,
+} from "@/config/entities/payroll.config"
 
 export interface IPayroll {
   id: string
@@ -81,7 +85,6 @@ export interface IPayslipTemplate {
   createdAt: string
   updatedAt: string
 }
-
 
 export interface IEmployeeSalaryConfig {
   id: string

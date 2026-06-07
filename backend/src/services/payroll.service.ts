@@ -58,7 +58,7 @@ export class PayrollService implements IPayrollService {
 
     // Fetch all active global salary variables
     const globalVariables = await this.prisma.salaryVariable.findMany({
-      where: { isActive: true }
+      where: { isActive: true },
     })
     const variablesContext: Record<string, number> = {}
     globalVariables.forEach((v: any) => {
@@ -115,8 +115,6 @@ export class PayrollService implements IPayrollService {
         MIN: Math.min,
         ...variablesContext,
       }
-
-
 
       const details = []
       let totalAdditions = new Prisma.Decimal(0)
@@ -183,7 +181,7 @@ export class PayrollService implements IPayrollService {
     if (!payroll) throw new AppError("Payroll not found", HttpStatusCode.NOT_FOUND, "SERVICE")
 
     const payslips = await this.payslipRepo.findByPayroll(id)
-    
+
     return {
       ...payroll,
       payslips,

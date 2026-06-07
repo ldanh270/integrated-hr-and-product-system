@@ -1,9 +1,3 @@
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
-import { CalendarDays } from "lucide-react"
-
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -30,6 +24,13 @@ import {
 } from "@/components/ui/select"
 import { useGeneratePayroll } from "@/hooks/payroll/use-payrolls"
 
+import { useState } from "react"
+
+import { zodResolver } from "@hookform/resolvers/zod"
+import { CalendarDays } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
+
 const generatePayrollSchema = z.object({
   month: z.string().min(1, "Month is required"),
   year: z.string().min(1, "Year is required"),
@@ -43,7 +44,7 @@ export function GeneratePayrollModal() {
 
   const currentYear = new Date().getFullYear()
   const currentMonth = (new Date().getMonth() + 1).toString()
-  
+
   const form = useForm<GeneratePayrollFormData>({
     resolver: zodResolver(generatePayrollSchema),
     defaultValues: {
@@ -73,7 +74,7 @@ export function GeneratePayrollModal() {
           Generate Payroll
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] rounded-xl">
+      <DialogContent className="sm:max-w-106.25 rounded-xl">
         <DialogHeader>
           <DialogTitle>Generate Payroll</DialogTitle>
           <DialogDescription>

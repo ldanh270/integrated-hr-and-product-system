@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/common"
 import PayslipSheet from "@/components/features/payroll/payslip-sheet"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,13 +17,11 @@ export default function MyPayslips() {
   const [selectedPayslip, setSelectedPayslip] = useState<IPayslip | null>(null)
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">Lương của tôi</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Lịch sử và chi tiết các phiếu lương của bạn.
-        </p>
-      </div>
+    <div className="container px-6 py-6 space-y-6">
+      <PageHeader
+        title="Lương của tôi"
+        description="Lịch sử và chi tiết các phiếu lương của bạn."
+      />
 
       {isLoading ? (
         <div className="flex h-64 items-center justify-center">

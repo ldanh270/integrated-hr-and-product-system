@@ -29,7 +29,7 @@ import {
 import { useSalaryComponents } from "@/hooks/payroll/use-salary-components"
 import type { ISalaryComponent } from "@/types/payroll.types"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 
 import { Search } from "lucide-react"
 
@@ -51,13 +51,6 @@ export function SalaryComponentSelectModal({
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState<string>("all")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-
-  // Reset local state when modal opens
-  useEffect(() => {
-    if (open) {
-      setSelectedIds(new Set())
-    }
-  }, [open])
 
   const filteredComponents = useMemo(() => {
     if (!salaryComponents) return []
@@ -100,6 +93,12 @@ export function SalaryComponentSelectModal({
     const selected = salaryComponents.filter((c) => selectedIds.has(c.id))
     onSelect(selected)
     onOpenChange(false)
+    setTimeout(() => setSelectedIds(new Set()), 200)
+  }
+
+  const handleCancel = () => {
+    onOpenChange(false)
+    setTimeout(() => setSelectedIds(new Set()), 200)
   }
 
   const handleReset = () => {
@@ -108,7 +107,7 @@ export function SalaryComponentSelectModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(val) => !val && handleCancel()}>
       <DialogContent className="w-full max-w-5xl max-h-[90vh] flex flex-col p-0 mx-auto overflow-hidden bg-background border border-border shadow-lg rounded-xl">
         <DialogHeader className="p-6 border-b border-border text-center shrink-0">
           <DialogTitle className="text-xl font-semibold tracking-tight text-foreground">
@@ -227,7 +226,7 @@ export function SalaryComponentSelectModal({
           <Button
             variant="outline"
             className="rounded-full border-border text-destructive hover:bg-destructive hover:text-destructive-foreground shadow-none px-6"
-            onClick={() => onOpenChange(false)}
+            onClick={handleCancel}
           >
             Huỷ bỏ
           </Button>

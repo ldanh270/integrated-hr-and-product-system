@@ -49,8 +49,8 @@ export const EMPLOYEE_STATUS_LABELS: Record<string, string> = {
 } as const
 
 export const EMPLOYEE_TYPE_LABELS: Record<string, string> = {
-  "full_time": "Chính thức",
-  "part_time": "Bán thời gian",
-  "contractor": "Hợp đồng",
-  "intern": "Thực tập",
+  full_time: "Chính thức",
+  part_time: "Bán thời gian",
+  contractor: "Hợp đồng",
+  intern: "Thực tập",
 } as const

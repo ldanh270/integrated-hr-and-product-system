@@ -1,10 +1,11 @@
-import { AppError } from "@/utils/error.util.ts"
 import {
   ICreateSalaryVariableDTO,
   ISalaryVariableRepository,
   ISalaryVariableService,
   IUpdateSalaryVariableDTO,
 } from "@/types/payroll.types.ts"
+import { AppError } from "@/utils/error.util.ts"
+
 import { SalaryVariable } from "@prisma/client"
 
 export class SalaryVariableService implements ISalaryVariableService {
@@ -35,10 +36,7 @@ export class SalaryVariableService implements ISalaryVariableService {
     return this.repo.create({ ...data, createdById })
   }
 
-  async updateVariable(
-    id: string,
-    data: IUpdateSalaryVariableDTO,
-  ): Promise<SalaryVariable> {
+  async updateVariable(id: string, data: IUpdateSalaryVariableDTO): Promise<SalaryVariable> {
     const existing = await this.repo.findById(id)
     if (!existing) {
       throw new AppError("Salary variable not found", 404, "Service")

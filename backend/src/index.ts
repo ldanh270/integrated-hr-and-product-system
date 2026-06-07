@@ -1,13 +1,14 @@
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { PORT } from "@/configs/system/server.config.ts"
 import { connectDB } from "@/libs/database.ts"
+import { initCronJobs } from "@/libs/payroll-cron.ts"
 import { cors } from "@/middlewares/cors.middleware.ts"
 import applicationRoutes from "@/routes/application.route.ts"
 import approvalRoutes from "@/routes/approval.route.ts"
 import attendanceRoutes from "@/routes/attendance.route.ts"
 import authRoutes from "@/routes/auth.route.ts"
-import employeeRoutes from "@/routes/employee.route.ts"
 import employeeSalaryConfigRoutes from "@/routes/employee-salary-config.route.ts"
+import employeeRoutes from "@/routes/employee.route.ts"
 import holidayRoutes from "@/routes/holiday.route.ts"
 import payrollRoutes from "@/routes/payroll.route.ts"
 import payslipTemplateRoutes from "@/routes/payslip-template.route.ts"
@@ -102,8 +103,6 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     },
   })
 })
-
-import { initCronJobs } from "@/libs/payroll-cron.ts"
 
 /**
  * Must connect to database successfully before start server

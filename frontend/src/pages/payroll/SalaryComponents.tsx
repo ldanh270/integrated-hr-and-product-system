@@ -1,3 +1,4 @@
+import { PageCard, PageHeader } from "@/components/common"
 import SalaryComponentSheet from "@/components/features/payroll/salary-component-sheet"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,7 +15,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { COMPONENT_TYPE_LABELS, COMPONENT_VALUE_TYPE_LABELS } from "@/config/entities/payroll.config"
+import {
+  COMPONENT_TYPE_LABELS,
+  COMPONENT_VALUE_TYPE_LABELS,
+} from "@/config/entities/payroll.config"
 import { useSalaryComponents } from "@/hooks/payroll/use-salary-components"
 import type { ISalaryComponent } from "@/types/payroll.types"
 
@@ -39,40 +43,47 @@ export default function SalaryComponents() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-background">
-      {/* Enterprise Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b bg-card">
-        <div className="flex items-center gap-2 text-primary font-semibold">
-          <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center text-primary">
-            +
-          </div>
-          Thành phần lương
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Quick actions placeholder like the image top right */}
-          <Button variant="outline" size="sm" className="h-8 px-3 text-xs" onClick={handleCreate}>
-            <Plus className="mr-1 h-3 w-3" /> Thêm thành phần
+    <div className="container px-6 py-6">
+      <PageHeader
+        title="Thành phần lương"
+        description="Định nghĩa các thành phần thu nhập, khấu trừ và công thức tính lương."
+        actions={
+          <Button className="gap-2" onClick={handleCreate}>
+            <Plus size={16} /> Thêm thành phần
           </Button>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-4">
-        <div className="rounded-md border bg-card">
-          <Table className="text-xs">
-            <TableHeader className="bg-muted/50">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-12 py-2 font-semibold">#</TableHead>
-                <TableHead className="py-2 font-semibold">Mã thành phần</TableHead>
-                <TableHead className="py-2 font-semibold">Tên thành phần</TableHead>
-                <TableHead className="py-2 font-semibold">Loại thành phần</TableHead>
-                <TableHead className="py-2 font-semibold">Kiểu giá trị</TableHead>
-                <TableHead className="py-2 font-semibold">Công thức / Giá trị tĩnh</TableHead>
-                <TableHead className="py-2 font-semibold hidden md:table-cell">Mô tả</TableHead>
-                <TableHead className="w-12 py-2"></TableHead>
+      <PageCard className="overflow-hidden p-0" noBorder={false}>
+        <div className="overflow-x-auto">
+          <Table className="text-sm">
+            <TableHeader className="bg-muted/40">
+              <TableRow className="hover:bg-transparent border-b">
+                <TableHead className="min-w-12.5 px-4 py-3 font-medium text-xs text-muted-foreground uppercase text-center">
+                  #
+                </TableHead>
+                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                  Mã thành phần
+                </TableHead>
+                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                  Tên thành phần
+                </TableHead>
+                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                  Loại thành phần
+                </TableHead>
+                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                  Kiểu giá trị
+                </TableHead>
+                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                  Công thức / Giá trị tĩnh
+                </TableHead>
+                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase hidden md:table-cell whitespace-nowrap">
+                  Mô tả
+                </TableHead>
+                <TableHead className="min-w-12.5 px-4 py-3"></TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className="divide-y divide-border">
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={8} className="h-24 text-center">
@@ -94,29 +105,36 @@ export default function SalaryComponents() {
               ) : (
                 components.map((comp, index) => (
                   <TableRow key={comp.id} className="cursor-pointer hover:bg-muted/30">
-                    <TableCell className="py-2 text-muted-foreground">{index + 1}</TableCell>
-                    <TableCell className="py-2 font-medium text-primary/80">
+                    <TableCell className="px-4 py-3 text-muted-foreground text-center">
+                      {index + 1}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 font-mono font-medium text-primary/80 whitespace-nowrap">
                       {comp.code || comp.id.split("-")[0].toUpperCase()}
                     </TableCell>
-                    <TableCell className="py-2 font-medium">{comp.name}</TableCell>
-                    <TableCell className="py-2 text-muted-foreground">
+                    <TableCell className="px-4 py-3 font-medium whitespace-nowrap">
+                      {comp.name}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                       {COMPONENT_TYPE_LABELS[comp.type]}
                     </TableCell>
-                    <TableCell className="py-2 text-muted-foreground">
+                    <TableCell className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                       {COMPONENT_VALUE_TYPE_LABELS[comp.valueType]}
                     </TableCell>
-                    <TableCell className="py-2 max-w-50 truncate font-mono text-xs" title={comp.formula}>
+                    <TableCell
+                      className="px-4 py-3 truncate font-mono text-xs"
+                      title={comp.formula}
+                    >
                       {comp.formula}
                     </TableCell>
-                    <TableCell className="py-2 hidden md:table-cell text-muted-foreground max-w-62.5 truncate">
+                    <TableCell className="px-4 py-3 hidden md:table-cell text-muted-foreground  truncate">
                       {comp.description || "-"}
                     </TableCell>
-                    <TableCell className="py-2">
+                    <TableCell className="px-4 py-3 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-6 w-6 p-0">
+                          <Button variant="ghost" className="h-8 w-8 p-0">
                             <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-3 w-3" />
+                            <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -132,7 +150,7 @@ export default function SalaryComponents() {
             </TableBody>
           </Table>
         </div>
-      </div>
+      </PageCard>
 
       <SalaryComponentSheet
         open={dialogOpen}

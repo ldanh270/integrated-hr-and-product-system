@@ -18,7 +18,7 @@ export class PrismaWorkingShiftRepository
 
   private parseTime(timeStr?: string): number | undefined {
     if (!timeStr) return undefined
-    const [hours, minutes] = timeStr.split(':').map(Number)
+    const [hours, minutes] = timeStr.split(":").map(Number)
     return hours * 60 + minutes
   }
 

@@ -5,6 +5,7 @@ import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
 import { PrismaPayrollRepository } from "@/repositories/payroll.repository.ts"
 import { PrismaPayslipRepository } from "@/repositories/payslip.repository.ts"
 import { PayrollService } from "@/services/payroll.service.ts"
+
 import cron from "node-cron"
 
 const payrollRepo = new PrismaPayrollRepository(prisma)

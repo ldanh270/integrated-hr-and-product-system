@@ -1,12 +1,12 @@
-import { Router } from "express"
-
+import { ROLE } from "@/configs/entities/employee.config.ts"
 import { SalaryVariableController } from "@/controllers/salary-variable.controller.ts"
 import { prisma } from "@/libs/database.ts"
-import { ROLE } from "@/configs/entities/employee.config.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
 import { authorizeRoles } from "@/middlewares/role.middleware.ts"
 import { PrismaSalaryVariableRepository } from "@/repositories/salary-variable.repository.ts"
 import { SalaryVariableService } from "@/services/salary-variable.service.ts"
+
+import { Router } from "express"
 
 const router = Router()
 

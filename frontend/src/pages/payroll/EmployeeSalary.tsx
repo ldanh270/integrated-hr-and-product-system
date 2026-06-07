@@ -1,3 +1,4 @@
+import { DataTableToolbar, PageCard, PageHeader } from "@/components/common"
 import EmployeePayslipHistoryDialog from "@/components/features/payroll/EmployeePayslipHistoryDialog"
 import EmployeeSalaryConfigDialog from "@/components/features/payroll/employee-salary-config-dialog"
 import { Button } from "@/components/ui/button"
@@ -7,7 +8,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
 import {
   Table,
   TableBody,
@@ -25,7 +25,7 @@ import type { Employee } from "@/types/employee.types"
 
 import { useState } from "react"
 
-import { Loader2, MoreHorizontal, Search, User, Users } from "lucide-react"
+import { Loader2, MoreHorizontal, User } from "lucide-react"
 
 const formatCurrency = (val: number) => {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(val)
@@ -61,121 +61,116 @@ export default function EmployeeSalary() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-background">
-      <div className="flex items-center justify-between px-4 py-3 border-b bg-card">
-        <div className="flex items-center gap-2 text-primary font-semibold">
-          <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center text-primary">
-            <Users className="h-3.5 w-3.5" />
-          </div>
-          Thiết lập lương
-        </div>
-      </div>
+    <div className="container px-6 py-6">
+      <PageHeader
+        title="Thiết lập lương"
+        description="Quản lý cấu hình mức lương cơ bản và gán mẫu bảng lương cho nhân viên."
+      />
 
-      <div className="flex-1 overflow-auto p-4 space-y-4">
-        <div className="rounded-md border bg-card overflow-hidden">
-          <div className="p-3 border-b flex items-center justify-between gap-4 bg-muted/10">
-            <div className="relative max-w-xs flex-1">
-              <Search className="absolute left-3 top-2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Tìm kiếm nhân viên..."
-                className="pl-9 rounded-full h-7 text-xs bg-background"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value)
-                  setPage(1)
-                }}
-              />
-            </div>
-          </div>
+      <PageCard className="overflow-hidden p-0" noBorder={false}>
+        <DataTableToolbar
+          searchQuery={searchQuery}
+          onSearchChange={(val) => {
+            setSearchQuery(val)
+            setPage(1)
+          }}
+          searchPlaceholder="Tìm kiếm nhân viên..."
+        />
 
-          <div className="overflow-x-auto">
-            <Table className="text-xs">
-              <TableHeader className="bg-muted/50">
-                <TableRow className="hover:bg-transparent border-b">
-                  <TableHead className="w-12 py-2 font-semibold text-center">STT</TableHead>
-                  <TableHead className="py-2 font-semibold">Nhân sự</TableHead>
-                  <TableHead className="py-2 font-semibold">Vị trí / Vai trò</TableHead>
-                  <TableHead className="py-2 font-semibold">Lương cơ bản</TableHead>
-                  <TableHead className="py-2 font-semibold">Mẫu bảng lương</TableHead>
-                  <TableHead className="w-12 py-2"></TableHead>
+        <div className="overflow-x-auto">
+          <Table className="text-sm">
+            <TableHeader className="bg-muted/40">
+              <TableRow className="hover:bg-transparent border-b">
+                <TableHead className="min-w-12.5 px-4 py-3 font-medium text-center text-xs text-muted-foreground uppercase">
+                  STT
+                </TableHead>
+                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                  Nhân sự
+                </TableHead>
+                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                  Vị trí / Vai trò
+                </TableHead>
+                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                  Lương cơ bản
+                </TableHead>
+                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                  Mẫu bảng lương
+                </TableHead>
+                <TableHead className="min-w-12.5 px-4 py-3"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-border">
+              {isEmployeesLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isEmployeesLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
-                      <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
-                    </TableCell>
-                  </TableRow>
-                ) : !employeeData || employeeData.data.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                      Không tìm thấy nhân viên nào phù hợp.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  employeeData.data.map((emp: Employee, index: number) => (
-                    <EmployeeRow
-                      key={emp.id}
-                      emp={emp}
-                      index={(page - 1) * 10 + index + 1}
-                      onConfigure={handleOpenConfigDialog}
-                      onViewHistory={handleOpenHistoryDialog}
-                    />
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {employeeData && employeeData.meta.totalPages > 1 && (
-            <div className="p-3 border-t flex items-center justify-between text-muted-foreground text-[10px]">
-              <div>
-                Hiển thị{" "}
-                <span className="font-semibold text-foreground">{employeeData.data.length}</span>{" "}
-                trên{" "}
-                <span className="font-semibold text-foreground">{employeeData.meta.total}</span>{" "}
-                nhân sự.
-              </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="rounded-full h-6 px-2 text-[10px]"
-                >
-                  Trước
-                </Button>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: employeeData.meta.totalPages }).map((_, i) => (
-                    <button
-                      key={i + 1}
-                      onClick={() => setPage(i + 1)}
-                      className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
-                        page === i + 1
-                          ? "bg-primary text-primary-foreground font-semibold"
-                          : "hover:bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === employeeData.meta.totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  className="rounded-full h-6 px-2 text-[10px]"
-                >
-                  Sau
-                </Button>
-              </div>
-            </div>
-          )}
+              ) : !employeeData || employeeData.data.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                    Không tìm thấy nhân viên nào phù hợp.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                employeeData.data.map((emp: Employee, index: number) => (
+                  <EmployeeRow
+                    key={emp.id}
+                    emp={emp}
+                    index={(page - 1) * 10 + index + 1}
+                    onConfigure={handleOpenConfigDialog}
+                    onViewHistory={handleOpenHistoryDialog}
+                  />
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
-      </div>
+
+        {employeeData && employeeData.meta.totalPages > 1 && (
+          <div className="p-4 border-t border-border flex items-center justify-between text-sm text-muted-foreground bg-muted/20">
+            <div>
+              Hiển thị{" "}
+              <span className="font-medium text-foreground">{employeeData.data.length}</span> trên{" "}
+              <span className="font-medium text-foreground">{employeeData.meta.total}</span> nhân
+              sự.
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Trước
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, employeeData.meta.totalPages) }).map((_, i) => (
+                  <button
+                    key={i + 1}
+                    onClick={() => setPage(i + 1)}
+                    className={`w-8 h-8 rounded-md flex items-center justify-center transition-colors ${
+                      page === i + 1
+                        ? "bg-primary text-primary-foreground font-medium"
+                        : "hover:bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === employeeData.meta.totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Sau
+              </Button>
+            </div>
+          </div>
+        )}
+      </PageCard>
 
       <EmployeeSalaryConfigDialog
         open={configDialogOpen}
@@ -212,8 +207,8 @@ function EmployeeRow({ emp, index, onConfigure, onViewHistory }: RowProps) {
         onConfigure({ id: emp.id, fullName: emp.fullName, position: emp.position || undefined })
       }
     >
-      <TableCell className="text-center py-2 text-muted-foreground">{index}</TableCell>
-      <TableCell className="py-2">
+      <TableCell className="text-center px-4 py-3 text-muted-foreground">{index}</TableCell>
+      <TableCell className="px-4 py-3">
         <div className="flex items-center gap-2">
           <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold overflow-hidden shrink-0 border">
             {emp.avatar?.url ? (
@@ -230,11 +225,11 @@ function EmployeeRow({ emp, index, onConfigure, onViewHistory }: RowProps) {
           </div>
         </div>
       </TableCell>
-      <TableCell className="py-2">
+      <TableCell className="px-4 py-3">
         <div className="font-semibold text-foreground/80">{emp.position || "-"}</div>
         <div className="text-[10px] text-muted-foreground uppercase">{emp.role}</div>
       </TableCell>
-      <TableCell className="py-2 font-semibold">
+      <TableCell className="px-4 py-3 font-semibold">
         {isLoading ? (
           <span className="text-muted-foreground">Đang tải...</span>
         ) : config ? (
@@ -243,7 +238,7 @@ function EmployeeRow({ emp, index, onConfigure, onViewHistory }: RowProps) {
           <span className="text-destructive">Chưa thiết lập</span>
         )}
       </TableCell>
-      <TableCell className="py-2">
+      <TableCell className="px-4 py-3">
         {isLoading ? (
           <span className="text-muted-foreground">Đang tải...</span>
         ) : (
@@ -258,7 +253,7 @@ function EmployeeRow({ emp, index, onConfigure, onViewHistory }: RowProps) {
           </span>
         )}
       </TableCell>
-      <TableCell className="py-2" onClick={(e) => e.stopPropagation()}>
+      <TableCell className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-6 w-6 p-0 rounded-full">

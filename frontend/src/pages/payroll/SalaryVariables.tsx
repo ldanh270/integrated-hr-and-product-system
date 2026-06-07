@@ -1,3 +1,4 @@
+import { PageCard, PageHeader } from "@/components/common"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -135,6 +136,7 @@ export default function SalaryVariablesPage() {
   const [editingVariable, setEditingVariable] = useState<ISalaryVariable | null>(null)
 
   const form = useForm<z.infer<typeof formSchema>>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
       code: "",
@@ -192,40 +194,40 @@ export default function SalaryVariablesPage() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-background">
-      {/* Enterprise Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b bg-card">
-        <div className="flex items-center gap-2 text-primary font-semibold">
-          <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center text-primary">
-            +
-          </div>
-          Biến hệ thống
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 px-3 text-xs"
-            onClick={handleOpenCreate}
-          >
-            <Plus className="mr-1 h-3 w-3" /> Thêm biến mới
+    <div className="container px-6 py-6">
+      <PageHeader
+        title="Biến hệ thống"
+        description="Quản lý các biến số dùng chung cho công thức tính lương."
+        actions={
+          <Button className="gap-2" onClick={handleOpenCreate}>
+            <Plus size={16} /> Thêm biến mới
           </Button>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="flex-1 overflow-auto p-4">
-        <div className="rounded-md border bg-card">
-          <Table className="text-xs">
-            <TableHeader className="bg-muted/50">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="py-2 font-semibold">Mã biến (Code)</TableHead>
-                <TableHead className="py-2 font-semibold">Tên biến</TableHead>
-                <TableHead className="py-2 font-semibold">Giá trị mặc định</TableHead>
-                <TableHead className="py-2 font-semibold">Trạng thái</TableHead>
-                <TableHead className="w-24 py-2 font-semibold text-right">Thao tác</TableHead>
+      <PageCard className="overflow-hidden p-0" noBorder={false}>
+        <div className="overflow-x-auto">
+          <Table className="text-sm">
+            <TableHeader className="bg-muted/40">
+              <TableRow className="hover:bg-transparent border-b">
+                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                  Mã biến (Code)
+                </TableHead>
+                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                  Tên biến
+                </TableHead>
+                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                  Giá trị mặc định
+                </TableHead>
+                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                  Trạng thái
+                </TableHead>
+                <TableHead className="min-w-25 px-4 py-3 font-medium text-xs text-muted-foreground uppercase text-right whitespace-nowrap">
+                  Thao tác
+                </TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className="divide-y divide-border">
               {!variables && isLoading ? (
                 <TableRow>
                   <TableCell colSpan={5} className="h-24 text-center">
@@ -238,26 +240,26 @@ export default function SalaryVariablesPage() {
                     key={variable.id}
                     className={`hover:bg-muted/30 ${variable.isSystem ? "bg-muted/10" : ""}`}
                   >
-                    <TableCell className="py-2 font-mono font-medium text-primary/80">
+                    <TableCell className="px-4 py-3 font-mono font-medium text-primary/80 whitespace-nowrap">
                       {variable.code}
                     </TableCell>
-                    <TableCell className="py-2">
-                      <div className="font-medium">{variable.name}</div>
+                    <TableCell className="px-4 py-3 whitespace-nowrap">
+                      <div className="font-medium text-foreground">{variable.name}</div>
                       {variable.description && (
                         <div className="text-muted-foreground line-clamp-1 mt-0.5">
                           {variable.description}
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="py-2">
+                    <TableCell className="px-4 py-3 whitespace-nowrap">
                       {typeof variable.value === "number"
                         ? variable.value.toLocaleString()
                         : variable.value}
                     </TableCell>
-                    <TableCell className="py-2">
+                    <TableCell className="px-4 py-3 whitespace-nowrap">
                       <Badge
                         variant={variable.isActive ? "default" : "secondary"}
-                        className="h-5 text-[10px]"
+                        className="text-[10px] font-semibold"
                       >
                         {variable.isSystem
                           ? "Hệ thống"
@@ -266,30 +268,28 @@ export default function SalaryVariablesPage() {
                             : "Vô hiệu"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="py-2 text-right">
+                    <TableCell className="px-4 py-3 text-right">
                       {!variable.isSystem ? (
                         <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7"
+                            className="h-8 w-8 rounded-md"
                             onClick={() => handleOpenEdit(variable as ISalaryVariable)}
                           >
-                            <Pencil className="h-3 w-3" />
+                            <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-destructive"
+                            className="h-8 w-8 rounded-md text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={() => handleDelete(variable.id)}
                           >
-                            <Trash2 className="h-3 w-3" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       ) : (
-                        <span className="text-[10px] text-muted-foreground italic px-2">
-                          Mặc định
-                        </span>
+                        <span className="text-xs text-muted-foreground italic px-2">Mặc định</span>
                       )}
                     </TableCell>
                   </TableRow>
@@ -298,10 +298,10 @@ export default function SalaryVariablesPage() {
             </TableBody>
           </Table>
         </div>
-      </div>
+      </PageCard>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-106.25">
           <DialogHeader>
             <DialogTitle>{editingVariable ? "Edit Variable" : "Create Variable"}</DialogTitle>
             <DialogDescription>

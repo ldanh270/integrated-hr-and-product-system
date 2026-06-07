@@ -33,15 +33,12 @@ export function exportPayrollsToCSV(payrolls: IPayroll[], filename: string = "pa
   ])
 
   // Combine headers and rows
-  const csvContent = [
-    headers.join(","),
-    ...rows.map((row) => row.join(",")),
-  ].join("\n")
+  const csvContent = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n")
 
   // Create a Blob and trigger download
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
   const url = URL.createObjectURL(blob)
-  
+
   const link = document.createElement("a")
   link.href = url
   link.setAttribute("download", filename)

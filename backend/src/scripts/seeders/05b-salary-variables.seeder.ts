@@ -1,4 +1,5 @@
 import { prisma } from "@/libs/database.ts"
+
 import { SeedContext } from "./seed-context.ts"
 import { ISeeder } from "./seeder.interface.ts"
 import { registry } from "./seeder.registry.ts"

@@ -88,7 +88,11 @@ export default function Sidebar() {
         className="absolute -right-3 top-16 mt-0.5 flex h-6 w-6 items-center justify-center rounded-md border border-border bg-background text-foreground shadow-none hover:bg-muted transition-colors cursor-pointer"
         aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
-        {isCollapsed ? <ChevronRight size={14} strokeWidth={1.5} /> : <ChevronLeft size={14} strokeWidth={1.5} />}
+        {isCollapsed ? (
+          <ChevronRight size={14} strokeWidth={1.5} />
+        ) : (
+          <ChevronLeft size={14} strokeWidth={1.5} />
+        )}
       </button>
     </aside>
   )

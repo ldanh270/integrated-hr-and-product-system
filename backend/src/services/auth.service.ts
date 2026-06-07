@@ -1,7 +1,6 @@
 import { PASSWORD_RESET_STATUS } from "@/configs/auth/auth.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
-
 import {
   AuthResponseDto,
   ForgotPasswordDto,
@@ -72,7 +71,7 @@ export class AuthService implements IAuthService {
 
       await this.repo.updateAuthEmployee(employee.id, {
         failedLoginCount: employee.failedLoginCount,
-        lockedUntil: employee.lockedUntil
+        lockedUntil: employee.lockedUntil,
       })
 
       // Log failed attempt through repository
@@ -93,7 +92,7 @@ export class AuthService implements IAuthService {
     await this.repo.updateAuthEmployee(employee.id, {
       failedLoginCount: employee.failedLoginCount,
       lockedUntil: employee.lockedUntil,
-      lastLoginAt: employee.lastLoginAt
+      lastLoginAt: employee.lastLoginAt,
     })
 
     // Log success through repository

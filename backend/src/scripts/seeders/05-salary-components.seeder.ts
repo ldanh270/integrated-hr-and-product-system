@@ -38,7 +38,8 @@ export class SalaryComponentsSeeder implements ISeeder {
       {
         name: "Overtime Pay",
         type: "addition" as any,
-        formula: "(baseSalary / standardWorkingDays / standardWorkingHours) * 1.5 * (overtimeMinutes / 60)",
+        formula:
+          "(baseSalary / standardWorkingDays / standardWorkingHours) * 1.5 * (overtimeMinutes / 60)",
         description: "Tiền làm thêm giờ (150%)",
         createdById: adminId,
       },
@@ -73,7 +74,8 @@ export class SalaryComponentsSeeder implements ISeeder {
       {
         name: "Late/Early Penalty",
         type: "deduction" as any,
-        formula: "(baseSalary / standardWorkingDays / standardWorkingHours) * (lateMinutes + earlyLeaveMinutes) / 60",
+        formula:
+          "(baseSalary / standardWorkingDays / standardWorkingHours) * (lateMinutes + earlyLeaveMinutes) / 60",
         description: "Phạt đi muộn/về sớm",
         createdById: adminId,
       },

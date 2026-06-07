@@ -1,3 +1,4 @@
+import { PageCard, PageHeader } from "@/components/common"
 import { GeneratePayrollModal } from "@/components/payroll/GeneratePayrollModal"
 import { PayrollHistoryTable } from "@/components/payroll/PayrollHistoryTable"
 import { Button } from "@/components/ui/button"
@@ -21,35 +22,28 @@ export default function PayrollManagement() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">
-            Payroll Management
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage your company's payroll cycles, view history, and generate new payrolls.
-          </p>
-        </div>
+    <div className="container px-6 py-6">
+      <PageHeader
+        title="Quản lý bảng lương"
+        description="Quản lý chu kỳ lương của tổ chức, xem lịch sử và tạo bảng lương mới."
+        actions={
+          <>
+            <Button
+              variant="outline"
+              onClick={handleExport}
+              disabled={!payrolls || payrolls.length === 0}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Xuất CSV
+            </Button>
+            <GeneratePayrollModal />
+          </>
+        }
+      />
 
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            className="rounded-full"
-            onClick={handleExport}
-            disabled={!payrolls || payrolls.length === 0}
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Export CSV
-          </Button>
-
-          <GeneratePayrollModal />
-        </div>
-      </div>
-
-      <div className="space-y-4">
+      <PageCard className="p-0 overflow-hidden" noBorder={false}>
         <PayrollHistoryTable payrolls={payrolls || []} isLoading={isLoading} />
-      </div>
+      </PageCard>
     </div>
   )
 }

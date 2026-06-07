@@ -1,4 +1,3 @@
-// Re-export Prisma generated types for use across the codebase
 export type {
   Employee,
   WorkingShift,

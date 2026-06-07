@@ -202,7 +202,7 @@ export function CreatePayslipTemplateForm({
                         <Textarea
                           placeholder="Nhập mô tả"
                           {...field}
-                          className="rounded-xl border-border shadow-none min-h-[100px] resize-y"
+                          className="rounded-xl border-border shadow-none min-h-25 resize-y"
                           disabled={isReadOnly}
                         />
                       </FormControl>
@@ -243,7 +243,9 @@ export function CreatePayslipTemplateForm({
                         <TableHead className="font-semibold text-foreground">
                           Tên cột hiển thị
                         </TableHead>
-                        <TableHead className="font-semibold text-foreground">Giá trị tính</TableHead>
+                        <TableHead className="font-semibold text-foreground">
+                          Giá trị tính
+                        </TableHead>
                         <TableHead className="text-center font-semibold text-foreground w-20">
                           Thao tác
                         </TableHead>

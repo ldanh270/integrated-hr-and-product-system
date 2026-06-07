@@ -41,7 +41,11 @@ export const COMPONENT_TYPE_LABELS: Record<ComponentType, string> = {
 
 export const SALARY_COMPONENT_VALUE_TYPES = ["currency", "number", "percentage"] as const
 
-export const COMPONENT_VALUE_TYPE = { CURRENCY: "currency", NUMBER: "number", PERCENTAGE: "percentage" } as const
+export const COMPONENT_VALUE_TYPE = {
+  CURRENCY: "currency",
+  NUMBER: "number",
+  PERCENTAGE: "percentage",
+} as const
 export type ComponentValueType = (typeof COMPONENT_VALUE_TYPE)[keyof typeof COMPONENT_VALUE_TYPE]
 
 export const COMPONENT_VALUE_TYPE_LABELS: Record<ComponentValueType, string> = {

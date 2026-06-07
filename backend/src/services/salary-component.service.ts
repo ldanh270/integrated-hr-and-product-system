@@ -48,7 +48,7 @@ export class SalaryComponentService implements ISalaryComponentService {
   async validateFormula(formula: string): Promise<{ valid: boolean; error?: string }> {
     try {
       const globalVariables = await prisma.salaryVariable.findMany({
-        where: { isActive: true }
+        where: { isActive: true },
       })
       const variablesContext: Record<string, number> = {}
       globalVariables.forEach((v: any) => {

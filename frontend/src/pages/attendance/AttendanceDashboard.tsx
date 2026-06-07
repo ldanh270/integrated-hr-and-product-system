@@ -4,7 +4,7 @@ import { CalendarX2, Clock, UserCheck, Users } from "lucide-react"
 
 export default function AttendanceDashboard() {
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-6 mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Tổng Quan Chấm Công</h1>
         <p className="text-muted-foreground mt-1">

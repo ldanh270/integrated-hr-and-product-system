@@ -29,7 +29,9 @@ export class PrismaSalaryComponentRepository
     })
   }
 
-  async create(data: ICreateSalaryComponentDTO & { createdById: string }): Promise<SalaryComponent> {
+  async create(
+    data: ICreateSalaryComponentDTO & { createdById: string },
+  ): Promise<SalaryComponent> {
     return this.prisma.salaryComponent.create({
       data: {
         name: data.name,

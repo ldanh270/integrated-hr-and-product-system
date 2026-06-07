@@ -87,7 +87,6 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
 
   const { reset } = form
 
-
   const [prevOpen, setPrevOpen] = useState(false)
   if (open !== prevOpen) {
     setPrevOpen(open)
@@ -133,8 +132,6 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
       toast.error(error.response?.data?.message || "Có lỗi xảy ra khi cập nhật")
     }
   }
-
-
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -191,7 +188,8 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
                               Mẫu bảng lương áp dụng
                             </FormLabel>
                             <FormDescription className="text-xs mb-2">
-                              Nhân sự sẽ được tính lương tự động dựa trên các thành phần (components) của mẫu này.
+                              Nhân sự sẽ được tính lương tự động dựa trên các thành phần
+                              (components) của mẫu này.
                             </FormDescription>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
@@ -308,8 +306,6 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
               ) : (
                 <div className="relative pl-6 border-l border-muted space-y-6 text-xs">
                   {history.map((h) => {
-
-
                     return (
                       <div key={h.id} className="relative">
                         {/* Timeline Bullet */}
@@ -340,10 +336,7 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
                                 {formatCurrency(Number(h.baseSalary))}
                               </span>
                             </div>
-
                           </div>
-
-
 
                           {h.note && (
                             <div className="mt-2 text-[11px] text-muted-foreground italic bg-background p-1.5 rounded border border-border/30">

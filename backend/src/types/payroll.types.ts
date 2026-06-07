@@ -1,5 +1,6 @@
 import type {
   ComponentType,
+  ComponentValueType,
   EmployeeSalaryConfig,
   Payroll,
   PayrollStatus,
@@ -8,8 +9,8 @@ import type {
   PayslipTemplate,
   Prisma,
   SalaryComponent,
-  ComponentValueType,
 } from "@prisma/client"
+import type { SalaryVariable } from "@prisma/client"
 
 export type PayslipTemplateWithComponents = PayslipTemplate & {
   createdBy: {
@@ -40,8 +41,6 @@ export type PayslipWithDetails = Payslip & {
 export type PayrollWithPayslips = Payroll & {
   payslips: PayslipWithDetails[]
 }
-
-import type { SalaryVariable } from "@prisma/client"
 
 // ── SalaryVariable ──────────────────────────────────────────────────────────
 
@@ -164,7 +163,6 @@ export interface ICreateSalaryConfigDTO {
   baseSalary: number
   effectiveFrom: Date
   note?: string
-
 }
 
 // ── Payroll Computation ──────────────────────────────────────────────────────

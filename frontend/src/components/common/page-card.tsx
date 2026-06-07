@@ -14,7 +14,6 @@ const paddingMap = {
 
 /**
  * PageCard — Standard card container used across all pages.
- * Replaces ad-hoc `rounded-xl border border-border bg-card shadow-sm` divs.
  */
 export function PageCard({
   children,
@@ -26,7 +25,7 @@ export function PageCard({
   return (
     <div
       className={cn(
-        "rounded-xl bg-card shadow-sm",
+        "rounded-xl bg-card",
         !noBorder && "border border-border",
         paddingMap[padding],
         className,

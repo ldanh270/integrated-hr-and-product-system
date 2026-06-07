@@ -19,8 +19,8 @@ export class PrismaPayslipRepository extends BaseRepository implements IPayslipR
             id: true,
             fullName: true,
             email: true,
-          }
-        }
+          },
+        },
       },
     }) as unknown as Promise<PayslipWithDetails[]>
   }

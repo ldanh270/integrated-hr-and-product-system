@@ -87,8 +87,6 @@ payrollRoutes.put(
   },
 )
 
-
-
 payrollRoutes.get("/", controller.listPayrolls)
 payrollRoutes.get("/:id", controller.getPayroll)
 payrollRoutes.get("/:id/payslips/:empId", controller.getPayslip)

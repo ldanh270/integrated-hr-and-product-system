@@ -1,7 +1,7 @@
+import { ISalaryVariableService } from "@/types/payroll.types.ts"
+
 import { NextFunction, Request, Response } from "express"
 import { z } from "zod"
-
-import { ISalaryVariableService } from "@/types/payroll.types.ts"
 
 const createSalaryVariableSchema = z.object({
   code: z.string().min(1, "Code is required").max(50),

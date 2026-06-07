@@ -64,7 +64,7 @@ export function PayrollHistoryTable({ payrolls, isLoading }: PayrollHistoryTable
 
   return (
     <>
-      <div className="border rounded-xl bg-card overflow-hidden">
+      <div className="rounded-xl bg-card overflow-hidden">
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow>

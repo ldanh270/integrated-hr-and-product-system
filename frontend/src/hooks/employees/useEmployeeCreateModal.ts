@@ -1,9 +1,10 @@
 import { EMPLOYEE_ROLES, EMPLOYEE_TYPES, ROLE } from "@/config/entities/employee.config"
-import { useCreateEmployee } from "./queries/useEmployeeQuery"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
+
+import { useCreateEmployee } from "./queries/useEmployeeQuery"
 
 const createSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),

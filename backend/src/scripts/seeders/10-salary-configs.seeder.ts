@@ -23,8 +23,6 @@ export class SalaryConfigsSeeder implements ISeeder {
     const templateId = payslipTemplateIds[0] // Use standard template
     const salaryConfigMap: Record<string, string> = {}
 
-
-
     const configs = await Promise.all(
       employees.map(async (emp) => {
         // Base salary based on role
@@ -35,7 +33,6 @@ export class SalaryConfigsSeeder implements ISeeder {
 
         // Add some randomness
         baseSalary += faker.number.int({ min: 0, max: 10 }) * 1000000
-
 
         const config = await prisma.employeeSalaryConfig.create({
           data: {
