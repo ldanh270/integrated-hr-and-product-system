@@ -54,9 +54,10 @@ export default function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 space-y-0.5 px-2 py-3 overflow-y-auto">
         {navItems.map((item) => {
+          const dashboardPath = activeSubsystemConfig?.sidebarItems[0]?.path
           const isActive =
             location.pathname === item.path ||
-            (item.path !== `${activeSubsystemConfig?.routePrefix}/dashboard` &&
+            (item.path !== dashboardPath &&
               location.pathname.startsWith(item.path) &&
               item.path !== activeSubsystemConfig?.routePrefix)
           const Icon = item.icon
