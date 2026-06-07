@@ -74,6 +74,9 @@ export interface IPayslipTemplate {
   name: string
   description?: string
   isActive: boolean
+  createdBy?: {
+    fullName: string
+  }
   components: IPayslipTemplateComponent[]
   createdAt: string
   updatedAt: string

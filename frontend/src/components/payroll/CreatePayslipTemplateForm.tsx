@@ -24,17 +24,20 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
-import { useCreatePayslipTemplate } from "@/hooks/payroll/use-payslip-templates"
+import {
+  useCreatePayslipTemplate,
+  useUpdatePayslipTemplate,
+} from "@/hooks/payroll/use-payslip-templates"
 import {
   type CreatePayslipTemplateFormData,
   createPayslipTemplateSchema,
 } from "@/schemas/payroll.schema"
-import type { ISalaryComponent } from "@/types/payroll.types"
+import type { IPayslipTemplate, ISalaryComponent } from "@/types/payroll.types"
 
 import { useState } from "react"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { ChevronLeft, Plus } from "lucide-react"
+import { ChevronLeft, Minus, Plus } from "lucide-react"
 import { useFieldArray, useForm } from "react-hook-form"
 import { toast } from "sonner"
 
@@ -54,24 +57,43 @@ interface ExtendedFormData extends CreatePayslipTemplateFormData {
 }
 
 interface CreatePayslipTemplateFormProps {
+  initialData?: IPayslipTemplate | null
+  isReadOnly?: boolean
   onSuccess?: () => void
   onCancel?: () => void
+  onEdit?: () => void
 }
 
-export function CreatePayslipTemplateForm({ onSuccess, onCancel }: CreatePayslipTemplateFormProps) {
-  const { mutateAsync: createTemplate, isPending } = useCreatePayslipTemplate()
+export function CreatePayslipTemplateForm({
+  initialData,
+  isReadOnly = false,
+  onSuccess,
+  onCancel,
+  onEdit,
+}: CreatePayslipTemplateFormProps) {
+  const { mutateAsync: createTemplate, isPending: isCreating } = useCreatePayslipTemplate()
+  const { mutateAsync: updateTemplate, isPending: isUpdating } = useUpdatePayslipTemplate()
+  const isPending = isCreating || isUpdating
+
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   const form = useForm<ExtendedFormData>({
     resolver: zodResolver(createPayslipTemplateSchema),
     defaultValues: {
-      name: "",
-      description: "",
-      components: [],
+      name: initialData?.name || "",
+      description: initialData?.description || "",
+      components:
+        initialData?.components?.map((c) => ({
+          componentId: c.componentId,
+          overrideFormula: c.overrideFormula || c.component.formula || undefined,
+          _name: c.component.name,
+          _displayName: c.component.name,
+          _isDisplayed: true,
+        })) || [],
     },
   })
 
-  const { fields, append } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "components",
   })
@@ -101,29 +123,38 @@ export function CreatePayslipTemplateForm({ onSuccess, onCancel }: CreatePayslip
           overrideFormula: c.overrideFormula?.trim() || undefined,
         })),
       }
-      await createTemplate(payload)
-      toast.success("Tạo mẫu bảng lương thành công.")
+      if (initialData?.id) {
+        await updateTemplate({ id: initialData.id, ...payload })
+        toast.success("Cập nhật mẫu bảng lương thành công.")
+      } else {
+        await createTemplate(payload)
+        toast.success("Tạo mẫu bảng lương thành công.")
+      }
       form.reset()
       onSuccess?.()
     } catch {
-      toast.error("Lỗi khi tạo mẫu bảng lương. Vui lòng thử lại.")
+      toast.error("Lỗi khi lưu mẫu bảng lương. Vui lòng thử lại.")
     }
   }
 
   return (
-    <div className="flex flex-col h-full min-h-screen bg-[#FBFBFA]">
+    <div className="flex flex-col h-full min-h-screen bg-muted/30">
       {/* Header Bar */}
-      <div className="sticky top-0 z-10 flex items-center gap-4 px-6 py-4 bg-white border-b border-[#EAEAEA]">
+      <div className="sticky top-0 z-10 flex items-center gap-4 px-6 py-4 bg-background border-b border-border">
         <Button
           variant="ghost"
           size="icon"
           onClick={onCancel}
-          className="rounded-full hover:bg-[#F7F6F3]"
+          className="rounded-full hover:bg-accent"
         >
-          <ChevronLeft className="w-5 h-5 text-[#111111]" />
+          <ChevronLeft className="w-5 h-5 text-foreground" />
         </Button>
-        <h1 className="text-xl font-semibold tracking-tight text-[#111111]">
-          Tạo mới mẫu bảng lương
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          {isReadOnly
+            ? "Chi tiết mẫu bảng lương"
+            : initialData
+              ? "Cập nhật mẫu bảng lương"
+              : "Tạo mới mẫu bảng lương"}
         </h1>
       </div>
 
@@ -135,9 +166,9 @@ export function CreatePayslipTemplateForm({ onSuccess, onCancel }: CreatePayslip
             className="space-y-6"
           >
             {/* Section 1: Thông tin mẫu bảng lương */}
-            <div className="bg-white border border-[#EAEAEA] rounded-xl overflow-hidden shadow-none">
-              <div className="px-6 py-4 border-b border-[#EAEAEA] bg-[#FBFBFA]">
-                <h2 className="font-semibold text-[#111111]">Thông tin mẫu bảng lương</h2>
+            <div className="bg-background border border-border rounded-xl overflow-hidden shadow-none">
+              <div className="px-6 py-4 border-b border-border bg-muted/50">
+                <h2 className="font-semibold text-foreground">Thông tin mẫu bảng lương</h2>
               </div>
               <div className="p-6 space-y-6">
                 <FormField
@@ -145,14 +176,15 @@ export function CreatePayslipTemplateForm({ onSuccess, onCancel }: CreatePayslip
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[#111111]">
+                      <FormLabel className="text-foreground">
                         Tên bảng lương mẫu <span className="text-destructive">*</span>
                       </FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Nhập tên mẫu bảng lương"
                           {...field}
-                          className="rounded-full border-[#EAEAEA] shadow-none"
+                          className="rounded-full border-border shadow-none"
+                          disabled={isReadOnly}
                         />
                       </FormControl>
                       <FormMessage />
@@ -165,12 +197,13 @@ export function CreatePayslipTemplateForm({ onSuccess, onCancel }: CreatePayslip
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[#111111]">Mô tả</FormLabel>
+                      <FormLabel className="text-foreground">Mô tả</FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="Nhập mô tả"
                           {...field}
-                          className="rounded-xl border-[#EAEAEA] shadow-none min-h-[100px] resize-y"
+                          className="rounded-xl border-border shadow-none min-h-[100px] resize-y"
+                          disabled={isReadOnly}
                         />
                       </FormControl>
                       <FormMessage />
@@ -181,13 +214,13 @@ export function CreatePayslipTemplateForm({ onSuccess, onCancel }: CreatePayslip
             </div>
 
             {/* Section 2: Thành phần lương */}
-            <div className="bg-white border border-[#EAEAEA] rounded-xl overflow-hidden shadow-none">
-              <div className="px-6 py-4 border-b border-[#EAEAEA] bg-[#FBFBFA] flex items-center justify-between">
-                <h2 className="font-semibold text-[#111111]">Thành phần lương</h2>
+            <div className="bg-background border border-border rounded-xl overflow-hidden shadow-none">
+              <div className="px-6 py-4 border-b border-border bg-muted/50 flex items-center justify-between">
+                <h2 className="font-semibold text-foreground">Thành phần lương</h2>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-[#787774]">Sao chép mẫu lương đã có</span>
-                  <Select>
-                    <SelectTrigger className="w-50 rounded-full border-[#EAEAEA] shadow-none bg-white">
+                  <span className="text-sm text-muted-foreground">Sao chép mẫu lương đã có</span>
+                  <Select disabled={isReadOnly}>
+                    <SelectTrigger className="w-50 rounded-full border-border shadow-none bg-background">
                       <SelectValue placeholder="Chọn mẫu" />
                     </SelectTrigger>
                     <SelectContent>
@@ -200,19 +233,19 @@ export function CreatePayslipTemplateForm({ onSuccess, onCancel }: CreatePayslip
               </div>
 
               <div className="p-6">
-                <div className="border border-[#EAEAEA] rounded-xl overflow-hidden bg-white mb-4">
+                <div className="border border-border rounded-xl overflow-hidden bg-background mb-4">
                   <Table>
-                    <TableHeader className="bg-[#FBFBFA]">
-                      <TableRow className="border-b border-[#EAEAEA] hover:bg-transparent">
-                        <TableHead className="font-semibold text-[#111111]">
+                    <TableHeader className="bg-muted/50">
+                      <TableRow className="border-b border-border hover:bg-transparent">
+                        <TableHead className="font-semibold text-foreground">
                           Tên thành phần
                         </TableHead>
-                        <TableHead className="font-semibold text-[#111111]">
+                        <TableHead className="font-semibold text-foreground">
                           Tên cột hiển thị
                         </TableHead>
-                        <TableHead className="font-semibold text-[#111111]">Giá trị tính</TableHead>
-                        <TableHead className="text-center font-semibold text-[#111111]">
-                          Hiển thị
+                        <TableHead className="font-semibold text-foreground">Giá trị tính</TableHead>
+                        <TableHead className="text-center font-semibold text-foreground w-20">
+                          Thao tác
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -223,8 +256,9 @@ export function CreatePayslipTemplateForm({ onSuccess, onCancel }: CreatePayslip
                             <Button
                               type="button"
                               variant="outline"
-                              className="rounded-full border-[#EAEAEA] text-[#111111] hover:bg-[#F7F6F3] shadow-none px-6"
+                              className="rounded-full border-primary text-primary hover:bg-primary/10 shadow-none px-6"
                               onClick={() => setIsModalOpen(true)}
+                              disabled={isReadOnly}
                             >
                               <Plus className="w-4 h-4 mr-2" />
                               Thêm thành phần
@@ -235,13 +269,13 @@ export function CreatePayslipTemplateForm({ onSuccess, onCancel }: CreatePayslip
                         fields.map((field, index) => (
                           <TableRow
                             key={field.id}
-                            className="border-b border-[#EAEAEA] hover:bg-[#F7F6F3]"
+                            className="border-b border-border hover:bg-muted/50"
                           >
                             <TableCell>
                               <Input
                                 disabled
                                 value={field._name}
-                                className="bg-transparent border-none shadow-none text-[#111111] px-0 disabled:opacity-100"
+                                className="bg-transparent border-none shadow-none text-foreground px-0 disabled:opacity-100"
                               />
                             </TableCell>
                             <TableCell>
@@ -251,7 +285,8 @@ export function CreatePayslipTemplateForm({ onSuccess, onCancel }: CreatePayslip
                                 render={({ field: inputField }) => (
                                   <Input
                                     {...inputField}
-                                    className="rounded-full border-[#EAEAEA] shadow-none h-8 text-[#111111]"
+                                    className="rounded-full border-border shadow-none h-8 text-foreground"
+                                    disabled={isReadOnly}
                                   />
                                 )}
                               />
@@ -263,24 +298,23 @@ export function CreatePayslipTemplateForm({ onSuccess, onCancel }: CreatePayslip
                                 render={({ field: inputField }) => (
                                   <Input
                                     {...inputField}
-                                    className="rounded-full border-[#EAEAEA] shadow-none h-8 font-mono text-sm text-[#111111]"
+                                    className="rounded-full border-border shadow-none h-8 font-mono text-sm text-foreground"
+                                    disabled={isReadOnly}
                                   />
                                 )}
                               />
                             </TableCell>
                             <TableCell className="text-center">
-                              <FormField
-                                control={form.control}
-                                name={`components.${index}._isDisplayed`}
-                                render={({ field: inputField }) => (
-                                  <input
-                                    type="checkbox"
-                                    className="w-4 h-4 rounded border-[#EAEAEA] cursor-pointer accent-[#111111]"
-                                    checked={inputField.value}
-                                    onChange={inputField.onChange}
-                                  />
-                                )}
-                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 rounded-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => remove(index)}
+                                disabled={isReadOnly}
+                              >
+                                <Minus className="h-4 w-4" />
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))
@@ -289,12 +323,12 @@ export function CreatePayslipTemplateForm({ onSuccess, onCancel }: CreatePayslip
                   </Table>
                 </div>
 
-                {fields.length > 0 && (
+                {!isReadOnly && fields.length > 0 && (
                   <div className="flex justify-center mt-4">
                     <Button
                       type="button"
                       variant="outline"
-                      className="rounded-full border-[#EAEAEA] text-[#111111] hover:bg-[#F7F6F3] shadow-none px-6"
+                      className="rounded-full border-primary text-primary hover:bg-primary/10 shadow-none px-6"
                       onClick={() => setIsModalOpen(true)}
                     >
                       <Plus className="w-4 h-4 mr-2" />
@@ -314,23 +348,52 @@ export function CreatePayslipTemplateForm({ onSuccess, onCancel }: CreatePayslip
       </div>
 
       {/* Footer Bar */}
-      <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 px-6 py-4 bg-white border-t border-[#EAEAEA]">
-        <Button
-          type="button"
-          variant="outline"
-          className="rounded-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground shadow-none px-8"
-          onClick={onCancel}
-        >
-          Huỷ bỏ
-        </Button>
-        <Button
-          type="submit"
-          form="create-template-form"
-          className="rounded-full bg-[#111111] text-white hover:bg-[#333333] shadow-none px-10"
-          disabled={isPending}
-        >
-          {isPending ? "Đang lưu..." : "Lưu"}
-        </Button>
+      <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 px-6 py-4 bg-background border-t border-border">
+        {isReadOnly ? (
+          <>
+            <Button
+              key="close-btn"
+              type="button"
+              variant="outline"
+              className="rounded-full border-border hover:bg-accent shadow-none px-8"
+              onClick={onCancel}
+            >
+              Đóng
+            </Button>
+            <Button
+              key="edit-btn"
+              type="button"
+              className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-none px-8"
+              onClick={(e) => {
+                e.preventDefault()
+                onEdit?.()
+              }}
+            >
+              Chỉnh sửa
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              key="cancel-btn"
+              type="button"
+              variant="outline"
+              className="rounded-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground shadow-none px-8"
+              onClick={onCancel}
+            >
+              Huỷ bỏ
+            </Button>
+            <Button
+              key="save-btn"
+              type="submit"
+              form="create-template-form"
+              className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-none px-10"
+              disabled={isPending || !form.formState.isDirty}
+            >
+              {isPending ? "Đang lưu..." : "Lưu"}
+            </Button>
+          </>
+        )}
       </div>
 
       <SalaryComponentSelectModal

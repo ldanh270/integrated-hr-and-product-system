@@ -23,6 +23,17 @@
   samp {
     font-family: var(--font-mono);
   }
+  
+  button,
+  a,
+  [role="button"] {
+    @apply cursor-pointer transition-colors duration-200;
+  }
+  
+  input[type="checkbox"],
+  input[type="radio"] {
+    @apply accent-primary cursor-pointer;
+  }
 }
 
 @theme inline {

@@ -52,8 +52,8 @@ export default function Header() {
                 onClick={() => setActiveTab(tab)}
                 className={`pb-1 font-medium transition-all cursor-pointer ${
                   activeTab === tab
-                    ? "text-foreground border-b border-foreground"
-                    : "text-muted-foreground hover:text-foreground border-b border-transparent"
+                    ? "text-primary border-b-2 border-primary"
+                    : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
                 }`}
               >
                 {tab === "personal" ? "Cá nhân" : "Tổng hợp"}
@@ -72,7 +72,7 @@ export default function Header() {
             aria-label="Notifications"
           >
             <Bell size={16} strokeWidth={1.5} />
-            <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-foreground" />
+            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
           </button>
 
           <div className="h-4 w-px bg-border mx-1" />

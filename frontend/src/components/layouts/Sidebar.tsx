@@ -40,7 +40,7 @@ export default function Sidebar() {
       <div className="flex h-16 items-center px-6 border-b border-border">
         <div className="flex items-center gap-3 overflow-hidden">
           {/* Logo mark */}
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-foreground text-background text-xs font-bold tracking-tighter">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs font-bold tracking-tighter shadow-sm">
             HRP
           </div>
           {!isCollapsed && (
@@ -69,7 +69,7 @@ export default function Sidebar() {
               title={isCollapsed ? item.name : undefined}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150 ${
                 isActive
-                  ? "bg-muted text-foreground"
+                  ? "bg-primary text-primary-foreground shadow-sm"
                   : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
               }`}
             >

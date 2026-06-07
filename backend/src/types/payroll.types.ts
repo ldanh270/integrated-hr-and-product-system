@@ -12,6 +12,9 @@ import type {
 } from "@prisma/client"
 
 export type PayslipTemplateWithComponents = PayslipTemplate & {
+  createdBy: {
+    fullName: string
+  }
   components: Array<{
     componentId: string
     overrideFormula: string | null

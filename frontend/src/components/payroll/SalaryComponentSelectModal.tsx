@@ -29,7 +29,7 @@ import {
 import { useSalaryComponents } from "@/hooks/payroll/use-salary-components"
 import type { ISalaryComponent } from "@/types/payroll.types"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { Search } from "lucide-react"
 
@@ -53,7 +53,7 @@ export function SalaryComponentSelectModal({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   // Reset local state when modal opens
-  useMemo(() => {
+  useEffect(() => {
     if (open) {
       setSelectedIds(new Set())
     }
@@ -109,9 +109,9 @@ export function SalaryComponentSelectModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-5xl max-h-[90vh] flex flex-col p-0 mx-auto overflow-hidden bg-background border border-[#EAEAEA] shadow-lg rounded-xl">
-        <DialogHeader className="p-6 border-b border-[#EAEAEA] text-center shrink-0">
-          <DialogTitle className="text-xl font-semibold tracking-tight text-[#111111]">
+      <DialogContent className="w-full max-w-5xl max-h-[90vh] flex flex-col p-0 mx-auto overflow-hidden bg-background border border-border shadow-lg rounded-xl">
+        <DialogHeader className="p-6 border-b border-border text-center shrink-0">
+          <DialogTitle className="text-xl font-semibold tracking-tight text-foreground">
             Chọn thành phần
           </DialogTitle>
         </DialogHeader>
@@ -125,11 +125,11 @@ export function SalaryComponentSelectModal({
                   placeholder="Tìm kiếm mã thành phần, tên thành phần"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 rounded-full border-[#EAEAEA] shadow-none"
+                  className="pl-9 rounded-full border-border shadow-none"
                 />
               </div>
               <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-45 rounded-full border-[#EAEAEA] shadow-none">
+                <SelectTrigger className="w-45 rounded-full border-border shadow-none">
                   <SelectValue placeholder="Loại thành phần" />
                 </SelectTrigger>
                 <SelectContent>
@@ -145,22 +145,22 @@ export function SalaryComponentSelectModal({
               </Button>
               <Button
                 variant="default"
-                className="rounded-full bg-[#111111] text-white hover:bg-[#333333] shadow-none"
+                className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-none"
               >
                 Tìm kiếm
               </Button>
             </div>
           </div>
 
-          <div className="border border-[#EAEAEA] rounded-xl overflow-hidden bg-white flex-1 flex flex-col min-h-0">
+          <div className="border border-border rounded-xl overflow-hidden bg-background flex-1 flex flex-col min-h-0">
             <div className="overflow-y-auto flex-1">
               <Table>
-                <TableHeader className="bg-[#F9F9F8]">
-                  <TableRow className="border-b border-[#EAEAEA] hover:bg-transparent">
+                <TableHeader className="bg-muted/50">
+                  <TableRow className="border-b border-border hover:bg-transparent">
                     <TableHead className="w-12 text-center">
                       <input
                         type="checkbox"
-                        className="w-4 h-4 rounded border-[#EAEAEA] cursor-pointer"
+                        className="w-4 h-4 rounded border-border cursor-pointer"
                         checked={
                           selectedIds.size === filteredComponents.length &&
                           filteredComponents.length > 0
@@ -168,10 +168,10 @@ export function SalaryComponentSelectModal({
                         onChange={handleToggleAll}
                       />
                     </TableHead>
-                    <TableHead className="font-semibold text-[#111111]">Tên thành phần</TableHead>
-                    <TableHead className="font-semibold text-[#111111]">Loại</TableHead>
-                    <TableHead className="font-semibold text-[#111111]">Kiểu giá trị</TableHead>
-                    <TableHead className="font-semibold text-[#111111]">Giá trị tính</TableHead>
+                    <TableHead className="font-semibold text-foreground">Tên thành phần</TableHead>
+                    <TableHead className="font-semibold text-foreground">Loại</TableHead>
+                    <TableHead className="font-semibold text-foreground">Kiểu giá trị</TableHead>
+                    <TableHead className="font-semibold text-foreground">Giá trị tính</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -194,24 +194,24 @@ export function SalaryComponentSelectModal({
                     filteredComponents.map((comp) => (
                       <TableRow
                         key={comp.id}
-                        className="border-b border-[#EAEAEA] hover:bg-[#F7F6F3] transition-colors"
+                        className="border-b border-border hover:bg-muted/50 transition-colors"
                       >
                         <TableCell className="text-center">
                           <input
                             type="checkbox"
-                            className="w-4 h-4 rounded border-[#EAEAEA] cursor-pointer"
+                            className="w-4 h-4 rounded border-border cursor-pointer"
                             checked={selectedIds.has(comp.id)}
                             onChange={() => handleToggleSelect(comp.id)}
                           />
                         </TableCell>
-                        <TableCell className="text-[#111111] font-medium">{comp.name}</TableCell>
-                        <TableCell className="text-[#787774]">
+                        <TableCell className="text-foreground font-medium">{comp.name}</TableCell>
+                        <TableCell className="text-muted-foreground">
                           {COMPONENT_TYPE_LABELS[comp.type]}
                         </TableCell>
-                        <TableCell className="text-[#787774]">
+                        <TableCell className="text-muted-foreground">
                           {COMPONENT_VALUE_TYPE_LABELS[comp.valueType]}
                         </TableCell>
-                        <TableCell className="text-[#787774] font-mono text-sm">
+                        <TableCell className="text-muted-foreground font-mono text-sm">
                           {comp.formula}
                         </TableCell>
                       </TableRow>
@@ -223,21 +223,20 @@ export function SalaryComponentSelectModal({
           </div>
         </div>
 
-        <DialogFooter className="p-6 border-t border-[#EAEAEA] bg-[#FBFBFA] flex items-center justify-end gap-2 shrink-0">
+        <DialogFooter className="p-6 border-t border-border bg-muted/30 flex items-center justify-end gap-2 shrink-0">
           <Button
             variant="outline"
-            className="rounded-full border-[#EAEAEA] text-destructive hover:bg-destructive hover:text-destructive-foreground shadow-none px-6"
+            className="rounded-full border-border text-destructive hover:bg-destructive hover:text-destructive-foreground shadow-none px-6"
             onClick={() => onOpenChange(false)}
           >
             Huỷ bỏ
           </Button>
           <Button
-            variant="default"
-            className="rounded-full bg-[#111111] text-white hover:bg-[#333333] shadow-none px-8"
+            className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-none px-8"
             onClick={handleSave}
             disabled={selectedIds.size === 0}
           >
-            Lưu
+            Thêm
           </Button>
         </DialogFooter>
       </DialogContent>

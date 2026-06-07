@@ -21,6 +21,7 @@ export class PrismaPayslipTemplateRepository
     return this.prisma.payslipTemplate.findMany({
       where: filter,
       include: {
+        createdBy: { select: { fullName: true } },
         components: {
           include: {
             component: true,
@@ -35,6 +36,7 @@ export class PrismaPayslipTemplateRepository
     return this.prisma.payslipTemplate.findUnique({
       where: { id },
       include: {
+        createdBy: { select: { fullName: true } },
         components: {
           include: {
             component: true,
