@@ -9,7 +9,7 @@ import { Link, useLocation } from "react-router-dom"
 interface NavItem {
   name: string
   path: string
-  icon: React.ComponentType<{ size?: number; className?: string }>
+  icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>
   roles?: string[]
 }
 
@@ -32,27 +32,27 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`relative flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ${
-        isCollapsed ? "w-15" : "w-60"
+      className={`relative flex flex-col bg-background text-foreground border-r border-border transition-all duration-300 ${
+        isCollapsed ? "w-16" : "w-64"
       }`}
     >
       {/* Brand header */}
-      <div className="flex h-14 items-center justify-between px-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-2.5 overflow-hidden">
+      <div className="flex h-16 items-center px-6 border-b border-border">
+        <div className="flex items-center gap-3 overflow-hidden">
           {/* Logo mark */}
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground text-[11px] font-extrabold shadow">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-foreground text-background text-xs font-bold tracking-tighter">
             HRP
           </div>
           {!isCollapsed && (
-            <span className="text-sm font-bold tracking-tight whitespace-nowrap animate-fade-in">
-              HRP
+            <span className="text-base font-medium tracking-tight whitespace-nowrap animate-fade-in">
+              HRP Platform
             </span>
           )}
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-0.5 px-2 py-3 overflow-y-auto">
+      <nav className="flex-1 space-y-1 px-3 py-6 overflow-y-auto">
         {navItems.map((item) => {
           const dashboardPath = activeSubsystemConfig?.sidebarItems[0]?.path
           const isActive =
@@ -67,13 +67,13 @@ export default function Sidebar() {
               key={item.path}
               to={item.path}
               title={isCollapsed ? item.name : undefined}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150 ${
                 isActive
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                  : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sidebar-foreground/70"
+                  ? "bg-muted text-foreground"
+                  : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Icon size={16} className="shrink-0" />
+              <Icon size={18} strokeWidth={isActive ? 2 : 1.5} className="shrink-0" />
               {!isCollapsed && (
                 <span className="truncate transition-opacity duration-200">{item.name}</span>
               )}
@@ -85,10 +85,10 @@ export default function Sidebar() {
       {/* Collapse toggle */}
       <button
         onClick={() => setIsCollapsed((p) => !p)}
-        className="absolute -right-3 top-13 flex h-5.5 w-5.5 items-center justify-center rounded-full border border-sidebar-border bg-sidebar text-sidebar-foreground shadow-sm hover:bg-sidebar-accent transition-colors cursor-pointer"
+        className="absolute -right-3 top-16 mt-0.5 flex h-6 w-6 items-center justify-center rounded-md border border-border bg-background text-foreground shadow-none hover:bg-muted transition-colors cursor-pointer"
         aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
-        {isCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
+        {isCollapsed ? <ChevronRight size={14} strokeWidth={1.5} /> : <ChevronLeft size={14} strokeWidth={1.5} />}
       </button>
     </aside>
   )
