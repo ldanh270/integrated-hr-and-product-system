@@ -41,9 +41,10 @@ export default function PayrollCycle() {
   })
 
   useEffect(() => {
-    if (settings) {
-      settingsForm.reset({
-        triggerDay: settings.triggerDay,
+    if (settings && settings.triggerDay) {
+      settingsForm.setValue("triggerDay", settings.triggerDay, {
+        shouldValidate: true,
+        shouldDirty: false,
       })
     }
   }, [settings, settingsForm])
@@ -100,7 +101,7 @@ export default function PayrollCycle() {
                       </FormLabel>
                       <Select
                         onValueChange={(val) => field.onChange(Number(val))}
-                        value={field.value.toString()}
+                        value={field.value?.toString()}
                       >
                         <FormControl>
                           <SelectTrigger className="rounded-full h-9">

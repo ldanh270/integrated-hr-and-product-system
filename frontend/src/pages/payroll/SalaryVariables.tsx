@@ -46,7 +46,7 @@ import type { ISalaryVariable } from "@/hooks/payroll/use-salary-variable"
 const formSchema = z.object({
   code: z.string().min(1, "Code is required").max(50),
   name: z.string().min(1, "Name is required").max(100),
-  value: z.coerce.number().min(0, "Value must be positive"),
+  value: z.number().min(0, "Value must be positive"),
   description: z.string().optional(),
   isActive: z.boolean().default(true),
 })
@@ -60,6 +60,8 @@ const SYSTEM_VARIABLES = [
     description: "Mức lương cơ bản của nhân viên",
     isActive: true,
     isSystem: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: "sys_workingDays",
@@ -69,6 +71,8 @@ const SYSTEM_VARIABLES = [
     description: "Số ngày công chuẩn trong kỳ lương",
     isActive: true,
     isSystem: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: "sys_actualWorkingDays",
@@ -78,6 +82,8 @@ const SYSTEM_VARIABLES = [
     description: "Số ngày công thực tế đi làm",
     isActive: true,
     isSystem: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: "sys_overtimeMinutes",
@@ -87,6 +93,8 @@ const SYSTEM_VARIABLES = [
     description: "Tổng số phút làm thêm giờ",
     isActive: true,
     isSystem: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: "sys_paidLeaveDays",
@@ -96,6 +104,8 @@ const SYSTEM_VARIABLES = [
     description: "Tổng số ngày nghỉ được hưởng lương",
     isActive: true,
     isSystem: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: "sys_unpaidLeaveDays",
@@ -105,8 +115,15 @@ const SYSTEM_VARIABLES = [
     description: "Tổng số ngày nghỉ không lương",
     isActive: true,
     isSystem: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
 ]
+
+type VariableRow = Omit<ISalaryVariable, "value"> & {
+  value: number | string
+  isSystem?: boolean
+}
 
 
 export default function SalaryVariablesPage() {
@@ -119,7 +136,7 @@ export default function SalaryVariablesPage() {
   const [editingVariable, setEditingVariable] = useState<ISalaryVariable | null>(null)
 
   const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       code: "",
       name: "",
@@ -212,7 +229,7 @@ export default function SalaryVariablesPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                [...SYSTEM_VARIABLES, ...(variables || [])].map((variable: ISalaryVariable & { isSystem?: boolean; code: string; name: string; value: number | string; isActive: boolean; description?: string }) => (
+                ([...SYSTEM_VARIABLES, ...(variables || [])] as VariableRow[]).map((variable) => (
                   <TableRow key={variable.id} className={`hover:bg-muted/30 ${variable.isSystem ? "bg-muted/10" : ""}`}>
                     <TableCell className="py-2 font-mono font-medium text-primary/80">{variable.code}</TableCell>
                     <TableCell className="py-2">
@@ -236,7 +253,7 @@ export default function SalaryVariablesPage() {
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7"
-                            onClick={() => handleOpenEdit(variable)}
+                            onClick={() => handleOpenEdit(variable as ISalaryVariable)}
                           >
                             <Pencil className="h-3 w-3" />
                           </Button>
@@ -305,7 +322,11 @@ export default function SalaryVariablesPage() {
                   <FormItem>
                     <FormLabel>Value</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} />
+                      <Input
+                        type="number"
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.value === "" ? 0 : Number(e.target.value))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
