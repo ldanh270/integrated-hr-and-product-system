@@ -17,7 +17,8 @@ import salaryComponentRoutes from "@/routes/salary-component.route.ts"
 import salaryVariableRoutes from "@/routes/salary-variable.route.ts"
 import scheduleRoutes from "@/routes/schedule.route.ts"
 import shiftRoutes from "@/routes/shift.route.ts"
-
+import taskRoutes from "@/routes/task.route.ts"
+import projectRoutes from "@/routes/project.route.ts"
 import dotenv from "dotenv"
 import express, { NextFunction, Request, Response } from "express"
 import rateLimit from "express-rate-limit"
@@ -86,7 +87,8 @@ app.use("/api/employees", employeeSalaryConfigRoutes)
 app.use("/api/payrolls", payrollRoutes)
 
 // Private routes
-
+app.use("/api/projects", projectRoutes)
+app.use("/api/tasks", taskRoutes)
 // 404 handler
 app.use((req, res) => {
   res.status(HttpStatusCode.NOT_FOUND).json({
