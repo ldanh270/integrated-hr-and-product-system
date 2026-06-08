@@ -111,33 +111,53 @@ export function PayrollDetailSheet({ payrollId, onClose }: PayrollDetailSheetPro
               <Table>
                 <TableHeader className="bg-muted/50">
                   <TableRow>
-                    <TableHead>Employee Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead className="text-right">Total Additions</TableHead>
-                    <TableHead className="text-right">Total Deductions</TableHead>
-                    <TableHead className="text-right font-bold">Net Salary</TableHead>
+                    <TableHead className="min-w-12.5 px-4 py-3 font-medium text-xs text-muted-foreground uppercase text-center">
+                      #
+                    </TableHead>
+                    <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                      Employee Name
+                    </TableHead>
+                    <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                      Email
+                    </TableHead>
+                    <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap text-right">
+                      Total Additions
+                    </TableHead>
+                    <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap text-right">
+                      Total Deductions
+                    </TableHead>
+                    <TableHead className="px-4 py-3 font-medium text-xs text-primary uppercase whitespace-nowrap text-right font-bold">
+                      Net Salary
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {payroll.payslips?.map((ps: any) => (
+                  {payroll.payslips?.map((ps: any, index: number) => (
                     <TableRow key={ps.id}>
-                      <TableCell className="font-medium">{ps.employee?.fullName}</TableCell>
-                      <TableCell className="text-muted-foreground">{ps.employee?.email}</TableCell>
-                      <TableCell className="text-right text-green-600">
+                      <TableCell className="px-4 py-3 text-center text-muted-foreground">
+                        {index + 1}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 font-medium">
+                        {ps.employee?.fullName}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-muted-foreground">
+                        {ps.employee?.email}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-right text-green-600">
                         +
                         {new Intl.NumberFormat("vi-VN", {
                           style: "currency",
                           currency: "VND",
                         }).format(ps.totalAdditions)}
                       </TableCell>
-                      <TableCell className="text-right text-red-600">
+                      <TableCell className="px-4 py-3 text-right text-red-600">
                         -
                         {new Intl.NumberFormat("vi-VN", {
                           style: "currency",
                           currency: "VND",
                         }).format(ps.totalDeductions)}
                       </TableCell>
-                      <TableCell className="text-right font-bold text-primary">
+                      <TableCell className="px-4 py-3 text-right font-bold text-primary">
                         {new Intl.NumberFormat("vi-VN", {
                           style: "currency",
                           currency: "VND",
@@ -147,7 +167,7 @@ export function PayrollDetailSheet({ payrollId, onClose }: PayrollDetailSheetPro
                   ))}
                   {(!payroll.payslips || payroll.payslips.length === 0) && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                      <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
                         No payslips found for this payroll.
                       </TableCell>
                     </TableRow>
