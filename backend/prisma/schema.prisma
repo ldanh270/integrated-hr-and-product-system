@@ -530,6 +530,7 @@ model PayrollSettings {
   triggerDay    Int
   triggerHour   Int      @default(0)
   triggerMinute Int      @default(0)
+  triggerSecond Int      @default(0)
   updatedById   String
   updatedBy     Employee @relation(fields: [updatedById], references: [id], onDelete: Restrict)
 
