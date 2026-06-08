@@ -51,7 +51,9 @@ export const initCronJobs = () => {
 
       // We check if a default payroll exists for this period, or just any payroll?
       // Since it's the cron job, it generates the main default payroll.
-      const existing = await payrollRepo.findByPeriod(month, year) // Need to ensure findByPeriod is ok
+      const { generateDefaultPayrollName } = await import("@/configs/entities/payroll.config.ts")
+      const name = generateDefaultPayrollName(month, year)
+      const existing = await payrollRepo.findByPeriod(month, year, name) // Need to ensure findByPeriod is ok
       if (existing) return // Already ran for this month
 
       console.log(`[CRON] Generating Payroll for ${month}/${year}...`)

@@ -2,6 +2,7 @@ import { prisma } from "@/libs/database.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
 import { ISeeder } from "@/scripts/seeders/seeder.interface.ts"
 import { registry } from "@/scripts/seeders/seeder.registry.ts"
+import { generateDefaultPayrollName } from "@/configs/entities/payroll.config.ts"
 
 export class PayrollsSeeder implements ISeeder {
   readonly name = "Payrolls"
@@ -32,6 +33,7 @@ export class PayrollsSeeder implements ISeeder {
       }
 
       payrollsToCreate.push({
+        name: generateDefaultPayrollName(month, year),
         periodMonth: month,
         periodYear: year,
         status: "approved" as any,
@@ -46,9 +48,10 @@ export class PayrollsSeeder implements ISeeder {
         (data) =>
           prisma.payroll.upsert({
             where: {
-              periodYear_periodMonth: {
+              periodYear_periodMonth_name: {
                 periodYear: data.periodYear,
                 periodMonth: data.periodMonth,
+                name: data.name,
               },
             },
             update: data,

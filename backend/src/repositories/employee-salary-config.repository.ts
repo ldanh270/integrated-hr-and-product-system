@@ -29,6 +29,9 @@ export class PrismaEmployeeSalaryConfigRepository
       include: {
         template: {
           include: {
+            createdBy: {
+              select: { fullName: true },
+            },
             components: {
               include: {
                 component: true,

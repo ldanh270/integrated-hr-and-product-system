@@ -112,6 +112,11 @@ export function CreatePayslipTemplateForm({
     })
   }
 
+  const handleCopyTemplate = (templateId: string) => {
+    // TODO: implement template copying
+    console.log("Copy template", templateId)
+  }
+
   const onSubmit = async (data: ExtendedFormData) => {
     try {
       // Strip UI-only properties before sending to API
