@@ -183,7 +183,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
   }
 
   async updateTask(id: string, data: UpdateTaskDto): Promise<Task | null> {
-    const updateData: Prisma.TaskUpdateInput = {
+    const updateData: Prisma.TaskUncheckedUpdateInput = {
       title: data.title,
       description: data.description,
       priority: data.priority as any,

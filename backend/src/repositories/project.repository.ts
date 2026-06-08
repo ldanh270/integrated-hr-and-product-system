@@ -169,7 +169,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
   }
 
   async updateProject(id: string, data: UpdateProjectDto): Promise<Project | null> {
-    const updateData: Prisma.ProjectUpdateInput = {
+   const updateData: Prisma.ProjectUncheckedUpdateInput = {
       name: data.name,
       description: data.description,
       techStack: data.techStack,
