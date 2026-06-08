@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "./generated/prisma-client"
 }
 
 datasource db {
@@ -126,6 +127,14 @@ enum ActivityAction {
   login
   logout
   failed_login
+}
+
+enum LeaveType {
+  annual
+  sick
+  unpaid
+  maternity
+  bereavement
 }
 
 // ─── Models ──────────────────────────────────────────────────────────────────
@@ -316,18 +325,21 @@ model AttendanceRecord {
 }
 
 model Application {
-  id         String            @id @default(cuid())
+  id         String   @id @default(cuid())
   employeeId String
-  employee   Employee          @relation("ApplicationEmployee", fields: [employeeId], references: [id], onDelete: Restrict)
-  type       ApplicationType
-  status     ApplicationStatus @default(pending)
-  startDate  DateTime
-  endDate    DateTime
-  reason     String?
-  note       String?
+  employee   Employee @relation("ApplicationEmployee", fields: [employeeId], references: [id], onDelete: Restrict)
+
+  type   ApplicationType
+  status ApplicationStatus @default(pending)
+
+  startDate DateTime
+  endDate   DateTime
+  reason    String?
+  note      String?
 
   approvedById String?
   approvedBy   Employee? @relation("ApplicationApprover", fields: [approvedById], references: [id], onDelete: Restrict)
+
   approvedAt   DateTime?
   rejectReason String?
 
@@ -339,8 +351,9 @@ model Application {
   overtimeDetail  ApplicationOvertimeDetail?
   regimeDetail    ApplicationRegimeDetail?
   lateEarlyDetail ApplicationLateEarlyDetail?
-  workingShift    WorkingShift?               @relation(fields: [workingShiftId], references: [id], onDelete: Restrict)
-  workingShiftId  String?
+
+  workingShiftId String?
+  workingShift   WorkingShift? @relation(fields: [workingShiftId], references: [id], onDelete: Restrict)
 
   @@index([employeeId, status])
   @@index([employeeId, startDate(sort: Desc)])
@@ -350,28 +363,35 @@ model Application {
 }
 
 model ApplicationLeaveDetail {
-  applicationId String      @id
-  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  regimeType    RegimeType
+  applicationId String @id
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  leaveType LeaveType
+
+  documentUrl String?
+
+  createdAt DateTime @default(now())
+
+  @@index([leaveType])
 }
 
 model ApplicationShiftSwapDetail {
-  applicationId String      @id
-  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId String @id
 
-  // Shift original want to swap (employee shift)
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
   employeeShiftId String
   employeeShift   EmployeeShift @relation("ApplicationEmployeeShift", fields: [employeeShiftId], references: [id], onDelete: Cascade)
 
-  // Shift to swap with (working shift)
   workingShiftId String?
   workingShift   WorkingShift? @relation("ShiftSwapWorkingShift", fields: [workingShiftId], references: [id], onDelete: Cascade)
 
-  // If swap with specific employee and shift instead of any available shift
   swapWithEmployeeId String
-  swapWithEmployee   Employee      @relation("ApplicationSwapWith", fields: [swapWithEmployeeId], references: [id], onDelete: Cascade)
-  swapWithShiftId    String
-  swapWithShift      EmployeeShift @relation("ApplicationSwapWithShift", fields: [swapWithShiftId], references: [id], onDelete: Cascade)
+  swapWithEmployee   Employee @relation("ApplicationSwapWith", fields: [swapWithEmployeeId], references: [id], onDelete: Cascade)
+
+  swapWithShiftId String
+  swapWithShift   EmployeeShift @relation("ApplicationSwapWithShift", fields: [swapWithShiftId], references: [id], onDelete: Cascade)
 
   @@index([employeeShiftId])
   @@index([workingShiftId])
@@ -380,32 +400,44 @@ model ApplicationShiftSwapDetail {
 }
 
 model ApplicationOvertimeDetail {
-  applicationId String      @id
-  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId String @id
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   employeeShiftId String
   employeeShift   EmployeeShift @relation("ApplicationOvertimeShift", fields: [employeeShiftId], references: [id], onDelete: Cascade)
+
+  expectedMinutes Int?
 
   @@index([employeeShiftId])
 }
 
 model ApplicationRegimeDetail {
-  applicationId        String      @id
-  application          Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  regimeType           RegimeType
-  reducedMinutesPerDay Int         @default(0)
-  applyToStart         Boolean     @default(false)
-  applyToEnd           Boolean     @default(false)
-  documentUrl          String?
+  applicationId String @id
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  regimeType RegimeType
+
+  reducedMinutesPerDay Int @default(0)
+
+  applyToStart Boolean @default(false)
+  applyToEnd   Boolean @default(false)
+
+  documentUrl String?
 }
 
 model ApplicationLateEarlyDetail {
-  applicationId   String        @id
-  application     Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId String @id
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
   employeeShiftId String
   employeeShift   EmployeeShift @relation("ApplicationLateEarlyShift", fields: [employeeShiftId], references: [id], onDelete: Cascade)
+
   durationMinutes Int
-  isLate          Boolean
+
+  isLate Boolean
 
   @@index([employeeShiftId])
 }
