@@ -1,0 +1,735 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/prisma-client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  admin
+  hr_manager
+  general_manager
+  team_leader
+  employee
+}
+
+enum EmployeeStatus {
+  active
+  inactive
+  on_leave
+  terminated
+}
+
+enum EmployeeType {
+  full_time
+  part_time
+  contractor
+  intern
+}
+
+enum AttendanceStatus {
+  on_time
+  late
+  early_leave
+  absent
+  overtime
+}
+
+enum ShiftStatus {
+  scheduled
+  holiday_pending
+  confirmed
+  cancelled
+}
+
+enum HolidayType {
+  national
+  company
+}
+
+enum ApplicationType {
+  leave
+  overtime
+  work_from_home
+  shift_swap
+  business_trip
+  late_early
+  regime
+}
+
+enum ApplicationStatus {
+  pending
+  approved
+  rejected
+  cancelled
+}
+
+enum RegimeType {
+  paid
+  unpaid
+}
+
+enum PayrollStatus {
+  draft
+  pending_approval
+  approved
+  rejected
+  paid
+}
+
+enum ComponentType {
+  addition
+  deduction
+}
+
+enum ComponentValueType {
+  currency
+  number
+  percentage
+}
+
+enum ProjectStatus {
+  planning
+  active
+  on_hold
+  completed
+  cancelled
+}
+
+enum TaskStatus {
+  todo
+  in_progress
+  in_review
+  done
+  cancelled
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum PasswordResetStatus {
+  pending
+  approved
+  rejected
+  used
+  expired
+}
+
+enum ActivityAction {
+  login
+  logout
+  failed_login
+}
+
+enum LeaveType {
+  annual
+  sick
+  unpaid
+  maternity
+  bereavement
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+// ── Employee ──
+model Employee {
+  id               String         @id @default(cuid())
+  fullName         String
+  username         String
+  passwordHash     String
+  role             Role           @default(employee)
+  email            String
+  phone            String?
+  dateOfBirth      DateTime?
+  nationalId       String?
+  address          String?
+  avatarUrl        String?
+  avatarId         String?
+  position         String?
+  employeeType     EmployeeType   @default(full_time)
+  status           EmployeeStatus @default(active)
+  failedLoginCount Int            @default(0)
+  lockedUntil      DateTime?
+  startDate        DateTime?      @db.Date
+  endDate          DateTime?      @db.Date
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // For soft deletes
+
+  // Relations
+  attendanceRecords          AttendanceRecord[]
+  employeeShifts             EmployeeShift[]              @relation("EmployeeShiftEmployee")
+  employeeShiftsCreated      EmployeeShift[]              @relation("EmployeeShiftCreator")
+  applications               Application[]                @relation("ApplicationEmployee")
+  applicationsApproved       Application[]                @relation("ApplicationApprover")
+  swapApplicationsAsPartner  ApplicationShiftSwapDetail[] @relation("ApplicationSwapWith")
+  shiftSchedules             ShiftSchedule[]              @relation("ShiftScheduleEmployee")
+  shiftSchedulesCreated      ShiftSchedule[]              @relation("ShiftScheduleCreator")
+  workingShiftsCreated       WorkingShift[]
+  holidayCalendarsCreated    HolidayCalendar[]
+  salaryVariablesCreated     SalaryVariable[]
+  salaryComponentsCreated    SalaryComponent[]
+  payslipTemplatesCreated    PayslipTemplate[]
+  salaryConfigs              EmployeeSalaryConfig[]
+  salaryConfigsCreated       EmployeeSalaryConfig[]       @relation("SalaryConfigCreator")
+  payrollSettingsUpdated     PayrollSettings[]
+  payrollsApproved           Payroll[]
+  payslips                   Payslip[]
+  projectsLead               Project[]                    @relation("ProjectTeamLeader")
+  projectsCreated            Project[]                    @relation("ProjectCreator")
+  projectMembers             ProjectMember[]
+  tasksAssigned              Task[]                       @relation("TaskAssignee")
+  tasksCreated               Task[]                       @relation("TaskCreator")
+  activityLogs               ActivityLog[]
+  passwordResetRequests      PasswordResetRequest[]       @relation("PasswordResetRequestEmployee")
+  passwordResetRequestsApprd PasswordResetRequest[]       @relation("PasswordResetRequestApprover")
+
+  @@index([status, employeeType])
+  @@index([role])
+  @@index([deletedAt])
+}
+
+// ── Attendance ──
+model WorkingShift {
+  id                 String   @id @default(cuid())
+  name               String
+  startTime          Int // "HH:mm" stored as total minutes from midnight (e.g., 540 for 09:00)
+  endTime            Int // "HH:mm" stored as total minutes from midnight (e.g., 1020 for 17:00)
+  gracePeriodMinutes Int      @default(15)
+  gpsLat             Float?
+  gpsLng             Float?
+  gpsRadiusMeters    Float    @default(100)
+  isActive           Boolean  @default(true)
+  createdById        String
+  createdBy          Employee @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employeeShifts EmployeeShift[]
+
+  // Relations for ShiftSchedule weekdays
+  shiftScheduleDays           ShiftScheduleDay[]
+  applications                Application[]
+  applicationShiftSwapDetails ApplicationShiftSwapDetail[] @relation("ShiftSwapWorkingShift")
+
+  /// @db.Check("start_time >= 0 AND start_time < 1440")
+  /// @db.Check("end_time >= 0 AND end_time <= 1440")
+  /// @db.Check("grace_period_minutes >= 0 AND grace_period_minutes <= 120")
+  /// @db.Check("gps_radius_meters > 0")
+
+  @@index([isActive])
+  @@index([createdById])
+}
+
+model ShiftSchedule {
+  id          String    @id @default(cuid())
+  employeeId  String
+  employee    Employee  @relation("ShiftScheduleEmployee", fields: [employeeId], references: [id], onDelete: Restrict)
+  validFrom   DateTime
+  validTo     DateTime?
+  createdById String
+  createdBy   Employee  @relation("ShiftScheduleCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  days           ShiftScheduleDay[]
+  employeeShifts EmployeeShift[]
+
+  @@index([employeeId, validFrom(sort: Desc)])
+  @@index([validTo])
+  @@index([createdById])
+}
+
+model ShiftScheduleDay {
+  id         String        @id @default(cuid())
+  scheduleId String
+  schedule   ShiftSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  dayOfWeek  Int // 0 = Sunday, 1 = Monday, ... 6 = Saturday
+  shiftId    String
+  shift      WorkingShift  @relation(fields: [shiftId], references: [id], onDelete: Restrict)
+
+  @@unique([scheduleId, dayOfWeek])
+  @@index([shiftId])
+}
+
+model EmployeeShift {
+  id           String         @id @default(cuid())
+  employeeId   String
+  employee     Employee       @relation("EmployeeShiftEmployee", fields: [employeeId], references: [id], onDelete: Restrict)
+  shiftId      String
+  shift        WorkingShift   @relation(fields: [shiftId], references: [id], onDelete: Restrict)
+  assignedDate DateTime       @db.Date
+  scheduleId   String?
+  schedule     ShiftSchedule? @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  status       ShiftStatus    @default(scheduled)
+  isOverride   Boolean        @default(false)
+  createdById  String
+  createdBy    Employee       @relation("EmployeeShiftCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attendanceRecord AttendanceRecord?
+  overtimeDetails  ApplicationOvertimeDetail[]  @relation("ApplicationOvertimeShift")
+  swapDetails      ApplicationShiftSwapDetail[] @relation("ApplicationEmployeeShift")
+  swapWithDetails  ApplicationShiftSwapDetail[] @relation("ApplicationSwapWithShift")
+  lateEarlyDetails ApplicationLateEarlyDetail[] @relation("ApplicationLateEarlyShift")
+
+  @@unique([employeeId, assignedDate])
+  @@index([shiftId, assignedDate])
+  @@index([status, assignedDate])
+  @@index([scheduleId])
+  @@index([createdById])
+}
+
+model AttendanceRecord {
+  id              String        @id @default(cuid())
+  employeeId      String
+  employee        Employee      @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  employeeShiftId String        @unique
+  employeeShift   EmployeeShift @relation(fields: [employeeShiftId], references: [id], onDelete: Cascade)
+  date            DateTime      @db.Date
+
+  checkInAt  DateTime?
+  checkInLat Float?
+  checkInLng Float?
+
+  checkOutAt  DateTime?
+  checkOutLat Float?
+  checkOutLng Float?
+
+  status            AttendanceStatus
+  lateMinutes       Int              @default(0)
+  earlyLeaveMinutes Int              @default(0)
+  overtimeMinutes   Int              @default(0)
+  totalWorkMinutes  Int              @default(0)
+  note              String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([employeeId, date(sort: Desc)])
+  // Partial index equivalent in Prisma requires raw SQL setup in migrations, but we create a standard one here
+  @@index([status, date(sort: Desc)])
+}
+
+model Application {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation("ApplicationEmployee", fields: [employeeId], references: [id], onDelete: Restrict)
+
+  type   ApplicationType
+  status ApplicationStatus @default(pending)
+
+  startDate DateTime
+  endDate   DateTime
+  reason    String?
+  note      String?
+
+  approvedById String?
+  approvedBy   Employee? @relation("ApplicationApprover", fields: [approvedById], references: [id], onDelete: Restrict)
+
+  approvedAt   DateTime?
+  rejectReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  leaveDetail     ApplicationLeaveDetail?
+  shiftSwapDetail ApplicationShiftSwapDetail?
+  overtimeDetail  ApplicationOvertimeDetail?
+  regimeDetail    ApplicationRegimeDetail?
+  lateEarlyDetail ApplicationLateEarlyDetail?
+
+  workingShiftId String?
+  workingShift   WorkingShift? @relation(fields: [workingShiftId], references: [id], onDelete: Restrict)
+
+  @@index([employeeId, status])
+  @@index([employeeId, startDate(sort: Desc)])
+  @@index([status, type])
+  @@index([approvedById])
+  @@index([workingShiftId])
+}
+
+model ApplicationLeaveDetail {
+  applicationId String @id
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  leaveType LeaveType
+
+  documentUrl String?
+
+  createdAt DateTime @default(now())
+
+  @@index([leaveType])
+}
+
+model ApplicationShiftSwapDetail {
+  applicationId String @id
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  employeeShiftId String
+  employeeShift   EmployeeShift @relation("ApplicationEmployeeShift", fields: [employeeShiftId], references: [id], onDelete: Cascade)
+
+  workingShiftId String?
+  workingShift   WorkingShift? @relation("ShiftSwapWorkingShift", fields: [workingShiftId], references: [id], onDelete: Cascade)
+
+  swapWithEmployeeId String
+  swapWithEmployee   Employee @relation("ApplicationSwapWith", fields: [swapWithEmployeeId], references: [id], onDelete: Cascade)
+
+  swapWithShiftId String
+  swapWithShift   EmployeeShift @relation("ApplicationSwapWithShift", fields: [swapWithShiftId], references: [id], onDelete: Cascade)
+
+  @@index([employeeShiftId])
+  @@index([workingShiftId])
+  @@index([swapWithEmployeeId])
+  @@index([swapWithShiftId])
+}
+
+model ApplicationOvertimeDetail {
+  applicationId String @id
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  employeeShiftId String
+  employeeShift   EmployeeShift @relation("ApplicationOvertimeShift", fields: [employeeShiftId], references: [id], onDelete: Cascade)
+
+  expectedMinutes Int?
+
+  @@index([employeeShiftId])
+}
+
+model ApplicationRegimeDetail {
+  applicationId String @id
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  regimeType RegimeType
+
+  reducedMinutesPerDay Int @default(0)
+
+  applyToStart Boolean @default(false)
+  applyToEnd   Boolean @default(false)
+
+  documentUrl String?
+}
+
+model ApplicationLateEarlyDetail {
+  applicationId String @id
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  employeeShiftId String
+  employeeShift   EmployeeShift @relation("ApplicationLateEarlyShift", fields: [employeeShiftId], references: [id], onDelete: Cascade)
+
+  durationMinutes Int
+
+  isLate Boolean
+
+  @@index([employeeShiftId])
+}
+
+model HolidayCalendar {
+  id          String      @id @default(cuid())
+  date        DateTime    @unique @db.Date
+  name        String
+  type        HolidayType
+  createdById String
+  createdBy   Employee    @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type, date])
+  @@index([createdById])
+}
+
+// ── Payroll ──
+model SalaryComponent {
+  id          String             @id @default(cuid())
+  code        String             @unique @default(cuid())
+  name        String             @unique
+  type        ComponentType
+  valueType   ComponentValueType @default(currency)
+  formula     String
+  description String?
+  isActive    Boolean            @default(true)
+  createdById String
+  createdBy   Employee           @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payslipTemplateComponents PayslipTemplateComponent[]
+  payslipDetails            PayslipDetail[]
+
+  @@index([type, isActive])
+  @@index([createdById])
+}
+
+model PayslipTemplate {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdById String
+  createdBy   Employee @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  components    PayslipTemplateComponent[]
+  salaryConfigs EmployeeSalaryConfig[]
+
+  @@index([isActive])
+  @@index([createdById])
+}
+
+model PayslipTemplateComponent {
+  templateId      String
+  template        PayslipTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  componentId     String
+  component       SalaryComponent @relation(fields: [componentId], references: [id], onDelete: Restrict)
+  overrideFormula String?
+
+  @@id([templateId, componentId])
+  @@index([componentId])
+}
+
+model EmployeeSalaryConfig {
+  id         String          @id @default(cuid())
+  employeeId String
+  employee   Employee        @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  templateId String
+  template   PayslipTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+
+  // ── Lương chính ─────────────────────────────────
+  baseSalary Decimal @db.Decimal(15, 2)
+  // Lương cứng hàng tháng — NOT NULL
+
+  // ── Versioning ──────────────────────────────────
+  effectiveFrom DateTime  @db.Date
+  effectiveTo   DateTime? @db.Date
+  note          String?
+
+  createdById String
+  createdBy   Employee @relation("SalaryConfigCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payslips Payslip[]
+
+  @@index([employeeId, effectiveFrom(sort: Desc)])
+  @@index([templateId])
+  @@index([effectiveTo])
+  @@index([createdById])
+}
+
+model SalaryVariable {
+  id          String  @id @default(cuid())
+  code        String  @unique
+  name        String
+  value       Decimal @default(0) @db.Decimal(15, 2)
+  description String?
+  isActive    Boolean @default(true)
+
+  createdById String
+  createdBy   Employee @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([createdById])
+}
+
+model PayrollSettings {
+  id            String   @id @default("GLOBAL")
+  triggerDay    Int
+  triggerHour   Int      @default(0)
+  triggerMinute Int      @default(0)
+  updatedById   String
+  updatedBy     Employee @relation(fields: [updatedById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([updatedById])
+}
+
+model Payroll {
+  id           String        @id @default(cuid())
+  name         String        @default("Bảng lương")
+  periodMonth  Int
+  periodYear   Int
+  status       PayrollStatus @default(draft)
+  /// Derived: SUM(payslips.netSalary). Must be updated in same transaction as payslip changes.
+  totalAmount  Decimal       @default(0) @db.Decimal(15, 2)
+  approvedById String?
+  approvedBy   Employee?     @relation(fields: [approvedById], references: [id], onDelete: Restrict)
+  approvedAt   DateTime?
+  rejectReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payslips Payslip[]
+
+  @@unique([periodYear, periodMonth, name])
+  @@index([status])
+  @@index([approvedById])
+}
+
+model Payslip {
+  id         String   @id @default(cuid())
+  payrollId  String
+  payroll    Payroll  @relation(fields: [payrollId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  salaryConfigId String
+  salaryConfig   EmployeeSalaryConfig @relation(fields: [salaryConfigId], references: [id], onDelete: Restrict)
+
+  totalAdditions  Decimal @default(0) @db.Decimal(15, 2)
+  totalDeductions Decimal @default(0) @db.Decimal(15, 2)
+  netSalary       Decimal @db.Decimal(15, 2)
+  workingDays     Int     @default(0)
+  absentDays      Int     @default(0)
+  overtimeMinutes Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  details PayslipDetail[]
+
+  @@unique([payrollId, employeeId])
+  @@index([employeeId, payrollId(sort: Desc)])
+  @@index([salaryConfigId])
+}
+
+model PayslipDetail {
+  id          String          @id @default(cuid())
+  payslipId   String
+  payslip     Payslip         @relation(fields: [payslipId], references: [id], onDelete: Cascade)
+  componentId String
+  component   SalaryComponent @relation(fields: [componentId], references: [id], onDelete: Restrict)
+  /// Snapshot: name of component at time of payroll calculation (component name may change later)
+  name        String
+  /// Snapshot: type of component at time of payroll calculation
+  type        ComponentType
+  value       Decimal         @db.Decimal(15, 2)
+
+  @@index([payslipId])
+  @@index([componentId])
+}
+
+// ── Project & Product ──
+model Project {
+  id              String        @id @default(cuid())
+  name            String        @unique
+  description     String?
+  techStack       String[] // Array of strings in PG
+  status          ProjectStatus @default(planning)
+  startDate       DateTime?
+  expectedEndDate DateTime?
+  actualEndDate   DateTime?
+  teamLeaderId    String?
+  teamLeader      Employee?     @relation("ProjectTeamLeader", fields: [teamLeaderId], references: [id], onDelete: SetNull)
+  createdById     String
+  createdBy       Employee      @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members ProjectMember[]
+  tasks   Task[]
+
+  @@index([status])
+  @@index([teamLeaderId, status])
+  @@index([createdById])
+}
+
+model ProjectMember {
+  projectId  String
+  project    Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  joinedAt   DateTime  @default(now())
+  removedAt  DateTime?
+
+  @@id([projectId, employeeId])
+  @@index([employeeId])
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  projectId   String
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  priority    TaskPriority @default(medium)
+  status      TaskStatus   @default(todo)
+  assigneeId  String?
+  assignee    Employee?    @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdById String
+  createdBy   Employee     @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  dueDate     DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId, status])
+  @@index([assigneeId, status])
+  @@index([dueDate, status])
+  @@index([createdById])
+}
+
+// ── Auth ──
+model ActivityLog {
+  id         String         @id @default(cuid())
+  employeeId String?
+  employee   Employee?      @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  actionType ActivityAction
+  ipAddress  String?
+  details    Json?          @db.JsonB // JsonB type for flexible metadata
+  expiresAt  DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([employeeId, createdAt(sort: Desc)])
+  @@index([expiresAt])
+}
+
+model PasswordResetRequest {
+  id           String              @id @default(cuid())
+  employeeId   String
+  employee     Employee            @relation("PasswordResetRequestEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  token        String              @unique
+  status       PasswordResetStatus @default(pending)
+  approvedById String?
+  approvedBy   Employee?           @relation("PasswordResetRequestApprover", fields: [approvedById], references: [id], onDelete: Restrict)
+  note         String?
+  expiresAt    DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([employeeId, status])
+  @@index([expiresAt])
+  @@index([approvedById])
+}

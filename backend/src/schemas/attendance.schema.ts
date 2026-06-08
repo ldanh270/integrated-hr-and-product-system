@@ -1,14 +1,14 @@
 import {
   APPLICATION_STATUSES,
   APPLICATION_TYPE_VALUES,
+  APPLICATION_TYPES,
   ATTENDANCE_STATUSES,
   HOLIDAY_TYPES,
+  LEAVE_TYPE_VALUES,
   REGIME_TYPES,
 } from "@/configs/entities/attendance.config.ts"
 
 import { z } from "zod"
-
-const objectIdRegex = /^[0-9a-fA-F]{24}$/
 
 const gpsScanSchema = z.object({
   lat: z.number().min(-90).max(90),
@@ -43,35 +43,89 @@ export const attendanceRecordQuerySchema = z
       .string()
       .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
       .optional(),
-    employeeId: z.string().regex(objectIdRegex, "Invalid ObjectId").optional(),
+    employeeId: z.string().optional(),
     status: z.enum(ATTENDANCE_STATUSES).optional(),
   })
   .strict()
 
 export type AttendanceRecordQuerySchemaType = z.infer<typeof attendanceRecordQuerySchema>
 
-// ─── APPLICATIONS (Leave, OT, Swap) ──────────────────────────
-export const submitApplicationSchema = z
-  .object({
-    type: z.enum(APPLICATION_TYPE_VALUES),
-    reason: z.string().min(5).max(500),
-    startDate: z
-      .string()
-      .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }),
-    endDate: z
-      .string()
-      .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
-      .optional(),
-    regimeType: z.enum(REGIME_TYPES).optional(),
-    swapWith: z.string().regex(objectIdRegex, "Invalid ObjectId").optional(),
-  })
-  .strict()
+// ─── APPLICATIONS (Leave, OT, Swap, etc.) ───────────────────
+
+const baseApplicationSchema = z.object({
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
+  reason: z.string().min(5).max(500).optional(),
+  note: z.string().max(500).optional(),
+  workingShiftId: z.string().optional(),
+})
+
+const leaveDetailSchema = z.object({
+  leaveType: z.enum(LEAVE_TYPE_VALUES),
+  documentUrl: z.string().url().optional().or(z.literal("")),
+})
+
+const shiftSwapDetailSchema = z.object({
+  employeeShiftId: z.string().cuid(),
+  workingShiftId: z.string().cuid().optional(),
+  swapWithEmployeeId: z.string().cuid(),
+  swapWithShiftId: z.string().cuid(),
+})
+
+const overtimeDetailSchema = z.object({
+  employeeShiftId: z.string().cuid(),
+  expectedMinutes: z.number().int().positive().optional(),
+})
+
+const regimeDetailSchema = z.object({
+  regimeType: z.enum(REGIME_TYPES),
+  reducedMinutesPerDay: z.number().int().min(0),
+  applyToStart: z.boolean(),
+  applyToEnd: z.boolean(),
+  documentUrl: z.string().url().optional().or(z.literal("")),
+})
+
+const lateEarlyDetailSchema = z.object({
+  employeeShiftId: z.string().cuid(),
+  durationMinutes: z.number().int().positive(),
+  isLate: z.boolean(),
+})
+
+export const submitApplicationSchema = z.discriminatedUnion("type", [
+  baseApplicationSchema.extend({
+    type: z.literal(APPLICATION_TYPES.LEAVE.LABEL),
+    leaveDetail: leaveDetailSchema,
+  }),
+  baseApplicationSchema.extend({
+    type: z.literal(APPLICATION_TYPES.OVERTIME.LABEL),
+    overtimeDetail: overtimeDetailSchema,
+  }),
+  baseApplicationSchema.extend({
+    type: z.literal(APPLICATION_TYPES.SHIFT_SWAP.LABEL),
+    shiftSwapDetail: shiftSwapDetailSchema,
+  }),
+  baseApplicationSchema.extend({
+    type: z.literal(APPLICATION_TYPES.REGIME.LABEL),
+    regimeDetail: regimeDetailSchema,
+  }),
+  baseApplicationSchema.extend({
+    type: z.literal(APPLICATION_TYPES.LATE_EARLY.LABEL),
+    lateEarlyDetail: lateEarlyDetailSchema,
+  }),
+  baseApplicationSchema.extend({
+    type: z.literal(APPLICATION_TYPES.WORK_FROM_HOME.LABEL),
+  }),
+  baseApplicationSchema.extend({
+    type: z.literal(APPLICATION_TYPES.BUSINESS_TRIP.LABEL),
+  }),
+])
 
 export type SubmitApplicationSchemaType = z.infer<typeof submitApplicationSchema>
 
 export const approveApplicationSchema = z
   .object({
     status: z.enum(APPLICATION_STATUSES),
+    rejectReason: z.string().max(500).optional(),
   })
   .strict()
 
