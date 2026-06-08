@@ -20,6 +20,7 @@ import shiftRoutes from "@/routes/shift.route.ts"
 
 import dotenv from "dotenv"
 import express, { NextFunction, Request, Response } from "express"
+import rateLimit from "express-rate-limit"
 import path from "path"
 import swaggerUi from "swagger-ui-express"
 import YAML from "yamljs"
@@ -42,6 +43,19 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 
 app.use(cors)
 app.use(express.json())
+
+// Set up rate limiter: maximum of 100 requests per 15 minutes
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // max 100 requests per windowMs
+  message: {
+    status: "error",
+    message: "Too many requests, please try again later.",
+  },
+})
+
+// Apply rate limiter to all API requests
+app.use("/api/", limiter)
 
 /**
  * Main routers
