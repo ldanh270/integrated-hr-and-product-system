@@ -66,15 +66,48 @@ export interface IShiftSchedule {
   validTo?: string
 }
 
+export interface IApplicationDetails {
+  // Common fields
+  reason?: string
+  note?: string
+
+  // Leave specific
+  leaveType?: string
+  startDate?: string
+  endDate?: string
+  totalDays?: number
+
+  // OT specific
+  otDate?: string
+  startTime?: string
+  endTime?: string
+  totalHours?: number
+
+  // Shift Swap specific
+  fromShiftId?: string
+  toShiftId?: string
+  swapDate?: string
+
+  // WFH/Remote specific
+  workMode?: string
+
+  // Business Trip specific
+  destination?: string
+
+  // Recruitment Proposal specific (from manager side usually, but good to have)
+  position?: string
+  headcount?: number
+  expectedStart?: string
+}
+
 export interface IApplication {
   _id: string
   employeeId: string
+  employeeName?: string
   type: IApplicationType
   status: IApplicationStatus
-  reason: string
-  startDate: string
-  endDate: string
-  regimeType?: IRegimeType
+  createdAt: string
+  details: IApplicationDetails
 }
 
 export interface IHoliday {

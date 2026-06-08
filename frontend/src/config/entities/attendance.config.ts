@@ -50,3 +50,19 @@ export type IApplicationStatus = (typeof APPLICATION_STATUSES)[number]
 
 export const REGIME_TYPES = ["paid", "unpaid"] as const
 export type IRegimeType = (typeof REGIME_TYPES)[number]
+
+export const LEAVE_TYPES = {
+  ANNUAL: { LABEL: "annual", DESCRIPTION: "Nghỉ phép năm" },
+  SICK: { LABEL: "sick", DESCRIPTION: "Nghỉ ốm" },
+  PERSONAL: { LABEL: "personal", DESCRIPTION: "Việc riêng" },
+  MATERNITY: { LABEL: "maternity", DESCRIPTION: "Nghỉ thai sản" },
+  BEREAVEMENT: { LABEL: "bereavement", DESCRIPTION: "Nghỉ hiếu hỉ" },
+} as const
+export type ILeaveType = (typeof LEAVE_TYPES)[keyof typeof LEAVE_TYPES]["LABEL"]
+
+export const WORK_MODES = {
+  OFFICE: { LABEL: "office", DESCRIPTION: "Tại văn phòng" },
+  REMOTE: { LABEL: "remote", DESCRIPTION: "Làm việc từ xa" },
+  HYBRID: { LABEL: "hybrid", DESCRIPTION: "Làm việc linh hoạt" },
+} as const
+export type IWorkMode = (typeof WORK_MODES)[keyof typeof WORK_MODES]["LABEL"]
