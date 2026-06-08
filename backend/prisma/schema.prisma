@@ -98,6 +98,10 @@ enum ProjectStatus {
   completed
   cancelled
 }
+enum TaskCreationPolicy {
+  leader_only
+  all_members
+}
 
 enum TaskStatus {
   todo
@@ -612,6 +616,7 @@ model Project {
   description     String?
   techStack       String[] // Array of strings in PG
   status          ProjectStatus @default(planning)
+  taskCreationPolicy  TaskCreationPolicy  @default(leader_only)
   startDate       DateTime?
   expectedEndDate DateTime?
   actualEndDate   DateTime?
