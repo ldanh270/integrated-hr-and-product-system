@@ -69,5 +69,22 @@ export const APPLICATION_STATUSES = [
 ] as const
 export type IApplicationStatus = (typeof APPLICATION_STATUSES)[number]
 
+export const LEAVE_TYPES = {
+  ANNUAL: "annual",
+  SICK: "sick",
+  UNPAID: "unpaid",
+  MATERNITY: "maternity",
+  BEREAVEMENT: "bereavement",
+} as const
+
+export const LEAVE_TYPE_VALUES = [
+  LEAVE_TYPES.ANNUAL,
+  LEAVE_TYPES.SICK,
+  LEAVE_TYPES.UNPAID,
+  LEAVE_TYPES.MATERNITY,
+  LEAVE_TYPES.BEREAVEMENT,
+] as const
+export type ILeaveType = (typeof LEAVE_TYPE_VALUES)[number]
+
 export const REGIME_TYPES = ["paid", "unpaid"] as const
 export type IRegimeType = (typeof REGIME_TYPES)[number]
