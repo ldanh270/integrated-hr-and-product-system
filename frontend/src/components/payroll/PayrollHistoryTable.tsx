@@ -68,22 +68,40 @@ export function PayrollHistoryTable({ payrolls, isLoading }: PayrollHistoryTable
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow>
-              <TableHead>Payroll ID</TableHead>
-              <TableHead>Period</TableHead>
-              <TableHead>Total Amount</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created At</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="min-w-12.5 px-4 py-3 font-medium text-xs text-muted-foreground uppercase text-center">
+                #
+              </TableHead>
+              <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                Payroll ID
+              </TableHead>
+              <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                Period
+              </TableHead>
+              <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                Total Amount
+              </TableHead>
+              <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                Status
+              </TableHead>
+              <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                Created At
+              </TableHead>
+              <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap text-right">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {payrolls.map((payroll) => {
+            {payrolls.map((payroll, index) => {
               const isDraft = payroll.status === "draft"
               const isApproved = payroll.status === "approved"
 
               return (
                 <TableRow key={payroll.id}>
-                  <TableCell>
+                  <TableCell className="px-4 py-3 text-center text-muted-foreground">
+                    {index + 1}
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     <button
                       type="button"
                       onClick={() => setSelectedPayrollId(payroll.id)}
@@ -92,16 +110,16 @@ export function PayrollHistoryTable({ payrolls, isLoading }: PayrollHistoryTable
                       PAY-{payroll.id.substring(payroll.id.length - 8).toUpperCase()}
                     </button>
                   </TableCell>
-                  <TableCell className="font-medium">
+                  <TableCell className="px-4 py-3 font-medium">
                     {payroll.periodMonth} / {payroll.periodYear}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-4 py-3">
                     {new Intl.NumberFormat("vi-VN", {
                       style: "currency",
                       currency: "VND",
                     }).format(payroll.totalAmount)}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-4 py-3">
                     <div
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
                         isDraft
@@ -117,14 +135,14 @@ export function PayrollHistoryTable({ payrolls, isLoading }: PayrollHistoryTable
                       {PAYROLL_STATUS_LABELS[payroll.status]}
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="px-4 py-3 text-muted-foreground">
                     {new Intl.DateTimeFormat("en-US", {
                       month: "short",
                       day: "numeric",
                       year: "numeric",
                     }).format(new Date(payroll.createdAt))}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="px-4 py-3 text-right">
                     {isDraft ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

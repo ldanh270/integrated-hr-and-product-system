@@ -72,15 +72,26 @@ export default function EmployeePayslipHistoryDialog({ open, onOpenChange, emplo
               <Table className="text-xs">
                 <TableHeader className="bg-muted/30 sticky top-0 backdrop-blur-sm">
                   <TableRow className="hover:bg-transparent border-b">
-                    <TableHead className="py-3 font-semibold">Kỳ lương</TableHead>
-                    <TableHead className="py-3 font-semibold text-right">Tổng thu nhập</TableHead>
-                    <TableHead className="py-3 font-semibold text-right">Tổng khấu trừ</TableHead>
-                    <TableHead className="py-3 font-semibold text-right">Thực nhận</TableHead>
-                    <TableHead className="py-3 font-semibold w-16"></TableHead>
+                    <TableHead className="min-w-12.5 px-4 py-3 font-medium text-xs text-muted-foreground uppercase text-center">
+                      #
+                    </TableHead>
+                    <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                      Kỳ lương
+                    </TableHead>
+                    <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap text-right">
+                      Tổng thu nhập
+                    </TableHead>
+                    <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap text-right">
+                      Tổng khấu trừ
+                    </TableHead>
+                    <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap text-right">
+                      Thực nhận
+                    </TableHead>
+                    <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap w-16"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {payslips.map((payslip) => (
+                  {payslips.map((payslip, index) => (
                     <TableRow
                       key={payslip.id}
                       className="hover:bg-muted/30 cursor-pointer"
@@ -91,7 +102,10 @@ export default function EmployeePayslipHistoryDialog({ open, onOpenChange, emplo
                         })
                       }
                     >
-                      <TableCell className="py-3 font-medium">
+                      <TableCell className="px-4 py-3 text-center text-muted-foreground">
+                        {index + 1}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 font-medium">
                         {/* Assuming the backend populates payroll.periodMonth and periodYear, if not we fallback */}
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {(payslip as any).payroll?.periodMonth
@@ -99,16 +113,16 @@ export default function EmployeePayslipHistoryDialog({ open, onOpenChange, emplo
                             `Tháng ${(payslip as any).payroll.periodMonth}/${(payslip as any).payroll.periodYear}`
                           : "Kỳ hiện tại"}
                       </TableCell>
-                      <TableCell className="py-3 text-right text-success font-medium">
+                      <TableCell className="px-4 py-3 text-right text-success font-medium">
                         +{formatCurrency(Number(payslip.totalAdditions))}
                       </TableCell>
-                      <TableCell className="py-3 text-right text-destructive font-medium">
+                      <TableCell className="px-4 py-3 text-right text-destructive font-medium">
                         -{formatCurrency(Number(payslip.totalDeductions))}
                       </TableCell>
-                      <TableCell className="py-3 text-right font-bold text-primary">
+                      <TableCell className="px-4 py-3 text-right font-bold text-primary">
                         {formatCurrency(Number(payslip.netSalary))}
                       </TableCell>
-                      <TableCell className="py-3 text-center">
+                      <TableCell className="px-4 py-3 text-center">
                         <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-full">
                           &rarr;
                         </Button>
