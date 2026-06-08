@@ -6,7 +6,6 @@ import { authorizeRoles } from "@/middlewares/role.middleware.ts"
 import { PrismaApplicationRepository } from "@/repositories/application.repository.ts"
 import { ApplicationService } from "@/services/application.service.ts"
 
-import { ApplicationType } from "@prisma/client"
 import express from "express"
 
 const applicationRoutes = express.Router()
@@ -19,15 +18,15 @@ const controller = new ApplicationController(service)
 applicationRoutes.use(authenticate)
 
 // Employees can submit applications and view their own applications
-applicationRoutes.get("/employee/:employeeId", controller.listEmployeeApplications)
-
-// Only admins, HR managers, and managers can approve applications
 applicationRoutes.post("/", controller.submit)
+applicationRoutes.get("/my", controller.listEmployeeApplications)
+applicationRoutes.get("/employee/:employeeId", controller.listEmployeeApplications)
+applicationRoutes.get("/:id", controller.getDetail)
 
-// In a real app, processorId would come from req.user, not the request body
+// Approval routes
 applicationRoutes.patch(
   "/:id/approve",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER, ROLE.TEAM_LEADER),
   controller.approve,
 )
 

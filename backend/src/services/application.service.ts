@@ -19,8 +19,9 @@ export class ApplicationService implements IApplicationService {
     id: string,
     status: IApplicationStatus,
     processorId: string,
+    rejectReason?: string,
   ): Promise<any | null> {
-    const updated = await this.applicationRepo.approve(id, status, processorId)
+    const updated = await this.applicationRepo.approve(id, status, processorId, rejectReason)
     if (!updated) {
       throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, "Service")
     }
@@ -29,5 +30,13 @@ export class ApplicationService implements IApplicationService {
 
   async getEmployeeApplications(employeeId: string): Promise<any[]> {
     return this.applicationRepo.findByEmployee(employeeId)
+  }
+
+  async getApplicationDetail(id: string): Promise<any> {
+    const app = await this.applicationRepo.findById(id)
+    if (!app) {
+      throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, "Service")
+    }
+    return app
   }
 }

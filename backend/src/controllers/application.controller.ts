@@ -11,7 +11,7 @@ export class ApplicationController {
 
   submit = async (req: Request, res: Response<ApiResponse<any>>) => {
     try {
-      const { employeeId } = req.body
+      const employeeId = req.user?.id as string
       const data = submitApplicationSchema.parse(req.body)
       const app = await this.service.submitApplication({ ...data, employeeId })
       res.status(HttpStatusCode.CREATED).json({ data: app, error: null })
@@ -28,11 +28,15 @@ export class ApplicationController {
 
   approve = async (req: Request, res: Response<ApiResponse<any>>) => {
     try {
-      // In a real app, processorId comes from req.user
-      const { processorId } = req.body
-      const { status } = approveApplicationSchema.parse(req.body)
+      const processorId = req.user?.id as string
+      const { status, rejectReason } = approveApplicationSchema.parse(req.body)
 
-      const app = await this.service.processApplication(String(req.params.id), status, processorId)
+      const app = await this.service.processApplication(
+        String(req.params.id),
+        status,
+        processorId,
+        rejectReason,
+      )
       res.status(HttpStatusCode.OK).json({ data: app, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -46,7 +50,13 @@ export class ApplicationController {
   }
 
   listEmployeeApplications = async (req: Request, res: Response<ApiResponse<any[]>>) => {
-    const apps = await this.service.getEmployeeApplications(String(req.params.employeeId))
+    const employeeId = req.params.employeeId || (req.user?.id as string)
+    const apps = await this.service.getEmployeeApplications(employeeId)
     res.status(HttpStatusCode.OK).json({ data: apps, error: null })
+  }
+
+  getDetail = async (req: Request, res: Response<ApiResponse<any>>) => {
+    const app = await this.service.getApplicationDetail(req.params.id)
+    res.status(HttpStatusCode.OK).json({ data: app, error: null })
   }
 }
