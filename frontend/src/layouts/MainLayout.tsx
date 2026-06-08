@@ -1,5 +1,5 @@
-import Header from "@/components/layouts/Header.tsx"
-import Sidebar from "@/components/layouts/Sidebar.tsx"
+import Header from "@/components/layouts/Header"
+import Sidebar from "@/components/layouts/Sidebar"
 import { SUBSYSTEMS } from "@/config/subsystem"
 import { useSubsystemStore } from "@/store/subsystem-store"
 
@@ -8,33 +8,31 @@ import { useEffect } from "react"
 
 import { useLocation } from "react-router-dom"
 
-/**
- * MainLayout component
- * Provides split-screen vertical navigation layout with Sidebar and top Header
- */
-const MainLayout = ({ children }: { children: ReactNode }) => {
+interface MainLayoutProps {
+  children?: ReactNode
+}
+
+export default function MainLayout({ children }: MainLayoutProps) {
   const location = useLocation()
   const { setActiveSubsystem } = useSubsystemStore()
 
+  // Sync active subsystem based on current URL
   useEffect(() => {
-    // Sync URL with activeSubsystem store
-    const path = location.pathname
-    // Find matching subsystem by routePrefix
-    const matchingSubsystem = SUBSYSTEMS.find((sub) => path.startsWith(sub.routePrefix))
-    if (matchingSubsystem) {
-      setActiveSubsystem(matchingSubsystem.id)
+    const currentPath = location.pathname
+    // Find the subsystem whose routePrefix matches the current path
+    const matchedSubsystem = SUBSYSTEMS.find((sub) => currentPath.startsWith(sub.routePrefix))
+    if (matchedSubsystem) {
+      setActiveSubsystem(matchedSubsystem.id)
     }
   }, [location.pathname, setActiveSubsystem])
 
   return (
-    <div className="min-h-screen flex bg-background overflow-hidden">
+    <div className="flex h-screen w-full bg-background overflow-hidden">
       <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto bg-secondary/30">{children}</main>
+        <main className="flex-1 overflow-y-auto px-4 md:px-6 lg:px-8">{children}</main>
       </div>
     </div>
   )
 }
-
-export default MainLayout

@@ -6,8 +6,6 @@ const gpsSchema = z.object({
   radiusMeters: z.number().min(10).optional(),
 })
 
-
-
 // ─── WORKING SHIFT ───────────────────────────────────────────
 export const createWorkingShiftSchema = z
   .object({
@@ -31,10 +29,14 @@ export const assignShiftScheduleSchema = z
   .object({
     employeeId: z.string(), // Note: Use .uuid() if strict, or leave string
     workingShiftId: z.string(),
-    days: z.array(z.object({
-      dayOfWeek: z.number().min(0).max(6),
-      shiftId: z.string()
-    })).optional(),
+    days: z
+      .array(
+        z.object({
+          dayOfWeek: z.number().min(0).max(6),
+          shiftId: z.string(),
+        }),
+      )
+      .optional(),
     validFrom: z
       .string()
       .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }),

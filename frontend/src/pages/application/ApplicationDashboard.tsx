@@ -91,7 +91,7 @@ export default function ApplicationDashboard() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6 w-full max-w-7xl mx-auto">
+    <div className="flex flex-col gap-6 p-6 w-full mx-auto">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border pb-6">
         <div>

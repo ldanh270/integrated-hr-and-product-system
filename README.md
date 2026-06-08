@@ -1,14 +1,14 @@
-# SWP391 — HRM System · Team 7
+# Integrated HR & Product System (HRP)
 
-Hệ thống quản lý nhân sự (Human Resource Management). Dự án môn học SWP391, Học kỳ Summer 2026.
+A comprehensive and modern Integrated Human Resource and Product Management System.
 
 ---
 
-## 🛠️ Công nghệ sử dụng (Tech Stack)
+## 🛠️ Tech Stack
 
 | Layer    | Technology                                      |
 | -------- | ----------------------------------------------- |
-| Runtime  | **Bun** (Trình chạy & quản lý package chính)    |
+| Runtime  | **Bun** (Primary runtime & package manager)     |
 | Backend  | Express 5 + TypeScript + Prisma ORM             |
 | Frontend | React 19 + Vite 8 + TypeScript + Tailwind CSS   |
 | Database | PostgreSQL                                      |
@@ -16,58 +16,56 @@ Hệ thống quản lý nhân sự (Human Resource Management). Dự án môn h�
 
 ---
 
-## 📁 Cấu trúc thư mục (Project Structure)
+## 📁 Project Structure
 
 ```text
 .
 ├── backend/            # Express REST API (TypeScript + Bun)
 │   ├── src/
 │   │   ├── configs/    # Centralized configurations (entities, auth, system, rules)
-│   │   ├── controllers/# Request handlers (chỉ xử lý HTTP adapter)
-│   │   ├── libs/       # Thư viện dùng chung (kết nối DB, Prisma client,...)
-│   │   ├── middlewares/# Express Middlewares (CORS, Validate, Auth guard)
-│   │   ├── repositories/# Data access layer (Nơi chạy query SQL/Prisma)
-│   │   ├── routes/     # Định nghĩa APIs route
-│   │   ├── services/   # Business logic layer (Xử lý nghiệp vụ chính)
-│   │   ├── utils/      # Helpers & các class lỗi (AppError)
-│   │   └── scripts/    # Các script độc lập (Seed, Clear DB, Hash password)
+│   │   ├── controllers/# Request handlers (HTTP adapters)
+│   │   ├── libs/       # Shared libraries (DB connection, Prisma client)
+│   │   ├── middlewares/# Express Middlewares (CORS, Validation, Auth guards)
+│   │   ├── repositories/# Data access layer (Prisma queries)
+│   │   ├── routes/     # API route definitions
+│   │   ├── services/   # Core Business Logic Layer
+│   │   ├── utils/      # Helpers & Custom Errors (AppError)
+│   │   └── scripts/    # Standalone scripts (Seed, Clear DB, Hash password)
 │   └── prisma/         # Prisma Schema & Migrations
 ├── frontend/           # React SPA (Vite + TypeScript)
 │   └── src/
-│       ├── components/ # UI Components / Primitives
+│       ├── components/ # Shared UI Components / Primitives
 │       ├── features/   # Feature-sliced modules
 │       ├── pages/      # Route pages
 │       └── App.tsx
-└── docs/               # Tài liệu thiết kế hệ thống & Quy chuẩn coding
+└── docs/               # System Architecture & Coding Standards Documentation
 ```
 
 ---
 
-## 🚀 Hướng dẫn Cài đặt & Khởi chạy
+## 🚀 Getting Started
 
-### 1. Yêu cầu hệ thống
+### 1. System Requirements
 
-- Yêu cầu cài đặt **[Bun](https://bun.sh)** (phiên bản `>= 1.0`).
+- **[Bun](https://bun.sh)** (`>= 1.0`) is required.
 
-### 2. Cài đặt Dependencies
+### 2. Install Dependencies
 
-Chạy lệnh sau tại thư mục **ROOT** để cài đặt thư viện cho toàn bộ dự án (cả Frontend và Backend):
+Run the following command at the **ROOT** directory to install dependencies for both Frontend and Backend concurrently:
 
 ```bash
 bun run install:all
 ```
 
-_(Lệnh này sử dụng `concurrently` để tự động chạy cài đặt song song ở cả 2 thư mục)._
+### 3. Environment Variables
 
-### 3. Cấu hình biến môi trường (Environment Variables)
-
-Tạo file `backend/.env` bằng cách sao chép từ file mẫu:
+Create the `backend/.env` file by copying the provided example:
 
 ```bash
 cp backend/.env.example backend/.env
 ```
 
-Cấu hình các giá trị trong `backend/.env` phù hợp với database PostgreSQL của bạn:
+Configure your PostgreSQL database connection string in `backend/.env`:
 
 ```env
 PORT=5000
@@ -78,54 +76,52 @@ REFRESH_TOKEN_SECRET=your_jwt_refresh_secret_here
 
 ---
 
-## 💻 Danh sách Lệnh CLI tại thư mục ROOT
+## 💻 CLI Commands (Root Level)
 
-Bạn có thể chạy toàn bộ các lệnh phát triển, tương tác DB trực tiếp từ thư mục **ROOT** mà không cần `cd` vào từng thư mục con.
+You can run development and database management commands directly from the **ROOT** directory without navigating into subfolders.
 
-### 1. Khởi chạy môi trường Phát triển (Development)
+### 1. Development Environment
 
-| Lệnh                   | Mô tả                                                                                                      |
-| :--------------------- | :--------------------------------------------------------------------------------------------------------- |
-| `bun run dev`          | Khởi chạy song song cả **Backend** (`:5000`) và **Frontend** (`:5173`)                                     |
-| `bun run dev:all`      | **(Khuyên dùng)** Chạy đồng thời **Frontend** + **Backend** + **Prisma Studio** (GUI quản lý DB trực quan) |
-| `bun run dev:backend`  | Chỉ chạy riêng Backend (có hot-reload tự động xem thay đổi code)                                           |
-| `bun run dev:frontend` | Chỉ chạy riêng Frontend (Vite Dev Server)                                                                  |
+| Command                | Description                                                                                    |
+| :--------------------- | :--------------------------------------------------------------------------------------------- |
+| `bun run dev`          | Starts both **Backend** (`:5000`) and **Frontend** (`:5173`) concurrently.                     |
+| `bun run dev:all`      | **(Recommended)** Starts **Frontend** + **Backend** + **Prisma Studio** (Visual Database GUI). |
+| `bun run dev:backend`  | Starts only the Backend (with hot-reload).                                                     |
+| `bun run dev:frontend` | Starts only the Frontend (Vite Dev Server).                                                    |
 
 > [!TIP]
-> Sử dụng lệnh **`bun run dev:all`** để vừa lập trình vừa có sẵn giao diện quản trị cơ sở dữ liệu trực quan trên trình duyệt (mặc định tại `http://localhost:5555`).
+> Use **`bun run dev:all`** to develop while having direct access to your database via Prisma Studio (default at `http://localhost:5555`).
 
 ---
 
-### 2. Quản lý Cơ sở Dữ liệu (Database & Prisma)
+### 2. Database Management (Prisma)
 
-| Lệnh                    | Mô tả                                                                        |
-| :---------------------- | :--------------------------------------------------------------------------- |
-| `bun run db:migrate`    | Tạo và chạy các file database migration mới dựa trên `schema.prisma`         |
-| `bun run db:generate`   | Biên dịch tạo lại Prisma Client (cần chạy sau khi sửa đổi schema)            |
-| `bun run db:studio`     | Khởi chạy Prisma Studio độc lập (Giao diện web để xem/sửa dữ liệu trực tiếp) |
-| `bun run db:seed`       | Nạp dữ liệu mẫu cơ bản vào database                                          |
-| `bun run db:seed:all`   | Nạp toàn bộ dữ liệu mẫu nâng cao                                             |
-| `bun run db:seed:reset` | Xóa sạch toàn bộ bảng DB cũ và tiến hành seed lại từ đầu                     |
-| `bun run db:clear`      | Xóa sạch hoàn toàn dữ liệu trong các bảng DB hiện tại                        |
+| Command                 | Description                                                             |
+| :---------------------- | :---------------------------------------------------------------------- |
+| `bun run db:migrate`    | Generates and runs new database migrations based on `schema.prisma`.    |
+| `bun run db:generate`   | Regenerates the Prisma Client (required after schema changes).          |
+| `bun run db:studio`     | Starts standalone Prisma Studio to visually inspect and edit data.      |
+| `bun run db:seed`       | Automatically clears the DB and seeds a complete set of mock data.      |
+| `bun run db:seed:admin` | Seeds/Updates only the 5 core role accounts (Admin, HR, Leader, etc.).  |
+| `bun run db:clear`      | Safely truncates and clears all data across all tables in the database. |
 
 ---
 
-### 3. Các lệnh bổ trợ khác (Helpers)
+### 3. Utilities & Helpers
 
-| Lệnh                    | Mô tả                                                  |
+| Command                 | Description                                            |
 | :---------------------- | :----------------------------------------------------- |
-| `bun run hash-password` | Tiện ích băm nhanh một mật khẩu (phục vụ test)         |
-| `bun run seed-admin`    | Tạo nhanh tài khoản Administrator mặc định vào DB      |
-| `bun run build`         | Build dự án Frontend phục vụ cho môi trường Production |
+| `bun run hash-password` | Quickly hashes a password string for testing purposes. |
+| `bun run build`         | Builds the Frontend application for Production.        |
 
 ---
 
-## 📑 Tài liệu Hướng dẫn chi tiết (Documentation Index)
+## 📑 Documentation Index
 
-Trước khi viết code mới hoặc thực hiện thay đổi, vui lòng đọc kỹ các tài liệu tiêu chuẩn thiết kế trong thư mục `docs/`:
+Before writing new code or making structural changes, carefully review the design guidelines in the `docs/` directory:
 
-- 📜 **[Quy chuẩn coding (Code Standards)](file:///docs/code-standards.md)**: Quy tắc đặt tên, cấu trúc file, standard abstractions.
-- 📜 **[Nguyên lý SOLID (SOLID Principles)](file:///docs/solid-principles.md)**: Cách thiết kế class, layers lỏng lẻo & tái sử dụng.
-- 📜 **[Mẫu thiết kế (Design Patterns)](file:///docs/design-patterns.md)**: Hướng dẫn áp dụng Repository, Service, Strategy, Factory patterns.
-- 📜 **[Kiến trúc hệ thống (System Architecture)](file:///docs/system-architecture.md)**: Sơ đồ luồng xử lý Request/Response, Auth flow chi tiết.
-- 📜 **[Hợp đồng Interface (Interface Contracts)](file:///docs/interface-contracts.md)**: Danh sách các API contracts, DTOs & envelopes chuẩn hóa.
+- 📜 **[Code Standards](file:///docs/code-standards.md)**: Naming conventions, file structure, and standard abstractions.
+- 📜 **[SOLID Principles](file:///docs/solid-principles.md)**: Class design, loose coupling, and reusability.
+- 📜 **[Design Patterns](file:///docs/design-patterns.md)**: Implementation guides for Repository, Service, Strategy, and Factory patterns.
+- 📜 **[System Architecture](file:///docs/system-architecture.md)**: Request/Response lifecycles and comprehensive Auth flow diagrams.
+- 📜 **[Interface Contracts](file:///docs/interface-contracts.md)**: Standardized API contracts, DTOs, and response envelopes.

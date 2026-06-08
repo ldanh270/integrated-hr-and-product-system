@@ -137,10 +137,12 @@ export class ApprovalService implements IApprovalService {
         where: { id: dto.id },
         data: {
           status:
-            dto.status === "approved" ? ApplicationStatus.approved : ApplicationStatus.rejected,
+            dto.status === APPLICATION_STATUS.APPROVED
+              ? ApplicationStatus.approved
+              : ApplicationStatus.rejected,
           approvedById: dto.processorId,
           approvedAt: new Date(),
-          ...(dto.rejectReason && dto.status === "rejected"
+          ...(dto.rejectReason && dto.status === APPLICATION_STATUS.REJECTED
             ? { rejectReason: dto.rejectReason }
             : {}),
         },
@@ -168,7 +170,7 @@ export class ApprovalService implements IApprovalService {
         )
       }
 
-      const isApproved = dto.status === "approved"
+      const isApproved = dto.status === APPLICATION_STATUS.APPROVED
       let tempPassword = ""
 
       const updatedReq = await prisma.passwordResetRequest.update({

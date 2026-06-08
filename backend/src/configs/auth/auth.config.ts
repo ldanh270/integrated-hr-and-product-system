@@ -4,7 +4,6 @@ export const ACCESS_TOKEN_TTL = 24 * 60 * 60 * 1000 // 1 day
 export const REGEX = {
   // MongoDB ObjectId is no longer used, we use Postgres UUID
 
-
   // Only contain lowercase letters, numbers, and underscores (_) and dots (.)
   USERNAME: /^[a-z0-9_.]+$/,
 

@@ -1,4 +1,5 @@
 import { ROUTES } from "@/config/routes.config"
+import { SUBSYSTEMS } from "@/config/subsystem"
 import { privateRoutes, publicRoutes } from "@/routes"
 import { useAuthStore } from "@/store/auth-store.ts"
 
@@ -63,6 +64,39 @@ const App = () => {
                       <Page />
                     </Layout>
                   </PublicRoute>
+                }
+              />
+            )
+          })}
+
+          {/* Subsystem Redirects */}
+          {SUBSYSTEMS.map((subsystem) => {
+            const subsystemKey = subsystem.id.toUpperCase() as keyof typeof ROUTES
+            const routeObj = ROUTES[subsystemKey]
+
+            // Lấy từ ROUTES object nếu có, nếu không thì lấy từ sidebarItems
+            let firstPath = subsystem.sidebarItems[0]?.path || `${subsystem.routePrefix}/dashboard`
+
+            if (routeObj && typeof routeObj === "object") {
+              const values = Object.values(routeObj)
+              if (values.length > 0 && typeof values[0] === "string") {
+                firstPath = values[0]
+              }
+            }
+
+            // Prevent infinite loop if the first path is the prefix itself (e.g. attendance)
+            if (firstPath === subsystem.routePrefix) {
+              return null
+            }
+
+            return (
+              <Route
+                key={`redirect-${subsystem.id}`}
+                path={subsystem.routePrefix}
+                element={
+                  <ProtectedRoute>
+                    <Navigate to={firstPath} replace />
+                  </ProtectedRoute>
                 }
               />
             )

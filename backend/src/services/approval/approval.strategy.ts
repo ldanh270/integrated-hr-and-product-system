@@ -1,4 +1,5 @@
 import { ROLE } from "@/configs/entities/employee.config.ts"
+import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
 import { APPROVAL_CONFIG, RequestCategory } from "@/configs/rules/approval.config.ts"
 import { prisma } from "@/libs/database.ts"
 
@@ -53,7 +54,7 @@ export class TeamLeaderApprovalStrategy implements IApprovalStrategy {
     const activeProject = await prisma.project.findFirst({
       where: {
         teamLeaderId: processorId,
-        status: "active",
+        status: PROJECT_STATUS.ACTIVE,
         members: {
           some: {
             employeeId: applicantId,

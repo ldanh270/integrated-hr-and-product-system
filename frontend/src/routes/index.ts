@@ -55,15 +55,46 @@ const privateRoutes = [
     component: lazy(() => import("@/pages/attendance/Holidays.tsx")),
     layout: MainLayout,
   },
-  // New Placeholder Modules
   {
     path: "/application/dashboard",
     component: lazy(() => import("@/pages/application/ApplicationDashboard.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/payroll/dashboard",
-    component: lazy(() => import("@/pages/payroll/PayrollDashboard.tsx")),
+    path: "/payroll/salary-components",
+    component: lazy(() => import("@/pages/payroll/SalaryComponents.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/payroll/salary-variables",
+    component: lazy(() => import("@/pages/payroll/SalaryVariables.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/payroll/cycle",
+    component: lazy(() => import("@/pages/payroll/PayrollCycle.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/payroll/employee-salary",
+    component: lazy(() => import("@/pages/payroll/EmployeeSalary.tsx")),
+    layout: MainLayout,
+  },
+
+  {
+    path: "/payroll/list",
+    component: lazy(() => import("@/pages/payroll/PayrollManagement.tsx")),
+    layout: MainLayout,
+  },
+
+  {
+    path: "/payroll/payslip-templates",
+    component: lazy(() => import("@/pages/payroll/PayslipTemplates.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/payroll/my-payslips",
+    component: lazy(() => import("@/pages/payroll/MyPayslips.tsx")),
     layout: MainLayout,
   },
   {

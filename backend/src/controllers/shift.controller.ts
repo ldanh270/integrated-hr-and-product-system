@@ -1,11 +1,11 @@
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import { createWorkingShiftSchema, updateWorkingShiftSchema } from "@/schemas/shift.schema.ts"
 import { ApiResponse } from "@/types"
 import { IShiftService } from "@/types/shift.types.ts"
 
 import { Request, Response } from "express"
 import { z } from "zod"
-import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 
 export class ShiftController {
   constructor(private service: IShiftService) {}

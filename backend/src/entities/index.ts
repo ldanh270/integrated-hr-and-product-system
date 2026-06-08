@@ -1,4 +1,3 @@
-// Re-export Prisma generated types for use across the codebase
 export type {
   Employee,
   WorkingShift,
@@ -9,9 +8,10 @@ export type {
   Application,
   HolidayCalendar,
   Payroll,
-  PayrollComponent,
-  PayrollTemplate,
-  PayrollTemplateComponent,
+  SalaryComponent,
+  PayslipTemplate,
+  PayslipTemplateComponent,
+  EmployeeSalaryConfig,
   PayrollSettings,
   Payslip,
   PayslipDetail,
