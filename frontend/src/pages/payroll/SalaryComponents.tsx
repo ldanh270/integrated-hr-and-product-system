@@ -63,9 +63,6 @@ export default function SalaryComponents() {
                   #
                 </TableHead>
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
-                  Mã thành phần
-                </TableHead>
-                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                   Tên thành phần
                 </TableHead>
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
@@ -86,19 +83,19 @@ export default function SalaryComponents() {
             <TableBody className="divide-y divide-border">
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center">
+                  <TableCell colSpan={7} className="h-24 text-center">
                     <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
                   </TableCell>
                 </TableRow>
               ) : isError ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center text-destructive">
+                  <TableCell colSpan={7} className="h-24 text-center text-destructive">
                     Lỗi khi tải danh sách thành phần lương.
                   </TableCell>
                 </TableRow>
               ) : !components || components.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                     Chưa có thành phần lương nào được cấu hình.
                   </TableCell>
                 </TableRow>
@@ -108,11 +105,13 @@ export default function SalaryComponents() {
                     <TableCell className="px-4 py-3 text-muted-foreground text-center">
                       {index + 1}
                     </TableCell>
-                    <TableCell className="px-4 py-3 font-mono font-medium text-primary/80 whitespace-nowrap">
-                      {comp.code || comp.id.split("-")[0].toUpperCase()}
-                    </TableCell>
-                    <TableCell className="px-4 py-3 font-medium whitespace-nowrap">
-                      {comp.name}
+                    <TableCell className="px-4 py-3 text-foreground font-medium whitespace-nowrap">
+                      <button
+                        onClick={() => handleEdit(comp)}
+                        className="hover:text-primary hover:underline focus:outline-none"
+                      >
+                        {comp.name}
+                      </button>
                     </TableCell>
                     <TableCell className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                       {COMPONENT_TYPE_LABELS[comp.type]}
