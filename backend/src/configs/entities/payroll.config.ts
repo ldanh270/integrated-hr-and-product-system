@@ -36,3 +36,8 @@ export const FORMULA_CONTEXT_VARS = [
   "lateMinutes",
   "holidayDays",
 ] as const
+
+// Helper functions
+export const generateDefaultPayrollName = (month: number, year: number): string => {
+  return `Bảng lương tháng ${month}/${year}`
+}

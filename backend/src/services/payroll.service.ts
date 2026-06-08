@@ -1,6 +1,6 @@
 import { ATTENDANCE_STATUS, EMPLOYEE_SHIFT_STATUS } from "@/configs/entities/attendance.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
-import { PAYROLL_STATUS, SALARY_COMPONENT_TYPES } from "@/configs/entities/payroll.config.ts"
+import { PAYROLL_STATUS, SALARY_COMPONENT_TYPES, generateDefaultPayrollName } from "@/configs/entities/payroll.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { IAttendanceRepository } from "@/types/attendance.types.ts"
 import { IEmployeeRepository } from "@/types/employee.types.ts"
@@ -33,8 +33,9 @@ export class PayrollService implements IPayrollService {
     private prisma: PrismaClient,
   ) {}
 
-  async generatePayroll(month: number, year: number): Promise<Payroll> {
-    const existing = await this.payrollRepo.findByPeriod(month, year)
+  async generatePayroll(month: number, year: number, name?: string): Promise<Payroll> {
+    const finalName = name || generateDefaultPayrollName(month, year)
+    const existing = await this.payrollRepo.findByPeriod(month, year, finalName)
     if (existing) {
       throw new AppError(
         "Payroll already exists for this period",
@@ -54,7 +55,7 @@ export class PayrollService implements IPayrollService {
     const periodStart = new Date(year, month - 1, 1)
     const periodEnd = new Date(year, month, 0) // last day of the month
 
-    const payroll = await this.payrollRepo.create({ periodMonth: month, periodYear: year })
+    const payroll = await this.payrollRepo.create({ periodMonth: month, periodYear: year, name: finalName })
 
     // Fetch all active global salary variables
     const globalVariables = await this.prisma.salaryVariable.findMany({
@@ -170,8 +171,9 @@ export class PayrollService implements IPayrollService {
     return { ...payroll, totalAmount }
   }
 
-  async getPayroll(month: number, year: number): Promise<Payroll> {
-    const payroll = await this.payrollRepo.findByPeriod(month, year)
+  async getPayroll(month: number, year: number, name?: string): Promise<Payroll> {
+    const finalName = name || generateDefaultPayrollName(month, year)
+    const payroll = await this.payrollRepo.findByPeriod(month, year, finalName)
     if (!payroll) throw new AppError("Payroll not found", HttpStatusCode.NOT_FOUND, "SERVICE")
     return payroll
   }

@@ -219,11 +219,11 @@ export function CreatePayslipTemplateForm({
                 <h2 className="font-semibold text-foreground">Thành phần lương</h2>
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-muted-foreground">Sao chép mẫu lương đã có</span>
-                  <Select disabled={isReadOnly}>
-                    <SelectTrigger className="w-50 rounded-full border-border shadow-none bg-background">
-                      <SelectValue placeholder="Chọn mẫu" />
+                  <Select onValueChange={handleCopyTemplate} disabled={isReadOnly}>
+                    <SelectTrigger className="w-50 rounded-full border-border h-11 bg-card shadow-none focus:ring-1 focus:ring-primary">
+                      <SelectValue placeholder="Chọn mẫu lương..." />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="border-border rounded-md shadow-sm">
                       <SelectItem value="none" disabled>
                         Chưa có mẫu nào
                       </SelectItem>

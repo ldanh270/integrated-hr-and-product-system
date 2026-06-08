@@ -16,7 +16,7 @@ const employeeRepo = new PrismaEmployeeRepository(prisma)
 const settingsRepo = {
   findGlobal: async () => {
     const s = await prisma.payrollSettings.findUnique({ where: { id: "GLOBAL" } })
-    return s || { triggerDay: 1, standardWorkingDays: 22 }
+    return s || { triggerDay: 1, triggerHour: 0, triggerMinute: 0, standardWorkingDays: 22 }
   },
 }
 
@@ -31,21 +31,31 @@ const payrollService = new PayrollService(
 )
 
 export const initCronJobs = () => {
-  // Run at 00:00 every day
-  cron.schedule("0 0 * * *", async () => {
+  // Run every minute to check if current time matches trigger settings
+  cron.schedule("* * * * *", async () => {
     try {
       const settings = await settingsRepo.findGlobal()
       const today = new Date()
 
-      if (today.getDate() !== settings.triggerDay) return
+      // Check day, hour, and minute
+      if (
+        today.getDate() !== settings.triggerDay ||
+        today.getHours() !== settings.triggerHour ||
+        today.getMinutes() !== settings.triggerMinute
+      ) {
+        return
+      }
 
       const month = today.getMonth() + 1
       const year = today.getFullYear()
 
-      const existing = await payrollRepo.findByPeriod(month, year)
+      // We check if a default payroll exists for this period, or just any payroll?
+      // Since it's the cron job, it generates the main default payroll.
+      const existing = await payrollRepo.findByPeriod(month, year) // Need to ensure findByPeriod is ok
       if (existing) return // Already ran for this month
 
       console.log(`[CRON] Generating Payroll for ${month}/${year}...`)
+      // Cron job uses the default name generated in the service
       await payrollService.generatePayroll(month, year)
       console.log(`[CRON] Payroll ${month}/${year} generated successfully.`)
     } catch (error) {

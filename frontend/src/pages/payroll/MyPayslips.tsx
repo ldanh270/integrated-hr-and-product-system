@@ -1,7 +1,15 @@
-import { PageHeader } from "@/components/common"
+import { PageCard, PageHeader } from "@/components/common"
 import PayslipSheet from "@/components/features/payroll/payslip-sheet"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { PAYROLL_STATUS_BADGE, PAYROLL_STATUS_LABELS } from "@/config/entities/payroll.config"
 import { useMyPayslips } from "@/hooks/payroll/use-my-payslips"
 import { formatCurrency } from "@/lib/utils"
@@ -9,7 +17,7 @@ import type { IPayslip } from "@/types/payroll.types"
 
 import { useState } from "react"
 
-import { CalendarDays, FileText, Loader2 } from "lucide-react"
+import { CalendarDays, ChevronRight, FileText, Loader2 } from "lucide-react"
 
 export default function MyPayslips() {
   const { data: payslips, isLoading, isError } = useMyPayslips()
@@ -17,63 +25,121 @@ export default function MyPayslips() {
   const [selectedPayslip, setSelectedPayslip] = useState<IPayslip | null>(null)
 
   return (
-    <div className="container px-6 py-6 space-y-6">
+    <div className="container px-6 py-6">
       <PageHeader
         title="Lương của tôi"
         description="Lịch sử và chi tiết các phiếu lương của bạn."
       />
 
-      {isLoading ? (
-        <div className="flex h-64 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <PageCard className="overflow-hidden p-0" noBorder={false}>
+        <div className="overflow-x-auto">
+          <Table className="text-sm">
+            <TableHeader className="bg-muted/40">
+              <TableRow className="hover:bg-transparent border-b">
+                <TableHead className="px-6 py-4 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                  Kỳ lương
+                </TableHead>
+                <TableHead className="px-6 py-4 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap text-center">
+                  Ngày công
+                </TableHead>
+                <TableHead className="px-6 py-4 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap text-center">
+                  Tăng ca
+                </TableHead>
+                <TableHead className="px-6 py-4 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                  Trạng thái
+                </TableHead>
+                <TableHead className="px-6 py-4 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap text-right">
+                  Thực lãnh
+                </TableHead>
+                <TableHead className="px-6 py-4"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-border">
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-32 text-center">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                  </TableCell>
+                </TableRow>
+              ) : isError ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-32 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                        <FileText className="h-5 w-5 text-destructive" />
+                      </div>
+                      <p className="text-destructive font-medium text-sm">Lỗi khi tải dữ liệu phiếu lương</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : !payslips || payslips.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-32 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                        <FileText className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <p className="text-muted-foreground text-sm">Bạn chưa có phiếu lương nào.</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                payslips.map((payslip) => (
+                  <TableRow
+                    key={payslip.id}
+                    className="hover:bg-muted/30 cursor-pointer transition-colors group"
+                    onClick={() => setSelectedPayslip(payslip)}
+                  >
+                    <TableCell className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                          <CalendarDays className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-foreground">
+                            Tháng {payslip.periodMonth}/{payslip.periodYear}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            Kỳ lương định kỳ
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-center font-medium text-muted-foreground">
+                      {payslip.workingDays} <span className="text-xs font-normal">ngày</span>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-center font-medium text-muted-foreground">
+                      {payslip.overtimeMinutes} <span className="text-xs font-normal">phút</span>
+                    </TableCell>
+                    <TableCell className="px-6 py-4">
+                      <Badge 
+                        variant={payslip.status ? PAYROLL_STATUS_BADGE[payslip.status] : "default"}
+                        className="rounded-full shadow-none font-medium px-2.5 py-0.5"
+                      >
+                        {payslip.status ? PAYROLL_STATUS_LABELS[payslip.status] : "Không rõ"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-right">
+                      <div className="font-bold text-primary text-base">
+                        {formatCurrency(payslip.netSalary)}
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
-      ) : isError ? (
-        <div className="flex h-64 flex-col items-center justify-center text-center space-y-3">
-          <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
-            <FileText className="h-6 w-6 text-destructive" />
-          </div>
-          <p className="text-destructive font-medium">Lỗi khi tải dữ liệu phiếu lương</p>
-        </div>
-      ) : !payslips || payslips.length === 0 ? (
-        <div className="flex h-64 flex-col items-center justify-center text-center space-y-3 border rounded-xl border-dashed">
-          <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-            <FileText className="h-6 w-6 text-muted-foreground" />
-          </div>
-          <p className="text-muted-foreground">Bạn chưa có phiếu lương nào.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {payslips.map((payslip) => (
-            <Card
-              key={payslip.id}
-              className="cursor-pointer hover:border-primary/50 transition-colors"
-              onClick={() => setSelectedPayslip(payslip)}
-            >
-              <CardHeader className="pb-3 flex flex-row items-start justify-between space-y-0">
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <CalendarDays className="h-5 w-5 text-muted-foreground" />
-                  Kỳ lương {payslip.periodMonth}/{payslip.periodYear}
-                </CardTitle>
-                <Badge variant={payslip.status ? PAYROLL_STATUS_BADGE[payslip.status] : "default"}>
-                  {payslip.status ? PAYROLL_STATUS_LABELS[payslip.status] : "Không rõ"}
-                </Badge>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Thực lãnh</p>
-                  <p className="text-2xl font-bold text-primary">
-                    {formatCurrency(payslip.netSalary)}
-                  </p>
-                </div>
-                <div className="mt-4 flex justify-between text-xs text-muted-foreground">
-                  <span>Ngày công: {payslip.workingDays}</span>
-                  <span>Tăng ca: {payslip.overtimeMinutes}p</span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      </PageCard>
 
       <PayslipSheet
         payslip={selectedPayslip}

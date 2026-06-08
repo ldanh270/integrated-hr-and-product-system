@@ -67,7 +67,7 @@ export const getPayrollDetails = async (id: string) => {
   return response.data.data
 }
 
-export const generatePayroll = async (data: { month: number; year: number }) => {
+export const generatePayroll = async (data: { month: number; year: number; name?: string }) => {
   const response = await apiClient.post<{ data: IPayroll }>("/payrolls/generate", data)
   return response.data.data
 }

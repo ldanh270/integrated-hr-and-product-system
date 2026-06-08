@@ -22,7 +22,7 @@ const employeeRepo = new PrismaEmployeeRepository(prisma)
 const settingsRepo = {
   findGlobal: async () => {
     const s = await prisma.payrollSettings.findUnique({ where: { id: "GLOBAL" } })
-    return s || { triggerDay: 1 }
+    return s || { triggerDay: 1, triggerHour: 0, triggerMinute: 0 }
   },
 }
 
@@ -52,7 +52,7 @@ payrollRoutes.get(
   async (req, res, next) => {
     try {
       const s = await prisma.payrollSettings.findUnique({ where: { id: "GLOBAL" } })
-      res.json({ data: s || { triggerDay: 1 } })
+      res.json({ data: s || { triggerDay: 1, triggerHour: 0, triggerMinute: 0 } })
     } catch (error) {
       next(error)
     }
@@ -64,7 +64,7 @@ payrollRoutes.put(
   authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER),
   async (req, res, next) => {
     try {
-      const { triggerDay } = req.body
+      const { triggerDay, triggerHour, triggerMinute } = req.body
       const updatedById = (req as any).user?.empId
       if (!updatedById) throw new Error("Unauthorized")
 
@@ -73,10 +73,14 @@ payrollRoutes.put(
         create: {
           id: "GLOBAL",
           triggerDay: Number(triggerDay),
+          triggerHour: triggerHour !== undefined ? Number(triggerHour) : 0,
+          triggerMinute: triggerMinute !== undefined ? Number(triggerMinute) : 0,
           updatedById,
         },
         update: {
           triggerDay: Number(triggerDay),
+          triggerHour: triggerHour !== undefined ? Number(triggerHour) : undefined,
+          triggerMinute: triggerMinute !== undefined ? Number(triggerMinute) : undefined,
           updatedById,
         },
       })

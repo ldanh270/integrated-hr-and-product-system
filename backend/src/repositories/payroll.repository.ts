@@ -10,12 +10,13 @@ export class PrismaPayrollRepository extends BaseRepository implements IPayrollR
     super(prisma)
   }
 
-  async findByPeriod(month: number, year: number): Promise<Payroll | null> {
+  async findByPeriod(month: number, year: number, name: string): Promise<Payroll | null> {
     return this.prisma.payroll.findUnique({
       where: {
-        periodYear_periodMonth: {
+        periodYear_periodMonth_name: {
           periodMonth: month,
           periodYear: year,
+          name,
         },
       },
     })
@@ -38,11 +39,12 @@ export class PrismaPayrollRepository extends BaseRepository implements IPayrollR
     })
   }
 
-  async create(data: { periodMonth: number; periodYear: number }): Promise<Payroll> {
+  async create(data: { periodMonth: number; periodYear: number; name: string }): Promise<Payroll> {
     return this.prisma.payroll.create({
       data: {
         periodMonth: data.periodMonth,
         periodYear: data.periodYear,
+        name: data.name,
         status: PAYROLL_STATUS.DRAFT,
         totalAmount: 0,
       },

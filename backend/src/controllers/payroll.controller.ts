@@ -16,8 +16,8 @@ export class PayrollController {
 
   async generatePayroll(req: Request, res: Response, next: NextFunction) {
     try {
-      const { month, year } = req.body
-      const payroll = await this.service.generatePayroll(Number(month), Number(year))
+      const { month, year, name } = req.body
+      const payroll = await this.service.generatePayroll(Number(month), Number(year), name)
       res.status(HttpStatusCode.CREATED).json({ data: payroll })
     } catch (error) {
       next(error)

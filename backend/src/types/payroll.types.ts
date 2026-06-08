@@ -168,10 +168,10 @@ export interface ICreateSalaryConfigDTO {
 // ── Payroll Computation ──────────────────────────────────────────────────────
 
 export interface IPayrollRepository {
-  findByPeriod(month: number, year: number): Promise<Payroll | null>
+  findByPeriod(month: number, year: number, name: string): Promise<Payroll | null>
   findById(id: string): Promise<Payroll | null>
   findAll(filter: { status?: PayrollStatus; year?: number }): Promise<Payroll[]>
-  create(data: { periodMonth: number; periodYear: number }): Promise<Payroll>
+  create(data: { periodMonth: number; periodYear: number; name: string }): Promise<Payroll>
   updateStatus(id: string, data: IUpdatePayrollStatusDTO): Promise<Payroll>
   updateTotalAmount(id: string, totalAmount: Prisma.Decimal): Promise<void>
 }
@@ -184,8 +184,9 @@ export interface IPayslipRepository {
 }
 
 export interface IPayrollService {
-  generatePayroll(month: number, year: number): Promise<Payroll>
-  getPayroll(month: number, year: number): Promise<Payroll>
+  generatePayroll(month: number, year: number, name?: string): Promise<Payroll>
+  getPayroll(month: number, year: number, name?: string): Promise<Payroll>
+
   getPayrollById(id: string): Promise<PayrollWithPayslips>
   listPayrolls(filter: { status?: PayrollStatus; year?: number }): Promise<Payroll[]>
   approvePayroll(payrollId: string, approverId: string): Promise<Payroll>

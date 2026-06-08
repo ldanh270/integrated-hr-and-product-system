@@ -128,13 +128,13 @@ export function SalaryComponentSelectModal({
                 />
               </div>
               <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-45 rounded-full border-border shadow-none">
+                <SelectTrigger className="w-45 rounded-full border-border h-11 bg-card shadow-none focus:ring-1 focus:ring-primary">
                   <SelectValue placeholder="Loại thành phần" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả loại</SelectItem>
-                  <SelectItem value="addition">Cộng vào</SelectItem>
-                  <SelectItem value="deduction">Khấu trừ</SelectItem>
+                <SelectContent className="border-border rounded-md shadow-sm">
+                  <SelectItem value="all" className="rounded-sm cursor-pointer focus:bg-muted">Tất cả loại</SelectItem>
+                  <SelectItem value="addition" className="rounded-sm cursor-pointer focus:bg-muted">Cộng vào</SelectItem>
+                  <SelectItem value="deduction" className="rounded-sm cursor-pointer focus:bg-muted">Khấu trừ</SelectItem>
                 </SelectContent>
               </Select>
             </div>

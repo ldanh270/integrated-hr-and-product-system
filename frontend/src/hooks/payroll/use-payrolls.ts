@@ -43,7 +43,7 @@ export function usePayrollDetails(id: string) {
 export function useGeneratePayroll() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: generatePayroll,
+    mutationFn: (data: { month: number; year: number; name?: string }) => generatePayroll(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payrolls"] })
       toast.success("Payroll generated successfully.")

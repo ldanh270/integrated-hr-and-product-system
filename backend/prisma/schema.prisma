@@ -526,10 +526,12 @@ model SalaryVariable {
 }
 
 model PayrollSettings {
-  id          String   @id @default("GLOBAL")
-  triggerDay  Int
-  updatedById String
-  updatedBy   Employee @relation(fields: [updatedById], references: [id], onDelete: Restrict)
+  id            String   @id @default("GLOBAL")
+  triggerDay    Int
+  triggerHour   Int      @default(0)
+  triggerMinute Int      @default(0)
+  updatedById   String
+  updatedBy     Employee @relation(fields: [updatedById], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -539,6 +541,7 @@ model PayrollSettings {
 
 model Payroll {
   id           String        @id @default(cuid())
+  name         String        @default("Bảng lương")
   periodMonth  Int
   periodYear   Int
   status       PayrollStatus @default(draft)
@@ -554,7 +557,7 @@ model Payroll {
 
   payslips Payslip[]
 
-  @@unique([periodYear, periodMonth])
+  @@unique([periodYear, periodMonth, name])
   @@index([status])
   @@index([approvedById])
 }

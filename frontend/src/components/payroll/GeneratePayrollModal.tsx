@@ -15,6 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form-ui"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -34,6 +35,7 @@ import { z } from "zod"
 const generatePayrollSchema = z.object({
   month: z.string().min(1, "Month is required"),
   year: z.string().min(1, "Year is required"),
+  name: z.string().optional(),
 })
 
 type GeneratePayrollFormData = z.infer<typeof generatePayrollSchema>
@@ -50,6 +52,7 @@ export function GeneratePayrollModal() {
     defaultValues: {
       month: currentMonth,
       year: currentYear.toString(),
+      name: "",
     },
   })
 
@@ -58,6 +61,7 @@ export function GeneratePayrollModal() {
       await generatePayroll({
         month: parseInt(data.month, 10),
         year: parseInt(data.year, 10),
+        name: data.name?.trim() || undefined,
       })
       setOpen(false)
       form.reset()
@@ -74,32 +78,38 @@ export function GeneratePayrollModal() {
           Generate Payroll
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-106.25 rounded-xl">
-        <DialogHeader>
-          <DialogTitle>Generate Payroll</DialogTitle>
-          <DialogDescription>
-            Select the month and year to generate the payroll for all active employees.
+      <DialogContent className="sm:max-w-[480px] p-8 border border-border bg-background shadow-none rounded-xl gap-0">
+        <DialogHeader className="mb-6">
+          <DialogTitle className="font-serif text-2xl tracking-tight text-foreground">
+            Generate Payroll
+          </DialogTitle>
+          <DialogDescription className="text-[15px] leading-relaxed text-muted-foreground mt-2">
+            Select the month and year to generate the payroll for all active employees. You can provide a custom name for mid-month payrolls.
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
-            <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-2 gap-5">
               <FormField
                 control={form.control}
                 name="month"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Month</FormLabel>
+                    <FormLabel className="text-sm font-medium text-foreground">Month</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger className="rounded-full">
+                        <SelectTrigger className="rounded-full border-border h-11 bg-card shadow-none focus:ring-1 focus:ring-primary">
                           <SelectValue placeholder="Select month" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="border-border rounded-md shadow-sm">
                         {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                          <SelectItem key={m} value={m.toString()}>
+                          <SelectItem 
+                            key={m} 
+                            value={m.toString()}
+                            className="rounded-sm cursor-pointer focus:bg-muted"
+                          >
                             Month {m}
                           </SelectItem>
                         ))}
@@ -115,16 +125,20 @@ export function GeneratePayrollModal() {
                 name="year"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Year</FormLabel>
+                    <FormLabel className="text-sm font-medium text-foreground">Year</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger className="rounded-full">
+                        <SelectTrigger className="rounded-full border-border h-11 bg-card shadow-none focus:ring-1 focus:ring-primary">
                           <SelectValue placeholder="Select year" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="border-border rounded-md shadow-sm">
                         {[currentYear - 1, currentYear, currentYear + 1].map((y) => (
-                          <SelectItem key={y} value={y.toString()}>
+                          <SelectItem 
+                            key={y} 
+                            value={y.toString()}
+                            className="rounded-sm cursor-pointer focus:bg-muted"
+                          >
                             {y}
                           </SelectItem>
                         ))}
@@ -136,17 +150,39 @@ export function GeneratePayrollModal() {
               />
             </div>
 
-            <div className="flex justify-end gap-3">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium text-foreground">Payroll Name (Optional)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder={`e.g. Bảng lương tháng ${form.watch("month")}/${form.watch("year")}`} 
+                      className="rounded-full border-border h-11 bg-card focus-visible:ring-1 focus-visible:ring-primary shadow-none"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex justify-end gap-3 pt-6 mt-8 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-full"
+                className="rounded-full border-border text-foreground hover:bg-accent"
                 onClick={() => setOpen(false)}
                 disabled={isPending}
               >
                 Cancel
               </Button>
-              <Button type="submit" className="rounded-full" disabled={isPending}>
+              <Button 
+                type="submit" 
+                className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[0.98] transition-transform shadow-none" 
+                disabled={isPending}
+              >
                 {isPending ? "Generating..." : "Generate"}
               </Button>
             </div>
