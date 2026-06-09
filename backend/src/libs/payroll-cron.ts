@@ -16,7 +16,15 @@ const employeeRepo = new PrismaEmployeeRepository(prisma)
 const settingsRepo = {
   findGlobal: async () => {
     const s = await prisma.payrollSettings.findUnique({ where: { id: "GLOBAL" } })
-    return s || { triggerDay: 1, triggerHour: 0, triggerMinute: 0, standardWorkingDays: 22 }
+    return (
+      s || {
+        triggerDay: 1,
+        triggerHour: 0,
+        triggerMinute: 0,
+        triggerSecond: 0,
+        standardWorkingDays: 22,
+      }
+    )
   },
 }
 
@@ -31,17 +39,18 @@ const payrollService = new PayrollService(
 )
 
 export const initCronJobs = () => {
-  // Run every minute to check if current time matches trigger settings
-  cron.schedule("* * * * *", async () => {
+  // Run every second to check if current time matches trigger settings exactly
+  cron.schedule("* * * * * *", async () => {
     try {
       const settings = await settingsRepo.findGlobal()
       const today = new Date()
 
-      // Check day, hour, and minute
+      // Check day, hour, minute, and second
       if (
         today.getDate() !== settings.triggerDay ||
         today.getHours() !== settings.triggerHour ||
-        today.getMinutes() !== settings.triggerMinute
+        today.getMinutes() !== settings.triggerMinute ||
+        today.getSeconds() !== settings.triggerSecond
       ) {
         return
       }
