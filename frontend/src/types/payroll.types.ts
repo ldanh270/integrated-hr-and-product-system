@@ -102,9 +102,6 @@ export interface IEmployeeSalaryConfig {
 export interface IPayrollSettings {
   id: string
   triggerDay: number
-  triggerHour: number
-  triggerMinute: number
-  triggerSecond: number
   updatedById?: string
   createdAt?: string
   updatedAt?: string

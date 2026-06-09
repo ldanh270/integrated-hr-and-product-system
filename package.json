@@ -11,7 +11,6 @@
     "build:frontend": "cd frontend && bun run build",
     "db:migrate": "cd backend && bunx prisma migrate dev",
     "db:generate": "cd backend && bunx prisma generate",
-    "db:reset": "cd backend && bunx prisma migrate reset",
     "db:studio": "cd backend && bunx prisma studio",
     "db:seed": "cd backend && bun run seed",
     "db:seed:admin": "cd backend && bun run seed:admin",
