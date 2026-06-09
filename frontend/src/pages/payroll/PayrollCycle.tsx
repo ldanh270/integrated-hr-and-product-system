@@ -29,7 +29,6 @@ const settingsSchema = z.object({
   triggerDay: z.number().min(1).max(31, "Ngày chạy phải từ 1 đến 31"),
   triggerHour: z.number().min(0).max(23),
   triggerMinute: z.number().min(0).max(59),
-  triggerSecond: z.number().min(0).max(59),
 })
 
 type SettingsFormValues = z.infer<typeof settingsSchema>
@@ -43,7 +42,6 @@ function PayrollCycleForm({ settings }: { settings: IPayrollSettings }) {
       triggerDay: settings.triggerDay || 5,
       triggerHour: settings.triggerHour || 0,
       triggerMinute: settings.triggerMinute || 0,
-      triggerSecond: settings.triggerSecond || 0,
     },
   })
 
@@ -141,7 +139,7 @@ function PayrollCycleForm({ settings }: { settings: IPayrollSettings }) {
                       control={settingsForm.control}
                       name="triggerHour"
                       render={({ field }) => (
-                        <FormItem className="flex-1 min-w-[120px]">
+                        <FormItem className="flex-1 min-w-30">
                           <Select
                             onValueChange={(val) => field.onChange(Number(val))}
                             value={field.value?.toString()}
@@ -151,7 +149,7 @@ function PayrollCycleForm({ settings }: { settings: IPayrollSettings }) {
                                 <SelectValue placeholder="Giờ" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent className="max-h-[250px]">
+                            <SelectContent className="max-h-62.5">
                               {Array.from({ length: 24 }).map((_, i) => (
                                 <SelectItem key={i} value={i.toString()}>
                                   {i.toString().padStart(2, "0")} Giờ
@@ -168,7 +166,7 @@ function PayrollCycleForm({ settings }: { settings: IPayrollSettings }) {
                       control={settingsForm.control}
                       name="triggerMinute"
                       render={({ field }) => (
-                        <FormItem className="flex-1 min-w-[120px]">
+                        <FormItem className="flex-1 min-w-30">
                           <Select
                             onValueChange={(val) => field.onChange(Number(val))}
                             value={field.value?.toString()}
@@ -178,37 +176,10 @@ function PayrollCycleForm({ settings }: { settings: IPayrollSettings }) {
                                 <SelectValue placeholder="Phút" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent className="max-h-[250px]">
+                            <SelectContent className="max-h-62.5">
                               {Array.from({ length: 60 }).map((_, i) => (
                                 <SelectItem key={i} value={i.toString()}>
                                   {i.toString().padStart(2, "0")} Phút
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <span className="text-muted-foreground font-medium">:</span>
-                    <FormField
-                      control={settingsForm.control}
-                      name="triggerSecond"
-                      render={({ field }) => (
-                        <FormItem className="flex-1 min-w-[120px]">
-                          <Select
-                            onValueChange={(val) => field.onChange(Number(val))}
-                            value={field.value?.toString()}
-                          >
-                            <FormControl>
-                              <SelectTrigger className="border-border h-10 shadow-sm">
-                                <SelectValue placeholder="Giây" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent className="max-h-[250px]">
-                              {Array.from({ length: 60 }).map((_, i) => (
-                                <SelectItem key={i} value={i.toString()}>
-                                  {i.toString().padStart(2, "0")} Giây
                                 </SelectItem>
                               ))}
                             </SelectContent>
