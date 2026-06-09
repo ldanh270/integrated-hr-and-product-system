@@ -35,10 +35,31 @@ authRoutes.post("/login", controller.login)
 authRoutes.post("/logout", authenticate, controller.logout as any)
 
 /**
+ * @route POST /api/auth/change-password
+ * @desc Change password for authenticated user
+ * @access Private (Requires valid token)
+ */
+authRoutes.post("/change-password", authenticate, controller.changePassword as any)
+
+/**
  * @route POST /api/auth/forgot-password
- * @desc Request a password reset
+ * @desc Request a password reset email
  * @access Public
  */
 authRoutes.post("/forgot-password", controller.forgotPassword)
+
+/**
+ * @route POST /api/auth/validate-reset-token
+ * @desc Validate a password reset token
+ * @access Public
+ */
+authRoutes.post("/validate-reset-token", controller.validateResetToken)
+
+/**
+ * @route POST /api/auth/reset-password
+ * @desc Reset password using a valid token
+ * @access Public
+ */
+authRoutes.post("/reset-password", controller.resetPassword)
 
 export default authRoutes

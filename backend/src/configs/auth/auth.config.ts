@@ -8,6 +8,9 @@ export const REGEX = {
   // Only contain lowercase letters, numbers, and underscores (_) and dots (.)
   USERNAME: /^[a-z0-9_.]+$/,
 
+  // Email validation regex
+  EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+
   // Minimum 8 characters, including at least 1 uppercase, 1 lowercase, 1 number and 1 special character.
   PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
 
@@ -17,10 +20,11 @@ export const REGEX = {
 
 export const PASSWORD_RESET_STATUS = {
   PENDING: "pending",
-  APPROVED: "approved",
-  REJECTED: "rejected",
   USED: "used",
   EXPIRED: "expired",
+  // Legacy statuses — not used by the new automated email reset flow
+  APPROVED: "approved",
+  REJECTED: "rejected",
 } as const
 
 export const PASSWORD_RESET_STATUSES = [

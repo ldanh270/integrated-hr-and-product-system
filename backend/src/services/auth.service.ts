@@ -1,16 +1,20 @@
 import { PASSWORD_RESET_STATUS } from "@/configs/auth/auth.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
-import PasswordResetRequest from "@/entities/auth/PasswordResetRequest.ts"
 import {
   AuthResponseDto,
+  ChangePasswordDto,
   ForgotPasswordDto,
-  ForgotPasswordResponseDto,
+  GenericAuthResponseDto,
   IAuthRepository,
   IAuthService,
   LoginDto,
   LogoutResponseDto,
+  ResetPasswordDto,
+  TokenValidationResponseDto,
+  ValidateResetTokenDto,
 } from "@/types/auth.types.ts"
+import { EmailUtil } from "@/utils/email.util.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
 import { JwtUtil } from "@/utils/jwt.util.ts"
@@ -18,7 +22,7 @@ import { JwtUtil } from "@/utils/jwt.util.ts"
 import crypto from "crypto"
 
 /**
- * Authentication Service implementing the business logic for login and logout
+ * Authentication Service implementing the business logic for login, logout, and password management
  * Adheres to SOLID principles by depending on IAuthRepository abstraction
  */
 export class AuthService implements IAuthService {
@@ -29,12 +33,14 @@ export class AuthService implements IAuthService {
 
   /**
    * Handles user login logic: credential verification, account locking, and token generation
+   * Normalizes input by trimming and converting to lowercase before repository lookup
    */
   async login(data: LoginDto, ipAddress?: string): Promise<AuthResponseDto> {
     const { username, password } = data
 
-    // 1. Fetch user through repository
-    const employee = await this.repo.findAuthByUsername(username)
+    // 1. Fetch user through repository using normalized identifier
+    const normalizedIdentifier = username.trim().toLowerCase()
+    const employee = await this.repo.findAuthByIdentifier(normalizedIdentifier)
 
     // Security: Generic error for non-existent username to prevent user enumeration
     if (!employee) {
@@ -86,7 +92,6 @@ export class AuthService implements IAuthService {
     // 5. Successful Login
     employee.failedLoginCount = 0
     employee.lockedUntil = undefined
-    employee.lastLoginAt = new Date()
     await employee.save()
 
     // Log success through repository
@@ -132,49 +137,165 @@ export class AuthService implements IAuthService {
   }
 
   /**
-   * Handles forgot password logic
+   * Handles forgot password logic: generates token and sends reset email
+   * Always returns a generic response to prevent user enumeration
    */
-  async forgotPassword(data: ForgotPasswordDto): Promise<ForgotPasswordResponseDto> {
-    const { username } = data
-
-    // 1. Fetch user through repository
-    const employee = await this.repo.findAuthByUsername(username)
-
-    if (!employee) {
-      // Don't leak if the user exists or not
-      return {
-        message: "If an account with that username exists, a reset request has been created.",
-      }
+  async forgotPassword(data: ForgotPasswordDto): Promise<GenericAuthResponseDto> {
+    const { email } = data
+    const genericResponse = {
+      message: "If an account exists, a reset email has been sent.",
     }
 
-    if (employee.status !== EMPLOYEE_STATUS.ACTIVE) {
-      return {
-        message: "If an account with that username exists, a reset request has been created.",
-      }
+    // 1. Fetch user by normalized email
+    const normalizedEmail = email.trim().toLowerCase()
+    const employee = await this.repo.findAuthByEmail(normalizedEmail)
+
+    // Security: Do not reveal if email exists
+    if (!employee || employee.status !== EMPLOYEE_STATUS.ACTIVE) {
+      return genericResponse
     }
 
-    // 2. Check if a pending request already exists
-    const existingRequest = await PasswordResetRequest.findOne({
-      employeeId: employee._id,
-      status: PASSWORD_RESET_STATUS.PENDING,
-    })
+    // 2. Prevent multiple active requests for the same employee
+    const existingRequest = await this.repo.findPendingRequestByEmployeeId(employee._id)
 
+    // If it exists but expired, we'll let it be handled by TTL or update logic,
+    // but the requirement is to "prevent multiple active PasswordResetRequest records".
+    // So if a pending one exists, we just return the generic response.
     if (existingRequest) {
-      return {
-        message: "If an account with that username exists, a reset request has been created.",
+      if (existingRequest.expiresAt > new Date()) {
+        return genericResponse
       }
+
+      await this.repo.updateResetRequestStatus(
+        existingRequest._id.toString(),
+        PASSWORD_RESET_STATUS.EXPIRED,
+      )
     }
 
-    // 3. Generate a secure token
+    // 3. Generate a secure plain-text token
     const token = crypto.randomBytes(32).toString("hex")
 
-    // 4. Create the request
-    await PasswordResetRequest.create({
+    // 4. Create the request with 15-minute expiration
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
+    await this.repo.createResetRequest({
       employeeId: employee._id,
       token,
-      status: PASSWORD_RESET_STATUS.PENDING,
+      expiresAt,
     })
 
-    return { message: "If an account with that username exists, a reset request has been created." }
+    // 5. Send email asynchronously via Resend
+    await EmailUtil.sendResetPasswordEmail(employee.email, token).catch((err) => {
+      console.error("Delayed error in forgotPassword email sending:", err)
+    })
+
+    return genericResponse
+  }
+
+  /**
+   * Validates a password reset token for status and expiration
+   */
+  async validateResetToken(data: ValidateResetTokenDto): Promise<TokenValidationResponseDto> {
+    const { token } = data
+
+    // 1. Find request by token (only checks status: PENDING in repo)
+    const request = await this.repo.findResetRequestByToken(token)
+
+    if (!request) {
+      return { isValid: false, message: "Invalid or already used token" }
+    }
+
+    // 2. Check expiration in Service layer (15-minute window)
+    if (request.expiresAt < new Date()) {
+      await this.repo.updateResetRequestStatus(request._id, PASSWORD_RESET_STATUS.EXPIRED)
+      return { isValid: false, message: "Reset link has expired" }
+    }
+
+    return { isValid: true }
+  }
+
+  /**
+   * Resets a user's password using a valid token
+   */
+  async resetPassword(data: ResetPasswordDto): Promise<GenericAuthResponseDto> {
+    const { token, newPassword } = data
+
+    // 1. Validate token status and expiration
+    const validation = await this.validateResetToken({ token })
+    if (!validation.isValid) {
+      throw new AppError(
+        validation.message || "Invalid token",
+        HttpStatusCode.BAD_REQUEST,
+        "Authentication",
+      )
+    }
+
+    // 2. Find the request again to get employee info
+    const request = await this.repo.findResetRequestByToken(token)
+    if (!request) {
+      throw new AppError("Reset request not found", HttpStatusCode.NOT_FOUND, "Authentication")
+    }
+
+    // 3. Update employee password
+    const employee = await this.repo.findById(request.employeeId)
+    if (!employee) {
+      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "Authentication")
+    }
+
+    // Security: Prevent resetting to the same password
+    const isSamePassword = await HashUtil.compare(newPassword, employee.passwordHash)
+    if (isSamePassword) {
+      throw new AppError(
+        "New password must be different from current password",
+        HttpStatusCode.BAD_REQUEST,
+        "Authentication",
+      )
+    }
+
+    employee.passwordHash = await HashUtil.hash(newPassword)
+    await employee.save()
+
+    // 4. Mark request as used
+    await this.repo.invalidateAllPendingRequests(request.employeeId.toString())
+
+    return { message: "Password reset successfully. You can now login with your new password." }
+  }
+
+  /**
+   * Changes an authenticated user's password
+   */
+  async changePassword(empId: string, data: ChangePasswordDto): Promise<GenericAuthResponseDto> {
+    const { oldPassword, newPassword } = data
+
+    // 1. Fetch employee with password hash
+    const employee = await this.repo.findById(empId)
+    if (!employee) {
+      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "Authentication")
+    }
+
+    // 2. Verify current password
+    const isMatch = await HashUtil.compare(oldPassword, employee.passwordHash)
+    if (!isMatch) {
+      throw new AppError(
+        "Incorrect current password",
+        HttpStatusCode.UNAUTHORIZED,
+        "Authentication",
+      )
+    }
+
+    // Security: Prevent changing to the same password
+    const isSamePassword = await HashUtil.compare(newPassword, employee.passwordHash)
+    if (isSamePassword) {
+      throw new AppError(
+        "New password must be different from current password",
+        HttpStatusCode.BAD_REQUEST,
+        "Authentication",
+      )
+    }
+
+    // 3. Update to new password
+    employee.passwordHash = await HashUtil.hash(newPassword)
+    await employee.save()
+
+    return { message: "Password changed successfully." }
   }
 }

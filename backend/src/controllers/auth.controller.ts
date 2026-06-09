@@ -1,6 +1,12 @@
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
-import { forgotPasswordSchema, loginSchema } from "@/schemas/auth.schema.ts"
+import {
+  changePasswordSchema,
+  forgotPasswordSchema,
+  loginSchema,
+  resetPasswordSchema,
+  validateResetTokenSchema,
+} from "@/schemas/auth.schema.ts"
 import { IAuthService } from "@/types/auth.types.ts"
 
 import { Request, Response } from "express"
@@ -100,6 +106,98 @@ export class AuthController {
       res.status(statusCode).json({
         status: "error",
         message: error.message || "Request failed",
+        errors: error.errors,
+      })
+    }
+  }
+
+  /**
+   * Handles password change for authenticated users
+   */
+  changePassword = async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          status: "error",
+          message: "Unauthorized",
+        })
+      }
+
+      const validatedData = changePasswordSchema.parse(req.body)
+      const result = await this.service.changePassword(req.user.empId, validatedData)
+
+      res.status(HttpStatusCode.OK).json({
+        status: "success",
+        message: result.message,
+      })
+    } catch (error: any) {
+      const statusCode =
+        error.name === "ZodError"
+          ? HttpStatusCode.BAD_REQUEST
+          : error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
+
+      res.status(statusCode).json({
+        status: "error",
+        message: error.message || "Password change failed",
+        errors: error.errors,
+      })
+    }
+  }
+
+  /**
+   * Validates a password reset token
+   */
+  validateResetToken = async (req: Request, res: Response) => {
+    try {
+      const validatedData = validateResetTokenSchema.parse(req.body)
+      const result = await this.service.validateResetToken(validatedData)
+
+      if (!result.isValid) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          status: "error",
+          message: result.message || "Invalid token",
+        })
+      }
+
+      res.status(HttpStatusCode.OK).json({
+        status: "success",
+        data: result,
+      })
+    } catch (error: any) {
+      const statusCode =
+        error.name === "ZodError"
+          ? HttpStatusCode.BAD_REQUEST
+          : error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
+
+      res.status(statusCode).json({
+        status: "error",
+        message: error.message || "Token validation failed",
+        errors: error.errors,
+      })
+    }
+  }
+
+  /**
+   * Handles password reset using a token
+   */
+  resetPassword = async (req: Request, res: Response) => {
+    try {
+      const validatedData = resetPasswordSchema.parse(req.body)
+      const result = await this.service.resetPassword(validatedData)
+
+      res.status(HttpStatusCode.OK).json({
+        status: "success",
+        message: result.message,
+      })
+    } catch (error: any) {
+      const statusCode =
+        error.name === "ZodError"
+          ? HttpStatusCode.BAD_REQUEST
+          : error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
+
+      res.status(statusCode).json({
+        status: "error",
+        message: error.message || "Password reset failed",
         errors: error.errors,
       })
     }
