@@ -104,7 +104,6 @@ export interface IPayrollSettings {
   triggerDay: number
   triggerHour: number
   triggerMinute: number
-  triggerSecond: number
   updatedById?: string
   createdAt?: string
   updatedAt?: string
