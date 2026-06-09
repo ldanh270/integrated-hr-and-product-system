@@ -1,3 +1,4 @@
+import { DB_ERROR_CODES } from "@/configs/system/db.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
   CreateEmployeeDto,
@@ -47,9 +48,9 @@ export class EmployeeService implements IEmployeeService {
         passwordHash,
       })
     } catch (error: any) {
-      if (error.code === 11000) {
+      if (DB_ERROR_CODES.UNIQUE_CONSTRAINT.includes(error.code)) {
         throw new AppError(
-          "Username or email already exists",
+          "Username, email, phone, or national ID already exists",
           HttpStatusCode.CONFLICT,
           "EmployeeService",
         )
