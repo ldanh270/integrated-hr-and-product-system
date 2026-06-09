@@ -27,6 +27,10 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     super(prisma)
   }
 
+  /**
+   * Maps Prisma task data to domain model
+   * Transforms database representation to business logic representation
+   */
   protected mapToDomain(task: PrismaTaskWithRelations): Task {
     return {
       id: task.id,
@@ -66,6 +70,11 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     }
   }
 
+  /**
+   * Finds a task by its unique ID
+   * Includes related project and employee information
+   * Returns null if task does not exist
+   */
   async findById(id: string): Promise<Task | null> {
     const task = await this.prisma.task.findUnique({
       where: { id },
@@ -85,6 +94,12 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     return task ? this.mapToDomain(task as any) : null
   }
 
+  /**
+   * Lists tasks with pagination and filtering
+   * Supports filtering by project, status, priority, assignee
+   * Supports search by title and description
+   * Supports sorting and pagination
+   */
   async listTasks(query: TaskListQuery): Promise<PaginatedTasksDto> {
     const {
       projectId,
@@ -154,6 +169,10 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     }
   }
 
+  /**
+   * Creates a new task in the database
+   * Sets initial status and dueDate based on provided data
+   */
   async createTask(data: CreateTaskDto & { createdById: string }): Promise<Task> {
     const task = await this.prisma.task.create({
       data: {
@@ -182,6 +201,12 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     return this.mapToDomain(task as any)
   }
 
+  /**
+   * Updates an existing task
+   * Automatically sets completedAt when status changes to 'done'
+   * Handles null values to allow clearing optional fields
+   * Returns updated task or null if not found
+   */
   async updateTask(id: string, data: UpdateTaskDto): Promise<Task | null> {
     const updateData: Prisma.TaskUncheckedUpdateInput = {
       title: data.title,
@@ -197,7 +222,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     if (data.assigneeId === null) updateData.assigneeId = null
     if (data.completedAt === null) updateData.completedAt = null
 
-    // Tự động set completedAt khi chuyển trạng thái sang Done
+    // Automatically set completedAt when switching status to Done
     if (data.status === "done" && !data.completedAt) {
       updateData.completedAt = new Date()
     }
@@ -221,6 +246,10 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     return this.mapToDomain(task as any)
   }
 
+  /**
+   * Permanently deletes a task from the database
+   * Returns true if successful
+   */
   async deleteTask(id: string): Promise<boolean> {
     await this.prisma.task.delete({
       where: { id },

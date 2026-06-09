@@ -17,17 +17,26 @@ export class ProjectService implements IProjectService {
     private employeeRepository: IEmployeeRepository
   ) {}
 
+  /**
+   * Checks if user has Admin or General Manager role
+   */
   private isAuthorizedAdminOrGM(userRole: string): boolean {
     return userRole === "admin" || userRole === "general_manager"
   }
 
+  /**
+   * Retrieves a project with role-based access control
+   * Admins/GMs can view any project
+   * Others can only view if they are the team leader or a member
+   * Throws forbidden error if user lacks access
+   */
   async getProject(id: string, userId: string, userRole: string): Promise<Project | null> {
     const project = await this.repository.findById(id)
     if (!project) {
       throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "ProjectService")
     }
 
-    // Phân quyền: GM/Admin xem hết. TL hoặc Employee chỉ xem được nếu là leader hoặc member của dự án đó
+    // Authorization: GM/Admin can view all. TL or Employee can only view if they are the leader or a member of the project
     if (!this.isAuthorizedAdminOrGM(userRole)) {
       const isTL = project.teamLeaderId === userId
       const isMember = await this.repository.isMember(id, userId)
@@ -39,6 +48,10 @@ export class ProjectService implements IProjectService {
     return project
   }
 
+  /**
+   * Lists projects with role-based filtering
+   * Delegates to repository which applies access control
+   */
   async listProjects(
     query: ProjectListQuery,
     userId: string,
@@ -47,8 +60,15 @@ export class ProjectService implements IProjectService {
     return this.repository.listProjects(query, userId, userRole)
   }
 
+  /**
+   * Creates a new project
+   * Only Admins and General Managers can create projects
+   * Validates team leader exists if provided
+   * Prevents duplicate project names
+   * Throws error if user lacks permission or data is invalid
+   */
   async createProject(data: CreateProjectDto, userId: string, userRole: string): Promise<Project> {
-    // Chỉ GM và Admin mới được tạo dự án
+    // Only GM and Admin are allowed to create projects
     if (!this.isAuthorizedAdminOrGM(userRole)) {
       throw new AppError(
         "Only General Managers or Admins can create projects",
@@ -57,7 +77,7 @@ export class ProjectService implements IProjectService {
       )
     }
 
-    // Kiểm tra Team Leader có tồn tại không
+    // Check if the Team Leader exists
     if (data.teamLeaderId) {
       const leader = await this.employeeRepository.findById(data.teamLeaderId)
       if (!leader) {
@@ -65,7 +85,7 @@ export class ProjectService implements IProjectService {
       }
     }
 
-    // Kiểm tra tên dự án trùng lặp
+    // Check for duplicate project name
     const existing = await this.repository.findByName(data.name)
     if (existing) {
       throw new AppError("Project name already exists", HttpStatusCode.CONFLICT, "ProjectService")
@@ -77,6 +97,13 @@ export class ProjectService implements IProjectService {
     })
   }
 
+  /**
+   * Updates an existing project
+   * Only Admins, GMs, or the project's Team Leader can update
+   * Validates new team leader exists if provided
+   * Prevents duplicate project names during rename
+   * Throws error if user lacks permission or project not found
+   */
   async updateProject(
     id: string,
     data: UpdateProjectDto,
@@ -88,7 +115,7 @@ export class ProjectService implements IProjectService {
       throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "ProjectService")
     }
 
-    // Chỉ GM/Admin hoặc Team Leader của dự án đó mới được cập nhật
+    // Only GM/Admin or the Team Leader of the project can update it
     const isTL = project.teamLeaderId === userId
     if (!this.isAuthorizedAdminOrGM(userRole) && !isTL) {
       throw new AppError(
@@ -98,7 +125,7 @@ export class ProjectService implements IProjectService {
       )
     }
 
-    // Kiểm tra Team Leader mới có tồn tại không
+    // Check if the new Team Leader exists
     if (data.teamLeaderId) {
       const leader = await this.employeeRepository.findById(data.teamLeaderId)
       if (!leader) {
@@ -106,7 +133,7 @@ export class ProjectService implements IProjectService {
       }
     }
 
-    // Kiểm tra tên trùng nếu đổi tên dự án
+    // Check for duplicate name if project is being renamed
     if (data.name && data.name !== project.name) {
       const existing = await this.repository.findByName(data.name)
       if (existing) {
@@ -117,8 +144,13 @@ export class ProjectService implements IProjectService {
     return this.repository.updateProject(id, data)
   }
 
+  /**
+   * Deletes a project
+   * Only Admins and General Managers can delete projects
+   * Throws error if user lacks permission or project not found
+   */
   async deleteProject(id: string, userId: string, userRole: string): Promise<boolean> {
-    // Chỉ GM/Admin mới được xóa dự án
+    // Only GM/Admin can delete projects
     if (!this.isAuthorizedAdminOrGM(userRole)) {
       throw new AppError(
         "Only General Managers or Admins can delete projects",
@@ -135,6 +167,12 @@ export class ProjectService implements IProjectService {
     return this.repository.deleteProject(id)
   }
 
+  /**
+   * Adds an employee as a member to a project
+   * Only Admins, GMs, or the project's Team Leader can add members
+   * Validates employee exists and is not already a member
+   * Throws error if user lacks permission or data is invalid
+   */
   async addMember(
     projectId: string,
     employeeId: string,
@@ -146,7 +184,7 @@ export class ProjectService implements IProjectService {
       throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "ProjectService")
     }
 
-    // Chỉ GM/Admin hoặc Team Leader của dự án mới được quản lý thành viên
+    // Only GM/Admin or the project's Team Leader can manage members
     const isTL = project.teamLeaderId === userId
     if (!this.isAuthorizedAdminOrGM(userRole) && !isTL) {
       throw new AppError(
@@ -156,13 +194,13 @@ export class ProjectService implements IProjectService {
       )
     }
 
-    // Kiểm tra nhân viên cần thêm có tồn tại không
+    // Check if the employee to be added exists
     const employee = await this.employeeRepository.findById(employeeId)
     if (!employee) {
       throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "ProjectService")
     }
 
-    // Kiểm tra xem đã là thành viên dự án chưa
+    // Check if already a project member
     const alreadyMember = await this.repository.isMember(projectId, employeeId)
     if (alreadyMember) {
       throw new AppError("Employee is already a member of this project", HttpStatusCode.CONFLICT, "ProjectService")
@@ -171,6 +209,12 @@ export class ProjectService implements IProjectService {
     return this.repository.addMember(projectId, employeeId)
   }
 
+  /**
+   * Removes a member from a project
+   * Only Admins, GMs, or the project's Team Leader can remove members
+   * Validates employee is actually a member before removing
+   * Throws error if user lacks permission or member not found
+   */
   async removeMember(
     projectId: string,
     employeeId: string,
@@ -182,7 +226,7 @@ export class ProjectService implements IProjectService {
       throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "ProjectService")
     }
 
-    // Chỉ GM/Admin hoặc Team Leader của dự án mới được quản lý thành viên
+    // Only GM/Admin or the project's Team Leader can manage members
     const isTL = project.teamLeaderId === userId
     if (!this.isAuthorizedAdminOrGM(userRole) && !isTL) {
       throw new AppError(
@@ -192,7 +236,7 @@ export class ProjectService implements IProjectService {
       )
     }
 
-    // Kiểm tra xem có thực sự là thành viên dự án không
+    // Check if they are actually a member of the project
     const isMember = await this.repository.isMember(projectId, employeeId)
     if (!isMember) {
       throw new AppError("Employee is not a member of this project", HttpStatusCode.NOT_FOUND, "ProjectService")
@@ -201,8 +245,13 @@ export class ProjectService implements IProjectService {
     return this.repository.removeMember(projectId, employeeId)
   }
 
+  /**
+   * Retrieves all members of a project
+   * User must have access to the project to view its members
+   * Validates project exists and user has permission
+   */
   async getMembers(projectId: string, userId: string, userRole: string): Promise<any[]> {
-    // Kiểm tra sự tồn tại và quyền truy cập dự án
+    // Check project existence and access permissions
     const project = await this.getProject(projectId, userId, userRole)
     if (!project) {
       throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "ProjectService")

@@ -16,7 +16,7 @@ const repository = new PrismaTaskRepository(prisma)
 const service = new TaskService(repository, projectRepository, employeeRepository)
 const controller = new TaskController(service)
 
-// Tất cả các route của task đều yêu cầu authenticate
+// All task routes require authentication
 taskRoutes.use(authenticate)
 
 // Task CRUD

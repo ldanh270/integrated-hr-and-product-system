@@ -9,6 +9,11 @@ import { z } from "zod"
 export class TaskController {
   constructor(private service: ITaskService) {}
 
+  /**
+   * Retrieves a paginated list of tasks
+   * Filters include project ID, status, priority, assignee, and search parameters
+   * Access control: Users can only view tasks from projects they have access to
+   */
   list = async (req: AuthRequest, res: Response<ApiResponse<PaginatedTasksDto>>) => {
     try {
       if (!req.user) {
@@ -32,6 +37,10 @@ export class TaskController {
     }
   }
 
+  /**
+   * Retrieves a single task by ID
+   * Validates user has access to the parent project before returning task details
+   */
   getOne = async (req: AuthRequest, res: Response<ApiResponse<Task>>) => {
     if (!req.user) {
       return res.status(HttpStatusCode.UNAUTHORIZED).json({
@@ -50,6 +59,11 @@ export class TaskController {
     res.status(HttpStatusCode.OK).json({ data: task, error: null })
   }
 
+  /**
+   * Creates a new task within a project
+   * Enforces task creation policy of the project (leader_only or all_members)
+   * Validates assignee is a member of the project
+   */
   create = async (req: AuthRequest, res: Response<ApiResponse<Task>>) => {
     try {
       if (!req.user) {
@@ -73,6 +87,11 @@ export class TaskController {
     }
   }
 
+  /**
+   * Updates an existing task
+   * Only Admins, project Team Leaders, task creator, or assignee can update
+   * Validates new assignee is a member of the project
+   */
   update = async (req: AuthRequest, res: Response<ApiResponse<Task>>) => {
     try {
       if (!req.user) {
@@ -102,6 +121,10 @@ export class TaskController {
     }
   }
 
+  /**
+   * Deletes a task by ID
+   * Only Admins, project Team Leaders, or task creator can delete
+   */
   delete = async (req: AuthRequest, res: Response<ApiResponse<null>>) => {
     if (!req.user) {
       return res.status(HttpStatusCode.UNAUTHORIZED).json({

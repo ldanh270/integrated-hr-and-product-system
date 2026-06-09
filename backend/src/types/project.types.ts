@@ -1,8 +1,19 @@
 import { PROJECT_STATUS, TASK_CREATION_POLICY } from "@/configs/entities/project.config.ts"
 
+/**
+ * Type representing the status of a Project (e.g., active, completed, suspended)
+ */
 export type ProjectStatus = (typeof PROJECT_STATUS)[keyof typeof PROJECT_STATUS]
+
+/**
+ * Type representing the policy for creating tasks in a project
+ * e.g., 'leader_only' (only Team Leader/Admin can create) or 'all_members' (any member can create)
+ */
 export type TaskCreationPolicy = (typeof TASK_CREATION_POLICY)[keyof typeof TASK_CREATION_POLICY]
 
+/**
+ * Domain model representing a Project within the system
+ */
 export interface Project {
   id: string
   name: string
@@ -17,11 +28,17 @@ export interface Project {
   createdById: string
   createdAt: Date
   updatedAt: Date
+  /**
+   * The team leader assigned to this project
+   */
   teamLeader?: {
     id: string
     fullName: string
     email: string
   } | null
+  /**
+   * The user/employee who created the project record
+   */
   createdBy?: {
     id: string
     fullName: string
@@ -29,6 +46,9 @@ export interface Project {
   }
 }
 
+/**
+ * Data Transfer Object for creating a new Project
+ */
 export interface CreateProjectDto {
   name: string
   description?: string | null
@@ -40,6 +60,9 @@ export interface CreateProjectDto {
   teamLeaderId?: string | null
 }
 
+/**
+ * Data Transfer Object for updating an existing Project
+ */
 export interface UpdateProjectDto {
   name?: string
   description?: string | null
@@ -52,6 +75,9 @@ export interface UpdateProjectDto {
   teamLeaderId?: string | null
 }
 
+/**
+ * Query parameters for filtering and paginating a list of projects
+ */
 export interface ProjectListQuery {
   page?: number
   limit?: number
@@ -61,6 +87,9 @@ export interface ProjectListQuery {
   sortOrder?: "asc" | "desc"
 }
 
+/**
+ * Standard Paginated Response envelope for Project list requests
+ */
 export interface PaginatedProjectsDto {
   data: Project[]
   meta: {
@@ -71,6 +100,9 @@ export interface PaginatedProjectsDto {
   }
 }
 
+/**
+ * Repository interface for managing Project database transactions
+ */
 export interface IProjectRepository {
   findById(id: string): Promise<Project | null>
   findByName(name: string): Promise<Project | null>
@@ -88,6 +120,9 @@ export interface IProjectRepository {
   getMembers(projectId: string): Promise<any[]>
 }
 
+/**
+ * Service interface implementing Project management business logic
+ */
 export interface IProjectService {
   getProject(id: string, userId: string, userRole: string): Promise<Project | null>
   listProjects(

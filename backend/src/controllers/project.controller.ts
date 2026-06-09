@@ -14,6 +14,11 @@ import { z } from "zod"
 export class ProjectController {
   constructor(private service: IProjectService) {}
 
+  /**
+   * Retrieves a paginated list of projects based on filters
+   * Filters include search, status, and pagination parameters
+   * Access control: Admins/GMs see all projects, others see only their own
+   */
   list = async (req: AuthRequest, res: Response<ApiResponse<PaginatedProjectsDto>>) => {
     try {
       if (!req.user) {
@@ -37,6 +42,10 @@ export class ProjectController {
     }
   }
 
+  /**
+   * Retrieves a single project by ID
+   * Validates user permissions before returning project details
+   */
   getOne = async (req: AuthRequest, res: Response<ApiResponse<Project>>) => {
     if (!req.user) {
       return res.status(HttpStatusCode.UNAUTHORIZED).json({
@@ -59,6 +68,11 @@ export class ProjectController {
     res.status(HttpStatusCode.OK).json({ data: project, error: null })
   }
 
+  /**
+   * Creates a new project
+   * Only Admins and General Managers can create projects
+   * Validates input schema and user permissions
+   */
   create = async (req: AuthRequest, res: Response<ApiResponse<Project>>) => {
     try {
       if (!req.user) {
@@ -82,6 +96,11 @@ export class ProjectController {
     }
   }
 
+  /**
+   * Updates an existing project
+   * Only Admins, GMs, and the project's Team Leader can update
+   * Validates input schema and user permissions
+   */
   update = async (req: AuthRequest, res: Response<ApiResponse<Project>>) => {
     try {
       if (!req.user) {
@@ -116,6 +135,10 @@ export class ProjectController {
     }
   }
 
+  /**
+   * Deletes a project by ID
+   * Only Admins and General Managers can delete projects
+   */
   delete = async (req: AuthRequest, res: Response<ApiResponse<null>>) => {
     if (!req.user) {
       return res.status(HttpStatusCode.UNAUTHORIZED).json({
@@ -128,6 +151,11 @@ export class ProjectController {
     res.status(HttpStatusCode.OK).json({ data: null, error: null })
   }
 
+  /**
+   * Adds a member to a project
+   * Only Admins, GMs, and the project's Team Leader can add members
+   * Validates that the employee exists and is not already a member
+   */
   addMember = async (req: AuthRequest, res: Response<ApiResponse<null>>) => {
     try {
       if (!req.user) {
@@ -151,6 +179,10 @@ export class ProjectController {
     }
   }
 
+  /**
+   * Removes a member from a project
+   * Only Admins, GMs, and the project's Team Leader can remove members
+   */
   removeMember = async (req: AuthRequest, res: Response<ApiResponse<null>>) => {
     if (!req.user) {
       return res.status(HttpStatusCode.UNAUTHORIZED).json({
@@ -168,6 +200,10 @@ export class ProjectController {
     res.status(HttpStatusCode.OK).json({ data: null, error: null })
   }
 
+  /**
+   * Retrieves all members of a project
+   * User must have access to the project to view its members
+   */
   getMembers = async (req: AuthRequest, res: Response<ApiResponse<any[]>>) => {
     if (!req.user) {
       return res.status(HttpStatusCode.UNAUTHORIZED).json({

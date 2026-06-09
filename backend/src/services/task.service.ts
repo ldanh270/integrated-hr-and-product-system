@@ -19,17 +19,26 @@ export class TaskService implements ITaskService {
     private employeeRepository: IEmployeeRepository
   ) {}
 
+  /**
+   * Checks if user has Admin or General Manager role
+   */
   private isAuthorizedAdminOrGM(userRole: string): boolean {
     return userRole === "admin" || userRole === "general_manager"
   }
 
+  /**
+   * Retrieves a task with project-based access control
+   * Admins/GMs can view any task
+   * Others can only view if they are in the project (leader or member)
+   * Throws error if task not found or user lacks access
+   */
   async getTask(id: string, userId: string, userRole: string): Promise<Task | null> {
     const task = await this.repository.findById(id)
     if (!task) {
       throw new AppError("Task not found", HttpStatusCode.NOT_FOUND, "TaskService")
     }
 
-    // Kiểm tra quyền truy cập dự án chứa task
+    // Check access permission to the project containing the task
     if (!this.isAuthorizedAdminOrGM(userRole)) {
       const project = await this.projectRepository.findById(task.projectId)
       if (!project) {
@@ -47,8 +56,14 @@ export class TaskService implements ITaskService {
     return task
   }
 
+  /**
+   * Lists tasks with project-based access control
+   * Non-admins must provide projectId and be member/leader of that project
+   * Admins can list tasks across all projects
+   * Throws error if user lacks access to specified project
+   */
   async listTasks(query: TaskListQuery, userId: string, userRole: string): Promise<PaginatedTasksDto> {
-    // Nếu không phải GM/Admin, bắt buộc phải truyền projectId và phải thuộc dự án đó mới được xem tasks
+    // If not GM/Admin, projectId is required and the user must belong to that project to view tasks
     if (!this.isAuthorizedAdminOrGM(userRole)) {
       if (!query.projectId) {
         throw new AppError(
@@ -74,6 +89,13 @@ export class TaskService implements ITaskService {
     return this.repository.listTasks(query)
   }
 
+  /**
+   * Creates a new task in a project
+   * Enforces project's task creation policy (leader_only or all_members)
+   * Validates assignee is a member or leader of the project
+   * Only Admins, GMs, project leaders, or members (if policy allows) can create
+   * Throws error if user lacks permission or data is invalid
+   */
   async createTask(data: CreateTaskDto, userId: string, userRole: string): Promise<Task> {
     const project = await this.projectRepository.findById(data.projectId)
     if (!project) {
@@ -83,7 +105,7 @@ export class TaskService implements ITaskService {
     const isGM = this.isAuthorizedAdminOrGM(userRole)
     const isTL = project.teamLeaderId === userId
 
-    // Áp dụng taskCreationPolicy của dự án
+    // Apply the project's task creation policy
     if (!isGM && !isTL) {
       const isMember = await this.projectRepository.isMember(data.projectId, userId)
       if (!isMember) {
@@ -100,7 +122,7 @@ export class TaskService implements ITaskService {
       }
     }
 
-    // Ràng buộc: Người được gán task (Assignee) phải thuộc dự án đó
+    //Constraint: The person assigned the task (Assignee) must belong to that project.
     if (data.assigneeId) {
       const assignee = await this.employeeRepository.findById(data.assigneeId)
       if (!assignee) {
@@ -124,6 +146,12 @@ export class TaskService implements ITaskService {
     })
   }
 
+  /**
+   * Updates an existing task
+   * Only Admins, GMs, project team leader, task creator, or assignee can update
+   * Validates new assignee is a member or leader of the project
+   * Throws error if user lacks permission or task not found
+   */
   async updateTask(
     id: string,
     data: UpdateTaskDto,
@@ -145,7 +173,7 @@ export class TaskService implements ITaskService {
     const isCreator = task.createdById === userId
     const isAssignee = task.assigneeId === userId
 
-    // Quyền cập nhật: GM, TL dự án, Người tạo, hoặc Người được gán
+    // Update permissions: GM, Project Team Leader, Creator, or Assignee
     if (!isGM && !isTL && !isCreator && !isAssignee) {
       throw new AppError(
         "You do not have permission to update this task",
@@ -154,7 +182,7 @@ export class TaskService implements ITaskService {
       )
     }
 
-    // Kiểm tra Assignee mới có thuộc dự án không
+    // Check if the new Assignee is part of the project.
     if (data.assigneeId) {
       const assignee = await this.employeeRepository.findById(data.assigneeId)
       if (!assignee) {
@@ -175,6 +203,11 @@ export class TaskService implements ITaskService {
     return this.repository.updateTask(id, data)
   }
 
+  /**
+   * Deletes a task
+   * Only Admins, GMs, project team leader, or task creator can delete
+   * Throws error if user lacks permission or task not found
+   */
   async deleteTask(id: string, userId: string, userRole: string): Promise<boolean> {
     const task = await this.repository.findById(id)
     if (!task) {
@@ -190,7 +223,7 @@ export class TaskService implements ITaskService {
     const isTL = project.teamLeaderId === userId
     const isCreator = task.createdById === userId
 
-    // Quyền xóa: Chỉ GM, TL dự án, hoặc Người tạo task
+    // Delete permissions: GM, Project Team Leader, or Creator
     if (!isGM && !isTL && !isCreator) {
       throw new AppError(
         "You do not have permission to delete this task",

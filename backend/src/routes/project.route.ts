@@ -10,7 +10,7 @@ const employeeRepository = new PrismaEmployeeRepository(prisma)
 const repository = new PrismaProjectRepository(prisma)
 const service = new ProjectService(repository, employeeRepository)
 const controller = new ProjectController(service)
-// Tất cả các route của project đều yêu cầu authenticate (phải có JWT token)
+// All project routes require authentication (must have JWT token)
 projectRoutes.use(authenticate)
 // Project CRUD
 projectRoutes.get("/", controller.list)

@@ -5,7 +5,7 @@ import { useAuthStore } from "@/store/auth-store.ts"
 
 import { Fragment, Suspense, lazy } from "react"
 
-import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom"
+import { BrowserRouter as Router, Navigate, Route,  Routes } from "react-router-dom"
 import { Toaster } from "sonner"
 
 const NotFound = lazy(() => import("@/pages/NotFound.tsx"))
@@ -74,7 +74,7 @@ const App = () => {
             const subsystemKey = subsystem.id.toUpperCase() as keyof typeof ROUTES
             const routeObj = ROUTES[subsystemKey]
 
-            // Lấy từ ROUTES object nếu có, nếu không thì lấy từ sidebarItems
+            // Get from ROUTES object if available, otherwise get from sidebarItems
             let firstPath = subsystem.sidebarItems[0]?.path || `${subsystem.routePrefix}/dashboard`
 
             if (routeObj && typeof routeObj === "object") {

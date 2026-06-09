@@ -1,8 +1,18 @@
 import { TASK_PRIORITIES, TASK_STATUSES } from "@/configs/entities/project.config.ts"
 
+/**
+ * Type representing the priority level of a Task (e.g., low, medium, high)
+ */
 export type TaskPriority = (typeof TASK_PRIORITIES)[number]
+
+/**
+ * Type representing the current status of a Task (e.g., todo, in_progress, review, done)
+ */
 export type TaskStatus = (typeof TASK_STATUSES)[number]
 
+/**
+ * Domain model representing a Task associated with a Project
+ */
 export interface Task {
   id: string
   projectId: string
@@ -16,17 +26,26 @@ export interface Task {
   completedAt: Date | null
   createdAt: Date
   updatedAt: Date
+  /**
+   * Parent project information containing the project's task creation policy
+   */
   project?: {
     id: string
     name: string
     taskCreationPolicy: string
     teamLeaderId: string | null
   }
+  /**
+   * The employee assigned to resolve the task
+   */
   assignee?: {
     id: string
     fullName: string
     email: string
   } | null
+  /**
+   * The employee who created the task
+   */
   createdBy?: {
     id: string
     fullName: string
@@ -34,6 +53,9 @@ export interface Task {
   }
 }
 
+/**
+ * Data Transfer Object for creating a new Task
+ */
 export interface CreateTaskDto {
   projectId: string
   title: string
@@ -44,6 +66,9 @@ export interface CreateTaskDto {
   dueDate?: Date | string | null
 }
 
+/**
+ * Data Transfer Object for updating an existing Task
+ */
 export interface UpdateTaskDto {
   title?: string
   description?: string | null
@@ -54,6 +79,9 @@ export interface UpdateTaskDto {
   completedAt?: Date | string | null
 }
 
+/**
+ * Query parameters for filtering and paginating a list of tasks
+ */
 export interface TaskListQuery {
   projectId?: string
   page?: number
@@ -66,6 +94,9 @@ export interface TaskListQuery {
   sortOrder?: "asc" | "desc"
 }
 
+/**
+ * Standard Paginated Response envelope for Task list requests
+ */
 export interface PaginatedTasksDto {
   data: Task[]
   meta: {
@@ -76,6 +107,9 @@ export interface PaginatedTasksDto {
   }
 }
 
+/**
+ * Repository interface for managing Task database transactions
+ */
 export interface ITaskRepository {
   findById(id: string): Promise<Task | null>
   listTasks(query: TaskListQuery): Promise<PaginatedTasksDto>
@@ -84,6 +118,9 @@ export interface ITaskRepository {
   deleteTask(id: string): Promise<boolean>
 }
 
+/**
+ * Service interface implementing Task management business logic
+ */
 export interface ITaskService {
   getTask(id: string, userId: string, userRole: string): Promise<Task | null>
   listTasks(query: TaskListQuery, userId: string, userRole: string): Promise<PaginatedTasksDto>
