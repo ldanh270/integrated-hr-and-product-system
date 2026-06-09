@@ -20,13 +20,15 @@ import { usePayrollSettings, useUpdatePayrollSettings } from "@/hooks/payroll/us
 import type { IPayrollSettings } from "@/types/payroll.types"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Loader2 } from "lucide-react"
+import { CalendarClock, Loader2, Settings2 } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
 
 const settingsSchema = z.object({
   triggerDay: z.number().min(1).max(31, "Ngày chạy phải từ 1 đến 31"),
+  triggerHour: z.number().min(0).max(23),
+  triggerMinute: z.number().min(0).max(59),
 })
 
 type SettingsFormValues = z.infer<typeof settingsSchema>
@@ -38,13 +40,15 @@ function PayrollCycleForm({ settings }: { settings: IPayrollSettings }) {
     resolver: zodResolver(settingsSchema),
     defaultValues: {
       triggerDay: settings.triggerDay || 5,
+      triggerHour: settings.triggerHour || 0,
+      triggerMinute: settings.triggerMinute || 0,
     },
   })
 
   const onSettingsSubmit = async (values: SettingsFormValues) => {
     try {
       await updateSettings(values)
-      toast.success("Cập nhật cấu hình chu kỳ lương thành công")
+      toast.success("Cập nhật cấu hình thành công")
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } }
       toast.error(error.response?.data?.message || "Có lỗi xảy ra khi cập nhật")
@@ -52,86 +56,150 @@ function PayrollCycleForm({ settings }: { settings: IPayrollSettings }) {
   }
 
   return (
-    <div className="bg-card border border-border rounded-2xl shadow-sm text-foreground overflow-hidden">
+    <div className="bg-card border border-border rounded-xl shadow-sm text-foreground overflow-hidden">
       <div className="flex flex-col md:flex-row">
-        {/* Left Side: Info */}
-        <div className="p-8 md:p-10 border-b md:border-b-0 md:border-r border-border bg-muted/30 md:w-2/5 flex flex-col justify-between">
+        {/* Left Side: Context & Info */}
+        <div className="p-8 md:p-10 border-b md:border-b-0 md:border-r border-border bg-muted/20 md:w-1/3 flex flex-col gap-6">
           <div>
-            <h3 className="text-xl font-medium tracking-tight mb-3">Thiết lập tự động</h3>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-8 w-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center">
+                <Settings2 className="h-4 w-4 text-primary" strokeWidth={2} />
+              </div>
+              <h3 className="text-lg font-medium tracking-tight">Cấu hình hệ thống</h3>
+            </div>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              Thiết lập ngày cụ thể trong tháng để hệ thống tự động khóa bảng công và tạo bảng lương
-              nháp. Đảm bảo quy trình vận hành nhất quán và đúng hạn.
+              Thiết lập thời điểm chính xác để hệ thống tự động khóa bảng công và khởi tạo bảng
+              lương nháp hằng tháng.
             </p>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="h-2 w-2 rounded-full bg-primary"></div>
-              <span className="text-xs font-semibold tracking-wider uppercase text-primary">
-                Tự động hóa
-              </span>
+          <div className="pt-6 border-t border-border/50">
+            <div className="flex items-start gap-3">
+              <CalendarClock className="h-4 w-4 text-muted-foreground mt-0.5" strokeWidth={2} />
+              <div>
+                <h4 className="text-sm font-medium text-foreground mb-1">Tự động hóa</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Đảm bảo quy trình vận hành nhất quán, loại bỏ rủi ro sai lệch thời gian do thao
+                  tác thủ công.
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Dữ liệu sẽ tự động nội suy từ bảng chấm công, cách ly khỏi các lỗi do thao tác thủ
-              công.
-            </p>
           </div>
         </div>
 
-        {/* Right Side: Form */}
-        <div className="p-8 md:p-10 md:w-3/5 bg-background">
+        {/* Right Side: Configuration Form */}
+        <div className="p-8 md:p-10 md:w-2/3 bg-background">
           <Form {...settingsForm}>
             <form
               onSubmit={settingsForm.handleSubmit(onSettingsSubmit)}
-              className="h-full flex flex-col justify-between"
+              className="flex flex-col h-full justify-between"
             >
-              <div className="space-y-6">
+              <div className="max-w-2xl space-y-8">
+                {/* Ngày chạy */}
                 <FormField
                   control={settingsForm.control}
                   name="triggerDay"
                   render={({ field }) => (
-                    <FormItem className="max-w-sm">
+                    <FormItem>
                       <FormLabel className="text-sm font-medium text-foreground">
-                        Ngày chạy hệ thống
+                        Ngày kích hoạt hằng tháng
                       </FormLabel>
                       <Select
                         onValueChange={(val) => field.onChange(Number(val))}
                         value={field.value?.toString()}
                       >
                         <FormControl>
-                          <SelectTrigger className="rounded-full border-border h-11 bg-card shadow-none focus:ring-1 focus:ring-primary">
+                          <SelectTrigger className="w-full md:w-72 border-border h-10 shadow-sm">
                             <SelectValue placeholder="Chọn ngày" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="border-border rounded-md shadow-sm">
+                        <SelectContent>
                           {Array.from({ length: 31 }).map((_, i) => (
-                            <SelectItem
-                              key={i + 1}
-                              value={(i + 1).toString()}
-                              className="rounded-sm cursor-pointer focus:bg-muted"
-                            >
+                            <SelectItem key={i + 1} value={(i + 1).toString()}>
                               Ngày {i + 1}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      <FormDescription className="text-xs text-muted-foreground mt-3 leading-relaxed">
-                        Ví dụ: Chọn ngày 5, hệ thống sẽ tự động tổng hợp công từ ngày 1 đến ngày
-                        cuối của tháng trước đó, và tạo bản nháp vào ngày 5 tháng này.
+                      <FormDescription className="text-xs text-muted-foreground mt-2">
+                        Ngày mà hệ thống sẽ chốt công của tháng liền trước.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
+                {/* Khung giờ chạy */}
+                <div className="space-y-4">
+                  <FormLabel className="text-sm font-medium text-foreground block">
+                    Thời gian chính xác
+                  </FormLabel>
+                  <div className="flex flex-wrap items-center gap-4">
+                    <FormField
+                      control={settingsForm.control}
+                      name="triggerHour"
+                      render={({ field }) => (
+                        <FormItem className="flex-1 min-w-30">
+                          <Select
+                            onValueChange={(val) => field.onChange(Number(val))}
+                            value={field.value?.toString()}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="border-border h-10 shadow-sm">
+                                <SelectValue placeholder="Giờ" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="max-h-62.5">
+                              {Array.from({ length: 24 }).map((_, i) => (
+                                <SelectItem key={i} value={i.toString()}>
+                                  {i.toString().padStart(2, "0")} Giờ
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <span className="text-muted-foreground font-medium">:</span>
+                    <FormField
+                      control={settingsForm.control}
+                      name="triggerMinute"
+                      render={({ field }) => (
+                        <FormItem className="flex-1 min-w-30">
+                          <Select
+                            onValueChange={(val) => field.onChange(Number(val))}
+                            value={field.value?.toString()}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="border-border h-10 shadow-sm">
+                                <SelectValue placeholder="Phút" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="max-h-62.5">
+                              {Array.from({ length: 60 }).map((_, i) => (
+                                <SelectItem key={i} value={i.toString()}>
+                                  {i.toString().padStart(2, "0")} Phút
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="pt-8 mt-8 border-t border-border">
+              {/* Action Area */}
+              <div className="pt-8 mt-8 border-t border-border flex items-center justify-start">
                 <Button
                   type="submit"
                   disabled={isUpdatingSettings}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full h-10 px-6 text-sm font-medium shadow-none transition-transform hover:scale-[0.99] active:scale-[0.98]"
+                  className="h-10 px-6 text-sm font-medium shadow-sm"
                 >
-                  {isUpdatingSettings ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  {isUpdatingSettings && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Lưu thay đổi
                 </Button>
               </div>
@@ -147,19 +215,21 @@ export default function PayrollCycle() {
   const { data: settings, isLoading: isSettingsLoading } = usePayrollSettings()
 
   return (
-    <div className="container px-6 py-6">
+    <div className="container px-6 py-6 max-w-5xl">
       <PageHeader
         title="Chu kỳ lương"
-        description="Quản lý nhịp độ xử lý lương của tổ chức. Xây dựng một lịch trình tài chính dễ dự đoán và chính xác."
+        description="Quản lý lịch trình tổng hợp và xử lý lương của doanh nghiệp."
       />
 
-      {isSettingsLoading || !settings ? (
-        <PageCard className="p-12 flex flex-col items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </PageCard>
-      ) : (
-        <PayrollCycleForm settings={settings} />
-      )}
+      <div className="mt-6">
+        {isSettingsLoading || !settings ? (
+          <PageCard className="p-12 flex flex-col items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </PageCard>
+        ) : (
+          <PayrollCycleForm settings={settings} />
+        )}
+      </div>
     </div>
   )
 }
