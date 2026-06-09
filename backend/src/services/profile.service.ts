@@ -12,7 +12,8 @@ import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
 
 import { Readable } from "stream"
-
+import { ROLE } from "@/configs/entities/employee.config.ts"
+const LAYER_NAME = "ProfileService"
 /**
  * Maps a Mongoose employee document to a clean ProfileDto
  * Centralizes the field-picking logic so controllers stay thin
@@ -87,7 +88,7 @@ export class ProfileService implements IProfileService {
     const employee = await this.repo.findById(empId)
 
     if (!employee) {
-      throw new AppError("Profile not found", HttpStatusCode.NOT_FOUND, "ProfileService")
+      throw new AppError("Profile not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
     return toProfileDto(employee)
@@ -100,7 +101,7 @@ export class ProfileService implements IProfileService {
     const updated = await this.repo.updateProfile(empId, data)
 
     if (!updated) {
-      throw new AppError("Profile not found", HttpStatusCode.NOT_FOUND, "ProfileService")
+      throw new AppError("Profile not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
     return toProfileDto(updated)
@@ -115,14 +116,14 @@ export class ProfileService implements IProfileService {
     try {
       assertCloudinaryConfigured()
     } catch (err: any) {
-      throw new AppError(err.message, HttpStatusCode.BAD_REQUEST, "ProfileService")
+      throw new AppError(err.message, HttpStatusCode.BAD_REQUEST, LAYER_NAME)
     }
 
     // Fetch current profile to get old avatar id for cleanup
     const current = await this.repo.findById(empId)
 
     if (!current) {
-      throw new AppError("Profile not found", HttpStatusCode.NOT_FOUND, "ProfileService")
+      throw new AppError("Profile not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
     // Delete old Cloudinary asset if it exists
@@ -143,7 +144,7 @@ export class ProfileService implements IProfileService {
       throw new AppError(
         "Failed to save avatar",
         HttpStatusCode.INTERNAL_SERVER_ERROR,
-        "ProfileService",
+        LAYER_NAME,
       )
     }
 
@@ -166,7 +167,7 @@ export class ProfileService implements IProfileService {
       throw new AppError(
         "Mật khẩu hiện tại không chính xác",
         HttpStatusCode.BAD_REQUEST,
-        "ProfileService",
+        LAYER_NAME,
         "INVALID_CURRENT_PASSWORD",
       )
     }

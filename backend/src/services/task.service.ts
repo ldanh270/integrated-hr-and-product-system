@@ -11,7 +11,8 @@ import {
   UpdateTaskDto,
 } from "@/types"
 import { AppError } from "@/utils/error.util.ts"
-
+import { ROLE } from "@/configs/entities/employee.config.ts"
+const LAYER_NAME = "TaskService"
 export class TaskService implements ITaskService {
   constructor(
     private repository: ITaskRepository,
@@ -23,7 +24,7 @@ export class TaskService implements ITaskService {
    * Checks if user has Admin or General Manager role
    */
   private isAuthorizedAdminOrGM(userRole: string): boolean {
-    return userRole === "admin" || userRole === "general_manager"
+    return userRole === ROLE.ADMIN || userRole === ROLE.GENERAL_MANAGER
   }
 
   /**
@@ -35,21 +36,21 @@ export class TaskService implements ITaskService {
   async getTask(id: string, userId: string, userRole: string): Promise<Task | null> {
     const task = await this.repository.findById(id)
     if (!task) {
-      throw new AppError("Task not found", HttpStatusCode.NOT_FOUND, "TaskService")
+      throw new AppError("Task not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
     // Check access permission to the project containing the task
     if (!this.isAuthorizedAdminOrGM(userRole)) {
       const project = await this.projectRepository.findById(task.projectId)
       if (!project) {
-        throw new AppError("Associated project not found", HttpStatusCode.NOT_FOUND, "TaskService")
+        throw new AppError("Associated project not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
       }
 
       const isTL = project.teamLeaderId === userId
       const isMember = await this.projectRepository.isMember(task.projectId, userId)
 
       if (!isTL && !isMember) {
-        throw new AppError("Access denied to this project's tasks", HttpStatusCode.FORBIDDEN, "TaskService")
+        throw new AppError("Access denied to this project's tasks", HttpStatusCode.FORBIDDEN, LAYER_NAME)
       }
     }
 
@@ -69,20 +70,20 @@ export class TaskService implements ITaskService {
         throw new AppError(
           "Project ID is required to view tasks",
           HttpStatusCode.BAD_REQUEST,
-          "TaskService"
+          LAYER_NAME
         )
       }
 
       const project = await this.projectRepository.findById(query.projectId)
       if (!project) {
-        throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "TaskService")
+        throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
       }
 
       const isTL = project.teamLeaderId === userId
       const isMember = await this.projectRepository.isMember(query.projectId, userId)
 
       if (!isTL && !isMember) {
-        throw new AppError("Access denied to this project's tasks", HttpStatusCode.FORBIDDEN, "TaskService")
+        throw new AppError("Access denied to this project's tasks", HttpStatusCode.FORBIDDEN, LAYER_NAME)
       }
     }
 
@@ -99,7 +100,7 @@ export class TaskService implements ITaskService {
   async createTask(data: CreateTaskDto, userId: string, userRole: string): Promise<Task> {
     const project = await this.projectRepository.findById(data.projectId)
     if (!project) {
-      throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "TaskService")
+      throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
     const isGM = this.isAuthorizedAdminOrGM(userRole)
@@ -109,7 +110,7 @@ export class TaskService implements ITaskService {
     if (!isGM && !isTL) {
       const isMember = await this.projectRepository.isMember(data.projectId, userId)
       if (!isMember) {
-        throw new AppError("You are not a member of this project", HttpStatusCode.FORBIDDEN, "TaskService")
+        throw new AppError("You are not a member of this project", HttpStatusCode.FORBIDDEN, LAYER_NAME)
       }
 
       // Check policy
@@ -117,7 +118,7 @@ export class TaskService implements ITaskService {
         throw new AppError(
           "Only Team Leaders or Managers can create tasks in this project",
           HttpStatusCode.FORBIDDEN,
-          "TaskService"
+          LAYER_NAME
         )
       }
     }
@@ -126,7 +127,7 @@ export class TaskService implements ITaskService {
     if (data.assigneeId) {
       const assignee = await this.employeeRepository.findById(data.assigneeId)
       if (!assignee) {
-        throw new AppError("Assignee employee not found", HttpStatusCode.NOT_FOUND, "TaskService")
+        throw new AppError("Assignee employee not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
       }
 
       const assigneeIsTL = project.teamLeaderId === data.assigneeId
@@ -135,7 +136,7 @@ export class TaskService implements ITaskService {
         throw new AppError(
           "Assignee must be a member or the leader of this project",
           HttpStatusCode.BAD_REQUEST,
-          "TaskService"
+          LAYER_NAME
         )
       }
     }
@@ -160,12 +161,12 @@ export class TaskService implements ITaskService {
   ): Promise<Task | null> {
     const task = await this.repository.findById(id)
     if (!task) {
-      throw new AppError("Task not found", HttpStatusCode.NOT_FOUND, "TaskService")
+      throw new AppError("Task not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
     const project = await this.projectRepository.findById(task.projectId)
     if (!project) {
-      throw new AppError("Associated project not found", HttpStatusCode.NOT_FOUND, "TaskService")
+      throw new AppError("Associated project not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
     const isGM = this.isAuthorizedAdminOrGM(userRole)
@@ -178,7 +179,7 @@ export class TaskService implements ITaskService {
       throw new AppError(
         "You do not have permission to update this task",
         HttpStatusCode.FORBIDDEN,
-        "TaskService"
+        LAYER_NAME
       )
     }
 
@@ -186,7 +187,7 @@ export class TaskService implements ITaskService {
     if (data.assigneeId) {
       const assignee = await this.employeeRepository.findById(data.assigneeId)
       if (!assignee) {
-        throw new AppError("Assignee employee not found", HttpStatusCode.NOT_FOUND, "TaskService")
+        throw new AppError("Assignee employee not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
       }
 
       const assigneeIsTL = project.teamLeaderId === data.assigneeId
@@ -195,7 +196,7 @@ export class TaskService implements ITaskService {
         throw new AppError(
           "Assignee must be a member or the leader of this project",
           HttpStatusCode.BAD_REQUEST,
-          "TaskService"
+          LAYER_NAME
         )
       }
     }
@@ -211,12 +212,12 @@ export class TaskService implements ITaskService {
   async deleteTask(id: string, userId: string, userRole: string): Promise<boolean> {
     const task = await this.repository.findById(id)
     if (!task) {
-      throw new AppError("Task not found", HttpStatusCode.NOT_FOUND, "TaskService")
+      throw new AppError("Task not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
     const project = await this.projectRepository.findById(task.projectId)
     if (!project) {
-      throw new AppError("Associated project not found", HttpStatusCode.NOT_FOUND, "TaskService")
+      throw new AppError("Associated project not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
     const isGM = this.isAuthorizedAdminOrGM(userRole)
@@ -228,7 +229,7 @@ export class TaskService implements ITaskService {
       throw new AppError(
         "You do not have permission to delete this task",
         HttpStatusCode.FORBIDDEN,
-        "TaskService"
+        LAYER_NAME
       )
     }
 
