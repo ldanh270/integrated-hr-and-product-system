@@ -1,3 +1,4 @@
+import { DB_ERROR_CODES } from "@/configs/system/db.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
   ICreateWorkingShiftDTO,
@@ -14,7 +15,7 @@ export class ShiftService implements IShiftService {
     try {
       return await this.shiftRepo.create(data)
     } catch (error: any) {
-      if (error.code === 11000) {
+      if (DB_ERROR_CODES.UNIQUE_CONSTRAINT.includes(error.code)) {
         throw new AppError("Shift name already exists", HttpStatusCode.CONFLICT, "Service")
       }
       throw error
