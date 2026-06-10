@@ -137,28 +137,19 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       endDate: data.endDate ? new Date(data.endDate) : undefined,
     }
 
-    // Prisma throws if record not found, so we check first or use update with try-catch
-    try {
-      const employee = await this.prisma.employee.update({
-        where: { id },
-        data: updateData,
-      })
-      return this.mapToDomain(employee)
-    } catch (error) {
-      return null
-    }
+    const employee = await this.prisma.employee.update({
+      where: { id },
+      data: updateData,
+    })
+    return this.mapToDomain(employee)
   }
 
   async updateStatus(id: string, status: EmployeeStatus): Promise<Employee | null> {
-    try {
-      const employee = await this.prisma.employee.update({
-        where: { id },
-        data: { status },
-      })
-      return this.mapToDomain(employee)
-    } catch (error) {
-      return null
-    }
+    const employee = await this.prisma.employee.update({
+      where: { id },
+      data: { status },
+    })
+    return this.mapToDomain(employee)
   }
 
   async deleteEmployee(id: string): Promise<boolean> {
@@ -168,21 +159,17 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     if (!record) return false
 
     const timestamp = new Date().getTime()
-    try {
-      await this.prisma.employee.update({
-        where: { id },
-        data: {
-          deletedAt: new Date(),
-          status: "terminated",
-          email: `deleted_${timestamp}_${record.email}`,
-          username: `deleted_${timestamp}_${record.username}`,
-          phone: record.phone ? `deleted_${timestamp}_${record.phone}` : null,
-          nationalId: record.nationalId ? `deleted_${timestamp}_${record.nationalId}` : null,
-        },
-      })
-      return true
-    } catch (error) {
-      return false
-    }
+    await this.prisma.employee.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+        status: "terminated",
+        email: `deleted_${timestamp}_${record.email}`,
+        username: `deleted_${timestamp}_${record.username}`,
+        phone: record.phone ? `deleted_${timestamp}_${record.phone}` : null,
+        nationalId: record.nationalId ? `deleted_${timestamp}_${record.nationalId}` : null,
+      },
+    })
+    return true
   }
 }

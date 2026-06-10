@@ -34,5 +34,10 @@ employeeRoutes.patch(
   authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
   controller.updateStatus,
 )
+employeeRoutes.delete(
+  "/:id",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  controller.delete,
+)
 
 export default employeeRoutes
