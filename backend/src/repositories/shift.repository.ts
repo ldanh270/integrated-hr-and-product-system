@@ -59,6 +59,10 @@ export class PrismaWorkingShiftRepository
   }
 
   async listAll(): Promise<any[]> {
-    return this.prisma.workingShift.findMany()
+    return this.prisma.workingShift.findMany({ orderBy: { createdAt: "desc" } })
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.prisma.workingShift.delete({ where: { id } })
   }
 }

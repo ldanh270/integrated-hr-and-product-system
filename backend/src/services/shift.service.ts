@@ -29,6 +29,14 @@ export class ShiftService implements IShiftService {
     return shift
   }
 
+  async deleteShift(id: string): Promise<void> {
+    const shift = await this.shiftRepo.findById(id)
+    if (!shift) {
+      throw new AppError("Shift not found", HttpStatusCode.NOT_FOUND, "Service")
+    }
+    await this.shiftRepo.delete(id)
+  }
+
   async getShift(id: string): Promise<any | null> {
     const shift = await this.shiftRepo.findById(id)
     if (!shift) {

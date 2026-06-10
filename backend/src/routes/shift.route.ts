@@ -29,5 +29,10 @@ shiftRoutes.patch(
   authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
   controller.update,
 )
+shiftRoutes.delete(
+  "/:id",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  controller.delete,
+)
 
 export default shiftRoutes

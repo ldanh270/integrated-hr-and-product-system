@@ -43,6 +43,11 @@ export class ShiftController {
     }
   }
 
+  delete = async (req: Request, res: Response<ApiResponse<null>>) => {
+    await this.service.deleteShift(String(req.params.id))
+    res.status(HttpStatusCode.OK).json({ data: null, error: null })
+  }
+
   getOne = async (req: Request, res: Response<ApiResponse<any>>) => {
     const shift = await this.service.getShift(String(req.params.id))
     res.status(HttpStatusCode.OK).json({ data: shift, error: null })
