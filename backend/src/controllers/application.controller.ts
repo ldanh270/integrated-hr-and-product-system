@@ -1,7 +1,14 @@
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
-import { approveApplicationSchema, submitApplicationSchema } from "@/schemas/attendance.schema.ts"
+import { AuthRequest } from "@/middlewares/auth.middleware.ts"
+import {
+  approveApplicationSchema,
+  cancelApplicationSchema,
+  listApplicationsQuerySchema,
+  submitApplicationSchema,
+} from "@/schemas/attendance.schema.ts"
 import { ApiResponse } from "@/types"
 import { IApplicationService } from "@/types/attendance.types.ts"
+import { AppError } from "@/utils/error.util.ts"
 
 import { Request, Response } from "express"
 import { z } from "zod"
@@ -9,11 +16,13 @@ import { z } from "zod"
 export class ApplicationController {
   constructor(private service: IApplicationService) {}
 
-  submit = async (req: Request, res: Response<ApiResponse<any>>) => {
+  // ─── Submit ──────────────────────────────────────────────────
+
+  submit = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
-      const { employeeId } = req.body
+      const employeeId = req.user!.empId // §SEC: always from JWT, never from body
       const data = submitApplicationSchema.parse(req.body)
-      const app = await this.service.submitApplication({ ...data, employeeId })
+      const app = await this.service.submitApplication({ ...data, employeeId } as any)
       res.status(HttpStatusCode.CREATED).json({ data: app, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -26,13 +35,103 @@ export class ApplicationController {
     }
   }
 
-  approve = async (req: Request, res: Response<ApiResponse<any>>) => {
-    try {
-      // In a real app, processorId comes from req.user
-      const { processorId } = req.body
-      const { status } = approveApplicationSchema.parse(req.body)
+  // ─── Get by ID ────────────────────────────────────────────────
 
-      const app = await this.service.processApplication(String(req.params.id), status, processorId)
+  getById = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+    const app = await this.service.getApplicationById(String(req.params.id))
+    res.status(HttpStatusCode.OK).json({ data: app, error: null })
+  }
+
+  // ─── List (manager view — all employees) ─────────────────────
+
+  listAll = async (req: Request, res: Response<ApiResponse<any>>) => {
+    try {
+      const query = listApplicationsQuerySchema.parse(req.query)
+      const result = await this.service.listApplications(query)
+      res.status(HttpStatusCode.OK).json({
+        data: result.data,
+        error: null,
+        meta: {
+          total: result.total,
+          page: query.page,
+          pageSize: query.pageSize,
+          totalPages: Math.ceil(result.total / (query.pageSize ?? 20)),
+        },
+      } as any)
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: { message: "Invalid query parameters", code: "VALIDATION_ERROR", meta: error.issues },
+        })
+      }
+      throw error
+    }
+  }
+
+  // ─── List own applications ────────────────────────────────────
+
+  listMine = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+    try {
+      const employeeId = req.user!.empId
+      const query = listApplicationsQuerySchema.parse(req.query)
+      const result = await this.service.getEmployeeApplications(employeeId, query)
+      res.status(HttpStatusCode.OK).json({
+        data: result.data,
+        error: null,
+        meta: {
+          total: result.total,
+          page: query.page,
+          pageSize: query.pageSize,
+          totalPages: Math.ceil(result.total / (query.pageSize ?? 20)),
+        },
+      } as any)
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: { message: "Invalid query parameters", code: "VALIDATION_ERROR", meta: error.issues },
+        })
+      }
+      throw error
+    }
+  }
+
+  // ─── List by specific employee (for HR/admin) ─────────────────
+
+  listByEmployee = async (req: Request, res: Response<ApiResponse<any>>) => {
+    try {
+      const employeeId = String(req.params.employeeId)
+      const query = listApplicationsQuerySchema.parse(req.query)
+      const result = await this.service.getEmployeeApplications(employeeId, query)
+      res.status(HttpStatusCode.OK).json({
+        data: result.data,
+        error: null,
+        meta: {
+          total: result.total,
+          page: query.page,
+          pageSize: query.pageSize,
+          totalPages: Math.ceil(result.total / (query.pageSize ?? 20)),
+        },
+      } as any)
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: { message: "Invalid query parameters", code: "VALIDATION_ERROR", meta: error.issues },
+        })
+      }
+      throw error
+    }
+  }
+
+  // ─── Cancel ──────────────────────────────────────────────────
+
+  cancel = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+    try {
+      const employeeId = req.user!.empId
+      cancelApplicationSchema.parse(req.body) // validates optional reason field
+      const app = await this.service.cancelApplication(String(req.params.id), employeeId)
       res.status(HttpStatusCode.OK).json({ data: app, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -45,8 +144,27 @@ export class ApplicationController {
     }
   }
 
-  listEmployeeApplications = async (req: Request, res: Response<ApiResponse<any[]>>) => {
-    const apps = await this.service.getEmployeeApplications(String(req.params.employeeId))
-    res.status(HttpStatusCode.OK).json({ data: apps, error: null })
+  // ─── Approve / Reject ─────────────────────────────────────────
+
+  approve = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+    try {
+      const processorId = req.user!.empId // §SEC: from JWT
+      const { status, rejectReason } = approveApplicationSchema.parse(req.body)
+
+      const app = await this.service.processApplication(
+        String(req.params.id),
+        status as any,
+        processorId,
+      )
+      res.status(HttpStatusCode.OK).json({ data: app, error: null })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
+        })
+      }
+      throw error
+    }
   }
 }
