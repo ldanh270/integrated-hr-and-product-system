@@ -2,6 +2,7 @@ import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AppError } from "@/utils/error.util.ts"
 
 import { NextFunction, Request, Response } from "express"
+import { ZodError } from "zod"
 
 export const globalErrorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
   if (err instanceof AppError) {
@@ -10,6 +11,14 @@ export const globalErrorHandler = (err: any, req: Request, res: Response, next: 
       message: err.message,
       type: err.errorCode || "APP_ERROR",
       layer: err.layer,
+    })
+  }
+
+  if (err instanceof ZodError) {
+    return res.status(HttpStatusCode.BAD_REQUEST).json({
+      message: "Validation Error",
+      errors: err.issues,
+      type: "VALIDATION_ERROR",
     })
   }
 

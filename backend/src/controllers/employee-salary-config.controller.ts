@@ -1,4 +1,5 @@
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { assignSalaryConfigSchema } from "@/schemas/payroll.schema.ts"
 import { IEmployeeSalaryConfigService } from "@/types/payroll.types.ts"
 
 import { NextFunction, Request, Response } from "express"
@@ -36,7 +37,9 @@ export class EmployeeSalaryConfigController {
       const createdById = (req as any).user?.empId
       if (!createdById) throw new Error("Unauthorized")
 
-      const config = await this.service.assignConfig(id, req.body, createdById)
+      const validatedData = assignSalaryConfigSchema.parse(req.body)
+
+      const config = await this.service.assignConfig(id, validatedData, createdById)
       res.status(HttpStatusCode.CREATED).json({ data: config })
     } catch (error) {
       next(error)

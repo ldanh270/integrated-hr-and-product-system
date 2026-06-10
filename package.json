@@ -14,7 +14,6 @@
     "db:generate": "cd backend && bunx prisma generate",
     "db:reset": "cd backend && bunx prisma migrate reset",
     "db:studio": "cd backend && bunx prisma studio",
-    "db:deploy": "cd backend && bunx prisma generate && bunx prisma migrate deploy",
     "db:seed": "cd backend && bun run seed",
     "db:seed:admin": "cd backend && bun run seed:admin",
     "db:clear": "cd backend && bun run clear",
