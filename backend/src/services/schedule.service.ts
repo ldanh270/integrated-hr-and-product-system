@@ -21,6 +21,10 @@ export class ScheduleService implements IScheduleService {
     return this.scheduleRepo.getScheduleByEmployee(employeeId, date)
   }
 
+  async listSchedulesForEmployee(employeeId: string): Promise<any[]> {
+    return this.scheduleRepo.listSchedulesByEmployee(employeeId)
+  }
+
   async overrideEmployeeShift(data: IOverrideEmployeeShiftDTO): Promise<any> {
     return this.employeeShiftRepo.overrideShift(data)
   }

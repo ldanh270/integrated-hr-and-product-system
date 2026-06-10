@@ -18,7 +18,17 @@ const controller = new ScheduleController(service)
 
 scheduleRoutes.use(authenticate)
 
+// Employee: view their own schedule
+scheduleRoutes.get("/my", controller.getMySchedule)
+scheduleRoutes.get("/my/all", controller.listMySchedules)
+
+// HR/Admin: view a specific employee's schedule
 scheduleRoutes.get("/employee/:employeeId", controller.getEmployeeSchedule)
+scheduleRoutes.get(
+  "/employee/:employeeId/all",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  controller.listEmployeeSchedules,
+)
 
 scheduleRoutes.post(
   "/assign",

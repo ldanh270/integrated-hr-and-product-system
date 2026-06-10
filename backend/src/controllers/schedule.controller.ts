@@ -36,6 +36,38 @@ export class ScheduleController {
     res.status(HttpStatusCode.OK).json({ data: schedule, error: null })
   }
 
+  listEmployeeSchedules = async (req: Request, res: Response<ApiResponse<any[]>>) => {
+    const { employeeId } = req.params
+    const schedules = await this.service.listSchedulesForEmployee(String(employeeId))
+    res.status(HttpStatusCode.OK).json({ data: schedules, error: null })
+  }
+
+  getMySchedule = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+    const employeeId = req.user?.empId
+    if (!employeeId) {
+      return res.status(HttpStatusCode.UNAUTHORIZED).json({
+        data: null,
+        error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+      })
+    }
+    const dateQuery = req.query.date as string | undefined
+    const scheduleDate = dateQuery ? new Date(dateQuery) : new Date()
+    const schedule = await this.service.getScheduleForEmployee(employeeId, scheduleDate)
+    res.status(HttpStatusCode.OK).json({ data: schedule, error: null })
+  }
+
+  listMySchedules = async (req: AuthRequest, res: Response<ApiResponse<any[]>>) => {
+    const employeeId = req.user?.empId
+    if (!employeeId) {
+      return res.status(HttpStatusCode.UNAUTHORIZED).json({
+        data: null,
+        error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+      })
+    }
+    const schedules = await this.service.listSchedulesForEmployee(employeeId)
+    res.status(HttpStatusCode.OK).json({ data: schedules, error: null })
+  }
+
   overrideShift = async (req: Request, res: Response<ApiResponse<any>>) => {
     try {
       const data = overrideEmployeeShiftSchema.parse(req.body)
