@@ -31,14 +31,18 @@ export class EmployeeController {
   }
 
   getOne = async (req: Request, res: Response<ApiResponse<Employee>>) => {
-    const employee = await this.service.getEmployee(String(req.params.id))
-    if (!employee) {
-      return res.status(HttpStatusCode.NOT_FOUND).json({
-        data: null,
-        error: { message: "Employee not found", code: "NOT_FOUND" },
-      })
+    try {
+      const employee = await this.service.getEmployee(String(req.params.id))
+      if (!employee) {
+        return res.status(HttpStatusCode.NOT_FOUND).json({
+          data: null,
+          error: { message: "Employee not found", code: "NOT_FOUND" },
+        })
+      }
+      res.status(HttpStatusCode.OK).json({ data: employee, error: null })
+    } catch (error: any) {
+      throw error
     }
-    res.status(HttpStatusCode.OK).json({ data: employee, error: null })
   }
 
   create = async (req: Request, res: Response<ApiResponse<Employee>>) => {
