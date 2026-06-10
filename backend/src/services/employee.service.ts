@@ -47,9 +47,9 @@ export class EmployeeService implements IEmployeeService {
         passwordHash,
       })
     } catch (error: any) {
-      if (error.code === 11000) {
+      if (error.code === 11000 || error.code === "P2002") {
         throw new AppError(
-          "Username or email already exists",
+          "Username, email, số điện thoại hoặc số CCCD đã tồn tại trong hệ thống.",
           HttpStatusCode.CONFLICT,
           "EmployeeService",
         )

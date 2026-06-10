@@ -6,6 +6,8 @@ import {
 
 import { z } from "zod"
 
+const emptyToNull = (val: any) => (val === "" ? null : val)
+
 export const createEmployeeSchema = z
   .object({
     fullName: z
@@ -35,36 +37,54 @@ export const createEmployeeSchema = z
 
     employeeType: z.enum(EMPLOYEE_TYPES).optional(),
 
-    phone: z
-      .string()
-      .regex(/^[0-9+\-\s()]{7,20}$/, "Invalid phone number format")
-      .optional()
-      .nullable(),
+    phone: z.preprocess(
+      emptyToNull,
+      z
+        .string()
+        .regex(/^[0-9+\-\s()]{7,20}$/, "Invalid phone number format")
+        .optional()
+        .nullable(),
+    ),
 
-    position: z.string().max(100, "Position too long").trim().optional().nullable(),
+    position: z.preprocess(
+      emptyToNull,
+      z.string().max(100, "Position too long").trim().optional().nullable(),
+    ),
 
     status: z.enum(EMPLOYEE_STATUSES).optional(),
 
-    dateOfBirth: z
-      .string()
-      .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
-      .optional()
-      .nullable(),
+    dateOfBirth: z.preprocess(
+      emptyToNull,
+      z
+        .string()
+        .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
+        .optional()
+        .nullable(),
+    ),
 
-    nationalId: z
-      .string()
-      .min(9, "National ID must be at least 9 characters")
-      .max(20, "National ID too long")
-      .optional()
-      .nullable(),
+    nationalId: z.preprocess(
+      emptyToNull,
+      z
+        .string()
+        .min(9, "National ID must be at least 9 characters")
+        .max(20, "National ID too long")
+        .optional()
+        .nullable(),
+    ),
 
-    address: z.string().max(500, "Address too long").trim().optional().nullable(),
+    address: z.preprocess(
+      emptyToNull,
+      z.string().max(500, "Address too long").trim().optional().nullable(),
+    ),
 
-    startDate: z
-      .string()
-      .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
-      .optional()
-      .nullable(),
+    startDate: z.preprocess(
+      emptyToNull,
+      z
+        .string()
+        .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
+        .optional()
+        .nullable(),
+    ),
   })
   .strict()
 
@@ -79,44 +99,65 @@ export const updateEmployeeSchema = z
       .trim()
       .optional(),
 
-    phone: z
-      .string()
-      .regex(/^[0-9+\-\s()]{7,20}$/, "Invalid phone number format")
-      .optional()
-      .nullable(),
+    phone: z.preprocess(
+      emptyToNull,
+      z
+        .string()
+        .regex(/^[0-9+\-\s()]{7,20}$/, "Invalid phone number format")
+        .optional()
+        .nullable(),
+    ),
 
-    position: z.string().max(100, "Position too long").trim().optional().nullable(),
+    position: z.preprocess(
+      emptyToNull,
+      z.string().max(100, "Position too long").trim().optional().nullable(),
+    ),
 
     employeeType: z.enum(EMPLOYEE_TYPES).optional(),
 
     status: z.enum(EMPLOYEE_STATUSES).optional(),
 
-    dateOfBirth: z
-      .string()
-      .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
-      .optional()
-      .nullable(),
+    dateOfBirth: z.preprocess(
+      emptyToNull,
+      z
+        .string()
+        .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
+        .optional()
+        .nullable(),
+    ),
 
-    nationalId: z
-      .string()
-      .min(9, "National ID must be at least 9 characters")
-      .max(20, "National ID too long")
-      .optional()
-      .nullable(),
+    nationalId: z.preprocess(
+      emptyToNull,
+      z
+        .string()
+        .min(9, "National ID must be at least 9 characters")
+        .max(20, "National ID too long")
+        .optional()
+        .nullable(),
+    ),
 
-    address: z.string().max(500, "Address too long").trim().optional().nullable(),
+    address: z.preprocess(
+      emptyToNull,
+      z.string().max(500, "Address too long").trim().optional().nullable(),
+    ),
 
-    startDate: z
-      .string()
-      .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
-      .optional()
-      .nullable(),
+    startDate: z.preprocess(
+      emptyToNull,
+      z
+        .string()
+        .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
+        .optional()
+        .nullable(),
+    ),
 
-    endDate: z
-      .string()
-      .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
-      .optional()
-      .nullable(),
+    endDate: z.preprocess(
+      emptyToNull,
+      z
+        .string()
+        .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
+        .optional()
+        .nullable(),
+    ),
   })
   .strict()
 
