@@ -71,3 +71,43 @@ export type IApplicationStatus = (typeof APPLICATION_STATUSES)[number]
 
 export const REGIME_TYPES = ["paid", "unpaid"] as const
 export type IRegimeType = (typeof REGIME_TYPES)[number]
+
+export const LEAVE_TYPE = {
+  ANNUAL_LEAVE: "annual_leave",
+  SICK_LEAVE: "sick_leave",
+  MATERNITY_LEAVE: "maternity_leave",
+  BEREAVEMENT_LEAVE: "bereavement_leave",
+  MARRIAGE_LEAVE: "marriage_leave",
+  UNPAID_LEAVE: "unpaid_leave",
+  OTHER: "other",
+} as const
+
+export const LEAVE_TYPE_VALUES = [
+  LEAVE_TYPE.ANNUAL_LEAVE,
+  LEAVE_TYPE.SICK_LEAVE,
+  LEAVE_TYPE.MATERNITY_LEAVE,
+  LEAVE_TYPE.BEREAVEMENT_LEAVE,
+  LEAVE_TYPE.MARRIAGE_LEAVE,
+  LEAVE_TYPE.UNPAID_LEAVE,
+  LEAVE_TYPE.OTHER,
+] as const
+export type ILeaveType = (typeof LEAVE_TYPE_VALUES)[number]
+
+// Leave types that consume from paid leave balance
+export const PAID_LEAVE_TYPES: ILeaveType[] = [
+  LEAVE_TYPE.ANNUAL_LEAVE,
+  LEAVE_TYPE.SICK_LEAVE,
+  LEAVE_TYPE.BEREAVEMENT_LEAVE,
+  LEAVE_TYPE.MARRIAGE_LEAVE,
+]
+
+// Leave balance quota (working days per year) — configurable
+export const LEAVE_BALANCE_DEFAULTS: Record<ILeaveType, number> = {
+  annual_leave: 12,
+  sick_leave: 30,
+  maternity_leave: 180,
+  bereavement_leave: 3,
+  marriage_leave: 3,
+  unpaid_leave: 0, // unlimited (no balance check)
+  other: 0, // unlimited
+}
