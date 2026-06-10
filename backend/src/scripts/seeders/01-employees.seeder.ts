@@ -96,10 +96,11 @@ export class EmployeesSeeder implements ISeeder {
       }
     })
 
-    const createdEmployees = await prisma.$transaction(
-      employeesData.map((data) => prisma.employee.create({ data })),
-      { timeout: 30000 },
-    )
+    const createdEmployees = []
+    for (const data of employeesData) {
+      const emp = await prisma.employee.create({ data })
+      createdEmployees.push(emp)
+    }
 
     console.log(`  Seeded ${createdEmployees.length} random employees.`)
 

@@ -1,11 +1,19 @@
 import { Pool } from "pg"
 import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from "@prisma/client"
+import { parse } from "pg-connection-string"
+
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
 function createPrismaClient() {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+  const connectionString = process.env.DATABASE_URL
+  const poolConfig = parse(connectionString || "")
+  poolConfig.ssl = {
+    rejectUnauthorized: false
+  }
+  const pool = new Pool(poolConfig)
   const adapter = new PrismaPg(pool)
   return new PrismaClient({ adapter })
 }

@@ -44,10 +44,11 @@ export class ApplicationsSeeder implements ISeeder {
       })
     }
 
-    const createdApps = await prisma.$transaction(
-      applicationsToCreate.map((data) => prisma.application.create({ data })),
-      { timeout: 30000 },
-    )
+    const createdApps = []
+    for (const data of applicationsToCreate) {
+      const app = await prisma.application.create({ data })
+      createdApps.push(app)
+    }
 
     console.log(`  Seeded ${createdApps.length} applications.`)
 

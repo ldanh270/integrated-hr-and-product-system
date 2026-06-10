@@ -81,16 +81,15 @@ export class SalaryComponentsSeeder implements ISeeder {
       },
     ]
 
-    const createdComponents = await prisma.$transaction(
-      componentsToCreate.map((data) =>
-        prisma.salaryComponent.upsert({
-          where: { name: data.name },
-          update: data,
-          create: data,
-        }),
-      ),
-      { timeout: 30000 },
-    )
+    const createdComponents = []
+    for (const data of componentsToCreate) {
+      const comp = await prisma.salaryComponent.upsert({
+        where: { name: data.name },
+        update: data,
+        create: data,
+      })
+      createdComponents.push(comp)
+    }
 
     console.log(`  Seeded ${createdComponents.length} salary components.`)
 
