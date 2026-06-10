@@ -1,4 +1,6 @@
+import { ROLE } from "@/configs/entities/employee.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import {
   attendanceRecordQuerySchema,
   checkInSchema,
@@ -15,12 +17,16 @@ export class AttendanceController {
 
   checkIn = async (req: Request, res: Response<ApiResponse<any>>) => {
     try {
-      // In a real app, employeeId comes from req.user!
-      // Here we assume it's passed in body or req.user.id
-      const { employeeId } = z.object({ employeeId: z.string().min(1) }).parse(req.body)
-      const { location } = checkInSchema.parse(req.body)
+      const employeeId = req.user?.empId
+      if (!employeeId) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          data: null,
+          error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+        })
+      }
 
-      const record = await this.service.checkIn(employeeId, location)
+      const { location } = checkInSchema.parse(req.body)
+      const record = await this.service.checkIn(employeeId, location, employeeId)
       res.status(HttpStatusCode.OK).json({ data: record, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -33,9 +39,16 @@ export class AttendanceController {
     }
   }
 
-  checkOut = async (req: Request, res: Response<ApiResponse<any>>) => {
+  checkOut = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
-      const { employeeId } = z.object({ employeeId: z.string().min(1) }).parse(req.body)
+      const employeeId = req.user?.empId
+      if (!employeeId) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          data: null,
+          error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+        })
+      }
+
       const { location } = checkOutSchema.parse(req.body)
 
       const record = await this.service.checkOut(employeeId, location)
@@ -51,11 +64,16 @@ export class AttendanceController {
     }
   }
 
-  scan = async (req: Request, res: Response<ApiResponse<any>>) => {
+  scan = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
-      // Auto-detect Check In vs Check Out based on existing record
-      // In a real app employeeId comes from req.user
-      const { employeeId } = z.object({ employeeId: z.string().min(1) }).parse(req.body)
+      const employeeId = req.user?.empId
+      if (!employeeId) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          data: null,
+          error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+        })
+      }
+
       const { location } = checkInSchema.parse(req.body)
 
       const today = new Date()
@@ -70,7 +88,7 @@ export class AttendanceController {
 
       let result
       if (!todayRecord || !todayRecord.checkIn?.at) {
-        result = await this.service.checkIn(employeeId, location)
+        result = await this.service.checkIn(employeeId, location, employeeId)
       } else {
         result = await this.service.checkOut(employeeId, location)
       }
@@ -87,9 +105,25 @@ export class AttendanceController {
     }
   }
 
-  queryRecords = async (req: Request, res: Response<ApiResponse<any[]>>) => {
+  queryRecords = async (req: AuthRequest, res: Response<ApiResponse<any[]>>) => {
     try {
       const query = attendanceRecordQuerySchema.parse(req.query)
+      const userRole = req.user?.role
+      const userId = req.user?.empId
+
+      if (!userRole || !userId) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          data: null,
+          error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+        })
+      }
+
+      const allowedRoles = [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER] as const
+      const canViewAll = allowedRoles.includes(userRole as (typeof allowedRoles)[number])
+      if (!canViewAll) {
+        query.employeeId = userId
+      }
+
       const records = await this.service.getAttendanceRecords(query)
       res.status(HttpStatusCode.OK).json({ data: records, error: null })
     } catch (error) {

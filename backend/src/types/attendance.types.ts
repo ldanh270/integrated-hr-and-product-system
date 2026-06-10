@@ -44,9 +44,18 @@ export interface IApproveApplicationDTO {
 }
 
 // ─── REPOSITORY INTERFACES ────────────────────────────────────
+export interface IAttendanceMetricsDTO {
+  status?: IAttendanceStatus
+  lateMinutes?: number
+  earlyLeaveMinutes?: number
+  overtimeMinutes?: number
+  totalWorkMinutes?: number
+}
+
 export interface IAttendanceRepository {
-  checkIn(employeeId: string, location: IGpsScanDTO, employeeShiftId?: string): Promise<any>
-  checkOut(employeeId: string, location: IGpsScanDTO): Promise<any>
+  checkIn(employeeId: string, location: IGpsScanDTO, employeeShiftId: string): Promise<any>
+  checkOut(employeeId: string, location: IGpsScanDTO, metrics?: IAttendanceMetricsDTO): Promise<any>
+  findByEmployeeAndDate(employeeId: string, date: string | Date): Promise<any | null>
   queryRecords(query: IAttendanceRecordQueryDTO): Promise<any[]>
 }
 
@@ -63,7 +72,7 @@ export interface IHolidayRepository {
 
 // ─── SERVICE INTERFACES ───────────────────────────────────────
 export interface IAttendanceService {
-  checkIn(employeeId: string, location: IGpsScanDTO): Promise<any>
+  checkIn(employeeId: string, location: IGpsScanDTO, createdById: string): Promise<any>
   checkOut(employeeId: string, location: IGpsScanDTO): Promise<any>
   getAttendanceRecords(query: IAttendanceRecordQueryDTO): Promise<any[]>
 }

@@ -66,4 +66,45 @@ export class PrismaEmployeeShiftRepository
       },
     })
   }
+
+  async ensureShiftForEmployeeDate(
+    employeeId: string,
+    date: string | Date,
+    shiftId: string,
+    createdById: string,
+  ): Promise<any> {
+    const targetDate = new Date(date)
+    targetDate.setHours(0, 0, 0, 0)
+
+    const existing = await this.prisma.employeeShift.findUnique({
+      where: {
+        employeeId_assignedDate: {
+          employeeId,
+          assignedDate: targetDate,
+        },
+      },
+    })
+
+    if (existing) {
+      return this.prisma.employeeShift.update({
+        where: { id: existing.id },
+        data: {
+          shiftId,
+          isOverride: false,
+          status: ShiftStatus.scheduled,
+        },
+      })
+    }
+
+    return this.prisma.employeeShift.create({
+      data: {
+        employeeId,
+        assignedDate: targetDate,
+        shiftId,
+        isOverride: false,
+        status: ShiftStatus.scheduled,
+        createdById,
+      },
+    })
+  }
 }

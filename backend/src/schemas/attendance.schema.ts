@@ -8,8 +8,6 @@ import {
 
 import { z } from "zod"
 
-const objectIdRegex = /^[0-9a-fA-F]{24}$/
-
 const gpsScanSchema = z.object({
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),
@@ -43,7 +41,7 @@ export const attendanceRecordQuerySchema = z
       .string()
       .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
       .optional(),
-    employeeId: z.string().regex(objectIdRegex, "Invalid ObjectId").optional(),
+    employeeId: z.string().min(1).optional(),
     status: z.enum(ATTENDANCE_STATUSES).optional(),
   })
   .strict()
@@ -63,7 +61,7 @@ export const submitApplicationSchema = z
       .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
       .optional(),
     regimeType: z.enum(REGIME_TYPES).optional(),
-    swapWith: z.string().regex(objectIdRegex, "Invalid ObjectId").optional(),
+    swapWith: z.string().min(1).optional(),
   })
   .strict()
 

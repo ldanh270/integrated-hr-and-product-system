@@ -1,4 +1,5 @@
 import {
+  IAttendanceMetricsDTO,
   IAttendanceRecordQueryDTO,
   IAttendanceRepository,
   IGpsScanDTO,
@@ -39,12 +40,14 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
     return record
   }
 
-  async checkOut(employeeId: string, location: IGpsScanDTO): Promise<any> {
+  async checkOut(
+    employeeId: string,
+    location: IGpsScanDTO,
+    metrics: IAttendanceMetricsDTO = {},
+  ): Promise<any> {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    // Since we don't pass employeeShiftId, we find the first record for this employee today
-    // and update it.
     const records = await this.prisma.attendanceRecord.findMany({
       where: {
         employeeId,
@@ -57,16 +60,25 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
       return null // Cannot checkout if not checked in
     }
 
-    const record = await this.prisma.attendanceRecord.update({
+    return this.prisma.attendanceRecord.update({
       where: { id: records[0].id },
       data: {
         checkOutAt: new Date(),
         checkOutLat: location.lat,
         checkOutLng: location.lng,
+        ...metrics,
       },
     })
+  }
 
-    return record
+  async findByEmployeeAndDate(employeeId: string, date: string | Date): Promise<any | null> {
+    const targetDate = new Date(date)
+    targetDate.setHours(0, 0, 0, 0)
+
+    return this.prisma.attendanceRecord.findFirst({
+      where: { employeeId, date: targetDate },
+      include: { employeeShift: true },
+    })
   }
 
   async queryRecords(query: IAttendanceRecordQueryDTO): Promise<any[]> {
