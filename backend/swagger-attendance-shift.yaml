@@ -344,6 +344,62 @@ paths:
                     totalWorkMinutes: 540
                 error: null
 
+  /api/attendance/export:
+    get:
+      tags: [Attendance]
+      summary: Export attendance report as CSV
+      description: |
+        Downloads a CSV file of attendance records filtered by query params.
+        Only ADMIN / HR_MANAGER / GENERAL_MANAGER can access.
+        The CSV includes BOM (UTF-8) for correct Excel rendering.
+      parameters:
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+          example: "2026-06-01"
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+          example: "2026-06-30"
+        - in: query
+          name: employeeId
+          schema:
+            type: string
+          description: Filter by employee ID (optional)
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/AttendanceStatus"
+          description: Filter by attendance status (optional)
+      responses:
+        "200":
+          description: CSV file downloaded successfully
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              example: attachment; filename="attendance_report_2026-06-10.csv"
+            Content-Type:
+              schema:
+                type: string
+              example: text/csv; charset=utf-8
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+              example: |
+                Date,Employee Name,Employee ID,Email,Shift Name,Scheduled Hours,Check In,Check Out,Status,Late (min),Early Leave (min),Overtime (min),Total Work (min)
+                2026-06-10,"Nguyen Van A",cmq6pppxs0000k8bdxllfuu7t,nva@company.com,Morning Shift,08:00 - 17:00,08:02:00,17:05:00,on_time,0,0,5,543
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "401":
+          description: Unauthorized
+
   /api/attendance/check-in:
     post:
       tags: [Attendance]

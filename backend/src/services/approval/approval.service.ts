@@ -7,7 +7,7 @@ import { IApprovalItem, IApprovalService, IProcessApprovalDTO } from "@/types/ap
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
 
-import { ApplicationStatus, PasswordResetStatus, ProjectStatus } from "@prisma/client"
+import { ApplicationStatus, ApplicationType, PasswordResetStatus, ProjectStatus } from "@prisma/client"
 
 export class ApprovalService implements IApprovalService {
   /**
@@ -133,19 +133,65 @@ export class ApprovalService implements IApprovalService {
         )
       }
 
-      return prisma.application.update({
-        where: { id: dto.id },
-        data: {
-          status:
-            dto.status === APPLICATION_STATUS.APPROVED
-              ? ApplicationStatus.approved
-              : ApplicationStatus.rejected,
-          approvedById: dto.processorId,
-          approvedAt: new Date(),
-          ...(dto.rejectReason && dto.status === APPLICATION_STATUS.REJECTED
-            ? { rejectReason: dto.rejectReason }
-            : {}),
-        },
+      return prisma.$transaction(async (tx) => {
+        const applicationRecord = await tx.application.findUnique({
+          where: { id: dto.id },
+          include: { shiftSwapDetail: true },
+        })
+        if (!applicationRecord) {
+          throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, "Service")
+        }
+
+        if (
+          applicationRecord.type === ApplicationType.shift_swap &&
+          dto.status === APPLICATION_STATUS.APPROVED
+        ) {
+          const swapDetail = applicationRecord.shiftSwapDetail
+          if (!swapDetail) {
+            throw new AppError(
+              "Shift swap detail not found",
+              HttpStatusCode.BAD_REQUEST,
+              "Service",
+            )
+          }
+
+          const { employeeShiftId, swapWithShiftId } = swapDetail
+          const shiftA = await tx.employeeShift.findUnique({ where: { id: employeeShiftId } })
+          const shiftB = await tx.employeeShift.findUnique({ where: { id: swapWithShiftId } })
+
+          if (!shiftA || !shiftB) {
+            throw new AppError(
+              "One or both employee shifts not found for swap",
+              HttpStatusCode.BAD_REQUEST,
+              "Service",
+            )
+          }
+
+          const tempShiftId = shiftA.shiftId
+          await tx.employeeShift.update({
+            where: { id: employeeShiftId },
+            data: { shiftId: shiftB.shiftId },
+          })
+          await tx.employeeShift.update({
+            where: { id: swapWithShiftId },
+            data: { shiftId: tempShiftId },
+          })
+        }
+
+        return tx.application.update({
+          where: { id: dto.id },
+          data: {
+            status:
+              dto.status === APPLICATION_STATUS.APPROVED
+                ? ApplicationStatus.approved
+                : ApplicationStatus.rejected,
+            approvedById: dto.processorId,
+            approvedAt: new Date(),
+            ...(dto.rejectReason && dto.status === APPLICATION_STATUS.REJECTED
+              ? { rejectReason: dto.rejectReason }
+              : {}),
+          },
+        })
       })
     } else if (dto.category === "password_reset") {
       const req = await prisma.passwordResetRequest.findUnique({ where: { id: dto.id } })

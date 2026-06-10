@@ -101,6 +101,19 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
 
     return this.prisma.attendanceRecord.findMany({
       where,
+      include: {
+        employee: {
+          select: {
+            fullName: true,
+            email: true,
+          },
+        },
+        employeeShift: {
+          include: {
+            shift: true,
+          },
+        },
+      },
       orderBy: { date: "desc" },
     })
   }
