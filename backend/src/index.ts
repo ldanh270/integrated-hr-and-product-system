@@ -98,27 +98,7 @@ app.use((req, res) => {
 })
 
 // Global error
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  if (err?.name === "AppError" || err?.statusCode) {
-    res.status(err.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
-      data: null,
-      error: {
-        message: err.message,
-        code: err.errorCode || (err.layer ? err.layer.toUpperCase() + "_ERROR" : "APP_ERROR"),
-      },
-    })
-    return
-  }
-
-  console.error("GLOBAL ERROR:", err)
-  res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
-    data: null,
-    error: {
-      message: "Internal Server Error",
-      code: "INTERNAL_SERVER_ERROR",
-    },
-  })
-})
+app.use(globalErrorHandler)
 
 /**
  * Must connect to database successfully before start server

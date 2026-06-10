@@ -131,13 +131,40 @@ export const updateEmployeeStatusSchema = z
 export type UpdateEmployeeStatusSchemaType = z.infer<typeof updateEmployeeStatusSchema>
 
 export const listEmployeesQuerySchema = z.object({
-  page: z.string().regex(/^\d+$/).transform(Number).optional(),
-  limit: z.string().regex(/^\d+$/).transform(Number).optional(),
+  page: z
+    .string()
+    .regex(/^\d+$/)
+    .transform(Number)
+    .refine((val) => val >= 1, { message: "Page must be at least 1" })
+    .optional(),
+  limit: z
+    .string()
+    .regex(/^\d+$/)
+    .transform(Number)
+    .refine((val) => val >= 1, { message: "Limit must be at least 1" })
+    .optional(),
   search: z.string().optional(),
   status: z.enum(EMPLOYEE_STATUSES).optional(),
   role: z.enum(EMPLOYEE_ROLES).optional(),
   employeeType: z.enum(EMPLOYEE_TYPES).optional(),
-  sortBy: z.string().optional(),
+  sortBy: z
+    .enum([
+      "id",
+      "fullName",
+      "username",
+      "role",
+      "email",
+      "phone",
+      "dateOfBirth",
+      "position",
+      "employeeType",
+      "status",
+      "startDate",
+      "endDate",
+      "createdAt",
+      "updatedAt",
+    ])
+    .optional(),
   sortOrder: z.enum(["asc", "desc"]).optional(),
 })
 
