@@ -43,21 +43,23 @@ export class PayrollsSeeder implements ISeeder {
       })
     }
 
-    const createdPayrolls = []
-    for (const data of payrollsToCreate) {
-      const payroll = await prisma.payroll.upsert({
-        where: {
-          periodYear_periodMonth_name: {
-            periodYear: data.periodYear,
-            periodMonth: data.periodMonth,
-            name: data.name,
-          },
-        },
-        update: data,
-        create: data,
-      })
-      createdPayrolls.push(payroll)
-    }
+    const createdPayrolls = await prisma.$transaction(
+      payrollsToCreate.map(
+        (data) =>
+          prisma.payroll.upsert({
+            where: {
+              periodYear_periodMonth_name: {
+                periodYear: data.periodYear,
+                periodMonth: data.periodMonth,
+                name: data.name,
+              },
+            },
+            update: data,
+            create: data,
+          }),
+        { timeout: 30000 },
+      ),
+    )
 
     console.log(`  Seeded ${createdPayrolls.length} payrolls.`)
 

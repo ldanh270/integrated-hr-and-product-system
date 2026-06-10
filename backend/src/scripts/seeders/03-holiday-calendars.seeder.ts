@@ -75,15 +75,17 @@ export class HolidayCalendarsSeeder implements ISeeder {
       },
     ]
 
-    const createdHolidays = []
-    for (const data of holidaysToCreate) {
-      const holiday = await prisma.holidayCalendar.upsert({
-        where: { date: data.date },
-        update: data,
-        create: data,
-      })
-      createdHolidays.push(holiday)
-    }
+    const createdHolidays = await prisma.$transaction(
+      holidaysToCreate.map(
+        (data) =>
+          prisma.holidayCalendar.upsert({
+            where: { date: data.date },
+            update: data,
+            create: data,
+          }),
+        { timeout: 30000 },
+      ),
+    )
 
     console.log(`  Seeded ${createdHolidays.length} holidays.`)
     return {}

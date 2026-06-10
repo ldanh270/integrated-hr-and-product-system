@@ -28,21 +28,25 @@ export class PayslipTemplatesSeeder implements ISeeder {
     })
 
     // Assign all components to this template
-    for (const componentId of salaryComponentIds) {
-      await prisma.payslipTemplateComponent.upsert({
-        where: {
-          templateId_componentId: {
-            templateId: standardTemplate.id,
-            componentId: componentId,
-          },
-        },
-        update: {},
-        create: {
-          templateId: standardTemplate.id,
-          componentId: componentId,
-        },
-      })
-    }
+    await prisma.$transaction(
+      salaryComponentIds.map(
+        (componentId) =>
+          prisma.payslipTemplateComponent.upsert({
+            where: {
+              templateId_componentId: {
+                templateId: standardTemplate.id,
+                componentId: componentId,
+              },
+            },
+            update: {},
+            create: {
+              templateId: standardTemplate.id,
+              componentId: componentId,
+            },
+          }),
+        { timeout: 30000 },
+      ),
+    )
 
     console.log(`  Seeded 1 payslip template with ${salaryComponentIds.length} components.`)
 
