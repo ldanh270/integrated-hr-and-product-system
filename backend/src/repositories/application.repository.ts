@@ -1,7 +1,6 @@
 import { PAID_LEAVE_TYPES } from "@/configs/entities/attendance.config.ts"
 import {
   IApplicationRepository,
-  IApplicationStatus,
   ILeaveType,
   IListApplicationsQueryDTO,
   ISubmitApplicationDTO,
@@ -98,14 +97,32 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     }
   }
 
-  async approve(id: string, status: IApplicationStatus, approvedBy: string): Promise<any | null> {
+  async approve(id: string, approvedBy: string): Promise<any | null> {
     try {
       return await this.prisma.application.update({
-        where: { id },
+        where: { id, status: ApplicationStatus.pending },
         data: {
-          status: status as ApplicationStatus,
+          status: ApplicationStatus.approved,
           approvedById: approvedBy,
           approvedAt: new Date(),
+          rejectReason: null,
+        },
+        include: APPLICATION_INCLUDE,
+      })
+    } catch {
+      return null
+    }
+  }
+
+  async reject(id: string, rejectedBy: string, rejectReason: string): Promise<any | null> {
+    try {
+      return await this.prisma.application.update({
+        where: { id, status: ApplicationStatus.pending },
+        data: {
+          status: ApplicationStatus.rejected,
+          approvedById: rejectedBy,
+          approvedAt: new Date(),
+          rejectReason,
         },
         include: APPLICATION_INCLUDE,
       })

@@ -47,11 +47,18 @@ applicationRoutes.get(
   controller.listByEmployee,
 )
 
-// Approve or reject an application
+// Approve an application (sets status=approved)
 applicationRoutes.patch(
   "/:id/approve",
   authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER, ROLE.TEAM_LEADER),
   controller.approve,
+)
+
+// Reject an application with a mandatory rejectReason
+applicationRoutes.patch(
+  "/:id/reject",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER, ROLE.TEAM_LEADER),
+  controller.reject,
 )
 
 export default applicationRoutes

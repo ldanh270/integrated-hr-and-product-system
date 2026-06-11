@@ -4,6 +4,7 @@ import {
   approveApplicationSchema,
   cancelApplicationSchema,
   listApplicationsQuerySchema,
+  rejectApplicationSchema,
   submitApplicationSchema,
 } from "@/schemas/attendance.schema.ts"
 import { ApiResponse } from "@/types"
@@ -62,7 +63,11 @@ export class ApplicationController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Invalid query parameters", code: "VALIDATION_ERROR", meta: error.issues },
+          error: {
+            message: "Invalid query parameters",
+            code: "VALIDATION_ERROR",
+            meta: error.issues,
+          },
         })
       }
       throw error
@@ -90,7 +95,11 @@ export class ApplicationController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Invalid query parameters", code: "VALIDATION_ERROR", meta: error.issues },
+          error: {
+            message: "Invalid query parameters",
+            code: "VALIDATION_ERROR",
+            meta: error.issues,
+          },
         })
       }
       throw error
@@ -102,6 +111,8 @@ export class ApplicationController {
   listByEmployee = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
       const employeeId = String(req.params.employeeId)
+      console.error(employeeId)
+
       const query = listApplicationsQuerySchema.parse(req.query)
       const requester = req.user ? { empId: req.user.empId, role: req.user.role } : undefined
       const result = await this.service.getEmployeeApplications(employeeId, query, requester)
@@ -119,7 +130,11 @@ export class ApplicationController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Invalid query parameters", code: "VALIDATION_ERROR", meta: error.issues },
+          error: {
+            message: "Invalid query parameters",
+            code: "VALIDATION_ERROR",
+            meta: error.issues,
+          },
         })
       }
       throw error
@@ -145,17 +160,37 @@ export class ApplicationController {
     }
   }
 
-  // ─── Approve / Reject ─────────────────────────────────────────
+  // ─── Approve ──────────────────────────────────────────────────
 
   approve = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
       const processorId = req.user!.empId // §SEC: from JWT
-      const { status, rejectReason } = approveApplicationSchema.parse(req.body)
+      approveApplicationSchema.parse(req.body) // validates status=approved only
 
-      const app = await this.service.processApplication(
+      const app = await this.service.approveApplication(String(req.params.id), processorId)
+      res.status(HttpStatusCode.OK).json({ data: app, error: null })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
+        })
+      }
+      throw error
+    }
+  }
+
+  // ─── Reject ───────────────────────────────────────────────────
+
+  reject = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+    try {
+      const processorId = req.user!.empId // §SEC: from JWT
+      const { rejectReason } = rejectApplicationSchema.parse(req.body)
+
+      const app = await this.service.rejectApplication(
         String(req.params.id),
-        status as any,
         processorId,
+        rejectReason,
       )
       res.status(HttpStatusCode.OK).json({ data: app, error: null })
     } catch (error) {

@@ -180,20 +180,32 @@ export const submitApplicationSchema = z.discriminatedUnion("type", [
 
 export type SubmitApplicationSchemaType = z.infer<typeof submitApplicationSchema>
 
-// ─── APPROVE / REJECT ────────────────────────────────────────
+// ─── APPROVE ─────────────────────────────────────────────────
 
+/**
+ * Used by PATCH /:id/approve — only accepts status=approved.
+ * Reject is handled by its own endpoint and schema.
+ */
 export const approveApplicationSchema = z
   .object({
-    status: z.enum(["approved", "rejected"] as const),
-    rejectReason: z.string().min(5).max(500).optional(),
+    status: z.literal("approved"),
   })
   .strict()
-  .refine((val) => val.status === "approved" || (val.status === "rejected" && !!val.rejectReason), {
-    message: "rejectReason is required when rejecting",
-    path: ["rejectReason"],
-  })
 
 export type ApproveApplicationSchemaType = z.infer<typeof approveApplicationSchema>
+
+// ─── REJECT ──────────────────────────────────────────────────
+
+/**
+ * Used by PATCH /:id/reject — rejectReason is mandatory (min 5 chars).
+ */
+export const rejectApplicationSchema = z
+  .object({
+    rejectReason: z.string().trim().min(5, "rejectReason must be at least 5 characters").max(500),
+  })
+  .strict()
+
+export type RejectApplicationSchemaType = z.infer<typeof rejectApplicationSchema>
 
 // ─── CANCEL ──────────────────────────────────────────────────
 

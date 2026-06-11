@@ -1,7 +1,6 @@
 import {
   APPLICATION_STATUS,
   LEAVE_BALANCE_DEFAULTS,
-  LEAVE_TYPE,
   PAID_LEAVE_TYPES,
 } from "@/configs/entities/attendance.config.ts"
 import { ROLE } from "@/configs/entities/employee.config.ts"
@@ -39,7 +38,12 @@ export class ApplicationService implements IApplicationService {
     // Type-specific business rule validation
     switch (data.type) {
       case "leave":
-        await this._validateLeaveApplication(data.employeeId, data.detail.leaveType, startDate, endDate)
+        await this._validateLeaveApplication(
+          data.employeeId,
+          data.detail.leaveType,
+          startDate,
+          endDate,
+        )
         break
 
       case "overtime":
@@ -177,18 +181,85 @@ export class ApplicationService implements IApplicationService {
     return this.applicationRepo.findByEmployee(employeeId, query)
   }
 
-  // ─── Approve / Reject (kept for backward compat with approval route) ──
+  // ─── Approve ──────────────────────────────────────────────────
 
+  async approveApplication(id: string, processorId: string): Promise<any> {
+    const app = await this.applicationRepo.findById(id)
+
+    if (!app) {
+      throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, "Service", "NOT_FOUND")
+    }
+
+    // §V8: only pending applications can be approved
+    if (app.status !== APPLICATION_STATUS.PENDING) {
+      throw new AppError(
+        `Cannot approve application with status '${app.status}'`,
+        HttpStatusCode.BAD_REQUEST,
+        "Service",
+        "INVALID_STATUS_TRANSITION",
+      )
+    }
+
+    const updated = await this.applicationRepo.approve(id, processorId)
+    if (!updated) {
+      throw new AppError("Failed to approve application", HttpStatusCode.INTERNAL_SERVER_ERROR, "Service")
+    }
+
+    return updated
+  }
+
+  // ─── Reject ───────────────────────────────────────────────────
+
+  async rejectApplication(id: string, processorId: string, rejectReason: string): Promise<any> {
+    const app = await this.applicationRepo.findById(id)
+
+    if (!app) {
+      throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, "Service", "NOT_FOUND")
+    }
+
+    // §V9: only pending applications can be rejected
+    if (app.status !== APPLICATION_STATUS.PENDING) {
+      throw new AppError(
+        `Cannot reject application with status '${app.status}'`,
+        HttpStatusCode.BAD_REQUEST,
+        "Service",
+        "INVALID_STATUS_TRANSITION",
+      )
+    }
+
+    const updated = await this.applicationRepo.reject(id, processorId, rejectReason)
+    if (!updated) {
+      throw new AppError("Failed to reject application", HttpStatusCode.INTERNAL_SERVER_ERROR, "Service")
+    }
+
+    return updated
+  }
+
+  // ─── processApplication (deprecated — kept for approval.route backward compat) ──
+
+  /** @deprecated Use approveApplication / rejectApplication instead. */
   async processApplication(
     id: string,
     status: IApplicationStatus,
     processorId: string,
   ): Promise<any | null> {
-    const updated = await this.applicationRepo.approve(id, status, processorId)
-    if (!updated) {
-      throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, "Service")
+    if (status === APPLICATION_STATUS.APPROVED) {
+      return this.approveApplication(id, processorId)
     }
-    return updated
+    if (status === APPLICATION_STATUS.REJECTED) {
+      throw new AppError(
+        "Use rejectApplication() — rejectReason is required",
+        HttpStatusCode.BAD_REQUEST,
+        "Service",
+        "USE_REJECT_ENDPOINT",
+      )
+    }
+    throw new AppError(
+      `Invalid status transition: '${status}'`,
+      HttpStatusCode.BAD_REQUEST,
+      "Service",
+      "INVALID_STATUS_TRANSITION",
+    )
   }
 
   // ─── Private Validators ───────────────────────────────────────

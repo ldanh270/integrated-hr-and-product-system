@@ -147,7 +147,10 @@ export interface IApplicationRepository {
   ): Promise<{ data: any[]; total: number }>
   findAll(query: IListApplicationsQueryDTO): Promise<{ data: any[]; total: number }>
   cancel(id: string, employeeId: string): Promise<any | null>
-  approve(id: string, status: IApplicationStatus, approvedBy: string): Promise<any | null>
+  /** Approves an application (sets status=approved). */
+  approve(id: string, approvedBy: string): Promise<any | null>
+  /** Rejects an application with a mandatory reason. */
+  reject(id: string, rejectedBy: string, rejectReason: string): Promise<any | null>
   checkLeaveOverlap(
     employeeId: string,
     startDate: string | Date,
@@ -155,8 +158,6 @@ export interface IApplicationRepository {
     excludeId?: string,
   ): Promise<boolean>
   getUsedLeaveDays(employeeId: string, leaveType: ILeaveType, year: number): Promise<number>
-  /** Approves or rejects an application. */
-  approve(id: string, status: IApplicationStatus, approvedBy: string): Promise<any | null>
 }
 
 /**
@@ -195,13 +196,16 @@ export interface IApplicationService {
     query: IListApplicationsQueryDTO,
     requester?: { empId: string; role: string },
   ): Promise<{ data: any[]; total: number }>
+  /** Approves a pending application. */
+  approveApplication(id: string, processorId: string): Promise<any>
+  /** Rejects a pending application with a mandatory reason. */
+  rejectApplication(id: string, processorId: string, rejectReason: string): Promise<any>
+  /** @deprecated Use approveApplication / rejectApplication instead. */
   processApplication(
     id: string,
     status: IApplicationStatus,
     processorId: string,
   ): Promise<any | null>
-  /** Gets applications for an employee. */
-  getEmployeeApplications(employeeId: string): Promise<any[]>
 }
 
 /**
