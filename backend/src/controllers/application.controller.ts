@@ -146,7 +146,7 @@ export class ApplicationController {
   cancel = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
       const employeeId = req.user!.empId
-      cancelApplicationSchema.parse(req.body) // validates optional reason field
+      cancelApplicationSchema.parse(req.body ?? {}) // validates optional reason field
       const app = await this.service.cancelApplication(String(req.params.id), employeeId)
       res.status(HttpStatusCode.OK).json({ data: app, error: null })
     } catch (error) {
