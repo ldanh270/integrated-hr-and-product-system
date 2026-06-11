@@ -79,6 +79,34 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                   </Label>
                   <Input id="phone" {...register("phone")} className="bg-background" />
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="dateOfBirth" className="text-[12px] text-muted-foreground">
+                      Ngày sinh
+                    </Label>
+                    <Input
+                      id="dateOfBirth"
+                      type="date"
+                      {...register("dateOfBirth")}
+                      className="bg-background"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="nationalId" className="text-[12px] text-muted-foreground">
+                      CCCD / CMND
+                    </Label>
+                    <Input id="nationalId" {...register("nationalId")} className="bg-background" />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="address" className="text-[12px] text-muted-foreground">
+                    Địa chỉ
+                  </Label>
+                  <Input id="address" {...register("address")} className="bg-background" />
+                </div>
               </div>
             </section>
 
@@ -129,6 +157,32 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                         </option>
                       ))}
                     </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="startDate" className="text-[12px] text-muted-foreground">
+                      Ngày bắt đầu
+                    </Label>
+                    <Input
+                      id="startDate"
+                      type="date"
+                      {...register("startDate")}
+                      className="bg-background"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="endDate" className="text-[12px] text-muted-foreground">
+                      Ngày kết thúc
+                    </Label>
+                    <Input
+                      id="endDate"
+                      type="date"
+                      {...register("endDate")}
+                      className="bg-background"
+                    />
                   </div>
                 </div>
               </div>

@@ -10,12 +10,23 @@ import {
   EMPLOYEE_TYPES,
   EMPLOYEE_TYPE_LABELS,
 } from "@/config/entities/employee.config"
+import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useEmployeeMaster } from "@/hooks/employees/useEmployeeMaster"
 import type { EmployeeType } from "@/types/employee.types"
 
 import { useMemo } from "react"
 
-import { Edit, FileDown, MoreHorizontal, Plus, RotateCcw, Search, Trash2, User } from "lucide-react"
+import {
+  Edit,
+  FileDown,
+  Loader2,
+  MoreHorizontal,
+  Plus,
+  RotateCcw,
+  Search,
+  Trash2,
+  User,
+} from "lucide-react"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -57,6 +68,11 @@ const STATUS_VARIANT_MAP = {
   [EMPLOYEE_STATUS.TERMINATED]: "danger",
 } as const
 
+/**
+ * Maximum number of page buttons to display in pagination bar.
+ */
+const MAX_VISIBLE_PAGES = SYSTEM_CONFIG.PAGINATION.MAX_VISIBLE_PAGES
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 /**
@@ -80,6 +96,7 @@ export default function EmployeeList() {
     setActiveActionMenu,
     data,
     isLoading,
+    isFetching,
     handleSearch,
     handleTabChange,
     handleDelete,
@@ -92,9 +109,9 @@ export default function EmployeeList() {
   const pageStart = (query.page! - 1) * query.limit! + (data?.data.length ? 1 : 0)
   const pageEnd = (query.page! - 1) * query.limit! + (data?.data.length || 0)
 
-  // Calculate which page numbers to display in pagination bar (capped at 5 pages)
+  // Calculate which page numbers to display in pagination bar (capped at MAX_VISIBLE_PAGES)
   const visiblePages = useMemo(
-    () => Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1),
+    () => Array.from({ length: Math.min(MAX_VISIBLE_PAGES, totalPages) }, (_, i) => i + 1),
     [totalPages],
   )
 
@@ -143,16 +160,13 @@ export default function EmployeeList() {
               >
                 <span className="flex items-center gap-1.5">
                   {tab.label}
-                  {tab.id === "all" && (
-                    <span
-                      className={[
-                        "text-[10px] font-semibold px-1.5 py-px rounded-full leading-none tabular-nums",
-                        activeTab === "all"
-                          ? "bg-primary/10 text-primary"
-                          : "bg-muted text-muted-foreground",
-                      ].join(" ")}
-                    >
-                      {data?.meta.total ?? 0}
+                  {activeTab === tab.id && (
+                    <span className="text-[10px] font-semibold px-1.5 py-px rounded-full flex items-center justify-center leading-none tabular-nums bg-primary/10 text-primary min-w-5 h-4.5">
+                      {isFetching ? (
+                        <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                      ) : (
+                        (data?.meta.total ?? 0)
+                      )}
                     </span>
                   )}
                 </span>

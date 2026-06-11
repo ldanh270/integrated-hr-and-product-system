@@ -5,16 +5,11 @@ import {
   EMPLOYEE_STATUS,
   EMPLOYEE_STATUS_LABELS,
   EMPLOYEE_TYPE_LABELS,
-  type IEmployeeRole,
-  ROLE,
   ROLE_LABELS,
 } from "@/config/entities/employee.config"
 import { useEmployee } from "@/hooks/employees/queries/useEmployeeQuery"
-import { useAuthStore } from "@/store/auth-store"
 
-import { useMemo } from "react"
-
-import { Briefcase, Building, Calendar, Edit, Hash, Mail, MapPin, Phone, User } from "lucide-react"
+import { Briefcase, Building, Calendar, Hash, Mail, MapPin, Phone, User } from "lucide-react"
 
 /**
  * Prop definitions for EmployeeDetailsDrawer component.
@@ -43,19 +38,9 @@ const STATUS_VARIANT_MAP = {
  * Slide-out drawer displaying exhaustive details for a specific employee profile.
  * Renders loading states (skeleton), errors, basic information, and organizational metrics in a bento-style grid.
  */
-export function EmployeeDetailsDrawer({ employeeId, onClose, onEdit }: EmployeeDetailsDrawerProps) {
+export function EmployeeDetailsDrawer({ employeeId, onClose }: EmployeeDetailsDrawerProps) {
   // Query hook to fetch employee details by their ID (reacts to changes in employeeId)
   const { data: employee, isLoading, error } = useEmployee(employeeId || "")
-  const user = useAuthStore((state) => state.user)
-
-  // Memoized checks if current user has permission to edit records
-  const isAdminOrManager = useMemo(
-    () =>
-      ([ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER] as IEmployeeRole[]).includes(
-        user?.role as IEmployeeRole,
-      ),
-    [user?.role],
-  )
 
   /**
    * Formats a date string into Vietnamese localized format (DD/MM/YYYY).
@@ -126,19 +111,6 @@ export function EmployeeDetailsDrawer({ employeeId, onClose, onEdit }: EmployeeD
                   <h2 className="text-2xl font-bold tracking-tight text-foreground">
                     {employee.fullName}
                   </h2>
-                  {isAdminOrManager && employee.status !== EMPLOYEE_STATUS.TERMINATED && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        onClose()
-                        onEdit?.(employee)
-                      }}
-                      className="h-8 gap-1.5 px-3"
-                    >
-                      <Edit size={13} /> Sửa
-                    </Button>
-                  )}
                 </div>
                 <div className="flex items-center gap-3 text-[13px] text-muted-foreground">
                   <span className="font-mono bg-background border border-border px-1.5 py-0.5 rounded text-[11px]">

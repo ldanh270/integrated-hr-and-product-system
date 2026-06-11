@@ -158,10 +158,20 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
         position: data.position,
         employeeType: data.employeeType,
         status: data.status,
-        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
+        dateOfBirth:
+          data.dateOfBirth !== undefined
+            ? data.dateOfBirth === null
+              ? null
+              : new Date(data.dateOfBirth)
+            : undefined,
         nationalId: data.nationalId,
         address: data.address,
-        startDate: data.startDate ? new Date(data.startDate) : undefined,
+        startDate:
+          data.startDate !== undefined
+            ? data.startDate === null
+              ? null
+              : new Date(data.startDate)
+            : undefined,
       },
     })
     return this.mapToDomain(employee)
@@ -180,11 +190,26 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       position: data.position,
       employeeType: data.employeeType,
       status: data.status,
-      dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
+      dateOfBirth:
+        data.dateOfBirth !== undefined
+          ? data.dateOfBirth === null
+            ? null
+            : new Date(data.dateOfBirth)
+          : undefined,
       nationalId: data.nationalId,
       address: data.address,
-      startDate: data.startDate ? new Date(data.startDate) : undefined,
-      endDate: data.endDate ? new Date(data.endDate) : undefined,
+      startDate:
+        data.startDate !== undefined
+          ? data.startDate === null
+            ? null
+            : new Date(data.startDate)
+          : undefined,
+      endDate:
+        data.endDate !== undefined
+          ? data.endDate === null
+            ? null
+            : new Date(data.endDate)
+          : undefined,
     }
 
     const employee = await this.prisma.employee.update({

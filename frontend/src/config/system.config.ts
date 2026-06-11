@@ -2,6 +2,11 @@ export const SYSTEM_CONFIG = {
   STORAGE_KEYS: {
     AUTH_TOKEN: "auth_token",
   },
+  PAGINATION: {
+    DEFAULT_LIMIT: 50,
+    SMALL_LIMIT: 10,
+    MAX_VISIBLE_PAGES: 5,
+  },
 } as const
 
 /**

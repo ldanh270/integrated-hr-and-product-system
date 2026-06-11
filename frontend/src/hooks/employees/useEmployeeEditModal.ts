@@ -1,5 +1,5 @@
 import { EMPLOYEE_STATUSES, EMPLOYEE_TYPES } from "@/config/entities/employee.config"
-import type { Employee } from "@/types/employee.types"
+import type { Employee, UpdateEmployeeDto } from "@/types/employee.types"
 
 import { useEffect } from "react"
 
@@ -15,6 +15,11 @@ const editSchema = z.object({
   position: z.string().optional(),
   employeeType: z.enum(EMPLOYEE_TYPES).optional(),
   status: z.enum(EMPLOYEE_STATUSES).optional(),
+  dateOfBirth: z.string().optional(),
+  nationalId: z.string().optional(),
+  address: z.string().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
 })
 
 type EditFormValues = z.infer<typeof editSchema>
@@ -36,12 +41,23 @@ export function useEmployeeEditModal(
 
   useEffect(() => {
     if (employee && isOpen) {
+      const formatDateForInput = (date: string | Date | null) => {
+        if (!date) return undefined
+        if (typeof date === "string") return date.split("T")[0]
+        return date.toISOString().split("T")[0]
+      }
+
       reset({
         fullName: employee.fullName,
         phone: employee.phone || undefined,
         position: employee.position || undefined,
         employeeType: employee.employeeType,
         status: employee.status,
+        dateOfBirth: formatDateForInput(employee.dateOfBirth),
+        nationalId: employee.nationalId || undefined,
+        address: employee.address || undefined,
+        startDate: formatDateForInput(employee.startDate),
+        endDate: formatDateForInput(employee.endDate),
       })
     }
   }, [employee, isOpen, reset])
@@ -49,7 +65,17 @@ export function useEmployeeEditModal(
   const onSubmit = async (data: EditFormValues) => {
     if (!employee) return
     try {
-      await updateMutation.mutateAsync({ id: employee.id, data })
+      const formattedData: UpdateEmployeeDto = {
+        ...data,
+        phone: data.phone === "" ? null : data.phone,
+        position: data.position === "" ? null : data.position,
+        dateOfBirth: data.dateOfBirth === "" ? null : data.dateOfBirth,
+        nationalId: data.nationalId === "" ? null : data.nationalId,
+        address: data.address === "" ? null : data.address,
+        startDate: data.startDate === "" ? null : data.startDate,
+        endDate: data.endDate === "" ? null : data.endDate,
+      }
+      await updateMutation.mutateAsync({ id: employee.id, data: formattedData })
       onClose()
     } catch (error) {
       console.error(error)

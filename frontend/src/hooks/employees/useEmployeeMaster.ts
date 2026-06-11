@@ -1,4 +1,5 @@
 import { EMPLOYEE_STATUS, ROLE } from "@/config/entities/employee.config"
+import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useAuthStore } from "@/store/auth-store"
 import type {
   Employee,
@@ -24,7 +25,7 @@ export const useEmployeeMaster = () => {
   // Query parameters for fetching the paginated employee list
   const [query, setQuery] = useState<EmployeeListQuery>({
     page: 1,
-    limit: 50,
+    limit: SYSTEM_CONFIG.PAGINATION.DEFAULT_LIMIT,
   })
 
   // The active filter tab (all, full-time, part-time, intern, contractor, terminated)
@@ -45,7 +46,7 @@ export const useEmployeeMaster = () => {
   const navigate = useNavigate()
 
   // Queries and mutations from React Query hooks
-  const { data, isLoading } = useEmployees(query)
+  const { data, isLoading, isFetching } = useEmployees(query)
   const updateStatusMutation = useUpdateEmployeeStatus()
 
   /**
@@ -130,6 +131,7 @@ export const useEmployeeMaster = () => {
     // Data
     data,
     isLoading,
+    isFetching,
     // Handlers
     handleSearch,
     handleTabChange,
