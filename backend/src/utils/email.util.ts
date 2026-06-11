@@ -7,36 +7,47 @@ import { Resend } from "resend"
 export class EmailUtil {
   /**
    * Sends a password reset email to the specified user using Resend.
+   * Returns the Resend response for debugging purposes.
    */
-  static async sendResetPasswordEmail(to: string, token: string): Promise<void> {
+  static async sendResetPasswordEmail(to: string, token: string): Promise<any> {
     const apiKey = process.env.RESEND_API_KEY
     const clientUrl = process.env.CLIENT_URL || "http://localhost:5173"
     const from = process.env.EMAIL_FROM || "onboarding@resend.dev"
 
     const resetUrl = `${clientUrl}/reset-password?token=${token}`
 
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[DEBUG] Email to: ${to}`)
+      console.log(`[DEBUG] Generated Token: ${token}`)
+      console.log(`[DEBUG] Reset URL: ${resetUrl}`)
+    }
+
     // Fallback: If Resend API key is missing, log reset link to console for development
     if (!apiKey) {
+      const mockResult = {
+        mocked: true,
+        to,
+        token,
+        resetUrl,
+        message: "RESEND_API_KEY missing, email was mocked to console.",
+      }
       console.log("--- EMAIL MOCK (RESEND_API_KEY MISSING) ---")
-      console.log(`To: ${to}`)
-      console.log(`Subject: Password Reset Request`)
-      console.log(`Message: Please reset your password by clicking here: ${resetUrl}`)
-      console.log("Note: This link will expire in 15 minutes.")
+      console.log(JSON.stringify(mockResult, null, 2))
       console.log("-----------------------------------------")
-      return
+      return mockResult
     }
 
     try {
       const resend = new Resend(apiKey)
 
-      await resend.emails.send({
-        from: `HR Management System <${from}>`,
+      const result = await resend.emails.send({
+        from: `HRP Management System <${from}>`,
         to,
         subject: "Password Reset Request",
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
             <h2 style="color: #333;">Password Reset Request</h2>
-            <p>You requested a password reset for your HR Management System account.</p>
+            <p>You requested a password reset for your HRP Management System account.</p>
             <p>Please click the button below to set a new password:</p>
             <div style="text-align: center; margin: 30px 0;">
               <a href="${resetUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
@@ -49,8 +60,15 @@ export class EmailUtil {
           </div>
         `,
       })
+
+      if (process.env.NODE_ENV !== "production") {
+        console.log("Resend response:", JSON.stringify(result, null, 2))
+      }
+
+      return result
     } catch (error) {
       console.error("Failed to send email via Resend:", error)
+      throw error // Re-throw to be caught in Service layer
     }
   }
 }
