@@ -183,9 +183,16 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
    * @param data DTO containing partial updates.
    * @returns The updated Employee domain object, or null if update fails.
    */
-  async updateEmployee(id: string, data: UpdateEmployeeDto): Promise<Employee | null> {
+  async updateEmployee(
+    id: string,
+    data: Omit<UpdateEmployeeDto, "password"> & { passwordHash?: string },
+  ): Promise<Employee | null> {
     const updateData: Prisma.EmployeeUpdateInput = {
       fullName: data.fullName,
+      email: data.email,
+      username: data.username,
+      passwordHash: data.passwordHash,
+      role: data.role,
       phone: data.phone,
       position: data.position,
       employeeType: data.employeeType,

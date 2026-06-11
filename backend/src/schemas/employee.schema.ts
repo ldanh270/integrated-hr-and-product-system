@@ -107,6 +107,27 @@ export const updateEmployeeSchema = z
       .trim()
       .optional(),
 
+    username: z
+      .string()
+      .min(3, "Username must be at least 3 characters")
+      .max(50, "Username too long")
+      .trim()
+      .toLowerCase()
+      .optional(),
+
+    email: z.string().email("Invalid email format").trim().toLowerCase().optional(),
+
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+        "Password must contain at least one uppercase, one lowercase, one number and one special character",
+      )
+      .optional(),
+
+    role: z.enum(EMPLOYEE_ROLES).optional(),
+
     phone: z
       .string()
       .regex(/^[0-9+\-\s()]{7,20}$/, "Invalid phone number format")

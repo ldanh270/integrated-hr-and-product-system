@@ -1,8 +1,11 @@
+import { AppModal } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   EMPLOYEE_ROLES,
+  EMPLOYEE_STATUSES,
+  EMPLOYEE_STATUS_LABELS,
   EMPLOYEE_TYPES,
   EMPLOYEE_TYPE_LABELS,
   ROLE_LABELS,
@@ -23,149 +26,317 @@ interface Props {
 
 /**
  * EmployeeCreateModal Component.
- * Renders a dialog window modal form containing input fields to register a brand new employee record.
+ * Wide, enterprise-grade modal containing a form to register a brand new employee record.
  * Handles inputs validation (via Zod & React Hook Form from the custom hooks helper).
  */
 export function EmployeeCreateModal({ isOpen, onClose }: Props) {
   // Extract react hook form fields, submission states, and error mappings
   const { register, handleSubmit, errors, isPending, handleClose } = useEmployeeCreateModal(onClose)
 
-  // Avoid rendering anything to DOM when modal flag is closed
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
-      <div className="bg-background rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header toolbar */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-lg font-semibold">Thêm nhân sự mới</h2>
+    <AppModal isOpen={isOpen} onClose={handleClose} widthClassName="sm:max-w-4xl">
+      <div className="flex flex-col h-full max-h-[90vh]">
+        {/* Header toolbar banner */}
+        <div className="px-10 pt-10 pb-6 bg-muted/10 border-b border-border flex justify-between items-start shrink-0">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight text-foreground">Thêm nhân sự mới</h2>
+            <p className="text-[13px] text-muted-foreground mt-1.5">
+              Điền đầy đủ các thông tin cần thiết để đăng ký hồ sơ nhân viên mới
+            </p>
+          </div>
           <button
             onClick={handleClose}
-            className="p-1 rounded-full hover:bg-muted text-muted-foreground transition-colors"
+            className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors"
           >
-            <X size={18} />
+            <X size={20} strokeWidth={1.5} />
           </button>
         </div>
 
-        {/* Scrollable Form Body container */}
-        <div className="p-5 overflow-y-auto">
-          <form id="create-employee-form" onSubmit={handleSubmit} className="space-y-4">
-            {/* Full name & Username fields */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="fullName">Họ và tên *</Label>
-                <Input
-                  id="fullName"
-                  {...register("fullName")}
-                  placeholder="Nhập họ tên"
-                  className={errors.fullName ? "border-destructive" : ""}
-                />
-                {errors.fullName && (
-                  <p className="text-xs text-destructive">{errors.fullName.message}</p>
-                )}
+        {/* Form content viewport */}
+        <div className="p-10 overflow-y-auto hide-scrollbar">
+          <form id="create-employee-form" onSubmit={handleSubmit} className="space-y-10">
+            {/* Account section */}
+            <section className="grid grid-cols-12 gap-8">
+              <div className="col-span-4 space-y-1">
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+                  Tài khoản & Phân quyền
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Thông tin đăng nhập và quyền truy cập vào hệ thống.
+                </p>
               </div>
+              <div className="col-span-8 grid grid-cols-2 gap-5">
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="username"
+                    className="text-[12px] text-muted-foreground font-medium"
+                  >
+                    Tên đăng nhập *
+                  </Label>
+                  <Input
+                    id="username"
+                    {...register("username")}
+                    className={`bg-background h-10 ${errors.username ? "border-destructive" : ""}`}
+                  />
+                  {errors.username && (
+                    <p className="text-xs text-destructive">{errors.username.message}</p>
+                  )}
+                </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="username">Username *</Label>
-                <Input
-                  id="username"
-                  {...register("username")}
-                  placeholder="Nhập username"
-                  className={errors.username ? "border-destructive" : ""}
-                />
-                {errors.username && (
-                  <p className="text-xs text-destructive">{errors.username.message}</p>
-                )}
-              </div>
-            </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-[12px] text-muted-foreground font-medium">
+                    Email *
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    {...register("email")}
+                    className={`bg-background h-10 ${errors.email ? "border-destructive" : ""}`}
+                  />
+                  {errors.email && (
+                    <p className="text-xs text-destructive">{errors.email.message}</p>
+                  )}
+                </div>
 
-            {/* Email & Password temporary fields */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  {...register("email")}
-                  placeholder="Nhập email"
-                  className={errors.email ? "border-destructive" : ""}
-                />
-                {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-              </div>
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="password"
+                    className="text-[12px] text-muted-foreground font-medium"
+                  >
+                    Mật khẩu *
+                  </Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    {...register("password")}
+                    className={`bg-background h-10 ${errors.password ? "border-destructive" : ""}`}
+                  />
+                  {errors.password && (
+                    <p className="text-xs text-destructive">{errors.password.message}</p>
+                  )}
+                </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="password">Mật khẩu *</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  {...register("password")}
-                  placeholder="Mật khẩu tạm"
-                  className={errors.password ? "border-destructive" : ""}
-                />
-                {errors.password && (
-                  <p className="text-xs text-destructive">{errors.password.message}</p>
-                )}
+                <div className="space-y-1.5">
+                  <Label htmlFor="role" className="text-[12px] text-muted-foreground font-medium">
+                    Phân quyền
+                  </Label>
+                  <select
+                    id="role"
+                    {...register("role")}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    {EMPLOYEE_ROLES.map((roleKey) => (
+                      <option key={roleKey} value={roleKey}>
+                        {ROLE_LABELS[roleKey]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            </div>
+            </section>
 
-            {/* Optional contact phone & Job title position fields */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="phone">Số điện thoại</Label>
-                <Input id="phone" {...register("phone")} placeholder="Nhập SĐT" />
-              </div>
+            <div className="w-full h-px bg-border/60" />
 
-              <div className="space-y-1.5">
-                <Label htmlFor="position">Vị trí</Label>
-                <Input id="position" {...register("position")} placeholder="Ví dụ: Tech Lead" />
+            {/* Basic Info section */}
+            <section className="grid grid-cols-12 gap-8">
+              <div className="col-span-4 space-y-1">
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+                  Thông tin cơ bản
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Định danh và phương thức liên lạc cá nhân.
+                </p>
               </div>
-            </div>
+              <div className="col-span-8 grid grid-cols-2 gap-5">
+                <div className="col-span-2 space-y-1.5">
+                  <Label
+                    htmlFor="fullName"
+                    className="text-[12px] text-muted-foreground font-medium"
+                  >
+                    Họ và tên *
+                  </Label>
+                  <Input
+                    id="fullName"
+                    {...register("fullName")}
+                    className={`bg-background h-10 ${errors.fullName ? "border-destructive" : ""}`}
+                  />
+                  {errors.fullName && (
+                    <p className="text-xs text-destructive">{errors.fullName.message}</p>
+                  )}
+                </div>
 
-            {/* Dropdown controls for authorization role and employment type */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="role">Nhóm quyền</Label>
-                <select
-                  id="role"
-                  {...register("role")}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                  {EMPLOYEE_ROLES.map((roleKey) => (
-                    <option key={roleKey} value={roleKey}>
-                      {ROLE_LABELS[roleKey]}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="phone" className="text-[12px] text-muted-foreground font-medium">
+                    Số điện thoại
+                  </Label>
+                  <Input
+                    id="phone"
+                    {...register("phone")}
+                    className={`bg-background h-10 ${errors.phone ? "border-destructive" : ""}`}
+                  />
+                  {errors.phone && (
+                    <p className="text-xs text-destructive">{errors.phone.message}</p>
+                  )}
+                </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="employeeType">Loại hợp đồng</Label>
-                <select
-                  id="employeeType"
-                  {...register("employeeType")}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                  {EMPLOYEE_TYPES.map((typeKey) => (
-                    <option key={typeKey} value={typeKey}>
-                      {EMPLOYEE_TYPE_LABELS[typeKey]}
-                    </option>
-                  ))}
-                </select>
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="nationalId"
+                    className="text-[12px] text-muted-foreground font-medium"
+                  >
+                    CCCD / CMND
+                  </Label>
+                  <Input
+                    id="nationalId"
+                    {...register("nationalId")}
+                    className={`bg-background h-10 ${errors.nationalId ? "border-destructive" : ""}`}
+                  />
+                  {errors.nationalId && (
+                    <p className="text-xs text-destructive">{errors.nationalId.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="dateOfBirth"
+                    className="text-[12px] text-muted-foreground font-medium"
+                  >
+                    Ngày sinh
+                  </Label>
+                  <Input
+                    id="dateOfBirth"
+                    type="date"
+                    {...register("dateOfBirth")}
+                    className={`bg-background h-10 ${errors.dateOfBirth ? "border-destructive" : ""}`}
+                  />
+                  {errors.dateOfBirth && (
+                    <p className="text-xs text-destructive">{errors.dateOfBirth.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="address"
+                    className="text-[12px] text-muted-foreground font-medium"
+                  >
+                    Địa chỉ
+                  </Label>
+                  <Input
+                    id="address"
+                    {...register("address")}
+                    className={`bg-background h-10 ${errors.address ? "border-destructive" : ""}`}
+                  />
+                  {errors.address && (
+                    <p className="text-xs text-destructive">{errors.address.message}</p>
+                  )}
+                </div>
               </div>
-            </div>
+            </section>
+
+            <div className="w-full h-px bg-border/60" />
+
+            {/* Employment and contract options section */}
+            <section className="grid grid-cols-12 gap-8">
+              <div className="col-span-4 space-y-1">
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+                  Công việc & Hợp đồng
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Thiết lập chức danh và hình thức làm việc tại công ty.
+                </p>
+              </div>
+              <div className="col-span-8 grid grid-cols-2 gap-5">
+                <div className="col-span-2 space-y-1.5">
+                  <Label
+                    htmlFor="position"
+                    className="text-[12px] text-muted-foreground font-medium"
+                  >
+                    Chức danh (Vị trí)
+                  </Label>
+                  <Input
+                    id="position"
+                    {...register("position")}
+                    className={`bg-background h-10 ${errors.position ? "border-destructive" : ""}`}
+                  />
+                  {errors.position && (
+                    <p className="text-xs text-destructive">{errors.position.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="status" className="text-[12px] text-muted-foreground font-medium">
+                    Trạng thái ban đầu
+                  </Label>
+                  <select
+                    id="status"
+                    {...register("status")}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    {EMPLOYEE_STATUSES.map((statusKey) => (
+                      <option key={statusKey} value={statusKey}>
+                        {EMPLOYEE_STATUS_LABELS[statusKey]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="employeeType"
+                    className="text-[12px] text-muted-foreground font-medium"
+                  >
+                    Loại hợp đồng
+                  </Label>
+                  <select
+                    id="employeeType"
+                    {...register("employeeType")}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    {EMPLOYEE_TYPES.map((typeKey) => (
+                      <option key={typeKey} value={typeKey}>
+                        {EMPLOYEE_TYPE_LABELS[typeKey]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-span-2 space-y-1.5">
+                  <Label
+                    htmlFor="startDate"
+                    className="text-[12px] text-muted-foreground font-medium"
+                  >
+                    Ngày bắt đầu làm việc
+                  </Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    {...register("startDate")}
+                    className={`bg-background h-10 ${errors.startDate ? "border-destructive" : ""}`}
+                  />
+                  {errors.startDate && (
+                    <p className="text-xs text-destructive">{errors.startDate.message}</p>
+                  )}
+                </div>
+              </div>
+            </section>
           </form>
         </div>
 
-        {/* Modal actions footer toolbar */}
-        <div className="p-4 border-t border-border bg-muted/30 flex justify-end gap-3 mt-auto">
-          <Button variant="outline" onClick={handleClose} type="button">
+        {/* Actions footer toolbar */}
+        <div className="px-10 py-6 bg-muted/10 border-t border-border flex items-center justify-end gap-3 shrink-0">
+          <Button variant="outline" onClick={handleClose} type="button" className="min-w-24">
             Hủy
           </Button>
-          <Button type="submit" form="create-employee-form" disabled={isPending}>
+          <Button
+            type="submit"
+            form="create-employee-form"
+            disabled={isPending}
+            className="min-w-32"
+          >
             {isPending ? "Đang lưu..." : "Lưu nhân sự"}
           </Button>
         </div>
       </div>
-    </div>
+    </AppModal>
   )
 }

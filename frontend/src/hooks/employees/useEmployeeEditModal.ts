@@ -1,4 +1,8 @@
-import { EMPLOYEE_STATUSES, EMPLOYEE_TYPES } from "@/config/entities/employee.config"
+import {
+  EMPLOYEE_ROLES,
+  EMPLOYEE_STATUSES,
+  EMPLOYEE_TYPES,
+} from "@/config/entities/employee.config"
 import type { Employee, UpdateEmployeeDto } from "@/types/employee.types"
 
 import { useEffect } from "react"
@@ -10,16 +14,77 @@ import { z } from "zod"
 import { useUpdateEmployee } from "./queries/useEmployeeQuery"
 
 const editSchema = z.object({
-  fullName: z.string().min(2, "Full name must be at least 2 characters").optional(),
-  phone: z.string().optional(),
-  position: z.string().optional(),
+  fullName: z
+    .string()
+    .min(2, "Họ và tên phải có ít nhất 2 ký tự")
+    .max(100, "Họ và tên quá dài")
+    .trim()
+    .optional(),
+
+  email: z.string().email("Định dạng email không hợp lệ").trim().optional(),
+
+  username: z
+    .string()
+    .min(3, "Tên đăng nhập phải có ít nhất 3 ký tự")
+    .max(50, "Tên đăng nhập quá dài")
+    .trim()
+    .optional(),
+
+  password: z
+    .string()
+    .min(8, "Mật khẩu phải có ít nhất 8 ký tự")
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+      "Mật khẩu phải chứa chữ hoa, chữ thường, số và ký tự đặc biệt",
+    )
+    .or(z.literal(""))
+    .optional(),
+
+  role: z.enum(EMPLOYEE_ROLES).optional(),
+
+  phone: z
+    .string()
+    .refine(
+      (val) => !val || val === "" || /^[0-9+\-\s()]{7,20}$/.test(val),
+      "Định dạng số điện thoại không hợp lệ",
+    )
+    .optional(),
+
+  position: z.string().max(100, "Chức danh quá dài").optional(),
+
   employeeType: z.enum(EMPLOYEE_TYPES).optional(),
   status: z.enum(EMPLOYEE_STATUSES).optional(),
-  dateOfBirth: z.string().optional(),
-  nationalId: z.string().optional(),
-  address: z.string().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
+
+  dateOfBirth: z
+    .string()
+    .refine((val) => !val || val === "" || !isNaN(Date.parse(val)), {
+      message: "Ngày sinh không hợp lệ",
+    })
+    .optional(),
+
+  nationalId: z
+    .string()
+    .refine(
+      (val) => !val || val === "" || (val.length >= 9 && val.length <= 20),
+      "CCCD/CMND phải từ 9 đến 20 ký tự",
+    )
+    .optional(),
+
+  address: z.string().max(500, "Địa chỉ quá dài").optional(),
+
+  startDate: z
+    .string()
+    .refine((val) => !val || val === "" || !isNaN(Date.parse(val)), {
+      message: "Ngày bắt đầu làm việc không hợp lệ",
+    })
+    .optional(),
+
+  endDate: z
+    .string()
+    .refine((val) => !val || val === "" || !isNaN(Date.parse(val)), {
+      message: "Ngày kết thúc không hợp lệ",
+    })
+    .optional(),
 })
 
 type EditFormValues = z.infer<typeof editSchema>
@@ -37,6 +102,7 @@ export function useEmployeeEditModal(
     reset,
   } = useForm<EditFormValues>({
     resolver: zodResolver(editSchema),
+    mode: "onBlur",
   })
 
   useEffect(() => {
@@ -49,6 +115,10 @@ export function useEmployeeEditModal(
 
       reset({
         fullName: employee.fullName,
+        email: employee.email,
+        username: employee.username,
+        role: employee.role,
+        password: "",
         phone: employee.phone || undefined,
         position: employee.position || undefined,
         employeeType: employee.employeeType,
@@ -67,6 +137,7 @@ export function useEmployeeEditModal(
     try {
       const formattedData: UpdateEmployeeDto = {
         ...data,
+        password: data.password === "" ? undefined : data.password,
         phone: data.phone === "" ? null : data.phone,
         position: data.position === "" ? null : data.position,
         dateOfBirth: data.dateOfBirth === "" ? null : data.dateOfBirth,

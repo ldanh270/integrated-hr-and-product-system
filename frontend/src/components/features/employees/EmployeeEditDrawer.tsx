@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
+  EMPLOYEE_ROLES,
   EMPLOYEE_STATUSES,
   EMPLOYEE_STATUS_LABELS,
   EMPLOYEE_TYPES,
   EMPLOYEE_TYPE_LABELS,
+  ROLE_LABELS,
 } from "@/config/entities/employee.config"
 import { useEmployeeEditModal } from "@/hooks/employees/useEmployeeEditModal"
 import type { Employee } from "@/types/employee.types"
@@ -53,6 +55,80 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
         {/* Form content viewport */}
         <div className="p-10 flex-1 overflow-y-auto">
           <form id="edit-employee-form" onSubmit={handleSubmit} className="space-y-8">
+            {/* Account section */}
+            <section>
+              <h3 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                Tài khoản & Phân quyền
+              </h3>
+              <div className="border border-border rounded-xl p-4 bg-card space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="username" className="text-[12px] text-muted-foreground">
+                      Tên đăng nhập
+                    </Label>
+                    <Input
+                      id="username"
+                      {...register("username")}
+                      className={`bg-background ${errors.username ? "border-destructive" : ""}`}
+                    />
+                    {errors.username && (
+                      <p className="text-xs text-destructive">{errors.username.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="email" className="text-[12px] text-muted-foreground">
+                      Email
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      {...register("email")}
+                      className={`bg-background ${errors.email ? "border-destructive" : ""}`}
+                    />
+                    {errors.email && (
+                      <p className="text-xs text-destructive">{errors.email.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="password" className="text-[12px] text-muted-foreground">
+                      Mật khẩu mới (Tùy chọn)
+                    </Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Để trống nếu không đổi"
+                      {...register("password")}
+                      className={`bg-background ${errors.password ? "border-destructive" : ""}`}
+                    />
+                    {errors.password && (
+                      <p className="text-xs text-destructive">{errors.password.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="role" className="text-[12px] text-muted-foreground">
+                      Phân quyền
+                    </Label>
+                    <select
+                      id="role"
+                      {...register("role")}
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      {EMPLOYEE_ROLES.map((roleKey) => (
+                        <option key={roleKey} value={roleKey}>
+                          {ROLE_LABELS[roleKey]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             {/* Basic Info section */}
             <section>
               <h3 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
@@ -77,7 +153,14 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                   <Label htmlFor="phone" className="text-[12px] text-muted-foreground">
                     Số điện thoại
                   </Label>
-                  <Input id="phone" {...register("phone")} className="bg-background" />
+                  <Input
+                    id="phone"
+                    {...register("phone")}
+                    className={`bg-background ${errors.phone ? "border-destructive" : ""}`}
+                  />
+                  {errors.phone && (
+                    <p className="text-xs text-destructive">{errors.phone.message}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -89,15 +172,25 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                       id="dateOfBirth"
                       type="date"
                       {...register("dateOfBirth")}
-                      className="bg-background"
+                      className={`bg-background ${errors.dateOfBirth ? "border-destructive" : ""}`}
                     />
+                    {errors.dateOfBirth && (
+                      <p className="text-xs text-destructive">{errors.dateOfBirth.message}</p>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">
                     <Label htmlFor="nationalId" className="text-[12px] text-muted-foreground">
                       CCCD / CMND
                     </Label>
-                    <Input id="nationalId" {...register("nationalId")} className="bg-background" />
+                    <Input
+                      id="nationalId"
+                      {...register("nationalId")}
+                      className={`bg-background ${errors.nationalId ? "border-destructive" : ""}`}
+                    />
+                    {errors.nationalId && (
+                      <p className="text-xs text-destructive">{errors.nationalId.message}</p>
+                    )}
                   </div>
                 </div>
 
@@ -105,7 +198,14 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                   <Label htmlFor="address" className="text-[12px] text-muted-foreground">
                     Địa chỉ
                   </Label>
-                  <Input id="address" {...register("address")} className="bg-background" />
+                  <Input
+                    id="address"
+                    {...register("address")}
+                    className={`bg-background ${errors.address ? "border-destructive" : ""}`}
+                  />
+                  {errors.address && (
+                    <p className="text-xs text-destructive">{errors.address.message}</p>
+                  )}
                 </div>
               </div>
             </section>
@@ -120,7 +220,14 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                   <Label htmlFor="position" className="text-[12px] text-muted-foreground">
                     Chức danh (Vị trí)
                   </Label>
-                  <Input id="position" {...register("position")} className="bg-background" />
+                  <Input
+                    id="position"
+                    {...register("position")}
+                    className={`bg-background ${errors.position ? "border-destructive" : ""}`}
+                  />
+                  {errors.position && (
+                    <p className="text-xs text-destructive">{errors.position.message}</p>
+                  )}
                 </div>
 
                 {/* Dropdowns for status & employment contract type */}
@@ -169,8 +276,11 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                       id="startDate"
                       type="date"
                       {...register("startDate")}
-                      className="bg-background"
+                      className={`bg-background ${errors.startDate ? "border-destructive" : ""}`}
                     />
+                    {errors.startDate && (
+                      <p className="text-xs text-destructive">{errors.startDate.message}</p>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">
@@ -181,8 +291,11 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                       id="endDate"
                       type="date"
                       {...register("endDate")}
-                      className="bg-background"
+                      className={`bg-background ${errors.endDate ? "border-destructive" : ""}`}
                     />
+                    {errors.endDate && (
+                      <p className="text-xs text-destructive">{errors.endDate.message}</p>
+                    )}
                   </div>
                 </div>
               </div>

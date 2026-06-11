@@ -80,6 +80,10 @@ export interface CreateEmployeeDto {
  */
 export interface UpdateEmployeeDto {
   fullName?: string
+  email?: string
+  username?: string
+  password?: string
+  role?: EmployeeRole
   phone?: string | null
   position?: string | null
   employeeType?: EmployeeType
@@ -137,7 +141,10 @@ export interface IEmployeeRepository {
   /** Create employee */
   createEmployee(data: CreateEmployeeDto & { passwordHash: string }): Promise<Employee>
   /** Update employee details */
-  updateEmployee(id: string, data: UpdateEmployeeDto): Promise<Employee | null>
+  updateEmployee(
+    id: string,
+    data: Omit<UpdateEmployeeDto, "password"> & { passwordHash?: string },
+  ): Promise<Employee | null>
   /** Update status of employee */
   updateStatus(id: string, status: EmployeeStatus): Promise<Employee | null>
   /** Soft delete employee */

@@ -91,8 +91,18 @@ export class EmployeeService implements IEmployeeService {
     // Check if employee exists first; throws 404 otherwise
     await this.getEmployee(id)
 
+    const { password, ...repoData } = data
+    let passwordHash: string | undefined = undefined
+
+    if (password) {
+      passwordHash = await HashUtil.hash(password)
+    }
+
     try {
-      const updated = await this.repository.updateEmployee(id, data)
+      const updated = await this.repository.updateEmployee(id, {
+        ...repoData,
+        ...(passwordHash ? { passwordHash } : {}),
+      })
       return updated
     } catch (error: any) {
       this.handleDbError(error)

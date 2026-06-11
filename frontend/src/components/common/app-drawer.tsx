@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 
-import { ReactNode } from "react"
+import type { ReactNode } from "react"
 
 import { X } from "lucide-react"
 
