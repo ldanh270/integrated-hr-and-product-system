@@ -110,8 +110,16 @@ export class ApplicationController {
 
   listByEmployee = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
-      const employeeId = String(req.params.employeeId)
-      console.error(employeeId)
+      const employeeId = String(req.body?.employeeId ?? "")
+      if (!employeeId) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: {
+            message: "Missing employeeId in request body",
+            code: "VALIDATION_ERROR",
+          },
+        })
+      }
 
       const query = listApplicationsQuerySchema.parse(req.query)
       const requester = req.user ? { empId: req.user.empId, role: req.user.role } : undefined
