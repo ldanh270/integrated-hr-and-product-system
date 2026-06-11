@@ -13,13 +13,33 @@ import {
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
 
+/**
+ * Service class implementing the application business logic for Employee management.
+ * Relies on the database abstraction layer (IEmployeeRepository) using Dependency Injection.
+ */
 export class EmployeeService implements IEmployeeService {
+  /**
+   * Initializes the service with the employee repository.
+   * Constructor injection guarantees interface-based coupling.
+   * @param repository The abstraction of database query/actions for Employee.
+   */
   constructor(private repository: IEmployeeRepository) {}
 
+  /**
+   * Fetches page-segmented employees matching criteria.
+   * @param query The page size, search criteria, sorting columns, etc.
+   * @returns Paginated results containing metadata and employee list.
+   */
   async listEmployees(query: EmployeeListQuery): Promise<PaginatedEmployeesDto> {
     return this.repository.listEmployeesPaginated(query)
   }
 
+  /**
+   * Retrieves an employee by their ID. Throws an application error if not found.
+   * @param id Employee UUID string.
+   * @returns The Employee details if found.
+   * @throws AppError 404 if the employee does not exist.
+   */
   async getEmployee(id: string): Promise<Employee | null> {
     const employee = await this.repository.findById(id)
     if (!employee) {
@@ -28,6 +48,14 @@ export class EmployeeService implements IEmployeeService {
     return employee
   }
 
+  /**
+   * Creates a new employee after hashing the provided password.
+   * Catches unique constraint errors (like duplicate emails/usernames) and maps to structured HTTP conflicts.
+   * @param data Details to create the employee record.
+   * @returns The newly created employee domain instance.
+   * @throws AppError 400 if password is missing.
+   * @throws AppError 490 (CONFLICT) if email/username already exists.
+   */
   async createEmployee(data: CreateEmployeeDto & { password?: string }): Promise<Employee> {
     if (!data.password) {
       throw new AppError(
@@ -37,9 +65,10 @@ export class EmployeeService implements IEmployeeService {
       )
     }
 
+    // Hash the password asynchronously using bcrypt
     const passwordHash = await HashUtil.hash(data.password)
 
-    // Remove password from data before passing to repo
+    // Exclude raw password from the DTO payload sent to the repository layer
     const { password, ...repoData } = data
 
     try {
@@ -48,6 +77,7 @@ export class EmployeeService implements IEmployeeService {
         passwordHash,
       })
     } catch (error: any) {
+      // Catch unique database constraints mapping from Prisma unique constraint code
       if (DB_ERROR_CODES.UNIQUE_CONSTRAINT.includes(error.code)) {
         throw new AppError(
           "Username, email, phone, or national ID already exists",
@@ -59,24 +89,42 @@ export class EmployeeService implements IEmployeeService {
     }
   }
 
+  /**
+   * Partially updates employee info. Validates the existence of the employee beforehand.
+   * @param id Employee ID string.
+   * @param data Fields to update.
+   * @returns The updated employee entity, or null.
+   */
   async updateEmployee(id: string, data: UpdateEmployeeDto): Promise<Employee | null> {
-    // Check if exists
+    // Check if employee exists first; throws 404 otherwise
     await this.getEmployee(id)
 
     const updated = await this.repository.updateEmployee(id, data)
     return updated
   }
 
+  /**
+   * Updates an employee's status field (e.g. active, inactive).
+   * Validates existence prior to updating.
+   * @param id Employee ID.
+   * @param status Target status type.
+   * @returns The updated employee entity, or null.
+   */
   async updateStatus(id: string, status: EmployeeStatus): Promise<Employee | null> {
-    // Check if exists
+    // Validate employee existence; throws 404 if absent
     await this.getEmployee(id)
 
     const updated = await this.repository.updateStatus(id, status)
     return updated
   }
 
+  /**
+   * Soft deletes an employee by setting status to terminated.
+   * @param id The employee ID.
+   * @returns A boolean signaling execution success.
+   */
   async deleteEmployee(id: string): Promise<boolean> {
-    // Check if exists
+    // Verify existence of record; throws 404 if not found
     await this.getEmployee(id)
 
     return this.repository.deleteEmployee(id)

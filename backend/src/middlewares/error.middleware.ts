@@ -1,3 +1,4 @@
+import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AppError } from "@/utils/error.util.ts"
 
@@ -14,8 +15,8 @@ export const globalErrorHandler = (err: any, req: Request, res: Response, next: 
       err instanceof AppError
         ? err.errorCode
         : err instanceof ZodError
-          ? "VALIDATION_ERROR"
-          : "INTERNAL_CRASH",
+          ? ErrorCode.VALIDATION_ERROR
+          : ErrorCode.INTERNAL_CRASH,
     status:
       err instanceof AppError
         ? err.statusCode
@@ -29,12 +30,7 @@ export const globalErrorHandler = (err: any, req: Request, res: Response, next: 
 
   // 2. Professional structured logging (Only log 500 errors to the server console)
   if (errorLog.status >= 500) {
-    console.error(
-      `[${errorLog.timestamp}] [${errorLog.level}] [${errorLog.layer}] ${errorLog.message}\n` +
-        `  Code: ${errorLog.code} | Status: ${errorLog.status}\n` +
-        `  Path: ${errorLog.path}\n` +
-        (errorLog.stack ? `  Stack: ${errorLog.stack.split("\\n")[1]?.trim() || ""}` : ""),
-    )
+    console.error("Unhandled server error:", err)
   }
 
   // 3. Send response to client
@@ -43,7 +39,7 @@ export const globalErrorHandler = (err: any, req: Request, res: Response, next: 
       data: null,
       error: {
         message: err.message,
-        code: err.errorCode || "APP_ERROR",
+        code: err.errorCode || ErrorCode.APP_ERROR,
         meta: { layer: err.layer },
       },
     })
@@ -59,7 +55,7 @@ export const globalErrorHandler = (err: any, req: Request, res: Response, next: 
       data: null,
       error: {
         message: "Validation Error",
-        code: "VALIDATION_ERROR",
+        code: ErrorCode.VALIDATION_ERROR,
         meta: formattedIssues,
       },
     })
@@ -70,7 +66,7 @@ export const globalErrorHandler = (err: any, req: Request, res: Response, next: 
     data: null,
     error: {
       message: "Internal Server Error",
-      code: "INTERNAL_SERVER_ERROR",
+      code: ErrorCode.INTERNAL_SERVER_ERROR,
     },
   })
 }

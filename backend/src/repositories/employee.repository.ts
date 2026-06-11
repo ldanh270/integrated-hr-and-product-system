@@ -1,3 +1,5 @@
+import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
+import { SORT_ORDER } from "@/configs/system/db.config.ts"
 import {
   CreateEmployeeDto,
   Employee,
@@ -12,11 +14,26 @@ import { Prisma, PrismaClient, Employee as PrismaEmployee } from "@prisma/client
 
 import { BaseRepository } from "./base.repository.ts"
 
+/**
+ * Repository implementation for managing Employee data in PostgreSQL using Prisma.
+ * Implements the IEmployeeRepository contract and extends BaseRepository.
+ */
 export class PrismaEmployeeRepository extends BaseRepository implements IEmployeeRepository {
+  /**
+   * Initializes the repository with the PrismaClient.
+   * @param prisma The PrismaClient instance.
+   */
   constructor(prisma: PrismaClient) {
     super(prisma)
   }
 
+  /**
+   * Maps a database Prisma employee record to the application domain Employee type.
+   * Ensures encapsulation and decouples database schemas from domain models.
+   * @param employee The PrismaEmployee record from database.
+   * @returns The mapped Employee domain object.
+   * @protected
+   */
   protected mapToDomain(employee: PrismaEmployee): Employee {
     return {
       id: employee.id,
@@ -42,6 +59,12 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     }
   }
 
+  /**
+   * Retrieves a paginated and filtered list of employees.
+   * Excludes soft-deleted employees and defaults to excluding terminated employees unless specified.
+   * @param query Filtering and pagination parameters.
+   * @returns A paginated result containing employee data list and metadata.
+   */
   async listEmployeesPaginated(query: EmployeeListQuery): Promise<PaginatedEmployeesDto> {
     const {
       page = 1,
@@ -51,12 +74,13 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       role,
       employeeType,
       sortBy = "createdAt",
-      sortOrder = "desc",
+      sortOrder = SORT_ORDER.DESC,
     } = query
 
     const skip = (page - 1) * limit
     const where: Prisma.EmployeeWhereInput = { deletedAt: null } as any
 
+    // Apply text search on full name, email, or username (case-insensitive)
     if (search) {
       where.OR = [
         { fullName: { contains: search, mode: "insensitive" } },
@@ -65,18 +89,23 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       ]
     }
 
+    // Apply status filter, default to excluding terminated employees
     if (status) {
       where.status = status
     } else {
-      where.status = { not: "terminated" }
+      where.status = { not: EMPLOYEE_STATUS.TERMINATED }
     }
+
+    // Apply optional field filters
     if (role) where.role = role
     if (employeeType) where.employeeType = employeeType
 
+    // Define ordering criteria dynamically
     const orderBy: Prisma.EmployeeOrderByWithRelationInput = {
-      [sortBy]: sortOrder === "asc" ? "asc" : "desc",
+      [sortBy]: sortOrder === SORT_ORDER.ASC ? SORT_ORDER.ASC : SORT_ORDER.DESC,
     }
 
+    // Perform concurrent data fetching and count query
     const [data, total] = await Promise.all([
       this.prisma.employee.findMany({
         where,
@@ -98,6 +127,12 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     }
   }
 
+  /**
+   * Finds an active employee by their unique ID.
+   * Excludes soft-deleted records.
+   * @param id The employee ID.
+   * @returns The Employee domain object if found, otherwise null.
+   */
   async findById(id: string): Promise<Employee | null> {
     const employee = await this.prisma.employee.findFirst({
       where: { id, deletedAt: null } as any,
@@ -106,6 +141,11 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     return this.mapToDomain(employee)
   }
 
+  /**
+   * Persists a new employee record in the database.
+   * @param data DTO containing the initial employee details along with their password hash.
+   * @returns The newly created Employee domain object.
+   */
   async createEmployee(data: CreateEmployeeDto & { passwordHash: string }): Promise<Employee> {
     const employee = await this.prisma.employee.create({
       data: {
@@ -127,6 +167,12 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     return this.mapToDomain(employee)
   }
 
+  /**
+   * Updates an existing employee's details.
+   * @param id The ID of the employee to update.
+   * @param data DTO containing partial updates.
+   * @returns The updated Employee domain object, or null if update fails.
+   */
   async updateEmployee(id: string, data: UpdateEmployeeDto): Promise<Employee | null> {
     const updateData: Prisma.EmployeeUpdateInput = {
       fullName: data.fullName,
@@ -148,6 +194,12 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     return this.mapToDomain(employee)
   }
 
+  /**
+   * Updates the status of an employee (e.g. active, inactive, on_leave).
+   * @param id The ID of the employee.
+   * @param status The new status value.
+   * @returns The updated Employee domain object, or null if employee not found.
+   */
   async updateStatus(id: string, status: EmployeeStatus): Promise<Employee | null> {
     const employee = await this.prisma.employee.update({
       where: { id },
@@ -156,6 +208,14 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     return this.mapToDomain(employee)
   }
 
+  /**
+   * Performs a soft delete on an employee record.
+   * Marks the employee's status as terminated, records the deletion timestamp,
+   * and anonymizes/prefixes unique identifier fields to prevent database constraint conflicts
+   * if a new employee is created with the same credentials.
+   * @param id The ID of the employee to delete.
+   * @returns A boolean representing whether the soft delete succeeded.
+   */
   async deleteEmployee(id: string): Promise<boolean> {
     const record = await this.prisma.employee.findFirst({
       where: { id, deletedAt: null } as any,
@@ -167,7 +227,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       where: { id },
       data: {
         deletedAt: new Date(),
-        status: "terminated",
+        status: EMPLOYEE_STATUS.TERMINATED,
         email: `deleted_${timestamp}_${record.email}`,
         username: `deleted_${timestamp}_${record.username}`,
         phone: record.phone ? `deleted_${timestamp}_${record.phone}` : null,

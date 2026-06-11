@@ -3,28 +3,49 @@ import {
   EMPLOYEE_STATUSES,
   EMPLOYEE_TYPES,
 } from "@/configs/entities/employee.config.ts"
+import { SORT_ORDER_VALUES } from "@/configs/system/db.config.ts"
 
 import { z } from "zod"
 
+/**
+ * Zod validation schema for creating a new Employee.
+ * Enforces field validations, data types, and value constraints.
+ */
 export const createEmployeeSchema = z
   .object({
     fullName: z
-      .string()
+      .string({
+        error: (issue) =>
+          issue.input === undefined ? "Full name is required" : "Full name must be a string",
+      })
       .min(2, "Full name must be at least 2 characters")
       .max(100, "Full name too long")
       .trim(),
 
     username: z
-      .string()
+      .string({
+        error: (issue) =>
+          issue.input === undefined ? "Username is required" : "Username must be a string",
+      })
       .min(3, "Username must be at least 3 characters")
       .max(50, "Username too long")
       .trim()
       .toLowerCase(),
 
-    email: z.string().email("Invalid email format").trim().toLowerCase(),
+    email: z
+      .string({
+        error: (issue) =>
+          issue.input === undefined ? "Email is required" : "Email must be a string",
+      })
+      .email("Invalid email format")
+      .trim()
+      .toLowerCase(),
 
     password: z
-      .string()
+      .string({
+        error: (issue) =>
+          issue.input === undefined ? "Password is required" : "Password must be a string",
+      })
       .min(8, "Password must be at least 8 characters")
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
@@ -68,8 +89,15 @@ export const createEmployeeSchema = z
   })
   .strict()
 
+/**
+ * Type inferred from createEmployeeSchema.
+ */
 export type CreateEmployeeSchemaType = z.infer<typeof createEmployeeSchema>
 
+/**
+ * Zod validation schema for updating an existing Employee.
+ * All fields are optional to support partial updates.
+ */
 export const updateEmployeeSchema = z
   .object({
     fullName: z
@@ -120,16 +148,29 @@ export const updateEmployeeSchema = z
   })
   .strict()
 
+/**
+ * Type inferred from updateEmployeeSchema.
+ */
 export type UpdateEmployeeSchemaType = z.infer<typeof updateEmployeeSchema>
 
+/**
+ * Zod validation schema for updating an employee's status.
+ */
 export const updateEmployeeStatusSchema = z
   .object({
     status: z.enum(EMPLOYEE_STATUSES),
   })
   .strict()
 
+/**
+ * Type inferred from updateEmployeeStatusSchema.
+ */
 export type UpdateEmployeeStatusSchemaType = z.infer<typeof updateEmployeeStatusSchema>
 
+/**
+ * Zod validation schema for query parameters in list endpoint.
+ * Coerces and validates parameters such as pagination, search criteria, sorting field, and order.
+ */
 export const listEmployeesQuerySchema = z.object({
   page: z
     .string()
@@ -165,7 +206,10 @@ export const listEmployeesQuerySchema = z.object({
       "updatedAt",
     ])
     .optional(),
-  sortOrder: z.enum(["asc", "desc"]).optional(),
+  sortOrder: z.enum(SORT_ORDER_VALUES).optional(),
 })
 
+/**
+ * Type inferred from listEmployeesQuerySchema.
+ */
 export type ListEmployeesQuerySchemaType = z.infer<typeof listEmployeesQuerySchema>
