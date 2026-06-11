@@ -28,7 +28,7 @@ export const useEmployeeMaster = () => {
   // Query parameters for fetching the paginated employee list
   const [query, setQuery] = useState<EmployeeListQuery>({
     page: 1,
-    limit: SYSTEM_CONFIG.PAGINATION.DEFAULT_LIMIT,
+    limit: SYSTEM_CONFIG.PAGINATION.SMALL_LIMIT,
   })
 
   // The active filter tab (all, full-time, part-time, intern, contractor, terminated)
