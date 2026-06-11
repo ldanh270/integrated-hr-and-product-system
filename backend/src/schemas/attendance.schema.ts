@@ -201,6 +201,7 @@ export type ApproveApplicationSchemaType = z.infer<typeof approveApplicationSche
  */
 export const rejectApplicationSchema = z
   .object({
+    status: z.literal("rejected").optional(),
     rejectReason: z.string().trim().min(5, "rejectReason must be at least 5 characters").max(500),
   })
   .strict()
