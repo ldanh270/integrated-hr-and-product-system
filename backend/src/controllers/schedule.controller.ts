@@ -10,10 +10,10 @@ import { z } from "zod"
 export class ScheduleController {
   constructor(private service: IScheduleService) {}
 
-  assignSchedule = async (req: Request, res: Response<ApiResponse<any>>) => {
+  assignSchedule = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
       const reqData = assignShiftScheduleSchema.parse(req.body)
-      const data = { ...reqData, createdById: (req as AuthRequest).user?.empId || "system" }
+      const data = { ...reqData, createdById: req.user?.empId || "system" }
       const schedule = await this.service.assignSchedule(data)
       res.status(HttpStatusCode.CREATED).json({ data: schedule, error: null })
     } catch (error) {
@@ -27,22 +27,7 @@ export class ScheduleController {
     }
   }
 
-  getEmployeeSchedule = async (req: Request, res: Response<ApiResponse<any>>) => {
-    const { employeeId } = req.params
-    const dateQuery = req.query.date as string | undefined
-    const scheduleDate = dateQuery ? new Date(dateQuery) : new Date()
-
-    const schedule = await this.service.getScheduleForEmployee(String(employeeId), scheduleDate)
-    res.status(HttpStatusCode.OK).json({ data: schedule, error: null })
-  }
-
-  listEmployeeSchedules = async (req: Request, res: Response<ApiResponse<any[]>>) => {
-    const { employeeId } = req.params
-    const schedules = await this.service.listSchedulesForEmployee(String(employeeId))
-    res.status(HttpStatusCode.OK).json({ data: schedules, error: null })
-  }
-
-  getMySchedule = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  getEmployeeSchedule = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     const employeeId = req.user?.empId
     if (!employeeId) {
       return res.status(HttpStatusCode.UNAUTHORIZED).json({
@@ -52,11 +37,12 @@ export class ScheduleController {
     }
     const dateQuery = req.query.date as string | undefined
     const scheduleDate = dateQuery ? new Date(dateQuery) : new Date()
+
     const schedule = await this.service.getScheduleForEmployee(employeeId, scheduleDate)
     res.status(HttpStatusCode.OK).json({ data: schedule, error: null })
   }
 
-  listMySchedules = async (req: AuthRequest, res: Response<ApiResponse<any[]>>) => {
+  listEmployeeSchedules = async (req: AuthRequest, res: Response<ApiResponse<any[]>>) => {
     const employeeId = req.user?.empId
     if (!employeeId) {
       return res.status(HttpStatusCode.UNAUTHORIZED).json({
@@ -68,7 +54,7 @@ export class ScheduleController {
     res.status(HttpStatusCode.OK).json({ data: schedules, error: null })
   }
 
-  overrideShift = async (req: Request, res: Response<ApiResponse<any>>) => {
+  overrideShift = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
       const data = overrideEmployeeShiftSchema.parse(req.body)
       const override = await this.service.overrideEmployeeShift(data)
