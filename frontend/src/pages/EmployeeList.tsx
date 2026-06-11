@@ -3,6 +3,13 @@ import { EmployeeCreateModal } from "@/components/features/employees/EmployeeCre
 import { EmployeeDetailsDrawer } from "@/components/features/employees/EmployeeDetailsDrawer"
 import { EmployeeEditDrawer } from "@/components/features/employees/EmployeeEditDrawer"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import {
   EMPLOYEE_STATUS,
@@ -92,8 +99,6 @@ export default function EmployeeList() {
     setEditEmployee,
     viewingEmployeeId,
     setViewingEmployeeId,
-    activeActionMenu,
-    setActiveActionMenu,
     data,
     isLoading,
     isFetching,
@@ -304,68 +309,53 @@ export default function EmployeeList() {
                     </td>
 
                     {/* Thao tác */}
-                    <td className="px-5 py-3 text-right relative">
-                      <button
-                        onClick={() =>
-                          setActiveActionMenu(activeActionMenu === employee.id ? null : employee.id)
-                        }
-                        className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                        aria-label="Mở menu thao tác"
-                      >
-                        <MoreHorizontal size={15} />
-                      </button>
+                    <td className="px-5 py-3 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors outline-none cursor-pointer"
+                            aria-label="Mở menu thao tác"
+                          >
+                            <MoreHorizontal size={15} />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44">
+                          {isAdminOrManager && (
+                            <>
+                              {employee.status !== EMPLOYEE_STATUS.TERMINATED && (
+                                <>
+                                  <DropdownMenuItem
+                                    onClick={() => setEditEmployee(employee)}
+                                    className="cursor-pointer gap-2"
+                                  >
+                                    <Edit size={13} className="text-blue-500" />
+                                    Sửa thông tin
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    variant="destructive"
+                                    onClick={() => handleDelete(employee.id)}
+                                    className="cursor-pointer gap-2"
+                                  >
+                                    <Trash2 size={13} />
+                                    Cho nghỉ việc
+                                  </DropdownMenuItem>
+                                </>
+                              )}
 
-                      {activeActionMenu === employee.id && (
-                        <>
-                          {/* Backdrop */}
-                          <div
-                            className="fixed inset-0 z-10"
-                            onClick={() => setActiveActionMenu(null)}
-                          />
-                          {/* Dropdown */}
-                          <div className="absolute right-5 top-10 w-44 bg-background border border-border rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.08)] py-1 z-20 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
-                            {isAdminOrManager && (
-                              <>
-                                {employee.status !== EMPLOYEE_STATUS.TERMINATED && (
-                                  <>
-                                    <button
-                                      onClick={() => {
-                                        setEditEmployee(employee)
-                                        setActiveActionMenu(null)
-                                      }}
-                                      className="w-full text-left px-3 py-1.5 text-[13px] hover:bg-muted flex items-center gap-2 text-foreground"
-                                    >
-                                      <Edit size={13} className="text-blue-500 shrink-0" />
-                                      Sửa thông tin
-                                    </button>
-                                    <div className="mx-2 my-1 border-t border-border" />
-                                    <button
-                                      onClick={() => handleDelete(employee.id)}
-                                      className="w-full text-left px-3 py-1.5 text-[13px] hover:bg-rose-50 text-rose-600 dark:hover:bg-rose-950/30 flex items-center gap-2"
-                                    >
-                                      <Trash2 size={13} className="shrink-0" />
-                                      Cho nghỉ việc
-                                    </button>
-                                  </>
-                                )}
-
-                                {employee.status === EMPLOYEE_STATUS.TERMINATED && (
-                                  <>
-                                    <div className="mx-2 my-1 border-t border-border" />
-                                    <button
-                                      onClick={() => handleReinstate(employee.id)}
-                                      className="w-full text-left px-3 py-1.5 text-[13px] hover:bg-emerald-50 text-emerald-700 dark:hover:bg-emerald-950/30 flex items-center gap-2"
-                                    >
-                                      <RotateCcw size={13} className="shrink-0" />
-                                      Đi làm lại
-                                    </button>
-                                  </>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </>
-                      )}
+                              {employee.status === EMPLOYEE_STATUS.TERMINATED && (
+                                <DropdownMenuItem
+                                  onClick={() => handleReinstate(employee.id)}
+                                  className="cursor-pointer gap-2 text-emerald-600 focus:text-emerald-700 focus:bg-emerald-50 dark:text-emerald-400 dark:focus:text-emerald-300 dark:focus:bg-emerald-950/30"
+                                >
+                                  <RotateCcw size={13} />
+                                  Đi làm lại
+                                </DropdownMenuItem>
+                              )}
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
                   </tr>
                 ))

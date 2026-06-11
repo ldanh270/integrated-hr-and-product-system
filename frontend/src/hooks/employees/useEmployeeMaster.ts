@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/common"
 import { EMPLOYEE_STATUS, ROLE } from "@/config/entities/employee.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useAuthStore } from "@/store/auth-store"
@@ -22,6 +23,8 @@ import { useEmployees, useUpdateEmployeeStatus } from "./queries/useEmployeeQuer
  * @returns Object containing all employee state values and handle handlers.
  */
 export const useEmployeeMaster = () => {
+  const confirm = useConfirm()
+
   // Query parameters for fetching the paginated employee list
   const [query, setQuery] = useState<EmployeeListQuery>({
     page: 1,
@@ -35,8 +38,6 @@ export const useEmployeeMaster = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [editEmployee, setEditEmployee] = useState<Employee | null>(null)
   const [viewingEmployeeId, setViewingEmployeeId] = useState<string | null>(null)
-  const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null)
-
   // Auth context to check permission roles
   const user = useAuthStore((state) => state.user)
   const isAdminOrManager =
@@ -87,11 +88,19 @@ export const useEmployeeMaster = () => {
    * @param id The ID of the employee to terminate.
    */
   const handleDelete = async (id: string) => {
-    if (confirm("Bạn có chắc chắn muốn cho nhân sự này nghỉ việc?")) {
+    const isConfirmed = await confirm({
+      title: "Cho nhân sự nghỉ việc",
+      description:
+        "Bạn có chắc chắn muốn cho nhân sự này nghỉ việc? Trạng thái tài khoản sẽ được chuyển thành thôi việc.",
+      confirmText: "Đồng ý",
+      cancelText: "Hủy bỏ",
+      variant: "destructive",
+    })
+
+    if (isConfirmed) {
       try {
         await updateStatusMutation.mutateAsync({ id, data: { status: EMPLOYEE_STATUS.TERMINATED } })
         toast.success("Đã cho nhân sự nghỉ việc thành công.")
-        setActiveActionMenu(null)
       } catch {
         toast.error("Có lỗi xảy ra khi cập nhật trạng thái nhân sự.")
       }
@@ -104,11 +113,19 @@ export const useEmployeeMaster = () => {
    * @param id The ID of the employee.
    */
   const handleReinstate = async (id: string) => {
-    if (confirm("Bạn có chắc chắn muốn cho nhân sự này đi làm lại?")) {
+    const isConfirmed = await confirm({
+      title: "Kích hoạt lại nhân sự",
+      description:
+        "Bạn có chắc chắn muốn cho nhân sự này đi làm lại? Trạng thái tài khoản sẽ được chuyển thành đang làm việc.",
+      confirmText: "Đồng ý",
+      cancelText: "Hủy bỏ",
+      variant: "default",
+    })
+
+    if (isConfirmed) {
       try {
         await updateStatusMutation.mutateAsync({ id, data: { status: EMPLOYEE_STATUS.ACTIVE } })
         toast.success("Đã kích hoạt lại nhân sự thành công.")
-        setActiveActionMenu(null)
       } catch {
         toast.error("Có lỗi xảy ra khi kích hoạt lại nhân sự.")
       }
@@ -126,8 +143,6 @@ export const useEmployeeMaster = () => {
     setEditEmployee,
     viewingEmployeeId,
     setViewingEmployeeId,
-    activeActionMenu,
-    setActiveActionMenu,
     // Data
     data,
     isLoading,
