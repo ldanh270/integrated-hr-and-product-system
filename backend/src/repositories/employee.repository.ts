@@ -1,7 +1,6 @@
 import {
   CreateEmployeeDto,
   Employee,
-  EmployeeDb,
   EmployeeListQuery,
   EmployeeStatus,
   IEmployeeRepository,
@@ -9,37 +8,35 @@ import {
   UpdateEmployeeDto,
 } from "@/types"
 
-import { Model } from "mongoose"
+import { Prisma, PrismaClient, Employee as PrismaEmployee } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
-export class MongoEmployeeRepository
-  extends BaseRepository<EmployeeDb, Employee>
-  implements IEmployeeRepository
-{
-  constructor(employeeModel: Model<EmployeeDb>) {
-    super(employeeModel)
+export class PrismaEmployeeRepository extends BaseRepository implements IEmployeeRepository {
+  constructor(prisma: PrismaClient) {
+    super(prisma)
   }
 
-  protected mapToDomain(employee: EmployeeDb): Employee {
+  protected mapToDomain(employee: PrismaEmployee): Employee {
     return {
-      id: employee._id.toString(),
+      id: employee.id,
       fullName: employee.fullName,
       username: employee.username,
       email: employee.email,
       role: employee.role,
-      phone: employee.phone ?? null,
-      position: employee.position ?? null,
+      phone: employee.phone,
+      position: employee.position,
       employeeType: employee.employeeType,
       status: employee.status,
-      dateOfBirth: employee.dateOfBirth ?? null,
-      nationalId: employee.nationalId ?? null,
-      address: employee.address ?? null,
-      startDate: employee.startDate ?? null,
-      endDate: employee.endDate ?? null,
-      avatar: employee.avatar
-        ? { url: employee.avatar.url ?? null, id: employee.avatar.id ?? null }
-        : null,
+      dateOfBirth: employee.dateOfBirth,
+      nationalId: employee.nationalId,
+      address: employee.address,
+      startDate: employee.startDate,
+      endDate: employee.endDate,
+      avatar:
+        employee.avatarUrl || employee.avatarId
+          ? { url: employee.avatarUrl, id: employee.avatarId }
+          : null,
       createdAt: employee.createdAt,
       updatedAt: employee.updatedAt,
     }
@@ -58,25 +55,32 @@ export class MongoEmployeeRepository
     } = query
 
     const skip = (page - 1) * limit
-    const filter: any = {}
+    const where: Prisma.EmployeeWhereInput = { deletedAt: null } as any
 
     if (search) {
-      filter.$or = [
-        { fullName: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { username: { $regex: search, $options: "i" } },
+      where.OR = [
+        { fullName: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { username: { contains: search, mode: "insensitive" } },
       ]
     }
 
-    if (status) filter.status = status
-    if (role) filter.role = role
-    if (employeeType) filter.employeeType = employeeType
+    if (status) where.status = status
+    if (role) where.role = role
+    if (employeeType) where.employeeType = employeeType
 
-    const sortObject: any = { [sortBy]: sortOrder === "asc" ? 1 : -1 }
+    const orderBy: Prisma.EmployeeOrderByWithRelationInput = {
+      [sortBy]: sortOrder === "asc" ? "asc" : "desc",
+    }
 
     const [data, total] = await Promise.all([
-      this.model.find(filter).sort(sortObject).skip(skip).limit(limit).lean<EmployeeDb[]>(),
-      this.model.countDocuments(filter),
+      this.prisma.employee.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      this.prisma.employee.count({ where }),
     ])
 
     return {
@@ -90,15 +94,95 @@ export class MongoEmployeeRepository
     }
   }
 
+  async findById(id: string): Promise<Employee | null> {
+    const employee = await this.prisma.employee.findFirst({
+      where: { id, deletedAt: null } as any,
+    })
+    if (!employee) return null
+    return this.mapToDomain(employee)
+  }
+
   async createEmployee(data: CreateEmployeeDto & { passwordHash: string }): Promise<Employee> {
-    return this.create(data)
+    const employee = await this.prisma.employee.create({
+      data: {
+        fullName: data.fullName,
+        email: data.email,
+        username: data.username,
+        passwordHash: data.passwordHash,
+        role: data.role,
+        phone: data.phone,
+        position: data.position,
+        employeeType: data.employeeType,
+        status: data.status,
+        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
+        nationalId: data.nationalId,
+        address: data.address,
+        startDate: data.startDate ? new Date(data.startDate) : undefined,
+      },
+    })
+    return this.mapToDomain(employee)
   }
 
   async updateEmployee(id: string, data: UpdateEmployeeDto): Promise<Employee | null> {
-    return this.update(id, data)
+    const updateData: Prisma.EmployeeUpdateInput = {
+      fullName: data.fullName,
+      phone: data.phone,
+      position: data.position,
+      employeeType: data.employeeType,
+      status: data.status,
+      dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
+      nationalId: data.nationalId,
+      address: data.address,
+      startDate: data.startDate ? new Date(data.startDate) : undefined,
+      endDate: data.endDate ? new Date(data.endDate) : undefined,
+    }
+
+    // Prisma throws if record not found, so we check first or use update with try-catch
+    try {
+      const employee = await this.prisma.employee.update({
+        where: { id },
+        data: updateData,
+      })
+      return this.mapToDomain(employee)
+    } catch (error) {
+      return null
+    }
   }
 
   async updateStatus(id: string, status: EmployeeStatus): Promise<Employee | null> {
-    return this.update(id, { status })
+    try {
+      const employee = await this.prisma.employee.update({
+        where: { id },
+        data: { status },
+      })
+      return this.mapToDomain(employee)
+    } catch (error) {
+      return null
+    }
+  }
+
+  async deleteEmployee(id: string): Promise<boolean> {
+    const record = await this.prisma.employee.findFirst({
+      where: { id, deletedAt: null } as any,
+    })
+    if (!record) return false
+
+    const timestamp = new Date().getTime()
+    try {
+      await this.prisma.employee.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+          status: "terminated",
+          email: `deleted_${timestamp}_${record.email}`,
+          username: `deleted_${timestamp}_${record.username}`,
+          phone: record.phone ? `deleted_${timestamp}_${record.phone}` : null,
+          nationalId: record.nationalId ? `deleted_${timestamp}_${record.nationalId}` : null,
+        },
+      })
+      return true
+    } catch (error) {
+      return false
+    }
   }
 }

@@ -174,6 +174,18 @@ Constants:   UPPER_SNAKE   → MAX_RETRY_COUNT, DEFAULT_TIMEOUT
 Types/I/F:   PascalCase    → UserProfile, IOrderRepository
 ```
 
+### Enum Values — The Law
+
+| Layer          | Key style     | Value style          | Source of truth     |
+| -------------- | ------------- | -------------------- | ------------------- |
+| Prisma schema  | N/A           | `lower_snake_case`   | ← canonical source  |
+| Backend const  | `UPPER_SNAKE` | = Prisma value       | `configs/entities/` |
+| Frontend const | `UPPER_SNAKE` | = Prisma value       | `config/entities/`  |
+| Zod schema     | N/A           | use `*_VALUES` array | never hardcode      |
+| API response   | N/A           | = Prisma value       | never transform     |
+
+Violation produces: silent `undefined` lookups, 500 errors, Prisma validation failures.
+
 ### Comments
 
 - Comment **why**, not **what**. Code shows what; comments explain intent.
@@ -330,14 +342,14 @@ When writing explanations, the agent **MUST**:
 
 > These files are the source of truth. Agent MUST read relevant doc before implementing.
 
-| Task | Read This First |
-|------|----------------|
-| Creating any class | `docs/solid-principles.md` |
-| Choosing a pattern | `docs/design-patterns.md` |
-| Defining types / interfaces | `docs/interface-contracts.md` |
-| Writing any backend layer | `docs/agent-directives.md` |
-| Architecture questions | `docs/system-architecture.md` |
-| Naming / conventions | `docs/code-standards.md` |
+| Task                         | Read This First                |
+| ---------------------------- | ------------------------------ |
+| Creating any class           | `docs/solid-principles.md`     |
+| Choosing a pattern           | `docs/design-patterns.md`      |
+| Defining types / interfaces  | `docs/interface-contracts.md`  |
+| Writing any backend layer    | `docs/agent-directives.md`     |
+| Architecture questions       | `docs/system-architecture.md`  |
+| Naming / conventions         | `docs/code-standards.md`       |
 | Feature scope / requirements | `docs/project-overview-pdr.md` |
-| What exists / what's missing | `docs/codebase-summary.md` |
-`docs/codebase-summary.md` |
+| What exists / what's missing | `docs/codebase-summary.md`     |
+| `docs/codebase-summary.md`   |

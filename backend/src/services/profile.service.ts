@@ -5,20 +5,22 @@ import type {
   IProfileService,
   ProfileDto,
   ProfileEmployeeDocument,
+  ProfileEmployeeDocumentWithPassword,
   UpdateProfileDto,
 } from "@/types/profile.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
 
 import { Readable } from "stream"
-
+import { ROLE } from "@/configs/entities/employee.config.ts"
+const LAYER_NAME = "ProfileService"
 /**
  * Maps a Mongoose employee document to a clean ProfileDto
  * Centralizes the field-picking logic so controllers stay thin
  */
 function toProfileDto(emp: ProfileEmployeeDocument): ProfileDto {
   return {
-    id: emp._id.toString(),
+    id: emp.id,
     fullName: emp.fullName,
     username: emp.username,
     email: emp.email,
@@ -32,8 +34,8 @@ function toProfileDto(emp: ProfileEmployeeDocument): ProfileDto {
     status: emp.status,
     startDate: emp.startDate ? emp.startDate.toISOString().split("T")[0] : null,
     avatar: {
-      url: emp.avatar?.url ?? null,
-      id: emp.avatar?.id ?? null,
+      url: emp.avatarUrl ?? null,
+      id: emp.avatarId ?? null,
     },
     createdAt: emp.createdAt.toISOString(),
     updatedAt: emp.updatedAt.toISOString(),
@@ -86,7 +88,7 @@ export class ProfileService implements IProfileService {
     const employee = await this.repo.findById(empId)
 
     if (!employee) {
-      throw new AppError("Profile not found", HttpStatusCode.NOT_FOUND, "ProfileService")
+      throw new AppError("Profile not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
     return toProfileDto(employee)
@@ -99,7 +101,7 @@ export class ProfileService implements IProfileService {
     const updated = await this.repo.updateProfile(empId, data)
 
     if (!updated) {
-      throw new AppError("Profile not found", HttpStatusCode.NOT_FOUND, "ProfileService")
+      throw new AppError("Profile not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
     return toProfileDto(updated)
@@ -114,21 +116,20 @@ export class ProfileService implements IProfileService {
     try {
       assertCloudinaryConfigured()
     } catch (err: any) {
-      throw new AppError(err.message, HttpStatusCode.BAD_REQUEST, "ProfileService")
+      throw new AppError(err.message, HttpStatusCode.BAD_REQUEST, LAYER_NAME)
     }
 
     // Fetch current profile to get old avatar id for cleanup
     const current = await this.repo.findById(empId)
 
     if (!current) {
-      throw new AppError("Profile not found", HttpStatusCode.NOT_FOUND, "ProfileService")
+      throw new AppError("Profile not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
     // Delete old Cloudinary asset if it exists
-    if (current.avatar?.id) {
-      await cloudinary.uploader.destroy(current.avatar.id).catch(() => {
-        // Non-blocking: log but don't fail the upload
-        console.warn(`[ProfileService] Could not delete old avatar: ${current.avatar?.id}`)
+    if (current.avatarId) {
+      await cloudinary.uploader.destroy(current.avatarId).catch(() => {
+        console.warn(`[ProfileService] Could not delete old avatar: ${current.avatarId}`)
       })
     }
 
@@ -143,7 +144,7 @@ export class ProfileService implements IProfileService {
       throw new AppError(
         "Failed to save avatar",
         HttpStatusCode.INTERNAL_SERVER_ERROR,
-        "ProfileService",
+        LAYER_NAME,
       )
     }
 
@@ -166,13 +167,12 @@ export class ProfileService implements IProfileService {
       throw new AppError(
         "Mật khẩu hiện tại không chính xác",
         HttpStatusCode.BAD_REQUEST,
-        "ProfileService",
+        LAYER_NAME,
         "INVALID_CURRENT_PASSWORD",
       )
     }
 
-    // Hash and save new password
-    employee.passwordHash = await HashUtil.hash(newPass)
-    await employee.save()
+    // Hash and save new password via repository
+    await this.repo.updatePassword(empId, await HashUtil.hash(newPass))
   }
 }

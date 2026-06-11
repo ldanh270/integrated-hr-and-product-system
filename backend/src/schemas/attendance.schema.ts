@@ -1,14 +1,13 @@
 import {
   APPLICATION_STATUSES,
-  APPLICATION_TYPES,
+  APPLICATION_TYPE_VALUES,
   ATTENDANCE_STATUSES,
   HOLIDAY_TYPES,
   REGIME_TYPES,
 } from "@/configs/entities/attendance.config.ts"
+import { ATTENDANCE_ERROR_MESSAGES } from "@/constants/attendance.constants.ts"
 
 import { z } from "zod"
-
-const objectIdRegex = /^[0-9a-fA-F]{24}$/
 
 const gpsScanSchema = z.object({
   lat: z.number().min(-90).max(90),
@@ -37,13 +36,17 @@ export const attendanceRecordQuerySchema = z
   .object({
     startDate: z
       .string()
-      .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
+      .refine((val) => !isNaN(Date.parse(val)), {
+        message: ATTENDANCE_ERROR_MESSAGES.INVALID_DATE_FORMAT,
+      })
       .optional(),
     endDate: z
       .string()
-      .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
+      .refine((val) => !isNaN(Date.parse(val)), {
+        message: ATTENDANCE_ERROR_MESSAGES.INVALID_DATE_FORMAT,
+      })
       .optional(),
-    employeeId: z.string().regex(objectIdRegex, "Invalid ObjectId").optional(),
+    employeeId: z.string().min(1).optional(),
     status: z.enum(ATTENDANCE_STATUSES).optional(),
   })
   .strict()
@@ -53,17 +56,21 @@ export type AttendanceRecordQuerySchemaType = z.infer<typeof attendanceRecordQue
 // ─── APPLICATIONS (Leave, OT, Swap) ──────────────────────────
 export const submitApplicationSchema = z
   .object({
-    type: z.enum(APPLICATION_TYPES),
+    type: z.enum(APPLICATION_TYPE_VALUES),
     reason: z.string().min(5).max(500),
     startDate: z
       .string()
-      .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }),
+      .refine((val) => !isNaN(Date.parse(val)), {
+        message: ATTENDANCE_ERROR_MESSAGES.INVALID_DATE_FORMAT,
+      }),
     endDate: z
       .string()
-      .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
+      .refine((val) => !isNaN(Date.parse(val)), {
+        message: ATTENDANCE_ERROR_MESSAGES.INVALID_DATE_FORMAT,
+      })
       .optional(),
     regimeType: z.enum(REGIME_TYPES).optional(),
-    swapWith: z.string().regex(objectIdRegex, "Invalid ObjectId").optional(),
+    swapWith: z.string().min(1).optional(),
   })
   .strict()
 
@@ -81,7 +88,11 @@ export type ApproveApplicationSchemaType = z.infer<typeof approveApplicationSche
 export const createHolidaySchema = z
   .object({
     name: z.string().min(2).max(100),
-    date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }),
+    date: z
+      .string()
+      .refine((val) => !isNaN(Date.parse(val)), {
+        message: ATTENDANCE_ERROR_MESSAGES.INVALID_DATE_FORMAT,
+      }),
     type: z.enum(HOLIDAY_TYPES),
   })
   .strict()

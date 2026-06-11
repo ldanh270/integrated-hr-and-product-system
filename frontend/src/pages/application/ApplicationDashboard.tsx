@@ -77,17 +77,9 @@ export default function ApplicationDashboard() {
   const formatDetails = (item: IApprovalItem) => {
     const { details, category } = item
     if (category === APPROVAL_CATEGORY.APPLICATION) {
-      const typeLabels: Record<string, string> = {
-        [APPLICATION_TYPES[0]]: "Xin nghỉ phép",
-        [APPLICATION_TYPES[1]]: "Làm thêm giờ (OT)",
-        [APPLICATION_TYPES[2]]: "Làm việc từ xa (WFH)",
-        [APPLICATION_TYPES[3]]: "Đổi ca làm việc",
-        [APPLICATION_TYPES[4]]: "Công tác",
-        [APPLICATION_TYPES[5]]: "Nghỉ thai sản",
-        [APPLICATION_TYPES[6]]: "Nghỉ thai sản (nam)",
-        [APPLICATION_TYPES[7]]: "Nghỉ ốm",
-      }
-      return `${typeLabels[details.type!] || "Yêu cầu"} từ ${new Date(details.startDate!).toLocaleDateString("vi-VN")} đến ${new Date(details.endDate!).toLocaleDateString("vi-VN")}`
+      const appType = Object.values(APPLICATION_TYPES).find((t) => t.LABEL === details.type)
+      const label = appType ? appType.DESCRIPTION : "Yêu cầu"
+      return `${label} từ ${new Date(details.startDate!).toLocaleDateString("vi-VN")} đến ${new Date(details.endDate!).toLocaleDateString("vi-VN")}`
     }
     if (category === APPROVAL_CATEGORY.PASSWORD_RESET) {
       return "Yêu cầu cấp lại mật khẩu cho tài khẩu"
@@ -99,7 +91,7 @@ export default function ApplicationDashboard() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6 w-full max-w-7xl mx-auto">
+    <div className="flex flex-col gap-6 p-6 w-full mx-auto">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border pb-6">
         <div>

@@ -108,6 +108,24 @@ Route (concrete wiring only)
   - Always use semantic token utilities (`bg-background`, `text-foreground`, `border-border`, `bg-primary`, etc.).
   - Keep all color definitions centralized in global theme variables (light as default, dark mode via `.dark` token overrides).
 
+### Enum Naming Convention (Critical)
+
+| Layer          | Key format    | Value format         |
+| -------------- | ------------- | -------------------- |
+| Prisma schema  | N/A           | `lower_snake_case`   |
+| Backend const  | `UPPER_SNAKE` | = exact Prisma value |
+| Frontend const | `UPPER_SNAKE` | = exact Prisma value |
+| Zod enum       | N/A           | use `*_VALUES` array |
+| API response   | N/A           | = exact Prisma value |
+
+Rules:
+
+- NEVER use UPPERCASE string as enum value (e.g., "DRAFT", "APPROVED")
+- NEVER hardcode enum strings in services/repositories — always import from configs/entities/
+- NEVER define enum values in frontend that differ from backend/DB values
+- Zod schemas must use the exported `*_VALUES` or `*_TYPES` array from config, not inline literals
+- New Prisma enum values must be added to backend config FIRST, then mirrored to frontend config
+
 ## Documentation Index
 
 | Doc                                                            | Contents                                                                  |

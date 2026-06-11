@@ -1,89 +1,152 @@
-import { AttendanceRecordDocument } from "@/entities/attendance/AttendanceRecord.ts"
 import {
+  IAttendanceMetricsDTO,
   IAttendanceRecordQueryDTO,
   IAttendanceRepository,
   IGpsScanDTO,
 } from "@/types/attendance.types.ts"
 
-import { Model } from "mongoose"
+import { AttendanceStatus, Prisma, PrismaClient } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
-export class MongoAttendanceRepository
-  extends BaseRepository<AttendanceRecordDocument>
-  implements IAttendanceRepository
-{
-  constructor(attendanceModel: Model<AttendanceRecordDocument>) {
-    super(attendanceModel)
+/**
+ * Repository implementation for attendance-related data using Prisma.
+ */
+export class PrismaAttendanceRepository extends BaseRepository implements IAttendanceRepository {
+  /**
+   * Creates a new PrismaAttendanceRepository instance.
+   * @param prisma - The PrismaClient instance.
+   */
+  constructor(prisma: PrismaClient) {
+    super(prisma)
   }
 
-  async checkIn(employeeId: string, location: IGpsScanDTO, shiftId?: string): Promise<any> {
+  /**
+   * Records a check-in for an employee.
+   * @param employeeId - The employee ID.
+   * @param location - The GPS location of the check-in.
+   * @param employeeShiftId - The associated employee shift ID.
+   * @returns The created or updated attendance record.
+   */
+  async checkIn(employeeId: string, location: IGpsScanDTO, employeeShiftId: string): Promise<any> {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    // Find if record already exists for today, else create
-    const record = await this.model
-      .findOneAndUpdate(
-        {
-          employeeId: { $eq: employeeId },
-          date: today,
-        },
-        {
-          $setOnInsert: { shiftId }, // Only set on insert
-          $set: {
-            "checkIn.at": new Date(),
-            "checkIn.location": location,
-          },
-        },
-        { new: true, upsert: true },
-      )
-      .lean()
+    // Using employeeShiftId for upsert since it is @unique
+    const record = await this.prisma.attendanceRecord.upsert({
+      where: { employeeShiftId },
+      update: {
+        checkInAt: new Date(),
+        checkInLat: location.lat,
+        checkInLng: location.lng,
+      },
+      create: {
+        employeeId,
+        employeeShiftId,
+        date: today,
+        checkInAt: new Date(),
+        checkInLat: location.lat,
+        checkInLng: location.lng,
+        status: AttendanceStatus.absent, // Default status, will be recalculated later
+      },
+    })
 
     return record
   }
 
-  async checkOut(employeeId: string, location: IGpsScanDTO): Promise<any> {
+  /**
+   * Records a check-out for an employee.
+   * @param employeeId - The employee ID.
+   * @param location - The GPS location of the check-out.
+   * @param metrics - Optional attendance metrics.
+   * @returns The updated attendance record.
+   */
+  async checkOut(
+    employeeId: string,
+    location: IGpsScanDTO,
+    metrics: IAttendanceMetricsDTO = {},
+  ): Promise<any> {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    // Update existing record
-    const record = await this.model
-      .findOneAndUpdate(
-        {
-          employeeId: { $eq: employeeId },
-          date: today,
-        },
-        {
-          $set: {
-            "checkOut.at": new Date(),
-            "checkOut.location": location,
-          },
-        },
-        { new: true },
-      )
-      .lean()
+    const records = await this.prisma.attendanceRecord.findMany({
+      where: {
+        employeeId,
+        date: today,
+      },
+      take: 1,
+    })
 
-    return record
+    if (records.length === 0) {
+      return null // Cannot checkout if not checked in
+    }
+
+    return this.prisma.attendanceRecord.update({
+      where: { id: records[0].id },
+      data: {
+        checkOutAt: new Date(),
+        checkOutLat: location.lat,
+        checkOutLng: location.lng,
+        ...metrics,
+      },
+    })
   }
 
+  /**
+   * Finds an attendance record by employee ID and date.
+   * @param employeeId - The employee ID.
+   * @param date - The target date.
+   * @returns The attendance record or null if not found.
+   */
+  async findByEmployeeAndDate(employeeId: string, date: string | Date): Promise<any | null> {
+    const targetDate = new Date(date)
+    targetDate.setHours(0, 0, 0, 0)
+
+    return this.prisma.attendanceRecord.findFirst({
+      where: { employeeId, date: targetDate },
+      include: { employeeShift: true },
+    })
+  }
+
+  /**
+   * Queries attendance records based on filters.
+   * @param query - The query parameters.
+   * @returns An array of matching attendance records.
+   */
   async queryRecords(query: IAttendanceRecordQueryDTO): Promise<any[]> {
-    const filter: any = {}
+    const where: Prisma.AttendanceRecordWhereInput = {}
 
-    if (query.employeeId) filter.employeeId = { $eq: query.employeeId }
-    if (query.status) filter.status = { $eq: query.status }
+    if (query.employeeId) where.employeeId = query.employeeId
+    if (query.status) where.status = query.status as AttendanceStatus
 
     if (query.startDate || query.endDate) {
-      filter.date = {}
+      where.date = {}
       if (query.startDate) {
         const startDate = new Date(query.startDate)
-        if (!Number.isNaN(startDate.getTime())) filter.date.$gte = startDate
+        if (!Number.isNaN(startDate.getTime())) where.date.gte = startDate
       }
       if (query.endDate) {
         const endDate = new Date(query.endDate)
-        if (!Number.isNaN(endDate.getTime())) filter.date.$lte = endDate
+        if (!Number.isNaN(endDate.getTime())) where.date.lte = endDate
       }
     }
 
-    return this.model.find(filter).sort({ date: -1 }).lean()
+    return this.prisma.attendanceRecord.findMany({
+      where,
+      include: {
+        employee: {
+          select: {
+            fullName: true,
+            email: true,
+          },
+        },
+        employeeShift: {
+          include: {
+            shift: true,
+          },
+        },
+      },
+      orderBy: { date: "desc" },
+    })
   }
 }

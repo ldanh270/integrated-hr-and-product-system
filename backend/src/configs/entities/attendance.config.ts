@@ -1,28 +1,58 @@
+export const EMPLOYEE_SHIFT_STATUS = {
+  SCHEDULED: "scheduled",
+  HOLIDAY_PENDING: "holiday_pending",
+  CONFIRMED: "confirmed",
+  CANCELLED: "cancelled",
+} as const
+
 export const EMPLOYEE_SHIFT_STATUSES = [
-  "scheduled",
-  "holiday_pending",
-  "confirmed",
-  "cancelled",
+  EMPLOYEE_SHIFT_STATUS.SCHEDULED,
+  EMPLOYEE_SHIFT_STATUS.HOLIDAY_PENDING,
+  EMPLOYEE_SHIFT_STATUS.CONFIRMED,
+  EMPLOYEE_SHIFT_STATUS.CANCELLED,
 ] as const
 export type IEmployeeShiftStatus = (typeof EMPLOYEE_SHIFT_STATUSES)[number]
 
 export const HOLIDAY_TYPES = ["national", "company"] as const
 export type IHolidayType = (typeof HOLIDAY_TYPES)[number]
 
-export const ATTENDANCE_STATUSES = ["on_time", "late", "early_leave", "absent", "overtime"] as const
+export const ATTENDANCE_STATUS = {
+  ON_TIME: "on_time",
+  LATE: "late",
+  EARLY_LEAVE: "early_leave",
+  ABSENT: "absent",
+  OVERTIME: "overtime",
+} as const
+
+export const ATTENDANCE_STATUSES = [
+  ATTENDANCE_STATUS.ON_TIME,
+  ATTENDANCE_STATUS.LATE,
+  ATTENDANCE_STATUS.EARLY_LEAVE,
+  ATTENDANCE_STATUS.ABSENT,
+  ATTENDANCE_STATUS.OVERTIME,
+] as const
 export type IAttendanceStatus = (typeof ATTENDANCE_STATUSES)[number]
 
-export const APPLICATION_TYPES = [
-  "leave",
-  "overtime",
-  "work_from_home",
-  "shift_swap",
-  "business_trip",
-  "maternity",
-  "paternity",
-  "sick",
+export const APPLICATION_TYPES = {
+  LEAVE: { LABEL: "leave", DESCRIPTION: "Xin nghỉ phép" },
+  OVERTIME: { LABEL: "overtime", DESCRIPTION: "Làm thêm giờ (OT)" },
+  WORK_FROM_HOME: { LABEL: "work_from_home", DESCRIPTION: "Làm việc từ xa (WFH)" },
+  SHIFT_SWAP: { LABEL: "shift_swap", DESCRIPTION: "Đổi ca làm việc" },
+  BUSINESS_TRIP: { LABEL: "business_trip", DESCRIPTION: "Công tác" },
+  LATE_EARLY: { LABEL: "late_early", DESCRIPTION: "Đi muộn/về sớm" },
+  REGIME: { LABEL: "regime", DESCRIPTION: "Chế độ thai sản/bệnh" },
+} as const
+export type IApplicationType = (typeof APPLICATION_TYPES)[keyof typeof APPLICATION_TYPES]["LABEL"]
+
+export const APPLICATION_TYPE_VALUES = [
+  APPLICATION_TYPES.LEAVE.LABEL,
+  APPLICATION_TYPES.OVERTIME.LABEL,
+  APPLICATION_TYPES.WORK_FROM_HOME.LABEL,
+  APPLICATION_TYPES.SHIFT_SWAP.LABEL,
+  APPLICATION_TYPES.BUSINESS_TRIP.LABEL,
+  APPLICATION_TYPES.LATE_EARLY.LABEL,
+  APPLICATION_TYPES.REGIME.LABEL,
 ] as const
-export type IApplicationType = (typeof APPLICATION_TYPES)[number]
 
 export const APPLICATION_STATUS = {
   PENDING: "pending",

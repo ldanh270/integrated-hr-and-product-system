@@ -1,39 +1,50 @@
-import dotenv from "dotenv"
-import mongoose from "mongoose"
+import { prisma } from "../libs/database.ts"
 
-dotenv.config()
+export async function clearDatabase() {
+  console.log("Clearing database...")
+  const tableNames = [
+    "PasswordResetRequest",
+    "ActivityLog",
 
-export const clearDatabase = async () => {
-  if (!mongoose.connection.db) {
-    throw new Error("MongoDB connection is not ready")
-  }
-
-  console.log("🧹 Dropping database...")
-  await mongoose.connection.db.dropDatabase()
+    "Task",
+    "ProjectMember",
+    "Project",
+    "PayslipDetail",
+    "Payslip",
+    "Payroll",
+    "PayrollSettings",
+    "EmployeeSalaryConfig",
+    "PayslipTemplateComponent",
+    "PayslipTemplate",
+    "SalaryComponent",
+    "HolidayCalendar",
+    "ApplicationLateEarlyDetail",
+    "ApplicationRegimeDetail",
+    "ApplicationOvertimeDetail",
+    "ApplicationShiftSwapDetail",
+    "ApplicationLeaveDetail",
+    "Application",
+    "AttendanceRecord",
+    "EmployeeShift",
+    "ShiftScheduleDay",
+    "ShiftSchedule",
+    "WorkingShift",
+    "Employee",
+  ]
+  const truncateQuery = `TRUNCATE TABLE ${tableNames.map((name) => `"${name}"`).join(", ")} CASCADE;`
+  await prisma.$executeRawUnsafe(truncateQuery)
+  console.log("Database cleared successfully.")
 }
 
-const main = async () => {
-  try {
-    const mongoUri = process.env.MONGODB_CONNECTION_STRING
-    if (!mongoUri) throw new Error("Missing MONGODB_CONNECTION_STRING")
-
-    await mongoose.connect(mongoUri)
-    console.log("🚀 Connected to MongoDB")
-
-    await clearDatabase()
-
-    console.log("✨ Database cleared")
-    await mongoose.disconnect()
-    process.exit(0)
-  } catch (error) {
-    console.error("❌ Clear database failed:", error)
-    await mongoose.disconnect()
-    process.exit(1)
-  }
-}
-
-const isMain = process.argv[1]?.includes("clear-db.ts") || process.argv[1]?.includes("clear-db.js")
-
-if (isMain) {
-  main()
+// Support standalone execution
+if (import.meta.main) {
+  clearDatabase()
+    .then(async () => {
+      await prisma.$disconnect()
+    })
+    .catch(async (error) => {
+      console.error("Error clearing database:", error)
+      await prisma.$disconnect()
+      process.exit(1)
+    })
 }

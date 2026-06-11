@@ -1,7 +1,7 @@
 import { ROLE } from "@/configs/entities/employee.config.ts"
 import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
 import { APPROVAL_CONFIG, RequestCategory } from "@/configs/rules/approval.config.ts"
-import Project from "@/entities/product/Project.ts"
+import { prisma } from "@/libs/database.ts"
 
 export interface IApprovalStrategy {
   canApprove(category: RequestCategory, applicantId: string, processorId: string): Promise<boolean>
@@ -16,7 +16,6 @@ export class AdminGMApprovalStrategy implements IApprovalStrategy {
     applicantId: string,
     processorId: string,
   ): Promise<boolean> {
-    // Cannot approve self-requests
     if (applicantId === processorId) return false
     return true
   }
@@ -32,8 +31,6 @@ export class HRApprovalStrategy implements IApprovalStrategy {
     processorId: string,
   ): Promise<boolean> {
     if (applicantId === processorId) return false
-
-    // Check if HR is configured for this request category
     const allowedRoles = APPROVAL_CONFIG[category]?.roles || []
     return allowedRoles.includes(ROLE.HR_MANAGER as any)
   }
@@ -50,18 +47,19 @@ export class TeamLeaderApprovalStrategy implements IApprovalStrategy {
   ): Promise<boolean> {
     if (applicantId === processorId) return false
 
-    // Team Leader is only configured for applications (Leave, OT, etc.)
     const allowedRoles = APPROVAL_CONFIG[category]?.roles || []
     if (!allowedRoles.includes(ROLE.TEAM_LEADER as any)) return false
 
     // Verify if applicant is an active member in any active project led by the TL
-    const activeProject = await Project.findOne({
-      teamLeaderId: processorId,
-      status: PROJECT_STATUS.ACTIVE,
-      members: {
-        $elemMatch: {
-          employeeId: applicantId,
-          removedAt: null,
+    const activeProject = await prisma.project.findFirst({
+      where: {
+        teamLeaderId: processorId,
+        status: PROJECT_STATUS.ACTIVE,
+        members: {
+          some: {
+            employeeId: applicantId,
+            removedAt: null,
+          },
         },
       },
     })

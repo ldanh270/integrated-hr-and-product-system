@@ -1,5 +1,4 @@
 import { EMPLOYEE_STATUSES, EMPLOYEE_TYPES } from "@/config/entities/employee.config"
-import { useUpdateEmployee } from "./queries/useEmployeeQuery"
 import type { Employee } from "@/types/employee.types"
 
 import { useEffect } from "react"
@@ -7,6 +6,8 @@ import { useEffect } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
+
+import { useUpdateEmployee } from "./queries/useEmployeeQuery"
 
 const editSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters").optional(),

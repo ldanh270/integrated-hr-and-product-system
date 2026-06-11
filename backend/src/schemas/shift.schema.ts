@@ -6,8 +6,6 @@ const gpsSchema = z.object({
   radiusMeters: z.number().min(10).optional(),
 })
 
-const objectIdRegex = /^[0-9a-fA-F]{24}$/
-
 // ─── WORKING SHIFT ───────────────────────────────────────────
 export const createWorkingShiftSchema = z
   .object({
@@ -29,16 +27,15 @@ export type UpdateWorkingShiftSchemaType = z.infer<typeof updateWorkingShiftSche
 // ─── SHIFT SCHEDULE ──────────────────────────────────────────
 export const assignShiftScheduleSchema = z
   .object({
-    employeeId: z.string().regex(objectIdRegex, "Invalid ObjectId"),
-    weekdays: z.object({
-      mon: z.string().regex(objectIdRegex).nullable().optional(),
-      tue: z.string().regex(objectIdRegex).nullable().optional(),
-      wed: z.string().regex(objectIdRegex).nullable().optional(),
-      thu: z.string().regex(objectIdRegex).nullable().optional(),
-      fri: z.string().regex(objectIdRegex).nullable().optional(),
-      sat: z.string().regex(objectIdRegex).nullable().optional(),
-      sun: z.string().regex(objectIdRegex).nullable().optional(),
-    }),
+    employeeId: z.string().min(1),
+    days: z
+      .array(
+        z.object({
+          dayOfWeek: z.number().min(0).max(6),
+          shiftId: z.string().min(1),
+        }),
+      )
+      .min(1, "At least one day assignment is required"),
     validFrom: z
       .string()
       .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }),
@@ -55,8 +52,8 @@ export type AssignShiftScheduleSchemaType = z.infer<typeof assignShiftScheduleSc
 // ─── EMPLOYEE SHIFT OVERRIDE ─────────────────────────────────
 export const overrideEmployeeShiftSchema = z
   .object({
-    employeeId: z.string().regex(objectIdRegex, "Invalid ObjectId"),
-    shiftId: z.string().regex(objectIdRegex, "Invalid ObjectId"),
+    employeeId: z.string(),
+    shiftId: z.string(),
     assignedDate: z
       .string()
       .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }),
@@ -64,3 +61,23 @@ export const overrideEmployeeShiftSchema = z
   .strict()
 
 export type OverrideEmployeeShiftSchemaType = z.infer<typeof overrideEmployeeShiftSchema>
+
+// ─── SHIFT CHANGE REQUEST ─────────────────────────────────────
+export const submitShiftChangeRequestSchema = z
+  .object({
+    reason: z.string().min(5).max(500),
+    startDate: z
+      .string()
+      .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }),
+    endDate: z
+      .string()
+      .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
+      .optional(),
+    employeeShiftId: z.string().min(1),
+    swapWithEmployeeId: z.string().min(1),
+    swapWithShiftId: z.string().min(1),
+    workingShiftId: z.string().min(1).optional(),
+  })
+  .strict()
+
+export type SubmitShiftChangeRequestSchemaType = z.infer<typeof submitShiftChangeRequestSchema>

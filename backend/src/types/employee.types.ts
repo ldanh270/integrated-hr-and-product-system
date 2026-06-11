@@ -24,28 +24,6 @@ export interface Employee {
   updatedAt: Date
 }
 
-export interface EmployeeDb {
-  _id: { toString(): string }
-  fullName: string
-  username: string
-  email: string
-  passwordHash: string
-  role: EmployeeRole
-  phone?: string
-  position?: string
-  employeeType: EmployeeType
-  status: EmployeeStatus
-  dateOfBirth?: Date
-  nationalId?: string
-  address?: string
-  startDate?: Date
-  endDate?: Date
-  avatar?: { url?: string; id?: string }
-  createdAt: Date
-  updatedAt: Date
-  save?: () => Promise<any>
-}
-
 export interface CreateEmployeeDto {
   fullName: string
   email: string
@@ -102,6 +80,7 @@ export interface IEmployeeRepository {
   createEmployee(data: CreateEmployeeDto & { passwordHash: string }): Promise<Employee>
   updateEmployee(id: string, data: UpdateEmployeeDto): Promise<Employee | null>
   updateStatus(id: string, status: EmployeeStatus): Promise<Employee | null>
+  deleteEmployee(id: string): Promise<boolean>
 }
 
 export interface IEmployeeService {
@@ -110,4 +89,5 @@ export interface IEmployeeService {
   createEmployee(data: CreateEmployeeDto & { password?: string }): Promise<Employee>
   updateEmployee(id: string, data: UpdateEmployeeDto): Promise<Employee | null>
   updateStatus(id: string, status: EmployeeStatus): Promise<Employee | null>
+  deleteEmployee(id: string): Promise<boolean>
 }

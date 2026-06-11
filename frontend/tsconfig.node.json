@@ -9,7 +9,7 @@
 
     /* Project Reference Rules */
     "composite": true,
-    "emitDeclarationOnly": true,
+    "noEmit": true,
 
     /* Bundler mode */
     "moduleResolution": "bundler",

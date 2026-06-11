@@ -1,56 +1,73 @@
-import { EMPLOYEE_STATUS, EMPLOYEE_TYPES, ROLE } from "@/configs/entities/employee.config.ts"
-import { CONNECTION_STRING } from "@/configs/system/server.config.ts"
-import Employee from "@/entities/Employee.ts"
-import { HashUtil } from "@/utils/hash.util.ts"
+import { ROLE } from "../configs/entities/employee.config.ts"
+import { prisma } from "../libs/database.ts"
+import { HashUtil } from "../utils/hash.util.ts"
 
-import dotenv from "dotenv"
-import mongoose from "mongoose"
+const PASSWORD = "Admin123@"
 
-dotenv.config()
+async function seedAdminAccounts() {
+  console.log("Seeding admin and role accounts...")
 
-/**
- * Script to seed a default admin user for testing
- */
-const seedAdmin = async () => {
   try {
-    if (!CONNECTION_STRING) {
-      throw new Error("Missing MONGODB_CONNECTION_STRING")
-    }
+    const passwordHash = await HashUtil.hash(PASSWORD)
 
-    await mongoose.connect(CONNECTION_STRING)
-    console.log("Connected to MongoDB for seeding")
+    const rolesToSeed = [
+      ROLE.ADMIN,
+      ROLE.HR_MANAGER,
+      ROLE.GENERAL_MANAGER,
+      ROLE.TEAM_LEADER,
+      ROLE.EMPLOYEE,
+    ]
 
-    // Check if admin already exists
-    const existingAdmin = await Employee.findOne({
-      $or: [{ email: "admin@hr.com" }, { username: "admin" }],
-    })
+    for (const role of rolesToSeed) {
+      const username = role === ROLE.ADMIN ? "admin" : role
+      const fullName = role
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ")
 
-    if (existingAdmin) {
-      console.log("Admin already exists, updating password and username...")
-      existingAdmin.passwordHash = await HashUtil.hash("Admin@123")
-      existingAdmin.username = "admin"
-      await existingAdmin.save()
-    } else {
-      console.log("Creating new admin...")
-      await Employee.create({
-        fullName: "System Admin",
-        username: "admin",
-        email: "admin@hr.com",
-        passwordHash: await HashUtil.hash("Admin@123"),
-        role: ROLE.ADMIN,
-        status: EMPLOYEE_STATUS.ACTIVE,
-        employeeType: EMPLOYEE_TYPES[0],
+      const existing = await prisma.employee.findFirst({
+        where: { username },
       })
+
+      let phoneSuffix = "0"
+      if (role === ROLE.ADMIN) phoneSuffix = "1"
+      else if (role === ROLE.HR_MANAGER) phoneSuffix = "2"
+      else if (role === ROLE.GENERAL_MANAGER) phoneSuffix = "3"
+      else if (role === ROLE.TEAM_LEADER) phoneSuffix = "4"
+      else if (role === ROLE.EMPLOYEE) phoneSuffix = "5"
+
+      const data = {
+        username,
+        passwordHash,
+        role: role as any,
+        fullName: `${fullName} User`,
+        email: `${username}@example.com`,
+        phone: `012345678${phoneSuffix}`,
+        address: "System Generated",
+        position: fullName,
+      }
+
+      if (existing) {
+        console.log(`Account ${username} exists. Updating instead of deleting...`)
+        await prisma.employee.update({
+          where: { id: existing.id },
+          data,
+        })
+      } else {
+        await prisma.employee.create({
+          data,
+        })
+      }
+      console.log(`[✓] Created account: ${username} (Role: ${role})`)
     }
 
-    console.log("Seeding complete: username: admin / password: Admin@123")
-    await mongoose.disconnect()
-    process.exit(0)
+    console.log("\nAdmin and role accounts seeded successfully.")
+    console.log(`Password for all accounts: ${PASSWORD}`)
   } catch (error) {
-    console.error("Seeding error:", error)
-    await mongoose.disconnect()
-    process.exit(1)
+    console.error("Error seeding admin accounts:", error)
+  } finally {
+    await prisma.$disconnect()
   }
 }
 
-seedAdmin()
+seedAdminAccounts()

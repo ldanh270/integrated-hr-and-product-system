@@ -76,12 +76,15 @@ export class AuthService implements IAuthService {
         employee.lockedUntil = new Date(Date.now() + 15 * 60 * 1000) // 15 mins lockout
       }
 
-      await employee.save()
+      await this.repo.updateAuthEmployee(employee.id, {
+        failedLoginCount: employee.failedLoginCount,
+        lockedUntil: employee.lockedUntil,
+      })
 
       // Log failed attempt through repository
       await this.repo.logActivity({
-        empId: employee._id,
-        actionType: "failed-login",
+        empId: employee.id,
+        actionType: "failed_login",
         ipAddress,
         timestamp: new Date(),
       })
@@ -92,11 +95,14 @@ export class AuthService implements IAuthService {
     // 5. Successful Login
     employee.failedLoginCount = 0
     employee.lockedUntil = undefined
-    await employee.save()
+    await this.repo.updateAuthEmployee(employee.id, {
+      failedLoginCount: employee.failedLoginCount,
+      lockedUntil: employee.lockedUntil,
+    })
 
     // Log success through repository
     await this.repo.logActivity({
-      empId: employee._id,
+      empId: employee.id,
       actionType: "login",
       ipAddress,
       timestamp: new Date(),
@@ -104,7 +110,7 @@ export class AuthService implements IAuthService {
 
     // 6. Generate Token
     const token = JwtUtil.generateToken({
-      empId: employee._id,
+      empId: employee.id,
       username: employee.username,
       role: employee.role,
     })
@@ -112,7 +118,7 @@ export class AuthService implements IAuthService {
     return {
       token,
       employee: {
-        id: employee._id,
+        id: employee.id,
         username: employee.username,
         email: employee.email,
         fullName: employee.fullName,
@@ -156,32 +162,17 @@ export class AuthService implements IAuthService {
     }
 
     // 2. Prevent multiple active requests for the same employee
-    const existingRequest = await this.repo.findPendingRequestByEmployeeId(employee._id)
+    const hasPending = await this.repo.hasPendingPasswordResetRequest(employee.id)
 
-    // If it exists but expired, we'll let it be handled by TTL or update logic,
-    // but the requirement is to "prevent multiple active PasswordResetRequest records".
-    // So if a pending one exists, we just return the generic response.
-    if (existingRequest) {
-      if (existingRequest.expiresAt > new Date()) {
-        return genericResponse
-      }
-
-      await this.repo.updateResetRequestStatus(
-        existingRequest._id.toString(),
-        PASSWORD_RESET_STATUS.EXPIRED,
-      )
+    if (hasPending) {
+      return genericResponse
     }
 
     // 3. Generate a secure plain-text token
     const token = crypto.randomBytes(32).toString("hex")
 
-    // 4. Create the request with 15-minute expiration
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
-    await this.repo.createResetRequest({
-      employeeId: employee._id,
-      token,
-      expiresAt,
-    })
+    // 4. Create the request
+    await this.repo.createPasswordResetRequest(employee.id, token)
 
     // 5. Send email asynchronously via Resend
     await EmailUtil.sendResetPasswordEmail(employee.email, token).catch((err) => {
@@ -206,7 +197,7 @@ export class AuthService implements IAuthService {
 
     // 2. Check expiration in Service layer (15-minute window)
     if (request.expiresAt < new Date()) {
-      await this.repo.updateResetRequestStatus(request._id, PASSWORD_RESET_STATUS.EXPIRED)
+      await this.repo.updateResetRequestStatus(request.id, PASSWORD_RESET_STATUS.EXPIRED)
       return { isValid: false, message: "Reset link has expired" }
     }
 
@@ -251,8 +242,8 @@ export class AuthService implements IAuthService {
       )
     }
 
-    employee.passwordHash = await HashUtil.hash(newPassword)
-    await employee.save()
+    const passwordHash = await HashUtil.hash(newPassword)
+    await this.repo.updateAuthEmployee(employee.id, { passwordHash })
 
     // 4. Mark request as used
     await this.repo.invalidateAllPendingRequests(request.employeeId.toString())
@@ -293,8 +284,8 @@ export class AuthService implements IAuthService {
     }
 
     // 3. Update to new password
-    employee.passwordHash = await HashUtil.hash(newPassword)
-    await employee.save()
+    const passwordHash = await HashUtil.hash(newPassword)
+    await this.repo.updateAuthEmployee(employee.id, { passwordHash })
 
     return { message: "Password changed successfully." }
   }

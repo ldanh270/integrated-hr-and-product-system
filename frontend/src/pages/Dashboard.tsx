@@ -62,7 +62,7 @@ export default function Dashboard() {
   const { user, todayFormatted, shiftInfo } = useDashboard()
 
   return (
-    <div className="container max-w-7xl px-6 py-6">
+    <div className="container px-6 py-6">
       <div className="grid grid-cols-12 gap-5">
         {/* Left column — welcome banner, shift tracker, attendance stats */}
         <div className="col-span-12 lg:col-span-5 xl:col-span-4 space-y-4">

@@ -46,7 +46,7 @@ export interface ValidateResetTokenDto {
 export interface AuthResponseDto {
   token: string
   employee: {
-    id: any // MongoDB ObjectId
+    id: string
     username: string
     email: string
     fullName: string
@@ -80,17 +80,16 @@ export interface TokenValidationResponseDto {
  * Internal interface for Employee document used in auth logic
  */
 export interface AuthEmployeeDocument {
-  _id: any
+  id: string
   username: string
   email: string
   fullName: string
   passwordHash: string
   role: EmployeeRole
   status: string
-  lockedUntil?: Date
+  lockedUntil?: Date | null
   failedLoginCount: number
-  lastLoginAt?: Date
-  save(): Promise<any>
+  lastLoginAt?: Date | null
 }
 
 /**
@@ -142,11 +141,15 @@ export interface IAuthRepository {
    */
   logActivity(data: {
     empId?: any
-    actionType: "login" | "logout" | "failed-login"
+    actionType: "login" | "logout" | "failed_login"
     ipAddress?: string
     timestamp: Date
     details?: string
   }): Promise<void>
+
+  updateAuthEmployee(empId: string, data: Partial<AuthEmployeeDocument>): Promise<void>
+  createPasswordResetRequest(empId: string, token: string): Promise<void>
+  hasPendingPasswordResetRequest(empId: string): Promise<boolean>
 }
 
 /**

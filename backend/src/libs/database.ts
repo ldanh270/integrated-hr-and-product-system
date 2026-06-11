@@ -1,22 +1,33 @@
+import { PrismaPg } from "@prisma/adapter-pg"
+import { PrismaClient } from "@prisma/client"
+import { Pool } from "pg"
+
+const globalForPrisma = global as unknown as { prisma: PrismaClient }
+
 /**
- * Connect to database
+ * Creates and configures a new PrismaClient instance.
+ * @returns A new PrismaClient instance configured with a PostgreSQL adapter.
  */
-import { CONNECTION_STRING } from "@/configs/system/server.config.ts"
+function createPrismaClient() {
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+  const adapter = new PrismaPg(pool)
+  return new PrismaClient({ adapter })
+}
 
-import mongoose from "mongoose"
+export const prisma = globalForPrisma.prisma ?? createPrismaClient()
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma
+}
 
 /**
- * Connect to database
- * - Using environment variables in .env file
+ * Establishes a connection to the PostgreSQL database using Prisma.
+ * Exits the process if the connection fails.
  */
 export const connectDB = async () => {
   try {
-    if (!CONNECTION_STRING) {
-      throw new Error("Missing MONGODB_CONNECTION_STRING in .env file")
-    }
-    await mongoose.connect(CONNECTION_STRING)
-
-    console.log("Connect to database successfully")
+    await prisma.$connect()
+    console.log("Connect to PostgreSQL database successfully via Prisma")
   } catch (error) {
     console.error("Connect to database error:", error)
     process.exit(1)

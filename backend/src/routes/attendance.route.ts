@@ -1,28 +1,24 @@
 import { ROLE } from "@/configs/entities/employee.config.ts"
 import { AttendanceController } from "@/controllers/attendance.controller.ts"
-import AttendanceRecord from "@/entities/attendance/AttendanceRecord.ts"
-import EmployeeShift from "@/entities/attendance/EmployeeShift.ts"
-import HolidayCalendar from "@/entities/attendance/HolidayCalendar.ts"
-import ShiftSchedule from "@/entities/attendance/ShiftSchedule.ts"
-import WorkingShift from "@/entities/attendance/WorkingShift.ts"
+import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
 import { authorizeRoles } from "@/middlewares/role.middleware.ts"
-import { MongoAttendanceRepository } from "@/repositories/attendance.repository.ts"
-import { MongoEmployeeShiftRepository } from "@/repositories/employee-shift.repository.ts"
-import { MongoHolidayRepository } from "@/repositories/holiday.repository.ts"
-import { MongoShiftScheduleRepository } from "@/repositories/schedule.repository.ts"
-import { MongoWorkingShiftRepository } from "@/repositories/shift.repository.ts"
+import { PrismaAttendanceRepository } from "@/repositories/attendance.repository.ts"
+import { PrismaEmployeeShiftRepository } from "@/repositories/employee-shift.repository.ts"
+import { PrismaHolidayRepository } from "@/repositories/holiday.repository.ts"
+import { PrismaShiftScheduleRepository } from "@/repositories/schedule.repository.ts"
+import { PrismaWorkingShiftRepository } from "@/repositories/shift.repository.ts"
 import { AttendanceService } from "@/services/attendance.service.ts"
 
 import express from "express"
 
 const attendanceRoutes = express.Router()
 
-const attendanceRepo = new MongoAttendanceRepository(AttendanceRecord as any)
-const employeeShiftRepo = new MongoEmployeeShiftRepository(EmployeeShift as any)
-const scheduleRepo = new MongoShiftScheduleRepository(ShiftSchedule as any)
-const holidayRepo = new MongoHolidayRepository(HolidayCalendar as any)
-const workingShiftRepo = new MongoWorkingShiftRepository(WorkingShift as any)
+const attendanceRepo = new PrismaAttendanceRepository(prisma)
+const employeeShiftRepo = new PrismaEmployeeShiftRepository(prisma)
+const scheduleRepo = new PrismaShiftScheduleRepository(prisma)
+const holidayRepo = new PrismaHolidayRepository(prisma)
+const workingShiftRepo = new PrismaWorkingShiftRepository(prisma)
 
 const service = new AttendanceService(
   attendanceRepo,
@@ -36,10 +32,12 @@ const controller = new AttendanceController(service)
 attendanceRoutes.use(authenticate)
 
 attendanceRoutes.get(
-  "/",
+  "/export",
   authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
-  controller.queryRecords,
+  controller.exportReport,
 )
+
+attendanceRoutes.get("/", controller.queryRecords)
 
 attendanceRoutes.post("/check-in", controller.checkIn)
 attendanceRoutes.post("/check-out", controller.checkOut)

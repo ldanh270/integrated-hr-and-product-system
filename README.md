@@ -1,153 +1,127 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/nXoHondQ)
+# Integrated HR & Product System (HRP)
 
-# SWP391 — HRM System · Team 7
-
-Human Resource Management system. University project, Summer 2026.
+A comprehensive and modern Integrated Human Resource and Product Management System.
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 | Layer    | Technology                                      |
 | -------- | ----------------------------------------------- |
-| Runtime  | Bun                                             |
-| Backend  | Express 5 + TypeScript                          |
-| Frontend | React 19 + Vite 8 + TypeScript                  |
+| Runtime  | **Bun** (Primary runtime & package manager)     |
+| Backend  | Express 5 + TypeScript + Prisma ORM             |
+| Frontend | React 19 + Vite 8 + TypeScript + Tailwind CSS   |
+| Database | PostgreSQL                                      |
 | Auth     | JWT (access 15m) + httpOnly cookie (refresh 7d) |
-| Database | TBD (driver not yet connected)                  |
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
-```
+```text
 .
-├── backend/            # Express REST API
+├── backend/            # Express REST API (TypeScript + Bun)
+│   ├── src/
+│   │   ├── configs/    # Centralized configurations (entities, auth, system, rules)
+│   │   ├── controllers/# Request handlers (HTTP adapters)
+│   │   ├── libs/       # Shared libraries (DB connection, Prisma client)
+│   │   ├── middlewares/# Express Middlewares (CORS, Validation, Auth guards)
+│   │   ├── repositories/# Data access layer (Prisma queries)
+│   │   ├── routes/     # API route definitions
+│   │   ├── services/   # Core Business Logic Layer
+│   │   ├── utils/      # Helpers & Custom Errors (AppError)
+│   │   └── scripts/    # Standalone scripts (Seed, Clear DB, Hash password)
+│   └── prisma/         # Prisma Schema & Migrations
+├── frontend/           # React SPA (Vite + TypeScript)
 │   └── src/
-│       ├── index.ts        # Server entry point
-│       ├── config/         # Constants, env, DB config
-│       ├── controller/     # HTTP request handlers
-│       ├── lib/            # Shared libs (DB connection)
-│       ├── middleware/     # Express middleware
-│       ├── repository/     # Data access layer
-│       ├── route/          # Route definitions
-│       ├── service/        # Business logic
-│       └── util/           # Helpers & error classes
-├── frontend/           # React SPA
-│   └── src/
-│       ├── App.tsx
-│       └── main.tsx
-├── docs/               # Architecture & standards docs
-│   ├── project-overview-pdr.md
-│   ├── codebase-summary.md
-│   ├── code-standards.md
-│   └── system-architecture.md
-├── CLAUDE.md           # AI engineering constitution
-└── AGENTS.md           # Sub-agent instructions
+│       ├── components/ # Shared UI Components / Primitives
+│       ├── features/   # Feature-sliced modules
+│       ├── pages/      # Route pages
+│       └── App.tsx
+└── docs/               # System Architecture & Coding Standards Documentation
 ```
 
 ---
 
-## Setup
+## 🚀 Getting Started
 
-### Prerequisites
+### 1. System Requirements
 
-- [Bun](https://bun.sh) >= 1.0
+- **[Bun](https://bun.sh)** (`>= 1.0`) is required.
 
-### Install dependencies
+### 2. Install Dependencies
 
-```bash
-# Root
-bun install
-
-# Backend
-cd backend && bun install && cd ..
-
-# Frontend
-cd frontend && bun install && cd ..
-```
-
-### Run (both FE + BE)
+Run the following command at the **ROOT** directory to install dependencies for both Frontend and Backend concurrently:
 
 ```bash
-bun run dev
+bun run install:all
 ```
 
-| Service  | URL                   |
-| -------- | --------------------- |
-| Backend  | http://localhost:5000 |
-| Frontend | http://localhost:5173 |
+### 3. Environment Variables
 
-### Run separately
+Create the `backend/.env` file by copying the provided example:
 
 ```bash
-bun run dev:backend    # BE only — hot-reload on :5000
-bun run dev:frontend   # FE only — Vite on :5173
+cp backend/.env.example backend/.env
 ```
 
-### Environment Variables
-
-> Create `backend/.env` before starting BE.
+Configure your PostgreSQL database connection string in `backend/.env`:
 
 ```env
 PORT=5000
+DATABASE_URL="postgresql://user:password@localhost:5432/hrm_db?schema=public"
 ACCESS_TOKEN_SECRET=your_jwt_secret_here
-# DB vars (when driver added):
-# DB_HOST=
-# DB_PORT=
-# DB_NAME=
-# DB_USER=
-# DB_PASS=
-```
-
-### Environment Variables
-
-```env
-# backend/.env
-PORT=5000
-ACCESS_TOKEN_SECRET=your_jwt_secret_here
-# DB vars (when driver added):
-# DB_HOST=
-# DB_PORT=
-# DB_NAME=
-# DB_USER=
-# DB_PASS=
+REFRESH_TOKEN_SECRET=your_jwt_refresh_secret_here
 ```
 
 ---
 
-## API
+## 💻 CLI Commands (Root Level)
 
-Base URL: `http://localhost:5000`
+You can run development and database management commands directly from the **ROOT** directory without navigating into subfolders.
 
-| Method | Path               | Description       | Status     |
-| ------ | ------------------ | ----------------- | ---------- |
-| GET    | `/`                | Health check      | ✅ Working |
-| POST   | `/api/auth/signup` | Register new user | ⚠️ Stub    |
+### 1. Development Environment
 
-> See `docs/system-architecture.md` for planned endpoints.
+| Command                | Description                                                                                    |
+| :--------------------- | :--------------------------------------------------------------------------------------------- |
+| `bun run dev`          | Starts both **Backend** (`:5000`) and **Frontend** (`:5173`) concurrently.                     |
+| `bun run dev:all`      | **(Recommended)** Starts **Frontend** + **Backend** + **Prisma Studio** (Visual Database GUI). |
+| `bun run dev:backend`  | Starts only the Backend (with hot-reload).                                                     |
+| `bun run dev:frontend` | Starts only the Frontend (Vite Dev Server).                                                    |
 
----
-
-## Documentation
-
-| Doc                                                            | Contents                             |
-| -------------------------------------------------------------- | ------------------------------------ |
-| [`docs/project-overview-pdr.md`](docs/project-overview-pdr.md) | Feature requirements, tech decisions |
-| [`docs/codebase-summary.md`](docs/codebase-summary.md)         | Module breakdown, known bugs         |
-| [`docs/code-standards.md`](docs/code-standards.md)             | Naming, patterns, what's missing     |
-| [`docs/system-architecture.md`](docs/system-architecture.md)   | Architecture diagram, request flow   |
+> [!TIP]
+> Use **`bun run dev:all`** to develop while having direct access to your database via Prisma Studio (default at `http://localhost:5555`).
 
 ---
 
-## What's Missing (Priority Order)
+### 2. Database Management (Prisma)
 
-1. 🔴 DB driver (`pg` or `mysql2`) — nothing persists
-2. 🔴 Auth middleware — JWT guard for protected routes
-3. 🔴 `cors` middleware — frontend blocked from calling API
-4. 🔴 Auth service logic — signup/login/logout/refresh unimplemented
-5. 🟡 Zod input validation — all endpoints accept raw unvalidated body
-6. 🟡 `config/env.ts` — typed env wrapper with startup validation
-7. 🟡 `types/` directory — shared TypeScript interfaces
-8. 🟡 Tests — zero coverage
-9. 🟡 Rate limiting on auth endpoints
+| Command                 | Description                                                             |
+| :---------------------- | :---------------------------------------------------------------------- |
+| `bun run db:migrate`    | Generates and runs new database migrations based on `schema.prisma`.    |
+| `bun run db:generate`   | Regenerates the Prisma Client (required after schema changes).          |
+| `bun run db:studio`     | Starts standalone Prisma Studio to visually inspect and edit data.      |
+| `bun run db:seed`       | Automatically clears the DB and seeds a complete set of mock data.      |
+| `bun run db:seed:admin` | Seeds/Updates only the 5 core role accounts (Admin, HR, Leader, etc.).  |
+| `bun run db:clear`      | Safely truncates and clears all data across all tables in the database. |
+
+---
+
+### 3. Utilities & Helpers
+
+| Command                 | Description                                            |
+| :---------------------- | :----------------------------------------------------- |
+| `bun run hash-password` | Quickly hashes a password string for testing purposes. |
+| `bun run build`         | Builds the Frontend application for Production.        |
+
+---
+
+## 📑 Documentation Index
+
+Before writing new code or making structural changes, carefully review the design guidelines in the `docs/` directory:
+
+- 📜 **[Code Standards](file:///docs/code-standards.md)**: Naming conventions, file structure, and standard abstractions.
+- 📜 **[SOLID Principles](file:///docs/solid-principles.md)**: Class design, loose coupling, and reusability.
+- 📜 **[Design Patterns](file:///docs/design-patterns.md)**: Implementation guides for Repository, Service, Strategy, and Factory patterns.
+- 📜 **[System Architecture](file:///docs/system-architecture.md)**: Request/Response lifecycles and comprehensive Auth flow diagrams.
+- 📜 **[Interface Contracts](file:///docs/interface-contracts.md)**: Standardized API contracts, DTOs, and response envelopes.

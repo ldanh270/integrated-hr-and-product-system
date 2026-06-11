@@ -8,8 +8,9 @@ import {
   EMPLOYEE_TYPE_LABELS,
 } from "@/config/entities/employee.config"
 import { useEmployeeEditModal } from "@/hooks/employees/useEmployeeEditModal"
+import type { Employee } from "@/types/employee.types"
+
 import { X } from "lucide-react"
-import type { Employee } from "../../../types/employee.types"
 
 interface Props {
   isOpen: boolean
@@ -18,7 +19,11 @@ interface Props {
 }
 
 export function EmployeeEditModal({ isOpen, onClose, employee }: Props) {
-  const { register, handleSubmit, errors, isPending } = useEmployeeEditModal(employee, isOpen, onClose)
+  const { register, handleSubmit, errors, isPending } = useEmployeeEditModal(
+    employee,
+    isOpen,
+    onClose,
+  )
 
   if (!isOpen || !employee) return null
 
