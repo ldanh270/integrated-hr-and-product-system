@@ -6,6 +6,7 @@ import {
   LEAVE_TYPE_VALUES,
   REGIME_TYPES,
 } from "@/configs/entities/attendance.config.ts"
+import { ATTENDANCE_ERROR_MESSAGES } from "@/constants/attendance.constants.ts"
 
 import { z } from "zod"
 
@@ -40,11 +41,15 @@ export const attendanceRecordQuerySchema = z
   .object({
     startDate: z
       .string()
-      .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
+      .refine((val) => !isNaN(Date.parse(val)), {
+        message: ATTENDANCE_ERROR_MESSAGES.INVALID_DATE_FORMAT,
+      })
       .optional(),
     endDate: z
       .string()
-      .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
+      .refine((val) => !isNaN(Date.parse(val)), {
+        message: ATTENDANCE_ERROR_MESSAGES.INVALID_DATE_FORMAT,
+      })
       .optional(),
     employeeId: z.string().cuid("Invalid employee ID").optional(),
     status: z.enum(ATTENDANCE_STATUSES).optional(),
@@ -183,10 +188,10 @@ export const approveApplicationSchema = z
     rejectReason: z.string().min(5).max(500).optional(),
   })
   .strict()
-  .refine(
-    (val) => val.status === "approved" || (val.status === "rejected" && !!val.rejectReason),
-    { message: "rejectReason is required when rejecting", path: ["rejectReason"] },
-  )
+  .refine((val) => val.status === "approved" || (val.status === "rejected" && !!val.rejectReason), {
+    message: "rejectReason is required when rejecting",
+    path: ["rejectReason"],
+  })
 
 export type ApproveApplicationSchemaType = z.infer<typeof approveApplicationSchema>
 
@@ -221,7 +226,9 @@ export type ListApplicationsQuerySchemaType = z.infer<typeof listApplicationsQue
 export const createHolidaySchema = z
   .object({
     name: z.string().min(2).max(100),
-    date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }),
+    date: z.string().refine((val) => !isNaN(Date.parse(val)), {
+      message: ATTENDANCE_ERROR_MESSAGES.INVALID_DATE_FORMAT,
+    }),
     type: z.enum(HOLIDAY_TYPES),
   })
   .strict()

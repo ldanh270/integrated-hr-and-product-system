@@ -11,9 +11,21 @@ import { AppError } from "@/utils/error.util.ts"
 import { Request, Response } from "express"
 import { z } from "zod"
 
+/**
+ * Controller for handling employee-related requests.
+ */
 export class EmployeeController {
+  /**
+   * Creates a new EmployeeController instance.
+   * @param service - The employee service implementation.
+   */
   constructor(private service: IEmployeeService) {}
 
+  /**
+   * Lists employees with pagination and filtering.
+   * @param req - Request object with query parameters.
+   * @param res - Response object with paginated employees.
+   */
   list = async (req: Request, res: Response<ApiResponse<PaginatedEmployeesDto>>) => {
     try {
       const query = listEmployeesQuerySchema.parse(req.query)
@@ -30,6 +42,11 @@ export class EmployeeController {
     }
   }
 
+  /**
+   * Gets a single employee by ID.
+   * @param req - Request object with employee ID in params.
+   * @param res - Response object with employee data.
+   */
   getOne = async (req: Request, res: Response<ApiResponse<Employee>>) => {
     try {
       const employee = await this.service.getEmployee(String(req.params.id))
@@ -45,6 +62,11 @@ export class EmployeeController {
     }
   }
 
+  /**
+   * Creates a new employee.
+   * @param req - Request object with employee data in body.
+   * @param res - Response object with created employee data.
+   */
   create = async (req: Request, res: Response<ApiResponse<Employee>>) => {
     try {
       const data = createEmployeeSchema.parse(req.body)
@@ -61,6 +83,11 @@ export class EmployeeController {
     }
   }
 
+  /**
+   * Updates an existing employee.
+   * @param req - Request object with employee ID in params and updated data in body.
+   * @param res - Response object with updated employee data.
+   */
   update = async (req: Request, res: Response<ApiResponse<Employee>>) => {
     try {
       const data = updateEmployeeSchema.parse(req.body)
@@ -83,6 +110,11 @@ export class EmployeeController {
     }
   }
 
+  /**
+   * Updates an employee's status.
+   * @param req - Request object with employee ID in params and status in body.
+   * @param res - Response object with updated employee data.
+   */
   updateStatus = async (req: Request, res: Response<ApiResponse<Employee>>) => {
     try {
       const { status } = updateEmployeeStatusSchema.parse(req.body)

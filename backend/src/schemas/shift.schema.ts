@@ -27,16 +27,15 @@ export type UpdateWorkingShiftSchemaType = z.infer<typeof updateWorkingShiftSche
 // ─── SHIFT SCHEDULE ──────────────────────────────────────────
 export const assignShiftScheduleSchema = z
   .object({
-    employeeId: z.string(), // Note: Use .uuid() if strict, or leave string
-    workingShiftId: z.string(),
+    employeeId: z.string().min(1),
     days: z
       .array(
         z.object({
           dayOfWeek: z.number().min(0).max(6),
-          shiftId: z.string(),
+          shiftId: z.string().min(1),
         }),
       )
-      .optional(),
+      .min(1, "At least one day assignment is required"),
     validFrom: z
       .string()
       .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }),
@@ -62,3 +61,23 @@ export const overrideEmployeeShiftSchema = z
   .strict()
 
 export type OverrideEmployeeShiftSchemaType = z.infer<typeof overrideEmployeeShiftSchema>
+
+// ─── SHIFT CHANGE REQUEST ─────────────────────────────────────
+export const submitShiftChangeRequestSchema = z
+  .object({
+    reason: z.string().min(5).max(500),
+    startDate: z
+      .string()
+      .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }),
+    endDate: z
+      .string()
+      .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
+      .optional(),
+    employeeShiftId: z.string().min(1),
+    swapWithEmployeeId: z.string().min(1),
+    swapWithShiftId: z.string().min(1),
+    workingShiftId: z.string().min(1).optional(),
+  })
+  .strict()
+
+export type SubmitShiftChangeRequestSchemaType = z.infer<typeof submitShiftChangeRequestSchema>

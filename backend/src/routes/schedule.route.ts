@@ -18,8 +18,11 @@ const controller = new ScheduleController(service)
 
 scheduleRoutes.use(authenticate)
 
-scheduleRoutes.get("/employee/:employeeId", controller.getEmployeeSchedule)
+// Employee: view their own schedule (Identified by JWT token)
+scheduleRoutes.get("/my", controller.getEmployeeSchedule)
+scheduleRoutes.get("/my/all", controller.listEmployeeSchedules)
 
+// HR/Admin: assign and override shifts
 scheduleRoutes.post(
   "/assign",
   authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
