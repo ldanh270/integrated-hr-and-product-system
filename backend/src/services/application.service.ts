@@ -4,6 +4,8 @@ import {
   LEAVE_TYPE,
   PAID_LEAVE_TYPES,
 } from "@/configs/entities/attendance.config.ts"
+import { ROLE } from "@/configs/entities/employee.config.ts"
+import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { prisma } from "@/libs/database.ts"
 import {
@@ -130,7 +132,48 @@ export class ApplicationService implements IApplicationService {
   async getEmployeeApplications(
     employeeId: string,
     query: IListApplicationsQueryDTO,
+    requester?: { empId: string; role: string },
   ): Promise<{ data: any[]; total: number }> {
+    // 1. Verify target employee exists and is not soft-deleted
+    const employeeExists = await prisma.employee.findFirst({
+      where: { id: employeeId, deletedAt: null } as any,
+      select: { id: true },
+    })
+
+    if (!employeeExists) {
+      throw new AppError(
+        `Employee '${employeeId}' not found`,
+        HttpStatusCode.NOT_FOUND,
+        "Service",
+        "EMPLOYEE_NOT_FOUND",
+      )
+    }
+
+    // 2. If requester is team_leader, enforce access rules
+    if (requester && requester.role === ROLE.TEAM_LEADER && employeeId !== requester.empId) {
+      const activeProject = await prisma.project.findFirst({
+        where: {
+          teamLeaderId: requester.empId,
+          status: PROJECT_STATUS.ACTIVE,
+          members: {
+            some: {
+              employeeId: employeeId,
+              removedAt: null,
+            },
+          },
+        },
+      })
+
+      if (!activeProject) {
+        throw new AppError(
+          "Forbidden: You can only view applications of employees in your projects",
+          HttpStatusCode.FORBIDDEN,
+          "Service",
+          "FORBIDDEN",
+        )
+      }
+    }
+
     return this.applicationRepo.findByEmployee(employeeId, query)
   }
 

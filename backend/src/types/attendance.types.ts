@@ -163,6 +163,7 @@ export interface IApplicationService {
   getEmployeeApplications(
     employeeId: string,
     query: IListApplicationsQueryDTO,
+    requester?: { empId: string; role: string },
   ): Promise<{ data: any[]; total: number }>
   processApplication(
     id: string,

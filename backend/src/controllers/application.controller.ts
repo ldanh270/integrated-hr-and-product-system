@@ -99,11 +99,12 @@ export class ApplicationController {
 
   // ─── List by specific employee (for HR/admin) ─────────────────
 
-  listByEmployee = async (req: Request, res: Response<ApiResponse<any>>) => {
+  listByEmployee = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
       const employeeId = String(req.params.employeeId)
       const query = listApplicationsQuerySchema.parse(req.query)
-      const result = await this.service.getEmployeeApplications(employeeId, query)
+      const requester = req.user ? { empId: req.user.empId, role: req.user.role } : undefined
+      const result = await this.service.getEmployeeApplications(employeeId, query, requester)
       res.status(HttpStatusCode.OK).json({
         data: result.data,
         error: null,
