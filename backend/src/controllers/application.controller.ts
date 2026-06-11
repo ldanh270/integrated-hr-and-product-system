@@ -17,8 +17,14 @@ import { z } from "zod"
 export class ApplicationController {
   constructor(private service: IApplicationService) {}
 
-  // ─── Submit ──────────────────────────────────────────────────
-
+  /**
+   * Submits a new application (leave, overtime, etc.) for the logged-in employee.
+   * Ensures the employee ID is retrieved securely from the authenticated user context.
+   * 
+   * @param req - The authenticated request containing the application payload.
+   * @param res - The response object containing the API response envelope.
+   * @returns A promise that resolves to the response with the created application.
+   */
   submit = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
       const employeeId = req.user!.empId // §SEC: always from JWT, never from body
@@ -36,15 +42,26 @@ export class ApplicationController {
     }
   }
 
-  // ─── Get by ID ────────────────────────────────────────────────
-
+  /**
+   * Retrieves a specific application by its unique identifier.
+   * 
+   * @param req - The authenticated request containing the application ID in the parameters.
+   * @param res - The response object containing the API response envelope.
+   * @returns A promise that resolves to the response with the application details.
+   */
   getById = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     const app = await this.service.getApplicationById(String(req.params.id))
     res.status(HttpStatusCode.OK).json({ data: app, error: null })
   }
 
-  // ─── List (manager view — all employees) ─────────────────────
-
+  /**
+   * Lists all applications across the organization (intended for manager/HR view).
+   * Supports pagination, filtering, and sorting query parameters.
+   * 
+   * @param req - The HTTP request containing query filters and pagination params.
+   * @param res - The response object containing the paginated API response.
+   * @returns A promise that resolves to the response with the list of applications.
+   */
   listAll = async (req: Request, res: Response<ApiResponse<any>>) => {
     try {
       const query = listApplicationsQuerySchema.parse(req.query)
@@ -74,8 +91,14 @@ export class ApplicationController {
     }
   }
 
-  // ─── List own applications ────────────────────────────────────
-
+  /**
+   * Lists the applications belonging only to the currently authenticated employee.
+   * Supports pagination, filtering, and sorting query parameters.
+   * 
+   * @param req - The authenticated request containing query params.
+   * @param res - The response object containing the paginated API response.
+   * @returns A promise that resolves to the response with the employee's own applications.
+   */
   listMine = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
       const employeeId = req.user!.empId
@@ -106,8 +129,14 @@ export class ApplicationController {
     }
   }
 
-  // ─── List by specific employee (for HR/admin) ─────────────────
-
+  /**
+   * Lists applications for a specific employee by their employee ID (intended for admin/HR view).
+   * Validates that the requester has sufficient permissions if necessary.
+   * 
+   * @param req - The authenticated request with the target employee ID parameter and query parameters.
+   * @param res - The response object containing the paginated API response.
+   * @returns A promise that resolves to the response with the employee's applications.
+   */
   listByEmployee = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
       const employeeId = String(req.body?.employeeId ?? "")
@@ -149,8 +178,13 @@ export class ApplicationController {
     }
   }
 
-  // ─── Cancel ──────────────────────────────────────────────────
-
+  /**
+   * Cancels a pending application by the employee who submitted it.
+   * 
+   * @param req - The authenticated request containing the application ID parameter and cancellation reasons.
+   * @param res - The response object containing the API response envelope.
+   * @returns A promise that resolves to the response with the updated application status.
+   */
   cancel = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
       const employeeId = req.user!.empId
@@ -168,8 +202,14 @@ export class ApplicationController {
     }
   }
 
-  // ─── Approve ──────────────────────────────────────────────────
-
+  /**
+   * Approves a pending application (intended for managers/HR).
+   * Registers the authenticated user as the processor of the application.
+   * 
+   * @param req - The authenticated request containing the application ID parameter.
+   * @param res - The response object containing the API response envelope.
+   * @returns A promise that resolves to the response with the approved application.
+   */
   approve = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
       const processorId = req.user!.empId // §SEC: from JWT
@@ -188,8 +228,14 @@ export class ApplicationController {
     }
   }
 
-  // ─── Reject ───────────────────────────────────────────────────
-
+  /**
+   * Rejects a pending application with a specified reason (intended for managers/HR).
+   * Registers the authenticated user as the processor of the application.
+   * 
+   * @param req - The authenticated request containing the application ID parameter and rejection reason.
+   * @param res - The response object containing the API response envelope.
+   * @returns A promise that resolves to the response with the rejected application.
+   */
   reject = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
       const processorId = req.user!.empId // §SEC: from JWT
