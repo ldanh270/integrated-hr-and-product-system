@@ -34,6 +34,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       status: employee.status,
       lockedUntil: employee.lockedUntil,
       failedLoginCount: employee.failedLoginCount,
+      lastLoginAt: (employee as any).lastLoginAt,
     }
   }
 
@@ -62,6 +63,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       status: employee.status,
       lockedUntil: employee.lockedUntil,
       failedLoginCount: employee.failedLoginCount,
+      lastLoginAt: (employee as any).lastLoginAt,
     }
   }
 
@@ -86,6 +88,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       status: employee.status,
       lockedUntil: employee.lockedUntil,
       failedLoginCount: employee.failedLoginCount,
+      lastLoginAt: (employee as any).lastLoginAt,
     }
   }
 
@@ -109,6 +112,21 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       where: {
         employeeId,
         status: PasswordResetStatus.pending,
+      },
+    })
+  }
+
+  /**
+   * Invalidates all pending password reset requests for a user
+   */
+  async invalidateAllPendingRequests(employeeId: string): Promise<void> {
+    await this.prisma.passwordResetRequest.updateMany({
+      where: {
+        employeeId,
+        status: PasswordResetStatus.pending,
+      },
+      data: {
+        status: PasswordResetStatus.expired,
       },
     })
   }
@@ -158,6 +176,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
         failedLoginCount: data.failedLoginCount,
         lockedUntil: data.lockedUntil,
         passwordHash: data.passwordHash,
+        lastLoginAt: data.lastLoginAt,
       } as any,
     })
   }
@@ -189,41 +208,5 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
         details: details ? JSON.parse(details) : undefined,
       },
     })
-  }
-
-  /**
-   * Invalidates all pending password reset requests for a user
-   */
-  async invalidateAllPendingRequests(employeeId: string): Promise<void> {
-    await this.prisma.passwordResetRequest.updateMany({
-      where: {
-        employeeId,
-        status: PasswordResetStatus.pending,
-      },
-      data: {
-        status: PasswordResetStatus.used,
-      },
-    })
-  }
-
-  async createPasswordResetRequest(empId: string, token: string): Promise<void> {
-    await this.prisma.passwordResetRequest.create({
-      data: {
-        employeeId: empId,
-        token,
-        status: PasswordResetStatus.pending,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // Expires in 24h
-      },
-    })
-  }
-
-  async hasPendingPasswordResetRequest(empId: string): Promise<boolean> {
-    const existing = await this.prisma.passwordResetRequest.findFirst({
-      where: {
-        employeeId: empId,
-        status: PasswordResetStatus.pending,
-      },
-    })
-    return !!existing
   }
 }
