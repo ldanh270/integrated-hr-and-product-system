@@ -7,9 +7,21 @@ import { IScheduleService } from "@/types/shift.types.ts"
 import { Request, Response } from "express"
 import { z } from "zod"
 
+/**
+ * Controller for handling schedule-related requests.
+ */
 export class ScheduleController {
+  /**
+   * Creates a new ScheduleController instance.
+   * @param service - The schedule service implementation.
+   */
   constructor(private service: IScheduleService) {}
 
+  /**
+   * Assigns a shift schedule to an employee or a group of employees.
+   * @param req - Authenticated request with schedule data in body.
+   * @param res - API response with the created schedule.
+   */
   assignSchedule = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
       const reqData = assignShiftScheduleSchema.parse(req.body)
@@ -27,6 +39,11 @@ export class ScheduleController {
     }
   }
 
+  /**
+   * Gets the schedule for the authenticated employee for a specific date or today.
+   * @param req - Authenticated request.
+   * @param res - API response with the employee's schedule.
+   */
   getEmployeeSchedule = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     const employeeId = req.user?.empId
     if (!employeeId) {
@@ -42,6 +59,11 @@ export class ScheduleController {
     res.status(HttpStatusCode.OK).json({ data: schedule, error: null })
   }
 
+  /**
+   * Lists all schedules for the authenticated employee.
+   * @param req - Authenticated request.
+   * @param res - API response with a list of schedules.
+   */
   listEmployeeSchedules = async (req: AuthRequest, res: Response<ApiResponse<any[]>>) => {
     const employeeId = req.user?.empId
     if (!employeeId) {
@@ -54,6 +76,11 @@ export class ScheduleController {
     res.status(HttpStatusCode.OK).json({ data: schedules, error: null })
   }
 
+  /**
+   * Overrides an employee's shift for a specific date.
+   * @param req - Authenticated request with override data in body.
+   * @param res - API response with the created override.
+   */
   overrideShift = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
       const data = overrideEmployeeShiftSchema.parse(req.body)

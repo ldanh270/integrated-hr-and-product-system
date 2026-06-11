@@ -12,9 +12,21 @@ import { IAttendanceService } from "@/types/attendance.types.ts"
 import { Request, Response } from "express"
 import { z } from "zod"
 
+/**
+ * Controller for handling attendance-related requests.
+ */
 export class AttendanceController {
+  /**
+   * Creates a new AttendanceController instance.
+   * @param service - The attendance service implementation.
+   */
   constructor(private service: IAttendanceService) {}
 
+  /**
+   * Handles check-in requests.
+   * @param req - The authenticated request.
+   * @param res - The API response.
+   */
   checkIn = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
       const employeeId = req.user?.empId
@@ -39,6 +51,11 @@ export class AttendanceController {
     }
   }
 
+  /**
+   * Handles check-out requests.
+   * @param req - The authenticated request.
+   * @param res - The API response.
+   */
   checkOut = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
       const employeeId = req.user?.empId
@@ -64,6 +81,11 @@ export class AttendanceController {
     }
   }
 
+  /**
+   * Handles scan requests (either check-in or check-out depending on today's status).
+   * @param req - The authenticated request.
+   * @param res - The API response.
+   */
   scan = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
       const employeeId = req.user?.empId
@@ -105,6 +127,11 @@ export class AttendanceController {
     }
   }
 
+  /**
+   * Queries attendance records based on provided filters.
+   * @param req - The authenticated request.
+   * @param res - The API response with an array of records.
+   */
   queryRecords = async (req: AuthRequest, res: Response<ApiResponse<any[]>>) => {
     try {
       const query = attendanceRecordQuerySchema.parse(req.query)
@@ -137,6 +164,11 @@ export class AttendanceController {
     }
   }
 
+  /**
+   * Exports attendance report as CSV.
+   * @param req - The authenticated request.
+   * @param res - The response object to send the CSV file.
+   */
   exportReport = async (req: AuthRequest, res: Response) => {
     try {
       const query = attendanceRecordQuerySchema.parse(req.query)

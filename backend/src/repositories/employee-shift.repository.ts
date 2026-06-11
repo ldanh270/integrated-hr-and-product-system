@@ -4,14 +4,26 @@ import { PrismaClient, ShiftStatus } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
+/**
+ * Repository implementation for employee shift assignments using Prisma.
+ */
 export class PrismaEmployeeShiftRepository
   extends BaseRepository
   implements IEmployeeShiftRepository
 {
+  /**
+   * Creates a new PrismaEmployeeShiftRepository instance.
+   * @param prisma - The PrismaClient instance.
+   */
   constructor(prisma: PrismaClient) {
     super(prisma)
   }
 
+  /**
+   * Overrides an employee's shift for a specific date.
+   * @param data - The override data.
+   * @returns The updated or created employee shift.
+   */
   async overrideShift(data: IOverrideEmployeeShiftDTO): Promise<any> {
     const { employeeId, assignedDate, shiftId } = data
     const date = new Date(assignedDate)
@@ -53,6 +65,12 @@ export class PrismaEmployeeShiftRepository
     }
   }
 
+  /**
+   * Gets a shift assignment for an employee on a specific date.
+   * @param employeeId - The employee ID.
+   * @param date - The target date.
+   * @returns The employee shift assignment or null if not found.
+   */
   async getShiftForEmployeeDate(employeeId: string, date: string | Date): Promise<any | null> {
     const targetDate = new Date(date)
     targetDate.setHours(0, 0, 0, 0)
@@ -67,6 +85,15 @@ export class PrismaEmployeeShiftRepository
     })
   }
 
+  /**
+   * Ensures a shift assignment exists for an employee on a specific date.
+   * Updates existing assignment or creates a new one.
+   * @param employeeId - The employee ID.
+   * @param date - The target date.
+   * @param shiftId - The shift ID to assign.
+   * @param createdById - The ID of the user performing the action.
+   * @returns The updated or created employee shift.
+   */
   async ensureShiftForEmployeeDate(
     employeeId: string,
     date: string | Date,

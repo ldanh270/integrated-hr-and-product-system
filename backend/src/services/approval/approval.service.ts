@@ -9,9 +9,16 @@ import { HashUtil } from "@/utils/hash.util.ts"
 
 import { ApplicationStatus, ApplicationType, PasswordResetStatus, ProjectStatus } from "@prisma/client"
 
+/**
+ * Service for managing approval workflows across different categories (applications, password resets, etc.).
+ */
 export class ApprovalService implements IApprovalService {
   /**
-   * Fetches all pending requests of all types that the current processor is authorized to approve
+   * Fetches all pending requests of all types that the current processor is authorized to approve.
+   * 
+   * @param processorId - The ID of the employee processing the approvals.
+   * @param role - The role of the processor.
+   * @returns A sorted list of pending approval items.
    */
   async getPendingApprovals(processorId: string, role: string): Promise<IApprovalItem[]> {
     const list: IApprovalItem[] = []
@@ -97,7 +104,11 @@ export class ApprovalService implements IApprovalService {
   }
 
   /**
-   * Approves or rejects a specific request
+   * Approves or rejects a specific request based on its category.
+   * 
+   * @param dto - Data containing request ID, category, processor ID, and new status.
+   * @returns The updated request record or a transaction result.
+   * @throws {AppError} If the request or processor is not found, or if the processor is not authorized.
    */
   async processApproval(dto: IProcessApprovalDTO): Promise<any> {
     const processorEmployee = await prisma.employee.findUnique({
@@ -242,6 +253,11 @@ export class ApprovalService implements IApprovalService {
     }
   }
 
+  /**
+   * Generates a random secure temporary password.
+   * 
+   * @returns A 10-character random password string.
+   */
   private generateSecureTempPassword(): string {
     const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     const lowercase = "abcdefghijklmnopqrstuvwxyz"

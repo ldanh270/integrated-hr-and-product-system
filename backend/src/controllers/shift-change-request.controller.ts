@@ -7,9 +7,21 @@ import { IShiftChangeRequestService } from "@/types/shift.types.ts"
 import { Response } from "express"
 import { z } from "zod"
 
+/**
+ * Controller for handling shift change requests.
+ */
 export class ShiftChangeRequestController {
+  /**
+   * Creates a new ShiftChangeRequestController instance.
+   * @param service - The shift change request service implementation.
+   */
   constructor(private service: IShiftChangeRequestService) {}
 
+  /**
+   * Submits a new shift change request.
+   * @param req - Authenticated request with request data in body.
+   * @param res - API response with the created request.
+   */
   submit = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
       const employeeId = req.user?.empId
@@ -34,6 +46,11 @@ export class ShiftChangeRequestController {
     }
   }
 
+  /**
+   * Lists shift change requests submitted by the authenticated employee.
+   * @param req - Authenticated request.
+   * @param res - API response with a list of requests.
+   */
   listMine = async (req: AuthRequest, res: Response<ApiResponse<any[]>>) => {
     const employeeId = req.user?.empId
     if (!employeeId) {
