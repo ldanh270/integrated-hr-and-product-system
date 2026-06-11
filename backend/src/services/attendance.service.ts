@@ -1,6 +1,10 @@
 import { ATTENDANCE_STATUS } from "@/configs/entities/attendance.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
+  ATTENDANCE_ERROR_MESSAGES,
+  ATTENDANCE_LAYERS,
+} from "@/constants/attendance.constants.ts"
+import {
   IAttendanceMetricsDTO,
   IAttendanceRecordQueryDTO,
   IAttendanceRepository,
@@ -193,9 +197,9 @@ export class AttendanceService implements IAttendanceService {
 
     if (!employeeShift) {
       throw new AppError(
-        "No shift assignment found for today",
+        ATTENDANCE_ERROR_MESSAGES.SHIFT_NOT_FOUND,
         HttpStatusCode.BAD_REQUEST,
-        "AttendanceService",
+        ATTENDANCE_LAYERS.SERVICE,
       )
     }
 
@@ -225,17 +229,17 @@ export class AttendanceService implements IAttendanceService {
 
     if (!record || !record.checkInAt) {
       throw new AppError(
-        "Cannot check out before check in",
+        ATTENDANCE_ERROR_MESSAGES.CHECK_OUT_BEFORE_IN,
         HttpStatusCode.BAD_REQUEST,
-        "AttendanceService",
+        ATTENDANCE_LAYERS.SERVICE,
       )
     }
 
     if (record.checkOutAt) {
       throw new AppError(
-        "Attendance already checked out",
+        ATTENDANCE_ERROR_MESSAGES.ALREADY_CHECKED_OUT,
         HttpStatusCode.CONFLICT,
-        "AttendanceService",
+        ATTENDANCE_LAYERS.SERVICE,
       )
     }
 

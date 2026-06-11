@@ -1,5 +1,10 @@
 import { ROLE } from "@/configs/entities/employee.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import {
+  ATTENDANCE_ERROR_CODES,
+  ATTENDANCE_ERROR_MESSAGES,
+  ATTENDANCE_REPORT_HEADERS,
+} from "@/constants/attendance.constants.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import {
   attendanceRecordQuerySchema,
@@ -33,7 +38,10 @@ export class AttendanceController {
       if (!employeeId) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           data: null,
-          error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+          error: {
+            message: ATTENDANCE_ERROR_MESSAGES.UNAUTHORIZED,
+            code: ATTENDANCE_ERROR_CODES.UNAUTHORIZED,
+          },
         })
       }
 
@@ -44,7 +52,11 @@ export class AttendanceController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
+          error: {
+            message: ATTENDANCE_ERROR_MESSAGES.VALIDATION_ERROR,
+            code: ATTENDANCE_ERROR_CODES.VALIDATION_ERROR,
+            meta: error.issues,
+          },
         })
       }
       throw error
@@ -62,7 +74,10 @@ export class AttendanceController {
       if (!employeeId) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           data: null,
-          error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+          error: {
+            message: ATTENDANCE_ERROR_MESSAGES.UNAUTHORIZED,
+            code: ATTENDANCE_ERROR_CODES.UNAUTHORIZED,
+          },
         })
       }
 
@@ -74,7 +89,11 @@ export class AttendanceController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
+          error: {
+            message: ATTENDANCE_ERROR_MESSAGES.VALIDATION_ERROR,
+            code: ATTENDANCE_ERROR_CODES.VALIDATION_ERROR,
+            meta: error.issues,
+          },
         })
       }
       throw error
@@ -92,7 +111,10 @@ export class AttendanceController {
       if (!employeeId) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           data: null,
-          error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+          error: {
+            message: ATTENDANCE_ERROR_MESSAGES.UNAUTHORIZED,
+            code: ATTENDANCE_ERROR_CODES.UNAUTHORIZED,
+          },
         })
       }
 
@@ -120,7 +142,11 @@ export class AttendanceController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
+          error: {
+            message: ATTENDANCE_ERROR_MESSAGES.VALIDATION_ERROR,
+            code: ATTENDANCE_ERROR_CODES.VALIDATION_ERROR,
+            meta: error.issues,
+          },
         })
       }
       throw error
@@ -141,7 +167,10 @@ export class AttendanceController {
       if (!userRole || !userId) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           data: null,
-          error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+          error: {
+            message: ATTENDANCE_ERROR_MESSAGES.UNAUTHORIZED,
+            code: ATTENDANCE_ERROR_CODES.UNAUTHORIZED,
+          },
         })
       }
 
@@ -157,7 +186,11 @@ export class AttendanceController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
+          error: {
+            message: ATTENDANCE_ERROR_MESSAGES.VALIDATION_ERROR,
+            code: ATTENDANCE_ERROR_CODES.VALIDATION_ERROR,
+            meta: error.issues,
+          },
         })
       }
       throw error
@@ -178,7 +211,10 @@ export class AttendanceController {
       if (!userRole || !userId) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           data: null,
-          error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+          error: {
+            message: ATTENDANCE_ERROR_MESSAGES.UNAUTHORIZED,
+            code: ATTENDANCE_ERROR_CODES.UNAUTHORIZED,
+          },
         })
       }
 
@@ -187,29 +223,16 @@ export class AttendanceController {
       if (!canViewAll) {
         return res.status(HttpStatusCode.FORBIDDEN).json({
           data: null,
-          error: { message: "Forbidden: Only HR and Admins can export reports", code: "FORBIDDEN" },
+          error: {
+            message: ATTENDANCE_ERROR_MESSAGES.FORBIDDEN_EXPORT,
+            code: ATTENDANCE_ERROR_CODES.FORBIDDEN,
+          },
         })
       }
 
       const records = await this.service.getAttendanceRecords(query)
 
-      const headers = [
-        "Date",
-        "Employee Name",
-        "Employee ID",
-        "Email",
-        "Shift Name",
-        "Scheduled Hours",
-        "Check In",
-        "Check Out",
-        "Status",
-        "Late (min)",
-        "Early Leave (min)",
-        "Overtime (min)",
-        "Total Work (min)",
-      ]
-
-      const csvRows = [headers.join(",")]
+      const csvRows = [ATTENDANCE_REPORT_HEADERS.join(",")]
 
       for (const record of records) {
         const dateStr = record.date ? new Date(record.date).toISOString().split("T")[0] : "N/A"
@@ -263,7 +286,11 @@ export class AttendanceController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
+          error: {
+            message: ATTENDANCE_ERROR_MESSAGES.VALIDATION_ERROR,
+            code: ATTENDANCE_ERROR_CODES.VALIDATION_ERROR,
+            meta: error.issues,
+          },
         })
       }
       throw error
