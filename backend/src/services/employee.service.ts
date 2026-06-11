@@ -1,4 +1,3 @@
-import { DB_ERROR_CODES } from "@/configs/system/db.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
   CreateEmployeeDto,
@@ -10,6 +9,7 @@ import {
   PaginatedEmployeesDto,
   UpdateEmployeeDto,
 } from "@/types"
+import { handleDbUniqueError } from "@/utils/db-error.util.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
 
@@ -77,15 +77,7 @@ export class EmployeeService implements IEmployeeService {
         passwordHash,
       })
     } catch (error: any) {
-      // Catch unique database constraints mapping from Prisma unique constraint code
-      if (DB_ERROR_CODES.UNIQUE_CONSTRAINT.includes(error.code)) {
-        throw new AppError(
-          "Username, email, phone, or national ID already exists",
-          HttpStatusCode.CONFLICT,
-          "EmployeeService",
-        )
-      }
-      throw error
+      this.handleDbError(error)
     }
   }
 
@@ -99,8 +91,12 @@ export class EmployeeService implements IEmployeeService {
     // Check if employee exists first; throws 404 otherwise
     await this.getEmployee(id)
 
-    const updated = await this.repository.updateEmployee(id, data)
-    return updated
+    try {
+      const updated = await this.repository.updateEmployee(id, data)
+      return updated
+    } catch (error: any) {
+      this.handleDbError(error)
+    }
   }
 
   /**
@@ -128,5 +124,22 @@ export class EmployeeService implements IEmployeeService {
     await this.getEmployee(id)
 
     return this.repository.deleteEmployee(id)
+  }
+
+  /**
+   * Helper to handle and format database unique constraint errors.
+   */
+  private handleDbError(error: any): never {
+    handleDbUniqueError(
+      error,
+      "EmployeeService",
+      {
+        username: "Username",
+        email: "Email",
+        phone: "Phone number",
+        nationalId: "National ID",
+      },
+      "Username, email, phone, or national ID already exists",
+    )
   }
 }
