@@ -40,7 +40,7 @@ export class AuthService implements IAuthService {
 
     // 1. Fetch user through repository using normalized identifier
     const normalizedIdentifier = username.trim().toLowerCase()
-    const employee = await this.repo.findAuthByIdentifier(normalizedIdentifier)
+    const employee = await this.repo.findAuthByIdentifier(username)
 
     // Security: Generic error for non-existent username to prevent user enumeration
     if (!employee) {
@@ -153,31 +153,64 @@ export class AuthService implements IAuthService {
     }
 
     // 1. Fetch user by normalized email
-    const normalizedEmail = email.trim().toLowerCase()
-    const employee = await this.repo.findAuthByEmail(normalizedEmail)
+    const employee = await this.repo.findAuthByEmail(email)
 
     // Security: Do not reveal if email exists
     if (!employee || employee.status !== EMPLOYEE_STATUS.ACTIVE) {
       return genericResponse
     }
 
-    // 2. Prevent multiple active requests for the same employee
-    const hasPending = await this.repo.hasPendingPasswordResetRequest(employee.id)
+    // 2. Handle existing pending requests
+    const existingRequest = await this.repo.findPendingRequestByEmployeeId(employee.id)
+    if (existingRequest) {
+      const now = new Date()
+      // If still valid: do nothing, return generic response
+      if (existingRequest.expiresAt > now) {
+        if (process.env.NODE_ENV !== "production") {
+          return {
+            ...genericResponse,
+            debugToken: existingRequest.token,
+            note: "Existing unexpired request found.",
+          } as any
+        }
+        return genericResponse
+      }
 
-    if (hasPending) {
-      return genericResponse
+      // If expired: Mark as EXPIRED to allow creating a new one
+      await this.repo.updateResetRequestStatus(existingRequest.id, PASSWORD_RESET_STATUS.EXPIRED)
     }
 
     // 3. Generate a secure plain-text token
     const token = crypto.randomBytes(32).toString("hex")
 
-    // 4. Create the request
-    await this.repo.createPasswordResetRequest(employee.id, token)
-
-    // 5. Send email asynchronously via Resend
-    await EmailUtil.sendResetPasswordEmail(employee.email, token).catch((err) => {
-      console.error("Delayed error in forgotPassword email sending:", err)
+    // 4. Create the request with 15-minute expiration
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
+    await this.repo.createResetRequest({
+      employeeId: employee.id,
+      token,
+      expiresAt,
     })
+
+    // 5. Send email synchronously via Resend for testing/validation
+    try {
+      const resendResult = await EmailUtil.sendResetPasswordEmail(employee.email, token)
+
+      // Debugging: Always return token and resend info if not in production
+      if (process.env.NODE_ENV !== "production") {
+        return {
+          message: genericResponse.message,
+          debugToken: token,
+          expiresAt,
+          resend: resendResult,
+        } as any
+      }
+    } catch (error) {
+      console.error("Critical error sending reset email:", error)
+      // Throw error in dev to see root cause
+      if (process.env.NODE_ENV !== "production") {
+        throw error
+      }
+    }
 
     return genericResponse
   }
@@ -246,7 +279,7 @@ export class AuthService implements IAuthService {
     await this.repo.updateAuthEmployee(employee.id, { passwordHash })
 
     // 4. Mark request as used
-    await this.repo.invalidateAllPendingRequests(request.employeeId.toString())
+    await this.repo.updateResetRequestStatus(request.id, PASSWORD_RESET_STATUS.USED)
 
     return { message: "Password reset successfully. You can now login with your new password." }
   }
@@ -266,11 +299,7 @@ export class AuthService implements IAuthService {
     // 2. Verify current password
     const isMatch = await HashUtil.compare(oldPassword, employee.passwordHash)
     if (!isMatch) {
-      throw new AppError(
-        "Incorrect current password",
-        HttpStatusCode.UNAUTHORIZED,
-        "Authentication",
-      )
+      throw new AppError("Incorrect current password", HttpStatusCode.UNAUTHORIZED, "Authentication")
     }
 
     // Security: Prevent changing to the same password
