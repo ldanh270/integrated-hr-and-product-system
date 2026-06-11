@@ -1,5 +1,3 @@
-import { PasswordResetRequestType } from "@/entities/auth/PasswordResetRequest.ts"
-
 import { EmployeeRole } from "./employee.types.ts"
 
 /**
@@ -129,27 +127,28 @@ export interface IAuthRepository {
   /**
    * Creates a new password reset request
    */
-  createResetRequest(data: { employeeId: any; token: string; expiresAt: Date }): Promise<void>
+  createResetRequest(data: { employeeId: string; token: string; expiresAt: Date }): Promise<void>
 
   /**
    * Updates the status of a password reset request
    */
-  updateResetRequestStatus(requestId: any, status: string): Promise<void>
+  updateResetRequestStatus(requestId: string, status: string): Promise<void>
+
+  /**
+   * Updates employee authentication fields
+   */
+  updateAuthEmployee(empId: string, data: Partial<AuthEmployeeDocument>): Promise<void>
 
   /**
    * Logs an activity to the database
    */
   logActivity(data: {
-    empId?: any
+    empId?: string
     actionType: "login" | "logout" | "failed_login"
     ipAddress?: string
     timestamp: Date
     details?: string
   }): Promise<void>
-
-  updateAuthEmployee(empId: string, data: Partial<AuthEmployeeDocument>): Promise<void>
-  createPasswordResetRequest(empId: string, token: string): Promise<void>
-  hasPendingPasswordResetRequest(empId: string): Promise<boolean>
 }
 
 /**
