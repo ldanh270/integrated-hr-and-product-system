@@ -65,7 +65,11 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       ]
     }
 
-    if (status) where.status = status
+    if (status) {
+      where.status = status
+    } else {
+      where.status = { not: "terminated" }
+    }
     if (role) where.role = role
     if (employeeType) where.employeeType = employeeType
 

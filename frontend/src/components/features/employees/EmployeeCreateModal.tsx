@@ -11,19 +11,32 @@ import { useEmployeeCreateModal } from "@/hooks/employees/useEmployeeCreateModal
 
 import { X } from "lucide-react"
 
+/**
+ * Prop definitions for EmployeeCreateModal component.
+ */
 interface Props {
+  /** Boolean state flag indicating if the modal dialog is open */
   isOpen: boolean
+  /** Callback event function triggered on closing the modal dialog */
   onClose: () => void
 }
 
+/**
+ * EmployeeCreateModal Component.
+ * Renders a dialog window modal form containing input fields to register a brand new employee record.
+ * Handles inputs validation (via Zod & React Hook Form from the custom hooks helper).
+ */
 export function EmployeeCreateModal({ isOpen, onClose }: Props) {
+  // Extract react hook form fields, submission states, and error mappings
   const { register, handleSubmit, errors, isPending, handleClose } = useEmployeeCreateModal(onClose)
 
+  // Avoid rendering anything to DOM when modal flag is closed
   if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
       <div className="bg-background rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+        {/* Header toolbar */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h2 className="text-lg font-semibold">Thêm nhân sự mới</h2>
           <button
@@ -34,8 +47,10 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
           </button>
         </div>
 
+        {/* Scrollable Form Body container */}
         <div className="p-5 overflow-y-auto">
           <form id="create-employee-form" onSubmit={handleSubmit} className="space-y-4">
+            {/* Full name & Username fields */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="fullName">Họ và tên *</Label>
@@ -64,6 +79,7 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
               </div>
             </div>
 
+            {/* Email & Password temporary fields */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="email">Email *</Label>
@@ -92,6 +108,7 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
               </div>
             </div>
 
+            {/* Optional contact phone & Job title position fields */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="phone">Số điện thoại</Label>
@@ -104,6 +121,7 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
               </div>
             </div>
 
+            {/* Dropdown controls for authorization role and employment type */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="role">Nhóm quyền</Label>
@@ -138,6 +156,7 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
           </form>
         </div>
 
+        {/* Modal actions footer toolbar */}
         <div className="p-4 border-t border-border bg-muted/30 flex justify-end gap-3 mt-auto">
           <Button variant="outline" onClick={handleClose} type="button">
             Hủy
