@@ -7,11 +7,18 @@ import { IApprovalItem, IApprovalService, IProcessApprovalDTO } from "@/types/ap
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
 
-import { ApplicationStatus, PasswordResetStatus, ProjectStatus } from "@prisma/client"
+import { ApplicationStatus, ApplicationType, PasswordResetStatus, ProjectStatus } from "@prisma/client"
 
+/**
+ * Service for managing approval workflows across different categories (applications, password resets, etc.).
+ */
 export class ApprovalService implements IApprovalService {
   /**
-   * Fetches all pending requests of all types that the current processor is authorized to approve
+   * Fetches all pending requests of all types that the current processor is authorized to approve.
+   * 
+   * @param processorId - The ID of the employee processing the approvals.
+   * @param role - The role of the processor.
+   * @returns A sorted list of pending approval items.
    */
   async getPendingApprovals(processorId: string, role: string): Promise<IApprovalItem[]> {
     const list: IApprovalItem[] = []
@@ -97,7 +104,11 @@ export class ApprovalService implements IApprovalService {
   }
 
   /**
-   * Approves or rejects a specific request
+   * Approves or rejects a specific request based on its category.
+   * 
+   * @param dto - Data containing request ID, category, processor ID, and new status.
+   * @returns The updated request record or a transaction result.
+   * @throws {AppError} If the request or processor is not found, or if the processor is not authorized.
    */
   async processApproval(dto: IProcessApprovalDTO): Promise<any> {
     const processorEmployee = await prisma.employee.findUnique({
@@ -133,19 +144,65 @@ export class ApprovalService implements IApprovalService {
         )
       }
 
-      return prisma.application.update({
-        where: { id: dto.id },
-        data: {
-          status:
-            dto.status === APPLICATION_STATUS.APPROVED
-              ? ApplicationStatus.approved
-              : ApplicationStatus.rejected,
-          approvedById: dto.processorId,
-          approvedAt: new Date(),
-          ...(dto.rejectReason && dto.status === APPLICATION_STATUS.REJECTED
-            ? { rejectReason: dto.rejectReason }
-            : {}),
-        },
+      return prisma.$transaction(async (tx) => {
+        const applicationRecord = await tx.application.findUnique({
+          where: { id: dto.id },
+          include: { shiftSwapDetail: true },
+        })
+        if (!applicationRecord) {
+          throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, "Service")
+        }
+
+        if (
+          applicationRecord.type === ApplicationType.shift_swap &&
+          dto.status === APPLICATION_STATUS.APPROVED
+        ) {
+          const swapDetail = applicationRecord.shiftSwapDetail
+          if (!swapDetail) {
+            throw new AppError(
+              "Shift swap detail not found",
+              HttpStatusCode.BAD_REQUEST,
+              "Service",
+            )
+          }
+
+          const { employeeShiftId, swapWithShiftId } = swapDetail
+          const shiftA = await tx.employeeShift.findUnique({ where: { id: employeeShiftId } })
+          const shiftB = await tx.employeeShift.findUnique({ where: { id: swapWithShiftId } })
+
+          if (!shiftA || !shiftB) {
+            throw new AppError(
+              "One or both employee shifts not found for swap",
+              HttpStatusCode.BAD_REQUEST,
+              "Service",
+            )
+          }
+
+          const tempShiftId = shiftA.shiftId
+          await tx.employeeShift.update({
+            where: { id: employeeShiftId },
+            data: { shiftId: shiftB.shiftId },
+          })
+          await tx.employeeShift.update({
+            where: { id: swapWithShiftId },
+            data: { shiftId: tempShiftId },
+          })
+        }
+
+        return tx.application.update({
+          where: { id: dto.id },
+          data: {
+            status:
+              dto.status === APPLICATION_STATUS.APPROVED
+                ? ApplicationStatus.approved
+                : ApplicationStatus.rejected,
+            approvedById: dto.processorId,
+            approvedAt: new Date(),
+            ...(dto.rejectReason && dto.status === APPLICATION_STATUS.REJECTED
+              ? { rejectReason: dto.rejectReason }
+              : {}),
+          },
+        })
       })
     } else if (dto.category === "password_reset") {
       const req = await prisma.passwordResetRequest.findUnique({ where: { id: dto.id } })
@@ -196,6 +253,11 @@ export class ApprovalService implements IApprovalService {
     }
   }
 
+  /**
+   * Generates a random secure temporary password.
+   * 
+   * @returns A 10-character random password string.
+   */
   private generateSecureTempPassword(): string {
     const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     const lowercase = "abcdefghijklmnopqrstuvwxyz"

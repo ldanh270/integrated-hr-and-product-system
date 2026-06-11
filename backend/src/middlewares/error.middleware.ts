@@ -5,6 +5,15 @@ import { AppError } from "@/utils/error.util.ts"
 import { NextFunction, Request, Response } from "express"
 import { ZodError } from "zod"
 
+/**
+ * Global error handling middleware for Express.
+ * Handles AppError, ZodError, and generic internal server errors.
+ * 
+ * @param err - The error object.
+ * @param req - Request object.
+ * @param res - Response object.
+ * @param next - Next function.
+ */
 export const globalErrorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
   // Format the error into a standardized structure
   const errorLog = {

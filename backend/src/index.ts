@@ -18,6 +18,7 @@ import projectRoutes from "@/routes/project.route.ts"
 import salaryComponentRoutes from "@/routes/salary-component.route.ts"
 import salaryVariableRoutes from "@/routes/salary-variable.route.ts"
 import scheduleRoutes from "@/routes/schedule.route.ts"
+import shiftChangeRequestRoutes from "@/routes/shift-change-request.route.ts"
 import shiftRoutes from "@/routes/shift.route.ts"
 import taskRoutes from "@/routes/task.route.ts"
 
@@ -78,6 +79,7 @@ app.use("/api/shifts", shiftRoutes)
 app.use("/api/schedules", scheduleRoutes)
 app.use("/api/attendance", attendanceRoutes)
 app.use("/api/applications", applicationRoutes)
+app.use("/api/shift-change-requests", shiftChangeRequestRoutes)
 app.use("/api/holidays", holidayRoutes)
 app.use("/api/approvals", approvalRoutes)
 
