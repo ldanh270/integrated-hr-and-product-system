@@ -31,8 +31,8 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   // Verify Authorization header presence and format
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     res.status(HttpStatusCode.UNAUTHORIZED).json({
-      status: "error",
-      message: "Authorization header missing or invalid",
+      data: null,
+      error: { message: "Authorization header missing or invalid", code: "UNAUTHORIZED" },
     })
     return
   }
@@ -44,8 +44,8 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   // Reject if verification fails
   if (!decoded) {
     res.status(HttpStatusCode.UNAUTHORIZED).json({
-      status: "error",
-      message: "Token is invalid or expired",
+      data: null,
+      error: { message: "Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.", code: "TOKEN_EXPIRED" },
     })
     return
   }
@@ -55,15 +55,15 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     const employee = await employeeRepository.findById(decoded.empId)
     if (!employee || employee.status !== EMPLOYEE_STATUS.ACTIVE) {
       res.status(HttpStatusCode.UNAUTHORIZED).json({
-        status: "error",
-        message: "User no longer exists or is inactive",
+        data: null,
+        error: { message: "Tài khoản không tồn tại hoặc không còn hoạt động.", code: "ACCOUNT_INACTIVE" },
       })
       return
     }
   } catch (error) {
     res.status(HttpStatusCode.UNAUTHORIZED).json({
-      status: "error",
-      message: "Invalid user token",
+      data: null,
+      error: { message: "Không thể xác thực người dùng.", code: "AUTH_ERROR" },
     })
     return
   }
