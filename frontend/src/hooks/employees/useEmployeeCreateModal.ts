@@ -8,6 +8,7 @@ import type { CreateEmployeeDto } from "@/types/employee.types"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
+import { toast } from "sonner"
 import { z } from "zod"
 
 import { useCreateEmployee } from "./queries/useEmployeeQuery"
@@ -105,8 +106,10 @@ export function useEmployeeCreateModal(onClose: () => void) {
       await createMutation.mutateAsync(formattedData)
       reset()
       onClose()
-    } catch (error) {
+    } catch (error: any) {
       console.error(error)
+      const errorMsg = error.response?.data?.error?.message || "Có lỗi xảy ra khi thêm nhân sự"
+      toast.error(errorMsg)
     }
   }
 
