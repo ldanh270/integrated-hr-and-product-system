@@ -106,9 +106,10 @@ export function useEmployeeCreateModal(onClose: () => void) {
       await createMutation.mutateAsync(formattedData)
       reset()
       onClose()
-    } catch (error: any) {
+    } catch (error) {
       console.error(error)
-      const errorMsg = error.response?.data?.error?.message || "Có lỗi xảy ra khi thêm nhân sự"
+      const err = error as { response?: { data?: { error?: { message?: string } } } }
+      const errorMsg = err.response?.data?.error?.message || "Có lỗi xảy ra khi thêm nhân sự"
       toast.error(errorMsg)
     }
   }
