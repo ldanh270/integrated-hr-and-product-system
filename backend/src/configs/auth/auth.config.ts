@@ -35,3 +35,11 @@ export const PASSWORD_RESET_STATUSES = [
   PASSWORD_RESET_STATUS.USED,
   PASSWORD_RESET_STATUS.EXPIRED,
 ] as const
+
+export const AUTH_ERRORS = {
+  MISSING_TOKEN: { message: "Authorization header missing or invalid", code: "UNAUTHORIZED" },
+  TOKEN_EXPIRED: { message: "Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.", code: "TOKEN_EXPIRED" },
+  ACCOUNT_INACTIVE: { message: "Tài khoản không tồn tại hoặc không còn hoạt động.", code: "ACCOUNT_INACTIVE" },
+  AUTH_ERROR: { message: "Không thể xác thực người dùng.", code: "AUTH_ERROR" },
+} as const
+

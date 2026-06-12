@@ -3,6 +3,7 @@
  * Validates the 'Authorization: Bearer <token>' header
  * Populates req.user if the token is valid, otherwise returns 401 Unauthorized
  */
+import { AUTH_ERRORS } from "@/configs/auth/auth.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { prisma } from "@/libs/database.ts"
@@ -31,8 +32,8 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   // Verify Authorization header presence and format
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     res.status(HttpStatusCode.UNAUTHORIZED).json({
-      status: "error",
-      message: "Authorization header missing or invalid",
+      data: null,
+      error: AUTH_ERRORS.MISSING_TOKEN,
     })
     return
   }
@@ -44,8 +45,8 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   // Reject if verification fails
   if (!decoded) {
     res.status(HttpStatusCode.UNAUTHORIZED).json({
-      status: "error",
-      message: "Token is invalid or expired",
+      data: null,
+      error: AUTH_ERRORS.TOKEN_EXPIRED,
     })
     return
   }
@@ -55,15 +56,15 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     const employee = await employeeRepository.findById(decoded.empId)
     if (!employee || employee.status !== EMPLOYEE_STATUS.ACTIVE) {
       res.status(HttpStatusCode.UNAUTHORIZED).json({
-        status: "error",
-        message: "User no longer exists or is inactive",
+        data: null,
+        error: AUTH_ERRORS.ACCOUNT_INACTIVE,
       })
       return
     }
   } catch (error) {
     res.status(HttpStatusCode.UNAUTHORIZED).json({
-      status: "error",
-      message: "Invalid user token",
+      data: null,
+      error: AUTH_ERRORS.AUTH_ERROR,
     })
     return
   }
