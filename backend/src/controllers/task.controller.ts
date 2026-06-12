@@ -1,7 +1,8 @@
+import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
-import { createTaskSchema, updateTaskSchema, listTasksQuerySchema } from "@/schemas/task.schema.ts"
-import { ApiResponse, Task, ITaskService, PaginatedTasksDto } from "@/types"
+import { createTaskSchema, listTasksQuerySchema, updateTaskSchema } from "@/schemas/task.schema.ts"
+import { ApiResponse, ITaskService, PaginatedTasksDto, Task } from "@/types"
 
 import { Response } from "express"
 import { z } from "zod"
@@ -19,7 +20,7 @@ export class TaskController {
       if (!req.user) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           data: null,
-          error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+          error: { message: "Unauthorized", code: ErrorCode.UNAUTHORIZED },
         })
       }
 
@@ -30,7 +31,11 @@ export class TaskController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
+          error: {
+            message: "Validation error",
+            code: ErrorCode.VALIDATION_ERROR,
+            meta: error.issues,
+          },
         })
       }
       throw error
@@ -45,7 +50,7 @@ export class TaskController {
     if (!req.user) {
       return res.status(HttpStatusCode.UNAUTHORIZED).json({
         data: null,
-        error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+        error: { message: "Unauthorized", code: ErrorCode.UNAUTHORIZED },
       })
     }
 
@@ -53,7 +58,7 @@ export class TaskController {
     if (!task) {
       return res.status(HttpStatusCode.NOT_FOUND).json({
         data: null,
-        error: { message: "Task not found", code: "NOT_FOUND" },
+        error: { message: "Task not found", code: ErrorCode.NOT_FOUND },
       })
     }
     res.status(HttpStatusCode.OK).json({ data: task, error: null })
@@ -69,7 +74,7 @@ export class TaskController {
       if (!req.user) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           data: null,
-          error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+          error: { message: "Unauthorized", code: ErrorCode.UNAUTHORIZED },
         })
       }
 
@@ -80,7 +85,11 @@ export class TaskController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
+          error: {
+            message: "Validation error",
+            code: ErrorCode.VALIDATION_ERROR,
+            meta: error.issues,
+          },
         })
       }
       throw error
@@ -97,16 +106,21 @@ export class TaskController {
       if (!req.user) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           data: null,
-          error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+          error: { message: "Unauthorized", code: ErrorCode.UNAUTHORIZED },
         })
       }
 
       const data = updateTaskSchema.parse(req.body)
-      const task = await this.service.updateTask(String(req.params.id), data, req.user.empId, req.user.role)
+      const task = await this.service.updateTask(
+        String(req.params.id),
+        data,
+        req.user.empId,
+        req.user.role,
+      )
       if (!task) {
         return res.status(HttpStatusCode.NOT_FOUND).json({
           data: null,
-          error: { message: "Task not found", code: "NOT_FOUND" },
+          error: { message: "Task not found", code: ErrorCode.NOT_FOUND },
         })
       }
       res.status(HttpStatusCode.OK).json({ data: task, error: null })
@@ -114,7 +128,11 @@ export class TaskController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
+          error: {
+            message: "Validation error",
+            code: ErrorCode.VALIDATION_ERROR,
+            meta: error.issues,
+          },
         })
       }
       throw error
@@ -129,7 +147,7 @@ export class TaskController {
     if (!req.user) {
       return res.status(HttpStatusCode.UNAUTHORIZED).json({
         data: null,
-        error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+        error: { message: "Unauthorized", code: ErrorCode.UNAUTHORIZED },
       })
     }
 

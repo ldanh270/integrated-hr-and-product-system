@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { PAYROLL_STATUS_LABELS } from "@/config/entities/payroll.config"
+import { PAYROLL_STATUS, PAYROLL_STATUS_LABELS } from "@/config/entities/payroll.config"
 import { usePayrollDetails } from "@/hooks/payroll/use-payrolls"
 
 import { CheckCircle2, Clock, XCircle } from "lucide-react"
@@ -75,18 +75,21 @@ export function PayrollDetailSheet({ payrollId, onClose }: PayrollDetailSheetPro
                 <div className="flex items-center gap-3">
                   <div
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                      payroll.status === "draft"
+                      payroll.status === PAYROLL_STATUS.DRAFT
                         ? "bg-yellow-100 text-yellow-800 border-yellow-200"
-                        : payroll.status === "approved"
+                        : payroll.status === PAYROLL_STATUS.APPROVED
                           ? "bg-green-100 text-green-800 border-green-200"
                           : "bg-red-100 text-red-800 border-red-200"
                     }`}
                   >
-                    {payroll.status === "draft" && <Clock className="w-3 h-3 mr-1" />}
-                    {payroll.status === "approved" && <CheckCircle2 className="w-3 h-3 mr-1" />}
-                    {payroll.status !== "draft" && payroll.status !== "approved" && (
-                      <XCircle className="w-3 h-3 mr-1" />
+                    {payroll.status === PAYROLL_STATUS.DRAFT && <Clock className="w-3 h-3 mr-1" />}
+                    {payroll.status === PAYROLL_STATUS.APPROVED && (
+                      <CheckCircle2 className="w-3 h-3 mr-1" />
                     )}
+                    {payroll.status !== PAYROLL_STATUS.DRAFT &&
+                      payroll.status !== PAYROLL_STATUS.APPROVED && (
+                        <XCircle className="w-3 h-3 mr-1" />
+                      )}
                     {PAYROLL_STATUS_LABELS[payroll.status as keyof typeof PAYROLL_STATUS_LABELS]}
                   </div>
                   <span className="text-muted-foreground text-sm font-medium">
@@ -126,7 +129,7 @@ export function PayrollDetailSheet({ payrollId, onClose }: PayrollDetailSheetPro
                     <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap text-right">
                       Total Deductions
                     </TableHead>
-                    <TableHead className="px-4 py-3 font-medium text-xs text-primary uppercase whitespace-nowrap text-right font-bold">
+                    <TableHead className="px-4 py-3 text-xs text-primary uppercase whitespace-nowrap text-right font-bold">
                       Net Salary
                     </TableHead>
                   </TableRow>

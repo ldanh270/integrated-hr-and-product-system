@@ -72,29 +72,40 @@ export class PayslipsSeeder implements ISeeder {
         const netSalary = totalAdditions - totalDeductions
         payrollTotal += netSalary
 
-        await prisma.payslip.upsert({
-          where: {
-            payrollId_employeeId: {
+        try {
+          await prisma.payslip.upsert({
+            where: {
+              payrollId_employeeId: {
+                payrollId: payroll.id,
+                employeeId: emp.id,
+              },
+            },
+            update: {}, // Don't override if exists for simplicity in seeder
+            create: {
               payrollId: payroll.id,
               employeeId: emp.id,
+              salaryConfigId: configId,
+              totalAdditions,
+              totalDeductions,
+              netSalary,
+              workingDays,
+              absentDays,
+              overtimeMinutes,
+              details: {
+                create: detailsData,
+              },
             },
-          },
-          update: {}, // Don't override if exists for simplicity in seeder
-          create: {
-            payrollId: payroll.id,
-            employeeId: emp.id,
-            salaryConfigId: configId,
-            totalAdditions,
-            totalDeductions,
-            netSalary,
-            workingDays,
-            absentDays,
-            overtimeMinutes,
-            details: {
-              create: detailsData,
-            },
-          },
-        })
+          })
+        } catch (err) {
+          console.error(`Failed on payroll ${payroll.id}, employee ${emp.id}, config ${configId}`)
+          const dbPayroll = await prisma.payroll.findUnique({ where: { id: payroll.id } })
+          console.error(`Does payroll exist in DB?`, !!dbPayroll)
+          const dbEmployee = await prisma.employee.findUnique({ where: { id: emp.id } })
+          console.error(`Does employee exist in DB?`, !!dbEmployee)
+          const dbConfig = await prisma.employeeSalaryConfig.findUnique({ where: { id: configId } })
+          console.error(`Does config exist in DB?`, !!dbConfig)
+          throw err;
+        }
         totalPayslipsSeeded++
       }
 

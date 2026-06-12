@@ -3,6 +3,7 @@ import { PORT } from "@/configs/system/server.config.ts"
 import { connectDB } from "@/libs/database.ts"
 import { initCronJobs } from "@/libs/payroll-cron.ts"
 import { cors } from "@/middlewares/cors.middleware.ts"
+import { globalErrorHandler } from "@/middlewares/error.middleware.ts"
 import applicationRoutes from "@/routes/application.route.ts"
 import approvalRoutes from "@/routes/approval.route.ts"
 import attendanceRoutes from "@/routes/attendance.route.ts"
@@ -13,13 +14,14 @@ import holidayRoutes from "@/routes/holiday.route.ts"
 import payrollRoutes from "@/routes/payroll.route.ts"
 import payslipTemplateRoutes from "@/routes/payslip-template.route.ts"
 import profileRoutes from "@/routes/profile.route.ts"
+import projectRoutes from "@/routes/project.route.ts"
 import salaryComponentRoutes from "@/routes/salary-component.route.ts"
 import salaryVariableRoutes from "@/routes/salary-variable.route.ts"
 import scheduleRoutes from "@/routes/schedule.route.ts"
 import shiftChangeRequestRoutes from "@/routes/shift-change-request.route.ts"
 import shiftRoutes from "@/routes/shift.route.ts"
 import taskRoutes from "@/routes/task.route.ts"
-import projectRoutes from "@/routes/project.route.ts"
+
 import dotenv from "dotenv"
 import express, { NextFunction, Request, Response } from "express"
 import rateLimit from "express-rate-limit"
@@ -100,27 +102,7 @@ app.use((req, res) => {
 })
 
 // Global error
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  if (err?.name === "AppError" || err?.statusCode) {
-    res.status(err.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
-      data: null,
-      error: {
-        message: err.message,
-        code: err.errorCode || (err.layer ? err.layer.toUpperCase() + "_ERROR" : "APP_ERROR"),
-      },
-    })
-    return
-  }
-
-  console.error("GLOBAL ERROR:", err)
-  res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
-    data: null,
-    error: {
-      message: "Internal Server Error",
-      code: "INTERNAL_SERVER_ERROR",
-    },
-  })
-})
+app.use(globalErrorHandler)
 
 /**
  * Must connect to database successfully before start server
