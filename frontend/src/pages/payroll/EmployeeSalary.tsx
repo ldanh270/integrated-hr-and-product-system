@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useEmployees } from "@/hooks/employees/queries/useEmployeeQuery"
 import {
   useActiveSalaryConfig,
@@ -46,7 +47,7 @@ export default function EmployeeSalary() {
 
   const { data: employeeData, isLoading: isEmployeesLoading } = useEmployees({
     page,
-    limit: 10,
+    limit: SYSTEM_CONFIG.PAGINATION.SMALL_LIMIT,
     search: searchQuery,
   })
 
@@ -117,7 +118,7 @@ export default function EmployeeSalary() {
                   <EmployeeRow
                     key={emp.id}
                     emp={emp}
-                    index={(page - 1) * 10 + index + 1}
+                    index={(page - 1) * SYSTEM_CONFIG.PAGINATION.SMALL_LIMIT + index + 1}
                     onConfigure={handleOpenConfigDialog}
                     onViewHistory={handleOpenHistoryDialog}
                   />
@@ -145,7 +146,12 @@ export default function EmployeeSalary() {
                 Trước
               </Button>
               <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, employeeData.meta.totalPages) }).map((_, i) => (
+                {Array.from({
+                  length: Math.min(
+                    SYSTEM_CONFIG.PAGINATION.MAX_VISIBLE_PAGES,
+                    employeeData.meta.totalPages,
+                  ),
+                }).map((_, i) => (
                   <button
                     key={i + 1}
                     onClick={() => setPage(i + 1)}

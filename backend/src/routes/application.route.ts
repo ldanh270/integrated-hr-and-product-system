@@ -6,7 +6,6 @@ import { authorizeRoles } from "@/middlewares/role.middleware.ts"
 import { PrismaApplicationRepository } from "@/repositories/application.repository.ts"
 import { ApplicationService } from "@/services/application.service.ts"
 
-import { ApplicationType } from "@prisma/client"
 import express from "express"
 
 const applicationRoutes = express.Router()
@@ -15,20 +14,51 @@ const repository = new PrismaApplicationRepository(prisma)
 const service = new ApplicationService(repository)
 const controller = new ApplicationController(service)
 
-// All routes in this file require authentication
+// All routes require authentication
 applicationRoutes.use(authenticate)
 
-// Employees can submit applications and view their own applications
-applicationRoutes.get("/employee/:employeeId", controller.listEmployeeApplications)
+// ─── Employee endpoints ───────────────────────────────────────
 
-// Only admins, HR managers, and managers can approve applications
+// Submit a new application (any authenticated employee)
 applicationRoutes.post("/", controller.submit)
 
-// In a real app, processorId would come from req.user, not the request body
+// List own applications (with pagination + filters)
+applicationRoutes.get("/me", controller.listMine)
+
+// Get specific application by ID (own or manager)
+applicationRoutes.get("/:id", controller.getById)
+
+// Cancel own pending application
+applicationRoutes.patch("/:id/cancel", controller.cancel)
+
+// ─── Manager endpoints ────────────────────────────────────────
+
+// List all applications across all employees (HR / GM / admin / TL)
+applicationRoutes.get(
+  "/",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER, ROLE.TEAM_LEADER),
+  controller.listAll,
+)
+
+// List applications for a specific employee (HR / GM / admin)
+applicationRoutes.get(
+  "/employee/:employeeId",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER, ROLE.TEAM_LEADER),
+  controller.listByEmployee,
+)
+
+// Approve an application (sets status=approved)
 applicationRoutes.patch(
   "/:id/approve",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER, ROLE.TEAM_LEADER),
   controller.approve,
+)
+
+// Reject an application with a mandatory rejectReason
+applicationRoutes.patch(
+  "/:id/reject",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER, ROLE.TEAM_LEADER),
+  controller.reject,
 )
 
 export default applicationRoutes

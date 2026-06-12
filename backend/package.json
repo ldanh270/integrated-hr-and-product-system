@@ -6,7 +6,7 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "bun --watch src/index.ts",
-    "build": "bunx prisma generate && bunx prisma migrate deploy",
+    "build": "bunx prisma generate",
     "seed": "bun run src/scripts/seed-all.ts",
     "seed:admin": "bun run src/scripts/seed-admin.ts",
     "clear": "bun run src/scripts/clear-db.ts"

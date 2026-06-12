@@ -1,7 +1,9 @@
+import { CONNECTION_STRING } from "@/configs/system/db.config.ts"
+import { ENVIRONMENT, ENV_ENVIRONMENT } from "@/configs/system/server.config.ts"
+
 import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from "@prisma/client"
 import { Pool } from "pg"
-import { ENV_ENVIRONMENT, ENVIRONMENT } from "@/configs/system/server.config.ts"
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
@@ -10,7 +12,13 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient }
  * @returns A new PrismaClient instance configured with a PostgreSQL adapter.
  */
 function createPrismaClient() {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+  const isProduction = ENV_ENVIRONMENT === ENVIRONMENT.PRODUCTION
+  const pool = new Pool({
+    connectionString: CONNECTION_STRING,
+    ssl: isProduction
+      ? { rejectUnauthorized: false }
+      : undefined,
+  })
   const adapter = new PrismaPg(pool)
   return new PrismaClient({ adapter })
 }

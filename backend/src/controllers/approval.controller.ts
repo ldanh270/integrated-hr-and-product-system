@@ -1,4 +1,5 @@
 import { RequestCategory } from "@/configs/rules/approval.config.ts"
+import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import { processApprovalSchema } from "@/schemas/approval.schema.ts"
@@ -19,7 +20,7 @@ export class ApprovalController {
       if (!req.user) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           data: null,
-          error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+          error: { message: "Unauthorized", code: ErrorCode.UNAUTHORIZED },
         })
       }
 
@@ -43,7 +44,7 @@ export class ApprovalController {
       if (!req.user) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           data: null,
-          error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+          error: { message: "Unauthorized", code: ErrorCode.UNAUTHORIZED },
         })
       }
 
@@ -71,7 +72,7 @@ export class ApprovalController {
           data: null,
           error: {
             message: "Validation error",
-            code: "VALIDATION_ERROR",
+            code: ErrorCode.VALIDATION_ERROR,
             meta: error.issues,
           },
         })

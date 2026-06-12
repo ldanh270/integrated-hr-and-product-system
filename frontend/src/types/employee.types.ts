@@ -67,15 +67,19 @@ export interface CreateEmployeeDto {
 
 export interface UpdateEmployeeDto {
   fullName?: string
-  phone?: string
-  position?: string
+  email?: string
+  username?: string
+  password?: string
+  role?: EmployeeRole
+  phone?: string | null
+  position?: string | null
   employeeType?: EmployeeType
   status?: EmployeeStatus
-  dateOfBirth?: string
-  nationalId?: string
-  address?: string
-  startDate?: string
-  endDate?: string
+  dateOfBirth?: string | null
+  nationalId?: string | null
+  address?: string | null
+  startDate?: string | null
+  endDate?: string | null
 }
 
 export interface UpdateStatusDto {

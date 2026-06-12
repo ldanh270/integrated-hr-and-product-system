@@ -1,3 +1,4 @@
+import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AppError } from "@/utils/error.util.ts"
 
@@ -14,24 +15,67 @@ import { ZodError } from "zod"
  * @param next - Next function.
  */
 export const globalErrorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
+  // Format the error into a standardized structure
+  const errorLog = {
+    timestamp: new Date().toISOString(),
+    level: "ERROR",
+    layer: err instanceof AppError ? err.layer : "Unhandled",
+    code:
+      err instanceof AppError
+        ? err.errorCode
+        : err instanceof ZodError
+          ? ErrorCode.VALIDATION_ERROR
+          : ErrorCode.INTERNAL_CRASH,
+    status:
+      err instanceof AppError
+        ? err.statusCode
+        : err instanceof ZodError
+          ? HttpStatusCode.BAD_REQUEST
+          : HttpStatusCode.INTERNAL_SERVER_ERROR,
+    message: err.message || "Unknown Error",
+    path: `${req.method} ${req.originalUrl}`,
+    stack: err.stack,
+  }
+
+  // 2. Professional structured logging (Only log 500 errors to the server console)
+  if (errorLog.status >= 500) {
+    console.error("Unhandled server error:", err)
+  }
+
+  // 3. Send response to client
   if (err instanceof AppError) {
-    console.error(`[ERROR - ${err.layer}] : ${err.message}`)
     return res.status(err.statusCode).json({
-      message: err.message,
-      type: err.errorCode || "APP_ERROR",
-      layer: err.layer,
+      data: null,
+      error: {
+        message: err.message,
+        code: err.errorCode || ErrorCode.APP_ERROR,
+        meta: { layer: err.layer },
+      },
     })
   }
 
   if (err instanceof ZodError) {
+    const formattedIssues = err.issues.map((i) => ({
+      field: i.path.join("."),
+      message: i.message,
+    }))
+
     return res.status(HttpStatusCode.BAD_REQUEST).json({
-      message: "Validation Error",
-      errors: err.issues,
-      type: "VALIDATION_ERROR",
+      data: null,
+      error: {
+        message: "Validation Error",
+        code: ErrorCode.VALIDATION_ERROR,
+        meta: formattedIssues,
+      },
     })
   }
 
-  // Unhandled errors (crashes, syntax errors...)
-  console.error(`[UNHANDLED CRASH] : `, err)
-  return res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" })
+  // Hide internal crash details from the client
+  return res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
+    data: null,
+    error: {
+      message: "Internal Server Error",
+      code: ErrorCode.INTERNAL_SERVER_ERROR,
+    },
+  })
 }

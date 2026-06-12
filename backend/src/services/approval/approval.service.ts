@@ -168,7 +168,9 @@ export class ApprovalService implements IApprovalService {
 
           const { employeeShiftId, swapWithShiftId } = swapDetail
           const shiftA = await tx.employeeShift.findUnique({ where: { id: employeeShiftId } })
-          const shiftB = await tx.employeeShift.findUnique({ where: { id: swapWithShiftId } })
+          const shiftB = swapWithShiftId
+            ? await tx.employeeShift.findUnique({ where: { id: swapWithShiftId } })
+            : null
 
           if (!shiftA || !shiftB) {
             throw new AppError(
@@ -183,10 +185,12 @@ export class ApprovalService implements IApprovalService {
             where: { id: employeeShiftId },
             data: { shiftId: shiftB.shiftId },
           })
-          await tx.employeeShift.update({
-            where: { id: swapWithShiftId },
-            data: { shiftId: tempShiftId },
-          })
+          if (swapWithShiftId && tempShiftId) {
+            await tx.employeeShift.update({
+              where: { id: swapWithShiftId },
+              data: { shiftId: tempShiftId },
+            })
+          }
         }
 
         return tx.application.update({
