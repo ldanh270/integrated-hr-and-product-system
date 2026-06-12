@@ -37,8 +37,12 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     super(prisma)
   }
 
-  // ── Submit ────────────────────────────────────────────────────
-
+  /**
+   * Creates and submits a new application with the correct detail relation in a single query.
+   * 
+   * @param data - The application details and parameters.
+   * @returns A promise that resolves to the newly created application with all included relations.
+   */
   async submit(data: ISubmitApplicationDTO): Promise<any> {
     const { employeeId, type, startDate, endDate, reason, note, detail } = data as any
 
@@ -57,8 +61,12 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     })
   }
 
-  // ── Read ──────────────────────────────────────────────────────
-
+  /**
+   * Finds a single application by its unique identifier.
+   * 
+   * @param id - The application ID.
+   * @returns A promise that resolves to the application details or null if not found.
+   */
   async findById(id: string): Promise<any | null> {
     return this.prisma.application.findUnique({
       where: { id },
@@ -66,6 +74,13 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     })
   }
 
+  /**
+   * Retrieves a paginated list of applications for a specific employee.
+   * 
+   * @param employeeId - The employee's ID.
+   * @param query - The pagination and filter parameters.
+   * @returns A promise that resolves to the matching applications and total count.
+   */
   async findByEmployee(
     employeeId: string,
     query: IListApplicationsQueryDTO,
@@ -74,13 +89,24 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     return this._paginate(where, query)
   }
 
+  /**
+   * Retrieves a paginated list of all applications in the database, with filters.
+   * 
+   * @param query - The pagination and filter parameters.
+   * @returns A promise that resolves to the matching applications and total count.
+   */
   async findAll(query: IListApplicationsQueryDTO): Promise<{ data: any[]; total: number }> {
     const where = this._buildWhere(query)
     return this._paginate(where, query)
   }
 
-  // ── Mutations ─────────────────────────────────────────────────
-
+  /**
+   * Cancels a pending application if it belongs to the specified employee.
+   * 
+   * @param id - The application ID.
+   * @param employeeId - The ID of the employee owning the application.
+   * @returns A promise that resolves to the updated application, or null if update failed.
+   */
   async cancel(id: string, employeeId: string): Promise<any | null> {
     try {
       return await this.prisma.application.update({
@@ -97,6 +123,13 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     }
   }
 
+  /**
+   * Approves a pending application and records the approving processor.
+   * 
+   * @param id - The application ID.
+   * @param approvedBy - The ID of the processor approving the application.
+   * @returns A promise that resolves to the updated application, or null if update failed.
+   */
   async approve(id: string, approvedBy: string): Promise<any | null> {
     try {
       return await this.prisma.application.update({
@@ -114,6 +147,14 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     }
   }
 
+  /**
+   * Rejects a pending application, recording the processor and the rejection reason.
+   * 
+   * @param id - The application ID.
+   * @param rejectedBy - The ID of the processor rejecting the application.
+   * @param rejectReason - The explanation for rejection.
+   * @returns A promise that resolves to the updated application, or null if update failed.
+   */
   async reject(id: string, rejectedBy: string, rejectReason: string): Promise<any | null> {
     try {
       return await this.prisma.application.update({
@@ -131,8 +172,15 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     }
   }
 
-  // ── Business-Rule Helpers ─────────────────────────────────────
-
+  /**
+   * Checks if an employee has any pending or approved leave applications overlapping with the specified range.
+   * 
+   * @param employeeId - The employee's ID.
+   * @param startDate - The starting date of the range.
+   * @param endDate - The ending date of the range.
+   * @param excludeId - Optional application ID to exclude from comparison.
+   * @returns A promise that resolves to true if an overlap exists, false otherwise.
+   */
   async checkLeaveOverlap(
     employeeId: string,
     startDate: string | Date,
@@ -155,8 +203,12 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
   }
 
   /**
-   * Count working days used for a specific leaveType in a given calendar year.
-   * Counts only approved leave applications.
+   * Calculates the total number of approved leave days used by an employee for a specific leave type in a given year.
+   * 
+   * @param employeeId - The employee's ID.
+   * @param leaveType - The type of leave.
+   * @param year - The calendar year.
+   * @returns A promise that resolves to the number of used leave days.
    */
   async getUsedLeaveDays(employeeId: string, leaveType: ILeaveType, year: number): Promise<number> {
     // Only count if it's a paid leave type that has a quota
@@ -188,10 +240,12 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     }, 0)
   }
 
-
-
-  // ── Private Helpers ───────────────────────────────────────────
-
+  /**
+   * Constructs the nested detail creation payload for Prisma based on the application type.
+   * 
+   * @param data - The application submission DTO.
+   * @returns The Prisma nested write object for details.
+   */
   private _buildDetailCreate(data: ISubmitApplicationDTO): Record<string, any> {
     switch (data.type) {
       case "leave":
@@ -270,6 +324,12 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     }
   }
 
+  /**
+   * Constructs the Prisma database filter conditions from query parameters.
+   * 
+   * @param query - The filter parameters.
+   * @returns The Prisma filter object.
+   */
   private _buildWhere(query: IListApplicationsQueryDTO & { employeeId?: string }) {
     const where: Record<string, any> = {}
 
@@ -285,6 +345,13 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     return where
   }
 
+  /**
+   * Executes a paginated query and counts matching records within a single database transaction.
+   * 
+   * @param where - The Prisma filter conditions.
+   * @param query - Pagination parameters.
+   * @returns A promise that resolves to the matching records and total count.
+   */
   private async _paginate(
     where: Record<string, any>,
     query: IListApplicationsQueryDTO,

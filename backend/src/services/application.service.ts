@@ -19,8 +19,14 @@ import { AppError } from "@/utils/error.util.ts"
 export class ApplicationService implements IApplicationService {
   constructor(private applicationRepo: IApplicationRepository) {}
 
-  // ─── Submit ──────────────────────────────────────────────────
-
+  /**
+   * Submits a new application after validating the specific business rules
+   * based on the type of application (leave, overtime, late/early, shift swap).
+   * 
+   * @param data - The application submission data transfer object.
+   * @returns A promise that resolves to the submitted application.
+   * @throws {AppError} If validation fails (e.g. invalid date range, leave overlap, insufficient balance).
+   */
   async submitApplication(data: ISubmitApplicationDTO): Promise<any> {
     const startDate = new Date(data.startDate)
     const endDate = new Date(data.endDate ?? data.startDate)
@@ -76,8 +82,14 @@ export class ApplicationService implements IApplicationService {
     return this.applicationRepo.submit(data)
   }
 
-  // ─── Cancel ──────────────────────────────────────────────────
-
+  /**
+   * Cancels a pending application if the requester is the owner of the application.
+   * 
+   * @param id - The unique identifier of the application to cancel.
+   * @param requesterId - The ID of the employee requesting the cancellation.
+   * @returns A promise that resolves to the cancelled application.
+   * @throws {AppError} If application is not found, requester is not the owner, or application status is not pending.
+   */
   async cancelApplication(id: string, requesterId: string): Promise<any> {
     const app = await this.applicationRepo.findById(id)
 
@@ -117,8 +129,13 @@ export class ApplicationService implements IApplicationService {
     return cancelled
   }
 
-  // ─── Read ─────────────────────────────────────────────────────
-
+  /**
+   * Retrieves an application by its unique identifier.
+   * 
+   * @param id - The unique identifier of the application.
+   * @returns A promise that resolves to the application details.
+   * @throws {AppError} If the application is not found.
+   */
   async getApplicationById(id: string): Promise<any> {
     const app = await this.applicationRepo.findById(id)
     if (!app) {
@@ -127,12 +144,27 @@ export class ApplicationService implements IApplicationService {
     return app
   }
 
+  /**
+   * Lists all applications in the system matching the query parameters.
+   * 
+   * @param query - The pagination, filter, and sort options.
+   * @returns A promise that resolves to a list of applications and the total count.
+   */
   async listApplications(
     query: IListApplicationsQueryDTO,
   ): Promise<{ data: any[]; total: number }> {
     return this.applicationRepo.findAll(query)
   }
 
+  /**
+   * Lists applications submitted by a specific employee, enforcing authorization rules if a requester is provided.
+   * 
+   * @param employeeId - The ID of the target employee.
+   * @param query - The pagination, filter, and sort options.
+   * @param requester - Optional metadata of the user requesting this list (id and role).
+   * @returns A promise that resolves to the list of employee's applications and total count.
+   * @throws {AppError} If the employee is not found or the requester is forbidden to access their applications.
+   */
   async getEmployeeApplications(
     employeeId: string,
     query: IListApplicationsQueryDTO,
@@ -181,8 +213,14 @@ export class ApplicationService implements IApplicationService {
     return this.applicationRepo.findByEmployee(employeeId, query)
   }
 
-  // ─── Approve ──────────────────────────────────────────────────
-
+  /**
+   * Approves a pending application.
+   * 
+   * @param id - The ID of the application to approve.
+   * @param processorId - The ID of the employee/manager processing the approval.
+   * @returns A promise that resolves to the approved application.
+   * @throws {AppError} If the application is not found or is not in pending status.
+   */
   async approveApplication(id: string, processorId: string): Promise<any> {
     const app = await this.applicationRepo.findById(id)
 
@@ -208,8 +246,15 @@ export class ApplicationService implements IApplicationService {
     return updated
   }
 
-  // ─── Reject ───────────────────────────────────────────────────
-
+  /**
+   * Rejects a pending application with a specified reason.
+   * 
+   * @param id - The ID of the application to reject.
+   * @param processorId - The ID of the employee/manager processing the rejection.
+   * @param rejectReason - The reason for rejecting the application.
+   * @returns A promise that resolves to the rejected application.
+   * @throws {AppError} If the application is not found or is not in pending status.
+   */
   async rejectApplication(id: string, processorId: string, rejectReason: string): Promise<any> {
     const app = await this.applicationRepo.findById(id)
 
@@ -235,9 +280,16 @@ export class ApplicationService implements IApplicationService {
     return updated
   }
 
-  // ─── processApplication (deprecated — kept for approval.route backward compat) ──
-
-  /** @deprecated Use approveApplication / rejectApplication instead. */
+  /**
+   * Processes an application by approving or rejecting it.
+   * 
+   * @deprecated Use approveApplication / rejectApplication instead.
+   * @param id - The ID of the application.
+   * @param status - The target status (approved/rejected).
+   * @param processorId - The ID of the processor.
+   * @returns A promise that resolves to the processed application.
+   * @throws {AppError} If invalid status is passed or rejection is attempted without a reason.
+   */
   async processApplication(
     id: string,
     status: IApplicationStatus,
@@ -262,10 +314,14 @@ export class ApplicationService implements IApplicationService {
     )
   }
 
-  // ─── Private Validators ───────────────────────────────────────
-
   /**
-   * §V4: leave — check overlap + balance
+   * §V4: Leave application validator. Checks for date overlaps and leave balance quotas.
+   * 
+   * @param employeeId - The ID of the employee submitting the leave.
+   * @param leaveType - The type of leave (annual, sick, etc.).
+   * @param startDate - The starting date of the leave.
+   * @param endDate - The ending date of the leave.
+   * @throws {AppError} If overlap is detected or the employee has insufficient leave balance.
    */
   private async _validateLeaveApplication(
     employeeId: string,
@@ -311,7 +367,11 @@ export class ApplicationService implements IApplicationService {
   }
 
   /**
-   * §V5: Verify employeeShift belongs to the requester
+   * §V5: Verifies that the specified employeeShift belongs to the requester.
+   * 
+   * @param shiftId - The ID of the employee shift to check.
+   * @param employeeId - The ID of the employee.
+   * @throws {AppError} If the shift doesn't exist or is not owned by the employee.
    */
   private async _validateShiftOwnership(shiftId: string, employeeId: string): Promise<void> {
     const shift = await prisma.employeeShift.findUnique({
@@ -339,7 +399,12 @@ export class ApplicationService implements IApplicationService {
   }
 
   /**
-   * §V6: overtime — application startDate must match shift.assignedDate
+   * §V6: Overtime application validator. Verifies that the application dates match the shift date.
+   * 
+   * @param employeeShiftId - The ID of the employee shift.
+   * @param startDate - The starting date of the overtime.
+   * @param endDate - The ending date of the overtime.
+   * @throws {AppError} If either the start or end date does not match the shift's assigned date.
    */
   private async _validateOvertimeDates(
     employeeShiftId: string,
@@ -383,7 +448,10 @@ export class ApplicationService implements IApplicationService {
   }
 
   /**
-   * §V7: validate swap target employee exists and is active
+   * §V7: Validates that the swap target employee exists, is active, and is not deleted.
+   * 
+   * @param employeeId - The ID of the swap target employee.
+   * @throws {AppError} If the target employee is not found, deleted, or not active.
    */
   private async _validateEmployeeExists(employeeId: string): Promise<void> {
     const employee = await prisma.employee.findUnique({
