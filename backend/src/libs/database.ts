@@ -1,6 +1,7 @@
 import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from "@prisma/client"
 import { Pool } from "pg"
+import { ENV_ENVIRONMENT, ENVIRONMENT } from "@/configs/system/server.config.ts"
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
@@ -16,7 +17,7 @@ function createPrismaClient() {
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient()
 
-if (process.env.NODE_ENV !== "production") {
+if (ENV_ENVIRONMENT !== ENVIRONMENT.PRODUCTION) {
   globalForPrisma.prisma = prisma
 }
 

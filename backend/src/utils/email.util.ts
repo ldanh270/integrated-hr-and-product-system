@@ -1,4 +1,6 @@
 import { Resend } from "resend"
+import { ENV_ENVIRONMENT, ENVIRONMENT } from "@/configs/system/server.config.ts"
+
 
 /**
  * EmailUtil provides functionality for sending emails using Resend SDK.
@@ -16,7 +18,7 @@ export class EmailUtil {
 
     const resetUrl = `${clientUrl}/reset-password?token=${token}`
 
-    if (process.env.NODE_ENV !== "production") {
+    if (ENV_ENVIRONMENT !== ENVIRONMENT.PRODUCTION) {
       console.log(`[DEBUG] Email to: ${to}`)
       console.log(`[DEBUG] Generated Token: ${token}`)
       console.log(`[DEBUG] Reset URL: ${resetUrl}`)
@@ -61,7 +63,7 @@ export class EmailUtil {
         `,
       })
 
-      if (process.env.NODE_ENV !== "production") {
+      if (ENV_ENVIRONMENT !== ENVIRONMENT.PRODUCTION) {
         console.log("Resend response:", JSON.stringify(result, null, 2))
       }
 

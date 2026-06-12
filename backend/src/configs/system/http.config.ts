@@ -18,9 +18,9 @@ export const HttpStatusCode = {
 
 export type HttpStatusCodeType = (typeof HttpStatusCode)[keyof typeof HttpStatusCode]
 
-export const ResponseStatus = {
+export const RESPONSE_STATUS = {
   SUCCESS: "success",
   ERROR: "error",
 } as const
 
-export type ResponseStatusType = (typeof ResponseStatus)[keyof typeof ResponseStatus]
+export type ResponseStatusType = (typeof RESPONSE_STATUS)[keyof typeof RESPONSE_STATUS]

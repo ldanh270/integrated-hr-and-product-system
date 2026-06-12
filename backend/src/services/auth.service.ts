@@ -1,7 +1,7 @@
 import { PASSWORD_RESET_STATUS } from "@/configs/auth/auth.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
-import { ENV, ENV_PRODUCTION } from "@/configs/system/server.config.ts"
+import { ENV_ENVIRONMENT, ENVIRONMENT } from "@/configs/system/server.config.ts"
 import {
   AuthResponseDto,
   ChangePasswordDto,
@@ -167,7 +167,7 @@ export class AuthService implements IAuthService {
       const now = new Date()
       // If still valid: do nothing, return generic response
       if (existingRequest.expiresAt > now) {
-        if (ENV !== ENV_PRODUCTION) {
+        if (ENV_ENVIRONMENT !== ENVIRONMENT.PRODUCTION) {
           return {
             ...genericResponse,
             debugToken: existingRequest.token,
@@ -197,7 +197,7 @@ export class AuthService implements IAuthService {
       const resendResult = await EmailUtil.sendResetPasswordEmail(employee.email, token)
 
       // Debugging: Always return token and resend info if not in production
-      if (process.env.NODE_ENV !== "production") {
+      if (ENV_ENVIRONMENT !== ENVIRONMENT.PRODUCTION) {
         return {
           message: genericResponse.message,
           debugToken: token,
@@ -208,7 +208,7 @@ export class AuthService implements IAuthService {
     } catch (error) {
       console.error("Critical error sending reset email:", error)
       // Throw error in dev to see root cause
-      if (process.env.NODE_ENV !== "production") {
+      if (ENV_ENVIRONMENT !== ENVIRONMENT.PRODUCTION) {
         throw error
       }
     }
