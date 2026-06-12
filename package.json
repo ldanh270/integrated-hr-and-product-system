@@ -23,7 +23,8 @@
   "dependencies": {
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "escalade": "^3.2.0",
-    "prettier-plugin-tailwindcss": "^0.8.0"
+    "prettier-plugin-tailwindcss": "^0.8.0",
+    "resend": "^6.12.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
