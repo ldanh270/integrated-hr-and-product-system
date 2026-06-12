@@ -3,6 +3,7 @@
  * Validates the 'Authorization: Bearer <token>' header
  * Populates req.user if the token is valid, otherwise returns 401 Unauthorized
  */
+import { AUTH_ERRORS } from "@/configs/auth/auth.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { prisma } from "@/libs/database.ts"
@@ -32,7 +33,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     res.status(HttpStatusCode.UNAUTHORIZED).json({
       data: null,
-      error: { message: "Authorization header missing or invalid", code: "UNAUTHORIZED" },
+      error: AUTH_ERRORS.MISSING_TOKEN,
     })
     return
   }
@@ -45,7 +46,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   if (!decoded) {
     res.status(HttpStatusCode.UNAUTHORIZED).json({
       data: null,
-      error: { message: "Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.", code: "TOKEN_EXPIRED" },
+      error: AUTH_ERRORS.TOKEN_EXPIRED,
     })
     return
   }
@@ -56,14 +57,14 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     if (!employee || employee.status !== EMPLOYEE_STATUS.ACTIVE) {
       res.status(HttpStatusCode.UNAUTHORIZED).json({
         data: null,
-        error: { message: "Tài khoản không tồn tại hoặc không còn hoạt động.", code: "ACCOUNT_INACTIVE" },
+        error: AUTH_ERRORS.ACCOUNT_INACTIVE,
       })
       return
     }
   } catch (error) {
     res.status(HttpStatusCode.UNAUTHORIZED).json({
       data: null,
-      error: { message: "Không thể xác thực người dùng.", code: "AUTH_ERROR" },
+      error: AUTH_ERRORS.AUTH_ERROR,
     })
     return
   }
