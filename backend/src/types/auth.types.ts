@@ -8,8 +8,34 @@ export interface LoginDto {
   password: string
 }
 
+/**
+ * Data Transfer Object for Forgot Password request
+ */
 export interface ForgotPasswordDto {
-  username: string
+  email: string
+}
+
+/**
+ * Data Transfer Object for Change Password request
+ */
+export interface ChangePasswordDto {
+  oldPassword: string
+  newPassword: string
+}
+
+/**
+ * Data Transfer Object for Reset Password request
+ */
+export interface ResetPasswordDto {
+  token: string
+  newPassword: string
+}
+
+/**
+ * Data Transfer Object for Token Validation request
+ */
+export interface ValidateResetTokenDto {
+  token: string
 }
 
 /**
@@ -33,8 +59,19 @@ export interface LogoutResponseDto {
   message: string
 }
 
-export interface ForgotPasswordResponseDto {
+/**
+ * Data Transfer Object for generic authentication message response
+ */
+export interface GenericAuthResponseDto {
   message: string
+}
+
+/**
+ * Data Transfer Object for token validation response
+ */
+export interface TokenValidationResponseDto {
+  isValid: boolean
+  message?: string
 }
 
 /**
@@ -58,24 +95,60 @@ export interface AuthEmployeeDocument {
  */
 export interface IAuthRepository {
   /**
-   * Finds an employee by username, including the password hash
+   * Finds an employee by ID, including the password hash
    */
-  findAuthByUsername(username: string): Promise<AuthEmployeeDocument | null>
+  findById(id: string): Promise<AuthEmployeeDocument | null>
+
+  /**
+   * Finds an employee by identifier (username or email), including the password hash
+   */
+  findAuthByIdentifier(identifier: string): Promise<AuthEmployeeDocument | null>
+
+  /**
+   * Finds an employee by email
+   */
+  findAuthByEmail(email: string): Promise<AuthEmployeeDocument | null>
+
+  /**
+   * Finds a pending password reset request by employee ID
+   */
+  findPendingRequestByEmployeeId(employeeId: string): Promise<any | null>
+
+  /**
+   * Finds a pending password reset request by token
+   */
+  findResetRequestByToken(token: string): Promise<any | null>
+
+  /**
+   * Invalidates all pending password reset requests for a user
+   */
+  invalidateAllPendingRequests(employeeId: string): Promise<void>
+
+  /**
+   * Creates a new password reset request
+   */
+  createResetRequest(data: { employeeId: string; token: string; expiresAt: Date }): Promise<void>
+
+  /**
+   * Updates the status of a password reset request
+   */
+  updateResetRequestStatus(requestId: string, status: string): Promise<void>
+
+  /**
+   * Updates employee authentication fields
+   */
+  updateAuthEmployee(empId: string, data: Partial<AuthEmployeeDocument>): Promise<void>
 
   /**
    * Logs an activity to the database
    */
   logActivity(data: {
-    empId?: any
+    empId?: string
     actionType: "login" | "logout" | "failed_login"
     ipAddress?: string
     timestamp: Date
     details?: string
   }): Promise<void>
-
-  updateAuthEmployee(empId: string, data: Partial<AuthEmployeeDocument>): Promise<void>
-  createPasswordResetRequest(empId: string, token: string): Promise<void>
-  hasPendingPasswordResetRequest(empId: string): Promise<boolean>
 }
 
 /**
@@ -95,5 +168,20 @@ export interface IAuthService {
   /**
    * Processes a forgot password request
    */
-  forgotPassword(data: ForgotPasswordDto): Promise<ForgotPasswordResponseDto>
+  forgotPassword(data: ForgotPasswordDto): Promise<GenericAuthResponseDto>
+
+  /**
+   * Validates a password reset token
+   */
+  validateResetToken(data: ValidateResetTokenDto): Promise<TokenValidationResponseDto>
+
+  /**
+   * Resets a user's password using a token
+   */
+  resetPassword(data: ResetPasswordDto): Promise<GenericAuthResponseDto>
+
+  /**
+   * Changes a user's password (requires current password)
+   */
+  changePassword(empId: string, data: ChangePasswordDto): Promise<GenericAuthResponseDto>
 }
