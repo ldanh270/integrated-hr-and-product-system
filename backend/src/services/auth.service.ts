@@ -1,6 +1,7 @@
 import { PASSWORD_RESET_STATUS } from "@/configs/auth/auth.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { ENV, ENV_PRODUCTION } from "@/configs/system/server.config.ts"
 import {
   AuthResponseDto,
   ChangePasswordDto,
@@ -38,7 +39,7 @@ export class AuthService implements IAuthService {
   async login(data: LoginDto, ipAddress?: string): Promise<AuthResponseDto> {
     const { username, password } = data
 
-    // 1. Fetch user through repository using normalized identifier
+    // Fetch user through repository using normalized identifier
     const normalizedIdentifier = username.trim().toLowerCase()
     const employee = await this.repo.findAuthByIdentifier(username)
 
@@ -47,7 +48,7 @@ export class AuthService implements IAuthService {
       throw new AppError("Invalid credentials", HttpStatusCode.UNAUTHORIZED, "Authentication")
     }
 
-    // 2. Status Check
+    // Status Check
     if (employee.status !== EMPLOYEE_STATUS.ACTIVE) {
       throw new AppError(
         "Account is disabled or inactive",
@@ -56,7 +57,7 @@ export class AuthService implements IAuthService {
       )
     }
 
-    // 3. Lock Check (Brute-force protection)
+    // Lock Check (Brute-force protection)
     if (employee.lockedUntil && employee.lockedUntil > new Date()) {
       throw new AppError(
         `Account is temporarily locked. Try again after ${employee.lockedUntil.toLocaleTimeString()}`,
@@ -65,7 +66,7 @@ export class AuthService implements IAuthService {
       )
     }
 
-    // 4. Password Verification
+    // Password Verification
     const isPasswordMatch = await HashUtil.compare(password, employee.passwordHash)
 
     if (!isPasswordMatch) {
@@ -92,7 +93,7 @@ export class AuthService implements IAuthService {
       throw new AppError("Invalid credentials", HttpStatusCode.UNAUTHORIZED, "Authentication")
     }
 
-    // 5. Successful Login
+    // Successful Login
     employee.failedLoginCount = 0
     employee.lockedUntil = undefined
     await this.repo.updateAuthEmployee(employee.id, {
@@ -108,7 +109,7 @@ export class AuthService implements IAuthService {
       timestamp: new Date(),
     })
 
-    // 6. Generate Token
+    // Generate Token
     const token = JwtUtil.generateToken({
       empId: employee.id,
       username: employee.username,
@@ -152,7 +153,7 @@ export class AuthService implements IAuthService {
       message: "If an account exists, a reset email has been sent.",
     }
 
-    // 1. Fetch user by normalized email
+    // Fetch user by normalized email
     const employee = await this.repo.findAuthByEmail(email)
 
     // Security: Do not reveal if email exists
@@ -160,13 +161,13 @@ export class AuthService implements IAuthService {
       return genericResponse
     }
 
-    // 2. Handle existing pending requests
+    // Handle existing pending requests
     const existingRequest = await this.repo.findPendingRequestByEmployeeId(employee.id)
     if (existingRequest) {
       const now = new Date()
       // If still valid: do nothing, return generic response
       if (existingRequest.expiresAt > now) {
-        if (process.env.NODE_ENV !== "production") {
+        if (ENV !== ENV_PRODUCTION) {
           return {
             ...genericResponse,
             debugToken: existingRequest.token,
@@ -180,10 +181,10 @@ export class AuthService implements IAuthService {
       await this.repo.updateResetRequestStatus(existingRequest.id, PASSWORD_RESET_STATUS.EXPIRED)
     }
 
-    // 3. Generate a secure plain-text token
+    // Generate a secure plain-text token
     const token = crypto.randomBytes(32).toString("hex")
 
-    // 4. Create the request with 15-minute expiration
+    // Create the request with 15-minute expiration
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
     await this.repo.createResetRequest({
       employeeId: employee.id,
@@ -191,7 +192,7 @@ export class AuthService implements IAuthService {
       expiresAt,
     })
 
-    // 5. Send email synchronously via Resend for testing/validation
+    // Send email synchronously via Resend for testing/validation
     try {
       const resendResult = await EmailUtil.sendResetPasswordEmail(employee.email, token)
 
@@ -221,14 +222,14 @@ export class AuthService implements IAuthService {
   async validateResetToken(data: ValidateResetTokenDto): Promise<TokenValidationResponseDto> {
     const { token } = data
 
-    // 1. Find request by token (only checks status: PENDING in repo)
+    // Find request by token (only checks status: PENDING in repo)
     const request = await this.repo.findResetRequestByToken(token)
 
     if (!request) {
       return { isValid: false, message: "Invalid or already used token" }
     }
 
-    // 2. Check expiration in Service layer (15-minute window)
+    // Check expiration in Service layer (15-minute window)
     if (request.expiresAt < new Date()) {
       await this.repo.updateResetRequestStatus(request.id, PASSWORD_RESET_STATUS.EXPIRED)
       return { isValid: false, message: "Reset link has expired" }
@@ -243,7 +244,7 @@ export class AuthService implements IAuthService {
   async resetPassword(data: ResetPasswordDto): Promise<GenericAuthResponseDto> {
     const { token, newPassword } = data
 
-    // 1. Validate token status and expiration
+    // Validate token status and expiration
     const validation = await this.validateResetToken({ token })
     if (!validation.isValid) {
       throw new AppError(
@@ -253,13 +254,13 @@ export class AuthService implements IAuthService {
       )
     }
 
-    // 2. Find the request again to get employee info
+    // Find the request again to get employee info
     const request = await this.repo.findResetRequestByToken(token)
     if (!request) {
       throw new AppError("Reset request not found", HttpStatusCode.NOT_FOUND, "Authentication")
     }
 
-    // 3. Update employee password
+    // Update employee password
     const employee = await this.repo.findById(request.employeeId)
     if (!employee) {
       throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "Authentication")
@@ -278,7 +279,7 @@ export class AuthService implements IAuthService {
     const passwordHash = await HashUtil.hash(newPassword)
     await this.repo.updateAuthEmployee(employee.id, { passwordHash })
 
-    // 4. Mark request as used
+    // Mark request as used
     await this.repo.updateResetRequestStatus(request.id, PASSWORD_RESET_STATUS.USED)
 
     return { message: "Password reset successfully. You can now login with your new password." }
@@ -296,7 +297,7 @@ export class AuthService implements IAuthService {
       throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "Authentication")
     }
 
-    // 2. Verify current password
+    // Verify current password
     const isMatch = await HashUtil.compare(oldPassword, employee.passwordHash)
     if (!isMatch) {
       throw new AppError("Incorrect current password", HttpStatusCode.UNAUTHORIZED, "Authentication")
@@ -312,7 +313,7 @@ export class AuthService implements IAuthService {
       )
     }
 
-    // 3. Update to new password
+    // Update to new password
     const passwordHash = await HashUtil.hash(newPassword)
     await this.repo.updateAuthEmployee(employee.id, { passwordHash })
 

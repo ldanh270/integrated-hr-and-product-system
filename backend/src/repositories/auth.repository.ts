@@ -1,4 +1,4 @@
-import { PASSWORD_RESET_STATUS } from "@/configs/auth/auth.config.ts"
+import { ACTIVITY_LOG_TTL, PASSWORD_RESET_STATUS } from "@/configs/auth/auth.config.ts"
 import { AuthEmployeeDocument, IAuthRepository } from "@/types/auth.types.ts"
 
 import { ActivityAction, PasswordResetStatus, PrismaClient } from "@prisma/client"
@@ -204,7 +204,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
         actionType: dbActionType,
         ipAddress,
         createdAt: timestamp,
-        expiresAt: new Date(timestamp.getTime() + 90 * 24 * 60 * 60 * 1000), // 90 days retention
+        expiresAt: new Date(timestamp.getTime() + ACTIVITY_LOG_TTL), // retention by config
         details: details ? JSON.parse(details) : undefined,
       },
     })

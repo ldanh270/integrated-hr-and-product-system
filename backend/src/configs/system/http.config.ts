@@ -17,3 +17,10 @@ export const HttpStatusCode = {
 } as const
 
 export type HttpStatusCodeType = (typeof HttpStatusCode)[keyof typeof HttpStatusCode]
+
+export const ResponseStatus = {
+  SUCCESS: "success",
+  ERROR: "error",
+} as const
+
+export type ResponseStatusType = (typeof ResponseStatus)[keyof typeof ResponseStatus]

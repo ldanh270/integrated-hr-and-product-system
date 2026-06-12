@@ -1,4 +1,5 @@
-import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { HttpStatusCode, ResponseStatus } from "@/configs/system/http.config.ts"
+import { AUTH_ERROR_MESSAGES } from "@/constants/auth.constants.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import {
   changePasswordSchema,
@@ -34,7 +35,7 @@ export class AuthController {
 
       // Return successful response
       res.status(HttpStatusCode.OK).json({
-        status: "success",
+        status: ResponseStatus.SUCCESS,
         data: result,
       })
     } catch (error: any) {
@@ -45,7 +46,7 @@ export class AuthController {
           : error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
 
       res.status(statusCode).json({
-        status: "error",
+        status: ResponseStatus.ERROR,
         message: error.message || "Login failed",
         errors: error.errors, // Include Zod validation details if present
       })
@@ -60,8 +61,8 @@ export class AuthController {
       // Security guard: req.user should be populated by authenticate middleware
       if (!req.user) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
-          status: "error",
-          message: "Unauthorized",
+          status: ResponseStatus.ERROR,
+          message: AUTH_ERROR_MESSAGES.UNAUTHORIZED,
         })
       }
 
@@ -70,12 +71,12 @@ export class AuthController {
 
       // Return successful response
       res.status(HttpStatusCode.OK).json({
-        status: "success",
+        status: ResponseStatus.SUCCESS,
         message: result.message,
       })
     } catch (error: any) {
       res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
-        status: "error",
+        status: ResponseStatus.ERROR,
         message: error.message || "Logout failed",
       })
     }
@@ -94,7 +95,7 @@ export class AuthController {
 
       // Return successful response
       res.status(HttpStatusCode.OK).json({
-        status: "success",
+        status: ResponseStatus.SUCCESS,
         message: result.message,
       })
     } catch (error: any) {
@@ -104,7 +105,7 @@ export class AuthController {
           : error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
 
       res.status(statusCode).json({
-        status: "error",
+        status: ResponseStatus.ERROR,
         message: error.message || "Request failed",
         errors: error.errors,
       })
@@ -118,8 +119,8 @@ export class AuthController {
     try {
       if (!req.user) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
-          status: "error",
-          message: "Unauthorized",
+          status: ResponseStatus.ERROR,
+          message: AUTH_ERROR_MESSAGES.UNAUTHORIZED,
         })
       }
 
@@ -127,7 +128,7 @@ export class AuthController {
       const result = await this.service.changePassword(req.user.empId, validatedData)
 
       res.status(HttpStatusCode.OK).json({
-        status: "success",
+        status: ResponseStatus.SUCCESS,
         message: result.message,
       })
     } catch (error: any) {
@@ -137,7 +138,7 @@ export class AuthController {
           : error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
 
       res.status(statusCode).json({
-        status: "error",
+        status: ResponseStatus.ERROR,
         message: error.message || "Password change failed",
         errors: error.errors,
       })
@@ -154,13 +155,13 @@ export class AuthController {
 
       if (!result.isValid) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
-          status: "error",
+          status: ResponseStatus.ERROR,
           message: result.message || "Invalid token",
         })
       }
 
       res.status(HttpStatusCode.OK).json({
-        status: "success",
+        status: ResponseStatus.SUCCESS,
         data: result,
       })
     } catch (error: any) {
@@ -170,7 +171,7 @@ export class AuthController {
           : error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
 
       res.status(statusCode).json({
-        status: "error",
+        status: ResponseStatus.ERROR,
         message: error.message || "Token validation failed",
         errors: error.errors,
       })
@@ -186,7 +187,7 @@ export class AuthController {
       const result = await this.service.resetPassword(validatedData)
 
       res.status(HttpStatusCode.OK).json({
-        status: "success",
+        status: ResponseStatus.SUCCESS,
         message: result.message,
       })
     } catch (error: any) {
@@ -196,7 +197,7 @@ export class AuthController {
           : error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
 
       res.status(statusCode).json({
-        status: "error",
+        status: ResponseStatus.ERROR,
         message: error.message || "Password reset failed",
         errors: error.errors,
       })
