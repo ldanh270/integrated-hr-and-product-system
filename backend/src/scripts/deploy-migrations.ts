@@ -5,7 +5,6 @@ import path from "path"
 
 dotenv.config()
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
 
 const migrationsDir = path.resolve(process.cwd(), "prisma/migrations")
 
@@ -16,7 +15,7 @@ async function main() {
   const client = new Client({
     connectionString,
     ssl: {
-      rejectUnauthorized: false
+      rejectUnauthorized: true
     }
   })
 

@@ -49,7 +49,7 @@ export class EmployeeService implements IEmployeeService {
     } catch (error: any) {
       if (error.code === 11000 || error.code === "P2002") {
         throw new AppError(
-          "Username, email, số điện thoại hoặc số CCCD đã tồn tại trong hệ thống.",
+          "Username, email, phone, or national ID already exists",
           HttpStatusCode.CONFLICT,
           "EmployeeService",
         )
