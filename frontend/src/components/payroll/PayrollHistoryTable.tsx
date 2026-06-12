@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { PAYROLL_STATUS_LABELS } from "@/config/entities/payroll.config"
+import { PAYROLL_STATUS, PAYROLL_STATUS_LABELS } from "@/config/entities/payroll.config"
 import { useApprovePayroll, useRejectPayroll } from "@/hooks/payroll/use-payrolls"
 import type { IPayroll } from "@/types/payroll.types"
 
@@ -93,8 +93,8 @@ export function PayrollHistoryTable({ payrolls, isLoading }: PayrollHistoryTable
           </TableHeader>
           <TableBody>
             {payrolls.map((payroll, index) => {
-              const isDraft = payroll.status === "draft"
-              const isApproved = payroll.status === "approved"
+              const isDraft = payroll.status === PAYROLL_STATUS.DRAFT
+              const isApproved = payroll.status === PAYROLL_STATUS.APPROVED
 
               return (
                 <TableRow key={payroll.id}>

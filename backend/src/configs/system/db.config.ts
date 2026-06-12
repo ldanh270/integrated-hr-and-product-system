@@ -15,3 +15,16 @@ export const DB_ERROR_CODES = {
   /** Prisma Foreign Key Constraint Violation */
   FOREIGN_KEY_CONSTRAINT: ["P2003"],
 } as const
+
+/**
+ * Standard database sorting directions
+ */
+export const SORT_ORDER = {
+  ASC: "asc",
+  DESC: "desc",
+} as const
+
+/**
+ * Array of valid sorting directions for schema validation
+ */
+export const SORT_ORDER_VALUES = [SORT_ORDER.ASC, SORT_ORDER.DESC] as const

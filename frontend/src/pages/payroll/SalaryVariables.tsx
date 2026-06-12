@@ -1,4 +1,4 @@
-import { PageCard, PageHeader } from "@/components/common"
+import { PageCard, PageHeader, useConfirm } from "@/components/common"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -127,6 +127,7 @@ type VariableRow = Omit<ISalaryVariable, "value"> & {
 }
 
 export default function SalaryVariablesPage() {
+  const confirm = useConfirm()
   const { data: variables, isLoading } = useSalaryVariables()
   const createMutation = useCreateSalaryVariable()
   const updateMutation = useUpdateSalaryVariable()
@@ -172,7 +173,15 @@ export default function SalaryVariablesPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this variable?")) {
+    const isConfirmed = await confirm({
+      title: "Xóa biến số",
+      description:
+        "Bạn có chắc chắn muốn xóa biến số tính lương này không? Hành động này không thể hoàn tác.",
+      confirmText: "Xóa",
+      cancelText: "Hủy bỏ",
+      variant: "destructive",
+    })
+    if (isConfirmed) {
       await deleteMutation.mutateAsync(id)
     }
   }

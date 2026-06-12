@@ -1,3 +1,4 @@
+import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { createHolidaySchema } from "@/schemas/attendance.schema.ts"
 import { ApiResponse } from "@/types"
@@ -18,7 +19,11 @@ export class HolidayController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
+          error: {
+            message: "Validation error",
+            code: ErrorCode.VALIDATION_ERROR,
+            meta: error.issues,
+          },
         })
       }
       throw error

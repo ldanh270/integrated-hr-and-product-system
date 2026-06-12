@@ -1,4 +1,12 @@
 import SubsystemDropdown from "@/components/layouts/SubsystemDropdown"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { ROUTES } from "@/config/routes.config"
 import { useAuth } from "@/hooks/use-auth.ts"
 import { useAuthStore } from "@/store/auth-store.ts"
@@ -19,7 +27,6 @@ export default function Header() {
   const { user, isAuthenticated } = useAuthStore()
   const { getActiveSubsystemConfig } = useSubsystemStore()
   const [activeTab, setActiveTab] = useState<"personal" | "summary">("personal")
-  const [showDropdown, setShowDropdown] = useState(false)
 
   const activeSubsystemConfig = getActiveSubsystemConfig()
 
@@ -78,71 +85,63 @@ export default function Header() {
           <div className="h-4 w-px bg-border mx-1" />
 
           {/* User profile */}
-          <div className="relative">
-            <button
-              onClick={() => setShowDropdown((prev) => !prev)}
-              className="flex items-center gap-3 text-left focus:outline-none hover:opacity-80 transition-opacity cursor-pointer"
-            >
-              <div className="hidden flex-col items-end lg:flex leading-none">
-                <span className="text-sm font-medium">{user?.fullName || "Lê Đức Anh"}</span>
-                <span className="text-xs text-muted-foreground mt-1">
-                  {user?.role || "Nhân viên"}
-                </span>
-              </div>
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-foreground text-xs font-medium border border-border">
-                {user?.fullName?.charAt(0).toUpperCase() || "U"}
-              </div>
-            </button>
-
-            {/* Dropdown */}
-            {showDropdown && (
-              <div className="absolute right-0 mt-3 w-56 origin-top-right rounded-md border border-border bg-background p-2 shadow-sm animate-fade-in z-50">
-                <div className="px-3 py-3 border-b border-border mb-2">
-                  <p className="text-xs text-muted-foreground">Đăng nhập với</p>
-                  <p className="text-sm font-medium truncate mt-1">{user?.fullName}</p>
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">{user?.email}</p>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-3 text-left focus:outline-none hover:opacity-80 transition-opacity cursor-pointer">
+                <div className="hidden flex-col items-end lg:flex leading-none">
+                  <span className="text-sm font-medium">{user?.fullName || "Lê Đức Anh"}</span>
+                  <span className="text-xs text-muted-foreground mt-1">
+                    {user?.role || "Nhân viên"}
+                  </span>
                 </div>
-
-                <div className="py-1 space-y-0.5">
-                  <Link
-                    to={ROUTES.HRM.PROFILE}
-                    onClick={() => setShowDropdown(false)}
-                    className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
-                  >
-                    <User size={14} strokeWidth={1.5} />
-                    <span>Hồ sơ cá nhân</span>
-                  </Link>
-                  <Link
-                    to="#"
-                    onClick={() => setShowDropdown(false)}
-                    className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
-                  >
-                    <History size={14} strokeWidth={1.5} />
-                    <span>Lịch sử đăng nhập</span>
-                  </Link>
-                  <Link
-                    to="#"
-                    onClick={() => setShowDropdown(false)}
-                    className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/50 rounded-md transition-colors cursor-pointer"
-                  >
-                    <MessageSquare size={14} strokeWidth={1.5} />
-                    <span>Đóng góp ý kiến</span>
-                  </Link>
+                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-foreground text-xs font-medium border border-border">
+                  {user?.fullName?.charAt(0).toUpperCase() || "U"}
                 </div>
+              </button>
+            </DropdownMenuTrigger>
 
-                <div className="border-t border-border my-2"></div>
+            <DropdownMenuContent align="end" className="w-56 mt-2">
+              <DropdownMenuLabel className="px-3 py-2 font-normal">
+                <p className="text-xs text-muted-foreground">Đăng nhập với</p>
+                <p className="text-sm font-medium truncate mt-1 text-foreground">
+                  {user?.fullName}
+                </p>
+                <p className="text-xs text-muted-foreground truncate mt-0.5">{user?.email}</p>
+              </DropdownMenuLabel>
 
-                <button
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/50 rounded-md transition-colors cursor-pointer disabled:opacity-50"
-                >
-                  <LogOut size={14} strokeWidth={1.5} />
-                  <span>{isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}</span>
-                </button>
-              </div>
-            )}
-          </div>
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem asChild className="cursor-pointer gap-3 px-3 py-2">
+                <Link to={ROUTES.HRM.PROFILE} className="w-full">
+                  <User size={14} strokeWidth={1.5} />
+                  <span>Hồ sơ cá nhân</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="cursor-pointer gap-3 px-3 py-2">
+                <Link to="#" className="w-full">
+                  <History size={14} strokeWidth={1.5} />
+                  <span>Lịch sử đăng nhập</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="cursor-pointer gap-3 px-3 py-2">
+                <Link to="#" className="w-full">
+                  <MessageSquare size={14} strokeWidth={1.5} />
+                  <span>Đóng góp ý kiến</span>
+                </Link>
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="cursor-pointer gap-3 px-3 py-2"
+              >
+                <LogOut size={14} strokeWidth={1.5} />
+                <span>{isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

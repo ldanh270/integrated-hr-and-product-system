@@ -19,11 +19,7 @@ const privateRoutes = [
     component: lazy(() => import("@/pages/EmployeeList.tsx")),
     layout: MainLayout,
   },
-  {
-    path: "/employees/:id",
-    component: lazy(() => import("@/pages/ViewEmployee.tsx")),
-    layout: MainLayout,
-  },
+
   {
     path: "/hrm/profile",
     component: lazy(() => import("@/pages/Profile.tsx")),
