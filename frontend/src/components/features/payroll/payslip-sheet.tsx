@@ -7,6 +7,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import { COMPONENT_TYPE } from "@/config/entities/payroll.config"
 import { formatCurrency } from "@/lib/utils"
 import type { IPayslip } from "@/types/payroll.types"
 
@@ -78,7 +79,7 @@ export default function PayslipSheet({ payslip, open, onOpenChange }: PayslipShe
               </div>
               <div className="space-y-2 text-sm">
                 {payslip.details
-                  .filter((d) => d.type === "addition")
+                  .filter((d) => d.type === COMPONENT_TYPE.ADDITION)
                   .map((detail, idx) => (
                     <div key={idx} className="flex justify-between items-center py-1">
                       <span className="text-muted-foreground">{detail.name}</span>
@@ -105,7 +106,7 @@ export default function PayslipSheet({ payslip, open, onOpenChange }: PayslipShe
               </div>
               <div className="space-y-2 text-sm">
                 {payslip.details
-                  .filter((d) => d.type === "deduction")
+                  .filter((d) => d.type === COMPONENT_TYPE.DEDUCTION)
                   .map((detail, idx) => (
                     <div key={idx} className="flex justify-between items-center py-1">
                       <span className="text-muted-foreground">{detail.name}</span>

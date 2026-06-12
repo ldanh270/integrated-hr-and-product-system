@@ -1,3 +1,4 @@
+import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import { changePasswordSchema, updateProfileSchema } from "@/schemas/profile.schema.ts"
@@ -148,7 +149,8 @@ export class ProfileController {
         status: "error",
         message: error.message || "Failed to change password",
         type:
-          error.errorCode || (error.name === "ZodError" ? "VALIDATION_ERROR" : "INTERNAL_ERROR"),
+          error.errorCode ||
+          (error.name === "ZodError" ? ErrorCode.VALIDATION_ERROR : ErrorCode.INTERNAL_ERROR),
         errors: error.errors,
       })
     }

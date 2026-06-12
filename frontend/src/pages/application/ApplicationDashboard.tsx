@@ -1,5 +1,5 @@
 import { APPLICATION_TYPES, REGIME_TYPES } from "@/config/entities/attendance.config"
-import { ROLE } from "@/config/entities/employee.config"
+import { ROLE_LABELS } from "@/config/entities/employee.config"
 import { APPROVAL_CATEGORY } from "@/config/rules/approval.config"
 import { useApplicationDashboard } from "@/hooks/application/useApplicationDashboard"
 import { type IApprovalItem } from "@/lib/api/approval.api"
@@ -98,13 +98,7 @@ export default function ApplicationDashboard() {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Duyệt đơn từ</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Quản lý và phê duyệt các đơn từ của nhân viên dựa theo vai trò{" "}
-            {user?.role === ROLE.ADMIN
-              ? "Admin"
-              : user?.role === ROLE.GENERAL_MANAGER
-                ? "General Manager"
-                : user?.role === ROLE.HR_MANAGER
-                  ? "HR Manager"
-                  : "Team Leader"}
+            {ROLE_LABELS[user?.role ?? ""] ?? "Nhân viên"}
           </p>
         </div>
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-xs font-semibold">

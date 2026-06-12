@@ -1,3 +1,4 @@
+import { ConfirmProvider } from "@/components/common"
 import { ROUTES } from "@/config/routes.config"
 import { SUBSYSTEMS } from "@/config/subsystem"
 import { privateRoutes, publicRoutes } from "@/routes"
@@ -5,7 +6,7 @@ import { useAuthStore } from "@/store/auth-store.ts"
 
 import { Fragment, Suspense, lazy } from "react"
 
-import { BrowserRouter as Router, Navigate, Route,  Routes } from "react-router-dom"
+import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom"
 import { Toaster } from "sonner"
 
 const NotFound = lazy(() => import("@/pages/NotFound.tsx"))
@@ -41,91 +42,94 @@ const App = () => {
   return (
     <Router>
       <Toaster position="top-right" richColors />
-      <Suspense
-        fallback={
-          <div className="flex h-screen w-full items-center justify-center bg-background">
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          </div>
-        }
-      >
-        <Routes>
-          {/* Public Routes */}
-          {publicRoutes.map((route, index) => {
-            const Page = route.component
-            const Layout = route.layout || Fragment
+      <ConfirmProvider>
+        <Suspense
+          fallback={
+            <div className="flex h-screen w-full items-center justify-center bg-background">
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            </div>
+          }
+        >
+          <Routes>
+            {/* Public Routes */}
+            {publicRoutes.map((route, index) => {
+              const Page = route.component
+              const Layout = route.layout || Fragment
 
-            return (
-              <Route
-                key={`public-${index}`}
-                path={route.path}
-                element={
-                  <PublicRoute>
-                    <Layout>
-                      <Page />
-                    </Layout>
-                  </PublicRoute>
+              return (
+                <Route
+                  key={`public-${index}`}
+                  path={route.path}
+                  element={
+                    <PublicRoute>
+                      <Layout>
+                        <Page />
+                      </Layout>
+                    </PublicRoute>
+                  }
+                />
+              )
+            })}
+
+            {/* Subsystem Redirects */}
+            {SUBSYSTEMS.map((subsystem) => {
+              const subsystemKey = subsystem.id.toUpperCase() as keyof typeof ROUTES
+              const routeObj = ROUTES[subsystemKey]
+
+              // Get from ROUTES object if available, otherwise get from sidebarItems
+              let firstPath =
+                subsystem.sidebarItems[0]?.path || `${subsystem.routePrefix}/dashboard`
+
+              if (routeObj && typeof routeObj === "object") {
+                const values = Object.values(routeObj)
+                if (values.length > 0 && typeof values[0] === "string") {
+                  firstPath = values[0]
                 }
-              />
-            )
-          })}
-
-          {/* Subsystem Redirects */}
-          {SUBSYSTEMS.map((subsystem) => {
-            const subsystemKey = subsystem.id.toUpperCase() as keyof typeof ROUTES
-            const routeObj = ROUTES[subsystemKey]
-
-            // Get from ROUTES object if available, otherwise get from sidebarItems
-            let firstPath = subsystem.sidebarItems[0]?.path || `${subsystem.routePrefix}/dashboard`
-
-            if (routeObj && typeof routeObj === "object") {
-              const values = Object.values(routeObj)
-              if (values.length > 0 && typeof values[0] === "string") {
-                firstPath = values[0]
               }
-            }
 
-            // Prevent infinite loop if the first path is the prefix itself (e.g. attendance)
-            if (firstPath === subsystem.routePrefix) {
-              return null
-            }
+              // Prevent infinite loop if the first path is the prefix itself (e.g. attendance)
+              if (firstPath === subsystem.routePrefix) {
+                return null
+              }
 
-            return (
-              <Route
-                key={`redirect-${subsystem.id}`}
-                path={subsystem.routePrefix}
-                element={
-                  <ProtectedRoute>
-                    <Navigate to={firstPath} replace />
-                  </ProtectedRoute>
-                }
-              />
-            )
-          })}
+              return (
+                <Route
+                  key={`redirect-${subsystem.id}`}
+                  path={subsystem.routePrefix}
+                  element={
+                    <ProtectedRoute>
+                      <Navigate to={firstPath} replace />
+                    </ProtectedRoute>
+                  }
+                />
+              )
+            })}
 
-          {/* Private Routes */}
-          {privateRoutes.map((route, index) => {
-            const Page = route.component
-            const Layout = route.layout || Fragment
+            {/* Private Routes */}
+            {privateRoutes.map((route, index) => {
+              const Page = route.component
+              const Layout = route.layout || Fragment
 
-            return (
-              <Route
-                key={`private-${index}`}
-                path={route.path}
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Page />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-            )
-          })}
+              return (
+                <Route
+                  key={`private-${index}`}
+                  path={route.path}
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <Page />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+              )
+            })}
 
-          <Route path="/" element={<RootRedirect />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
+            <Route path="/" element={<RootRedirect />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
+      </ConfirmProvider>
     </Router>
   )
 }

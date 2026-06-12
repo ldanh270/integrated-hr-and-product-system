@@ -1,4 +1,5 @@
 import { ROLE } from "@/configs/entities/employee.config.ts"
+import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
   ATTENDANCE_ERROR_CODES,

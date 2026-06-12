@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
+  COMPONENT_TYPE,
   COMPONENT_TYPE_LABELS,
   COMPONENT_VALUE_TYPE_LABELS,
 } from "@/config/entities/payroll.config"
@@ -132,9 +133,21 @@ export function SalaryComponentSelectModal({
                   <SelectValue placeholder="Loại thành phần" />
                 </SelectTrigger>
                 <SelectContent className="border-border rounded-md shadow-sm">
-                  <SelectItem value="all" className="rounded-sm cursor-pointer focus:bg-muted">Tất cả loại</SelectItem>
-                  <SelectItem value="addition" className="rounded-sm cursor-pointer focus:bg-muted">Cộng vào</SelectItem>
-                  <SelectItem value="deduction" className="rounded-sm cursor-pointer focus:bg-muted">Khấu trừ</SelectItem>
+                  <SelectItem value="all" className="rounded-sm cursor-pointer focus:bg-muted">
+                    Tất cả loại
+                  </SelectItem>
+                  <SelectItem
+                    value={COMPONENT_TYPE.ADDITION}
+                    className="rounded-sm cursor-pointer focus:bg-muted"
+                  >
+                    Cộng vào
+                  </SelectItem>
+                  <SelectItem
+                    value={COMPONENT_TYPE.DEDUCTION}
+                    className="rounded-sm cursor-pointer focus:bg-muted"
+                  >
+                    Khấu trừ
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>

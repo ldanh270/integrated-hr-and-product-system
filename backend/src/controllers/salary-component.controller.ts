@@ -1,3 +1,4 @@
+import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { ISalaryComponentService } from "@/types/payroll.types.ts"
 
@@ -66,7 +67,7 @@ export class SalaryComponentController {
         res.status(HttpStatusCode.OK).json({ data: { valid: true } })
       } else {
         res.status(HttpStatusCode.BAD_REQUEST).json({
-          error: { message: result.error, code: "INVALID_FORMULA" },
+          error: { message: result.error, code: ErrorCode.INVALID_FORMULA },
         })
       }
     } catch (error) {

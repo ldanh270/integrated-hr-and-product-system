@@ -9,9 +9,6 @@
 -- CreateEnum
 CREATE TYPE "LeaveType" AS ENUM ('annual_leave', 'sick_leave', 'maternity_leave', 'bereavement_leave', 'marriage_leave', 'unpaid_leave', 'other');
 
--- CreateEnum
-CREATE TYPE "TaskCreationPolicy" AS ENUM ('leader_only', 'all_members');
-
 -- DropForeignKey
 ALTER TABLE "Application" DROP CONSTRAINT "Application_workingShiftId_fkey";
 
@@ -28,11 +25,6 @@ ALTER TABLE "ApplicationLeaveDetail" ADD COLUMN     "leaveType" "LeaveType" NOT 
 ALTER TABLE "ApplicationShiftSwapDetail" ALTER COLUMN "swapWithEmployeeId" DROP NOT NULL,
 ALTER COLUMN "swapWithShiftId" DROP NOT NULL;
 
--- AlterTable
-ALTER TABLE "PayrollSettings" DROP COLUMN "triggerSecond";
-
--- AlterTable
-ALTER TABLE "Project" ADD COLUMN     "taskCreationPolicy" "TaskCreationPolicy" NOT NULL DEFAULT 'leader_only';
 
 -- CreateTable
 CREATE TABLE "ApplicationBusinessTripDetail" (
