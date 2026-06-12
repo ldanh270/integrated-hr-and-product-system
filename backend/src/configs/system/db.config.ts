@@ -1,3 +1,6 @@
+/** Database connection string from environment */
+export const CONNECTION_STRING = process.env.DATABASE_URL
+
 /**
  * Common Database Error Codes
  * Maps database-specific error codes (Prisma, MongoDB, etc.) to standardized definitions
