@@ -32,10 +32,12 @@ const controller = new AttendanceController(service)
 attendanceRoutes.use(authenticate)
 
 attendanceRoutes.get(
-  "/",
+  "/export",
   authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
-  controller.queryRecords,
+  controller.exportReport,
 )
+
+attendanceRoutes.get("/", controller.queryRecords)
 
 attendanceRoutes.post("/check-in", controller.checkIn)
 attendanceRoutes.post("/check-out", controller.checkOut)

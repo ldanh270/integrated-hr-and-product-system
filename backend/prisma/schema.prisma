@@ -50,6 +50,16 @@ enum HolidayType {
   company
 }
 
+enum LeaveType {
+  annual_leave
+  sick_leave
+  maternity_leave
+  bereavement_leave
+  marriage_leave
+  unpaid_leave
+  other
+}
+
 enum ApplicationType {
   leave
   overtime
@@ -214,7 +224,6 @@ model WorkingShift {
 
   // Relations for ShiftSchedule weekdays
   shiftScheduleDays           ShiftScheduleDay[]
-  applications                Application[]
   applicationShiftSwapDetails ApplicationShiftSwapDetail[] @relation("ShiftSwapWorkingShift")
 
   /// @db.Check("start_time >= 0 AND start_time < 1440")
@@ -343,19 +352,19 @@ model Application {
   overtimeDetail  ApplicationOvertimeDetail?
   regimeDetail    ApplicationRegimeDetail?
   lateEarlyDetail ApplicationLateEarlyDetail?
-  workingShift    WorkingShift?               @relation(fields: [workingShiftId], references: [id], onDelete: Restrict)
-  workingShiftId  String?
+  businessTripDetail ApplicationBusinessTripDetail?
+  workFromHomeDetail ApplicationWorkFromHomeDetail?
 
   @@index([employeeId, status])
   @@index([employeeId, startDate(sort: Desc)])
   @@index([status, type])
   @@index([approvedById])
-  @@index([workingShiftId])
 }
 
 model ApplicationLeaveDetail {
   applicationId String      @id
   application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  leaveType     LeaveType
   regimeType    RegimeType
 }
 
@@ -372,10 +381,10 @@ model ApplicationShiftSwapDetail {
   workingShift   WorkingShift? @relation("ShiftSwapWorkingShift", fields: [workingShiftId], references: [id], onDelete: Cascade)
 
   // If swap with specific employee and shift instead of any available shift
-  swapWithEmployeeId String
-  swapWithEmployee   Employee      @relation("ApplicationSwapWith", fields: [swapWithEmployeeId], references: [id], onDelete: Cascade)
-  swapWithShiftId    String
-  swapWithShift      EmployeeShift @relation("ApplicationSwapWithShift", fields: [swapWithShiftId], references: [id], onDelete: Cascade)
+  swapWithEmployeeId String?
+  swapWithEmployee   Employee?      @relation("ApplicationSwapWith", fields: [swapWithEmployeeId], references: [id], onDelete: Cascade)
+  swapWithShiftId    String?
+  swapWithShift      EmployeeShift? @relation("ApplicationSwapWithShift", fields: [swapWithShiftId], references: [id], onDelete: Cascade)
 
   @@index([employeeShiftId])
   @@index([workingShiftId])
@@ -412,6 +421,20 @@ model ApplicationLateEarlyDetail {
   isLate          Boolean
 
   @@index([employeeShiftId])
+}
+
+model ApplicationBusinessTripDetail {
+  applicationId String      @id
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  location      String
+  purpose       String?
+  budget        Decimal?    @db.Decimal(15, 2)
+}
+
+model ApplicationWorkFromHomeDetail {
+  applicationId String      @id
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  location      String?
 }
 
 model HolidayCalendar {
