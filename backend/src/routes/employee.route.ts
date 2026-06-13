@@ -3,91 +3,46 @@ import { EmployeeController } from "@/controllers/employee.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
 import { authorizeRoles } from "@/middlewares/role.middleware.ts"
-import { validate } from "@/middlewares/validate.middleware.ts"
+import { PrismaAuthRepository } from "@/repositories/auth.repository.ts"
 import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
-import {
-  createEmployeeSchema,
-  listEmployeesQuerySchema,
-  updateEmployeeSchema,
-  updateEmployeeStatusSchema,
-} from "@/schemas/employee.schema.ts"
 import { EmployeeService } from "@/services/employee.service.ts"
 
 import express from "express"
 
-/**
- * Express router defining routing routes and applying validation/authorization middlewares
- * for Employee management operations.
- */
 const employeeRoutes = express.Router()
 
-// Wire dependencies (Constructor Injection)
-const repository = new PrismaEmployeeRepository(prisma)
-const service = new EmployeeService(repository)
+const employeeRepository = new PrismaEmployeeRepository(prisma)
+const authRepository = new PrismaAuthRepository(prisma)
+
+// Inject both repositories into the EmployeeService
+const service = new EmployeeService(employeeRepository, authRepository)
+
 const controller = new EmployeeController(service)
 
-// Apply JWT authentication guard globally for all employee endpoints
 employeeRoutes.use(authenticate)
 
-/**
- * GET /employees
- * Retrieve list of employees. Paginated and filtered.
- * Accessible to all authenticated users.
- */
-employeeRoutes.get("/", validate(listEmployeesQuerySchema, "query"), controller.list)
+employeeRoutes.get("/", controller.list as any)
+employeeRoutes.get("/:id", controller.getOne as any)
 
-/**
- * GET /employees/:id
- * Retrieve details of a specific employee by ID.
- * Accessible to all authenticated users.
- */
-employeeRoutes.get("/:id", controller.getOne)
-
-/**
- * POST /employees
- * Create a new employee.
- * Access restricted to Admin, HR Manager, and General Manager roles.
- */
 employeeRoutes.post(
   "/",
   authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
-  validate(createEmployeeSchema),
-  controller.create,
+  controller.create as any,
 )
-
-/**
- * PATCH /employees/:id
- * Update details of an existing employee.
- * Access restricted to Admin, HR Manager, and General Manager roles.
- */
 employeeRoutes.patch(
   "/:id",
   authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
-  validate(updateEmployeeSchema),
-  controller.update,
+  controller.update as any,
 )
-
-/**
- * PATCH /employees/:id/status
- * Update the employment status of an employee.
- * Access restricted to Admin, HR Manager, and General Manager roles.
- */
 employeeRoutes.patch(
   "/:id/status",
   authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
-  validate(updateEmployeeStatusSchema),
-  controller.updateStatus,
+  controller.updateStatus as any,
 )
-
-/**
- * DELETE /employees/:id
- * Soft delete an employee record.
- * Access restricted to Admin, HR Manager, and General Manager roles.
- */
 employeeRoutes.delete(
   "/:id",
   authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
-  controller.delete,
+  controller.delete as any,
 )
 
 export default employeeRoutes
