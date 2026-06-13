@@ -82,6 +82,7 @@ interface IBaseApplicationDTO {
   endDate: string | Date
   reason?: string
   note?: string
+  assignedToId?: string
 }
 
 // ─── DISCRIMINATED UNION SUBMIT DTO ──────────────────────────

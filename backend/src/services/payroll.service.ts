@@ -1,4 +1,4 @@
-import { ATTENDANCE_STATUS, EMPLOYEE_SHIFT_STATUS } from "@/configs/entities/attendance.config.ts"
+import { ATTENDANCE_STATUS, EMPLOYEE_SHIFT_STATUS, PAID_LEAVE_TYPES } from "@/configs/entities/attendance.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { PAYROLL_STATUS, SALARY_COMPONENT_TYPES, generateDefaultPayrollName } from "@/configs/entities/payroll.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
@@ -95,13 +95,51 @@ export class PayrollService implements IPayrollService {
         if (record.status === ATTENDANCE_STATUS.ON_TIME || record.status === ATTENDANCE_STATUS.LATE)
           attendance.workingDays += 1
         if (record.status === ATTENDANCE_STATUS.ABSENT) attendance.absentDays += 1
-        if (record.status === ATTENDANCE_STATUS.OVERTIME) attendance.workingDays += 1 // or separate counting
+        if (record.status === ATTENDANCE_STATUS.OVERTIME) attendance.workingDays += 1
         if (record.status === (EMPLOYEE_SHIFT_STATUS.HOLIDAY_PENDING as string))
-          attendance.holidayDays += 1 // adjust based on actual logic
+          attendance.holidayDays += 1
 
         attendance.overtimeMinutes += record.overtimeMinutes || 0
         attendance.lateMinutes += record.lateMinutes || 0
+        attendance.earlyLeaveMinutes += record.earlyLeaveMinutes || 0
       })
+
+      // Query approved applications for Paid Leaves and Excused Late/Early
+      const approvedApps = await this.prisma.application.findMany({
+        where: {
+          employeeId: employee.id,
+          status: "approved",
+          type: { in: ["leave", "late_early"] },
+          startDate: { lte: periodEnd },
+          endDate: { gte: periodStart },
+        },
+        include: { leaveDetail: true, lateEarlyDetail: true }
+      })
+
+      let paidLeaveDays = 0
+      let excusedLateMinutes = 0
+      let excusedEarlyMinutes = 0
+
+      for (const app of approvedApps) {
+        if (app.type === "leave" && app.leaveDetail) {
+          if ((PAID_LEAVE_TYPES as string[]).includes(app.leaveDetail.leaveType)) {
+            const start = app.startDate > periodStart ? app.startDate : periodStart
+            const end = app.endDate < periodEnd ? app.endDate : periodEnd
+            const diffMs = end.getTime() - start.getTime()
+            paidLeaveDays += Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
+          }
+        } else if (app.type === "late_early" && app.lateEarlyDetail) {
+          if (app.lateEarlyDetail.isLate) {
+            excusedLateMinutes += app.lateEarlyDetail.durationMinutes
+          } else {
+            excusedEarlyMinutes += app.lateEarlyDetail.durationMinutes
+          }
+        }
+      }
+
+      attendance.workingDays += paidLeaveDays
+      attendance.lateMinutes = Math.max(0, attendance.lateMinutes - excusedLateMinutes)
+      attendance.earlyLeaveMinutes = Math.max(0, attendance.earlyLeaveMinutes - excusedEarlyMinutes)
 
       // Build context
       const context: IFormulaContext | any = {

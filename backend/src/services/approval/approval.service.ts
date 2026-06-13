@@ -6,6 +6,7 @@ import { ApprovalStrategyFactory } from "@/services/approval/approval.strategy.t
 import { IApprovalItem, IApprovalService, IProcessApprovalDTO } from "@/types/approval.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
+import { PrismaApplicationRepository } from "@/repositories/application.repository.ts"
 
 import { ApplicationStatus, ApplicationType, PasswordResetStatus, ProjectStatus } from "@prisma/client"
 
@@ -46,12 +47,44 @@ export class ApprovalService implements IApprovalService {
         where: {
           status: ApplicationStatus.pending,
           ...(employeeIdFilter ? { employeeId: { in: employeeIdFilter } } : {}),
+          // If not admin/GM/HR, only show apps assigned to this processor or unassigned apps
+          ...(role === ROLE.TEAM_LEADER
+            ? {
+                OR: [
+                  { assignedToId: processorId },
+                  { assignedToId: null },
+                ],
+              }
+            : {}),
         },
-        include: { employee: { select: { fullName: true } } },
+        include: { 
+          employee: { select: { fullName: true } },
+          assignedTo: { select: { id: true, fullName: true } },
+          shiftSwapDetail: {
+            include: {
+              swapWithEmployee: { select: { fullName: true } },
+              employeeShift: { include: { shift: { select: { name: true } } } },
+              swapWithShift: { include: { shift: { select: { name: true } } } },
+              workingShift: { select: { name: true } }
+            }
+          },
+          overtimeDetail: true,
+          lateEarlyDetail: true,
+          businessTripDetail: true,
+          workFromHomeDetail: true,
+          regimeDetail: true,
+          leaveDetail: true,
+        },
         orderBy: { createdAt: "desc" },
       })
 
       for (const app of apps) {
+        // If application has a specific assignedTo, only that person or global admins/GM/HR can approve
+        const isAssignedToSelf = app.assignedToId === processorId || app.assignedToId === null
+        const isGlobalApprover =
+          role === ROLE.ADMIN || role === ROLE.GENERAL_MANAGER || role === ROLE.HR_MANAGER
+        if (!isGlobalApprover && !isAssignedToSelf) continue
+
         const canApprove = await strategy.canApprove("application", app.employeeId, processorId)
         if (canApprove) {
           list.push({
@@ -67,6 +100,15 @@ export class ApprovalService implements IApprovalService {
               endDate: app.endDate,
               reason: app.reason,
               note: app.note,
+              assignedToId: app.assignedToId,
+              assignedTo: (app as any).assignedTo,
+              shiftSwapDetail: app.shiftSwapDetail,
+              overtimeDetail: app.overtimeDetail,
+              lateEarlyDetail: app.lateEarlyDetail,
+              businessTripDetail: app.businessTripDetail,
+              workFromHomeDetail: app.workFromHomeDetail,
+              regimeDetail: app.regimeDetail,
+              leaveDetail: app.leaveDetail,
             },
           })
         }
@@ -144,70 +186,22 @@ export class ApprovalService implements IApprovalService {
         )
       }
 
-      return prisma.$transaction(async (tx) => {
-        const applicationRecord = await tx.application.findUnique({
-          where: { id: dto.id },
-          include: { shiftSwapDetail: true },
-        })
-        if (!applicationRecord) {
-          throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, "Service")
-        }
-
-        if (
-          applicationRecord.type === ApplicationType.shift_swap &&
-          dto.status === APPLICATION_STATUS.APPROVED
-        ) {
-          const swapDetail = applicationRecord.shiftSwapDetail
-          if (!swapDetail) {
-            throw new AppError(
-              "Shift swap detail not found",
-              HttpStatusCode.BAD_REQUEST,
-              "Service",
-            )
-          }
-
-          const { employeeShiftId, swapWithShiftId } = swapDetail
-          const shiftA = await tx.employeeShift.findUnique({ where: { id: employeeShiftId } })
-          const shiftB = swapWithShiftId
-            ? await tx.employeeShift.findUnique({ where: { id: swapWithShiftId } })
-            : null
-
-          if (!shiftA || !shiftB) {
-            throw new AppError(
-              "One or both employee shifts not found for swap",
-              HttpStatusCode.BAD_REQUEST,
-              "Service",
-            )
-          }
-
-          const tempShiftId = shiftA.shiftId
-          await tx.employeeShift.update({
-            where: { id: employeeShiftId },
-            data: { shiftId: shiftB.shiftId },
-          })
-          if (swapWithShiftId && tempShiftId) {
-            await tx.employeeShift.update({
-              where: { id: swapWithShiftId },
-              data: { shiftId: tempShiftId },
-            })
-          }
-        }
-
-        return tx.application.update({
+      if (dto.status === APPLICATION_STATUS.APPROVED) {
+        const appRepo = new PrismaApplicationRepository(prisma)
+        const result = await appRepo.approve(dto.id, dto.processorId)
+        if (!result) throw new AppError("Failed to approve application", HttpStatusCode.INTERNAL_SERVER_ERROR, "Service")
+        return result
+      } else {
+        return prisma.application.update({
           where: { id: dto.id },
           data: {
-            status:
-              dto.status === APPLICATION_STATUS.APPROVED
-                ? ApplicationStatus.approved
-                : ApplicationStatus.rejected,
+            status: ApplicationStatus.rejected,
             approvedById: dto.processorId,
             approvedAt: new Date(),
-            ...(dto.rejectReason && dto.status === APPLICATION_STATUS.REJECTED
-              ? { rejectReason: dto.rejectReason }
-              : {}),
+            rejectReason: dto.rejectReason,
           },
         })
-      })
+      }
     } else if (dto.category === "password_reset") {
       const req = await prisma.passwordResetRequest.findUnique({ where: { id: dto.id } })
       if (!req)

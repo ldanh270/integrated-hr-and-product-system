@@ -37,6 +37,13 @@ employeeRoutes.use(authenticate)
 employeeRoutes.get("/", validate(listEmployeesQuerySchema, "query"), controller.list)
 
 /**
+ * GET /employees/approvers
+ * Retrieve list of employees who can approve applications (Team Leader, HR Manager, Admin, GM).
+ * Accessible to all authenticated users for use in form dropdowns.
+ */
+employeeRoutes.get("/approvers", controller.listApprovers)
+
+/**
  * GET /employees/:id
  * Retrieve details of a specific employee by ID.
  * Accessible to all authenticated users.

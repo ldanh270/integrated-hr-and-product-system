@@ -69,6 +69,7 @@ const baseApplicationFields = {
   endDate: dateString.optional(),
   reason: z.string().min(5).max(500).optional(),
   note: z.string().max(1000).optional(),
+  assignedToId: z.string().cuid("Invalid assignedTo employee ID").optional(),
 }
 
 // ─── TYPE-SPECIFIC APPLICATION SCHEMAS ───────────────────────

@@ -1,4 +1,4 @@
-import { PAID_LEAVE_TYPES } from "@/configs/entities/attendance.config.ts"
+import { APPLICATION_TYPES, PAID_LEAVE_TYPES } from "@/configs/entities/attendance.config.ts"
 import {
   IApplicationRepository,
   ILeaveType,
@@ -6,7 +6,7 @@ import {
   ISubmitApplicationDTO,
 } from "@/types/attendance.types.ts"
 
-import { ApplicationStatus, ApplicationType, PrismaClient } from "@prisma/client"
+import { ApplicationStatus, ApplicationType, AttendanceStatus, PrismaClient } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
@@ -39,12 +39,12 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
 
   /**
    * Creates and submits a new application with the correct detail relation in a single query.
-   * 
+   *
    * @param data - The application details and parameters.
    * @returns A promise that resolves to the newly created application with all included relations.
    */
   async submit(data: ISubmitApplicationDTO): Promise<any> {
-    const { employeeId, type, startDate, endDate, reason, note, detail } = data as any
+    const { employeeId, type, startDate, endDate, reason, note, assignedToId, detail } = data as any
 
     return this.prisma.application.create({
       data: {
@@ -55,6 +55,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
         endDate: new Date(endDate ?? startDate),
         reason,
         note,
+        assignedToId: assignedToId ?? null,
         ...this._buildDetailCreate(data),
       },
       include: APPLICATION_INCLUDE,
@@ -63,7 +64,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
 
   /**
    * Finds a single application by its unique identifier.
-   * 
+   *
    * @param id - The application ID.
    * @returns A promise that resolves to the application details or null if not found.
    */
@@ -76,7 +77,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
 
   /**
    * Retrieves a paginated list of applications for a specific employee.
-   * 
+   *
    * @param employeeId - The employee's ID.
    * @param query - The pagination and filter parameters.
    * @returns A promise that resolves to the matching applications and total count.
@@ -91,7 +92,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
 
   /**
    * Retrieves a paginated list of all applications in the database, with filters.
-   * 
+   *
    * @param query - The pagination and filter parameters.
    * @returns A promise that resolves to the matching applications and total count.
    */
@@ -102,7 +103,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
 
   /**
    * Cancels a pending application if it belongs to the specified employee.
-   * 
+   *
    * @param id - The application ID.
    * @param employeeId - The ID of the employee owning the application.
    * @returns A promise that resolves to the updated application, or null if update failed.
@@ -125,31 +126,109 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
 
   /**
    * Approves a pending application and records the approving processor.
-   * 
+   * Also executes necessary side-effects (like swapping shifts).
+   *
    * @param id - The application ID.
    * @param approvedBy - The ID of the processor approving the application.
    * @returns A promise that resolves to the updated application, or null if update failed.
    */
   async approve(id: string, approvedBy: string): Promise<any | null> {
     try {
-      return await this.prisma.application.update({
-        where: { id, status: ApplicationStatus.pending },
-        data: {
-          status: ApplicationStatus.approved,
-          approvedById: approvedBy,
-          approvedAt: new Date(),
-          rejectReason: null,
-        },
-        include: APPLICATION_INCLUDE,
+      return await this.prisma.$transaction(async (tx) => {
+        // 1. Fetch application to check type and details
+        const app = await tx.application.findUnique({
+          where: { id, status: ApplicationStatus.pending },
+          include: APPLICATION_INCLUDE,
+        })
+
+        if (!app) return null
+
+        // 2. Execute side-effects
+        if (app.type === ApplicationType.shift_swap && app.shiftSwapDetail) {
+          const detail = app.shiftSwapDetail
+          if (detail.swapWithShiftId && detail.swapWithEmployeeId) {
+            // Swapping two existing employee shifts
+            const shift1 = await tx.employeeShift.findUnique({
+              where: { id: detail.employeeShiftId },
+            })
+            const shift2 = await tx.employeeShift.findUnique({
+              where: { id: detail.swapWithShiftId },
+            })
+
+            if (shift1 && shift2) {
+              const tempDate = new Date("1970-01-01")
+              // Step 1: Move shift1 to a temp date to avoid unique constraint violations [employeeId, assignedDate]
+              await tx.employeeShift.update({
+                where: { id: shift1.id },
+                data: { assignedDate: tempDate },
+              })
+              // Step 2: Update shift2 with shift1's original shiftId and date
+              await tx.employeeShift.update({
+                where: { id: shift2.id },
+                data: { shiftId: shift1.shiftId, assignedDate: shift1.assignedDate },
+              })
+              // Step 3: Update shift1 with shift2's original shiftId and date
+              await tx.employeeShift.update({
+                where: { id: shift1.id },
+                data: { shiftId: shift2.shiftId, assignedDate: shift2.assignedDate },
+              })
+            }
+          } else if (detail.workingShiftId) {
+            // Swapping to a different working shift on the same day
+            await tx.employeeShift.update({
+              where: { id: detail.employeeShiftId },
+              data: { shiftId: detail.workingShiftId },
+            })
+          }
+        } else if (app.type === ApplicationType.overtime && app.overtimeDetail) {
+          const detail = app.overtimeDetail
+          const start = new Date(app.startDate).getTime()
+          const end = new Date(app.endDate).getTime()
+          const minutes = Math.max(0, Math.round((end - start) / 60000))
+
+          if (minutes > 0) {
+            const shift = await tx.employeeShift.findUnique({
+              where: { id: detail.employeeShiftId },
+            })
+            if (shift) {
+              await tx.attendanceRecord.upsert({
+                where: { employeeShiftId: shift.id },
+                create: {
+                  employeeId: shift.employeeId,
+                  employeeShiftId: shift.id,
+                  date: shift.assignedDate,
+                  status: AttendanceStatus.absent,
+                  overtimeMinutes: minutes,
+                },
+                update: {
+                  overtimeMinutes: { increment: minutes },
+                },
+              })
+            }
+          }
+        }
+
+        // 3. Update application status
+        return await tx.application.update({
+          where: { id },
+          data: {
+            status: ApplicationStatus.approved,
+            approvedById: approvedBy,
+            approvedAt: new Date(),
+            rejectReason: null,
+          },
+          include: APPLICATION_INCLUDE,
+        })
       })
-    } catch {
+    } catch (err) {
+      console.error("[ApplicationRepository.approve] Failed:", err)
       return null
     }
   }
 
   /**
    * Rejects a pending application, recording the processor and the rejection reason.
-   * 
+   *
    * @param id - The application ID.
    * @param rejectedBy - The ID of the processor rejecting the application.
    * @param rejectReason - The explanation for rejection.
@@ -174,7 +253,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
 
   /**
    * Checks if an employee has any pending or approved leave applications overlapping with the specified range.
-   * 
+   *
    * @param employeeId - The employee's ID.
    * @param startDate - The starting date of the range.
    * @param endDate - The ending date of the range.
@@ -204,7 +283,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
 
   /**
    * Calculates the total number of approved leave days used by an employee for a specific leave type in a given year.
-   * 
+   *
    * @param employeeId - The employee's ID.
    * @param leaveType - The type of leave.
    * @param year - The calendar year.
@@ -242,13 +321,13 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
 
   /**
    * Constructs the nested detail creation payload for Prisma based on the application type.
-   * 
+   *
    * @param data - The application submission DTO.
    * @returns The Prisma nested write object for details.
    */
   private _buildDetailCreate(data: ISubmitApplicationDTO): Record<string, any> {
     switch (data.type) {
-      case "leave":
+      case APPLICATION_TYPES.LEAVE.LABEL:
         return {
           leaveDetail: {
             create: {
@@ -258,21 +337,21 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
           },
         }
 
-      case "overtime":
+      case APPLICATION_TYPES.OVERTIME.LABEL:
         return {
           overtimeDetail: {
             create: { employeeShiftId: data.detail.employeeShiftId },
           },
         }
 
-      case "work_from_home":
+      case APPLICATION_TYPES.WORK_FROM_HOME.LABEL:
         return {
           workFromHomeDetail: {
             create: { location: data.detail?.location },
           },
         }
 
-      case "shift_swap":
+      case APPLICATION_TYPES.SHIFT_SWAP.LABEL:
         return {
           shiftSwapDetail: {
             create: {
@@ -284,7 +363,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
           },
         }
 
-      case "business_trip":
+      case APPLICATION_TYPES.BUSINESS_TRIP.LABEL:
         return {
           businessTripDetail: {
             create: {
@@ -295,7 +374,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
           },
         }
 
-      case "late_early":
+      case APPLICATION_TYPES.LATE_EARLY.LABEL:
         return {
           lateEarlyDetail: {
             create: {
@@ -306,7 +385,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
           },
         }
 
-      case "regime":
+      case APPLICATION_TYPES.REGIME.LABEL:
         return {
           regimeDetail: {
             create: {
@@ -326,7 +405,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
 
   /**
    * Constructs the Prisma database filter conditions from query parameters.
-   * 
+   *
    * @param query - The filter parameters.
    * @returns The Prisma filter object.
    */
@@ -347,7 +426,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
 
   /**
    * Executes a paginated query and counts matching records within a single database transaction.
-   * 
+   *
    * @param where - The Prisma filter conditions.
    * @param query - Pagination parameters.
    * @returns A promise that resolves to the matching records and total count.

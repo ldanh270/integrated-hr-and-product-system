@@ -1,4 +1,6 @@
+import { EMPLOYEE_STATUS, ROLE } from "@/configs/entities/employee.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { prisma } from "@/libs/database.ts"
 import {
   CreateEmployeeDto,
   Employee,
@@ -134,6 +136,24 @@ export class EmployeeService implements IEmployeeService {
     await this.getEmployee(id)
 
     return this.repository.deleteEmployee(id)
+  }
+
+  /**
+   * Returns a flat list of employees who hold approver-eligible roles.
+   * Used to populate the "Người duyệt đơn" dropdown in the application form.
+   * @returns List of approver employees with minimal fields.
+   */
+  async listApprovers(): Promise<{ id: string; fullName: string; role: string; position: string | null }[]> {
+    const APPROVER_ROLES = [ROLE.ADMIN, ROLE.GENERAL_MANAGER, ROLE.HR_MANAGER, ROLE.TEAM_LEADER] as any[]
+    return prisma.employee.findMany({
+      where: {
+        role: { in: APPROVER_ROLES },
+        status: EMPLOYEE_STATUS.ACTIVE,
+        deletedAt: null,
+      },
+      select: { id: true, fullName: true, role: true, position: true },
+      orderBy: [{ role: "asc" }, { fullName: "asc" }],
+    })
   }
 
   /**

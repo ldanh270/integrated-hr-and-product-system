@@ -1,4 +1,4 @@
-import { APPLICATION_TYPES, REGIME_TYPES } from "@/config/entities/attendance.config"
+import { APPLICATION_TYPES, REGIME_TYPE, REGIME_TYPES } from "@/config/entities/attendance.config"
 import { ROLE_LABELS } from "@/config/entities/employee.config"
 import { APPROVAL_CATEGORY } from "@/config/rules/approval.config"
 import { useApplicationDashboard } from "@/hooks/application/useApplicationDashboard"
@@ -337,6 +337,15 @@ export default function ApplicationDashboard() {
                 </span>
               </div>
 
+              {selectedApproval.details.assignedTo && (
+                <div className="grid grid-cols-3 border-b border-border/30 pb-2">
+                  <span className="text-muted-foreground font-medium">Người duyệt CĐ:</span>
+                  <span className="col-span-2 text-foreground font-semibold">
+                    {selectedApproval.details.assignedTo.fullName}
+                  </span>
+                </div>
+              )}
+
               <div className="grid grid-cols-3 border-b border-border/30 pb-2">
                 <span className="text-muted-foreground font-medium">Thời gian tạo:</span>
                 <span className="col-span-2 text-foreground font-semibold">
@@ -359,7 +368,139 @@ export default function ApplicationDashboard() {
                       {new Date(selectedApproval.details.endDate!).toLocaleDateString("vi-VN")}
                     </span>
                   </div>
-                  {selectedApproval.details.regimeType && (
+                  
+                  {/* Leave Detail */}
+                  {selectedApproval.details.leaveDetail && (
+                    <>
+                      <div className="grid grid-cols-3 border-b border-border/30 pb-2">
+                        <span className="text-muted-foreground font-medium">Loại nghỉ phép:</span>
+                        <span className="col-span-2 text-foreground font-semibold">
+                          {selectedApproval.details.leaveDetail.leaveType}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 border-b border-border/30 pb-2">
+                        <span className="text-muted-foreground font-medium">Chế độ:</span>
+                        <span className="col-span-2 text-foreground font-semibold">
+                          {selectedApproval.details.leaveDetail.regimeType === REGIME_TYPE.PAID ? "Có lương" : "Không lương"}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Overtime Detail */}
+                  {selectedApproval.details.overtimeDetail && (
+                    <div className="grid grid-cols-3 border-b border-border/30 pb-2">
+                      <span className="text-muted-foreground font-medium">Ca làm việc OT:</span>
+                      <span className="col-span-2 text-foreground font-semibold">
+                        {selectedApproval.details.overtimeDetail.employeeShiftId}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Late/Early Detail */}
+                  {selectedApproval.details.lateEarlyDetail && (
+                    <>
+                      <div className="grid grid-cols-3 border-b border-border/30 pb-2">
+                        <span className="text-muted-foreground font-medium">Loại vi phạm:</span>
+                        <span className="col-span-2 text-foreground font-semibold">
+                          {selectedApproval.details.lateEarlyDetail.isLate ? "Đi muộn" : "Về sớm"}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 border-b border-border/30 pb-2">
+                        <span className="text-muted-foreground font-medium">Số phút:</span>
+                        <span className="col-span-2 text-foreground font-semibold">
+                          {selectedApproval.details.lateEarlyDetail.durationMinutes} phút
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Shift Swap Detail */}
+                  {selectedApproval.details.shiftSwapDetail && (
+                    <>
+                      <div className="grid grid-cols-3 border-b border-border/30 pb-2">
+                        <span className="text-muted-foreground font-medium">Ca của bạn:</span>
+                        <span className="col-span-2 text-foreground font-semibold">
+                          {selectedApproval.details.shiftSwapDetail.workingShift?.name || selectedApproval.details.shiftSwapDetail.employeeShiftId}
+                        </span>
+                      </div>
+                      {selectedApproval.details.shiftSwapDetail.swapWithEmployee && (
+                        <div className="grid grid-cols-3 border-b border-border/30 pb-2">
+                          <span className="text-muted-foreground font-medium">Đổi với nhân viên:</span>
+                          <span className="col-span-2 text-foreground font-semibold">
+                            {selectedApproval.details.shiftSwapDetail.swapWithEmployee.fullName}
+                          </span>
+                        </div>
+                      )}
+                      {selectedApproval.details.shiftSwapDetail.swapWithShift && (
+                        <div className="grid grid-cols-3 border-b border-border/30 pb-2">
+                          <span className="text-muted-foreground font-medium">Đổi sang ca:</span>
+                          <span className="col-span-2 text-foreground font-semibold">
+                            {selectedApproval.details.shiftSwapDetail.swapWithShift.shift?.name}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Business Trip Detail */}
+                  {selectedApproval.details.businessTripDetail && (
+                    <>
+                      <div className="grid grid-cols-3 border-b border-border/30 pb-2">
+                        <span className="text-muted-foreground font-medium">Địa điểm CT:</span>
+                        <span className="col-span-2 text-foreground font-semibold">
+                          {selectedApproval.details.businessTripDetail.location}
+                        </span>
+                      </div>
+                      {selectedApproval.details.businessTripDetail.purpose && (
+                        <div className="grid grid-cols-3 border-b border-border/30 pb-2">
+                          <span className="text-muted-foreground font-medium">Mục đích:</span>
+                          <span className="col-span-2 text-foreground font-semibold">
+                            {selectedApproval.details.businessTripDetail.purpose}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Work From Home Detail */}
+                  {selectedApproval.details.workFromHomeDetail && (
+                    <div className="grid grid-cols-3 border-b border-border/30 pb-2">
+                      <span className="text-muted-foreground font-medium">Địa điểm WFH:</span>
+                      <span className="col-span-2 text-foreground font-semibold">
+                        {selectedApproval.details.workFromHomeDetail.location || "Tại nhà"}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Regime Detail */}
+                  {selectedApproval.details.regimeDetail && (
+                    <>
+                      <div className="grid grid-cols-3 border-b border-border/30 pb-2">
+                        <span className="text-muted-foreground font-medium">Chế độ lương:</span>
+                        <span className="col-span-2 text-foreground font-semibold">
+                          {selectedApproval.details.regimeDetail.regimeType === REGIME_TYPE.PAID ? "Có lương" : "Không lương"}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 border-b border-border/30 pb-2">
+                        <span className="text-muted-foreground font-medium">Số phút giảm/ngày:</span>
+                        <span className="col-span-2 text-foreground font-semibold">
+                          {selectedApproval.details.regimeDetail.reducedMinutesPerDay} phút
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 border-b border-border/30 pb-2">
+                        <span className="text-muted-foreground font-medium">Áp dụng:</span>
+                        <span className="col-span-2 text-foreground font-semibold">
+                          {selectedApproval.details.regimeDetail.applyToStart && "Đầu buổi "}
+                          {selectedApproval.details.regimeDetail.applyToStart && selectedApproval.details.regimeDetail.applyToEnd && " & "}
+                          {selectedApproval.details.regimeDetail.applyToEnd && "Cuối buổi"}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  
+                  {/* Fallback for old schema regimeType */}
+                  {!selectedApproval.details.leaveDetail && !selectedApproval.details.regimeDetail && selectedApproval.details.regimeType && (
                     <div className="grid grid-cols-3 border-b border-border/30 pb-2">
                       <span className="text-muted-foreground font-medium">Chế độ:</span>
                       <span className="col-span-2 text-foreground font-semibold">

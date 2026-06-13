@@ -48,7 +48,12 @@ export const APPLICATION_STATUSES = [
 ] as const
 export type IApplicationStatus = (typeof APPLICATION_STATUSES)[number]
 
-export const REGIME_TYPES = ["paid", "unpaid"] as const
+export const REGIME_TYPE = {
+  PAID: "paid",
+  UNPAID: "unpaid",
+} as const
+
+export const REGIME_TYPES = [REGIME_TYPE.PAID, REGIME_TYPE.UNPAID] as const
 export type IRegimeType = (typeof REGIME_TYPES)[number]
 
 // ─── Label Maps ───────────────────────────────────────────────

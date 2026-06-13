@@ -1,9 +1,10 @@
 import {
   APPLICATION_STATUS,
+  APPLICATION_TYPES,
   LEAVE_BALANCE_DEFAULTS,
   PAID_LEAVE_TYPES,
 } from "@/configs/entities/attendance.config.ts"
-import { ROLE } from "@/configs/entities/employee.config.ts"
+import { EMPLOYEE_STATUS, ROLE } from "@/configs/entities/employee.config.ts"
 import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { prisma } from "@/libs/database.ts"
@@ -22,7 +23,7 @@ export class ApplicationService implements IApplicationService {
   /**
    * Submits a new application after validating the specific business rules
    * based on the type of application (leave, overtime, late/early, shift swap).
-   * 
+   *
    * @param data - The application submission data transfer object.
    * @returns A promise that resolves to the submitted application.
    * @throws {AppError} If validation fails (e.g. invalid date range, leave overlap, insufficient balance).
@@ -43,7 +44,7 @@ export class ApplicationService implements IApplicationService {
 
     // Type-specific business rule validation
     switch (data.type) {
-      case "leave":
+      case APPLICATION_TYPES.LEAVE.LABEL:
         await this._validateLeaveApplication(
           data.employeeId,
           data.detail.leaveType,
@@ -52,16 +53,16 @@ export class ApplicationService implements IApplicationService {
         )
         break
 
-      case "overtime":
+      case APPLICATION_TYPES.OVERTIME.LABEL:
         await this._validateShiftOwnership(data.detail.employeeShiftId, data.employeeId)
         await this._validateOvertimeDates(data.detail.employeeShiftId, startDate, endDate)
         break
 
-      case "late_early":
+      case APPLICATION_TYPES.LATE_EARLY.LABEL:
         await this._validateShiftOwnership(data.detail.employeeShiftId, data.employeeId)
         break
 
-      case "shift_swap":
+      case APPLICATION_TYPES.SHIFT_SWAP.LABEL:
         await this._validateShiftOwnership(data.detail.employeeShiftId, data.employeeId)
         if (data.detail.swapWithEmployeeId) {
           await this._validateEmployeeExists(data.detail.swapWithEmployeeId)
@@ -70,6 +71,7 @@ export class ApplicationService implements IApplicationService {
           await this._validateShiftOwnership(
             data.detail.swapWithShiftId,
             data.detail.swapWithEmployeeId,
+            "Forbidden: The swap-with shift does not belong to the target employee",
           )
         }
         break
@@ -79,12 +81,17 @@ export class ApplicationService implements IApplicationService {
         break
     }
 
+    // §V7: If assignedToId is provided, validate that the person exists and has an approver role
+    if (data.assignedToId) {
+      await this._validateApproverRole(data.assignedToId)
+    }
+
     return this.applicationRepo.submit(data)
   }
 
   /**
    * Cancels a pending application if the requester is the owner of the application.
-   * 
+   *
    * @param id - The unique identifier of the application to cancel.
    * @param requesterId - The ID of the employee requesting the cancellation.
    * @returns A promise that resolves to the cancelled application.
@@ -131,7 +138,7 @@ export class ApplicationService implements IApplicationService {
 
   /**
    * Retrieves an application by its unique identifier.
-   * 
+   *
    * @param id - The unique identifier of the application.
    * @returns A promise that resolves to the application details.
    * @throws {AppError} If the application is not found.
@@ -146,7 +153,7 @@ export class ApplicationService implements IApplicationService {
 
   /**
    * Lists all applications in the system matching the query parameters.
-   * 
+   *
    * @param query - The pagination, filter, and sort options.
    * @returns A promise that resolves to a list of applications and the total count.
    */
@@ -158,7 +165,7 @@ export class ApplicationService implements IApplicationService {
 
   /**
    * Lists applications submitted by a specific employee, enforcing authorization rules if a requester is provided.
-   * 
+   *
    * @param employeeId - The ID of the target employee.
    * @param query - The pagination, filter, and sort options.
    * @param requester - Optional metadata of the user requesting this list (id and role).
@@ -215,7 +222,7 @@ export class ApplicationService implements IApplicationService {
 
   /**
    * Approves a pending application.
-   * 
+   *
    * @param id - The ID of the application to approve.
    * @param processorId - The ID of the employee/manager processing the approval.
    * @returns A promise that resolves to the approved application.
@@ -240,7 +247,11 @@ export class ApplicationService implements IApplicationService {
 
     const updated = await this.applicationRepo.approve(id, processorId)
     if (!updated) {
-      throw new AppError("Failed to approve application", HttpStatusCode.INTERNAL_SERVER_ERROR, "Service")
+      throw new AppError(
+        "Failed to approve application",
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
+        "Service",
+      )
     }
 
     return updated
@@ -248,7 +259,7 @@ export class ApplicationService implements IApplicationService {
 
   /**
    * Rejects a pending application with a specified reason.
-   * 
+   *
    * @param id - The ID of the application to reject.
    * @param processorId - The ID of the employee/manager processing the rejection.
    * @param rejectReason - The reason for rejecting the application.
@@ -274,7 +285,11 @@ export class ApplicationService implements IApplicationService {
 
     const updated = await this.applicationRepo.reject(id, processorId, rejectReason)
     if (!updated) {
-      throw new AppError("Failed to reject application", HttpStatusCode.INTERNAL_SERVER_ERROR, "Service")
+      throw new AppError(
+        "Failed to reject application",
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
+        "Service",
+      )
     }
 
     return updated
@@ -282,7 +297,7 @@ export class ApplicationService implements IApplicationService {
 
   /**
    * Processes an application by approving or rejecting it.
-   * 
+   *
    * @deprecated Use approveApplication / rejectApplication instead.
    * @param id - The ID of the application.
    * @param status - The target status (approved/rejected).
@@ -316,7 +331,7 @@ export class ApplicationService implements IApplicationService {
 
   /**
    * §V4: Leave application validator. Checks for date overlaps and leave balance quotas.
-   * 
+   *
    * @param employeeId - The ID of the employee submitting the leave.
    * @param leaveType - The type of leave (annual, sick, etc.).
    * @param startDate - The starting date of the leave.
@@ -368,12 +383,16 @@ export class ApplicationService implements IApplicationService {
 
   /**
    * §V5: Verifies that the specified employeeShift belongs to the requester.
-   * 
+   *
    * @param shiftId - The ID of the employee shift to check.
    * @param employeeId - The ID of the employee.
    * @throws {AppError} If the shift doesn't exist or is not owned by the employee.
    */
-  private async _validateShiftOwnership(shiftId: string, employeeId: string): Promise<void> {
+  private async _validateShiftOwnership(
+    shiftId: string,
+    employeeId: string,
+    customErrorMessage?: string,
+  ): Promise<void> {
     const shift = await prisma.employeeShift.findUnique({
       where: { id: shiftId },
       select: { employeeId: true },
@@ -390,7 +409,7 @@ export class ApplicationService implements IApplicationService {
 
     if (shift.employeeId !== employeeId) {
       throw new AppError(
-        "Forbidden: The specified shift does not belong to you",
+        customErrorMessage || "Forbidden: The specified shift does not belong to you",
         HttpStatusCode.FORBIDDEN,
         "Service",
         "SHIFT_NOT_OWNED",
@@ -400,7 +419,7 @@ export class ApplicationService implements IApplicationService {
 
   /**
    * §V6: Overtime application validator. Verifies that the application dates match the shift date.
-   * 
+   *
    * @param employeeShiftId - The ID of the employee shift.
    * @param startDate - The starting date of the overtime.
    * @param endDate - The ending date of the overtime.
@@ -449,7 +468,7 @@ export class ApplicationService implements IApplicationService {
 
   /**
    * §V7: Validates that the swap target employee exists, is active, and is not deleted.
-   * 
+   *
    * @param employeeId - The ID of the swap target employee.
    * @throws {AppError} If the target employee is not found, deleted, or not active.
    */
@@ -468,12 +487,51 @@ export class ApplicationService implements IApplicationService {
       )
     }
 
-    if (employee.status !== "active") {
+    if (employee.status !== EMPLOYEE_STATUS.ACTIVE) {
       throw new AppError(
         `Employee '${employeeId}' is not active`,
         HttpStatusCode.BAD_REQUEST,
         "Service",
         "EMPLOYEE_INACTIVE",
+      )
+    }
+  }
+
+  /**
+   * §V8: Validates that the assigned-to employee exists and holds an approver-eligible role.
+   * Approver roles: ADMIN, GENERAL_MANAGER, HR_MANAGER, TEAM_LEADER.
+   *
+   * @param employeeId - The ID of the employee to assign as approver.
+   * @throws {AppError} If not found or role is not approver-eligible.
+   */
+  private async _validateApproverRole(employeeId: string): Promise<void> {
+    const APPROVER_ROLES = [
+      ROLE.ADMIN,
+      ROLE.GENERAL_MANAGER,
+      ROLE.HR_MANAGER,
+      ROLE.TEAM_LEADER,
+    ] as string[]
+
+    const employee = await prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { id: true, role: true, status: true },
+    })
+
+    if (!employee) {
+      throw new AppError(
+        `Assigned approver '${employeeId}' not found`,
+        HttpStatusCode.NOT_FOUND,
+        "Service",
+        "APPROVER_NOT_FOUND",
+      )
+    }
+
+    if (!APPROVER_ROLES.includes(employee.role)) {
+      throw new AppError(
+        "The selected assignee does not have permission to approve applications",
+        HttpStatusCode.BAD_REQUEST,
+        "Service",
+        "INVALID_APPROVER_ROLE",
       )
     }
   }

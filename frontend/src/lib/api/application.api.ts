@@ -93,6 +93,7 @@ export interface ISubmitApplicationDTO {
   endDate: string
   reason?: string
   note?: string
+  assignedToId?: string
   detail: IApplicationDetail & Record<string, unknown>
 }
 
