@@ -49,7 +49,7 @@ export class EmailUtil {
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
             <h2 style="color: #333;">Password Reset Request</h2>
-            <p>You requested a password reset for your HRP Management System account.</p>
+            <p>You requested a password reset for your <b>HRP Management System</b> account.</p>
             <p>Please click the button below to set a new password:</p>
             <div style="text-align: center; margin: 30px 0;">
               <a href="${resetUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
@@ -120,7 +120,7 @@ export class EmailUtil {
             </div>
             <p>If you did not attempt these logins, please contact your system administrator immediately.</p>
             <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-            <p style="color: #999; font-size: 12px;">This is an automated security notification from the HRP Management System.</p>
+            <p style="color: #999; font-size: 12px;">This is an automated security notification from the <b>HRP Management System</b>.</p>
           </div>
         `,
       })
