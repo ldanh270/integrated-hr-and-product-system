@@ -110,7 +110,7 @@ export interface EmployeeListQuery {
   /** Role filter */
   role?: EmployeeRole
   /** Employee type filter */
-  employeeType?: EmployeeType
+  type?: EmployeeType
   /** Column/property to sort by */
   sortBy?: string
   /** Sort order direction */
