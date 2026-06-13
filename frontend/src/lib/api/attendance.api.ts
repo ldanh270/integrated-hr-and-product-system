@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from "@/config/api.config"
+import { ATTENDANCE_QUERY_PARAMS } from "@/constants/attendance.constants"
 import apiClient from "@/lib/api-client"
 import type {
   IApproval,
@@ -70,7 +71,7 @@ export const schedulesApi = {
   /** Fetches the planned schedule for the authenticated user on a specific date or current week. */
   getMy: async (date?: string): Promise<ISchedule> => {
     const res = await apiClient.get<ApiResponse<ISchedule>>(API_ENDPOINTS.SCHEDULES.MY, {
-      params: date ? { date } : undefined,
+      params: date ? { [ATTENDANCE_QUERY_PARAMS.DATE]: date } : undefined,
     })
     return res.data.data
   },
@@ -85,7 +86,7 @@ export const schedulesApi = {
   getByEmployee: async (employeeId: string, date?: string): Promise<ISchedule> => {
     const res = await apiClient.get<ApiResponse<ISchedule>>(
       API_ENDPOINTS.SCHEDULES.EMPLOYEE(employeeId),
-      { params: date ? { date } : undefined },
+      { params: date ? { [ATTENDANCE_QUERY_PARAMS.DATE]: date } : undefined },
     )
     return res.data.data
   },
@@ -156,10 +157,10 @@ export const attendanceApi = {
   /** Generates a full URL for the CSV export endpoint, including query parameters. */
   exportCsv: (query?: IAttendanceQuery): string => {
     const params = new URLSearchParams()
-    if (query?.startDate) params.set("startDate", query.startDate)
-    if (query?.endDate) params.set("endDate", query.endDate)
-    if (query?.employeeId) params.set("employeeId", query.employeeId)
-    if (query?.status) params.set("status", query.status)
+    if (query?.startDate) params.set(ATTENDANCE_QUERY_PARAMS.START_DATE, query.startDate)
+    if (query?.endDate) params.set(ATTENDANCE_QUERY_PARAMS.END_DATE, query.endDate)
+    if (query?.employeeId) params.set(ATTENDANCE_QUERY_PARAMS.EMPLOYEE_ID, query.employeeId)
+    if (query?.status) params.set(ATTENDANCE_QUERY_PARAMS.STATUS, query.status)
     const base = import.meta.env.VITE_API_BASE_URL ?? ""
     const qs = params.toString()
     return `${base}/api${API_ENDPOINTS.ATTENDANCE.EXPORT}${qs ? `?${qs}` : ""}`
