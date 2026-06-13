@@ -43,7 +43,7 @@ export class SalaryVariableController {
   public createVariable = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const validatedData = createSalaryVariableSchema.parse(req.body)
-      const createdById = (req as any).user!.id
+      const createdById = (req as any).user!.empId
       const variable = await this.service.createVariable(validatedData, createdById)
       res.status(201).json({ data: variable, meta: null, error: null })
     } catch (error) {

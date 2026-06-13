@@ -137,7 +137,7 @@ export function SalaryComponentFormPage({
                     <FormControl>
                       <Textarea
                         placeholder="Mô tả điều kiện áp dụng thành phần này..."
-                        className="rounded-xl border-border shadow-none min-h-[80px] resize-y"
+                        className="rounded-xl border-border shadow-none min-h-20 resize-y"
                         disabled={isReadOnly}
                         {...field}
                       />

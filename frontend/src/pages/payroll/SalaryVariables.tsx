@@ -1,25 +1,7 @@
 import { PageCard, PageHeader, useConfirm } from "@/components/common"
+import { SalaryVariableFormPage } from "@/components/features/payroll/salary-variable-form-page"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form-ui"
-import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
 import {
   Table,
   TableBody,
@@ -28,29 +10,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  useCreateSalaryVariable,
-  useDeleteSalaryVariable,
-  useSalaryVariables,
-  useUpdateSalaryVariable,
-} from "@/hooks/payroll/use-salary-variable"
+import { useDeleteSalaryVariable, useSalaryVariables } from "@/hooks/payroll/use-salary-variable"
 import type { ISalaryVariable } from "@/hooks/payroll/use-salary-variable"
 
 import { useState } from "react"
 
-import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2, Pencil, Plus, Trash2 } from "lucide-react"
-import { useForm } from "react-hook-form"
-import * as z from "zod"
-
-const formSchema = z.object({
-  code: z.string().min(1, "Code is required").max(50),
-  name: z.string().min(1, "Name is required").max(100),
-  value: z.number().min(0, "Value must be positive"),
-  description: z.string().optional(),
-  isActive: z.boolean().default(true),
-})
 
 const SYSTEM_VARIABLES = [
   {
@@ -129,47 +94,25 @@ type VariableRow = Omit<ISalaryVariable, "value"> & {
 export default function SalaryVariablesPage() {
   const confirm = useConfirm()
   const { data: variables, isLoading } = useSalaryVariables()
-  const createMutation = useCreateSalaryVariable()
-  const updateMutation = useUpdateSalaryVariable()
   const deleteMutation = useDeleteSalaryVariable()
 
-  const [isOpen, setIsOpen] = useState(false)
-  const [editingVariable, setEditingVariable] = useState<ISalaryVariable | null>(null)
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(formSchema) as any,
-    defaultValues: {
-      code: "",
-      name: "",
-      value: 0,
-      description: "",
-      isActive: true,
-    },
-  })
+  // View state pattern
+  const [view, setView] = useState<"list" | "create" | "edit">("list")
+  const [selectedItem, setSelectedItem] = useState<ISalaryVariable | null>(null)
 
   const handleOpenCreate = () => {
-    setEditingVariable(null)
-    form.reset({
-      code: "",
-      name: "",
-      value: 0,
-      description: "",
-      isActive: true,
-    })
-    setIsOpen(true)
+    setSelectedItem(null)
+    setView("create")
   }
 
   const handleOpenEdit = (variable: ISalaryVariable) => {
-    setEditingVariable(variable)
-    form.reset({
-      code: variable.code,
-      name: variable.name,
-      value: variable.value,
-      description: variable.description || "",
-      isActive: variable.isActive,
-    })
-    setIsOpen(true)
+    setSelectedItem(variable)
+    setView("edit")
+  }
+
+  const handleCloseForm = () => {
+    setView("list")
+    setSelectedItem(null)
   }
 
   const handleDelete = async (id: string) => {
@@ -186,20 +129,15 @@ export default function SalaryVariablesPage() {
     }
   }
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    try {
-      if (editingVariable) {
-        await updateMutation.mutateAsync({
-          id: editingVariable.id,
-          payload: values,
-        })
-      } else {
-        await createMutation.mutateAsync(values)
-      }
-      setIsOpen(false)
-    } catch {
-      // Error is handled in mutation
-    }
+  // Render Form Page if not in list view
+  if (view !== "list") {
+    return (
+      <SalaryVariableFormPage
+        initialData={selectedItem}
+        onCancel={handleCloseForm}
+        onSuccess={handleCloseForm}
+      />
+    )
   }
 
   return (
@@ -208,13 +146,13 @@ export default function SalaryVariablesPage() {
         title="Biến hệ thống"
         description="Quản lý các biến số dùng chung cho công thức tính lương."
         actions={
-          <Button className="gap-2" onClick={handleOpenCreate}>
+          <Button className="gap-2 rounded-full" onClick={handleOpenCreate}>
             <Plus size={16} /> Thêm biến mới
           </Button>
         }
       />
 
-      <PageCard className="overflow-hidden p-0" noBorder={false}>
+      <PageCard className="overflow-hidden p-0 rounded-xl" noBorder={false}>
         <div className="overflow-x-auto">
           <Table className="text-sm">
             <TableHeader className="bg-muted/40">
@@ -275,7 +213,7 @@ export default function SalaryVariablesPage() {
                       <TableCell className="px-4 py-3 whitespace-nowrap">
                         <Badge
                           variant={variable.isActive ? "default" : "secondary"}
-                          className="text-[10px] font-semibold"
+                          className="text-[10px] font-semibold rounded-full"
                         >
                           {variable.isSystem
                             ? "Hệ thống"
@@ -290,7 +228,7 @@ export default function SalaryVariablesPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 rounded-md"
+                              className="h-8 w-8 rounded-full"
                               onClick={() => handleOpenEdit(variable as ISalaryVariable)}
                             >
                               <Pencil className="h-4 w-4" />
@@ -298,7 +236,7 @@ export default function SalaryVariablesPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 rounded-md text-destructive hover:text-destructive hover:bg-destructive/10"
+                              className="h-8 w-8 rounded-full text-destructive hover:text-destructive hover:bg-destructive/10"
                               onClick={() => handleDelete(variable.id)}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -318,107 +256,6 @@ export default function SalaryVariablesPage() {
           </Table>
         </div>
       </PageCard>
-
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-106.25">
-          <DialogHeader>
-            <DialogTitle>{editingVariable ? "Edit Variable" : "Create Variable"}</DialogTitle>
-            <DialogDescription>
-              Variables can be used in salary component formulas. Code must be unique.
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="code"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Code</FormLabel>
-                    <FormControl>
-                      <Input placeholder="MUC_LUONG_CO_SO" {...field} />
-                    </FormControl>
-                    <FormDescription>Must be camelCase (e.g., mealAllowance).</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Mức lương cơ sở" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="value"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Value</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        {...field}
-                        onChange={(e) =>
-                          field.onChange(e.target.value === "" ? 0 : Number(e.target.value))
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Optional description" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {editingVariable && (
-                <FormField
-                  control={form.control}
-                  name="isActive"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                      <div className="space-y-0.5">
-                        <FormLabel>Active</FormLabel>
-                        <FormDescription>
-                          Inactive variables cannot be used in new formulas.
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              )}
-              <DialogFooter>
-                <Button
-                  type="submit"
-                  disabled={createMutation.isPending || updateMutation.isPending}
-                >
-                  {editingVariable ? "Save changes" : "Create"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
