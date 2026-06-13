@@ -75,6 +75,68 @@ export interface TokenValidationResponseDto {
 }
 
 /**
+ * Interface for Activity Log item
+ */
+export interface ActivityLogItem {
+  id: string
+  employeeId?: string | null
+  employeeName?: string | null
+  category: string
+  actionType: string
+  ipAddress?: string | null
+  details?: any
+  createdAt: Date
+}
+
+/**
+ * Filter for Activity Logs
+ */
+export interface ActivityLogQuery {
+  employeeId?: string
+  category?: string
+  actionType?: string
+  fromDate?: Date
+  toDate?: Date
+  page?: number
+  limit?: number
+}
+
+/**
+ * Paginated response for Activity Logs
+ */
+export interface PaginatedActivityLogsDto {
+  data: ActivityLogItem[]
+  meta: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }
+}
+
+/**
+ * Interface for Locked Account item
+ */
+export interface LockedAccountItem {
+  employeeId: string
+  employeeName: string
+  email: string
+  failedLoginCount: number
+  lockedUntil: Date | null
+}
+
+/**
+ * Interface for Security Dashboard Summary
+ */
+export interface SecuritySummaryDto {
+  lockedAccountsCount: number
+  failedLoginsToday: number
+  successfulLoginsToday: number
+  recentSecurityEvents: ActivityLogItem[]
+  recentRoleEvents: ActivityLogItem[]
+}
+
+/**
  * Internal interface for Employee document used in auth logic
  */
 export interface AuthEmployeeDocument {
@@ -144,11 +206,52 @@ export interface IAuthRepository {
    */
   logActivity(data: {
     empId?: string
-    actionType: "login" | "logout" | "failed_login"
+    category: "auth" | "role" | "security"
+    actionType:
+      | "login"
+      | "logout"
+      | "failed_login"
+      | "role_assigned"
+      | "role_revoked"
+      | "account_locked"
+      | "account_unlocked"
     ipAddress?: string
     timestamp: Date
     details?: string
   }): Promise<void>
+
+  /**
+   * Lists activity logs with pagination and filters
+   */
+  listActivityLogs(query: ActivityLogQuery): Promise<PaginatedActivityLogsDto>
+
+  /**
+   * Gets a single activity log by ID
+   */
+  getActivityLogById(id: string): Promise<ActivityLogItem | null>
+
+  /**
+   * Gets all currently locked employees
+   */
+  getLockedEmployees(): Promise<LockedAccountItem[]>
+
+  /**
+   * Unlocks an employee account
+   */
+  unlockEmployee(empId: string): Promise<void>
+
+  /**
+   * Counts logs by type for today
+   */
+  countActivityLogsToday(
+    category: "auth" | "role" | "security",
+    actionType: string,
+  ): Promise<number>
+
+  /**
+   * Gets recent activity logs by category
+   */
+  getRecentLogsByCategory(category: "auth" | "role" | "security", limit: number): Promise<ActivityLogItem[]>
 }
 
 /**
@@ -184,4 +287,29 @@ export interface IAuthService {
    * Changes a user's password (requires current password)
    */
   changePassword(empId: string, data: ChangePasswordDto): Promise<GenericAuthResponseDto>
+
+  /**
+   * Gets activity logs
+   */
+  getActivityLogs(query: ActivityLogQuery): Promise<PaginatedActivityLogsDto>
+
+  /**
+   * Gets activity log detail
+   */
+  getActivityLogDetail(id: string): Promise<ActivityLogItem | null>
+
+  /**
+   * Gets security summary for dashboard
+   */
+  getSecuritySummary(): Promise<SecuritySummaryDto>
+
+  /**
+   * Gets locked accounts
+   */
+  getLockedAccounts(): Promise<LockedAccountItem[]>
+
+  /**
+   * Unlocks an account
+   */
+  unlockAccount(empId: string, actorId: string, ipAddress?: string): Promise<void>
 }
