@@ -2,6 +2,8 @@ import {
   ACTIVITY_ACTION,
   ACTIVITY_CATEGORY,
   PASSWORD_RESET_STATUS,
+  PASSWORD_RESET_TTL,
+  ACCOUNT_LOCK_TTL,
 } from "@/configs/auth/auth.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
@@ -91,7 +93,7 @@ export class AuthService implements IAuthService {
 
       if (employee.failedLoginCount >= 5) {
         const isNewlyLocked = employee.failedLoginCount === 5
-        employee.lockedUntil = new Date(Date.now() + 15 * 60 * 1000) // 15 mins lockout
+        employee.lockedUntil = new Date(Date.now() + ACCOUNT_LOCK_TTL) // 5 mins lockout
 
         // Log account lock
         await this.repo.logActivity({
@@ -231,8 +233,8 @@ export class AuthService implements IAuthService {
     // Generate a secure plain-text token
     const token = crypto.randomBytes(32).toString("hex")
 
-    // Create the request with 15-minute expiration
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
+    // Create the request with expiration
+    const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL)
     await this.repo.createResetRequest({
       employeeId: employee.id,
       token,
