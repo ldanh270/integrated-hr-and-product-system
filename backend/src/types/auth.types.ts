@@ -251,7 +251,10 @@ export interface IAuthRepository {
   /**
    * Gets recent activity logs by category
    */
-  getRecentLogsByCategory(category: "auth" | "role" | "security", limit: number): Promise<ActivityLogItem[]>
+  getRecentLogsByCategory(
+    category: "auth" | "role" | "security",
+    limit: number,
+  ): Promise<ActivityLogItem[]>
 }
 
 /**
