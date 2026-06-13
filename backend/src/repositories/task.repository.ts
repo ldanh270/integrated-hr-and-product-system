@@ -37,12 +37,16 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
       projectId: task.projectId,
       title: task.title,
       description: task.description,
+      tracker: task.tracker as any,
       priority: task.priority as any,
       status: task.status as any,
       assigneeId: task.assigneeId,
       createdById: task.createdById,
+      startDate: task.startDate,
       dueDate: task.dueDate,
       completedAt: task.completedAt,
+      estimatedTime: task.estimatedTime,
+      progress: task.progress,
       createdAt: task.createdAt,
       updatedAt: task.updatedAt,
       project: task.project
@@ -106,9 +110,11 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
       page = 1,
       limit = 10,
       search,
+      tracker,
       status,
       priority,
       assigneeId,
+      createdById,
       sortBy = "createdAt",
       sortOrder = "desc",
     } = query
@@ -119,6 +125,9 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     if (projectId) {
       where.projectId = projectId
     }
+    if (tracker) {
+      where.tracker = tracker as any
+    }
     if (status) {
       where.status = status as any
     }
@@ -127,6 +136,9 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     }
     if (assigneeId) {
       where.assigneeId = assigneeId
+    }
+    if (createdById) {
+      where.createdById = createdById
     }
 
     if (search) {
@@ -179,11 +191,15 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
         projectId: data.projectId,
         title: data.title,
         description: data.description,
+        tracker: data.tracker as any,
         priority: data.priority as any,
         status: data.status as any,
         assigneeId: data.assigneeId,
         createdById: data.createdById,
+        startDate: data.startDate ? new Date(data.startDate) : null,
         dueDate: data.dueDate ? new Date(data.dueDate) : null,
+        estimatedTime: data.estimatedTime,
+        progress: data.progress || 0,
       },
       include: {
         project: {
@@ -211,16 +227,22 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     const updateData: Prisma.TaskUncheckedUpdateInput = {
       title: data.title,
       description: data.description,
+      tracker: data.tracker as any,
       priority: data.priority as any,
       status: data.status as any,
       assigneeId: data.assigneeId,
+      startDate: data.startDate ? new Date(data.startDate) : undefined,
       dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
       completedAt: data.completedAt ? new Date(data.completedAt) : undefined,
+      estimatedTime: data.estimatedTime,
+      progress: data.progress,
     }
 
+    if (data.startDate === null) updateData.startDate = null
     if (data.dueDate === null) updateData.dueDate = null
     if (data.assigneeId === null) updateData.assigneeId = null
     if (data.completedAt === null) updateData.completedAt = null
+    if (data.estimatedTime === null) updateData.estimatedTime = null
 
     // Automatically set completedAt when switching status to Done
     if (data.status === "done" && !data.completedAt) {

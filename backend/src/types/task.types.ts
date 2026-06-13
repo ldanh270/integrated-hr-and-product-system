@@ -1,4 +1,9 @@
-import { TASK_PRIORITIES, TASK_STATUSES } from "@/configs/entities/project.config.ts"
+import { TASK_PRIORITIES, TASK_STATUSES, TASK_TRACKERS } from "@/configs/entities/project.config.ts"
+
+/**
+ * Type representing the tracker of a Task (e.g., feature, bug, support)
+ */
+export type TaskTracker = (typeof TASK_TRACKERS)[number]
 
 /**
  * Type representing the priority level of a Task (e.g., low, medium, high)
@@ -18,12 +23,16 @@ export interface Task {
   projectId: string
   title: string
   description: string | null
+  tracker: TaskTracker
   priority: TaskPriority
   status: TaskStatus
   assigneeId: string | null
   createdById: string
+  startDate: Date | null
   dueDate: Date | null
   completedAt: Date | null
+  estimatedTime: number | null
+  progress: number
   createdAt: Date
   updatedAt: Date
   /**
@@ -60,10 +69,14 @@ export interface CreateTaskDto {
   projectId: string
   title: string
   description?: string | null
+  tracker?: TaskTracker
   priority?: TaskPriority
   status?: TaskStatus
   assigneeId?: string | null
+  startDate?: Date | string | null
   dueDate?: Date | string | null
+  estimatedTime?: number | null
+  progress?: number
 }
 
 /**
@@ -72,11 +85,15 @@ export interface CreateTaskDto {
 export interface UpdateTaskDto {
   title?: string
   description?: string | null
+  tracker?: TaskTracker
   priority?: TaskPriority
   status?: TaskStatus
   assigneeId?: string | null
+  startDate?: Date | string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
+  estimatedTime?: number | null
+  progress?: number
 }
 
 /**
@@ -87,9 +104,11 @@ export interface TaskListQuery {
   page?: number
   limit?: number
   search?: string
+  tracker?: TaskTracker
   status?: TaskStatus
   priority?: TaskPriority
   assigneeId?: string
+  createdById?: string
   sortBy?: string
   sortOrder?: "asc" | "desc"
 }
