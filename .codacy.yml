@@ -68,6 +68,7 @@ exclude_paths:
   - .claude/**
   - .vscode/**
   - .planning/**
+  - .github/prompts/**
 
   # ── Project-specific non-source folders ───────────────────────────────────
   - information/**
