@@ -111,7 +111,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
     const skip = (page - 1) * limit
     const where: Prisma.ProjectWhereInput = {}
 
-    // 1. Project list visibility authorization
+    // Project list visibility authorization
     if (userRole !== "admin" && userRole !== "general_manager") {
       where.OR = [
         { teamLeaderId: userId },
@@ -126,12 +126,12 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
       ]
     }
 
-    // 2. Filter by status
+    // Filter by status
     if (status) {
       where.status = status as any
     }
 
-    // 3. Search by name or description
+    // Search by name or description
     if (search) {
       where.OR = [
         ...(where.OR || []),
@@ -140,7 +140,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
       ]
     }
 
-    // 4. Retrieve paginated data
+    // Retrieve paginated data
     const [total, projects] = await Promise.all([
       this.prisma.project.count({ where }),
       this.prisma.project.findMany({
