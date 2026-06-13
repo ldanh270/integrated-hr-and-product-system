@@ -1,0 +1,263 @@
+import { SPENT_TIME_ACTIVITIES, SPENT_TIME_WORK_TIME_TYPES } from "@/config/entities/project.config"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import { taskApi } from "@/lib/api/task.api"
+import type { SpentTime } from "@/types/spent-time.types"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import React, { useState, useEffect } from "react"
+
+interface LogTimeModalProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  taskId: string
+  taskTitle: string
+  spentTime?: SpentTime
+  onSuccess?: () => void
+}
+
+export default function LogTimeModal({
+  open,
+  onOpenChange,
+  taskId,
+  taskTitle,
+  spentTime,
+  onSuccess,
+}: LogTimeModalProps) {
+  const queryClient = useQueryClient()
+  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0])
+  const [hours, setHours] = useState("")
+  const [activity, setActivity] = useState<string>("develop")
+  const [workTimeType, setWorkTimeType] = useState<string>("working_day")
+  const [comment, setComment] = useState("")
+  const [error, setError] = useState<string | null>(null)
+
+  // Sync state with spentTime when editing
+  useEffect(() => {
+    if (open) {
+      if (spentTime) {
+        setDate(new Date(spentTime.date).toISOString().split("T")[0])
+        setHours(String(spentTime.hours))
+        setActivity(spentTime.activity)
+        setWorkTimeType(spentTime.workTimeType)
+        setComment(spentTime.comment || "")
+      } else {
+        setDate(new Date().toISOString().split("T")[0])
+        setHours("")
+        setActivity("develop")
+        setWorkTimeType("working_day")
+        setComment("")
+      }
+      setError(null)
+    }
+  }, [open, spentTime])
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const parsedHours = parseFloat(hours)
+      if (isNaN(parsedHours) || parsedHours <= 0) {
+        throw new Error("Số giờ phải lớn hơn 0")
+      }
+      if (spentTime) {
+        return taskApi.updateSpentTime(spentTime.id, {
+          date,
+          hours: parsedHours,
+          activity: activity as any,
+          workTimeType: workTimeType as any,
+          comment: comment.trim() || null,
+        })
+      } else {
+        return taskApi.logSpentTime({
+          taskId,
+          date,
+          hours: parsedHours,
+          activity: activity as any,
+          workTimeType: workTimeType as any,
+          comment: comment.trim() || null,
+        })
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["spentTimes", taskId] })
+      queryClient.invalidateQueries({ queryKey: ["task", taskId] })
+      queryClient.invalidateQueries({ queryKey: ["project"] })
+      onOpenChange(false)
+      // Reset form
+      setHours("")
+      setComment("")
+      setError(null)
+      if (onSuccess) onSuccess()
+    },
+    onError: (err: any) => {
+      setError(err.response?.data?.error?.message || err.message || "Đã xảy ra lỗi")
+    },
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    if (!hours) {
+      setError("Vui lòng nhập số giờ làm việc")
+      return
+    }
+    mutation.mutate()
+  }
+
+  // Capitalize helpers
+  const formatLabel = (val: string) => {
+    if (val === "develop") return "Phát triển (Develop)"
+    if (val === "design") return "Thiết kế (Design)"
+    if (val === "test") return "Kiểm thử (Test)"
+    if (val === "manage") return "Quản lý (Manage)"
+    if (val === "other") return "Khác (Other)"
+    if (val === "working_day") return "Ngày làm việc bình thường"
+    if (val === "overtime") return "Làm thêm giờ (Overtime)"
+    return val
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px] rounded-xl bg-background border-border p-6 shadow-lg">
+        <DialogHeader className="space-y-1">
+          <DialogTitle className="text-lg font-bold text-foreground">
+            {spentTime ? "Chỉnh sửa thời gian làm việc" : "Ghi nhận thời gian (Log Time)"}
+          </DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            {spentTime ? "Cập nhật nhật ký thời gian" : "Log time"} cho công việc:{" "}
+            <span className="font-semibold text-foreground">
+              #{taskId.substring(0, 8)} - {taskTitle}
+            </span>
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4 pt-3">
+          {error && (
+            <div className="rounded-full bg-destructive/10 px-4 py-2 text-xs text-destructive font-medium border border-destructive/20">
+              {error}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="date" className="text-xs font-semibold text-muted-foreground">
+                Ngày thực hiện
+              </Label>
+              <Input
+                id="date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="h-10 text-sm border-border rounded-full px-4"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="hours" className="text-xs font-semibold text-muted-foreground">
+                Số giờ
+              </Label>
+              <Input
+                id="hours"
+                type="number"
+                step="0.1"
+                min="0.1"
+                max="24"
+                placeholder="Ví dụ: 2.5"
+                value={hours}
+                onChange={(e) => setHours(e.target.value)}
+                className="h-10 text-sm border-border rounded-full px-4"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="activity" className="text-xs font-semibold text-muted-foreground">
+                Hoạt động
+              </Label>
+              <Select value={activity} onValueChange={setActivity}>
+                <SelectTrigger id="activity" className="w-full h-10 border-border rounded-full px-4 bg-background">
+                  <SelectValue placeholder="Chọn hoạt động" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border bg-popover text-popover-foreground">
+                  {SPENT_TIME_ACTIVITIES.map((act) => (
+                    <SelectItem key={act} value={act} className="rounded-lg">
+                      {formatLabel(act)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="workTimeType" className="text-xs font-semibold text-muted-foreground">
+                Loại giờ
+              </Label>
+              <Select value={workTimeType} onValueChange={setWorkTimeType}>
+                <SelectTrigger id="workTimeType" className="w-full h-10 border-border rounded-full px-4 bg-background">
+                  <SelectValue placeholder="Chọn loại giờ" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border bg-popover text-popover-foreground">
+                  {SPENT_TIME_WORK_TIME_TYPES.map((type) => (
+                    <SelectItem key={type} value={type} className="rounded-lg">
+                      {formatLabel(type)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="comment" className="text-xs font-semibold text-muted-foreground">
+              Ý kiến / Ghi chú
+            </Label>
+            <Textarea
+              id="comment"
+              placeholder="Nhập nội dung công việc đã làm..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              className="min-h-[80px] rounded-xl border-border p-3 text-sm focus-visible:ring-1 focus-visible:ring-ring"
+              maxLength={255}
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="h-10 rounded-full px-5 text-sm"
+              disabled={mutation.isPending}
+            >
+              Hủy
+            </Button>
+            <Button
+              type="submit"
+              className="h-10 rounded-full px-5 text-sm bg-primary text-primary-foreground hover:bg-primary/90"
+              disabled={mutation.isPending}
+            >
+              {mutation.isPending ? "Đang lưu..." : spentTime ? "Lưu thay đổi" : "Ghi nhận"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
