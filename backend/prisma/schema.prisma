@@ -108,6 +108,7 @@ enum ProjectStatus {
   completed
   cancelled
 }
+
 enum TaskCreationPolicy {
   leader_only
   all_members
@@ -347,11 +348,11 @@ model Application {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  leaveDetail     ApplicationLeaveDetail?
-  shiftSwapDetail ApplicationShiftSwapDetail?
-  overtimeDetail  ApplicationOvertimeDetail?
-  regimeDetail    ApplicationRegimeDetail?
-  lateEarlyDetail ApplicationLateEarlyDetail?
+  leaveDetail        ApplicationLeaveDetail?
+  shiftSwapDetail    ApplicationShiftSwapDetail?
+  overtimeDetail     ApplicationOvertimeDetail?
+  regimeDetail       ApplicationRegimeDetail?
+  lateEarlyDetail    ApplicationLateEarlyDetail?
   businessTripDetail ApplicationBusinessTripDetail?
   workFromHomeDetail ApplicationWorkFromHomeDetail?
 
@@ -634,19 +635,19 @@ model PayslipDetail {
 
 // ── Project & Product ──
 model Project {
-  id              String        @id @default(cuid())
-  name            String        @unique
-  description     String?
-  techStack       String[] // Array of strings in PG
-  status          ProjectStatus @default(planning)
-  taskCreationPolicy  TaskCreationPolicy  @default(leader_only)
-  startDate       DateTime?
-  expectedEndDate DateTime?
-  actualEndDate   DateTime?
-  teamLeaderId    String?
-  teamLeader      Employee?     @relation("ProjectTeamLeader", fields: [teamLeaderId], references: [id], onDelete: SetNull)
-  createdById     String
-  createdBy       Employee      @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  id                 String             @id @default(cuid())
+  name               String             @unique
+  description        String?
+  techStack          String[] // Array of strings in PG
+  status             ProjectStatus      @default(planning)
+  taskCreationPolicy TaskCreationPolicy @default(leader_only)
+  startDate          DateTime?
+  expectedEndDate    DateTime?
+  actualEndDate      DateTime?
+  teamLeaderId       String?
+  teamLeader         Employee?          @relation("ProjectTeamLeader", fields: [teamLeaderId], references: [id], onDelete: SetNull)
+  createdById        String
+  createdBy          Employee           @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
