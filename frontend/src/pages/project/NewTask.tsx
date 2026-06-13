@@ -43,7 +43,7 @@ export default function NewTask() {
   const [taskDue, setTaskDue] = useState("")
   const [taskEstimate, setTaskEstimate] = useState("")
   const [taskProgress, setTaskProgress] = useState("0")
-  const [parentTask, setParentTask] = useState(parentTaskId)
+  const [parentTask, setParentTask] = useState(parentTaskId || "none")
   const [taskCategory, setTaskCategory] = useState("none")
   const [taskError, setTaskError] = useState<string | null>(null)
 
@@ -123,6 +123,13 @@ export default function NewTask() {
     queryFn: () => taskCategoryApi.list(pId),
     enabled: !!pId,
   })
+  // 4. Fetch all tasks in the project (for CÔNG VIỆC CHA select dropdown)
+  const { data: projectTasksData } = useQuery({
+    queryKey: ["project-tasks", pId],
+    queryFn: () => taskApi.list({ projectId: pId, limit: 100 }),
+    enabled: !!pId,
+  })
+  const projectTasks = projectTasksData?.data || []
   // Create Task Mutation
   const createTaskMutation = useMutation({
     mutationFn: async (payload: { title: string; andAnother: boolean }) => {
@@ -153,7 +160,7 @@ export default function NewTask() {
         // Reset only transient fields
         setTaskTitle("")
         setTaskDesc("")
-        setParentTask("")
+        setParentTask("none")
         setTaskCategory("none")
         setSelectedFiles([])
       } else {
@@ -170,6 +177,10 @@ export default function NewTask() {
     setTaskError(null)
     if (!taskTitle.trim()) {
       setTaskError("Vui lòng nhập tiêu đề")
+      return
+    }
+    if (taskStart && taskDue && new Date(taskStart) > new Date(taskDue)) {
+      toast.warning("Ngày bắt đầu không được sau hạn hoàn thành")
       return
     }
     createTaskMutation.mutate({ title: taskTitle, andAnother })
@@ -189,11 +200,12 @@ export default function NewTask() {
   }
 
   const formatStatus = (status: string) => {
-    if (status === "todo") return "Mới"
+    if (status === "todo") return "Đang mở"
     if (status === "in_progress") return "Đang thực hiện"
     if (status === "in_review") return "Đang xem xét"
     if (status === "done") return "Hoàn thành"
     if (status === "cancelled") return "Đã hủy"
+    if (status === "reopened") return "Mở lại"
     return status.charAt(0).toUpperCase() + status.slice(1)
   }
 
@@ -458,13 +470,19 @@ export default function NewTask() {
               <Label htmlFor="parentTask" className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
                 CÔNG VIỆC CHA
               </Label>
-              <Input
-                id="parentTask"
-                placeholder="#1234 hoặc Tên công việc"
-                value={parentTask}
-                onChange={(e) => setParentTask(e.target.value)}
-                className="h-10 text-sm border-border rounded-full px-4"
-              />
+              <Select value={parentTask} onValueChange={setParentTask}>
+                <SelectTrigger id="parentTask" className="w-full h-10 border-border rounded-full px-4 bg-background">
+                  <SelectValue placeholder="Chọn công việc cha" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border bg-popover text-popover-foreground">
+                  <SelectItem value="none" className="rounded-lg">Không có</SelectItem>
+                  {projectTasks.map((t) => (
+                    <SelectItem key={t.id} value={t.id} className="rounded-lg">
+                      #{t.id.slice(-4)} - {t.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">

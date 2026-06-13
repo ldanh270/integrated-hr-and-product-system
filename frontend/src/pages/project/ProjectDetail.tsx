@@ -233,14 +233,14 @@ export default function ProjectDetail() {
 
   // Calculate stats for Overview Tab using all tasks
   const overviewTasks = overviewTasksData?.data || []
-  const openTasksCount = overviewTasks.filter((t) => ["todo", "in_progress", "in_review"].includes(t.status)).length
+  const openTasksCount = overviewTasks.filter((t) => ["todo", "in_progress", "in_review", "reopened"].includes(t.status)).length
   const closedTasksCount = overviewTasks.filter((t) => ["done", "cancelled"].includes(t.status)).length
   const totalTasksCount = overviewTasks.length
 
   // Stats by tracker
   const trackerStats = TASK_TRACKERS.reduce((acc, tr) => {
     const trTasks = overviewTasks.filter((t) => t.tracker === tr)
-    const open = trTasks.filter((t) => ["todo", "in_progress", "in_review"].includes(t.status)).length
+    const open = trTasks.filter((t) => ["todo", "in_progress", "in_review", "reopened"].includes(t.status)).length
     const closed = trTasks.filter((t) => ["done", "cancelled"].includes(t.status)).length
     acc[tr] = { open, closed, total: trTasks.length }
     return acc;
@@ -455,11 +455,12 @@ export default function ProjectDetail() {
   // Formatting helpers
 
   const formatStatus = (status: string) => {
-    if (status === "todo") return "Mới"
+    if (status === "todo") return "Đang mở"
     if (status === "in_progress") return "Đang làm"
     if (status === "in_review") return "Đánh giá"
     if (status === "done") return "Hoàn thành"
     if (status === "cancelled") return "Đã hủy"
+    if (status === "reopened") return "Mở lại"
     return status
   }
 
@@ -468,6 +469,7 @@ export default function ProjectDetail() {
     if (status === "in_progress") return "warning"
     if (status === "in_review") return "info"
     if (status === "cancelled") return "danger"
+    if (status === "reopened") return "info"
     return "neutral"
   }
 

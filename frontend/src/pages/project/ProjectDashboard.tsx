@@ -229,25 +229,29 @@ export default function ProjectDashboard() {
                     <StatusPill
                       label={
                         task.status === "todo"
-                          ? "Mới"
-                          : task.status === "in_progress"
-                            ? "Đang làm"
-                            : task.status === "in_review"
-                              ? "Đánh giá"
-                              : task.status === "done"
-                                ? "Hoàn thành"
-                                : "Đã hủy"
+                          ? "Đang mở"
+                          : task.status === "reopened"
+                            ? "Mở lại"
+                            : task.status === "in_progress"
+                              ? "Đang làm"
+                              : task.status === "in_review"
+                                ? "Đánh giá"
+                                : task.status === "done"
+                                  ? "Hoàn thành"
+                                  : "Đã hủy"
                       }
                       variant={
                         task.status === "done"
                           ? "success"
                           : task.status === "in_progress"
                             ? "warning"
-                            : task.status === "in_review"
+                            : task.status === "reopened"
                               ? "info"
-                              : task.status === "cancelled"
-                                ? "danger"
-                                : "neutral"
+                              : task.status === "in_review"
+                                ? "info"
+                                : task.status === "cancelled"
+                                  ? "danger"
+                                  : "neutral"
                       }
                     />
                   </TableCell>
@@ -561,27 +565,29 @@ export default function ProjectDashboard() {
               </span>
               <ChevronRight size={10} className="shrink-0" />
             </button>
-            <div className="absolute left-full top-0 ml-1 hidden group-hover/sub:block min-w-[130px] bg-background border border-border rounded-lg shadow-md p-1 z-50">
-              {[
-                { name: "Hoàn thành", id: "done" },
-                { name: "Chờ xử lý", id: "in_review" },
-                { name: "Xác nhận", id: "in_review" },
-                { name: "Mở lại", id: "in_progress" },
-                { name: "Hủy bỏ", id: "cancelled" },
-                { name: "Đóng", id: "done" },
-              ].map((st) => {
-                const isActive = contextMenu.task.status === st.id
-                return (
-                  <button
-                    key={st.name}
-                    onClick={() => handleUpdateTask({ status: st.id })}
-                    className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between"
-                  >
-                    <span>{st.name}</span>
-                    {isActive && <span className="text-[10px] font-bold">✓</span>}
-                  </button>
-                )
-              })}
+            <div className="absolute left-full top-0 -ml-2 pl-3 hidden group-hover/sub:block z-50">
+              <div className="bg-background border border-border rounded-lg shadow-md p-1 min-w-[130px]">
+                {[
+                  { name: "Đang mở", id: "todo" },
+                  { name: "Mở lại", id: "reopened" },
+                  { name: "Đang làm", id: "in_progress" },
+                  { name: "Đánh giá", id: "in_review" },
+                  { name: "Hoàn thành", id: "done" },
+                  { name: "Hủy bỏ", id: "cancelled" },
+                ].map((st) => {
+                  const isActive = contextMenu.task.status === st.id
+                  return (
+                    <button
+                      key={st.name}
+                      onClick={() => handleUpdateTask({ status: st.id })}
+                      className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between"
+                    >
+                      <span>{st.name}</span>
+                      {isActive && <span className="text-[10px] font-bold">✓</span>}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
 
@@ -594,25 +600,27 @@ export default function ProjectDashboard() {
               </span>
               <ChevronRight size={10} className="shrink-0" />
             </button>
-            <div className="absolute left-full top-0 ml-1 hidden group-hover/sub:block min-w-[130px] bg-background border border-border rounded-lg shadow-md p-1 z-50">
-              {[
-                { label: "Lỗi (Bug)", value: "bug" },
-                { label: "Tính năng", value: "feature" },
-                { label: "Hỗ trợ", value: "support" },
-                { label: "Nhiệm vụ", value: "task" },
-              ].map((tr) => {
-                const isActive = contextMenu.task.tracker === tr.value
-                return (
-                  <button
-                    key={tr.value}
-                    onClick={() => handleUpdateTask({ tracker: tr.value })}
-                    className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between"
-                  >
-                    <span>{tr.label}</span>
-                    {isActive && <span className="text-[10px] font-bold">✓</span>}
-                  </button>
-                )
-              })}
+            <div className="absolute left-full top-0 -ml-2 pl-3 hidden group-hover/sub:block z-50">
+              <div className="bg-background border border-border rounded-lg shadow-md p-1 min-w-[130px]">
+                {[
+                  { label: "Lỗi (Bug)", value: "bug" },
+                  { label: "Tính năng", value: "feature" },
+                  { label: "Hỗ trợ", value: "support" },
+                  { label: "Nhiệm vụ", value: "task" },
+                ].map((tr) => {
+                  const isActive = contextMenu.task.tracker === tr.value
+                  return (
+                    <button
+                      key={tr.value}
+                      onClick={() => handleUpdateTask({ tracker: tr.value })}
+                      className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between"
+                    >
+                      <span>{tr.label}</span>
+                      {isActive && <span className="text-[10px] font-bold">✓</span>}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
 
@@ -625,25 +633,27 @@ export default function ProjectDashboard() {
               </span>
               <ChevronRight size={10} className="shrink-0" />
             </button>
-            <div className="absolute left-full top-0 ml-1 hidden group-hover/sub:block min-w-[130px] bg-background border border-border rounded-lg shadow-md p-1 z-50">
-              {[
-                { label: "Thấp", value: "low" },
-                { label: "Trung bình", value: "medium" },
-                { label: "Cao", value: "high" },
-                { label: "Khẩn cấp", value: "urgent" },
-              ].map((pr) => {
-                const isActive = contextMenu.task.priority === pr.value
-                return (
-                  <button
-                    key={pr.value}
-                    onClick={() => handleUpdateTask({ priority: pr.value })}
-                    className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between"
-                  >
-                    <span>{pr.label}</span>
-                    {isActive && <span className="text-[10px] font-bold">✓</span>}
-                  </button>
-                )
-              })}
+            <div className="absolute left-full top-0 -ml-2 pl-3 hidden group-hover/sub:block z-50">
+              <div className="bg-background border border-border rounded-lg shadow-md p-1 min-w-[130px]">
+                {[
+                  { label: "Thấp", value: "low" },
+                  { label: "Trung bình", value: "medium" },
+                  { label: "Cao", value: "high" },
+                  { label: "Khẩn cấp", value: "urgent" },
+                ].map((pr) => {
+                  const isActive = contextMenu.task.priority === pr.value
+                  return (
+                    <button
+                      key={pr.value}
+                      onClick={() => handleUpdateTask({ priority: pr.value })}
+                      className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between"
+                    >
+                      <span>{pr.label}</span>
+                      {isActive && <span className="text-[10px] font-bold">✓</span>}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
 
@@ -656,27 +666,29 @@ export default function ProjectDashboard() {
               </span>
               <ChevronRight size={10} className="shrink-0" />
             </button>
-            <div className="absolute left-full top-0 ml-1 hidden group-hover/sub:block min-w-[150px] max-h-[180px] overflow-y-auto bg-background border border-border rounded-lg shadow-md p-1 z-50">
-              <button
-                onClick={() => handleUpdateTask({ assigneeId: null })}
-                className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between border-b border-border/40 pb-1"
-              >
-                <span>Chưa phân công</span>
-                {!contextMenu.task.assigneeId && <span className="text-[10px] font-bold">✓</span>}
-              </button>
-              {activeProjectMembers?.map((m) => {
-                const isActive = contextMenu.task.assigneeId === m.employeeId
-                return (
-                  <button
-                    key={m.id}
-                    onClick={() => handleUpdateTask({ assigneeId: m.employeeId })}
-                    className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between"
-                  >
-                    <span className="truncate">{m.employee?.fullName || "Chưa rõ"}</span>
-                    {isActive && <span className="text-[10px] font-bold">✓</span>}
-                  </button>
-                )
-              })}
+            <div className="absolute left-full top-0 -ml-2 pl-3 hidden group-hover/sub:block z-50">
+              <div className="bg-background border border-border rounded-lg shadow-md p-1 min-w-[150px] max-h-[180px] overflow-y-auto">
+                <button
+                  onClick={() => handleUpdateTask({ assigneeId: null })}
+                  className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between border-b border-border/40 pb-1"
+                >
+                  <span>Chưa phân công</span>
+                  {!contextMenu.task.assigneeId && <span className="text-[10px] font-bold">✓</span>}
+                </button>
+                {activeProjectMembers?.map((m) => {
+                  const isActive = contextMenu.task.assigneeId === m.employeeId
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => handleUpdateTask({ assigneeId: m.employeeId })}
+                      className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between"
+                    >
+                      <span className="truncate">{m.employee?.fullName || "Chưa rõ"}</span>
+                      {isActive && <span className="text-[10px] font-bold">✓</span>}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
 
@@ -689,20 +701,22 @@ export default function ProjectDashboard() {
               </span>
               <ChevronRight size={10} className="shrink-0" />
             </button>
-            <div className="absolute left-full top-0 ml-1 hidden group-hover/sub:block min-w-[100px] max-h-[180px] overflow-y-auto bg-background border border-border rounded-lg shadow-md p-1 z-50">
-              {["0", "10", "20", "30", "40", "50", "60", "70", "80", "90", "100"].map((p) => {
-                const isActive = contextMenu.task.progress === Number(p)
-                return (
-                  <button
-                    key={p}
-                    onClick={() => handleUpdateTask({ progress: Number(p) })}
-                    className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between font-mono"
-                  >
-                    <span>{p} %</span>
-                    {isActive && <span className="text-[10px] font-bold">✓</span>}
-                  </button>
-                )
-              })}
+            <div className="absolute left-full top-0 -ml-2 pl-3 hidden group-hover/sub:block z-50">
+              <div className="bg-background border border-border rounded-lg shadow-md p-1 min-w-[100px] max-h-[180px] overflow-y-auto">
+                {["0", "10", "20", "30", "40", "50", "60", "70", "80", "90", "100"].map((p) => {
+                  const isActive = contextMenu.task.progress === Number(p)
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => handleUpdateTask({ progress: Number(p) })}
+                      className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between font-mono"
+                    >
+                      <span>{p} %</span>
+                      {isActive && <span className="text-[10px] font-bold">✓</span>}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
 
@@ -715,16 +729,18 @@ export default function ProjectDashboard() {
               </span>
               <ChevronRight size={10} className="shrink-0" />
             </button>
-            <div className="absolute left-full top-0 ml-1 hidden group-hover/sub:block min-w-[150px] max-h-[180px] overflow-y-auto bg-background border border-border rounded-lg shadow-md p-1 z-50">
-              {activeProjectMembers?.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => m.employee?.fullName && toast.success(`Đang theo dõi bởi: ${m.employee.fullName}`)}
-                  className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer text-left truncate"
-                >
-                  {m.employee?.fullName || "Chưa rõ"}
-                </button>
-              ))}
+            <div className="absolute left-full top-0 -ml-2 pl-3 hidden group-hover/sub:block z-50">
+              <div className="bg-background border border-border rounded-lg shadow-md p-1 min-w-[150px] max-h-[180px] overflow-y-auto">
+                {activeProjectMembers?.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => m.employee?.fullName && toast.success(`Đang theo dõi bởi: ${m.employee.fullName}`)}
+                    className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer text-left truncate"
+                  >
+                    {m.employee?.fullName || "Chưa rõ"}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

@@ -45,7 +45,7 @@ export const TASK_PRIORITIES = ["low", "medium", "high", "urgent"] as const
 /**
  * Task status enumeration
  */
-export const TASK_STATUSES = ["todo", "in_progress", "in_review", "done", "cancelled"] as const
+export const TASK_STATUSES = ["todo", "in_progress", "in_review", "done", "cancelled", "reopened"] as const
 
 /**
  * Task tracker enumeration

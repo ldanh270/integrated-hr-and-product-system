@@ -28,6 +28,7 @@ import { taskCategoryApi } from "@/lib/api/task-category.api"
 import { useAuthStore } from "@/store/auth-store"
 import type { SpentTime } from "@/types/spent-time.types"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
 import {
   AlertCircle,
   Calendar,
@@ -224,11 +225,12 @@ export default function TaskDetail() {
 
   // Formatting helpers
   const formatStatus = (status: string) => {
-    if (status === "todo") return "Mới"
+    if (status === "todo") return "Đang mở"
     if (status === "in_progress") return "Đang làm"
     if (status === "in_review") return "Đánh giá"
     if (status === "done") return "Hoàn thành"
     if (status === "cancelled") return "Đã hủy"
+    if (status === "reopened") return "Mở lại"
     return status
   }
 
@@ -237,6 +239,7 @@ export default function TaskDetail() {
     if (status === "in_progress") return "warning"
     if (status === "in_review") return "info"
     if (status === "cancelled") return "danger"
+    if (status === "reopened") return "info"
     return "neutral"
   }
 
@@ -581,6 +584,10 @@ export default function TaskDetail() {
               setEditError(null)
               if (!taskTitle.trim()) {
                 setEditError("Vui lòng nhập tiêu đề công việc")
+                return
+              }
+              if (taskStart && taskDue && new Date(taskStart) > new Date(taskDue)) {
+                toast.warning("Ngày bắt đầu không được sau hạn hoàn thành")
                 return
               }
               updateMutation.mutate()

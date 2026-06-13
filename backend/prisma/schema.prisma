@@ -120,6 +120,7 @@ enum TaskStatus {
   in_review
   done
   cancelled
+  reopened
 }
 
 enum TaskTracker {
