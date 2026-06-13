@@ -1,3 +1,4 @@
+import Sidebar from "@/components/layouts/Sidebar"
 import SubsystemDropdown from "@/components/layouts/SubsystemDropdown"
 import {
   DropdownMenu,
@@ -7,6 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { ROUTES } from "@/config/routes.config"
 import { useAuth } from "@/hooks/use-auth.ts"
 import { useAuthStore } from "@/store/auth-store.ts"
@@ -14,7 +16,7 @@ import { useSubsystemStore } from "@/store/subsystem-store"
 
 import { useState } from "react"
 
-import { Bell, History, LogOut, MessageSquare, User } from "lucide-react"
+import { Bell, History, LogOut, Menu, MessageSquare, User } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 
 /**
@@ -27,6 +29,7 @@ export default function Header() {
   const { user, isAuthenticated } = useAuthStore()
   const { getActiveSubsystemConfig } = useSubsystemStore()
   const [activeTab, setActiveTab] = useState<"personal" | "summary">("personal")
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const activeSubsystemConfig = getActiveSubsystemConfig()
 
@@ -45,9 +48,25 @@ export default function Header() {
     <header className="sticky top-0 z-40 w-full h-16 border-b border-border bg-background text-foreground px-6 flex items-center shadow-none">
       <div className="flex w-full items-center justify-between">
         {/* Left: title + sub-tabs */}
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-4 md:gap-8">
+          <div className="md:hidden flex items-center">
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <button className="p-2 -ml-2 rounded-md hover:bg-muted text-muted-foreground focus:outline-none">
+                  <Menu size={20} />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-64 p-0 border-r-0">
+                <Sidebar
+                  isMobile
+                  onNavClick={() => setMobileMenuOpen(false)}
+                  className="h-full border-r-0"
+                />
+              </SheetContent>
+            </Sheet>
+          </div>
           <div className="flex flex-col">
-            <h1 className="text-sm font-medium tracking-tight leading-none">
+            <h1 className="text-sm font-medium tracking-tight leading-none hidden sm:block">
               {activeSubsystemConfig?.name || "Hệ thống HRP"}
             </h1>
           </div>

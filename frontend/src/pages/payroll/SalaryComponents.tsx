@@ -70,7 +70,7 @@ export default function SalaryComponents() {
   }
 
   return (
-    <div className="container px-6 py-6">
+    <div className="container px-3 sm:px-6 py-4 sm:py-6">
       <PageHeader
         title="Thành phần lương"
         description="Định nghĩa các thành phần thu nhập, khấu trừ và công thức tính lương."
@@ -104,7 +104,7 @@ export default function SalaryComponents() {
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                   Loại thành phần
                 </TableHead>
-                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                <TableHead className="hidden sm:table-cell px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                   Kiểu giá trị
                 </TableHead>
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
@@ -152,7 +152,7 @@ export default function SalaryComponents() {
                     <TableCell className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                       {COMPONENT_TYPE_LABELS[comp.type]}
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                    <TableCell className="hidden sm:table-cell px-4 py-3 text-muted-foreground whitespace-nowrap">
                       {COMPONENT_VALUE_TYPE_LABELS[comp.valueType]}
                     </TableCell>
                     <TableCell

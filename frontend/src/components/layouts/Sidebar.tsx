@@ -13,12 +13,18 @@ interface NavItem {
   roles?: string[]
 }
 
+interface SidebarProps {
+  className?: string
+  isMobile?: boolean
+  onNavClick?: () => void
+}
+
 /**
  * Sidebar component
  * Reusable navigation panel with expand/collapse states.
  * Brand: HRP (Human Resource Platform)
  */
-export default function Sidebar() {
+export default function Sidebar({ className, isMobile, onNavClick }: SidebarProps = {}) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const location = useLocation()
 
@@ -33,8 +39,8 @@ export default function Sidebar() {
   return (
     <aside
       className={`relative flex flex-col bg-background text-foreground border-r border-border transition-all duration-300 ${
-        isCollapsed ? "w-16" : "w-64"
-      }`}
+        isMobile ? "w-full" : isCollapsed ? "w-16" : "w-64"
+      } ${className || ""}`}
     >
       {/* Brand header */}
       <div className="flex h-16 items-center px-6 border-b border-border">
@@ -43,7 +49,7 @@ export default function Sidebar() {
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs font-bold tracking-tighter shadow-sm">
             HRP
           </div>
-          {!isCollapsed && (
+          {(!isCollapsed || isMobile) && (
             <span className="text-base font-medium tracking-tight whitespace-nowrap animate-fade-in">
               HRP Platform
             </span>
@@ -66,7 +72,8 @@ export default function Sidebar() {
             <Link
               key={item.path}
               to={item.path}
-              title={isCollapsed ? item.name : undefined}
+              title={isCollapsed && !isMobile ? item.name : undefined}
+              onClick={onNavClick}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150 ${
                 isActive
                   ? "bg-primary text-primary-foreground shadow-sm"
@@ -74,7 +81,7 @@ export default function Sidebar() {
               }`}
             >
               <Icon size={18} strokeWidth={isActive ? 2 : 1.5} className="shrink-0" />
-              {!isCollapsed && (
+              {(!isCollapsed || isMobile) && (
                 <span className="truncate transition-opacity duration-200">{item.name}</span>
               )}
             </Link>
@@ -83,17 +90,19 @@ export default function Sidebar() {
       </nav>
 
       {/* Collapse toggle */}
-      <button
-        onClick={() => setIsCollapsed((p) => !p)}
-        className="absolute -right-3 top-16 mt-0.5 flex h-6 w-6 items-center justify-center rounded-md border border-border bg-background text-foreground shadow-none hover:bg-muted transition-colors cursor-pointer"
-        aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-      >
-        {isCollapsed ? (
-          <ChevronRight size={14} strokeWidth={1.5} />
-        ) : (
-          <ChevronLeft size={14} strokeWidth={1.5} />
-        )}
-      </button>
+      {!isMobile && (
+        <button
+          onClick={() => setIsCollapsed((p) => !p)}
+          className="absolute -right-3 top-16 mt-0.5 flex h-6 w-6 items-center justify-center rounded-md border border-border bg-background text-foreground shadow-none hover:bg-muted transition-colors cursor-pointer"
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {isCollapsed ? (
+            <ChevronRight size={14} strokeWidth={1.5} />
+          ) : (
+            <ChevronLeft size={14} strokeWidth={1.5} />
+          )}
+        </button>
+      )}
     </aside>
   )
 }

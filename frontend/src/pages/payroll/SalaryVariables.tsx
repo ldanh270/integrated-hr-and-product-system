@@ -160,7 +160,7 @@ export default function SalaryVariablesPage() {
   }
 
   return (
-    <div className="container px-6 py-6">
+    <div className="container px-3 sm:px-6 py-4 sm:py-6">
       <PageHeader
         title="Biến hệ thống"
         description="Quản lý các biến số dùng chung cho công thức tính lương."
@@ -194,7 +194,7 @@ export default function SalaryVariablesPage() {
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                   Tên biến
                 </TableHead>
-                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                <TableHead className="hidden sm:table-cell px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                   Giá trị mặc định
                 </TableHead>
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
@@ -232,7 +232,7 @@ export default function SalaryVariablesPage() {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="px-4 py-3 whitespace-nowrap">
+                    <TableCell className="hidden sm:table-cell px-4 py-3 whitespace-nowrap">
                       {typeof variable.value === "number"
                         ? variable.value.toLocaleString()
                         : variable.value}

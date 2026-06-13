@@ -1,4 +1,5 @@
 import { AppPagination, DataTableToolbar } from "@/components/common"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -14,7 +15,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { PAYROLL_STATUS, PAYROLL_STATUS_LABELS } from "@/config/entities/payroll.config"
+import {
+  PAYROLL_STATUS,
+  PAYROLL_STATUS_BADGE,
+  PAYROLL_STATUS_LABELS,
+} from "@/config/entities/payroll.config"
 import { useApprovePayroll, useRejectPayroll } from "@/hooks/payroll/use-payrolls"
 import type { IPayroll } from "@/types/payroll.types"
 
@@ -101,7 +106,7 @@ export function PayrollHistoryTable({ payrolls, isLoading }: PayrollHistoryTable
               <TableHead className="min-w-12.5 px-4 py-3 font-medium text-xs text-muted-foreground uppercase text-center">
                 #
               </TableHead>
-              <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+              <TableHead className="hidden sm:table-cell px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                 Payroll ID
               </TableHead>
               <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
@@ -113,7 +118,7 @@ export function PayrollHistoryTable({ payrolls, isLoading }: PayrollHistoryTable
               <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                 Status
               </TableHead>
-              <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+              <TableHead className="hidden md:table-cell px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                 Created At
               </TableHead>
               <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap text-right">
@@ -131,7 +136,7 @@ export function PayrollHistoryTable({ payrolls, isLoading }: PayrollHistoryTable
                   <TableCell className="px-4 py-3 text-center text-muted-foreground">
                     {(page - 1) * limit + index + 1}
                   </TableCell>
-                  <TableCell className="px-4 py-3">
+                  <TableCell className="hidden sm:table-cell px-4 py-3">
                     <button
                       type="button"
                       onClick={() => setSelectedPayrollId(payroll.id)}
@@ -150,22 +155,17 @@ export function PayrollHistoryTable({ payrolls, isLoading }: PayrollHistoryTable
                     }).format(payroll.totalAmount)}
                   </TableCell>
                   <TableCell className="px-4 py-3">
-                    <div
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                        isDraft
-                          ? "bg-yellow-100 text-yellow-800 border-yellow-200"
-                          : isApproved
-                            ? "bg-green-100 text-green-800 border-green-200"
-                            : "bg-red-100 text-red-800 border-red-200"
-                      }`}
+                    <Badge
+                      variant={payroll.status ? PAYROLL_STATUS_BADGE[payroll.status] : "default"}
+                      className="rounded-full shadow-none font-medium px-2.5 py-0.5"
                     >
                       {isDraft && <Clock className="w-3 h-3 mr-1" />}
                       {isApproved && <CheckCircle2 className="w-3 h-3 mr-1" />}
                       {!isDraft && !isApproved && <XCircle className="w-3 h-3 mr-1" />}
-                      {PAYROLL_STATUS_LABELS[payroll.status]}
-                    </div>
+                      {payroll.status ? PAYROLL_STATUS_LABELS[payroll.status] : "Không rõ"}
+                    </Badge>
                   </TableCell>
-                  <TableCell className="px-4 py-3 text-muted-foreground">
+                  <TableCell className="hidden md:table-cell px-4 py-3 text-muted-foreground">
                     {new Intl.DateTimeFormat("en-US", {
                       month: "short",
                       day: "numeric",

@@ -103,7 +103,7 @@ export default function PayslipTemplates() {
   const totalPages = Math.ceil(filteredTemplates.length / limit)
 
   return (
-    <div className="container px-6 py-6">
+    <div className="container px-3 sm:px-6 py-4 sm:py-6">
       <PageHeader
         title="Mẫu bảng lương"
         description="Quản lý và cấu hình các mẫu bảng lương mẫu cho từng nhóm nhân viên."
@@ -146,13 +146,13 @@ export default function PayslipTemplates() {
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                   Tên bảng lương mẫu
                 </TableHead>
-                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                <TableHead className="hidden sm:table-cell px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                   Ngày tạo
                 </TableHead>
-                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                <TableHead className="hidden sm:table-cell px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                   Người tạo
                 </TableHead>
-                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                <TableHead className="hidden md:table-cell px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                   Mô tả
                 </TableHead>
                 <TableHead className="min-w-12.5 px-4 py-3"></TableHead>
@@ -188,15 +188,15 @@ export default function PayslipTemplates() {
                         {template.name}
                       </button>
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                    <TableCell className="hidden sm:table-cell px-4 py-3 text-muted-foreground whitespace-nowrap">
                       {template.createdAt
                         ? new Date(template.createdAt).toLocaleDateString("vi-VN")
                         : "N/A"}
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                    <TableCell className="hidden sm:table-cell px-4 py-3 text-muted-foreground whitespace-nowrap">
                       {template.createdBy?.fullName || "Hệ thống"}
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-muted-foreground max-w-50 truncate">
+                    <TableCell className="hidden md:table-cell px-4 py-3 text-muted-foreground max-w-50 truncate">
                       {template.description || "N/A"}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-center">

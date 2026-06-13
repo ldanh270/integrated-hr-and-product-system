@@ -50,7 +50,7 @@ export default function MyPayslips() {
   }
 
   return (
-    <div className="container px-6 py-6">
+    <div className="container px-3 sm:px-6 py-4 sm:py-6">
       <PageHeader
         title="Lương của tôi"
         description="Lịch sử và chi tiết các phiếu lương của bạn."
@@ -76,10 +76,10 @@ export default function MyPayslips() {
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                   Kỳ lương
                 </TableHead>
-                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap text-center">
+                <TableHead className="hidden sm:table-cell px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap text-center">
                   Ngày công
                 </TableHead>
-                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap text-center">
+                <TableHead className="hidden sm:table-cell px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap text-center">
                   Tăng ca
                 </TableHead>
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
@@ -137,7 +137,7 @@ export default function MyPayslips() {
                     </TableCell>
                     <TableCell className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                        <div className="h-8 w-8 sm:h-10 sm:w-10 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                           <CalendarDays className="h-5 w-5" />
                         </div>
                         <div>
@@ -150,10 +150,10 @@ export default function MyPayslips() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-center font-medium text-muted-foreground">
+                    <TableCell className="hidden sm:table-cell px-4 py-3 text-center font-medium text-muted-foreground">
                       {payslip.workingDays} <span className="text-xs font-normal">ngày</span>
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-center font-medium text-muted-foreground">
+                    <TableCell className="hidden sm:table-cell px-4 py-3 text-center font-medium text-muted-foreground">
                       {payslip.overtimeMinutes} <span className="text-xs font-normal">phút</span>
                     </TableCell>
                     <TableCell className="px-4 py-3">

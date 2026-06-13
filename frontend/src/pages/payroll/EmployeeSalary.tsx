@@ -63,7 +63,7 @@ export default function EmployeeSalary() {
   }
 
   return (
-    <div className="container px-6 py-6">
+    <div className="container px-3 sm:px-6 py-4 sm:py-6">
       <PageHeader
         title="Thiết lập lương"
         description="Quản lý cấu hình mức lương cơ bản và gán mẫu bảng lương cho nhân viên."
@@ -89,10 +89,10 @@ export default function EmployeeSalary() {
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                   Nhân sự
                 </TableHead>
-                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                <TableHead className="hidden sm:table-cell px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                   Vị trí / Vai trò
                 </TableHead>
-                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                <TableHead className="hidden sm:table-cell px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                   Lương cơ bản
                 </TableHead>
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
@@ -197,11 +197,11 @@ function EmployeeRow({ emp, index, onConfigure, onViewHistory }: RowProps) {
           </div>
         </div>
       </TableCell>
-      <TableCell className="px-4 py-3">
+      <TableCell className="hidden sm:table-cell px-4 py-3">
         <div className="font-semibold text-foreground/80">{emp.position || "-"}</div>
         <div className="text-[10px] text-muted-foreground uppercase">{emp.role}</div>
       </TableCell>
-      <TableCell className="px-4 py-3 font-semibold">
+      <TableCell className="hidden sm:table-cell px-4 py-3 font-semibold">
         {isLoading ? (
           <span className="text-muted-foreground">Đang tải...</span>
         ) : config ? (

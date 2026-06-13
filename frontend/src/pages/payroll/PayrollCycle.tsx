@@ -111,7 +111,7 @@ function TriggerTimeField({ control }: { control: Control<SettingsFormValues> })
                 value={field.value?.toString()}
               >
                 <FormControl>
-                  <SelectTrigger className="w-28 rounded-full border-border h-10 shadow-sm transition-shadow hover:shadow-md focus:shadow-md">
+                  <SelectTrigger className="w-24 sm:w-28 rounded-full border-border h-10 shadow-sm transition-shadow hover:shadow-md focus:shadow-md">
                     <SelectValue placeholder="Giờ" />
                   </SelectTrigger>
                 </FormControl>
@@ -138,7 +138,7 @@ function TriggerTimeField({ control }: { control: Control<SettingsFormValues> })
                 value={field.value?.toString()}
               >
                 <FormControl>
-                  <SelectTrigger className="w-28 rounded-full border-border h-10 shadow-sm transition-shadow hover:shadow-md focus:shadow-md">
+                  <SelectTrigger className="w-24 sm:w-28 rounded-full border-border h-10 shadow-sm transition-shadow hover:shadow-md focus:shadow-md">
                     <SelectValue placeholder="Phút" />
                   </SelectTrigger>
                 </FormControl>
@@ -203,7 +203,7 @@ function TriggerDayField({ control }: { control: Control<SettingsFormValues> }) 
 
 function PayrollCycleSkeleton() {
   return (
-    <div className="container px-6 py-6 max-w-5xl">
+    <div className="container px-3 sm:px-6 py-4 sm:py-6 max-w-5xl">
       <PageHeader
         title="Chu kỳ lương"
         description="Quản lý lịch trình tổng hợp và xử lý lương của doanh nghiệp."
