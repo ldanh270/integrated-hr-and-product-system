@@ -1,5 +1,5 @@
 import { PageCard, PageHeader } from "@/components/common"
-import SalaryComponentSheet from "@/components/features/payroll/salary-component-sheet"
+import { SalaryComponentFormPage } from "@/components/features/payroll/salary-component-form-page"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -29,17 +29,32 @@ import { Loader2, MoreHorizontal, Plus } from "lucide-react"
 export default function SalaryComponents() {
   const { data: components, isLoading, isError } = useSalaryComponents()
 
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingComponent, setEditingComponent] = useState<ISalaryComponent | null>(null)
+  const [view, setView] = useState<"list" | "create" | "edit">("list")
+  const [selectedComponent, setSelectedComponent] = useState<ISalaryComponent | null>(null)
 
   const handleCreate = () => {
-    setEditingComponent(null)
-    setDialogOpen(true)
+    setSelectedComponent(null)
+    setView("create")
   }
 
   const handleEdit = (comp: ISalaryComponent) => {
-    setEditingComponent(comp)
-    setDialogOpen(true)
+    setSelectedComponent(comp)
+    setView("edit")
+  }
+
+  const handleCloseForm = () => {
+    setView("list")
+    setSelectedComponent(null)
+  }
+
+  if (view !== "list") {
+    return (
+      <SalaryComponentFormPage
+        initialData={selectedComponent}
+        onSuccess={handleCloseForm}
+        onCancel={handleCloseForm}
+      />
+    )
   }
 
   return (
@@ -150,12 +165,6 @@ export default function SalaryComponents() {
           </Table>
         </div>
       </PageCard>
-
-      <SalaryComponentSheet
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        initialData={editingComponent}
-      />
     </div>
   )
 }
