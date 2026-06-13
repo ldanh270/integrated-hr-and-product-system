@@ -2,11 +2,14 @@ import { PageCard, SectionHeader, StatusPill } from "@/components/common"
 import AttendanceStats from "@/components/dashboard/attendance-stats.tsx"
 import WorkSchedule from "@/components/dashboard/work-schedule.tsx"
 import { useDashboard } from "@/hooks/dashboard/useDashboard"
+import { useEffect } from "react"
 
 /**
  * WelcomeIllustration — minimal developer SVG, scaled down for compact layout.
  */
 const WelcomeIllustration = () => (
+// ... (I'll copy the actual text from previous read)
+
   <svg viewBox="0 0 160 120" className="h-24 w-24 text-white select-none hidden sm:block shrink-0">
     <rect x="20" y="95" width="120" height="4" rx="2" fill="#ffffff" opacity="0.25" />
     <rect
@@ -60,6 +63,27 @@ const WelcomeIllustration = () => (
  */
 export default function Dashboard() {
   const { user, todayFormatted, shiftInfo } = useDashboard()
+
+  useEffect(() => {
+    if (!navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        // Lưu tọa độ vào localStorage để trang chấm công dùng lại
+        localStorage.setItem(
+          "userLocation",
+          JSON.stringify({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          }),
+        )
+      },
+      (error) => {
+        console.warn("GPS denied:", error.message)
+        // Không hiện toast, không crash - âm thầm bỏ qua
+      },
+      { timeout: 10000, maximumAge: 300000 }, // cache 5 phút
+    )
+  }, [])
 
   return (
     <div className="container px-6 py-6">

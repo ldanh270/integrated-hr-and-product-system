@@ -6,13 +6,36 @@ import { useEffect, useState } from "react"
 
 import { toast } from "sonner"
 
+const USER_LOCATION_KEY = "userLocation"
+
+function persistLocation(location: { lat: number; lng: number }) {
+  localStorage.setItem(USER_LOCATION_KEY, JSON.stringify(location))
+}
+
+function readCachedLocation(): { lat: number; lng: number } | null {
+  const cached = localStorage.getItem(USER_LOCATION_KEY)
+  if (!cached) return null
+
+  try {
+    const parsed = JSON.parse(cached) as { lat?: number; lng?: number }
+    if (typeof parsed.lat !== "number" || typeof parsed.lng !== "number") return null
+    return { lat: parsed.lat, lng: parsed.lng }
+  } catch {
+    return null
+  }
+}
+
+function getApiErrorMessage(error: unknown, fallback: string): string {
+  const err = error as { response?: { data?: { error?: { message?: string } } } }
+  return err.response?.data?.error?.message ?? fallback
+}
+
 export function useVirtualScanner(): {
   user: User | null
   currentTime: Date
   location: { lat: number; lng: number } | null
   locating: boolean
   isProcessing: boolean
-  getLocation: () => void
   handleScan: () => Promise<void>
 } {
   const { user } = useAuthStore()
@@ -21,49 +44,75 @@ export function useVirtualScanner(): {
   const [locating, setLocating] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
 
-  // Update clock
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
     return () => clearInterval(timer)
   }, [])
 
-  // Get location
-  const getLocation = () => {
+  useEffect(() => {
+    const cached = readCachedLocation()
+    if (cached) setLocation(cached)
+  }, [])
+
+  useEffect(() => {
+    if (!navigator.geolocation) return
+
     setLocating(true)
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          })
-          setLocating(false)
-        },
-        (error) => {
-          console.error(error)
-          toast.error("Không thể lấy vị trí. Vui lòng cấp quyền truy cập vị trí.")
-          setLocating(false)
-        },
-      )
-    } else {
-      toast.error("Trình duyệt của bạn không hỗ trợ Geolocation.")
-      setLocating(false)
-    }
-  }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+        setLocation(coords)
+        persistLocation(coords)
+        setLocating(false)
+      },
+      (err) => {
+        console.warn("GPS mount error:", err.message)
+        if (err.code === 1) {
+          toast.warning("Vui lòng cho phép truy cập vị trí để chấm công")
+        }
+        setLocating(false)
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    )
+  }, [])
 
   const handleScan = async () => {
-    if (!location) {
-      toast.error("Vui lòng cho phép lấy vị trí trước khi chấm công.")
-      return getLocation()
+    let finalLocation = location ?? readCachedLocation()
+
+    if (!finalLocation) {
+      if (!navigator.geolocation) {
+        toast.error("Trình duyệt không hỗ trợ GPS")
+        return
+      }
+
+      setIsProcessing(true)
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 })
+        })
+        finalLocation = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        }
+        setLocation(finalLocation)
+        persistLocation(finalLocation)
+      } catch {
+        toast.error("Không lấy được vị trí GPS. Vui lòng thử lại.")
+        setIsProcessing(false)
+        return
+      }
+    } else {
+      setLocation(finalLocation)
     }
 
     setIsProcessing(true)
+
     try {
-      await attendanceApi.scan({ location })
+      await attendanceApi.scan({ location: finalLocation })
       toast.success("Chấm công thành công!")
     } catch (error) {
-      const err = error as { response?: { data?: { message?: string } } }
-      toast.error(err.response?.data?.message || "Lỗi khi chấm công")
+      console.error("Scan error:", error)
+      toast.error(getApiErrorMessage(error, "Lỗi khi chấm công"))
     } finally {
       setIsProcessing(false)
     }
@@ -75,7 +124,6 @@ export function useVirtualScanner(): {
     location,
     locating,
     isProcessing,
-    getLocation,
     handleScan,
   }
 }
