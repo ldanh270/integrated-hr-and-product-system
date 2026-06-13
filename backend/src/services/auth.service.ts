@@ -1,17 +1,26 @@
-import { PASSWORD_RESET_STATUS } from "@/configs/auth/auth.config.ts"
+import {
+  ACTIVITY_ACTION,
+  ACTIVITY_CATEGORY,
+  PASSWORD_RESET_STATUS,
+} from "@/configs/auth/auth.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
-import { ENV_ENVIRONMENT, ENVIRONMENT } from "@/configs/system/server.config.ts"
+import { ENVIRONMENT, ENV_ENVIRONMENT } from "@/configs/system/server.config.ts"
 import {
+  ActivityLogItem,
+  ActivityLogQuery,
   AuthResponseDto,
   ChangePasswordDto,
   ForgotPasswordDto,
   GenericAuthResponseDto,
   IAuthRepository,
   IAuthService,
+  LockedAccountItem,
   LoginDto,
   LogoutResponseDto,
+  PaginatedActivityLogsDto,
   ResetPasswordDto,
+  SecuritySummaryDto,
   TokenValidationResponseDto,
   ValidateResetTokenDto,
 } from "@/types/auth.types.ts"
@@ -40,7 +49,6 @@ export class AuthService implements IAuthService {
     const { username, password } = data
 
     // Fetch user through repository using normalized identifier
-    const normalizedIdentifier = username.trim().toLowerCase()
     const employee = await this.repo.findAuthByIdentifier(username)
 
     // Security: Generic error for non-existent username to prevent user enumeration
@@ -60,7 +68,7 @@ export class AuthService implements IAuthService {
     // Lock Check (Brute-force protection)
     if (employee.lockedUntil && employee.lockedUntil > new Date()) {
       throw new AppError(
-        `Account is temporarily locked. Try again after ${employee.lockedUntil.toLocaleTimeString()}`,
+        `Account is temporarily locked. Try again after ${employee.lockedUntil.toLocaleString()}`,
         HttpStatusCode.FORBIDDEN,
         "Authentication",
       )
@@ -74,7 +82,34 @@ export class AuthService implements IAuthService {
       employee.failedLoginCount = (employee.failedLoginCount || 0) + 1
 
       if (employee.failedLoginCount >= 5) {
+        const isNewlyLocked = employee.failedLoginCount === 5
         employee.lockedUntil = new Date(Date.now() + 15 * 60 * 1000) // 15 mins lockout
+
+        // Log account lock
+        await this.repo.logActivity({
+          empId: employee.id,
+          category: ACTIVITY_CATEGORY.SECURITY,
+          actionType: ACTIVITY_ACTION.ACCOUNT_LOCKED,
+          ipAddress,
+          timestamp: new Date(),
+          details: JSON.stringify({
+            failedLoginCount: employee.failedLoginCount,
+            lockedUntil: employee.lockedUntil,
+          }),
+        })
+
+        // Send lock notification email only on transition to locked state
+        if (isNewlyLocked) {
+          try {
+            await EmailUtil.sendAccountLockedEmail(employee.email, {
+              fullName: employee.fullName,
+              lockedUntil: employee.lockedUntil,
+              failedAttempts: employee.failedLoginCount,
+            })
+          } catch (emailError) {
+            console.error("Failed to send account lock email:", emailError)
+          }
+        }
       }
 
       await this.repo.updateAuthEmployee(employee.id, {
@@ -85,7 +120,8 @@ export class AuthService implements IAuthService {
       // Log failed attempt through repository
       await this.repo.logActivity({
         empId: employee.id,
-        actionType: "failed_login",
+        category: ACTIVITY_CATEGORY.AUTH,
+        actionType: ACTIVITY_ACTION.FAILED_LOGIN,
         ipAddress,
         timestamp: new Date(),
       })
@@ -95,16 +131,18 @@ export class AuthService implements IAuthService {
 
     // Successful Login
     employee.failedLoginCount = 0
-    employee.lockedUntil = undefined
+    employee.lockedUntil = null
     await this.repo.updateAuthEmployee(employee.id, {
       failedLoginCount: employee.failedLoginCount,
       lockedUntil: employee.lockedUntil,
+      lastLoginAt: new Date(),
     })
 
     // Log success through repository
     await this.repo.logActivity({
       empId: employee.id,
-      actionType: "login",
+      category: ACTIVITY_CATEGORY.AUTH,
+      actionType: ACTIVITY_ACTION.LOGIN,
       ipAddress,
       timestamp: new Date(),
     })
@@ -135,7 +173,8 @@ export class AuthService implements IAuthService {
     // Log logout activity through repository
     await this.repo.logActivity({
       empId,
-      actionType: "logout",
+      category: ACTIVITY_CATEGORY.AUTH,
+      actionType: ACTIVITY_ACTION.LOGOUT,
       ipAddress,
       timestamp: new Date(),
     })
@@ -197,7 +236,7 @@ export class AuthService implements IAuthService {
       const resendResult = await EmailUtil.sendResetPasswordEmail(employee.email, token)
 
       // Debugging: Always return token and resend info if not in production
-      if (ENV_ENVIRONMENT !== ENVIRONMENT.PRODUCTION) {
+      if (process.env.NODE_ENV !== "production") {
         return {
           message: genericResponse.message,
           debugToken: token,
@@ -208,7 +247,7 @@ export class AuthService implements IAuthService {
     } catch (error) {
       console.error("Critical error sending reset email:", error)
       // Throw error in dev to see root cause
-      if (ENV_ENVIRONMENT !== ENVIRONMENT.PRODUCTION) {
+      if (process.env.NODE_ENV !== "production") {
         throw error
       }
     }
@@ -300,7 +339,11 @@ export class AuthService implements IAuthService {
     // Verify current password
     const isMatch = await HashUtil.compare(oldPassword, employee.passwordHash)
     if (!isMatch) {
-      throw new AppError("Incorrect current password", HttpStatusCode.UNAUTHORIZED, "Authentication")
+      throw new AppError(
+        "Incorrect current password",
+        HttpStatusCode.UNAUTHORIZED,
+        "Authentication",
+      )
     }
 
     // Security: Prevent changing to the same password
@@ -318,5 +361,78 @@ export class AuthService implements IAuthService {
     await this.repo.updateAuthEmployee(employee.id, { passwordHash })
 
     return { message: "Password changed successfully." }
+  }
+
+  /**
+   * Gets activity logs with filtering and pagination
+   */
+  async getActivityLogs(query: ActivityLogQuery): Promise<PaginatedActivityLogsDto> {
+    return this.repo.listActivityLogs(query)
+  }
+
+  /**
+   * Gets a single activity log detail
+   */
+  async getActivityLogDetail(id: string): Promise<ActivityLogItem | null> {
+    return this.repo.getActivityLogById(id)
+  }
+
+  /**
+   * Gets security dashboard summary
+   */
+  async getSecuritySummary(): Promise<SecuritySummaryDto> {
+    const [
+      lockedAccounts,
+      failedLoginsToday,
+      successfulLoginsToday,
+      recentSecurityEvents,
+      recentRoleEvents,
+    ] = await Promise.all([
+      this.repo.getLockedEmployees(),
+      this.repo.countActivityLogsToday(ACTIVITY_CATEGORY.AUTH, ACTIVITY_ACTION.FAILED_LOGIN),
+      this.repo.countActivityLogsToday(ACTIVITY_CATEGORY.AUTH, ACTIVITY_ACTION.LOGIN),
+      this.repo.getRecentLogsByCategory(ACTIVITY_CATEGORY.SECURITY, 5),
+      this.repo.getRecentLogsByCategory(ACTIVITY_CATEGORY.ROLE, 5),
+    ])
+
+    return {
+      lockedAccountsCount: lockedAccounts.length,
+      failedLoginsToday,
+      successfulLoginsToday,
+      recentSecurityEvents,
+      recentRoleEvents,
+    }
+  }
+
+  /**
+   * Gets all currently locked accounts
+   */
+  async getLockedAccounts(): Promise<LockedAccountItem[]> {
+    return this.repo.getLockedEmployees()
+  }
+
+  /**
+   * Unlocks an employee account and logs the action
+   */
+  async unlockAccount(empId: string, actorId: string, ipAddress?: string): Promise<void> {
+    const employee = await this.repo.findById(empId)
+    if (!employee) {
+      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "Authentication")
+    }
+
+    await this.repo.unlockEmployee(empId)
+
+    // Log the unlock action
+    await this.repo.logActivity({
+      empId,
+      category: ACTIVITY_CATEGORY.SECURITY,
+      actionType: ACTIVITY_ACTION.ACCOUNT_UNLOCKED,
+      ipAddress,
+      timestamp: new Date(),
+      details: JSON.stringify({
+        actorId,
+        message: "Account manually unlocked by administrator",
+      }),
+    })
   }
 }
