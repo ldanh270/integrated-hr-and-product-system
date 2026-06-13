@@ -1,5 +1,5 @@
 import { AppPagination, PageCard, PageHeader } from "@/components/common"
-import PayslipSheet from "@/components/features/payroll/payslip-sheet"
+import { PayslipDetailPage } from "@/components/features/payroll/payslip-detail-page"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,12 +22,22 @@ import { CalendarDays, ChevronRight, FileText, Loader2 } from "lucide-react"
 export default function MyPayslips() {
   const { data: payslips, isLoading, isError } = useMyPayslips()
 
+  const [view, setView] = useState<"list" | "detail">("list")
   const [selectedPayslip, setSelectedPayslip] = useState<IPayslip | null>(null)
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
 
   const paginatedPayslips = payslips?.slice((page - 1) * limit, page * limit) || []
   const totalPages = payslips ? Math.ceil(payslips.length / limit) : 0
+
+  const handleCloseForm = () => {
+    setView("list")
+    setSelectedPayslip(null)
+  }
+
+  if (view !== "list") {
+    return <PayslipDetailPage payslip={selectedPayslip} onClose={handleCloseForm} />
+  }
 
   return (
     <div className="container px-6 py-6">
@@ -98,7 +108,10 @@ export default function MyPayslips() {
                   <TableRow
                     key={payslip.id}
                     className="hover:bg-muted/30 cursor-pointer transition-colors group"
-                    onClick={() => setSelectedPayslip(payslip)}
+                    onClick={() => {
+                      setSelectedPayslip(payslip)
+                      setView("detail")
+                    }}
                   >
                     <TableCell className="px-4 py-3 text-muted-foreground text-center">
                       {(page - 1) * limit + index + 1}
@@ -167,12 +180,6 @@ export default function MyPayslips() {
           />
         )}
       </PageCard>
-
-      <PayslipSheet
-        payslip={selectedPayslip}
-        open={selectedPayslip !== null}
-        onOpenChange={(open) => !open && setSelectedPayslip(null)}
-      />
     </div>
   )
 }
