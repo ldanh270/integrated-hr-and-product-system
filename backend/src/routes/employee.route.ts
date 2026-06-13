@@ -3,8 +3,10 @@ import { EmployeeController } from "@/controllers/employee.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
 import { authorizeRoles } from "@/middlewares/role.middleware.ts"
+import { validate } from "@/middlewares/validate.middleware.ts"
 import { PrismaAuthRepository } from "@/repositories/auth.repository.ts"
 import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
+import { listEmployeesQuerySchema } from "@/schemas/employee.schema.ts"
 import { EmployeeService } from "@/services/employee.service.ts"
 
 import express from "express"
@@ -21,7 +23,7 @@ const controller = new EmployeeController(service)
 
 employeeRoutes.use(authenticate)
 
-employeeRoutes.get("/", controller.list as any)
+employeeRoutes.get("/", validate(listEmployeesQuerySchema, "query"), controller.list as any)
 employeeRoutes.get("/:id", controller.getOne as any)
 
 employeeRoutes.post(

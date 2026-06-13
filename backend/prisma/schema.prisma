@@ -175,6 +175,7 @@ model Employee {
   lockedUntil      DateTime?
   startDate        DateTime?      @db.Date
   endDate          DateTime?      @db.Date
+  lastLoginAt      DateTime?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
