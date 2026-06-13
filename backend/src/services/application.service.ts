@@ -170,7 +170,7 @@ export class ApplicationService implements IApplicationService {
     query: IListApplicationsQueryDTO,
     requester?: { empId: string; role: string },
   ): Promise<{ data: any[]; total: number }> {
-    // 1. Verify target employee exists and is not soft-deleted
+    // Verify target employee exists and is not soft-deleted
     const employeeExists = await prisma.employee.findFirst({
       where: { id: employeeId, deletedAt: null } as any,
       select: { id: true },
@@ -185,7 +185,7 @@ export class ApplicationService implements IApplicationService {
       )
     }
 
-    // 2. If requester is team_leader, enforce access rules
+    // If requester is team_leader, enforce access rules
     if (requester && requester.role === ROLE.TEAM_LEADER && employeeId !== requester.empId) {
       const activeProject = await prisma.project.findFirst({
         where: {

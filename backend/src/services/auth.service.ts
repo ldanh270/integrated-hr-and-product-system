@@ -338,7 +338,7 @@ export class AuthService implements IAuthService {
   async changePassword(empId: string, data: ChangePasswordDto): Promise<GenericAuthResponseDto> {
     const { oldPassword, newPassword } = data
 
-    // 1. Fetch employee with password hash
+    // Fetch employee with password hash
     const employee = await this.repo.findById(empId)
     if (!employee) {
       throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "Authentication")

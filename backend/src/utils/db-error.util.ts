@@ -20,16 +20,16 @@ export function handleDbUniqueError(
   if (DB_ERROR_CODES.UNIQUE_CONSTRAINT.includes(error.code)) {
     let fields: string[] = []
 
-    // 1. Try standard Prisma target array
+    // Try standard Prisma target array
     if (Array.isArray(error.meta?.target)) {
       fields = error.meta.target
     } else {
-      // 2. Try Prisma driver adapter constraint fields
+      // Try Prisma driver adapter constraint fields
       const driverFields = error.meta?.driverAdapterError?.cause?.constraint?.fields
       if (Array.isArray(driverFields)) {
         fields = driverFields
       } else {
-        // 3. Fallback: Parse from raw DB message if fields not structured
+        // Fallback: Parse from raw DB message if fields not structured
         const msg = error.meta?.driverAdapterError?.cause?.originalMessage || ""
         for (const field of Object.keys(fieldMap)) {
           if (msg.includes(field)) {
