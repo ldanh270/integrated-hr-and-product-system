@@ -1,6 +1,10 @@
 import { ATTENDANCE_STATUS, EMPLOYEE_SHIFT_STATUS } from "@/configs/entities/attendance.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
-import { PAYROLL_STATUS, SALARY_COMPONENT_TYPES, generateDefaultPayrollName } from "@/configs/entities/payroll.config.ts"
+import {
+  PAYROLL_STATUS,
+  SALARY_COMPONENT_TYPES,
+  generateDefaultPayrollName,
+} from "@/configs/entities/payroll.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { IAttendanceRepository } from "@/types/attendance.types.ts"
 import { IEmployeeRepository } from "@/types/employee.types.ts"
@@ -55,7 +59,11 @@ export class PayrollService implements IPayrollService {
     const periodStart = new Date(year, month - 1, 1)
     const periodEnd = new Date(year, month, 0) // last day of the month
 
-    const payroll = await this.payrollRepo.create({ periodMonth: month, periodYear: year, name: finalName })
+    const payroll = await this.payrollRepo.create({
+      periodMonth: month,
+      periodYear: year,
+      name: finalName,
+    })
 
     // Fetch all active global salary variables
     const globalVariables = await this.prisma.salaryVariable.findMany({
@@ -107,6 +115,7 @@ export class PayrollService implements IPayrollService {
       const context: IFormulaContext | any = {
         baseSalary: Number(config.baseSalary),
         workingDays: attendance.workingDays,
+        actualWorkingDays: attendance.workingDays,
         absentDays: attendance.absentDays,
         overtimeMinutes: attendance.overtimeMinutes,
         lateMinutes: attendance.lateMinutes,
