@@ -1,6 +1,6 @@
-import { Resend } from "resend"
-import { ENV_ENVIRONMENT, ENVIRONMENT } from "@/configs/system/server.config.ts"
+import { ENVIRONMENT, ENV_ENVIRONMENT } from "@/configs/system/server.config.ts"
 
+import { Resend } from "resend"
 
 /**
  * EmailUtil provides functionality for sending emails using Resend SDK.
@@ -14,7 +14,7 @@ export class EmailUtil {
   static async sendResetPasswordEmail(to: string, token: string): Promise<any> {
     const apiKey = process.env.RESEND_API_KEY
     const clientUrl = process.env.CLIENT_URL || "http://localhost:5173"
-    const from = process.env.EMAIL_FROM || "onboarding@resend.dev"
+    const from = process.env.EMAIL_FROM || "noreply@smartpcstore.id.vn"
 
     const resetUrl = `${clientUrl}/reset-password?token=${token}`
 
@@ -71,6 +71,62 @@ export class EmailUtil {
     } catch (error) {
       console.error("Failed to send email via Resend:", error)
       throw error // Re-throw to be caught in Service layer
+    }
+  }
+
+  /**
+   * Sends an account locked notification email.
+   */
+  static async sendAccountLockedEmail(
+    to: string,
+    data: {
+      fullName: string
+      lockedUntil: Date
+      failedAttempts: number
+    },
+  ): Promise<any> {
+    const apiKey = process.env.RESEND_API_KEY
+    const from = process.env.EMAIL_FROM || "onboarding@resend.dev"
+
+    const lockTimeStr = data.lockedUntil.toLocaleTimeString()
+    const lockExpiryStr = data.lockedUntil.toLocaleString()
+
+    if (ENV_ENVIRONMENT !== ENVIRONMENT.PRODUCTION) {
+      console.log(`[DEBUG] Account Locked Email to: ${to}`)
+      console.log(`[DEBUG] Locked Until: ${lockExpiryStr}`)
+    }
+
+    if (!apiKey) {
+      console.log("--- EMAIL MOCK (ACCOUNT LOCKED) ---")
+      console.log(`To: ${to}, Locked Until: ${lockExpiryStr}`)
+      return { mocked: true }
+    }
+
+    try {
+      const resend = new Resend(apiKey)
+
+      return await resend.emails.send({
+        from: `HRP Security <${from}>`,
+        to,
+        subject: "Security Alert: Account Temporarily Locked",
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ffcccc; border-radius: 10px;">
+            <h2 style="color: #d9534f;">Security Alert</h2>
+            <p>Hello <strong>${data.fullName}</strong>,</p>
+            <p>Your account has been temporarily locked due to <strong>${data.failedAttempts}</strong> consecutive failed login attempts.</p>
+            <p>For your security, you will not be able to log in until:</p>
+            <div style="text-align: center; margin: 30px 0; padding: 15px; background-color: #f9f9f9; border-radius: 5px; font-size: 18px; font-weight: bold; color: #333;">
+              ${lockExpiryStr}
+            </div>
+            <p>If you did not attempt these logins, please contact your system administrator immediately.</p>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+            <p style="color: #999; font-size: 12px;">This is an automated security notification from the HRP Management System.</p>
+          </div>
+        `,
+      })
+    } catch (error) {
+      console.error("Failed to send account locked email:", error)
+      throw error
     }
   }
 }
