@@ -743,7 +743,7 @@ export default function Applications() {
     </div>
   )
 
-  const renderPagination = (hook: typeof myApps) => (
+  const renderPagination = (hook: { page: number; totalPages: number; setPage: (v: number) => void }) => (
     hook.totalPages > 1 && (
       <div className="flex items-center justify-center gap-4 mt-6">
         <Button variant="outline" size="sm" onClick={() => hook.setPage(hook.page - 1)} disabled={hook.page <= 1} className="rounded-full gap-2">
