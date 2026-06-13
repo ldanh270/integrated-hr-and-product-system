@@ -79,3 +79,31 @@ export const SPENT_TIME_WORK_TIME_TYPES = [
   SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY,
   SPENT_TIME_WORK_TIME_TYPE.OVERTIME,
 ] as const
+
+/**
+ * Task tracker enumeration
+ */
+export const TASK_TRACKER = {
+  FEATURE: "feature",
+  BUG: "bug",
+  SUPPORT: "support",
+  TASK: "task",
+  MEETING: "meeting",
+  TEST: "test",
+  SUBTASK: "subtask",
+  MANAGEMENT: "management",
+} as const
+
+/**
+ * Array of all valid task trackers
+ */
+export const TASK_TRACKERS = [
+  TASK_TRACKER.FEATURE,
+  TASK_TRACKER.BUG,
+  TASK_TRACKER.SUPPORT,
+  TASK_TRACKER.TASK,
+  TASK_TRACKER.MEETING,
+  TASK_TRACKER.TEST,
+  TASK_TRACKER.SUBTASK,
+  TASK_TRACKER.MANAGEMENT,
+] as const
