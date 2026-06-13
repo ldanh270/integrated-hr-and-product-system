@@ -54,15 +54,14 @@ export class ProjectsSeeder implements ISeeder {
     ]
 
     const createdProjects = await prisma.$transaction(
-      projectsData.map(
-        (data) =>
-          prisma.project.upsert({
-            where: { name: data.name },
-            update: data,
-            create: data,
-          }),
-        { timeout: 30000 },
+      projectsData.map((data) =>
+        prisma.project.upsert({
+          where: { name: data.name },
+          update: data,
+          create: data,
+        }),
       ),
+      { timeout: 30000 },
     )
 
     console.log(`  Seeded ${createdProjects.length} projects.`)

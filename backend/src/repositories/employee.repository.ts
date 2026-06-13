@@ -72,7 +72,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       search,
       status,
       role,
-      employeeType,
+      type: employeeType,
       sortBy = "createdAt",
       sortOrder = SORT_ORDER.DESC,
     } = query
@@ -110,8 +110,8 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       this.prisma.employee.findMany({
         where,
         orderBy,
-        skip,
-        take: limit,
+        skip: Number(skip),
+        take: Number(limit),
       }),
       this.prisma.employee.count({ where }),
     ])

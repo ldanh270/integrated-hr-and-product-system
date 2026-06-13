@@ -1,6 +1,8 @@
+import { ROLE } from "@/configs/entities/employee.config.ts"
 import { AuthController } from "@/controllers/auth.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
+import { authorizeRoles } from "@/middlewares/role.middleware.ts"
 import { PrismaAuthRepository } from "@/repositories/auth.repository.ts"
 import { AuthService } from "@/services/auth.service.ts"
 
@@ -62,5 +64,29 @@ authRoutes.post("/validate-reset-token", controller.validateResetToken)
  * @access Public
  */
 authRoutes.post("/reset-password", controller.resetPassword)
+
+/**
+ * @route GET /api/auth/activity-logs
+ * @desc Get activity logs with filters
+ * @access Private (Admin/HR/GM only)
+ */
+authRoutes.get(
+  "/activity-logs",
+  authenticate,
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  controller.listActivityLogs as any,
+)
+
+/**
+ * @route GET /api/auth/activity-logs/:id
+ * @desc Get activity log detail
+ * @access Private (Admin/HR/GM only)
+ */
+authRoutes.get(
+  "/activity-logs/:id",
+  authenticate,
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  controller.getActivityLogDetail as any,
+)
 
 export default authRoutes
