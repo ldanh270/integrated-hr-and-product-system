@@ -62,3 +62,9 @@ export const PAYROLL_MANAGER_ROLES: readonly IEmployeeRole[] = [
 ]
 export const PAYROLL_EDITOR_ROLES: readonly IEmployeeRole[] = [ROLE.ADMIN, ROLE.HR_MANAGER]
 export const PAYROLL_APPROVER_ROLES: readonly IEmployeeRole[] = [ROLE.ADMIN, ROLE.GENERAL_MANAGER]
+
+export const PAYROLL_SETTINGS_FIELDS = ["triggerDay", "triggerHour", "triggerMinute"] as const
+
+export const PAYROLL_QUERY_KEYS = {
+  SETTINGS: ["payroll-settings"] as const,
+} as const

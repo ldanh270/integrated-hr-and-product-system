@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from "@/config/api.config"
+import { PAYROLL_QUERY_KEYS, PAYROLL_SETTINGS_FIELDS } from "@/config/entities/payroll.config"
 import apiClient from "@/lib/api-client"
 import type { IPayrollSettings } from "@/types/payroll.types"
 
@@ -6,9 +7,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 export function usePayrollSettings() {
   return useQuery({
-    queryKey: ["payroll-settings"],
+    queryKey: PAYROLL_QUERY_KEYS.SETTINGS,
     queryFn: async () => {
-      const response = await apiClient.get(`${API_ENDPOINTS.PAYROLL.BASE}/settings`)
+      const response = await apiClient.get(API_ENDPOINTS.PAYROLL.SETTINGS)
       const data = response.data?.data || response.data
       console.log("FETCHED SETTINGS FROM API:", data)
       return data as IPayrollSettings
@@ -19,13 +20,13 @@ export function usePayrollSettings() {
 export function useUpdatePayrollSettings() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (data: Pick<IPayrollSettings, "triggerDay">) => {
-      const response = await apiClient.put(`${API_ENDPOINTS.PAYROLL.BASE}/settings`, data)
+    mutationFn: async (data: Pick<IPayrollSettings, (typeof PAYROLL_SETTINGS_FIELDS)[number]>) => {
+      const response = await apiClient.put(API_ENDPOINTS.PAYROLL.SETTINGS, data)
       const resData = response.data?.data || response.data
       return resData as IPayrollSettings
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payroll-settings"] })
+      queryClient.invalidateQueries({ queryKey: PAYROLL_QUERY_KEYS.SETTINGS })
     },
   })
 }

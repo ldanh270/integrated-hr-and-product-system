@@ -1,6 +1,6 @@
-import { Resend } from "resend"
-import { ENV_ENVIRONMENT, ENVIRONMENT } from "@/configs/system/server.config.ts"
+import { ENVIRONMENT, ENV_ENVIRONMENT } from "@/configs/system/server.config.ts"
 
+import { Resend } from "resend"
 
 /**
  * EmailUtil provides functionality for sending emails using Resend SDK.
@@ -14,7 +14,7 @@ export class EmailUtil {
   static async sendResetPasswordEmail(to: string, token: string): Promise<any> {
     const apiKey = process.env.RESEND_API_KEY
     const clientUrl = process.env.CLIENT_URL || "http://localhost:5173"
-    const from = process.env.EMAIL_FROM || "onboarding@resend.dev"
+    const from = process.env.EMAIL_FROM || "noreply@smartpcstore.id.vn"
 
     const resetUrl = `${clientUrl}/reset-password?token=${token}`
 
@@ -49,7 +49,7 @@ export class EmailUtil {
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
             <h2 style="color: #333;">Password Reset Request</h2>
-            <p>You requested a password reset for your HRP Management System account.</p>
+            <p>You requested a password reset for your <b>HRP Management System</b> account.</p>
             <p>Please click the button below to set a new password:</p>
             <div style="text-align: center; margin: 30px 0;">
               <a href="${resetUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
