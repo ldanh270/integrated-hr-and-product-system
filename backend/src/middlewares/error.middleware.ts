@@ -37,12 +37,12 @@ export const globalErrorHandler = (err: any, req: Request, res: Response, next: 
     stack: err.stack,
   }
 
-  // 2. Professional structured logging (Only log 500 errors to the server console)
+  // Professional structured logging (Only log 500 errors to the server console)
   if (errorLog.status >= 500) {
     console.error("Unhandled server error:", err)
   }
 
-  // 3. Send response to client
+  // Send response to client
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({
       data: null,
