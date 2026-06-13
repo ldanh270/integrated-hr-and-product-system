@@ -136,10 +136,20 @@ enum PasswordResetStatus {
   expired
 }
 
+enum ActivityCategory {
+  auth
+  role
+  security
+}
+
 enum ActivityAction {
   login
   logout
   failed_login
+  role_assigned
+  role_revoked
+  account_locked
+  account_unlocked
 }
 
 // ─── Models ──────────────────────────────────────────────────────────────────
@@ -697,17 +707,20 @@ model Task {
 
 // ── Auth ──
 model ActivityLog {
-  id         String         @id @default(cuid())
+  id         String           @id @default(cuid())
   employeeId String?
-  employee   Employee?      @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  employee   Employee?        @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  category   ActivityCategory @default(auth)
   actionType ActivityAction
   ipAddress  String?
-  details    Json?          @db.JsonB // JsonB type for flexible metadata
+  details    Json?            @db.JsonB // JsonB type for flexible metadata
   expiresAt  DateTime
 
   createdAt DateTime @default(now())
 
   @@index([employeeId, createdAt(sort: Desc)])
+  @@index([category, actionType, createdAt])
+  @@index([category])
   @@index([expiresAt])
 }
 
