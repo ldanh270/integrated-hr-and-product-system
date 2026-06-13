@@ -1,0 +1,75 @@
+---
+# Codacy configuration for: TypeScript / Node.js (Express) + React (Vite)
+# Tech stack: Bun, TypeScript, Prisma, PostgreSQL — NO Java
+
+# Pin ESLint to v9 → supports flat config (eslint.config.js) natively
+tools:
+  - eslint@9
+
+engines:
+  # ── Java-only tools — DISABLED (project has no Java) ──────────────────────
+  pmd:
+    enabled: false
+  pmd-legacy:
+    enabled: false
+
+  # ── JavaScript / TypeScript tools — ENABLED ───────────────────────────────
+  eslint:
+    enabled: true         # uses eslint.config.js (flat config) via v9
+  tslint:
+    enabled: false        # deprecated
+
+  # ── CSS ───────────────────────────────────────────────────────────────────
+  stylelint:
+    enabled: true
+
+  # ── Python tools — DISABLED (no Python in this project) ──────────────────
+  pylint:
+    enabled: false
+  pylintpython3:
+    enabled: false
+  prospector:
+    enabled: false
+  bandit:
+    enabled: false
+
+  # ── SQL ───────────────────────────────────────────────────────────────────
+  tsqllint:
+    enabled: true
+
+  # ── Shell / PowerShell ────────────────────────────────────────────────────
+  psscriptanalyzer:
+    enabled: true
+
+  # ── Other ─────────────────────────────────────────────────────────────────
+  jshint:
+    enabled: false        # superseded by ESLint in this project
+
+exclude_paths:
+  # ── Build artifacts ───────────────────────────────────────────────────────
+  - node_modules/**
+  - "**/node_modules/**"
+  - dist/**
+  - "**/dist/**"
+  - "**/*.d.ts"
+  - "**/*.min.js"
+
+  # ── Lock files ────────────────────────────────────────────────────────────
+  - bun.lock
+  - package-lock.json
+
+  # ── AI agent / tooling folders (contain non-UTF-8 files → MalformedInputException) ──
+  - .agent/**
+  - .agents/**
+  - .gemini/**
+  - .cursor/**
+  - .kiro/**
+  - .opencode/**
+  - .codex/**
+  - .claude/**
+  - .vscode/**
+  - .planning/**
+
+  # ── Project-specific non-source folders ───────────────────────────────────
+  - information/**
+  - frontend/public/**
