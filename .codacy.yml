@@ -33,10 +33,6 @@ engines:
   bandit:
     enabled: false
 
-  # ── SQL ───────────────────────────────────────────────────────────────────
-  tsqllint:
-    enabled: true
-
   # ── Shell / PowerShell ────────────────────────────────────────────────────
   psscriptanalyzer:
     enabled: true
