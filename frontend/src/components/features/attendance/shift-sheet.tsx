@@ -1,5 +1,13 @@
 import { Button } from "@/components/ui/button"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
   Form,
   FormControl,
   FormField,
@@ -8,14 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form-ui"
 import { Input } from "@/components/ui/input"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
+import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { useCreateShift, useUpdateShift } from "@/hooks/attendance/use-shifts"
 import { minutesToTime, timeToMinutes } from "@/lib/utils"
@@ -24,16 +25,12 @@ import type { IWorkingShift } from "@/types/attendance.types"
 import { useEffect } from "react"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Loader2 } from "lucide-react"
+import { Clock, Info, Loader2, MapPin } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
 const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/
 
-/**
- * formSchema — Zod validation schema for Creating/Updating Working Shifts.
- * Uses numeric types for GPS coordinates and radius.
- */
 const formSchema = z.object({
   name: z.string().min(2, "Tên ca phải từ 2 ký tự"),
   startTime: z.string().regex(timeRegex, "Định dạng HH:MM"),
@@ -56,14 +53,7 @@ interface Props {
   initialData?: IWorkingShift | null
 }
 
-/**
- * ShiftSheet — Side sheet form for defining a Working Shift's basic info and GPS configuration.
- * Handles both Creation and Modification modes.
- */
 export default function ShiftSheet({ open, onOpenChange, initialData }: Props) {
-  /**
-   * useForm — Initializes form management with Zod schema.
-   */
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -78,15 +68,10 @@ export default function ShiftSheet({ open, onOpenChange, initialData }: Props) {
     },
   })
 
-  // useCreateShift, useUpdateShift: Mutation hooks for persistence
   const createMutation = useCreateShift()
   const updateMutation = useUpdateShift()
   const isPending = createMutation.isPending || updateMutation.isPending
 
-  /**
-   * useEffect — Syncs form state with initialData when the sheet opens.
-   * Triggered by: [open, initialData, form]
-   */
   useEffect(() => {
     if (!open) return
     if (initialData) {
@@ -114,15 +99,7 @@ export default function ShiftSheet({ open, onOpenChange, initialData }: Props) {
     }
   }, [open, initialData, form])
 
-  /**
-   * onSubmit — Handler for form submission.
-   * 1. Performs manual validation for time range.
-   * 2. Construct GPS object if all coordinates are provided.
-   * 3. Calls either update or create mutation based on initialData existence.
-   * @param {FormValues} values 
-   */
   const onSubmit = (values: FormValues) => {
-    // Validate endTime > startTime manually (avoids zod .refine TS issues)
     if (
       values.startTime &&
       values.endTime &&
@@ -161,76 +138,79 @@ export default function ShiftSheet({ open, onOpenChange, initialData }: Props) {
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-md overflow-y-auto flex flex-col h-full bg-background border-l">
-        <SheetHeader className="mb-6">
-          <SheetTitle>{initialData ? "Cập nhật ca làm việc" : "Tạo ca làm việc mới"}</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl bg-popover rounded-4xl">
+        <DialogHeader>
+          <DialogTitle className="text-xl">
+            {initialData ? "Cập nhật ca làm việc" : "Tạo ca làm việc mới"}
+          </DialogTitle>
+          <DialogDescription>
             {initialData
-              ? "Chỉnh sửa thông tin ca và áp dụng thay đổi."
-              : "Định nghĩa ca mới với giờ vào/ra và cài đặt GPS."}
-          </SheetDescription>
-        </SheetHeader>
+              ? "Chỉnh sửa thông tin ca và áp dụng thay đổi hệ thống."
+              : "Định nghĩa ca làm việc mới với quy định giờ giấc và vị trí GPS."}
+          </DialogDescription>
+        </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col space-y-6">
-            <div className="flex-1 space-y-5">
-              {/* Basic info section */}
-              <div className="space-y-4">
-                <p className="font-semibold text-sm text-primary uppercase tracking-wider">
-                  Thông tin cơ bản
-                </p>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-2">
+            {/* Basic Info Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-primary font-semibold text-sm uppercase tracking-wider">
+                <Info size={16} />
+                <span>Thông tin cơ bản</span>
+              </div>
 
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tên ca làm việc <span className="text-destructive">*</span></FormLabel>
+                    <FormControl>
+                      <Input placeholder="VD: Ca sáng, Ca hành chính..." className="h-11" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="name"
+                  name="startTime"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        Tên ca <span className="text-destructive">*</span>
+                      <FormLabel className="flex items-center gap-2">
+                        <Clock size={14} className="text-muted-foreground" />
+                        Giờ bắt đầu <span className="text-destructive">*</span>
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="VD: Ca sáng" {...field} />
+                        <Input type="time" className="h-11" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="startTime"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          Giờ bắt đầu <span className="text-destructive">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input type="time" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <FormField
+                  control={form.control}
+                  name="endTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <Clock size={14} className="text-muted-foreground" />
+                        Giờ kết thúc <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input type="time" className="h-11" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-                  <FormField
-                    control={form.control}
-                    name="endTime"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          Giờ kết thúc <span className="text-destructive">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input type="time" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
                 <FormField
                   control={form.control}
                   name="gracePeriodMinutes"
@@ -238,7 +218,7 @@ export default function ShiftSheet({ open, onOpenChange, initialData }: Props) {
                     <FormItem>
                       <FormLabel>Thời gian ân hạn (phút)</FormLabel>
                       <FormControl>
-                        <Input type="number" min={0} max={120} {...field} />
+                        <Input type="number" min={0} max={120} className="h-11" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -249,80 +229,63 @@ export default function ShiftSheet({ open, onOpenChange, initialData }: Props) {
                   control={form.control}
                   name="isActive"
                   render={({ field }) => (
-                    <FormItem className="flex items-center gap-3">
+                    <FormItem className="flex items-center gap-3 bg-muted/30 p-3 rounded-2xl border border-border/50 h-11">
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
                       </FormControl>
-                      <FormLabel className="!mt-0">Kích hoạt ca này</FormLabel>
+                      <FormLabel className="!mt-0 cursor-pointer">Kích hoạt ca</FormLabel>
                     </FormItem>
                   )}
                 />
               </div>
+            </div>
 
-              {/* GPS config section — used for location-based check-in validation */}
-              <div className="space-y-4 pt-4 border-t">
-                <p className="font-semibold text-sm text-primary uppercase tracking-wider">
-                  Vị trí GPS (tuỳ chọn)
-                </p>
+            <Separator />
 
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="gpsLat"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Vĩ độ</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="any"
-                            placeholder="10.7769"
-                            {...field}
-                            value={field.value ?? ""}
-                            onChange={(e) =>
-                              field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+            {/* GPS Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-primary font-semibold text-sm uppercase tracking-wider">
+                <MapPin size={16} />
+                <span>Cấu hình vị trí GPS (Tùy chọn)</span>
+              </div>
 
-                  <FormField
-                    control={form.control}
-                    name="gpsLng"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Kinh độ</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="any"
-                            placeholder="106.7009"
-                            {...field}
-                            value={field.value ?? ""}
-                            onChange={(e) =>
-                              field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="gpsRadiusMeters"
+                  name="gpsLat"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Bán kính (m)</FormLabel>
+                      <FormLabel>Vĩ độ (Latitude)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
-                          placeholder="100"
+                          step="any"
+                          placeholder="10.7769"
+                          className="h-11"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="gpsLng"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Kinh độ (Longitude)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="any"
+                          placeholder="106.7009"
+                          className="h-11"
                           {...field}
                           value={field.value ?? ""}
                           onChange={(e) =>
@@ -335,20 +298,43 @@ export default function ShiftSheet({ open, onOpenChange, initialData }: Props) {
                   )}
                 />
               </div>
+
+              <FormField
+                control={form.control}
+                name="gpsRadiusMeters"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bán kính chấm công cho phép (mét)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="VD: 100, 200..."
+                        className="h-11"
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
-            <SheetFooter className="pt-6 border-t">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Hủy
+            <DialogFooter className="mt-4">
+              <Button type="button" variant="outline" className="rounded-full" onClick={() => onOpenChange(false)}>
+                Hủy bỏ
               </Button>
-              <Button type="submit" disabled={isPending}>
+              <Button type="submit" className="rounded-full px-8 bg-primary hover:bg-primary/90 shadow-md" disabled={isPending}>
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {initialData ? "Cập nhật" : "Tạo mới"}
+                {initialData ? "Lưu thay đổi" : "Tạo ca làm việc"}
               </Button>
-            </SheetFooter>
+            </DialogFooter>
           </form>
         </Form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }

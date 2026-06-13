@@ -1,5 +1,13 @@
 import { Button } from "@/components/ui/button"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
   Form,
   FormControl,
   FormField,
@@ -15,27 +23,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
+import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { useShifts } from "@/hooks/attendance/use-shifts"
 import { useSubmitShiftChangeRequest } from "@/hooks/attendance/use-shift-change-requests"
 import { useEmployees } from "@/hooks/employees/queries/useEmployeeQuery"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Loader2 } from "lucide-react"
+import { Calendar, Loader2, MessageSquare, Repeat } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-/**
- * formSchema — Zod validation schema for shift change requests.
- */
 const formSchema = z.object({
   reason: z.string().min(5, "Lý do phải từ 5 ký tự").max(500),
   startDate: z.string().min(1, "Vui lòng chọn ngày"),
@@ -51,15 +49,7 @@ interface Props {
   onOpenChange: (open: boolean) => void
 }
 
-/**
- * ShiftChangeRequestSheet — Side sheet form for employees to request a shift swap with a colleague.
- * Replaces manual ID inputs with searchable Select/Combobox components.
- */
 export default function ShiftChangeRequestSheet({ open, onOpenChange }: Props) {
-  /**
-   * useForm — Initializes react-hook-form with Zod validation.
-   * Manages form state and error tracking.
-   */
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -71,27 +61,10 @@ export default function ShiftChangeRequestSheet({ open, onOpenChange }: Props) {
     },
   })
 
-  /**
-   * useShifts — Custom hook to fetch all available working shifts.
-   * Calls API: shiftsApi.getAll
-   */
   const { data: shifts } = useShifts()
-  /**
-   * useEmployees — Custom hook to fetch a list of employees for the swap.
-   * Calls API: employeeApi.list
-   */
   const { data: employeeData } = useEmployees({ page: 1, limit: 100 })
-  /**
-   * useSubmitShiftChangeRequest — Mutation hook to submit the swap request to Backend.
-   * Calls API: shiftChangeRequestsApi.submit
-   */
   const mutation = useSubmitShiftChangeRequest()
 
-  /**
-   * onSubmit — Handler for form submission.
-   * Calls the mutation and resets the form upon successful submission.
-   * @param {FormValues} values — The validated form data.
-   */
   const onSubmit = (values: FormValues) => {
     mutation.mutate(values, {
       onSuccess: () => {
@@ -102,58 +75,54 @@ export default function ShiftChangeRequestSheet({ open, onOpenChange }: Props) {
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-md overflow-y-auto flex flex-col h-full bg-background border-l">
-        <SheetHeader className="mb-6">
-          <SheetTitle>Gửi yêu cầu đổi ca</SheetTitle>
-          <SheetDescription>Điền thông tin để gửi yêu cầu đổi ca làm việc.</SheetDescription>
-        </SheetHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl bg-popover rounded-4xl">
+        <DialogHeader>
+          <DialogTitle className="text-xl">Gửi yêu cầu đổi ca làm việc</DialogTitle>
+          <DialogDescription>
+            Đề xuất thay đổi ca làm việc với đồng nghiệp. Yêu cầu cần được cấp trên phê duyệt.
+          </DialogDescription>
+        </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col space-y-6">
-            <div className="flex-1 space-y-5">
-              {/* Date selection for the swap */}
-              <FormField
-                control={form.control}
-                name="startDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Ngày đổi ca <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Left Column: Date & Current Shift */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-primary font-semibold text-sm uppercase tracking-wider">
+                  <Calendar size={16} />
+                  <span>Thời gian</span>
+                </div>
 
-              <div className="space-y-4 pt-4 border-t">
-                <p className="font-semibold text-sm text-primary uppercase tracking-wider">
-                  Thông tin đổi ca
-                </p>
+                <FormField
+                  control={form.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ngày muốn đổi ca <span className="text-destructive">*</span></FormLabel>
+                      <FormControl>
+                        <Input type="date" className="h-11 rounded-2xl" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                {/* Current Shift selection */}
                 <FormField
                   control={form.control}
                   name="employeeShiftId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        Ca hiện tại của bạn <span className="text-destructive">*</span>
-                      </FormLabel>
+                      <FormLabel>Ca hiện tại của bạn <span className="text-destructive">*</span></FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="rounded-xl border-border h-11 bg-card shadow-none">
+                          <SelectTrigger className="rounded-2xl border-border h-11 bg-muted/30 shadow-none">
                             <SelectValue placeholder="-- Chọn ca của bạn --" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="border-border rounded-md shadow-sm">
+                        <SelectContent className="border-border rounded-xl">
                           {shifts?.map((s) => (
-                            <SelectItem key={s.id} value={s.id} className="cursor-pointer">
-                              {s.name}
-                            </SelectItem>
+                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -161,25 +130,30 @@ export default function ShiftChangeRequestSheet({ open, onOpenChange }: Props) {
                     </FormItem>
                   )}
                 />
+              </div>
 
-                {/* Target Employee selection for the swap */}
+              {/* Right Column: Swap Partner & Target Shift */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-primary font-semibold text-sm uppercase tracking-wider">
+                  <Repeat size={16} />
+                  <span>Thông tin đối ứng</span>
+                </div>
+
                 <FormField
                   control={form.control}
                   name="swapWithEmployeeId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        Nhân viên đổi ca cùng <span className="text-destructive">*</span>
-                      </FormLabel>
+                      <FormLabel>Đổi với nhân viên <span className="text-destructive">*</span></FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="rounded-xl border-border h-11 bg-card shadow-none">
+                          <SelectTrigger className="rounded-2xl border-border h-11 bg-muted/30 shadow-none">
                             <SelectValue placeholder="-- Chọn đồng nghiệp --" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="border-border rounded-md shadow-sm">
+                        <SelectContent className="border-border rounded-xl">
                           {employeeData?.data.map((emp) => (
-                            <SelectItem key={emp.id} value={emp.id} className="cursor-pointer">
+                            <SelectItem key={emp.id} value={emp.id}>
                               {emp.fullName} ({emp.username})
                             </SelectItem>
                           ))}
@@ -190,26 +164,21 @@ export default function ShiftChangeRequestSheet({ open, onOpenChange }: Props) {
                   )}
                 />
 
-                {/* Target Shift selection for the swap */}
                 <FormField
                   control={form.control}
                   name="swapWithShiftId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        Ca bạn muốn đổi sang <span className="text-destructive">*</span>
-                      </FormLabel>
+                      <FormLabel>Ca muốn đổi sang <span className="text-destructive">*</span></FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="rounded-xl border-border h-11 bg-card shadow-none">
+                          <SelectTrigger className="rounded-2xl border-border h-11 bg-muted/30 shadow-none">
                             <SelectValue placeholder="-- Chọn ca cần đổi --" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="border-border rounded-md shadow-sm">
+                        <SelectContent className="border-border rounded-xl">
                           {shifts?.map((s) => (
-                            <SelectItem key={s.id} value={s.id} className="cursor-pointer">
-                              {s.name}
-                            </SelectItem>
+                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -218,43 +187,45 @@ export default function ShiftChangeRequestSheet({ open, onOpenChange }: Props) {
                   )}
                 />
               </div>
-
-              {/* Justification for the swap request */}
-              <div className="pt-4 border-t">
-                <FormField
-                  control={form.control}
-                  name="reason"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Lý do <span className="text-destructive">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Nêu lý do muốn đổi ca..."
-                          className="resize-none h-24"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
             </div>
 
-            <SheetFooter className="pt-6 border-t">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Hủy
+            <Separator />
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-primary font-semibold text-sm uppercase tracking-wider">
+                <MessageSquare size={16} />
+                <span>Lý do gửi yêu cầu</span>
+              </div>
+              <FormField
+                control={form.control}
+                name="reason"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Textarea
+                        placeholder="VD: Cần giải quyết việc gia đình, đổi ca để đi khám bệnh..."
+                        className="resize-none min-h-24 rounded-2xl p-4 bg-muted/20"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <DialogFooter className="mt-4">
+              <Button type="button" variant="outline" className="rounded-full" onClick={() => onOpenChange(false)}>
+                Hủy bỏ
               </Button>
-              <Button type="submit" disabled={mutation.isPending}>
+              <Button type="submit" className="rounded-full px-8 bg-primary hover:bg-primary/90 shadow-md" disabled={mutation.isPending}>
                 {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Gửi yêu cầu
               </Button>
-            </SheetFooter>
+            </DialogFooter>
           </form>
         </Form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }
