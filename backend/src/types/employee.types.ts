@@ -162,9 +162,9 @@ export interface IEmployeeService {
   /** Register a new employee */
   createEmployee(data: CreateEmployeeDto & { password?: string }): Promise<Employee>
   /** Update existing employee info */
-  updateEmployee(id: string, data: UpdateEmployeeDto): Promise<Employee | null>
+  updateEmployee(id: string, data: UpdateEmployeeDto, actorId?: string, ipAddress?: string): Promise<Employee | null>
   /** Update employee status */
-  updateStatus(id: string, status: EmployeeStatus): Promise<Employee | null>
+  updateStatus(id: string, status: EmployeeStatus, actorId?: string, ipAddress?: string): Promise<Employee | null>
   /** Remove employee record (soft delete) */
   deleteEmployee(id: string): Promise<boolean>
 }
