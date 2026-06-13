@@ -8,7 +8,13 @@ import {
   PaginatedActivityLogsDto,
 } from "@/types/auth.types.ts"
 
-import { ActivityAction, ActivityCategory, PasswordResetStatus, Prisma, PrismaClient } from "@prisma/client"
+import {
+  ActivityAction,
+  ActivityCategory,
+  PasswordResetStatus,
+  Prisma,
+  PrismaClient,
+} from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
@@ -225,22 +231,18 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
    * Lists activity logs with pagination and filters
    */
   async listActivityLogs(query: ActivityLogQuery): Promise<PaginatedActivityLogsDto> {
-    const {
-      page = 1,
-      limit = 20,
-      employeeId,
-      category,
-      actionType,
-      fromDate,
-      toDate,
-    } = query
+    const { page = 1, limit = 20, employeeId, category, actionType, fromDate, toDate } = query
 
     const skip = (page - 1) * limit
     const where: Prisma.ActivityLogWhereInput = {}
 
     if (employeeId) where.employeeId = employeeId
-    if (category) where.category = category as ActivityCategory
-    if (actionType) where.actionType = actionType as ActivityAction
+    if (category && Object.values(ActivityCategory).includes(category as ActivityCategory)) {
+      where.category = category as ActivityCategory
+    }
+    if (actionType && Object.values(ActivityAction).includes(actionType as ActivityAction)) {
+      where.actionType = actionType as ActivityAction
+    }
     if (fromDate || toDate) {
       where.createdAt = {}
       if (fromDate) where.createdAt.gte = fromDate
@@ -324,27 +326,24 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
     const now = new Date()
     const employees = await this.prisma.employee.findMany({
       where: {
-        OR: [
-          { lockedUntil: { gt: now } },
-          { failedLoginCount: { gte: 5 } }
-        ],
-        deletedAt: null
+        OR: [{ lockedUntil: { gt: now } }, { failedLoginCount: { gte: 5 } }],
+        deletedAt: null,
       },
       select: {
         id: true,
         fullName: true,
         email: true,
         failedLoginCount: true,
-        lockedUntil: true
-      }
+        lockedUntil: true,
+      },
     })
 
-    return employees.map(emp => ({
+    return employees.map((emp) => ({
       employeeId: emp.id,
       employeeName: emp.fullName,
       email: emp.email,
       failedLoginCount: emp.failedLoginCount,
-      lockedUntil: emp.lockedUntil
+      lockedUntil: emp.lockedUntil,
     }))
   }
 
@@ -356,8 +355,8 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       where: { id: empId },
       data: {
         failedLoginCount: 0,
-        lockedUntil: null
-      }
+        lockedUntil: null,
+      },
     })
   }
 
@@ -376,9 +375,9 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
         category: category as ActivityCategory,
         actionType: actionType as ActivityAction,
         createdAt: {
-          gte: today
-        }
-      }
+          gte: today,
+        },
+      },
     })
   }
 
@@ -387,11 +386,11 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
    */
   async getRecentLogsByCategory(
     category: "auth" | "role" | "security",
-    limit: number
+    limit: number,
   ): Promise<ActivityLogItem[]> {
     const logs = await this.prisma.activityLog.findMany({
       where: {
-        category: category as ActivityCategory
+        category: category as ActivityCategory,
       },
       include: {
         employee: {
@@ -401,12 +400,12 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
         },
       },
       orderBy: {
-        createdAt: "desc"
+        createdAt: "desc",
       },
-      take: limit
+      take: limit,
     })
 
-    return logs.map(log => ({
+    return logs.map((log) => ({
       id: log.id,
       employeeId: log.employeeId,
       employeeName: log.employee?.fullName,

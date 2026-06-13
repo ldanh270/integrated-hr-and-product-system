@@ -57,6 +57,14 @@ export class AuthService implements IAuthService {
     }
 
     // Status Check
+    if (employee.status === EMPLOYEE_STATUS.TERMINATED) {
+      throw new AppError(
+        "Tài khoản đã bị chấm dứt do nghỉ việc (Account terminated)",
+        HttpStatusCode.FORBIDDEN,
+        "Authentication",
+      )
+    }
+
     if (employee.status !== EMPLOYEE_STATUS.ACTIVE) {
       throw new AppError(
         "Account is disabled or inactive",
