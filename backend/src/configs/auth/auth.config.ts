@@ -1,7 +1,8 @@
 export const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET || ""
 export const ACCESS_TOKEN_TTL = 24 * 60 * 60 * 1000 // 1 day
 export const ACTIVITY_LOG_TTL = 90 * 24 * 60 * 60 * 1000 // 90 days
-export const PASSWORD_RESET_TTL = 15 * 60 * 1000 // 15 mins
+export const PASSWORD_RESET_TTL = 5 * 60 * 1000 // 5 mins
+export const ACCOUNT_LOCK_TTL = 5 * 60 * 1000 // 5 mins
 
 export const REGEX = {
   // MongoDB ObjectId is no longer used, we use Postgres UUID
