@@ -1,42 +1,210 @@
+import { API_ENDPOINTS } from "@/config/api.config"
+import { ATTENDANCE_QUERY_PARAMS } from "@/constants/attendance.constants"
 import apiClient from "@/lib/api-client"
-import type { IAttendanceRecord, ICheckInOutRequest } from "@/types/attendance.types"
+import type {
+  IApproval,
+  IAssignSchedulePayload,
+  IAttendanceQuery,
+  IAttendanceRecord,
+  ICheckInOutRequest,
+  ICreateShiftPayload,
+  IOverrideShiftPayload,
+  IProcessApprovalPayload,
+  ISchedule,
+  IShiftChangeRequest,
+  ISubmitShiftChangeRequestPayload,
+  IUpdateShiftPayload,
+  IWorkingShift,
+} from "@/types/attendance.types"
 
+/**
+ * ApiResponse envelope — standard format for all Backend responses.
+ */
 interface ApiResponse<T> {
   data: T
   error: { message: string; code?: string } | null
-  status?: string
 }
 
+/**
+ * shiftsApi — Data access layer for Working Shifts.
+ */
+export const shiftsApi = {
+  /** Fetches all active and inactive shifts. */
+  getAll: async (): Promise<IWorkingShift[]> => {
+    const res = await apiClient.get<ApiResponse<IWorkingShift[]>>(API_ENDPOINTS.SHIFTS.BASE)
+    return res.data.data
+  },
+
+  /** Fetches a single shift by its unique ID. */
+  getById: async (id: string): Promise<IWorkingShift> => {
+    const res = await apiClient.get<ApiResponse<IWorkingShift>>(
+      `${API_ENDPOINTS.SHIFTS.BASE}/${id}`,
+    )
+    return res.data.data
+  },
+
+  /** Creates a new working shift definition. */
+  create: async (data: ICreateShiftPayload): Promise<IWorkingShift> => {
+    const res = await apiClient.post<ApiResponse<IWorkingShift>>(API_ENDPOINTS.SHIFTS.BASE, data)
+    return res.data.data
+  },
+
+  /** Updates an existing shift definition using PATCH. */
+  update: async (id: string, data: IUpdateShiftPayload): Promise<IWorkingShift> => {
+    const res = await apiClient.patch<ApiResponse<IWorkingShift>>(
+      `${API_ENDPOINTS.SHIFTS.BASE}/${id}`,
+      data,
+    )
+    return res.data.data
+  },
+
+  /** Removes a shift definition from the system. */
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`${API_ENDPOINTS.SHIFTS.BASE}/${id}`)
+  },
+}
+
+/**
+ * schedulesApi — Data access layer for Shift Assignment Schedules.
+ */
+export const schedulesApi = {
+  /** Fetches the planned schedule for the authenticated user on a specific date or current week. */
+  getMy: async (date?: string): Promise<ISchedule> => {
+    const res = await apiClient.get<ApiResponse<ISchedule>>(API_ENDPOINTS.SCHEDULES.MY, {
+      params: date ? { [ATTENDANCE_QUERY_PARAMS.DATE]: date } : undefined,
+    })
+    return res.data.data
+  },
+
+  /** Fetches the entire history of shift assignments for the current user. */
+  getMyAll: async (): Promise<ISchedule[]> => {
+    const res = await apiClient.get<ApiResponse<ISchedule[]>>(API_ENDPOINTS.SCHEDULES.MY_ALL)
+    return res.data.data
+  },
+
+  /** Fetches the planned schedule for a specific employee. */
+  getByEmployee: async (employeeId: string, date?: string): Promise<ISchedule> => {
+    const res = await apiClient.get<ApiResponse<ISchedule>>(
+      API_ENDPOINTS.SCHEDULES.EMPLOYEE(employeeId),
+      { params: date ? { [ATTENDANCE_QUERY_PARAMS.DATE]: date } : undefined },
+    )
+    return res.data.data
+  },
+
+  /** Fetches all schedule assignments for a specific employee. */
+  getAllByEmployee: async (employeeId: string): Promise<ISchedule[]> => {
+    const res = await apiClient.get<ApiResponse<ISchedule[]>>(
+      API_ENDPOINTS.SCHEDULES.EMPLOYEE_ALL(employeeId),
+    )
+    return res.data.data
+  },
+
+  /** Assigns a shift schedule to an employee for a specific date range. */
+  assign: async (data: IAssignSchedulePayload): Promise<ISchedule> => {
+    const res = await apiClient.post<ApiResponse<ISchedule>>(API_ENDPOINTS.SCHEDULES.ASSIGN, data)
+    return res.data.data
+  },
+
+  /** Overrides a single day's shift for an employee. */
+  override: async (data: IOverrideShiftPayload): Promise<ISchedule> => {
+    const res = await apiClient.post<ApiResponse<ISchedule>>(
+      API_ENDPOINTS.SCHEDULES.OVERRIDE,
+      data,
+    )
+    return res.data.data
+  },
+}
+
+/**
+ * attendanceApi — Data access layer for actual Check-In/Check-Out records.
+ */
 export const attendanceApi = {
-  getRecords: async (query?: {
-    employeeId?: string
-    startDate?: string
-    endDate?: string
-  }): Promise<IAttendanceRecord[]> => {
-    const response = await apiClient.get<ApiResponse<IAttendanceRecord[]>>("/attendance", {
+  /** Fetches attendance logs filtered by date range, employee, or status. */
+  getRecords: async (query?: IAttendanceQuery): Promise<IAttendanceRecord[]> => {
+    const res = await apiClient.get<ApiResponse<IAttendanceRecord[]>>(API_ENDPOINTS.ATTENDANCE.BASE, {
       params: query,
     })
-    return response.data.data
+    return res.data.data
   },
 
+  /** Manually records a check-in event. */
   checkIn: async (data: ICheckInOutRequest): Promise<IAttendanceRecord> => {
-    const response = await apiClient.post<ApiResponse<IAttendanceRecord>>(
-      "/attendance/check-in",
+    const res = await apiClient.post<ApiResponse<IAttendanceRecord>>(
+      API_ENDPOINTS.ATTENDANCE.CHECK_IN,
       data,
     )
-    return response.data.data
+    return res.data.data
   },
 
+  /** Manually records a check-out event. */
   checkOut: async (data: ICheckInOutRequest): Promise<IAttendanceRecord> => {
-    const response = await apiClient.post<ApiResponse<IAttendanceRecord>>(
-      "/attendance/check-out",
+    const res = await apiClient.post<ApiResponse<IAttendanceRecord>>(
+      API_ENDPOINTS.ATTENDANCE.CHECK_OUT,
       data,
     )
-    return response.data.data
+    return res.data.data
   },
 
+  /** Universal scan method (Check-In or Check-Out based on context) used by VirtualScanner. */
   scan: async (data: ICheckInOutRequest): Promise<IAttendanceRecord> => {
-    const response = await apiClient.post<ApiResponse<IAttendanceRecord>>("/attendance/scan", data)
-    return response.data.data
+    const res = await apiClient.post<ApiResponse<IAttendanceRecord>>(
+      API_ENDPOINTS.ATTENDANCE.SCAN,
+      data,
+    )
+    return res.data.data
+  },
+
+  /** Generates a full URL for the CSV export endpoint, including query parameters. */
+  exportCsv: (query?: IAttendanceQuery): string => {
+    const params = new URLSearchParams()
+    if (query?.startDate) params.set(ATTENDANCE_QUERY_PARAMS.START_DATE, query.startDate)
+    if (query?.endDate) params.set(ATTENDANCE_QUERY_PARAMS.END_DATE, query.endDate)
+    if (query?.employeeId) params.set(ATTENDANCE_QUERY_PARAMS.EMPLOYEE_ID, query.employeeId)
+    if (query?.status) params.set(ATTENDANCE_QUERY_PARAMS.STATUS, query.status)
+    const base = import.meta.env.VITE_API_BASE_URL ?? ""
+    const qs = params.toString()
+    return `${base}/api${API_ENDPOINTS.ATTENDANCE.EXPORT}${qs ? `?${qs}` : ""}`
+  },
+}
+
+/**
+ * shiftChangeRequestsApi — Data access layer for swapping shifts between colleagues.
+ */
+export const shiftChangeRequestsApi = {
+  /** Submits a new swap request. */
+  submit: async (data: ISubmitShiftChangeRequestPayload): Promise<IShiftChangeRequest> => {
+    const res = await apiClient.post<ApiResponse<IShiftChangeRequest>>(
+      API_ENDPOINTS.SHIFT_CHANGE_REQUESTS.BASE,
+      data,
+    )
+    return res.data.data
+  },
+
+  /** Fetches all swap requests sent by the current user. */
+  getMine: async (): Promise<IShiftChangeRequest[]> => {
+    const res = await apiClient.get<ApiResponse<IShiftChangeRequest[]>>(
+      API_ENDPOINTS.SHIFT_CHANGE_REQUESTS.MINE,
+    )
+    return res.data.data
+  },
+}
+
+/**
+ * approvalsApi — Data access layer for administrative approval workflows.
+ */
+export const approvalsApi = {
+  /** Fetches all pending requests that require the current user's approval action. */
+  getPending: async (): Promise<IApproval[]> => {
+    const res = await apiClient.get<ApiResponse<IApproval[]>>(API_ENDPOINTS.APPROVALS.BASE)
+    return res.data.data
+  },
+
+  /** Processes a request (Approve or Reject) with an optional reason. */
+  process: async (id: string, data: IProcessApprovalPayload): Promise<IApproval> => {
+    const res = await apiClient.patch<ApiResponse<IApproval>>(
+      API_ENDPOINTS.APPROVALS.APPLICATION(id),
+      data,
+    )
+    return res.data.data
   },
 }
