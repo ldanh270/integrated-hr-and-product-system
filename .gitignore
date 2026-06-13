@@ -150,3 +150,6 @@ bun.lock
 # AI generated files
 .planning
 plans
+findings.md
+progress.md
+task_plan.md
