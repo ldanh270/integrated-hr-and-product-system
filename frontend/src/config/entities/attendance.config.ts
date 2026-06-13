@@ -50,3 +50,71 @@ export type IApplicationStatus = (typeof APPLICATION_STATUSES)[number]
 
 export const REGIME_TYPES = ["paid", "unpaid"] as const
 export type IRegimeType = (typeof REGIME_TYPES)[number]
+
+// ─── Label Maps ───────────────────────────────────────────────
+
+export const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
+  on_time: "Đúng giờ",
+  late: "Đi muộn",
+  early_leave: "Về sớm",
+  absent: "Vắng mặt",
+  overtime: "Tăng ca",
+}
+
+export const ATTENDANCE_STATUS_VARIANTS: Record<
+  string,
+  "success" | "warning" | "danger" | "info" | "neutral"
+> = {
+  on_time: "success",
+  late: "warning",
+  early_leave: "warning",
+  absent: "danger",
+  overtime: "info",
+}
+
+export const APPLICATION_TYPE_LABELS: Record<string, string> = {
+  leave: "Nghỉ phép",
+  overtime: "Làm thêm giờ",
+  work_from_home: "Làm từ xa",
+  shift_swap: "Đổi ca",
+  business_trip: "Công tác",
+  late_early: "Đi muộn/Về sớm",
+  regime: "Chế độ thai sản/bệnh",
+}
+
+export const APPLICATION_STATUS_LABELS: Record<string, string> = {
+  pending: "Chờ duyệt",
+  approved: "Đã duyệt",
+  rejected: "Từ chối",
+  cancelled: "Đã hủy",
+}
+
+export const APPLICATION_STATUS_VARIANTS: Record<
+  string,
+  "success" | "warning" | "danger" | "info" | "neutral"
+> = {
+  pending: "warning",
+  approved: "success",
+  rejected: "danger",
+  cancelled: "neutral",
+}
+
+export const DAY_OF_WEEK_LABELS: Record<number, string> = {
+  0: "CN",
+  1: "T2",
+  2: "T3",
+  3: "T4",
+  4: "T5",
+  5: "T6",
+  6: "T7",
+}
+
+export const DAY_OF_WEEK_FULL_LABELS: Record<number, string> = {
+  0: "Chủ Nhật",
+  1: "Thứ Hai",
+  2: "Thứ Ba",
+  3: "Thứ Tư",
+  4: "Thứ Năm",
+  5: "Thứ Sáu",
+  6: "Thứ Bảy",
+}
