@@ -44,7 +44,7 @@ export interface EmployeeListQuery {
   search?: string
   status?: EmployeeStatus
   role?: EmployeeRole
-  employeeType?: EmployeeType
+  type?: EmployeeType
   sortBy?: string
   sortOrder?: "asc" | "desc"
 }

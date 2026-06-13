@@ -29,9 +29,14 @@ export const useLogin = () => {
       await login(data)
       navigate(ROUTES.HRM.DASHBOARD)
     } catch (error) {
-      const err = error as { response?: { data?: { message?: string } } }
+      const err = error as {
+        response?: { data?: { error?: { message?: string }; message?: string } }
+      }
       setError("root", {
-        message: err.response?.data?.message || "Login failed. Please try again.",
+        message:
+          err.response?.data?.error?.message ||
+          err.response?.data?.message ||
+          "Login failed. Please try again.",
       })
     }
   }
@@ -49,8 +54,14 @@ export const useLogin = () => {
       setShowForgotModal(false)
       setForgotUsername("")
     } catch (error) {
-      const err = error as { response?: { data?: { message?: string } } }
-      toast.error(err.response?.data?.message || "Có lỗi xảy ra khi gửi yêu cầu")
+      const err = error as {
+        response?: { data?: { error?: { message?: string }; message?: string } }
+      }
+      toast.error(
+        err.response?.data?.error?.message ||
+          err.response?.data?.message ||
+          "Có lỗi xảy ra khi gửi yêu cầu",
+      )
     }
   }
 

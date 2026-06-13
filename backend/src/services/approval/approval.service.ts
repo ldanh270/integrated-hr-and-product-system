@@ -24,7 +24,7 @@ export class ApprovalService implements IApprovalService {
     const list: IApprovalItem[] = []
     const strategy = ApprovalStrategyFactory.getStrategy(role)
 
-    // 1. Fetch Applications (Leaves, OT, etc.)
+    // Fetch Applications (Leaves, OT, etc.)
     if (
       role === ROLE.ADMIN ||
       role === ROLE.GENERAL_MANAGER ||
@@ -73,7 +73,7 @@ export class ApprovalService implements IApprovalService {
       }
     }
 
-    // 2. Fetch Password Reset Requests (admin and general_manager only)
+    // Fetch Password Reset Requests (admin and general_manager only)
     if (role === ROLE.ADMIN || role === ROLE.GENERAL_MANAGER) {
       const resetRequests = await prisma.passwordResetRequest.findMany({
         where: { status: PasswordResetStatus.pending },

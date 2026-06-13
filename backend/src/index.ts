@@ -18,6 +18,7 @@ import projectRoutes from "@/routes/project.route.ts"
 import salaryComponentRoutes from "@/routes/salary-component.route.ts"
 import salaryVariableRoutes from "@/routes/salary-variable.route.ts"
 import scheduleRoutes from "@/routes/schedule.route.ts"
+import securityRoutes from "@/routes/security.route.ts"
 import shiftChangeRequestRoutes from "@/routes/shift-change-request.route.ts"
 import shiftRoutes from "@/routes/shift.route.ts"
 import taskRoutes from "@/routes/task.route.ts"
@@ -71,6 +72,7 @@ app.get("/", async (req, res) =>
 )
 
 app.use("/api/auth", authRoutes)
+app.use("/api/security", securityRoutes)
 app.use("/api/employees", employeeRoutes)
 app.use("/api/profile", profileRoutes)
 
