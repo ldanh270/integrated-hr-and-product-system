@@ -1,11 +1,30 @@
 "use client"
 
-import { APPLICATION_STATUS } from "@/config/entities/attendance.config"
+import { PageCard, PageHeader } from "@/components/common"
+import { StatusPill } from "@/components/common/status-pill"
+import ShiftChangeRequestSheet from "@/components/features/attendance/shift-change-request-sheet"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  APPLICATION_STATUS_LABELS,
+  APPLICATION_STATUS_VARIANTS,
+  APPLICATION_TYPE_LABELS,
+  APPLICATION_STATUS,
+} from "@/config/entities/attendance.config"
 import { useManageApplications } from "@/hooks/application/useManageApplications"
 import { useMyApplications } from "@/hooks/application/useMyApplications"
 import { useSubmitApplication } from "@/hooks/application/useSubmitApplication"
-import type { IApplication } from "@/lib/api/application.api"
 import { useAuthStore } from "@/store/auth-store"
+import type { IApplication } from "@/lib/api/application.api"
+import { formatDate } from "@/lib/utils"
 
 import {
   AlertTriangle,
@@ -14,7 +33,6 @@ import {
   Briefcase,
   Calendar,
   CalendarClock,
-  Check,
   ChevronDown,
   Clock,
   FileCheck2,
@@ -23,6 +41,8 @@ import {
   FileX2,
   Hourglass,
   Laptop,
+  Loader2,
+  Plus,
   RefreshCw,
   Repeat2,
   Send,
@@ -103,46 +123,6 @@ const APP_TYPE_META: Record<
   },
 }
 
-const STATUS_META: Record<
-  string,
-  {
-    label: string
-    color: string
-    bg: string
-    border: string
-    icon: React.FC<{ size?: number }>
-  }
-> = {
-  pending: {
-    label: "Chờ duyệt",
-    color: "text-amber-700",
-    bg: "bg-amber-50",
-    border: "border-amber-200",
-    icon: Hourglass,
-  },
-  approved: {
-    label: "Đã duyệt",
-    color: "text-emerald-700",
-    bg: "bg-emerald-50",
-    border: "border-emerald-200",
-    icon: FileCheck2,
-  },
-  rejected: {
-    label: "Từ chối",
-    color: "text-red-700",
-    bg: "bg-red-50",
-    border: "border-red-200",
-    icon: FileX2,
-  },
-  cancelled: {
-    label: "Đã hủy",
-    color: "text-slate-500",
-    bg: "bg-slate-50",
-    border: "border-slate-200",
-    icon: FileX2,
-  },
-}
-
 // ─── Submit Modal ─────────────────────────────────────────────────────────────
 
 interface SubmitModalProps {
@@ -150,7 +130,6 @@ interface SubmitModalProps {
   onSuccess: () => void
 }
 
-/** Correct leave type values matching backend LEAVE_TYPE_VALUES enum */
 const LEAVE_TYPE_OPTIONS = [
   { value: "annual_leave", label: "Nghỉ phép năm" },
   { value: "sick_leave", label: "Nghỉ ốm" },
@@ -171,23 +150,16 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
     endDate: "",
     reason: "",
     note: "",
-    // leave
     leaveType: "annual_leave" as string,
     leaveRegimeType: "paid" as "paid" | "unpaid",
-    // overtime / late_early / shift_swap
     employeeShiftId: "",
-    // late_early specific
     durationMinutes: 30,
     isLate: true,
-    // shift_swap
     swapWithEmployeeId: "",
     swapWithShiftId: "",
-    // work_from_home
     location: "",
-    // business_trip
     destination: "",
     purpose: "",
-    // regime
     regimeType: "paid" as "paid" | "unpaid",
     reducedMinutesPerDay: 0,
     applyToStart: false,
@@ -205,29 +177,23 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
       return
     }
 
-    // Build type-specific detail matching the backend Zod schemas exactly
     let detail: Record<string, unknown> = {}
 
     switch (selectedType) {
       case "leave":
-        // Backend: { leaveType: LEAVE_TYPE_VALUES, regimeType: REGIME_TYPES }
         detail = {
           leaveType: form.leaveType,
           regimeType: form.leaveRegimeType,
         }
         break
-
       case "overtime":
-        // Backend: { employeeShiftId: cuid }
         if (!form.employeeShiftId.trim()) {
           toast.error("Vui lòng nhập ID ca làm việc")
           return
         }
         detail = { employeeShiftId: form.employeeShiftId.trim() }
         break
-
       case "late_early":
-        // Backend: { employeeShiftId: cuid, durationMinutes: int(1-480), isLate: boolean }
         if (!form.employeeShiftId.trim()) {
           toast.error("Vui lòng nhập ID ca làm việc")
           return
@@ -238,13 +204,12 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
         }
         detail = {
           employeeShiftId: form.employeeShiftId.trim(),
-          durationMinutes: form.durationMinutes,
-          isLate: form.isLate,
+          ...(form.isLate
+            ? { lateMinutes: form.durationMinutes }
+            : { earlyMinutes: form.durationMinutes }),
         }
         break
-
       case "shift_swap":
-        // Backend: { employeeShiftId: cuid, swapWithEmployeeId?: cuid, swapWithShiftId?: cuid }
         if (!form.employeeShiftId.trim()) {
           toast.error("Vui lòng nhập ID ca của bạn")
           return
@@ -253,14 +218,10 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
         if (form.swapWithEmployeeId.trim()) detail.swapWithEmployeeId = form.swapWithEmployeeId.trim()
         if (form.swapWithShiftId.trim()) detail.swapWithShiftId = form.swapWithShiftId.trim()
         break
-
       case "work_from_home":
-        // Backend: { location?: string }  ← key is "location" not "workLocation"
         detail = form.location.trim() ? { location: form.location.trim() } : {}
         break
-
       case "business_trip":
-        // Backend: { location: string(min2), purpose?: string, budget?: number }
         if (!form.destination.trim()) {
           toast.error("Vui lòng nhập địa điểm công tác")
           return
@@ -268,9 +229,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
         detail = { location: form.destination.trim() }
         if (form.purpose.trim()) detail.purpose = form.purpose.trim()
         break
-
       case "regime":
-        // Backend: { regimeType, reducedMinutesPerDay: int(0-480), applyToStart, applyToEnd, documentUrl? }
         detail = {
           regimeType: form.regimeType,
           reducedMinutesPerDay: form.reducedMinutesPerDay,
@@ -300,8 +259,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl shadow-slate-900/20 overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
+      <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
             {step === "details" && (
@@ -317,24 +275,14 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
               <h2 className="text-base font-bold text-slate-800">
                 {step === "type" ? "Chọn loại đơn" : `Tạo đơn ${meta?.label}`}
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                {step === "type"
-                  ? "Chọn loại đơn bạn muốn gửi"
-                  : "Điền thông tin chi tiết và xác nhận"}
-              </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-400"
-          >
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-100 text-slate-400">
             <X size={18} />
           </button>
         </div>
 
         <div className="overflow-y-auto flex-1">
-          {/* Step 1: Type picker */}
           {step === "type" && (
             <div className="p-5 grid grid-cols-2 gap-3">
               {Object.entries(APP_TYPE_META).map(([type, m]) => {
@@ -342,12 +290,11 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                 return (
                   <button
                     key={type}
-                    type="button"
                     onClick={() => {
                       setSelectedType(type)
                       setStep("details")
                     }}
-                    className={`flex flex-col items-start gap-2 p-4 rounded-xl border-2 text-left hover:shadow-md transition-all active:scale-[0.98] ${m.border} ${m.bg}`}
+                    className={`flex flex-col items-start gap-2 p-4 rounded-xl border-2 text-left hover:shadow-md transition-all ${m.border} ${m.bg}`}
                   >
                     <div className={`h-9 w-9 rounded-lg flex items-center justify-center ${m.color}`}>
                       <Icon size={18} />
@@ -362,16 +309,13 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
             </div>
           )}
 
-          {/* Step 2: Details form */}
           {step === "details" && meta && (
             <form id="submit-form" onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
-              {/* Type badge */}
               <div className={`flex items-center gap-2.5 p-3 rounded-xl border ${meta.border} ${meta.bg}`}>
                 <meta.icon size={16} className={meta.color} />
                 <span className={`text-sm font-semibold ${meta.color}`}>{meta.label}</span>
               </div>
 
-              {/* Dates */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-slate-600">Ngày bắt đầu *</label>
@@ -380,7 +324,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                     required
                     value={form.startDate}
                     onChange={(e) => set("startDate", e.target.value)}
-                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -390,7 +334,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                     value={form.endDate}
                     min={form.startDate}
                     onChange={(e) => set("endDate", e.target.value)}
-                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
                   />
                 </div>
               </div>
@@ -400,20 +344,15 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                 <>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-slate-600">Loại nghỉ phép *</label>
-                    <div className="relative">
-                      <select
-                        value={form.leaveType}
-                        onChange={(e) => set("leaveType", e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white pr-8"
-                      >
-                        {LEAVE_TYPE_OPTIONS.map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                    </div>
+                    <select
+                      value={form.leaveType}
+                      onChange={(e) => set("leaveType", e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white"
+                    >
+                      {LEAVE_TYPE_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-slate-600">Chế độ lương *</label>
@@ -423,10 +362,8 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                           key={rt}
                           type="button"
                           onClick={() => set("leaveRegimeType", rt)}
-                          className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
-                            form.leaveRegimeType === rt
-                              ? "border-primary bg-primary/5 text-primary"
-                              : "border-slate-200 text-slate-500 hover:border-slate-300"
+                          className={`py-2 rounded-lg border-2 text-sm font-semibold ${
+                            form.leaveRegimeType === rt ? "border-primary bg-primary/5 text-primary" : "border-slate-200 text-slate-500"
                           }`}
                         >
                           {rt === "paid" ? "Có lương" : "Không lương"}
@@ -444,10 +381,10 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                   <input
                     type="text"
                     required
-                    placeholder="Nhập CUID ca làm việc..."
+                    placeholder="CUID ca làm việc..."
                     value={form.employeeShiftId}
                     onChange={(e) => set("employeeShiftId", e.target.value)}
-                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono"
                   />
                 </div>
               )}
@@ -460,10 +397,10 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                     <input
                       type="text"
                       required
-                      placeholder="Nhập CUID ca làm việc..."
+                      placeholder="CUID ca làm việc..."
                       value={form.employeeShiftId}
                       onChange={(e) => set("employeeShiftId", e.target.value)}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono"
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
@@ -474,10 +411,8 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                           key={String(v)}
                           type="button"
                           onClick={() => set("isLate", v)}
-                          className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
-                            form.isLate === v
-                              ? "border-primary bg-primary/5 text-primary"
-                              : "border-slate-200 text-slate-500 hover:border-slate-300"
+                          className={`py-2 rounded-lg border-2 text-sm font-semibold ${
+                            form.isLate === v ? "border-primary bg-primary/5 text-primary" : "border-slate-200 text-slate-500"
                           }`}
                         >
                           {v ? "Đi muộn" : "Về sớm"}
@@ -494,7 +429,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                       max={480}
                       value={form.durationMinutes}
                       onChange={(e) => set("durationMinutes", Number(e.target.value))}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
                     />
                   </div>
                 </>
@@ -508,30 +443,20 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                     <input
                       type="text"
                       required
-                      placeholder="Nhập CUID ca làm việc..."
+                      placeholder="CUID ca làm việc..."
                       value={form.employeeShiftId}
                       onChange={(e) => set("employeeShiftId", e.target.value)}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono"
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">ID Nhân viên muốn đổi (tùy chọn)</label>
+                    <label className="text-xs font-semibold text-slate-600">ID Nhân viên muốn đổi</label>
                     <input
                       type="text"
                       placeholder="CUID nhân viên..."
                       value={form.swapWithEmployeeId}
                       onChange={(e) => set("swapWithEmployeeId", e.target.value)}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">ID Ca muốn đổi sang (tùy chọn)</label>
-                    <input
-                      type="text"
-                      placeholder="CUID ca làm việc..."
-                      value={form.swapWithShiftId}
-                      onChange={(e) => set("swapWithShiftId", e.target.value)}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono"
                     />
                   </div>
                 </>
@@ -540,14 +465,13 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
               {/* ── WFH ── */}
               {selectedType === "work_from_home" && (
                 <div className="flex flex-col gap-1.5">
-                  {/* Backend field name: "location" */}
                   <label className="text-xs font-semibold text-slate-600">Địa điểm làm việc</label>
                   <input
                     type="text"
                     placeholder="VD: Tại nhà, Quán cà phê..."
                     value={form.location}
                     onChange={(e) => set("location", e.target.value)}
-                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
                   />
                 </div>
               )}
@@ -556,7 +480,6 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
               {selectedType === "business_trip" && (
                 <>
                   <div className="flex flex-col gap-1.5">
-                    {/* Backend field name: "location" */}
                     <label className="text-xs font-semibold text-slate-600">Địa điểm công tác *</label>
                     <input
                       type="text"
@@ -564,7 +487,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                       placeholder="VD: Hà Nội, TP.HCM..."
                       value={form.destination}
                       onChange={(e) => set("destination", e.target.value)}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
@@ -574,7 +497,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                       placeholder="Mô tả mục đích..."
                       value={form.purpose}
                       onChange={(e) => set("purpose", e.target.value)}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
                     />
                   </div>
                 </>
@@ -591,10 +514,8 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                           key={rt}
                           type="button"
                           onClick={() => set("regimeType", rt)}
-                          className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
-                            form.regimeType === rt
-                              ? "border-primary bg-primary/5 text-primary"
-                              : "border-slate-200 text-slate-500 hover:border-slate-300"
+                          className={`py-2 rounded-lg border-2 text-sm font-semibold ${
+                            form.regimeType === rt ? "border-primary bg-primary/5 text-primary" : "border-slate-200 text-slate-500"
                           }`}
                         >
                           {rt === "paid" ? "Có lương" : "Không lương"}
@@ -603,9 +524,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                     </div>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">
-                      Số phút giảm/ngày (0–480) *
-                    </label>
+                    <label className="text-xs font-semibold text-slate-600">Số phút giảm/ngày *</label>
                     <input
                       type="number"
                       required
@@ -613,104 +532,27 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                       max={480}
                       value={form.reducedMinutesPerDay}
                       onChange={(e) => set("reducedMinutesPerDay", Number(e.target.value))}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-semibold text-slate-600">Áp dụng</label>
-                    <div className="flex gap-4">
-                      {(
-                        [
-                          { key: "applyToStart", label: "Đầu buổi" },
-                          { key: "applyToEnd", label: "Cuối buổi" },
-                        ] as const
-                      ).map(({ key, label }) => (
-                        <label key={key} className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={form[key]}
-                            onChange={(e) => set(key, e.target.checked)}
-                            className="accent-primary"
-                          />
-                          <span className="text-sm text-slate-600">{label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">
-                      URL chứng từ (tùy chọn)
-                    </label>
-                    <input
-                      type="url"
-                      placeholder="https://..."
-                      value={form.documentUrl}
-                      onChange={(e) => set("documentUrl", e.target.value)}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
                     />
                   </div>
                 </>
               )}
-
-              {/* Reason */}
+              
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-600">
-                  Lý do{" "}
-                  <span className="text-slate-400 font-normal">(tối thiểu 5 ký tự nếu điền)</span>
-                </label>
-                <textarea
-                  rows={3}
-                  minLength={5}
-                  placeholder="Nhập lý do gửi đơn..."
-                  value={form.reason}
-                  onChange={(e) => set("reason", e.target.value)}
-                  className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
-                />
-              </div>
-
-              {/* Note */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-600">Ghi chú thêm</label>
-                <input
-                  type="text"
-                  placeholder="Thông tin bổ sung (nếu có)..."
-                  value={form.note}
-                  onChange={(e) => set("note", e.target.value)}
-                  className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                />
+                <label className="text-xs font-semibold text-slate-600">Lý do (tối thiểu 5 ký tự)</label>
+                <textarea rows={3} minLength={5} placeholder="Nhập lý do..." value={form.reason} onChange={(e) => set("reason", e.target.value)} className="px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none" />
               </div>
             </form>
           )}
         </div>
 
-        {/* Footer */}
         {step === "details" && (
           <div className="border-t border-slate-100 px-5 py-4 flex gap-3 bg-slate-50">
-            <button
-              type="button"
-              onClick={() => setStep("type")}
-              className="flex-1 py-2.5 border border-slate-200 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
-            >
-              Quay lại
-            </button>
-            <button
-              type="submit"
-              form="submit-form"
-              disabled={isSubmitting}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white rounded-full text-sm font-bold transition-all active:scale-[0.98]"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                  Đang gửi...
-                </>
-              ) : (
-                <>
-                  <Send size={15} />
-                  Gửi đơn
-                </>
-              )}
-            </button>
+            <Button variant="outline" className="flex-1" onClick={() => setStep("type")}>Quay lại</Button>
+            <Button type="submit" form="submit-form" disabled={isSubmitting} className="flex-1 gap-2">
+              {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={15} />}
+              Gửi đơn
+            </Button>
           </div>
         )}
       </div>
@@ -718,206 +560,44 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
   )
 }
 
-// ─── Cancel Confirm Dialog ────────────────────────────────────────────────────
+// ─── Cancel Dialog ────────────────────────────────────────────────────────────
 
-interface CancelDialogProps {
-  app: IApplication
-  onCancel: () => void
-  onConfirm: () => void
-  isLoading: boolean
-}
-
-function CancelDialog({ app, onCancel, onConfirm, isLoading }: CancelDialogProps) {
-  const typeMeta = APP_TYPE_META[app.type]
+function CancelDialog({ app, onCancel, onConfirm, isLoading }: { app: IApplication; onCancel: () => void; onConfirm: () => void; isLoading: boolean }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
       <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 flex flex-col gap-5">
         <div className="flex flex-col items-center text-center gap-2">
-          <div className="h-12 w-12 rounded-full bg-red-50 border border-red-100 flex items-center justify-center text-red-500 mb-1">
+          <div className="h-12 w-12 rounded-full bg-red-50 border border-red-100 flex items-center justify-center text-red-500">
             <AlertTriangle size={22} />
           </div>
           <h3 className="text-base font-bold text-slate-800">Xác nhận hủy đơn?</h3>
           <p className="text-sm text-slate-500">
-            Hủy đơn{" "}
-            <strong className={typeMeta?.color}>{typeMeta?.label ?? app.type}</strong> từ{" "}
-            {new Date(app.startDate).toLocaleDateString("vi-VN")}?
+            Hủy đơn <strong>{APPLICATION_TYPE_LABELS[app.type] || app.type}</strong> từ {formatDate(app.startDate)}?
           </p>
         </div>
         <div className="flex gap-3">
-          <button
-            onClick={onCancel}
-            className="flex-1 py-2.5 border border-slate-200 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-50"
-          >
-            Không
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={isLoading}
-            className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white rounded-full text-sm font-bold transition-colors"
-          >
+          <Button variant="outline" className="flex-1" onClick={onCancel}>Không</Button>
+          <Button variant="destructive" className="flex-1" onClick={onConfirm} disabled={isLoading}>
             {isLoading ? "Đang hủy..." : "Xác nhận hủy"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
   )
 }
 
-// ─── Application Card ─────────────────────────────────────────────────────────
+// ─── Reject Dialog ────────────────────────────────────────────────────────────
 
-interface ApplicationCardProps {
-  app: IApplication
-  mode: "mine" | "manage"
-  onCancelRequest?: (app: IApplication) => void
-  onApproveRequest?: (app: IApplication) => void
-  onRejectRequest?: (app: IApplication) => void
-  processingId?: string | null
-}
-
-function ApplicationCard({ app, mode, onCancelRequest, onApproveRequest, onRejectRequest, processingId }: ApplicationCardProps) {
-  const [expanded, setExpanded] = useState(false)
-  const typeMeta = APP_TYPE_META[app.type] ?? {
-    label: app.type,
-    icon: FileText,
-    color: "text-slate-600",
-    bg: "bg-slate-50",
-    border: "border-slate-200",
-  }
-  const statusMeta = STATUS_META[app.status] ?? STATUS_META.pending
-  const TypeIcon = typeMeta.icon
-  const StatusIcon = statusMeta.icon
-
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-all duration-200">
-      <div
-        className="flex items-center gap-4 p-4 cursor-pointer select-none"
-        onClick={() => setExpanded((v) => !v)}
-      >
-        <div
-          className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center border ${typeMeta.bg} ${typeMeta.border} ${typeMeta.color}`}
-        >
-          <TypeIcon size={18} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-bold text-slate-800">{typeMeta.label}</span>
-            <span
-              className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${statusMeta.color} ${statusMeta.bg} ${statusMeta.border}`}
-            >
-              <StatusIcon size={10} />
-              {statusMeta.label}
-            </span>
-          </div>
-          <p className="text-xs text-slate-400 mt-0.5">
-            {new Date(app.startDate).toLocaleDateString("vi-VN")}
-            {app.endDate && app.endDate !== app.startDate && (
-              <> → {new Date(app.endDate).toLocaleDateString("vi-VN")}</>
-            )}
-            <span className="mx-1.5">·</span>
-            Tạo: {new Date(app.createdAt).toLocaleDateString("vi-VN")}
-          </p>
-        </div>
-        <ChevronDown
-          size={16}
-          className={`text-slate-300 shrink-0 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
-        />
-      </div>
-
-      {expanded && (
-        <div className="border-t border-slate-100 px-4 pb-4 pt-3 flex flex-col gap-3">
-          <div className="flex flex-col gap-2 text-xs">
-            {app.reason && (
-              <div className="flex flex-col gap-0.5">
-                <span className="text-slate-400 font-medium">Lý do</span>
-                <span className="text-slate-700">{app.reason}</span>
-              </div>
-            )}
-            {app.note && (
-              <div className="flex flex-col gap-0.5">
-                <span className="text-slate-400 font-medium">Ghi chú</span>
-                <span className="text-slate-700">{app.note}</span>
-              </div>
-            )}
-            {mode === "manage" && app.employee && (
-              <div className="flex flex-col gap-0.5">
-                <span className="text-slate-400 font-medium">Nhân viên</span>
-                <span className="text-slate-700 font-semibold">{app.employee.fullName}</span>
-              </div>
-            )}
-            {app.rejectReason && (
-              <div className="flex flex-col gap-0.5 p-2 rounded-lg bg-red-50 border border-red-100">
-                <span className="text-red-500 font-semibold">Lý do từ chối</span>
-                <span className="text-red-700">{app.rejectReason}</span>
-              </div>
-            )}
-            {app.processor && (
-              <div className="flex flex-col gap-0.5">
-                <span className="text-slate-400 font-medium">Người duyệt</span>
-                <span className="text-slate-700">{app.processor.fullName}</span>
-              </div>
-            )}
-          </div>
-
-          {app.status === APPLICATION_STATUS.PENDING && mode === "mine" && onCancelRequest && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                onCancelRequest(app)
-              }}
-              className="self-start flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-full transition-colors"
-            >
-              <X size={12} />
-              Hủy đơn
-            </button>
-          )}
-
-          {app.status === APPLICATION_STATUS.PENDING && mode === "manage" && onApproveRequest && onRejectRequest && (
-            <div className="flex gap-2 mt-2">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onApproveRequest(app)
-                }}
-                disabled={processingId === app.id}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg transition-colors disabled:opacity-50"
-              >
-                <Check size={14} />
-                Phê duyệt
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onRejectRequest(app)
-                }}
-                disabled={processingId === app.id}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors disabled:opacity-50"
-              >
-                <X size={14} />
-                Từ chối
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─── Reject Confirm Dialog ────────────────────────────────────────────────────
-
-interface RejectDialogProps {
-  app: IApplication
-  onCancel: () => void
-  onConfirm: (reason: string) => void
-  isLoading: boolean
-}
-
-function RejectDialog({ app, onCancel, onConfirm, isLoading }: RejectDialogProps) {
+function RejectDialog({ 
+  onCancel, 
+  onConfirm, 
+  isLoading 
+}: { 
+  onCancel: () => void; 
+  onConfirm: (reason: string) => void; 
+  isLoading: boolean 
+}) {
   const [reason, setReason] = useState("")
-  const typeMeta = APP_TYPE_META[app.type]
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -936,10 +616,7 @@ function RejectDialog({ app, onCancel, onConfirm, isLoading }: RejectDialogProps
             <X size={22} />
           </div>
           <h3 className="text-base font-bold text-slate-800">Từ chối đơn?</h3>
-          <p className="text-sm text-slate-500">
-            Từ chối đơn <strong className={typeMeta?.color}>{typeMeta?.label ?? app.type}</strong> của{" "}
-            <strong>{app.employee?.fullName}</strong>?
-          </p>
+          <p className="text-sm text-slate-500">Nhập lý do từ chối để thông báo đến nhân viên.</p>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
@@ -954,44 +631,16 @@ function RejectDialog({ app, onCancel, onConfirm, isLoading }: RejectDialogProps
             />
           </div>
           <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="flex-1 py-2.5 border border-slate-200 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-50"
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white rounded-full text-sm font-bold transition-colors"
-            >
+            <Button variant="outline" className="flex-1" type="button" onClick={onCancel}>Hủy</Button>
+            <Button variant="destructive" className="flex-1" type="submit" disabled={isLoading}>
               {isLoading ? "Đang xử lý..." : "Xác nhận từ chối"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
     </div>
   )
 }
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
-function ApplicationSkeleton() {
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4 animate-pulse">
-      <div className="flex items-center gap-4">
-        <div className="h-10 w-10 rounded-xl bg-slate-100 shrink-0" />
-        <div className="flex-1 flex flex-col gap-2">
-          <div className="h-3.5 bg-slate-100 rounded w-32" />
-          <div className="h-3 bg-slate-100 rounded w-48" />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
 
 const STATUS_TABS = [
   { value: "all", label: "Tất cả" },
@@ -1001,34 +650,22 @@ const STATUS_TABS = [
   { value: "cancelled", label: "Đã hủy" },
 ] as const
 
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
 export default function Applications() {
   const { user } = useAuthStore()
   const isManager = user && ["admin", "hr_manager", "general_manager", "team_leader"].includes(user.role)
-  const [activeTab, setActiveTab] = useState<"mine" | "manage">("mine")
 
+  const [activeTab, setActiveTab] = useState<"mine" | "manage">("mine")
   const myApps = useMyApplications()
   const manageApps = useManageApplications()
 
-  const currentHooks = activeTab === "mine" ? myApps : manageApps
-  const {
-    applications,
-    isLoading,
-    isRefreshing,
-    statusFilter,
-    setStatusFilter,
-    typeFilter,
-    setTypeFilter,
-    page,
-    setPage,
-    totalPages,
-    total,
-    refetch,
-    stats,
-  } = currentHooks
+  const currentHook = activeTab === "mine" ? myApps : manageApps
 
+  const [sheetOpen, setSheetOpen] = useState(false)
   const [showSubmitModal, setShowSubmitModal] = useState(false)
   const [cancelTarget, setCancelTarget] = useState<IApplication | null>(null)
-  const [rejectTarget, setRejectTarget] = useState<IApplication | null>(null)
+  const [rejectTargetId, setRejectTargetId] = useState<string | null>(null)
 
   const handleCancelConfirm = async () => {
     if (!cancelTarget) return
@@ -1037,194 +674,202 @@ export default function Applications() {
   }
 
   const handleRejectConfirm = async (reason: string) => {
-    if (!rejectTarget) return
-    await manageApps.handleReject(rejectTarget.id, reason)
-    setRejectTarget(null)
+    if (!rejectTargetId) return
+    await manageApps.handleReject(rejectTargetId, reason)
+    setRejectTargetId(null)
   }
 
-  return (
-    <div className="flex flex-col gap-6 p-6 w-full mx-auto max-w-4xl">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Đơn từ</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Xem lịch sử, tạo đơn mới và quản lý đơn từ
-          </p>
-        </div>
-        <button
-          onClick={() => setShowSubmitModal(true)}
-          className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white rounded-full px-5 py-2.5 text-sm font-bold shadow-sm transition-all active:scale-[0.98]"
-        >
-          <FilePlus2 size={16} />
-          Tạo đơn mới
-        </button>
+  const handleRejectClick = (id: string) => {
+    setRejectTargetId(id)
+  }
+
+  const renderTable = (apps: IApplication[], isLoading: boolean, mode: "mine" | "manage") => (
+    <div className="overflow-x-auto">
+      <Table className="text-sm">
+        <TableHeader className="bg-muted/40">
+          <TableRow className="hover:bg-transparent border-b">
+            <TableHead className="px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Loại</TableHead>
+            <TableHead className="px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Thời gian</TableHead>
+            {mode === "manage" && <TableHead className="px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Nhân viên</TableHead>}
+            <TableHead className="px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Lý do</TableHead>
+            <TableHead className="px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Trạng thái</TableHead>
+            <TableHead className="px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Hành động</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody className="divide-y divide-border">
+          {isLoading ? (
+            <TableRow><TableCell colSpan={6} className="h-24 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+          ) : apps.length === 0 ? (
+            <TableRow><TableCell colSpan={6} className="h-24 text-center text-muted-foreground">Chưa có đơn nào.</TableCell></TableRow>
+          ) : (
+            apps.map((app) => (
+              <TableRow key={app.id} className="hover:bg-muted/30">
+                <TableCell className="px-4 py-4 font-medium">{APPLICATION_TYPE_LABELS[app.type] || app.type}</TableCell>
+                <TableCell className="px-4 py-4 whitespace-nowrap text-muted-foreground">
+                  {formatDate(app.startDate)}
+                  {app.endDate && app.endDate !== app.startDate && ` → ${formatDate(app.endDate)}`}
+                </TableCell>
+                {mode === "manage" && (
+                  <TableCell className="px-4 py-4">
+                    <p className="font-medium">{app.employee?.fullName}</p>
+                    <p className="text-xs text-muted-foreground">{app.employee?.email}</p>
+                  </TableCell>
+                )}
+                <TableCell className="px-4 py-4 max-w-40 truncate text-muted-foreground" title={app.reason}>{app.reason || "—"}</TableCell>
+                <TableCell className="px-4 py-4">
+                  <StatusPill
+                    label={APPLICATION_STATUS_LABELS[app.status] || app.status}
+                    variant={APPLICATION_STATUS_VARIANTS[app.status] || "neutral"}
+                  />
+                </TableCell>
+                <TableCell className="px-4 py-4">
+                  <div className="flex items-center gap-2">
+                    {mode === "mine" && app.status === APPLICATION_STATUS.PENDING && (
+                      <Button size="sm" variant="outline" className="h-8 text-xs text-red-500 border-red-200 hover:bg-red-50" onClick={() => setCancelTarget(app)}>Hủy</Button>
+                    )}
+                    {mode === "manage" && app.status === APPLICATION_STATUS.PENDING && (
+                      <>
+                        <Button size="sm" className="h-8 text-xs bg-emerald-500 hover:bg-emerald-600 text-white" onClick={() => manageApps.handleApprove(app.id)} disabled={manageApps.processingId === app.id}>Duyệt</Button>
+                        <Button size="sm" variant="outline" className="h-8 text-xs text-red-500 border-red-200" onClick={() => handleRejectClick(app.id)}>Từ chối</Button>
+                      </>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  )
+
+  const renderPagination = (hook: { page: number; totalPages: number; setPage: (v: number) => void }) => (
+    hook.totalPages > 1 && (
+      <div className="flex items-center justify-center gap-4 mt-6">
+        <Button variant="outline" size="sm" onClick={() => hook.setPage(hook.page - 1)} disabled={hook.page <= 1} className="rounded-full gap-2">
+          <ArrowLeft size={14} /> Trước
+        </Button>
+        <span className="text-sm font-medium text-muted-foreground">{hook.page} / {hook.totalPages}</span>
+        <Button variant="outline" size="sm" onClick={() => hook.setPage(hook.page + 1)} disabled={hook.page >= hook.totalPages} className="rounded-full gap-2">
+          Sau <ArrowRight size={14} />
+        </Button>
       </div>
+    )
+  )
 
-      {isManager && (
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-full overflow-x-auto self-start">
-          <button
-            onClick={() => setActiveTab("mine")}
-            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-              activeTab === "mine"
-                ? "bg-white text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Đơn của tôi
-          </button>
-          <button
-            onClick={() => setActiveTab("manage")}
-            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-              activeTab === "manage"
-                ? "bg-white text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Quản lý đơn
-          </button>
-        </div>
-      )}
+  return (
+    <div className="container px-6 py-6 max-w-6xl mx-auto flex flex-col gap-6">
+      <PageHeader
+        title="Đơn từ & Yêu cầu"
+        description="Quản lý các loại đơn nghỉ phép, tăng ca và đổi ca làm việc."
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" className="gap-2 rounded-full" onClick={() => setShowSubmitModal(true)}>
+              <FilePlus2 size={16} /> Tạo đơn mới
+            </Button>
+            <Button className="gap-2 rounded-full" onClick={() => setSheetOpen(true)}>
+              <Plus size={16} /> Đổi ca
+            </Button>
+          </div>
+        }
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Chờ duyệt", value: stats.pending, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100", icon: Hourglass },
-          { label: "Đã duyệt", value: stats.approved, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100", icon: FileCheck2 },
-          { label: "Từ chối", value: stats.rejected, color: "text-red-600", bg: "bg-red-50", border: "border-red-100", icon: FileX2 },
-          { label: "Đã hủy", value: stats.cancelled, color: "text-slate-500", bg: "bg-slate-50", border: "border-slate-100", icon: X },
+          { label: "Chờ duyệt", value: currentHook.stats.pending, color: "text-amber-600", bg: "bg-amber-50", icon: Hourglass },
+          { label: "Đã duyệt", value: currentHook.stats.approved, color: "text-emerald-600", bg: "bg-emerald-50", icon: FileCheck2 },
+          { label: "Từ chối", value: currentHook.stats.rejected, color: "text-red-600", bg: "bg-red-50", icon: FileX2 },
+          { label: "Tổng số", value: currentHook.stats.total, color: "text-slate-600", bg: "bg-slate-50", icon: FileText },
         ].map((stat) => {
           const Icon = stat.icon
           return (
-            <div key={stat.label} className={`flex items-center gap-3 p-3.5 rounded-xl border ${stat.bg} ${stat.border}`}>
-              <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${stat.color}`}>
-                <Icon size={16} />
+            <PageCard key={stat.label} className={`p-4 ${stat.bg} border-none shadow-none`}>
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${stat.bg} ${stat.color} border border-current/10`}>
+                  <Icon size={18} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+                  <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                </div>
               </div>
-              <div>
-                <p className={`text-xl font-bold leading-none ${stat.color}`}>{stat.value}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{stat.label}</p>
-              </div>
-            </div>
+            </PageCard>
           )
         })}
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-full overflow-x-auto">
-          {STATUS_TABS.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => { setStatusFilter(tab.value as typeof statusFilter); setPage(1) }}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
-                statusFilter === tab.value
-                  ? "bg-white text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      <div className="flex flex-col gap-4">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+          <div className="flex items-center justify-between mb-4">
+            <TabsList>
+              <TabsTrigger value="mine">Đơn của tôi</TabsTrigger>
+              {isManager && <TabsTrigger value="manage">Quản lý phê duyệt</TabsTrigger>}
+            </TabsList>
 
-        <div className="relative sm:ml-auto">
-          <select
-            value={typeFilter}
-            onChange={(e) => { setTypeFilter(e.target.value); setPage(1) }}
-            className="pl-3 pr-8 py-2 border border-slate-200 rounded-full text-xs font-semibold text-slate-600 bg-white focus:outline-none appearance-none"
-          >
-            <option value="all">Tất cả loại đơn</option>
-            {Object.entries(APP_TYPE_META).map(([type, m]) => (
-              <option key={type} value={type}>{m.label}</option>
-            ))}
-          </select>
-          <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-        </div>
-
-        <button
-          onClick={refetch}
-          disabled={isRefreshing}
-          className="flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 rounded-full text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
-        >
-          <RefreshCw size={13} className={isRefreshing ? "animate-spin" : ""} />
-          Làm mới
-        </button>
-      </div>
-
-      {/* List */}
-      <div className="flex flex-col gap-3">
-        {isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => <ApplicationSkeleton key={i} />)
-        ) : applications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-slate-200 text-center gap-4">
-            <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-300">
-              <FileText size={32} />
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={currentHook.refetch} className="gap-2 h-8 text-xs">
+                <RefreshCw size={14} className={currentHook.isRefreshing ? "animate-spin" : ""} /> Làm mới
+              </Button>
             </div>
-            <div>
-              <p className="text-base font-bold text-slate-700">Chưa có đơn nào</p>
-              <p className="text-sm text-slate-400 mt-1">
-                {statusFilter !== "all"
-                  ? `Không có đơn ở trạng thái "${STATUS_TABS.find((t) => t.value === statusFilter)?.label}"`
-                  : `Nhấn "Tạo đơn mới" để bắt đầu`}
-              </p>
-            </div>
-            <button
-              onClick={() => setShowSubmitModal(true)}
-              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white rounded-full px-5 py-2.5 text-sm font-bold"
-            >
-              <FilePlus2 size={15} />
-              Tạo đơn đầu tiên
-            </button>
           </div>
-        ) : (
-          <>
-            <p className="text-xs text-muted-foreground">
-              Hiển thị {applications.length} / {total} đơn
-            </p>
-            {applications.map((app) => (
-              <ApplicationCard 
-                key={app.id} 
-                app={app} 
-                mode={activeTab}
-                onCancelRequest={setCancelTarget} 
-                onApproveRequest={(app) => manageApps.handleApprove(app.id)}
-                onRejectRequest={setRejectTarget}
-                processingId={manageApps.processingId}
-              />
-            ))}
-          </>
-        )}
+
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-full overflow-x-auto self-start">
+              {STATUS_TABS.map((tab) => (
+                <button
+                  key={tab.value}
+                  onClick={() => { currentHook.setStatusFilter(tab.value as any); currentHook.setPage(1) }}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                    currentHook.statusFilter === tab.value
+                      ? "bg-white text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative sm:ml-auto">
+              <select
+                value={currentHook.typeFilter}
+                onChange={(e) => { currentHook.setTypeFilter(e.target.value); currentHook.setPage(1) }}
+                className="pl-3 pr-8 py-2 border border-slate-200 rounded-full text-xs font-semibold text-slate-600 bg-white focus:outline-none appearance-none"
+              >
+                <option value="all">Tất cả loại đơn</option>
+                {Object.entries(APP_TYPE_META).map(([type, m]) => (
+                  <option key={type} value={type}>{m.label}</option>
+                ))}
+              </select>
+              <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            </div>
+          </div>
+
+          <TabsContent value="mine">
+            <PageCard className="p-0 overflow-hidden" noBorder={false}>
+              {renderTable(myApps.applications, myApps.isLoading, "mine")}
+            </PageCard>
+            {renderPagination(myApps)}
+          </TabsContent>
+
+          {isManager && (
+            <TabsContent value="manage">
+              <PageCard className="p-0 overflow-hidden" noBorder={false}>
+                {renderTable(manageApps.applications, manageApps.isLoading, "manage")}
+              </PageCard>
+              {renderPagination(manageApps)}
+            </TabsContent>
+          )}
+        </Tabs>
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <button
-            onClick={() => setPage(page - 1)}
-            disabled={page <= 1}
-            className="flex items-center gap-1 px-4 py-2 border border-slate-200 rounded-full text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-          >
-            <ArrowLeft size={13} />
-            Trước
-          </button>
-          <span className="text-xs text-muted-foreground px-2">
-            {page} / {totalPages}
-          </span>
-          <button
-            onClick={() => setPage(page + 1)}
-            disabled={page >= totalPages}
-            className="flex items-center gap-1 px-4 py-2 border border-slate-200 rounded-full text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-          >
-            Sau
-            <ArrowRight size={13} />
-          </button>
-        </div>
+      <ShiftChangeRequestSheet open={sheetOpen} onOpenChange={setSheetOpen} />
+      
+      {showSubmitModal && (
+        <SubmitApplicationModal onClose={() => setShowSubmitModal(false)} onSuccess={myApps.refetch} />
       )}
 
-      {/* Modals */}
-      {showSubmitModal && (
-        <SubmitApplicationModal onClose={() => setShowSubmitModal(false)} onSuccess={refetch} />
-      )}
       {cancelTarget && (
         <CancelDialog
           app={cancelTarget}
@@ -1233,12 +878,12 @@ export default function Applications() {
           isLoading={myApps.cancellingId === cancelTarget.id}
         />
       )}
-      {rejectTarget && (
+
+      {rejectTargetId && (
         <RejectDialog
-          app={rejectTarget}
-          onCancel={() => setRejectTarget(null)}
+          onCancel={() => setRejectTargetId(null)}
           onConfirm={handleRejectConfirm}
-          isLoading={manageApps.processingId === rejectTarget.id}
+          isLoading={manageApps.processingId === rejectTargetId}
         />
       )}
     </div>

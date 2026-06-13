@@ -13,4 +13,30 @@ export const API_ENDPOINTS = {
     PAYSLIP_TEMPLATES: "/payslip-templates",
     EMPLOYEE_SALARY_CONFIG: "/employees",
   },
+  ATTENDANCE: {
+    BASE: "/attendance",
+    CHECK_IN: "/attendance/check-in",
+    CHECK_OUT: "/attendance/check-out",
+    SCAN: "/attendance/scan",
+    EXPORT: "/attendance/export",
+  },
+  SHIFTS: {
+    BASE: "/shifts",
+  },
+  SCHEDULES: {
+    MY: "/schedules/my",
+    MY_ALL: "/schedules/my/all",
+    ASSIGN: "/schedules/assign",
+    OVERRIDE: "/schedules/override",
+    EMPLOYEE: (employeeId: string) => `/schedules/employee/${employeeId}`,
+    EMPLOYEE_ALL: (employeeId: string) => `/schedules/employee/${employeeId}/all`,
+  },
+  SHIFT_CHANGE_REQUESTS: {
+    BASE: "/shift-change-requests",
+    MINE: "/shift-change-requests/mine",
+  },
+  APPROVALS: {
+    BASE: "/approvals",
+    APPLICATION: (id: string) => `/approvals/application/${id}`,
+  },
 } as const
