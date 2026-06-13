@@ -68,15 +68,15 @@ export const useEmployeeMaster = () => {
     setActiveTab(tab)
     if (tab === "all") {
       const newQuery = { ...query, page: 1 }
-      delete newQuery.employeeType
+      delete newQuery.type
       delete newQuery.status
       setQuery(newQuery)
     } else if (tab === EMPLOYEE_STATUS.TERMINATED) {
       const newQuery = { ...query, page: 1, status: EMPLOYEE_STATUS.TERMINATED as EmployeeStatus }
-      delete newQuery.employeeType
+      delete newQuery.type
       setQuery(newQuery)
     } else {
-      const newQuery = { ...query, page: 1, employeeType: tab }
+      const newQuery = { ...query, page: 1, type: tab }
       delete newQuery.status
       setQuery(newQuery)
     }
