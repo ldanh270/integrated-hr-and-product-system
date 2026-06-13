@@ -1,4 +1,4 @@
-import { DataTableToolbar, PageCard, PageHeader } from "@/components/common"
+import { AppPagination, DataTableToolbar, PageCard, PageHeader } from "@/components/common"
 import { CreatePayslipTemplateForm } from "@/components/payroll/CreatePayslipTemplateForm"
 import { Button } from "@/components/ui/button"
 import {
@@ -15,13 +15,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -46,6 +39,8 @@ export default function PayslipTemplates() {
   const [selectedTemplate, setSelectedTemplate] = useState<IPayslipTemplate | null>(null)
   const [templateToDelete, setTemplateToDelete] = useState<IPayslipTemplate | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10)
 
   const { data: templates, isLoading } = usePayslipTemplates()
   const { mutateAsync: deleteTemplate, isPending: isDeleting } = useDeletePayslipTemplate()
@@ -104,6 +99,9 @@ export default function PayslipTemplates() {
       template.name.toLowerCase().includes(searchTerm.toLowerCase()),
     ) || []
 
+  const paginatedTemplates = filteredTemplates.slice((page - 1) * limit, page * limit)
+  const totalPages = Math.ceil(filteredTemplates.length / limit)
+
   return (
     <div className="container px-6 py-6">
       <PageHeader
@@ -119,10 +117,20 @@ export default function PayslipTemplates() {
       <PageCard className="overflow-hidden p-0" noBorder={false}>
         <DataTableToolbar
           searchQuery={searchTerm}
-          onSearchChange={setSearchTerm}
+          onSearchChange={(val) => {
+            setSearchTerm(val)
+            setPage(1)
+          }}
           searchPlaceholder="Tìm kiếm mã mẫu, tên mẫu..."
           actions={
-            <Button variant="ghost" size="sm" onClick={() => setSearchTerm("")}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearchTerm("")
+                setPage(1)
+              }}
+            >
               Thiết lập lại
             </Button>
           }
@@ -157,7 +165,7 @@ export default function PayslipTemplates() {
                     Đang tải dữ liệu...
                   </TableCell>
                 </TableRow>
-              ) : filteredTemplates.length === 0 ? (
+              ) : paginatedTemplates.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={6}
@@ -167,10 +175,10 @@ export default function PayslipTemplates() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredTemplates.map((template, index) => (
+                paginatedTemplates.map((template, index) => (
                   <TableRow key={template.id} className="hover:bg-muted/50 transition-colors">
                     <TableCell className="text-center px-4 py-3 text-muted-foreground">
-                      {index + 1}
+                      {(page - 1) * limit + index + 1}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-foreground font-medium whitespace-nowrap">
                       <button
@@ -218,38 +226,19 @@ export default function PayslipTemplates() {
           </Table>
         </div>
 
-        {/* Pagination Mockup */}
-        <div className="p-4 border-t border-border flex items-center justify-end gap-4 text-sm text-muted-foreground bg-muted/20">
-          <div className="flex items-center gap-2">
-            <span>Hiển thị</span>
-            <Select defaultValue="50">
-              <SelectTrigger className="w-17.5 h-8 bg-background">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <span>
-            Hiển thị từ 1 - {filteredTemplates.length} trên tổng {filteredTemplates.length}
-          </span>
-          <div className="flex items-center gap-1">
-            <Button variant="outline" size="sm" disabled>
-              Trước
-            </Button>
-            <div className="flex items-center gap-1">
-              <button className="w-8 h-8 rounded-md bg-primary text-primary-foreground font-medium flex items-center justify-center">
-                1
-              </button>
-            </div>
-            <Button variant="outline" size="sm" disabled>
-              Sau
-            </Button>
-          </div>
-        </div>
+        {filteredTemplates.length > 0 && (
+          <AppPagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            totalItems={filteredTemplates.length}
+            itemsPerPage={limit}
+            onItemsPerPageChange={(newLimit) => {
+              setLimit(newLimit)
+              setPage(1)
+            }}
+          />
+        )}
       </PageCard>
 
       <Dialog open={!!templateToDelete} onOpenChange={() => setTemplateToDelete(null)}>

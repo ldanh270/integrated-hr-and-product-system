@@ -1,3 +1,4 @@
+import { AppPagination } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -32,6 +33,12 @@ export function PayrollHistoryTable({ payrolls, isLoading }: PayrollHistoryTable
   const { mutate: approvePayroll } = useApprovePayroll()
   const { mutate: rejectPayroll } = useRejectPayroll()
   const [selectedPayrollId, setSelectedPayrollId] = useState<string | null>(null)
+
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10)
+
+  const paginatedPayrolls = payrolls?.slice((page - 1) * limit, page * limit) || []
+  const totalPages = payrolls ? Math.ceil(payrolls.length / limit) : 0
 
   const handleApprove = (id: string) => {
     approvePayroll(id)
@@ -92,14 +99,14 @@ export function PayrollHistoryTable({ payrolls, isLoading }: PayrollHistoryTable
             </TableRow>
           </TableHeader>
           <TableBody>
-            {payrolls.map((payroll, index) => {
+            {paginatedPayrolls.map((payroll, index) => {
               const isDraft = payroll.status === PAYROLL_STATUS.DRAFT
               const isApproved = payroll.status === PAYROLL_STATUS.APPROVED
 
               return (
                 <TableRow key={payroll.id}>
                   <TableCell className="px-4 py-3 text-center text-muted-foreground">
-                    {index + 1}
+                    {(page - 1) * limit + index + 1}
                   </TableCell>
                   <TableCell className="px-4 py-3">
                     <button
@@ -172,6 +179,22 @@ export function PayrollHistoryTable({ payrolls, isLoading }: PayrollHistoryTable
           </TableBody>
         </Table>
       </div>
+
+      {payrolls && payrolls.length > 0 && (
+        <div className="bg-card rounded-xl border border-t-0 rounded-t-none">
+          <AppPagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            totalItems={payrolls.length}
+            itemsPerPage={limit}
+            onItemsPerPageChange={(newLimit) => {
+              setLimit(newLimit)
+              setPage(1)
+            }}
+          />
+        </div>
+      )}
 
       <PayrollDetailSheet
         payrollId={selectedPayrollId}

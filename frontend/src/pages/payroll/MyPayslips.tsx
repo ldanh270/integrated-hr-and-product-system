@@ -1,4 +1,4 @@
-import { PageCard, PageHeader } from "@/components/common"
+import { AppPagination, PageCard, PageHeader } from "@/components/common"
 import PayslipSheet from "@/components/features/payroll/payslip-sheet"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -23,6 +23,11 @@ export default function MyPayslips() {
   const { data: payslips, isLoading, isError } = useMyPayslips()
 
   const [selectedPayslip, setSelectedPayslip] = useState<IPayslip | null>(null)
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10)
+
+  const paginatedPayslips = payslips?.slice((page - 1) * limit, page * limit) || []
+  const totalPages = payslips ? Math.ceil(payslips.length / limit) : 0
 
   return (
     <div className="container px-6 py-6">
@@ -77,7 +82,7 @@ export default function MyPayslips() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : !payslips || payslips.length === 0 ? (
+              ) : paginatedPayslips.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="h-32 text-center">
                     <div className="flex flex-col items-center justify-center space-y-2">
@@ -89,14 +94,14 @@ export default function MyPayslips() {
                   </TableCell>
                 </TableRow>
               ) : (
-                payslips.map((payslip, index) => (
+                paginatedPayslips.map((payslip, index) => (
                   <TableRow
                     key={payslip.id}
                     className="hover:bg-muted/30 cursor-pointer transition-colors group"
                     onClick={() => setSelectedPayslip(payslip)}
                   >
                     <TableCell className="px-4 py-3 text-muted-foreground text-center">
-                      {index + 1}
+                      {(page - 1) * limit + index + 1}
                     </TableCell>
                     <TableCell className="px-4 py-3">
                       <div className="flex items-center gap-3">
@@ -147,6 +152,20 @@ export default function MyPayslips() {
             </TableBody>
           </Table>
         </div>
+
+        {payslips && payslips.length > 0 && (
+          <AppPagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            totalItems={payslips.length}
+            itemsPerPage={limit}
+            onItemsPerPageChange={(newLimit) => {
+              setLimit(newLimit)
+              setPage(1)
+            }}
+          />
+        )}
       </PageCard>
 
       <PayslipSheet

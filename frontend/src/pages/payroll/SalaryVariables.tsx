@@ -1,4 +1,4 @@
-import { PageCard, PageHeader, useConfirm } from "@/components/common"
+import { AppPagination, PageCard, PageHeader, useConfirm } from "@/components/common"
 import { SalaryVariableFormPage } from "@/components/features/payroll/salary-variable-form-page"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -99,6 +99,12 @@ export default function SalaryVariablesPage() {
   // View state pattern
   const [view, setView] = useState<"list" | "create" | "edit">("list")
   const [selectedItem, setSelectedItem] = useState<ISalaryVariable | null>(null)
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10)
+
+  const combinedVariables = [...SYSTEM_VARIABLES, ...(variables || [])] as VariableRow[]
+  const paginatedVariables = combinedVariables.slice((page - 1) * limit, page * limit)
+  const totalPages = Math.ceil(combinedVariables.length / limit)
 
   const handleOpenCreate = () => {
     setSelectedItem(null)
@@ -185,76 +191,86 @@ export default function SalaryVariablesPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                ([...SYSTEM_VARIABLES, ...(variables || [])] as VariableRow[]).map(
-                  (variable, index) => (
-                    <TableRow
-                      key={variable.id}
-                      className={`hover:bg-muted/30 ${variable.isSystem ? "bg-muted/10" : ""}`}
-                    >
-                      <TableCell className="px-4 py-3 text-muted-foreground text-center">
-                        {index + 1}
-                      </TableCell>
-                      <TableCell className="px-4 py-3 font-mono font-medium text-primary/80 whitespace-nowrap">
-                        {variable.code}
-                      </TableCell>
-                      <TableCell className="px-4 py-3 whitespace-nowrap">
-                        <div className="font-medium text-foreground">{variable.name}</div>
-                        {variable.description && (
-                          <div className="text-muted-foreground line-clamp-1 mt-0.5">
-                            {variable.description}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="px-4 py-3 whitespace-nowrap">
-                        {typeof variable.value === "number"
-                          ? variable.value.toLocaleString()
-                          : variable.value}
-                      </TableCell>
-                      <TableCell className="px-4 py-3 whitespace-nowrap">
-                        <Badge
-                          variant={variable.isActive ? "default" : "secondary"}
-                          className="text-[10px] font-semibold rounded-full"
-                        >
-                          {variable.isSystem
-                            ? "Hệ thống"
-                            : variable.isActive
-                              ? "Hoạt động"
-                              : "Vô hiệu"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="px-4 py-3 text-right">
-                        {!variable.isSystem ? (
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 rounded-full"
-                              onClick={() => handleOpenEdit(variable as ISalaryVariable)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 rounded-full text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => handleDelete(variable.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground italic px-2">
-                            Mặc định
-                          </span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ),
-                )
+                paginatedVariables.map((variable, index) => (
+                  <TableRow
+                    key={variable.id}
+                    className={`hover:bg-muted/30 ${variable.isSystem ? "bg-muted/10" : ""}`}
+                  >
+                    <TableCell className="px-4 py-3 text-muted-foreground text-center">
+                      {(page - 1) * limit + index + 1}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 font-mono font-medium text-primary/80 whitespace-nowrap">
+                      {variable.code}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 whitespace-nowrap">
+                      <div className="font-medium text-foreground">{variable.name}</div>
+                      {variable.description && (
+                        <div className="text-muted-foreground line-clamp-1 mt-0.5">
+                          {variable.description}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 whitespace-nowrap">
+                      {typeof variable.value === "number"
+                        ? variable.value.toLocaleString()
+                        : variable.value}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 whitespace-nowrap">
+                      <Badge
+                        variant={variable.isActive ? "default" : "secondary"}
+                        className="text-[10px] font-semibold rounded-full"
+                      >
+                        {variable.isSystem
+                          ? "Hệ thống"
+                          : variable.isActive
+                            ? "Hoạt động"
+                            : "Vô hiệu"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-right">
+                      {!variable.isSystem ? (
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full"
+                            onClick={() => handleOpenEdit(variable as ISalaryVariable)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDelete(variable.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic px-2">Mặc định</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>
         </div>
+
+        {combinedVariables.length > 0 && (
+          <AppPagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            totalItems={combinedVariables.length}
+            itemsPerPage={limit}
+            onItemsPerPageChange={(newLimit) => {
+              setLimit(newLimit)
+              setPage(1)
+            }}
+          />
+        )}
       </PageCard>
     </div>
   )
