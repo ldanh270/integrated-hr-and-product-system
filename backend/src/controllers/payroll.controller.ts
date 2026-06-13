@@ -92,7 +92,7 @@ export class PayrollController {
   }
   async getEmployeePayslips(req: Request, res: Response, next: NextFunction) {
     try {
-      const { empId: employeeId } = req.body
+      const employeeId = req.params.empId as string
       // Just reuse getMyPayslips logic since it fetches payslips for a specific employeeId
       const payslips = await this.service.getMyPayslips(employeeId)
       res.status(HttpStatusCode.OK).json({ data: payslips })

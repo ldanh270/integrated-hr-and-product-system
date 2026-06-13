@@ -1,4 +1,4 @@
-import { PageCard, PageHeader } from "@/components/common"
+import { AppPagination, PageCard, PageHeader } from "@/components/common"
 import { SalaryComponentFormPage } from "@/components/features/payroll/salary-component-form-page"
 import { Button } from "@/components/ui/button"
 import {
@@ -31,6 +31,11 @@ export default function SalaryComponents() {
 
   const [view, setView] = useState<"list" | "create" | "edit">("list")
   const [selectedComponent, setSelectedComponent] = useState<ISalaryComponent | null>(null)
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10)
+
+  const paginatedComponents = components?.slice((page - 1) * limit, page * limit) || []
+  const totalPages = components ? Math.ceil(components.length / limit) : 0
 
   const handleCreate = () => {
     setSelectedComponent(null)
@@ -108,17 +113,17 @@ export default function SalaryComponents() {
                     Lỗi khi tải danh sách thành phần lương.
                   </TableCell>
                 </TableRow>
-              ) : !components || components.length === 0 ? (
+              ) : paginatedComponents.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                     Chưa có thành phần lương nào được cấu hình.
                   </TableCell>
                 </TableRow>
               ) : (
-                components.map((comp, index) => (
+                paginatedComponents.map((comp, index) => (
                   <TableRow key={comp.id} className="cursor-pointer hover:bg-muted/30">
                     <TableCell className="px-4 py-3 text-muted-foreground text-center">
-                      {index + 1}
+                      {(page - 1) * limit + index + 1}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-foreground font-medium whitespace-nowrap">
                       <button
@@ -164,6 +169,20 @@ export default function SalaryComponents() {
             </TableBody>
           </Table>
         </div>
+
+        {components && components.length > 0 && (
+          <AppPagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            totalItems={components.length}
+            itemsPerPage={limit}
+            onItemsPerPageChange={(newLimit) => {
+              setLimit(newLimit)
+              setPage(1)
+            }}
+          />
+        )}
       </PageCard>
     </div>
   )
