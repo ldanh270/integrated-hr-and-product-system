@@ -1,4 +1,4 @@
-import { AppPagination, PageCard, PageHeader } from "@/components/common"
+import { AppPagination, DataTableToolbar, PageCard, PageHeader } from "@/components/common"
 import { SalaryComponentFormPage } from "@/components/features/payroll/salary-component-form-page"
 import { Button } from "@/components/ui/button"
 import {
@@ -31,11 +31,18 @@ export default function SalaryComponents() {
 
   const [view, setView] = useState<"list" | "create" | "edit">("list")
   const [selectedComponent, setSelectedComponent] = useState<ISalaryComponent | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
 
-  const paginatedComponents = components?.slice((page - 1) * limit, page * limit) || []
-  const totalPages = components ? Math.ceil(components.length / limit) : 0
+  const filteredComponents =
+    components?.filter((c) => {
+      const s = searchTerm.toLowerCase()
+      return c.name.toLowerCase().includes(s) || c.formula.toLowerCase().includes(s)
+    }) || []
+
+  const paginatedComponents = filteredComponents.slice((page - 1) * limit, page * limit)
+  const totalPages = Math.ceil(filteredComponents.length / limit)
 
   const handleCreate = () => {
     setSelectedComponent(null)
@@ -75,6 +82,15 @@ export default function SalaryComponents() {
       />
 
       <PageCard className="overflow-hidden p-0" noBorder={false}>
+        <DataTableToolbar
+          searchQuery={searchTerm}
+          onSearchChange={(val) => {
+            setSearchTerm(val)
+            setPage(1)
+          }}
+          searchPlaceholder="Tìm kiếm tên, công thức..."
+        />
+
         <div className="overflow-x-auto">
           <Table className="text-sm">
             <TableHeader className="bg-muted/40">
@@ -170,12 +186,12 @@ export default function SalaryComponents() {
           </Table>
         </div>
 
-        {components && components.length > 0 && (
+        {filteredComponents.length > 0 && (
           <AppPagination
             currentPage={page}
             totalPages={totalPages}
             onPageChange={setPage}
-            totalItems={components.length}
+            totalItems={filteredComponents.length}
             itemsPerPage={limit}
             onItemsPerPageChange={(newLimit) => {
               setLimit(newLimit)

@@ -1,4 +1,10 @@
-import { AppPagination, PageCard, PageHeader, useConfirm } from "@/components/common"
+import {
+  AppPagination,
+  DataTableToolbar,
+  PageCard,
+  PageHeader,
+  useConfirm,
+} from "@/components/common"
 import { SalaryVariableFormPage } from "@/components/features/payroll/salary-variable-form-page"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -99,12 +105,19 @@ export default function SalaryVariablesPage() {
   // View state pattern
   const [view, setView] = useState<"list" | "create" | "edit">("list")
   const [selectedItem, setSelectedItem] = useState<ISalaryVariable | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
 
   const combinedVariables = [...SYSTEM_VARIABLES, ...(variables || [])] as VariableRow[]
-  const paginatedVariables = combinedVariables.slice((page - 1) * limit, page * limit)
-  const totalPages = Math.ceil(combinedVariables.length / limit)
+
+  const filteredVariables = combinedVariables.filter((v) => {
+    const s = searchTerm.toLowerCase()
+    return v.code.toLowerCase().includes(s) || v.name.toLowerCase().includes(s)
+  })
+
+  const paginatedVariables = filteredVariables.slice((page - 1) * limit, page * limit)
+  const totalPages = Math.ceil(filteredVariables.length / limit)
 
   const handleOpenCreate = () => {
     setSelectedItem(null)
@@ -159,6 +172,15 @@ export default function SalaryVariablesPage() {
       />
 
       <PageCard className="overflow-hidden p-0 rounded-xl" noBorder={false}>
+        <DataTableToolbar
+          searchQuery={searchTerm}
+          onSearchChange={(val) => {
+            setSearchTerm(val)
+            setPage(1)
+          }}
+          searchPlaceholder="Tìm kiếm mã biến, tên biến..."
+        />
+
         <div className="overflow-x-auto">
           <Table className="text-sm">
             <TableHeader className="bg-muted/40">
@@ -258,12 +280,12 @@ export default function SalaryVariablesPage() {
           </Table>
         </div>
 
-        {combinedVariables.length > 0 && (
+        {filteredVariables.length > 0 && (
           <AppPagination
             currentPage={page}
             totalPages={totalPages}
             onPageChange={setPage}
-            totalItems={combinedVariables.length}
+            totalItems={filteredVariables.length}
             itemsPerPage={limit}
             onItemsPerPageChange={(newLimit) => {
               setLimit(newLimit)

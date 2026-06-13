@@ -1,4 +1,4 @@
-import { AppPagination, PageCard, PageHeader } from "@/components/common"
+import { AppPagination, DataTableToolbar, PageCard, PageHeader } from "@/components/common"
 import { PayslipDetailPage } from "@/components/features/payroll/payslip-detail-page"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -24,11 +24,21 @@ export default function MyPayslips() {
 
   const [view, setView] = useState<"list" | "detail">("list")
   const [selectedPayslip, setSelectedPayslip] = useState<IPayslip | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
 
-  const paginatedPayslips = payslips?.slice((page - 1) * limit, page * limit) || []
-  const totalPages = payslips ? Math.ceil(payslips.length / limit) : 0
+  const filteredPayslips =
+    payslips?.filter((p) => {
+      const s = searchTerm.toLowerCase()
+      const periodStr = `${p.periodMonth}/${p.periodYear}`
+      const periodStrZero = `${String(p.periodMonth).padStart(2, "0")}/${p.periodYear}`
+      const statusStr = p.status ? PAYROLL_STATUS_LABELS[p.status].toLowerCase() : ""
+      return periodStr.includes(s) || periodStrZero.includes(s) || statusStr.includes(s)
+    }) || []
+
+  const paginatedPayslips = filteredPayslips.slice((page - 1) * limit, page * limit)
+  const totalPages = Math.ceil(filteredPayslips.length / limit)
 
   const handleCloseForm = () => {
     setView("list")
@@ -47,6 +57,15 @@ export default function MyPayslips() {
       />
 
       <PageCard className="overflow-hidden p-0" noBorder={false}>
+        <DataTableToolbar
+          searchQuery={searchTerm}
+          onSearchChange={(val) => {
+            setSearchTerm(val)
+            setPage(1)
+          }}
+          searchPlaceholder="Tìm kiếm theo tháng/năm, trạng thái..."
+        />
+
         <div className="overflow-x-auto">
           <Table className="text-sm">
             <TableHeader className="bg-muted/40">
@@ -166,12 +185,12 @@ export default function MyPayslips() {
           </Table>
         </div>
 
-        {payslips && payslips.length > 0 && (
+        {filteredPayslips.length > 0 && (
           <AppPagination
             currentPage={page}
             totalPages={totalPages}
             onPageChange={setPage}
-            totalItems={payslips.length}
+            totalItems={filteredPayslips.length}
             itemsPerPage={limit}
             onItemsPerPageChange={(newLimit) => {
               setLimit(newLimit)

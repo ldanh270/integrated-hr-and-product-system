@@ -1,4 +1,4 @@
-import { AppPagination } from "@/components/common"
+import { AppPagination, DataTableToolbar } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -33,12 +33,27 @@ export function PayrollHistoryTable({ payrolls, isLoading }: PayrollHistoryTable
   const { mutate: approvePayroll } = useApprovePayroll()
   const { mutate: rejectPayroll } = useRejectPayroll()
   const [selectedPayrollId, setSelectedPayrollId] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
 
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
 
-  const paginatedPayrolls = payrolls?.slice((page - 1) * limit, page * limit) || []
-  const totalPages = payrolls ? Math.ceil(payrolls.length / limit) : 0
+  const filteredPayrolls =
+    payrolls?.filter((p) => {
+      const s = searchTerm.toLowerCase()
+      const periodStr = `${p.periodMonth}/${p.periodYear}`
+      const periodStrZero = `${String(p.periodMonth).padStart(2, "0")}/${p.periodYear}`
+      const statusStr = PAYROLL_STATUS_LABELS[p.status]?.toLowerCase() || ""
+      return (
+        p.id.toLowerCase().includes(s) ||
+        periodStr.includes(s) ||
+        periodStrZero.includes(s) ||
+        statusStr.includes(s)
+      )
+    }) || []
+
+  const paginatedPayrolls = filteredPayrolls.slice((page - 1) * limit, page * limit)
+  const totalPages = Math.ceil(filteredPayrolls.length / limit)
 
   const handleApprove = (id: string) => {
     approvePayroll(id)
@@ -71,6 +86,14 @@ export function PayrollHistoryTable({ payrolls, isLoading }: PayrollHistoryTable
 
   return (
     <>
+      <DataTableToolbar
+        searchQuery={searchTerm}
+        onSearchChange={(val) => {
+          setSearchTerm(val)
+          setPage(1)
+        }}
+        searchPlaceholder="Tìm kiếm mã, tháng/năm, trạng thái..."
+      />
       <div className="rounded-xl bg-card overflow-hidden">
         <Table>
           <TableHeader className="bg-muted/50">
@@ -180,13 +203,13 @@ export function PayrollHistoryTable({ payrolls, isLoading }: PayrollHistoryTable
         </Table>
       </div>
 
-      {payrolls && payrolls.length > 0 && (
+      {filteredPayrolls.length > 0 && (
         <div className="bg-card rounded-xl border border-t-0 rounded-t-none">
           <AppPagination
             currentPage={page}
             totalPages={totalPages}
             onPageChange={setPage}
-            totalItems={payrolls.length}
+            totalItems={filteredPayrolls.length}
             itemsPerPage={limit}
             onItemsPerPageChange={(newLimit) => {
               setLimit(newLimit)
