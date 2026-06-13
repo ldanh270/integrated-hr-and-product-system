@@ -36,6 +36,22 @@ export const PASSWORD_RESET_STATUSES = [
   PASSWORD_RESET_STATUS.EXPIRED,
 ] as const
 
+export const ACTIVITY_CATEGORY = {
+  AUTH: "auth",
+  ROLE: "role",
+  SECURITY: "security",
+} as const
+
+export const ACTIVITY_ACTION = {
+  LOGIN: "login",
+  LOGOUT: "logout",
+  FAILED_LOGIN: "failed_login",
+  ROLE_ASSIGNED: "role_assigned",
+  ROLE_REVOKED: "role_revoked",
+  ACCOUNT_LOCKED: "account_locked",
+  ACCOUNT_UNLOCKED: "account_unlocked",
+} as const
+
 export const AUTH_ERRORS = {
   MISSING_TOKEN: { message: "Authorization header missing or invalid", code: "UNAUTHORIZED" },
   TOKEN_EXPIRED: { message: "Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.", code: "TOKEN_EXPIRED" },
