@@ -20,6 +20,10 @@ type PrismaTaskWithRelations = PrismaTask & {
   } | null
   assignee?: PrismaEmployee | null
   createdBy?: PrismaEmployee | null
+  category?: {
+    id: string
+    name: string
+  } | null
 }
 
 export class PrismaTaskRepository extends BaseRepository implements ITaskRepository {
@@ -49,6 +53,13 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
       progress: task.progress,
       createdAt: task.createdAt,
       updatedAt: task.updatedAt,
+      categoryId: task.categoryId,
+      category: task.category
+        ? {
+            id: task.category.id,
+            name: task.category.name,
+          }
+        : null,
       project: task.project
         ? {
             id: task.project.id,
@@ -93,6 +104,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
         },
         assignee: true,
         createdBy: true,
+        category: true,
       },
     })
     return task ? this.mapToDomain(task as any) : null
@@ -166,6 +178,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
           },
           assignee: true,
           createdBy: true,
+          category: true,
         },
       }),
     ])
@@ -200,6 +213,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
         dueDate: data.dueDate ? new Date(data.dueDate) : null,
         estimatedTime: data.estimatedTime,
         progress: data.progress || 0,
+        categoryId: data.categoryId,
       },
       include: {
         project: {
@@ -212,6 +226,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
         },
         assignee: true,
         createdBy: true,
+        category: true,
       },
     })
     return this.mapToDomain(task as any)
@@ -236,6 +251,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
       completedAt: data.completedAt ? new Date(data.completedAt) : undefined,
       estimatedTime: data.estimatedTime,
       progress: data.progress,
+      categoryId: data.categoryId,
     }
 
     if (data.startDate === null) updateData.startDate = null
@@ -243,10 +259,13 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     if (data.assigneeId === null) updateData.assigneeId = null
     if (data.completedAt === null) updateData.completedAt = null
     if (data.estimatedTime === null) updateData.estimatedTime = null
+    if (data.categoryId === null) updateData.categoryId = null
 
-    // Automatically set completedAt when switching status to Done
+    // Automatically set completedAt when switching status to Done, or clear it when moving away from Done
     if (data.status === "done" && !data.completedAt) {
       updateData.completedAt = new Date()
+    } else if (data.status && data.status !== "done") {
+      updateData.completedAt = null
     }
 
     const task = await this.prisma.task.update({
@@ -263,6 +282,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
         },
         assignee: true,
         createdBy: true,
+        category: true,
       },
     })
     return this.mapToDomain(task as any)
