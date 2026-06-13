@@ -1,6 +1,5 @@
-import { PageHeader } from "@/components/common"
+import { EntityFormPage, PageHeader } from "@/components/common"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
   Form,
@@ -21,31 +20,25 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { usePayrollSettings, useUpdatePayrollSettings } from "@/hooks/payroll/use-payroll-settings"
+import {
+  type SettingsFormValues,
+  usePayrollCycleForm,
+} from "@/hooks/payroll/use-payroll-cycle-form"
+import { usePayrollSettings } from "@/hooks/payroll/use-payroll-settings"
 import type { IPayrollSettings } from "@/types/payroll.types"
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { CalendarClock, Info, Loader2, Settings2 } from "lucide-react"
-import { useForm, useWatch } from "react-hook-form"
-import { toast } from "sonner"
-import { z } from "zod"
+import { CalendarClock, Info, Settings2 } from "lucide-react"
+import { type Control, useWatch } from "react-hook-form"
+import { useNavigate } from "react-router-dom"
 
-const settingsSchema = z.object({
-  triggerDay: z.number().min(1).max(31, "Ngày chạy phải từ 1 đến 31"),
-  triggerHour: z.number().min(0).max(23),
-  triggerMinute: z.number().min(0).max(59),
-})
-
-type SettingsFormValues = z.infer<typeof settingsSchema>
-
-// --- Sub-components (SOLID Principles) ---
+// --- Sub-components ---
 
 function CycleContextPanel() {
   return (
     <div className="p-8 md:p-10 border-b md:border-b-0 md:border-r border-border bg-muted/20 md:w-1/3 flex flex-col gap-6">
       <div>
         <div className="flex items-center gap-2 mb-4">
-          <div className="h-8 w-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
             <Settings2 className="h-4 w-4 text-primary" strokeWidth={2} />
           </div>
           <h3 className="text-lg font-medium tracking-tight">Cấu hình hệ thống</h3>
@@ -84,18 +77,15 @@ function CycleContextPanel() {
   )
 }
 
-function SchedulePreviewBadge({ control }: { control: any }) {
-  const triggerDay = useWatch({
-    control,
-    name: "triggerDay",
-  })
+function SchedulePreviewBadge({ control }: { control: Control<SettingsFormValues> }) {
+  const triggerDay = useWatch({ control, name: "triggerDay" })
   const triggerHour = useWatch({ control, name: "triggerHour" })
   const triggerMinute = useWatch({ control, name: "triggerMinute" })
 
   return (
     <Badge
       variant="secondary"
-      className="font-normal text-xs px-3 py-1 bg-primary/5 text-primary border-primary/10"
+      className="font-normal text-xs px-3 py-1 bg-primary/5 text-primary border-primary/10 rounded-full"
     >
       Kích hoạt ngày {triggerDay || "..."} hàng tháng lúc{" "}
       {triggerHour?.toString().padStart(2, "0") || "00"}:
@@ -104,7 +94,7 @@ function SchedulePreviewBadge({ control }: { control: any }) {
   )
 }
 
-function TriggerTimeField({ control }: { control: any }) {
+function TriggerTimeField({ control }: { control: Control<SettingsFormValues> }) {
   return (
     <div className="space-y-4">
       <FormLabel className="text-sm font-medium text-foreground block">
@@ -121,13 +111,13 @@ function TriggerTimeField({ control }: { control: any }) {
                 value={field.value?.toString()}
               >
                 <FormControl>
-                  <SelectTrigger className="w-28 border-border h-10 shadow-sm transition-shadow hover:shadow-md focus:shadow-md">
+                  <SelectTrigger className="w-28 rounded-full border-border h-10 shadow-sm transition-shadow hover:shadow-md focus:shadow-md">
                     <SelectValue placeholder="Giờ" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent position="popper" className="max-h-64!">
+                <SelectContent position="popper" className="max-h-64 rounded-xl">
                   {Array.from({ length: 24 }).map((_, i) => (
-                    <SelectItem key={i} value={i.toString()}>
+                    <SelectItem key={i} value={i.toString()} className="rounded-lg">
                       {i.toString().padStart(2, "0")} Giờ
                     </SelectItem>
                   ))}
@@ -148,13 +138,13 @@ function TriggerTimeField({ control }: { control: any }) {
                 value={field.value?.toString()}
               >
                 <FormControl>
-                  <SelectTrigger className="w-28 border-border h-10 shadow-sm transition-shadow hover:shadow-md focus:shadow-md">
+                  <SelectTrigger className="w-28 rounded-full border-border h-10 shadow-sm transition-shadow hover:shadow-md focus:shadow-md">
                     <SelectValue placeholder="Phút" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent position="popper" className="max-h-64!">
+                <SelectContent position="popper" className="max-h-64 rounded-xl">
                   {Array.from({ length: 60 }).map((_, i) => (
-                    <SelectItem key={i} value={i.toString()}>
+                    <SelectItem key={i} value={i.toString()} className="rounded-lg">
                       {i.toString().padStart(2, "0")} Phút
                     </SelectItem>
                   ))}
@@ -165,40 +155,45 @@ function TriggerTimeField({ control }: { control: any }) {
           )}
         />
       </div>
+      <FormDescription className="text-xs max-w-sm mt-1.5 leading-relaxed">
+        Nên chọn thời điểm ngoài giờ hành chính (ví dụ 00:00 hoặc 02:00 sáng) để không làm gián đoạn
+        trải nghiệm của nhân sự.
+      </FormDescription>
     </div>
   )
 }
 
-function TriggerDayField({ control }: { control: any }) {
+function TriggerDayField({ control }: { control: Control<SettingsFormValues> }) {
   return (
     <FormField
       control={control}
       name="triggerDay"
       render={({ field }) => (
-        <FormItem>
-          <FormLabel className="text-sm font-medium text-foreground">
-            Ngày kích hoạt hằng tháng
-          </FormLabel>
+        <FormItem className="space-y-4">
+          <div className="space-y-1">
+            <FormLabel className="text-sm font-medium text-foreground">Ngày kích hoạt</FormLabel>
+            <FormDescription className="text-xs leading-relaxed max-w-md">
+              Ngày trong tháng mà hệ thống sẽ chốt công và tạo bảng lương. Thường là ngày 1 hoặc 5
+              hằng tháng.
+            </FormDescription>
+          </div>
           <Select
             onValueChange={(val) => field.onChange(Number(val))}
             value={field.value?.toString()}
           >
             <FormControl>
-              <SelectTrigger className="w-full sm:w-48 border-border h-10 shadow-sm transition-shadow hover:shadow-md focus:shadow-md">
-                <SelectValue placeholder="Chọn ngày" />
+              <SelectTrigger className="w-full max-w-xs rounded-full border-border h-10 shadow-sm transition-shadow hover:shadow-md focus:shadow-md">
+                <SelectValue placeholder="Chọn ngày chạy (1-31)" />
               </SelectTrigger>
             </FormControl>
-            <SelectContent position="popper" className="max-h-64!">
+            <SelectContent position="popper" className="max-h-64 rounded-xl">
               {Array.from({ length: 31 }).map((_, i) => (
-                <SelectItem key={i + 1} value={(i + 1).toString()}>
-                  Ngày {i + 1}
+                <SelectItem key={i + 1} value={(i + 1).toString()} className="rounded-lg">
+                  Ngày {i + 1} hàng tháng
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <FormDescription className="text-xs text-muted-foreground mt-2">
-            Hệ thống sẽ chốt công của tháng liền trước vào ngày này.
-          </FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -208,119 +203,82 @@ function TriggerDayField({ control }: { control: any }) {
 
 function PayrollCycleSkeleton() {
   return (
-    <Card className="rounded-xl shadow-sm border-border overflow-hidden p-0">
-      <div className="flex flex-col md:flex-row">
-        <div className="p-8 md:p-10 border-b md:border-b-0 md:border-r border-border bg-muted/20 md:w-1/3 flex flex-col gap-6">
-          <Skeleton className="h-8 w-1/2" />
-          <Skeleton className="h-20 w-full" />
-          <Separator className="bg-border/50" />
-          <Skeleton className="h-16 w-full" />
-        </div>
-        <div className="p-8 md:p-10 md:w-2/3 bg-background flex flex-col justify-between min-h-100">
-          <div className="space-y-8">
-            <div className="space-y-3">
-              <Skeleton className="h-5 w-1/3" />
-              <Skeleton className="h-10 w-72" />
-              <Skeleton className="h-4 w-1/2" />
-            </div>
-            <div className="space-y-3">
-              <Skeleton className="h-5 w-1/4" />
-              <Skeleton className="h-10 w-40" />
-            </div>
+    <div className="container px-6 py-6 max-w-5xl">
+      <PageHeader
+        title="Chu kỳ lương"
+        description="Quản lý lịch trình tổng hợp và xử lý lương của doanh nghiệp."
+      />
+      <Card className="rounded-xl border-border overflow-hidden p-0 mt-6">
+        <div className="flex flex-col md:flex-row">
+          <div className="p-8 md:w-1/3 border-b md:border-b-0 md:border-r border-border">
+            <Skeleton className="h-6 w-3/4 mb-4 rounded-lg" />
+            <Skeleton className="h-4 w-full mb-2 rounded-lg" />
+            <Skeleton className="h-4 w-5/6 rounded-lg" />
           </div>
-          <div className="pt-8 mt-8">
-            <Skeleton className="h-10 w-32" />
+          <div className="p-8 md:w-2/3">
+            <Skeleton className="h-8 w-1/3 mb-8 rounded-lg" />
+            <Skeleton className="h-10 w-full max-w-xs mb-8 rounded-full" />
+            <Skeleton className="h-10 w-full max-w-sm rounded-full" />
           </div>
         </div>
-      </div>
-    </Card>
+      </Card>
+    </div>
   )
 }
 
 // --- Main Components ---
 
 function PayrollCycleForm({ settings }: { settings: IPayrollSettings }) {
-  const { mutateAsync: updateSettings, isPending: isUpdatingSettings } = useUpdatePayrollSettings()
-
-  const settingsForm = useForm<SettingsFormValues>({
-    resolver: zodResolver(settingsSchema),
-    defaultValues: {
-      triggerDay: settings.triggerDay || 5,
-      triggerHour: settings.triggerHour || 0,
-      triggerMinute: settings.triggerMinute || 0,
-    },
+  const navigate = useNavigate()
+  const { form, isPending, onSubmit } = usePayrollCycleForm({
+    initialData: settings,
   })
 
-  const onSettingsSubmit = async (values: SettingsFormValues) => {
-    try {
-      await updateSettings(values)
-      toast.success("Cập nhật cấu hình thành công")
-    } catch (err) {
-      const error = err as { response?: { data?: { message?: string } } }
-      toast.error(error.response?.data?.message || "Có lỗi xảy ra khi cập nhật")
-    }
-  }
-
   return (
-    <Card className="rounded-xl shadow-sm border-border overflow-hidden p-0">
-      <div className="flex flex-col md:flex-row">
-        <CycleContextPanel />
+    <EntityFormPage
+      title="Thiết lập Chu kỳ lương"
+      formId="payroll-cycle-form"
+      isReadOnly={false}
+      onBack={() => navigate(-1)}
+      isPending={isPending}
+      isDirty={form.formState.isDirty}
+      submitLabel="Lưu thay đổi"
+    >
+      <Form {...form}>
+        <form id="payroll-cycle-form" onSubmit={onSubmit} className="h-full">
+          <Card className="rounded-xl shadow-sm border-border overflow-hidden p-0">
+            <div className="flex flex-col md:flex-row">
+              <CycleContextPanel />
 
-        <div className="p-8 md:p-10 md:w-2/3 bg-background">
-          <Form {...settingsForm}>
-            <form
-              onSubmit={settingsForm.handleSubmit(onSettingsSubmit)}
-              className="flex flex-col h-full justify-between"
-            >
-              <div className="space-y-8">
-                <div className="flex items-center justify-between flex-wrap gap-4">
-                  <h3 className="text-lg font-medium tracking-tight">Thiết lập chu kỳ</h3>
-                  <SchedulePreviewBadge control={settingsForm.control} />
-                </div>
+              <div className="p-8 md:p-10 md:w-2/3 bg-background">
+                <div className="space-y-8">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <h3 className="text-lg font-medium tracking-tight">Chi tiết lịch trình</h3>
+                    <SchedulePreviewBadge control={form.control} />
+                  </div>
 
-                <Separator className="bg-border/50" />
+                  <Separator className="bg-border/50" />
 
-                <div className="max-w-2xl space-y-8">
-                  <TriggerDayField control={settingsForm.control} />
-                  <TriggerTimeField control={settingsForm.control} />
+                  <div className="max-w-2xl space-y-8">
+                    <TriggerDayField control={form.control} />
+                    <TriggerTimeField control={form.control} />
+                  </div>
                 </div>
               </div>
-
-              <div className="pt-8 mt-8 border-t border-border flex items-center justify-start">
-                <Button
-                  type="submit"
-                  disabled={isUpdatingSettings}
-                  className="h-10 px-6 text-sm font-medium shadow-sm transition-all hover:-translate-y-px active:translate-y-0"
-                >
-                  {isUpdatingSettings && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Lưu thay đổi
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </div>
-      </div>
-    </Card>
+            </div>
+          </Card>
+        </form>
+      </Form>
+    </EntityFormPage>
   )
 }
 
 export default function PayrollCycle() {
   const { data: settings, isLoading: isSettingsLoading } = usePayrollSettings()
 
-  return (
-    <div className="container px-6 py-6 max-w-5xl">
-      <PageHeader
-        title="Chu kỳ lương"
-        description="Quản lý lịch trình tổng hợp và xử lý lương của doanh nghiệp."
-      />
+  if (isSettingsLoading || !settings) {
+    return <PayrollCycleSkeleton />
+  }
 
-      <div className="mt-6">
-        {isSettingsLoading || !settings ? (
-          <PayrollCycleSkeleton />
-        ) : (
-          <PayrollCycleForm settings={settings} />
-        )}
-      </div>
-    </div>
-  )
+  return <PayrollCycleForm settings={settings} />
 }
