@@ -1,6 +1,7 @@
 import { SpentTimeController } from "@/controllers/spent-time.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
+import { rateLimiter } from "@/middlewares/rate-limit.middleware.ts"
 import { PrismaProjectRepository } from "@/repositories/project.repository.ts"
 import { PrismaSpentTimeRepository } from "@/repositories/spent-time.repository.ts"
 import { PrismaTaskRepository } from "@/repositories/task.repository.ts"
@@ -15,7 +16,8 @@ const repository = new PrismaSpentTimeRepository(prisma)
 const service = new SpentTimeService(repository, taskRepository, projectRepository)
 const controller = new SpentTimeController(service)
 
-// All spent time routes require authentication
+// All spent time routes require rate limiting and authentication
+spentTimeRoutes.use(rateLimiter)
 spentTimeRoutes.use(authenticate)
 
 spentTimeRoutes.get("/", controller.list)

@@ -151,10 +151,14 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
    * Creates a new spent time log
    */
   async create(data: CreateSpentTimeDto): Promise<SpentTime> {
+    if (!data.employeeId) {
+      throw new Error("Employee ID is required to create a spent time log")
+    }
+
     const record = await this.prisma.spentTime.create({
       data: {
         taskId: data.taskId,
-        employeeId: data.employeeId ?? "",
+        employeeId: data.employeeId,
         date: typeof data.date === "string" ? new Date(data.date) : data.date,
         hours: data.hours,
         comment: data.comment,

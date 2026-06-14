@@ -118,7 +118,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
         category: true,
       },
     })
-    return task ? this.mapToDomain(task as any) : null
+    return task ? this.mapToDomain(task as PrismaTaskWithRelations) : null
   }
 
   /**
@@ -195,7 +195,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     ])
 
     return {
-      data: tasks.map((t) => this.mapToDomain(t as any)),
+      data: tasks.map((t) => this.mapToDomain(t as PrismaTaskWithRelations)),
       meta: {
         total,
         page,
