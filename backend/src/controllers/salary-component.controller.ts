@@ -15,6 +15,14 @@ export class SalaryComponentController {
     this.validateFormula = this.validateFormula.bind(this)
   }
 
+  /**
+   * Process business logic for listComponents.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async listComponents(req: Request, res: Response, next: NextFunction) {
     try {
       const { type, isActive } = req.query
@@ -29,6 +37,15 @@ export class SalaryComponentController {
     }
   }
 
+  /**
+   * Process business logic for createComponent.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   * @throws AppError if a business logic error occurs or data is not found
+   */
   async createComponent(req: Request, res: Response, next: NextFunction) {
     try {
       const createdById = (req as AuthenticatedRequest).user.empId
@@ -42,6 +59,14 @@ export class SalaryComponentController {
     }
   }
 
+  /**
+   * Process business logic for updateComponent.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async updateComponent(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
@@ -52,6 +77,14 @@ export class SalaryComponentController {
     }
   }
 
+  /**
+   * Delete a salary component from the system configuration.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async deleteComponent(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
@@ -62,6 +95,14 @@ export class SalaryComponentController {
     }
   }
 
+  /**
+   * Analyze and validate the mathematical salary calculation formula.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async validateFormula(req: Request, res: Response, next: NextFunction) {
     try {
       const { formula } = req.body

@@ -13,10 +13,24 @@ import { AppError } from "@/utils/error.util.ts"
 export class PayslipTemplateService implements IPayslipTemplateService {
   constructor(private templateRepo: IPayslipTemplateRepository) {}
 
+  /**
+   * Process business logic for listTemplates.
+   *
+   * @param filter - The filter parameter
+   * @returns Returns the result of type Promise<PayslipTemplateWithComponents[]>
+   */
   async listTemplates(filter: { isActive?: boolean }): Promise<PayslipTemplateWithComponents[]> {
     return this.templateRepo.findAll(filter)
   }
 
+  /**
+   * Process business logic for createTemplate.
+   *
+   * @param data - The data parameter
+   * @param createdById - The createdById parameter
+   * @returns Returns the result of type Promise<PayslipTemplateWithComponents>
+   * @throws AppError if a business logic error occurs or data is not found
+   */
   async createTemplate(
     data: ICreatePayslipTemplateDTO,
     createdById: string,
@@ -32,6 +46,14 @@ export class PayslipTemplateService implements IPayslipTemplateService {
     return fullTemplate
   }
 
+  /**
+   * Process business logic for updateTemplate.
+   *
+   * @param id - The id parameter
+   * @param data - The data parameter
+   * @returns Returns the result of type Promise<PayslipTemplateWithComponents>
+   * @throws AppError if a business logic error occurs or data is not found
+   */
   async updateTemplate(
     id: string,
     data: IUpdatePayslipTemplateDTO,
@@ -47,6 +69,12 @@ export class PayslipTemplateService implements IPayslipTemplateService {
     return fullTemplate
   }
 
+  /**
+   * Delete a payslip template from the system.
+   *
+   * @param id - The id parameter
+   * @returns Returns nothing (void)
+   */
   async deleteTemplate(id: string): Promise<void> {
     return this.templateRepo.softDelete(id)
   }

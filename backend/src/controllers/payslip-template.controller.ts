@@ -14,6 +14,14 @@ export class PayslipTemplateController {
     this.deleteTemplate = this.deleteTemplate.bind(this)
   }
 
+  /**
+   * Process business logic for listTemplates.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async listTemplates(req: Request, res: Response, next: NextFunction) {
     try {
       const { isActive } = req.query
@@ -27,6 +35,15 @@ export class PayslipTemplateController {
     }
   }
 
+  /**
+   * Process business logic for createTemplate.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   * @throws AppError if a business logic error occurs or data is not found
+   */
   async createTemplate(req: Request, res: Response, next: NextFunction) {
     try {
       const createdById = (req as AuthenticatedRequest).user.empId
@@ -40,6 +57,14 @@ export class PayslipTemplateController {
     }
   }
 
+  /**
+   * Process business logic for updateTemplate.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async updateTemplate(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
@@ -50,6 +75,14 @@ export class PayslipTemplateController {
     }
   }
 
+  /**
+   * Delete a payslip template from the system.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async deleteTemplate(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string

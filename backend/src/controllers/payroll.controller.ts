@@ -15,6 +15,14 @@ export class PayrollController {
     this.getMyPayslips = this.getMyPayslips.bind(this)
   }
 
+  /**
+   * Initialize a new payroll for a specific month and year.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async generatePayroll(req: Request, res: Response, next: NextFunction) {
     try {
       const { month, year, name } = req.body
@@ -25,6 +33,14 @@ export class PayrollController {
     }
   }
 
+  /**
+   * Process business logic for getPayroll.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async getPayroll(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
@@ -35,6 +51,14 @@ export class PayrollController {
     }
   }
 
+  /**
+   * Process business logic for listPayrolls.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async listPayrolls(req: Request, res: Response, next: NextFunction) {
     try {
       const { status, year } = req.query
@@ -48,6 +72,14 @@ export class PayrollController {
     }
   }
 
+  /**
+   * Approve a payroll, changing its status to approved.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async approvePayroll(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
@@ -59,6 +91,14 @@ export class PayrollController {
     }
   }
 
+  /**
+   * Reject a payroll and record the rejection reason.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async rejectPayroll(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
@@ -71,6 +111,14 @@ export class PayrollController {
     }
   }
 
+  /**
+   * Handle the request to retrieve detailed payslip information for an employee.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async getPayslip(req: Request, res: Response, next: NextFunction) {
     try {
       const payrollId = req.params.id as string
@@ -82,6 +130,14 @@ export class PayrollController {
     }
   }
 
+  /**
+   * Process business logic for getMyPayslips.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async getMyPayslips(req: Request, res: Response, next: NextFunction) {
     try {
       const employeeId = (req as AuthenticatedRequest).user.empId
@@ -91,6 +147,14 @@ export class PayrollController {
       next(error)
     }
   }
+  /**
+   * Handle the request to retrieve the payslip history for an employee.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async getEmployeePayslips(req: Request, res: Response, next: NextFunction) {
     try {
       const employeeId = req.params.empId as string

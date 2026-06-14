@@ -22,10 +22,12 @@ export class EmployeeSalaryConfigController {
   }
 
   /**
-   * Gets the currently active salary configuration for an employee.
-   * @param req - Request object containing employee ID in params.
-   * @param res - Response object.
-   * @param next - Next function.
+   * Retrieve the active salary configuration for the employee at a specific time (defaults to current).
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
    */
   async getActiveConfig(req: Request, res: Response, next: NextFunction) {
     try {
@@ -38,10 +40,12 @@ export class EmployeeSalaryConfigController {
   }
 
   /**
-   * Gets the salary configuration history for an employee.
-   * @param req - Request object containing employee ID in params.
-   * @param res - Response object.
-   * @param next - Next function.
+   * Retrieve the configuration history for the employee.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
    */
   async getConfigHistory(req: Request, res: Response, next: NextFunction) {
     try {
@@ -54,10 +58,13 @@ export class EmployeeSalaryConfigController {
   }
 
   /**
-   * Assigns a new salary configuration to an employee.
-   * @param req - Request object containing employee ID in params and config in body.
-   * @param res - Response object.
-   * @param next - Next function.
+   * Assign a new salary configuration to the employee.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   * @throws AppError if a business logic error occurs or data is not found
    */
   async assignConfig(req: Request, res: Response, next: NextFunction) {
     try {

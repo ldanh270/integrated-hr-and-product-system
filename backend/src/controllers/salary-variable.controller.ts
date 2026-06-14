@@ -23,6 +23,14 @@ const updateSalaryVariableSchema = createSalaryVariableSchema.partial().extend({
 export class SalaryVariableController {
   constructor(private readonly service: ISalaryVariableService) {}
 
+  /**
+   * Process business logic for listVariables.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   public listVariables = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { isActive } = req.query
@@ -37,6 +45,14 @@ export class SalaryVariableController {
     }
   }
 
+  /**
+   * Process business logic for getVariable.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   public getVariable = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const variable = await this.service.getVariable(req.params.id as string)
@@ -46,6 +62,14 @@ export class SalaryVariableController {
     }
   }
 
+  /**
+   * Process business logic for createVariable.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   public createVariable = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const validatedData = createSalaryVariableSchema.parse(req.body)
@@ -57,6 +81,14 @@ export class SalaryVariableController {
     }
   }
 
+  /**
+   * Process business logic for updateVariable.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   public updateVariable = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const validatedData = updateSalaryVariableSchema.parse(req.body)
@@ -67,6 +99,14 @@ export class SalaryVariableController {
     }
   }
 
+  /**
+   * Delete a salary variable from the system configuration.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   public deleteVariable = async (req: Request, res: Response, next: NextFunction) => {
     try {
       await this.service.deleteVariable(req.params.id as string)

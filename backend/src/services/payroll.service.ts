@@ -39,6 +39,15 @@ export class PayrollService implements IPayrollService {
     private prisma: PrismaClient,
   ) {}
 
+  /**
+   * Initialize a new payroll for a specific month and year.
+   *
+   * @param month - The month parameter
+   * @param year - The year parameter
+   * @param name - The name parameter (optional)
+   * @returns Returns the result of type Promise<{ name: string; id: string; periodMonth: number; periodYear: number; status: $Enums.PayrollStatus; totalAmount: Decimal; approvedById: string | null; approvedAt: Date | null; rejectReason: string | null; createdAt: Date; updatedAt: Date; }>
+   * @throws AppError if a business logic error occurs or data is not found
+   */
   async generatePayroll(month: number, year: number, name?: string): Promise<Payroll> {
     const finalName = name || generateDefaultPayrollName(month, year)
     const existing = await this.payrollRepo.findByPeriod(month, year, finalName)
@@ -182,6 +191,15 @@ export class PayrollService implements IPayrollService {
     return { ...payroll, totalAmount }
   }
 
+  /**
+   * Process business logic for getPayroll.
+   *
+   * @param month - The month parameter
+   * @param year - The year parameter
+   * @param name - The name parameter (optional)
+   * @returns Returns the result of type Promise<{ name: string; id: string; periodMonth: number; periodYear: number; status: $Enums.PayrollStatus; totalAmount: Decimal; approvedById: string | null; approvedAt: Date | null; rejectReason: string | null; createdAt: Date; updatedAt: Date; }>
+   * @throws AppError if a business logic error occurs or data is not found
+   */
   async getPayroll(month: number, year: number, name?: string): Promise<Payroll> {
     const finalName = name || generateDefaultPayrollName(month, year)
     const payroll = await this.payrollRepo.findByPeriod(month, year, finalName)
@@ -194,6 +212,13 @@ export class PayrollService implements IPayrollService {
     return payroll
   }
 
+  /**
+   * Process business logic for getPayrollById.
+   *
+   * @param id - The id parameter
+   * @returns Returns the result of type Promise<any>
+   * @throws AppError if a business logic error occurs or data is not found
+   */
   async getPayrollById(id: string): Promise<any> {
     const payroll = await this.payrollRepo.findById(id)
     if (!payroll)
@@ -211,10 +236,23 @@ export class PayrollService implements IPayrollService {
     }
   }
 
+  /**
+   * Process business logic for listPayrolls.
+   *
+   * @param filter - The filter parameter
+   * @returns Returns the result of type Promise<{ name: string; id: string; periodMonth: number; periodYear: number; status: $Enums.PayrollStatus; totalAmount: Decimal; approvedById: string | null; approvedAt: Date | null; rejectReason: string | null; createdAt: Date; updatedAt: Date; }[]>
+   */
   async listPayrolls(filter: { status?: PayrollStatus; year?: number }): Promise<Payroll[]> {
     return this.payrollRepo.findAll(filter)
   }
 
+  /**
+   * Approve a payroll, changing its status to approved.
+   *
+   * @param payrollId - The payrollId parameter
+   * @param approverId - The approverId parameter
+   * @returns Returns the result of type Promise<{ name: string; id: string; periodMonth: number; periodYear: number; status: $Enums.PayrollStatus; totalAmount: Decimal; approvedById: string | null; approvedAt: Date | null; rejectReason: string | null; createdAt: Date; updatedAt: Date; }>
+   */
   async approvePayroll(payrollId: string, approverId: string): Promise<Payroll> {
     return this.payrollRepo.updateStatus(payrollId, {
       status: PAYROLL_STATUS.APPROVED,
@@ -223,6 +261,14 @@ export class PayrollService implements IPayrollService {
     })
   }
 
+  /**
+   * Reject a payroll and record the rejection reason.
+   *
+   * @param payrollId - The payrollId parameter
+   * @param approverId - The approverId parameter
+   * @param reason - The reason parameter
+   * @returns Returns the result of type Promise<{ name: string; id: string; periodMonth: number; periodYear: number; status: $Enums.PayrollStatus; totalAmount: Decimal; approvedById: string | null; approvedAt: Date | null; rejectReason: string | null; createdAt: Date; updatedAt: Date; }>
+   */
   async rejectPayroll(payrollId: string, approverId: string, reason: string): Promise<Payroll> {
     return this.payrollRepo.updateStatus(payrollId, {
       status: PAYROLL_STATUS.REJECTED,
@@ -232,6 +278,14 @@ export class PayrollService implements IPayrollService {
     })
   }
 
+  /**
+   * Handle the request to retrieve detailed payslip information for an employee.
+   *
+   * @param payrollId - The payrollId parameter
+   * @param employeeId - The employeeId parameter
+   * @returns Returns the result of type Promise<PayslipWithDetails>
+   * @throws AppError if a business logic error occurs or data is not found
+   */
   async getPayslip(payrollId: string, employeeId: string): Promise<PayslipWithDetails> {
     const payslip = await this.payslipRepo.findOne(payrollId, employeeId)
     if (!payslip)
@@ -243,6 +297,12 @@ export class PayrollService implements IPayrollService {
     return payslip
   }
 
+  /**
+   * Process business logic for getMyPayslips.
+   *
+   * @param employeeId - The employeeId parameter
+   * @returns Returns the result of type Promise<any[]>
+   */
   async getMyPayslips(employeeId: string): Promise<any[]> {
     const rawPayslips = await this.payslipRepo.findByEmployee(employeeId)
     // Map included payroll info to the top level for the frontend

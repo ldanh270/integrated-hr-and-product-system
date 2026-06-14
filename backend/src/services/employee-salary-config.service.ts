@@ -17,6 +17,14 @@ export class EmployeeSalaryConfigService implements IEmployeeSalaryConfigService
     private prisma: PrismaClient,
   ) {}
 
+  /**
+   * Retrieve the active salary configuration for the employee at a specific time (defaults to current).
+   *
+   * @param employeeId - The employeeId parameter
+   * @param atDate - The atDate parameter (optional)
+   * @returns Returns the result of type Promise<{ id: string; employeeId: string; templateId: string; baseSalary: Decimal; effectiveFrom: Date; effectiveTo: Date | null; note: string | null; createdById: string; createdAt: Date; updatedAt: Date; }>
+   * @throws AppError if a business logic error occurs or data is not found
+   */
   async getActiveConfig(employeeId: string, atDate?: Date): Promise<EmployeeSalaryConfig> {
     const date = atDate || new Date()
     const config = await this.configRepo.findActiveByEmployee(employeeId, date)
@@ -29,10 +37,24 @@ export class EmployeeSalaryConfigService implements IEmployeeSalaryConfigService
     return config
   }
 
+  /**
+   * Retrieve the configuration history for the employee.
+   *
+   * @param employeeId - The employeeId parameter
+   * @returns Returns the result of type Promise<{ id: string; employeeId: string; templateId: string; baseSalary: Decimal; effectiveFrom: Date; effectiveTo: Date | null; note: string | null; createdById: string; createdAt: Date; updatedAt: Date; }[]>
+   */
   async getConfigHistory(employeeId: string): Promise<EmployeeSalaryConfig[]> {
     return this.configRepo.findAllByEmployee(employeeId)
   }
 
+  /**
+   * Assign a new salary configuration to the employee.
+   *
+   * @param employeeId - The employeeId parameter
+   * @param data - The data parameter
+   * @param createdById - The createdById parameter
+   * @returns Returns the result of type Promise<{ id: string; employeeId: string; templateId: string; baseSalary: Decimal; effectiveFrom: Date; effectiveTo: Date | null; note: string | null; createdById: string; createdAt: Date; updatedAt: Date; }>
+   */
   async assignConfig(
     employeeId: string,
     data: ICreateSalaryConfigDTO,
