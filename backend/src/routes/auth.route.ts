@@ -38,6 +38,18 @@ authRoutes.post("/login", controller.login)
 authRoutes.post("/logout", authenticate, controller.logout as any)
 
 /**
+ * POST /api/auth/refresh
+ * Refresh access token using refresh token in cookies
+ */
+authRoutes.post("/refresh", controller.refresh)
+
+/**
+ * GET /api/auth/me
+ * Get current user information
+ */
+authRoutes.get("/me", authenticate, controller.getMe as any)
+
+/**
  * @route POST /api/auth/change-password
  * @desc Change password for authenticated user
  * @access Private (Requires valid token)

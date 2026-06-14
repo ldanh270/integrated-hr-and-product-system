@@ -33,7 +33,7 @@ export class AuthController {
       const validatedData = loginSchema.parse(req.body)
 
       // Delegate to service
-      const result = await this.service.login(validatedData, req.ip)
+      const result = await this.service.login(validatedData, res, req.ip)
 
       // Return successful response
       res.status(HttpStatusCode.OK).json({
@@ -69,7 +69,7 @@ export class AuthController {
       }
 
       // Delegate to service
-      const result = await this.service.logout(req.user.empId, req.ip)
+      const result = await this.service.logout(req.user.empId, res, req.ip)
 
       // Return successful response
       res.status(HttpStatusCode.OK).json({
@@ -80,6 +80,59 @@ export class AuthController {
       res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
         status: RESPONSE_STATUS.ERROR,
         message: error.message || "Logout failed",
+      })
+    }
+  }
+
+  /**
+   * Refreshes the access token using a refresh token from cookies
+   */
+  refresh = async (req: Request, res: Response) => {
+    try {
+      const rawRefreshToken = req.cookies["refresh_token"]
+      if (!rawRefreshToken) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          status: RESPONSE_STATUS.ERROR,
+          message: "No refresh token provided",
+        })
+      }
+
+      const result = await this.service.refresh(rawRefreshToken, res)
+
+      res.status(HttpStatusCode.OK).json({
+        status: RESPONSE_STATUS.SUCCESS,
+        data: result,
+      })
+    } catch (error: any) {
+      res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
+        status: RESPONSE_STATUS.ERROR,
+        message: error.message || "Refresh failed",
+      })
+    }
+  }
+
+  /**
+   * Gets the currently authenticated user's information
+   */
+  getMe = async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          status: RESPONSE_STATUS.ERROR,
+          message: AUTH_ERROR_MESSAGES.UNAUTHORIZED,
+        })
+      }
+
+      const result = await this.service.getMe(req.user.empId)
+
+      res.status(HttpStatusCode.OK).json({
+        status: RESPONSE_STATUS.SUCCESS,
+        data: result,
+      })
+    } catch (error: any) {
+      res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
+        status: RESPONSE_STATUS.ERROR,
+        message: error.message || "Failed to get user details",
       })
     }
   }

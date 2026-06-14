@@ -1,5 +1,3 @@
-import { SYSTEM_CONFIG } from "@/config/system.config"
-
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
@@ -12,9 +10,8 @@ export interface User {
 
 interface AuthState {
   user: User | null
-  token: string | null
   isAuthenticated: boolean
-  setAuth: (user: User, token: string) => void
+  setAuth: (user: User) => void
   clearAuth: () => void
 }
 
@@ -26,15 +23,12 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
-      token: null,
       isAuthenticated: false,
-      setAuth: (user, token) => {
-        localStorage.setItem(SYSTEM_CONFIG.STORAGE_KEYS.AUTH_TOKEN, token)
-        set({ user, token, isAuthenticated: true })
+      setAuth: (user) => {
+        set({ user, isAuthenticated: true })
       },
       clearAuth: () => {
-        localStorage.removeItem(SYSTEM_CONFIG.STORAGE_KEYS.AUTH_TOKEN)
-        set({ user: null, token: null, isAuthenticated: false })
+        set({ user: null, isAuthenticated: false })
       },
     }),
     {

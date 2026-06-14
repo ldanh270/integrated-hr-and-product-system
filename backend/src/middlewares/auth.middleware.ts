@@ -27,10 +27,10 @@ export interface AuthRequest extends Request {
 }
 
 export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization
+  const token = req.cookies?.["access_token"]
 
-  // Verify Authorization header presence and format
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  // Verify token presence
+  if (!token) {
     res.status(HttpStatusCode.UNAUTHORIZED).json({
       data: null,
       error: AUTH_ERRORS.MISSING_TOKEN,
@@ -38,12 +38,12 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     return
   }
 
-  // Extract and verify token
-  const token = authHeader.split(" ")[1]
-  const decoded = JwtUtil.verifyToken(token)
+  // Verify token
+  const decoded = JwtUtil.verifyAccessToken(token)
 
   // Reject if verification fails
   if (!decoded) {
+    console.error("Auth Middleware: Token verification failed or token expired", { token })
     res.status(HttpStatusCode.UNAUTHORIZED).json({
       data: null,
       error: AUTH_ERRORS.TOKEN_EXPIRED,
@@ -55,6 +55,10 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   try {
     const employee = await employeeRepository.findById(decoded.empId)
     if (!employee || employee.status !== EMPLOYEE_STATUS.ACTIVE) {
+      console.error("Auth Middleware: Employee not found or inactive", {
+        empId: decoded.empId,
+        employeeStatus: employee?.status,
+      })
       res.status(HttpStatusCode.UNAUTHORIZED).json({
         data: null,
         error: AUTH_ERRORS.ACCOUNT_INACTIVE,
@@ -62,6 +66,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       return
     }
   } catch (error) {
+    console.error("Auth Middleware: Error finding employee", error)
     res.status(HttpStatusCode.UNAUTHORIZED).json({
       data: null,
       error: AUTH_ERRORS.AUTH_ERROR,

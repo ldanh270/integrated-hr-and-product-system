@@ -51,7 +51,6 @@ export interface ValidateResetTokenDto {
  * Data Transfer Object for successful authentication response
  */
 export interface AuthResponseDto {
-  token: string
   employee: {
     id: string
     username: string
@@ -59,6 +58,19 @@ export interface AuthResponseDto {
     fullName: string
     role: EmployeeRole
   }
+}
+
+export interface RefreshTokenDocument {
+  id: string
+  employeeId: string
+  tokenHash: string
+  expiresAt: Date
+  createdAt: Date
+  revokedAt: Date | null
+}
+
+export interface RefreshResultDto {
+  employee: AuthResponseDto["employee"]
 }
 
 /**
@@ -206,6 +218,30 @@ export interface IAuthRepository {
   updateResetRequestStatus(requestId: string, status: string): Promise<void>
 
   /**
+   * Creates a new refresh token
+   */
+  createRefreshToken(data: {
+    employeeId: string
+    tokenHash: string
+    expiresAt: Date
+  }): Promise<void>
+
+  /**
+   * Finds a refresh token by hash
+   */
+  findRefreshTokenByHash(tokenHash: string): Promise<RefreshTokenDocument | null>
+
+  /**
+   * Revokes a specific refresh token
+   */
+  revokeRefreshToken(id: string): Promise<void>
+
+  /**
+   * Revokes all refresh tokens for a user
+   */
+  revokeAllUserRefreshTokens(employeeId: string): Promise<void>
+
+  /**
    * Updates employee authentication fields
    */
   updateAuthEmployee(empId: string, data: Partial<AuthEmployeeDocument>): Promise<void>
@@ -273,12 +309,22 @@ export interface IAuthService {
   /**
    * Authenticates a user and returns a token
    */
-  login(data: LoginDto, ipAddress?: string): Promise<AuthResponseDto>
+  login(data: LoginDto, res: any, ipAddress?: string): Promise<AuthResponseDto>
+
+  /**
+   * Refreshes access token using refresh token
+   */
+  refresh(rawRefreshToken: string, res: any): Promise<RefreshResultDto>
+
+  /**
+   * Gets the currently authenticated user's information
+   */
+  getMe(empId: string): Promise<AuthResponseDto["employee"]>
 
   /**
    * Processes a logout for a user
    */
-  logout(empId: string, ipAddress?: string): Promise<LogoutResponseDto>
+  logout(empId: string, res: any, ipAddress?: string): Promise<LogoutResponseDto>
 
   /**
    * Processes a forgot password request
