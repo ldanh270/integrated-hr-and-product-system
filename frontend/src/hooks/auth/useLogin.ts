@@ -16,7 +16,7 @@ export const useLogin = () => {
 
   const [showPassword, setShowPassword] = useState(false)
   const [showForgotModal, setShowForgotModal] = useState(false)
-  const [forgotUsername, setForgotUsername] = useState("")
+  const [forgotEmail, setForgotEmail] = useState("")
 
   const loginForm = useForm<LoginSchemaType>({
     resolver: zodResolver(loginSchema),
@@ -42,16 +42,16 @@ export const useLogin = () => {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!forgotUsername.trim()) {
-      toast.error("Vui lòng nhập username")
+    if (!forgotEmail.trim()) {
+      toast.error("Vui lòng nhập email")
       return
     }
 
     try {
-      await forgotPassword({ username: forgotUsername })
+      await forgotPassword({ email: forgotEmail })
       toast.success("Yêu cầu reset mật khẩu đã được gửi cho admin duyệt.")
       setShowForgotModal(false)
-      setForgotUsername("")
+      setForgotEmail("")
     } catch (error) {
       const err = error as {
         response?: { data?: { error?: { message?: string }; message?: string } }
@@ -70,8 +70,8 @@ export const useLogin = () => {
     setShowPassword,
     showForgotModal,
     setShowForgotModal,
-    forgotUsername,
-    setForgotUsername,
+    forgotEmail,
+    setForgotEmail,
     isLoggingIn,
     isSendingForgotPassword,
     onSubmit: handleSubmit(onSubmit),
