@@ -1,4 +1,5 @@
 import { attendanceApi } from "@/lib/api/attendance.api"
+import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useAuthStore } from "@/store/auth-store"
 import type { User } from "@/store/auth-store"
 
@@ -6,24 +7,31 @@ import { useEffect, useState } from "react"
 
 import { toast } from "sonner"
 
-const USER_LOCATION_KEY = "userLocation"
 
 function persistLocation(location: { lat: number; lng: number }) {
-  localStorage.setItem(USER_LOCATION_KEY, JSON.stringify(location))
+  sessionStorage.setItem(
+    SYSTEM_CONFIG.STORAGE_KEYS.LOCATION_CACHE,
+    JSON.stringify({ ...location, timestamp: Date.now() })
+  )
 }
 
 function readCachedLocation(): { lat: number; lng: number } | null {
-  const cached = localStorage.getItem(USER_LOCATION_KEY)
+  const cached = sessionStorage.getItem(SYSTEM_CONFIG.STORAGE_KEYS.LOCATION_CACHE)
   if (!cached) return null
 
   try {
-    const parsed = JSON.parse(cached) as { lat?: number; lng?: number }
-    if (typeof parsed.lat !== "number" || typeof parsed.lng !== "number") return null
+    const parsed = JSON.parse(cached)
+    // Check if cache is older than 30 minutes
+    if (Date.now() - (parsed.timestamp || 0) > 30 * 60 * 1000) {
+      sessionStorage.removeItem(SYSTEM_CONFIG.STORAGE_KEYS.LOCATION_CACHE)
+      return null
+    }
     return { lat: parsed.lat, lng: parsed.lng }
   } catch {
     return null
   }
 }
+
 
 function getApiErrorMessage(error: unknown, fallback: string): string {
   const err = error as { response?: { data?: { error?: { message?: string } } } }
@@ -77,7 +85,7 @@ export function useVirtualScanner(): {
   }, [])
 
   const handleScan = async () => {
-    let finalLocation = location ?? readCachedLocation()
+    let finalLocation = location
 
     if (!finalLocation) {
       if (!navigator.geolocation) {

@@ -78,12 +78,14 @@ export function ShiftChangeRequestDialog({ open, onOpenChange }: Props) {
 
   /**
    * useShifts - Hook lấy danh sách các ca làm việc có sẵn.
+   * Calls API: shiftsApi.getAll
    */
   const { data: shifts } = useShifts()
 
   /**
    * useEmployees - Hook lấy danh sách nhân viên với tính năng tìm kiếm.
    * Limit được đặt là 10 để tối ưu hiệu năng, kết hợp với tìm kiếm từ server.
+   * Calls API: employeeApi.list
    */
   const { data: employeeData, isLoading: isLoadingEmployees } = useEmployees({ 
     page: 1, 
@@ -198,7 +200,7 @@ export function ShiftChangeRequestDialog({ open, onOpenChange }: Props) {
                               className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
                               placeholder="Tìm tên nhân viên..."
                               value={employeeSearch}
-                              onChange={(e) => setEmployeeSearch(e.target.value)}
+                              onChange={(e) => { setEmployeeSearch(e.target.value) }}
                             />
                           </div>
                           <div className="max-h-60 overflow-y-auto p-1">

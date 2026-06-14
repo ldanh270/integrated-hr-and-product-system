@@ -1,6 +1,7 @@
 import { PageCard, SectionHeader, StatusPill } from "@/components/common"
 import AttendanceStats from "@/components/dashboard/attendance-stats.tsx"
 import WorkSchedule from "@/components/dashboard/work-schedule.tsx"
+import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useDashboard } from "@/hooks/dashboard/useDashboard"
 import { useEffect } from "react"
 
@@ -66,25 +67,26 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!navigator.geolocation) return
+
+    // Pre-fetch location and store in session storage (safer than localStorage)
+    // session_location only lasts until the tab is closed.
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        // Lưu tọa độ vào localStorage để trang chấm công dùng lại
-        localStorage.setItem(
-          "userLocation",
+        sessionStorage.setItem(
+          SYSTEM_CONFIG.STORAGE_KEYS.LOCATION_CACHE,
           JSON.stringify({
             lat: position.coords.latitude,
             lng: position.coords.longitude,
-          }),
+            timestamp: Date.now(),
+          })
         )
       },
       (error) => {
-        console.warn("GPS denied:", error.message)
-        // Không hiện toast, không crash - âm thầm bỏ qua
+        console.warn("Location pre-fetch failed:", error.message)
       },
-      { timeout: 10000, maximumAge: 300000 }, // cache 5 phút
+      { timeout: 10000, maximumAge: 60000 } // Cache for 1 minute
     )
   }, [])
-
   return (
     <div className="container px-6 py-6">
       <div className="grid grid-cols-12 gap-5">

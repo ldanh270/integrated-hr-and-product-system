@@ -1,6 +1,7 @@
 export const SYSTEM_CONFIG = {
   STORAGE_KEYS: {
     AUTH_TOKEN: "auth_token",
+    LOCATION_CACHE: "session_location",
   },
   PAGINATION: {
     DEFAULT_LIMIT: 50,
