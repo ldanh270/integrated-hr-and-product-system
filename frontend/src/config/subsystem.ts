@@ -24,6 +24,7 @@ export type SubsystemId =
   | "training"
   | "security"
   | "settings"
+  | "project"
 
 export interface NavItem {
   name: string
@@ -166,5 +167,16 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     icon: Settings,
     routePrefix: "/settings",
     sidebarItems: [{ name: "Tổng quan", path: ROUTES.SETTINGS.DASHBOARD, icon: Settings }],
+  },
+  {
+    id: "project",
+    name: "Dự án",
+    description: "Quản lý dự án, tiến độ công việc và báo cáo",
+    icon: Briefcase,
+    routePrefix: "/project",
+    sidebarItems: [
+      { name: "Tổng quan", path: ROUTES.PROJECT.DASHBOARD, icon: FileText },
+      { name: "Danh sách dự án", path: ROUTES.PROJECT.LIST, icon: Briefcase },
+    ],
   },
 ]

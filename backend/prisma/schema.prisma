@@ -108,6 +108,7 @@ enum ProjectStatus {
   completed
   cancelled
 }
+
 enum TaskCreationPolicy {
   leader_only
   all_members
@@ -119,6 +120,18 @@ enum TaskStatus {
   in_review
   done
   cancelled
+  reopened
+}
+
+enum TaskTracker {
+  feature
+  bug
+  support
+  task
+  meeting
+  test
+  subtask
+  management
 }
 
 enum TaskPriority {
@@ -209,6 +222,7 @@ model Employee {
   passwordResetRequests      PasswordResetRequest[]       @relation("PasswordResetRequestEmployee")
   passwordResetRequestsApprd PasswordResetRequest[]       @relation("PasswordResetRequestApprover")
   refreshTokens              RefreshToken[]
+  spentTimes                 SpentTime[]                  @relation("EmployeeSpentTimes")
 
   @@index([status, employeeType])
   @@index([role])
@@ -359,11 +373,11 @@ model Application {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  leaveDetail     ApplicationLeaveDetail?
-  shiftSwapDetail ApplicationShiftSwapDetail?
-  overtimeDetail  ApplicationOvertimeDetail?
-  regimeDetail    ApplicationRegimeDetail?
-  lateEarlyDetail ApplicationLateEarlyDetail?
+  leaveDetail        ApplicationLeaveDetail?
+  shiftSwapDetail    ApplicationShiftSwapDetail?
+  overtimeDetail     ApplicationOvertimeDetail?
+  regimeDetail       ApplicationRegimeDetail?
+  lateEarlyDetail    ApplicationLateEarlyDetail?
   businessTripDetail ApplicationBusinessTripDetail?
   workFromHomeDetail ApplicationWorkFromHomeDetail?
 
@@ -646,25 +660,26 @@ model PayslipDetail {
 
 // ── Project & Product ──
 model Project {
-  id              String        @id @default(cuid())
-  name            String        @unique
-  description     String?
-  techStack       String[] // Array of strings in PG
-  status          ProjectStatus @default(planning)
-  taskCreationPolicy  TaskCreationPolicy  @default(leader_only)
-  startDate       DateTime?
-  expectedEndDate DateTime?
-  actualEndDate   DateTime?
-  teamLeaderId    String?
-  teamLeader      Employee?     @relation("ProjectTeamLeader", fields: [teamLeaderId], references: [id], onDelete: SetNull)
-  createdById     String
-  createdBy       Employee      @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  id                 String             @id @default(cuid())
+  name               String             @unique
+  description        String?
+  techStack          String[] // Array of strings in PG
+  status             ProjectStatus      @default(planning)
+  taskCreationPolicy TaskCreationPolicy @default(leader_only)
+  startDate          DateTime?
+  expectedEndDate    DateTime?
+  actualEndDate      DateTime?
+  teamLeaderId       String?
+  teamLeader         Employee?          @relation("ProjectTeamLeader", fields: [teamLeaderId], references: [id], onDelete: SetNull)
+  createdById        String
+  createdBy          Employee           @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members ProjectMember[]
-  tasks   Task[]
+  members    ProjectMember[]
+  tasks      Task[]
+  categories TaskCategory[]
 
   @@index([status])
   @@index([teamLeaderId, status])
@@ -684,27 +699,36 @@ model ProjectMember {
 }
 
 model Task {
-  id          String       @id @default(cuid())
-  projectId   String
-  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  title       String
-  description String?
-  priority    TaskPriority @default(medium)
-  status      TaskStatus   @default(todo)
-  assigneeId  String?
-  assignee    Employee?    @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
-  createdById String
-  createdBy   Employee     @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  dueDate     DateTime?
-  completedAt DateTime?
+  id            String        @id @default(cuid())
+  projectId     String
+  project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  tracker       TaskTracker   @default(feature)
+  priority      TaskPriority  @default(medium)
+  status        TaskStatus    @default(todo)
+  assigneeId    String?
+  assignee      Employee?     @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdById   String
+  createdBy     Employee      @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  startDate     DateTime?     @db.Date
+  dueDate       DateTime?
+  completedAt   DateTime?
+  estimatedTime Float?
+  progress      Int           @default(0)
+  categoryId    String?
+  category      TaskCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  spentTimes SpentTime[] @relation("TaskSpentTimes")
 
   @@index([projectId, status])
   @@index([assigneeId, status])
   @@index([dueDate, status])
   @@index([createdById])
+  @@index([categoryId])
 }
 
 // ── Auth ──
@@ -749,12 +773,42 @@ model RefreshToken {
   id         String    @id @default(cuid())
   employeeId String
   employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  tokenHash  String    @unique       // SHA-256 hash của raw token
-  expiresAt  DateTime               // Fixed — kế thừa từ lần login gốc, không rolling
+  tokenHash  String    @unique // SHA-256 hash của raw token
+  expiresAt  DateTime // Fixed — kế thừa từ lần login gốc, không rolling
   createdAt  DateTime  @default(now())
-  revokedAt  DateTime?              // null = còn hợp lệ
+  revokedAt  DateTime? // null = còn hợp lệ
 
   @@index([employeeId])
   @@index([expiresAt])
   @@index([tokenHash])
+}
+
+model TaskCategory {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  createdAt DateTime @default(now())
+  tasks     Task[]
+
+  @@unique([projectId, name])
+  @@index([projectId])
+}
+
+model SpentTime {
+  id           String   @id @default(cuid())
+  taskId       String
+  task         Task     @relation("TaskSpentTimes", fields: [taskId], references: [id], onDelete: Cascade)
+  employeeId   String
+  employee     Employee @relation("EmployeeSpentTimes", fields: [employeeId], references: [id], onDelete: Restrict)
+  date         DateTime @db.Date
+  hours        Float
+  comment      String?
+  activity     String
+  workTimeType String   @default("working_day")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([taskId])
+  @@index([employeeId])
 }

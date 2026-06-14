@@ -1,4 +1,5 @@
-import { TASK_PRIORITIES, TASK_STATUSES } from "@/configs/entities/project.config.ts"
+import { TASK_PRIORITIES, TASK_STATUSES, TASK_TRACKERS } from "@/configs/entities/project.config.ts"
+import { SORT_ORDER_VALUES } from "@/configs/system/db.config.ts"
 
 import { z } from "zod"
 
@@ -13,17 +14,29 @@ export const createTaskSchema = z
 
     description: z.string().max(1000, "Description too long").trim().optional().nullable(),
 
+    tracker: z.enum(TASK_TRACKERS).optional(),
+
     priority: z.enum(TASK_PRIORITIES).optional(),
 
     status: z.enum(TASK_STATUSES).optional(),
 
     assigneeId: z.string().optional().nullable(),
 
+    startDate: z
+      .string()
+      .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid startDate format" })
+      .optional()
+      .nullable(),
+
     dueDate: z
       .string()
       .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid dueDate format" })
       .optional()
       .nullable(),
+
+    estimatedTime: z.number().nonnegative().optional().nullable(),
+    progress: z.number().int().min(0).max(100).optional(),
+    categoryId: z.string().optional().nullable(),
   })
   .strict()
 
@@ -40,11 +53,19 @@ export const updateTaskSchema = z
 
     description: z.string().max(1000, "Description too long").trim().optional().nullable(),
 
+    tracker: z.enum(TASK_TRACKERS).optional(),
+
     priority: z.enum(TASK_PRIORITIES).optional(),
 
     status: z.enum(TASK_STATUSES).optional(),
 
     assigneeId: z.string().optional().nullable(),
+
+    startDate: z
+      .string()
+      .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid startDate format" })
+      .optional()
+      .nullable(),
 
     dueDate: z
       .string()
@@ -57,6 +78,10 @@ export const updateTaskSchema = z
       .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid completedAt format" })
       .optional()
       .nullable(),
+
+    estimatedTime: z.number().nonnegative().optional().nullable(),
+    progress: z.number().int().min(0).max(100).optional(),
+    categoryId: z.string().optional().nullable(),
   })
   .strict()
 
@@ -67,11 +92,13 @@ export const listTasksQuerySchema = z.object({
   page: z.string().regex(/^\d+$/).transform(Number).optional(),
   limit: z.string().regex(/^\d+$/).transform(Number).optional(),
   search: z.string().optional(),
+  tracker: z.enum(TASK_TRACKERS).optional(),
   status: z.enum(TASK_STATUSES).optional(),
   priority: z.enum(TASK_PRIORITIES).optional(),
   assigneeId: z.string().optional(),
+  createdById: z.string().optional(),
   sortBy: z.string().optional(),
-  sortOrder: z.enum(["asc", "desc"]).optional(),
+  sortOrder: z.enum(SORT_ORDER_VALUES).optional(),
 })
 
 export type ListTasksQuerySchemaType = z.infer<typeof listTasksQuerySchema>

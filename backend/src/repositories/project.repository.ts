@@ -303,6 +303,13 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
         },
       },
     })
-    return members.map((m) => m.employee)
+    return members.map((m) => ({
+      id: `${m.projectId}_${m.employeeId}`,
+      projectId: m.projectId,
+      employeeId: m.employeeId,
+      joinedAt: m.joinedAt,
+      removedAt: m.removedAt,
+      employee: m.employee,
+    }))
   }
 }

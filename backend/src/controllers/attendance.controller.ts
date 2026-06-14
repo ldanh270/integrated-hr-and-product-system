@@ -132,10 +132,18 @@ export class AttendanceController {
       const todayRecord = records[0]
 
       let result
-      if (!todayRecord || !todayRecord.checkIn?.at) {
+      if (!todayRecord || !todayRecord.checkInAt) {
         result = await this.service.checkIn(employeeId, location, employeeId)
-      } else {
+      } else if (!todayRecord.checkOutAt) {
         result = await this.service.checkOut(employeeId, location)
+      } else {
+        return res.status(HttpStatusCode.CONFLICT).json({
+          data: null,
+          error: {
+            message: ATTENDANCE_ERROR_MESSAGES.ALREADY_CHECKED_OUT,
+            code: ATTENDANCE_ERROR_CODES.CONFLICT,
+          },
+        })
       }
 
       res.status(HttpStatusCode.OK).json({ data: result, error: null })
