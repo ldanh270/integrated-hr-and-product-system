@@ -65,7 +65,7 @@ export default function EmployeeSalary() {
   return (
     <div className="container px-3 sm:px-6 py-4 sm:py-6">
       <PageHeader
-        title="Thiết lập lương"
+        title="Lương nhân sự"
         description="Quản lý cấu hình mức lương cơ bản và gán mẫu bảng lương cho nhân viên."
       />
 
