@@ -1,3 +1,6 @@
+import { PAYROLL_MESSAGES } from "@/configs/messages/payroll.message"
+import { ErrorLayer } from "@/configs/system/error-code.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { prisma } from "@/libs/database.ts"
 import {
   ICreateSalaryComponentDTO,
@@ -6,6 +9,7 @@ import {
   ISalaryComponentService,
   IUpdateSalaryComponentDTO,
 } from "@/types/payroll.types.ts"
+import { AppError } from "@/utils/error.util.ts"
 
 import { ComponentType, SalaryComponent } from "@prisma/client"
 import * as math from "mathjs"
@@ -26,7 +30,11 @@ export class SalaryComponentService implements ISalaryComponentService {
   ): Promise<SalaryComponent> {
     const { valid, error } = await this.validateFormula(data.formula)
     if (!valid) {
-      throw new Error(`Invalid formula: ${error}`)
+      throw new AppError(
+        PAYROLL_MESSAGES.ERRORS.INVALID_FORMULA(error || "Unknown error"),
+        HttpStatusCode.BAD_REQUEST,
+        ErrorLayer.SERVICE,
+      )
     }
     return this.componentRepo.create({ ...data, createdById })
   }
@@ -35,7 +43,11 @@ export class SalaryComponentService implements ISalaryComponentService {
     if (data.formula) {
       const { valid, error } = await this.validateFormula(data.formula)
       if (!valid) {
-        throw new Error(`Invalid formula: ${error}`)
+        throw new AppError(
+          PAYROLL_MESSAGES.ERRORS.INVALID_FORMULA(error || "Unknown error"),
+          HttpStatusCode.BAD_REQUEST,
+          ErrorLayer.SERVICE,
+        )
       }
     }
     return this.componentRepo.update(id, data)
@@ -68,7 +80,11 @@ export class SalaryComponentService implements ISalaryComponentService {
 
       const result = math.evaluate(formula, testContext)
       if (typeof result !== "number" || isNaN(result)) {
-        throw new Error("Formula must return a number")
+        throw new AppError(
+          PAYROLL_MESSAGES.ERRORS.FORMULA_MUST_BE_NUMBER,
+          HttpStatusCode.BAD_REQUEST,
+          ErrorLayer.SERVICE,
+        )
       }
       return { valid: true }
     } catch (e: any) {

@@ -23,6 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { PAYROLL_MESSAGES } from "@/config/messages/payroll.message"
 import {
   useDeletePayslipTemplate,
   usePayslipTemplates,
@@ -49,10 +50,10 @@ export default function PayslipTemplates() {
     if (!templateToDelete) return
     try {
       await deleteTemplate(templateToDelete.id)
-      toast.success("Xoá mẫu bảng lương thành công")
+      toast.success(PAYROLL_MESSAGES.SUCCESS.DELETE_PAYSLIP_TEMPLATE)
       setTemplateToDelete(null)
     } catch {
-      toast.error("Lỗi khi xoá mẫu bảng lương")
+      toast.error(PAYROLL_MESSAGES.ERRORS.DELETE_PAYSLIP_TEMPLATE)
     }
   }
 

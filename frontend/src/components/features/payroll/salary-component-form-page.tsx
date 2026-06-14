@@ -19,12 +19,13 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   COMPONENT_TYPE_LABELS,
   COMPONENT_VALUE_TYPE_LABELS,
+  FORMULA_VALIDATION_STATUS,
 } from "@/config/entities/payroll.config"
 import { useSalaryComponentForm } from "@/hooks/payroll/use-salary-component-form"
 import { useSalaryVariables } from "@/hooks/payroll/use-salary-variable"
 import type { ISalaryComponent } from "@/types/payroll.types"
 
-import { Loader2 } from "lucide-react"
+import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react"
 
 interface SalaryComponentFormPageProps {
   initialData?: ISalaryComponent | null
@@ -235,27 +236,26 @@ export function SalaryComponentFormPage({
                     <FormLabel className="text-foreground">
                       Công thức / Giá trị <span className="text-destructive">*</span>
                     </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="VD: baseSalary * 0.1 hoặc 500000"
-                        className="rounded-full border-border shadow-none font-mono text-sm"
-                        disabled={isReadOnly}
-                        {...field}
-                      />
-                    </FormControl>
-
-                    <div className="text-xs mt-2 h-4 flex items-center">
-                      {formulaStatus === "validating" && (
-                        <span className="text-muted-foreground flex items-center gap-1">
-                          <Loader2 className="h-3 w-3 animate-spin" /> Đang kiểm tra công thức...
-                        </span>
-                      )}
-                      {formulaStatus === "valid" && (
-                        <span className="text-success">✔ Công thức hợp lệ</span>
-                      )}
-                      {formulaStatus === "invalid" && (
-                        <span className="text-destructive">✖ Lỗi cú pháp công thức</span>
-                      )}
+                    <div className="relative">
+                      <FormControl>
+                        <Input
+                          placeholder="VD: baseSalary * 0.1 hoặc 500000"
+                          className="rounded-full border-border shadow-none font-mono text-sm pr-10"
+                          disabled={isReadOnly}
+                          {...field}
+                        />
+                      </FormControl>
+                      <div className="absolute right-3 top-2.5 flex items-center">
+                        {formulaStatus === FORMULA_VALIDATION_STATUS.VALIDATING && (
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        )}
+                        {formulaStatus === FORMULA_VALIDATION_STATUS.VALID && (
+                          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                        )}
+                        {formulaStatus === FORMULA_VALIDATION_STATUS.INVALID && (
+                          <AlertCircle className="h-4 w-4 text-destructive" />
+                        )}
+                      </div>
                     </div>
                     <FormMessage />
                   </FormItem>

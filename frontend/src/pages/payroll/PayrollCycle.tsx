@@ -183,11 +183,11 @@ function TriggerDayField({ control }: { control: Control<SettingsFormValues> }) 
           >
             <FormControl>
               <SelectTrigger className="w-full max-w-xs rounded-full border-border h-10 shadow-sm transition-shadow hover:shadow-md focus:shadow-md">
-                <SelectValue placeholder="Chọn ngày chạy (1-31)" />
+                <SelectValue placeholder="Chọn ngày chạy (1-28)" />
               </SelectTrigger>
             </FormControl>
             <SelectContent position="popper" className="max-h-64 rounded-xl">
-              {Array.from({ length: 31 }).map((_, i) => (
+              {Array.from({ length: 28 }).map((_, i) => (
                 <SelectItem key={i + 1} value={(i + 1).toString()} className="rounded-lg">
                   Ngày {i + 1} hàng tháng
                 </SelectItem>

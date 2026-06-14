@@ -5,6 +5,8 @@ import {
   SALARY_COMPONENT_TYPES,
   generateDefaultPayrollName,
 } from "@/configs/entities/payroll.config.ts"
+import { PAYROLL_MESSAGES } from "@/configs/messages/payroll.message"
+import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { IAttendanceRepository } from "@/types/attendance.types.ts"
 import { IEmployeeRepository } from "@/types/employee.types.ts"
@@ -42,9 +44,9 @@ export class PayrollService implements IPayrollService {
     const existing = await this.payrollRepo.findByPeriod(month, year, finalName)
     if (existing) {
       throw new AppError(
-        "Payroll already exists for this period",
+        PAYROLL_MESSAGES.ERRORS.PAYROLL_ALREADY_EXISTS,
         HttpStatusCode.CONFLICT,
-        "SERVICE",
+        ErrorLayer.SERVICE,
       )
     }
 
@@ -114,7 +116,7 @@ export class PayrollService implements IPayrollService {
       // Build context
       const context: IFormulaContext | any = {
         baseSalary: Number(config.baseSalary),
-        workingDays: attendance.workingDays,
+        workingDays: 22, // Should ideally be standard working days for the month. Currently hardcoded to 22 or fetched from config
         actualWorkingDays: attendance.workingDays,
         absentDays: attendance.absentDays,
         overtimeMinutes: attendance.overtimeMinutes,
@@ -183,13 +185,23 @@ export class PayrollService implements IPayrollService {
   async getPayroll(month: number, year: number, name?: string): Promise<Payroll> {
     const finalName = name || generateDefaultPayrollName(month, year)
     const payroll = await this.payrollRepo.findByPeriod(month, year, finalName)
-    if (!payroll) throw new AppError("Payroll not found", HttpStatusCode.NOT_FOUND, "SERVICE")
+    if (!payroll)
+      throw new AppError(
+        PAYROLL_MESSAGES.ERRORS.PAYROLL_NOT_FOUND,
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+      )
     return payroll
   }
 
   async getPayrollById(id: string): Promise<any> {
     const payroll = await this.payrollRepo.findById(id)
-    if (!payroll) throw new AppError("Payroll not found", HttpStatusCode.NOT_FOUND, "SERVICE")
+    if (!payroll)
+      throw new AppError(
+        PAYROLL_MESSAGES.ERRORS.PAYROLL_NOT_FOUND,
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+      )
 
     const payslips = await this.payslipRepo.findByPayroll(id)
 
@@ -222,7 +234,12 @@ export class PayrollService implements IPayrollService {
 
   async getPayslip(payrollId: string, employeeId: string): Promise<PayslipWithDetails> {
     const payslip = await this.payslipRepo.findOne(payrollId, employeeId)
-    if (!payslip) throw new AppError("Payslip not found", HttpStatusCode.NOT_FOUND, "SERVICE")
+    if (!payslip)
+      throw new AppError(
+        PAYROLL_MESSAGES.ERRORS.PAYSLIP_NOT_FOUND,
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+      )
     return payslip
   }
 

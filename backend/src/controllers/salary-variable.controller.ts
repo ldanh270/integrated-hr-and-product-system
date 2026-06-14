@@ -1,10 +1,16 @@
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { AuthenticatedRequest } from "@/types/auth.types.ts"
 import { ISalaryVariableService } from "@/types/payroll.types.ts"
 
 import { NextFunction, Request, Response } from "express"
 import { z } from "zod"
 
 const createSalaryVariableSchema = z.object({
-  code: z.string().min(1, "Code is required").max(50),
+  code: z
+    .string()
+    .min(1, "Code is required")
+    .max(50)
+    .regex(/^[a-z][a-zA-Z0-9]*$/, "Code must be in camelCase"),
   name: z.string().min(1, "Name is required").max(100),
   value: z.number(),
   description: z.string().optional(),
@@ -43,9 +49,9 @@ export class SalaryVariableController {
   public createVariable = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const validatedData = createSalaryVariableSchema.parse(req.body)
-      const createdById = (req as any).user!.empId
+      const createdById = (req as AuthenticatedRequest).user.empId
       const variable = await this.service.createVariable(validatedData, createdById)
-      res.status(201).json({ data: variable, meta: null, error: null })
+      res.status(HttpStatusCode.CREATED).json({ data: variable, meta: null, error: null })
     } catch (error) {
       next(error)
     }
@@ -64,7 +70,7 @@ export class SalaryVariableController {
   public deleteVariable = async (req: Request, res: Response, next: NextFunction) => {
     try {
       await this.service.deleteVariable(req.params.id as string)
-      res.status(204).send()
+      res.status(HttpStatusCode.NO_CONTENT).send()
     } catch (error) {
       next(error)
     }

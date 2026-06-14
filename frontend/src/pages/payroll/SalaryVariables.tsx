@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { SALARY_VARIABLE_DESCRIPTIONS } from "@/config/messages/payroll.message"
 import { useDeleteSalaryVariable, useSalaryVariables } from "@/hooks/payroll/use-salary-variable"
 import type { ISalaryVariable } from "@/hooks/payroll/use-salary-variable"
 
@@ -29,7 +30,7 @@ const SYSTEM_VARIABLES = [
     code: "baseSalary",
     name: "Lương cơ bản",
     value: "Theo thiết lập lương",
-    description: "Mức lương cơ bản của nhân viên",
+    description: SALARY_VARIABLE_DESCRIPTIONS.BASE_SALARY,
     isActive: true,
     isSystem: true,
     createdAt: new Date().toISOString(),
@@ -40,7 +41,7 @@ const SYSTEM_VARIABLES = [
     code: "workingDays",
     name: "Ngày làm việc chuẩn",
     value: "Theo lịch tháng",
-    description: "Số ngày công chuẩn trong kỳ lương",
+    description: SALARY_VARIABLE_DESCRIPTIONS.STANDARD_DAYS,
     isActive: true,
     isSystem: true,
     createdAt: new Date().toISOString(),
@@ -51,7 +52,7 @@ const SYSTEM_VARIABLES = [
     code: "actualWorkingDays",
     name: "Ngày làm thực tế",
     value: "Từ chấm công",
-    description: "Số ngày công thực tế đi làm",
+    description: SALARY_VARIABLE_DESCRIPTIONS.WORKING_DAYS,
     isActive: true,
     isSystem: true,
     createdAt: new Date().toISOString(),
@@ -62,7 +63,7 @@ const SYSTEM_VARIABLES = [
     code: "overtimeMinutes",
     name: "Phút tăng ca",
     value: "Từ chấm công",
-    description: "Tổng số phút làm thêm giờ",
+    description: SALARY_VARIABLE_DESCRIPTIONS.OVERTIME_MINUTES,
     isActive: true,
     isSystem: true,
     createdAt: new Date().toISOString(),
@@ -73,7 +74,7 @@ const SYSTEM_VARIABLES = [
     code: "paidLeaveDays",
     name: "Nghỉ phép có lương",
     value: "Từ hệ thống phép",
-    description: "Tổng số ngày nghỉ được hưởng lương",
+    description: SALARY_VARIABLE_DESCRIPTIONS.HOLIDAY_DAYS,
     isActive: true,
     isSystem: true,
     createdAt: new Date().toISOString(),
@@ -84,7 +85,7 @@ const SYSTEM_VARIABLES = [
     code: "unpaidLeaveDays",
     name: "Nghỉ không lương",
     value: "Từ hệ thống phép",
-    description: "Tổng số ngày nghỉ không lương",
+    description: SALARY_VARIABLE_DESCRIPTIONS.ABSENT_DAYS,
     isActive: true,
     isSystem: true,
     createdAt: new Date().toISOString(),
@@ -136,7 +137,7 @@ export default function SalaryVariablesPage() {
 
   const handleDelete = async (id: string) => {
     const isConfirmed = await confirm({
-      title: "Xóa biến số",
+      title: SALARY_VARIABLE_DESCRIPTIONS.DELETE_TITLE,
       description:
         "Bạn có chắc chắn muốn xóa biến số tính lương này không? Hành động này không thể hoàn tác.",
       confirmText: "Xóa",

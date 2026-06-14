@@ -1,3 +1,4 @@
+import { PAYROLL_MESSAGES } from "@/config/messages/payroll.message"
 import { useUpdatePayrollSettings } from "@/hooks/payroll/use-payroll-settings"
 import type { IPayrollSettings } from "@/types/payroll.types"
 
@@ -7,7 +8,7 @@ import { toast } from "sonner"
 import { z } from "zod"
 
 export const settingsSchema = z.object({
-  triggerDay: z.number().min(1).max(31, "Ngày chạy phải từ 1 đến 31"),
+  triggerDay: z.number().min(1).max(28, PAYROLL_MESSAGES.VALIDATION.TRIGGER_DAY_RANGE),
   triggerHour: z.number().min(0).max(23),
   triggerMinute: z.number().min(0).max(59),
 })
@@ -35,13 +36,13 @@ export function usePayrollCycleForm({
   const onSubmit = async (values: SettingsFormValues) => {
     try {
       await updateSettings(values)
-      toast.success("Cập nhật cấu hình thành công")
+      toast.success(PAYROLL_MESSAGES.SUCCESS.UPDATE_PAYROLL_CYCLE)
       // Update default values to new ones to reset isDirty state
       form.reset(values)
       if (onSuccess) onSuccess()
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } }
-      toast.error(error.response?.data?.message || "Có lỗi xảy ra khi cập nhật")
+      toast.error(error.response?.data?.message || PAYROLL_MESSAGES.ERRORS.UPDATE_PAYROLL_CYCLE)
     }
   }
 

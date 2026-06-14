@@ -1,3 +1,5 @@
+import { PAYROLL_MESSAGES } from "@/config/messages/payroll.message"
+
 import { zodResolver } from "@hookform/resolvers/zod"
 import { type UseFormReturn, useForm } from "react-hook-form"
 import { z } from "zod"
@@ -8,14 +10,11 @@ import type { ISalaryVariable } from "./use-salary-variable"
 const formSchema = z.object({
   code: z
     .string()
-    .min(1, "Mã biến không được để trống")
+    .min(1, PAYROLL_MESSAGES.VALIDATION.VARIABLE_CODE_REQUIRED)
     .max(50)
-    .regex(
-      /^[a-zA-Z][a-zA-Z0-9]*$/,
-      "Mã biến phải viết theo kiểu camelCase (chỉ chứa chữ cái và số, bắt đầu bằng chữ)",
-    ),
-  name: z.string().min(1, "Tên biến không được để trống").max(100),
-  value: z.number().min(0, "Giá trị phải lớn hơn hoặc bằng 0"),
+    .regex(/^[a-z][a-zA-Z0-9]*$/, PAYROLL_MESSAGES.VALIDATION.VARIABLE_CODE_FORMAT),
+  name: z.string().min(1, PAYROLL_MESSAGES.VALIDATION.VARIABLE_NAME_REQUIRED).max(100),
+  value: z.number().min(0, PAYROLL_MESSAGES.VALIDATION.VARIABLE_VALUE_MIN),
   description: z.string().optional(),
   isActive: z.boolean().default(true),
 })
@@ -82,6 +81,7 @@ export function useSalaryVariableForm({ initialData, onSuccess }: UseSalaryVaria
       })
       .replace(/\s+/g, "")
       .replace(/[^a-zA-Z0-9]/g, "")
+      .replace(/^[A-Z]/, (c) => c.toLowerCase())
 
     form.setValue("code", formatted, { shouldValidate: true, shouldDirty: true })
   }

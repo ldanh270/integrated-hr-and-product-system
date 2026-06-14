@@ -1,4 +1,5 @@
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { AuthenticatedRequest } from "@/types/auth.types.ts"
 import { IPayrollService } from "@/types/payroll.types.ts"
 
 import { NextFunction, Request, Response } from "express"
@@ -50,7 +51,7 @@ export class PayrollController {
   async approvePayroll(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
-      const approverId = (req as any).user?.empId
+      const approverId = (req as AuthenticatedRequest).user.empId
       const payroll = await this.service.approvePayroll(id, approverId)
       res.status(HttpStatusCode.OK).json({ data: payroll })
     } catch (error) {
@@ -61,7 +62,7 @@ export class PayrollController {
   async rejectPayroll(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
-      const approverId = (req as any).user?.empId
+      const approverId = (req as AuthenticatedRequest).user.empId
       const { reason } = req.body
       const payroll = await this.service.rejectPayroll(id, approverId, reason)
       res.status(HttpStatusCode.OK).json({ data: payroll })
@@ -83,7 +84,7 @@ export class PayrollController {
 
   async getMyPayslips(req: Request, res: Response, next: NextFunction) {
     try {
-      const employeeId = (req as any).user?.empId
+      const employeeId = (req as AuthenticatedRequest).user.empId
       const payslips = await this.service.getMyPayslips(employeeId)
       res.status(HttpStatusCode.OK).json({ data: payslips })
     } catch (error) {

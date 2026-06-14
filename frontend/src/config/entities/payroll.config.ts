@@ -54,6 +54,15 @@ export const COMPONENT_VALUE_TYPE_LABELS: Record<ComponentValueType, string> = {
   percentage: "Phần trăm",
 }
 
+export const FORMULA_VALIDATION_STATUS = {
+  IDLE: "idle",
+  VALIDATING: "validating",
+  VALID: "valid",
+  INVALID: "invalid",
+} as const
+export type FormulaValidationStatus =
+  (typeof FORMULA_VALIDATION_STATUS)[keyof typeof FORMULA_VALIDATION_STATUS]
+
 // Role groups for use-role-guard
 export const PAYROLL_MANAGER_ROLES: readonly IEmployeeRole[] = [
   ROLE.ADMIN,
@@ -67,4 +76,13 @@ export const PAYROLL_SETTINGS_FIELDS = ["triggerDay", "triggerHour", "triggerMin
 
 export const PAYROLL_QUERY_KEYS = {
   SETTINGS: ["payroll-settings"] as const,
+  EMPLOYEE_SALARY_CONFIG: ["employee-salary-config"] as const,
+  PAYSLIP_TEMPLATES: ["payslip-templates"] as const,
+  MY_PAYSLIPS: ["my-payslips"] as const,
+  PAYROLLS: ["payrolls"] as const,
+  PAYROLL_DETAILS: ["payrollDetails"] as const,
+  PAYSLIPS_HISTORY: ["payslips-history"] as const,
+  PAYSLIP: ["payslip"] as const,
+  SALARY_COMPONENTS: ["salary-components"] as const,
+  SALARY_VARIABLES: ["salary-variables"] as const,
 } as const

@@ -26,7 +26,7 @@ export function useUpdatePayrollSettings() {
       return resData as IPayrollSettings
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PAYROLL_QUERY_KEYS.SETTINGS })
+      return queryClient.invalidateQueries({ queryKey: PAYROLL_QUERY_KEYS.SETTINGS })
     },
   })
 }

@@ -1,6 +1,9 @@
+import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { assignSalaryConfigSchema } from "@/schemas/payroll.schema.ts"
+import { AuthenticatedRequest } from "@/types/auth.types.ts"
 import { IEmployeeSalaryConfigService } from "@/types/payroll.types.ts"
+import { AppError } from "@/utils/error.util.ts"
 
 import { NextFunction, Request, Response } from "express"
 
@@ -59,8 +62,9 @@ export class EmployeeSalaryConfigController {
   async assignConfig(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
-      const createdById = (req as any).user?.empId
-      if (!createdById) throw new Error("Unauthorized")
+      const createdById = (req as AuthenticatedRequest).user.empId
+      if (!createdById)
+        throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER)
 
       const validatedData = assignSalaryConfigSchema.parse(req.body)
 

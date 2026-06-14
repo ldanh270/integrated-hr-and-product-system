@@ -1,3 +1,6 @@
+import { PAYROLL_MESSAGES } from "@/configs/messages/payroll.message"
+import { ErrorLayer } from "@/configs/system/error-code.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
   ICreateSalaryVariableDTO,
   ISalaryVariableRepository,
@@ -18,7 +21,11 @@ export class SalaryVariableService implements ISalaryVariableService {
   async getVariable(id: string): Promise<SalaryVariable> {
     const variable = await this.repo.findById(id)
     if (!variable) {
-      throw new AppError("Salary variable not found", 404, "Service")
+      throw new AppError(
+        PAYROLL_MESSAGES.ERRORS.SALARY_VARIABLE_NOT_FOUND,
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+      )
     }
     return variable
   }
@@ -30,7 +37,11 @@ export class SalaryVariableService implements ISalaryVariableService {
     // check if code exists
     const existing = await this.repo.findByCode(data.code)
     if (existing) {
-      throw new AppError("Salary variable with this code already exists", 400, "Service")
+      throw new AppError(
+        PAYROLL_MESSAGES.ERRORS.SALARY_VARIABLE_EXISTS,
+        HttpStatusCode.BAD_REQUEST,
+        ErrorLayer.SERVICE,
+      )
     }
 
     return this.repo.create({ ...data, createdById })
@@ -39,13 +50,21 @@ export class SalaryVariableService implements ISalaryVariableService {
   async updateVariable(id: string, data: IUpdateSalaryVariableDTO): Promise<SalaryVariable> {
     const existing = await this.repo.findById(id)
     if (!existing) {
-      throw new AppError("Salary variable not found", 404, "Service")
+      throw new AppError(
+        PAYROLL_MESSAGES.ERRORS.SALARY_VARIABLE_NOT_FOUND,
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+      )
     }
 
     if (data.code && data.code !== existing.code) {
       const codeExists = await this.repo.findByCode(data.code)
       if (codeExists) {
-        throw new AppError("Salary variable with this code already exists", 400, "Service")
+        throw new AppError(
+          PAYROLL_MESSAGES.ERRORS.SALARY_VARIABLE_EXISTS,
+          HttpStatusCode.BAD_REQUEST,
+          ErrorLayer.SERVICE,
+        )
       }
     }
 
@@ -55,7 +74,11 @@ export class SalaryVariableService implements ISalaryVariableService {
   async deleteVariable(id: string): Promise<void> {
     const existing = await this.repo.findById(id)
     if (!existing) {
-      throw new AppError("Salary variable not found", 404, "Service")
+      throw new AppError(
+        PAYROLL_MESSAGES.ERRORS.SALARY_VARIABLE_NOT_FOUND,
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+      )
     }
 
     await this.repo.softDelete(id)

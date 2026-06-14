@@ -1,3 +1,6 @@
+import { PAYROLL_MESSAGES } from "@/configs/messages/payroll.message"
+import { ErrorLayer } from "@/configs/system/error-code.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
   ICreatePayslipTemplateDTO,
   IPayslipTemplateRepository,
@@ -5,6 +8,7 @@ import {
   IUpdatePayslipTemplateDTO,
   PayslipTemplateWithComponents,
 } from "@/types/payroll.types.ts"
+import { AppError } from "@/utils/error.util.ts"
 
 export class PayslipTemplateService implements IPayslipTemplateService {
   constructor(private templateRepo: IPayslipTemplateRepository) {}
@@ -19,7 +23,12 @@ export class PayslipTemplateService implements IPayslipTemplateService {
   ): Promise<PayslipTemplateWithComponents> {
     const template = await this.templateRepo.create(data, createdById)
     const fullTemplate = await this.templateRepo.findById(template.id)
-    if (!fullTemplate) throw new Error("Template not found after creation")
+    if (!fullTemplate)
+      throw new AppError(
+        PAYROLL_MESSAGES.ERRORS.TEMPLATE_NOT_FOUND_CREATE,
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+      )
     return fullTemplate
   }
 
@@ -29,7 +38,12 @@ export class PayslipTemplateService implements IPayslipTemplateService {
   ): Promise<PayslipTemplateWithComponents> {
     await this.templateRepo.update(id, data)
     const fullTemplate = await this.templateRepo.findById(id)
-    if (!fullTemplate) throw new Error("Template not found after update")
+    if (!fullTemplate)
+      throw new AppError(
+        PAYROLL_MESSAGES.ERRORS.TEMPLATE_NOT_FOUND_UPDATE,
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+      )
     return fullTemplate
   }
 

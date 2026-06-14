@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from "@/config/api.config"
+import { PAYROLL_QUERY_KEYS } from "@/config/entities/payroll.config"
 import apiClient from "@/lib/api-client"
 import type { ISalaryComponent } from "@/types/payroll.types"
 
@@ -6,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 export function useSalaryComponents() {
   return useQuery({
-    queryKey: ["salary-components"],
+    queryKey: PAYROLL_QUERY_KEYS.SALARY_COMPONENTS,
     queryFn: async () => {
       const response = await apiClient.get(API_ENDPOINTS.PAYROLL.SALARY_COMPONENTS)
       return response.data.data as ISalaryComponent[]
@@ -22,7 +23,7 @@ export function useCreateSalaryComponent() {
       return response.data.data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["salary-components"] })
+      return queryClient.invalidateQueries({ queryKey: PAYROLL_QUERY_KEYS.SALARY_COMPONENTS })
     },
   })
 }
@@ -35,7 +36,7 @@ export function useUpdateSalaryComponent() {
       return response.data.data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["salary-components"] })
+      return queryClient.invalidateQueries({ queryKey: PAYROLL_QUERY_KEYS.SALARY_COMPONENTS })
     },
   })
 }
@@ -48,7 +49,7 @@ export function useDeleteSalaryComponent() {
       return response.data.data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["salary-components"] })
+      return queryClient.invalidateQueries({ queryKey: PAYROLL_QUERY_KEYS.SALARY_COMPONENTS })
     },
   })
 }
