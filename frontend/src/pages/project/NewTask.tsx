@@ -258,7 +258,7 @@ export default function NewTask() {
       hash = name.charCodeAt(i) + ((hash << 5) - hash)
     }
     const index = Math.abs(hash) % colors.length
-    return colors[index] ?? colors[0]
+    return colors.find((_, i) => i === index) || colors[0]
   }
 
   return (

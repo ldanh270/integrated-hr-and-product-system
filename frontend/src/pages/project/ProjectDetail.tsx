@@ -42,6 +42,7 @@ import {
   TASK_TRACKERS,
 } from "@/config/entities/project.config"
 import { ROLE } from "@/config/entities/employee.config"
+import type { TaskTracker, TaskPriority, TaskStatus } from "@/types/task.types"
 import { employeeApi } from "@/lib/api/employee.api"
 import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
@@ -167,14 +168,14 @@ export default function ProjectDetail() {
         page: currentPage,
         limit: pageSize,
         search: issueSearch || undefined,
-        tracker: trackerFilter === "all" ? undefined : (trackerFilter as any),
-        status: statusFilter === "all" ? undefined : (statusFilter as any),
-        priority: priorityFilter === "all" ? undefined : (priorityFilter as any),
+        tracker: trackerFilter === "all" ? undefined : (trackerFilter as TaskTracker),
+        status: statusFilter === "all" ? undefined : (statusFilter as TaskStatus),
+        priority: priorityFilter === "all" ? undefined : (priorityFilter as TaskPriority),
         assigneeId: assigneeFilter === "all" ? undefined : assigneeFilter,
         categoryId: categoryIdFilter === "all" ? undefined : categoryIdFilter,
         createdById: createdByIdFilter === "all" ? undefined : createdByIdFilter,
         sortBy,
-        sortOrder: sortOrder as any,
+        sortOrder: sortOrder as "asc" | "desc",
       }),
     enabled: !!projectId,
   })
@@ -243,9 +244,9 @@ export default function ProjectDetail() {
     const trTasks = overviewTasks.filter((t) => t.tracker === tr)
     const open = trTasks.filter((t) => ["todo", "in_progress", "in_review", "reopened"].includes(t.status)).length
     const closed = trTasks.filter((t) => ["done", "cancelled"].includes(t.status)).length
-    acc[tr] = { open, closed, total: trTasks.length }
+    acc.set(tr, { open, closed, total: trTasks.length })
     return acc;
-  }, {} as Record<string, { open: number; closed: number; total: number }>)
+  }, new Map<string, { open: number; closed: number; total: number }>())
 
   // Time tracking stats
   const totalEstimatedHours = overviewTasks.reduce((sum, t) => sum + (t.estimatedTime || 0), 0)
@@ -257,13 +258,22 @@ export default function ProjectDetail() {
       return taskCategoryApi.create(projectId, { name })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["project-categories", projectId] })
+      void queryClient.invalidateQueries({ queryKey: ["project-categories", projectId] })
       setNewCategoryName("")
       setCategoryError(null)
       toast.success("Thêm chủ đề dự án thành công")
     },
-    onError: (err: any) => {
-      setCategoryError(err.response?.data?.error?.message || err.message || "Đã xảy ra lỗi")
+    onError: (err: unknown) => {
+      let errorMessage = "Đã xảy ra lỗi"
+      if (err && typeof err === "object" && "response" in err) {
+        const response = (err as { response?: { data?: { error?: { message?: string } } } }).response
+        if (response?.data?.error?.message) {
+          errorMessage = response.data.error.message
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message
+      }
+      setCategoryError(errorMessage)
     },
   })
 
@@ -272,14 +282,23 @@ export default function ProjectDetail() {
       return taskCategoryApi.update(projectId, id, { name })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["project-categories", projectId] })
+      void queryClient.invalidateQueries({ queryKey: ["project-categories", projectId] })
       setEditingCategoryId(null)
       setEditCategoryName("")
       setCategoryError(null)
       toast.success("Cập nhật chủ đề dự án thành công")
     },
-    onError: (err: any) => {
-      setCategoryError(err.response?.data?.error?.message || err.message || "Đã xảy ra lỗi")
+    onError: (err: unknown) => {
+      let errorMessage = "Đã xảy ra lỗi"
+      if (err && typeof err === "object" && "response" in err) {
+        const response = (err as { response?: { data?: { error?: { message?: string } } } }).response
+        if (response?.data?.error?.message) {
+          errorMessage = response.data.error.message
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message
+      }
+      setCategoryError(errorMessage)
     },
   })
 
@@ -288,12 +307,21 @@ export default function ProjectDetail() {
       return taskCategoryApi.delete(projectId, catId)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["project-categories", projectId] })
+      void queryClient.invalidateQueries({ queryKey: ["project-categories", projectId] })
       setCategoryError(null)
       toast.success("Xóa chủ đề dự án thành công")
     },
-    onError: (err: any) => {
-      setCategoryError(err.response?.data?.error?.message || err.message || "Đã xảy ra lỗi")
+    onError: (err: unknown) => {
+      let errorMessage = "Đã xảy ra lỗi"
+      if (err && typeof err === "object" && "response" in err) {
+        const response = (err as { response?: { data?: { error?: { message?: string } } } }).response
+        if (response?.data?.error?.message) {
+          errorMessage = response.data.error.message
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message
+      }
+      setCategoryError(errorMessage)
     },
   })
 
@@ -304,14 +332,23 @@ export default function ProjectDetail() {
       return projectApi.addMember(projectId, memberEmployeeId)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["members", projectId] })
+      void queryClient.invalidateQueries({ queryKey: ["members", projectId] })
       setIsOpenMemberModal(false)
       setMemberEmployeeId("none")
       setMemberError(null)
       toast.success("Thêm thành viên vào dự án thành công")
     },
-    onError: (err: any) => {
-      setMemberError(err.response?.data?.error?.message || err.message || "Đã xảy ra lỗi")
+    onError: (err: unknown) => {
+      let errorMessage = "Đã xảy ra lỗi"
+      if (err && typeof err === "object" && "response" in err) {
+        const response = (err as { response?: { data?: { error?: { message?: string } } } }).response
+        if (response?.data?.error?.message) {
+          errorMessage = response.data.error.message
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message
+      }
+      setMemberError(errorMessage)
     },
   })
 
@@ -335,32 +372,41 @@ export default function ProjectDetail() {
       return projectApi.update(projectId, {
         name: editProjectName.trim(),
         description: editProjectDesc.trim() || null,
-        status: editProjectStatus as any,
-        taskCreationPolicy: editProjectPolicy as any,
+        status: editProjectStatus as (typeof PROJECT_STATUSES)[number],
+        taskCreationPolicy: editProjectPolicy as (typeof TASK_CREATION_POLICIES)[number],
         teamLeaderId: editProjectLeader === "none" ? null : editProjectLeader,
         startDate: editProjectStart || null,
         expectedEndDate: editProjectEnd || null,
       })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["project", projectId] })
-      queryClient.invalidateQueries({ queryKey: ["projects"] })
+      void queryClient.invalidateQueries({ queryKey: ["project", projectId] })
+      void queryClient.invalidateQueries({ queryKey: ["projects"] })
       setIsOpenEditProjectModal(false)
       setEditProjectError(null)
       toast.success("Cập nhật thông tin dự án thành công")
     },
-    onError: (err: any) => {
-      setEditProjectError(err.response?.data?.error?.message || err.message || "Đã xảy ra lỗi")
+    onError: (err: unknown) => {
+      let errorMessage = "Đã xảy ra lỗi"
+      if (err && typeof err === "object" && "response" in err) {
+        const response = (err as { response?: { data?: { error?: { message?: string } } } }).response
+        if (response?.data?.error?.message) {
+          errorMessage = response.data.error.message
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message
+      }
+      setEditProjectError(errorMessage)
     },
   })
 
   // Quick Status update mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ taskId, status }: { taskId: string; status: string }) => {
-      return taskApi.update(taskId, { status: status as any })
+      return taskApi.update(taskId, { status: status as TaskStatus })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", "project", projectId] })
+      void queryClient.invalidateQueries({ queryKey: ["tasks", "project", projectId] })
       toast.success("Cập nhật trạng thái công việc thành công")
     },
   })
@@ -371,7 +417,7 @@ export default function ProjectDetail() {
       return projectApi.removeMember(projectId, employeeId)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["members", projectId] })
+      void queryClient.invalidateQueries({ queryKey: ["members", projectId] })
       toast.success("Đã xóa thành viên khỏi dự án")
     },
   })
@@ -569,7 +615,7 @@ export default function ProjectDetail() {
                   </TableHeader>
                   <TableBody>
                     {TASK_TRACKERS.map((tr) => {
-                      const stat = trackerStats[tr] || { open: 0, closed: 0, total: 0 }
+                      const stat = trackerStats.get(tr) || { open: 0, closed: 0, total: 0 }
                       if (stat.total === 0) return null; // Only show trackers with tasks
                       return (
                         <TableRow key={tr} className="h-12 hover:bg-muted/30">

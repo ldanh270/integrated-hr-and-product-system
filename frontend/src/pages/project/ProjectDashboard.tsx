@@ -19,6 +19,7 @@ import { Link } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import LogTimeModal from "@/components/features/project/LogTimeModal"
+import type { Task } from "@/types/task.types"
 
 export default function ProjectDashboard() {
   const { user } = useAuthStore()
@@ -29,7 +30,7 @@ export default function ProjectDashboard() {
     isOpen: boolean
     x: number
     y: number
-    task: any | null
+    task: Task | null
   }>({
     isOpen: false,
     x: 0,
@@ -96,25 +97,34 @@ export default function ProjectDashboard() {
 
   // Update Task Mutation
   const updateTaskMutation = useMutation({
-    mutationFn: async (payload: { taskId: string; data: any }) => {
+    mutationFn: async (payload: { taskId: string; data: Record<string, unknown> }) => {
       return taskApi.update(payload.taskId, payload.data)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] })
+      void queryClient.invalidateQueries({ queryKey: ["tasks"] })
       toast.success("Issue updated successfully")
       setContextMenu({ isOpen: false, x: 0, y: 0, task: null })
     },
-    onError: (err: any) => {
-      toast.error(err.response?.data?.error?.message || err.message || "Failed to update issue")
+    onError: (err: unknown) => {
+      let errorMessage = "Failed to update issue"
+      if (err && typeof err === "object" && "response" in err) {
+        const response = (err as { response?: { data?: { error?: { message?: string } } } }).response
+        if (response?.data?.error?.message) {
+          errorMessage = response.data.error.message
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message
+      }
+      toast.error(errorMessage)
     },
   })
 
-  const handleUpdateTask = (data: any) => {
+  const handleUpdateTask = (data: Record<string, unknown>) => {
     if (!contextMenu.task) return
     updateTaskMutation.mutate({ taskId: contextMenu.task.id, data })
   }
 
-  const handleRowContextMenu = (e: React.MouseEvent, task: any) => {
+  const handleRowContextMenu = (e: React.MouseEvent, task: Task) => {
     e.preventDefault()
     let x = e.clientX
     let y = e.clientY
@@ -200,7 +210,7 @@ export default function ProjectDashboard() {
               return (
                 <TableRow
                   key={task.id}
-                  onContextMenu={(e) => handleRowContextMenu(e, task)}
+                  onContextMenu={(e) => { handleRowContextMenu(e, task); }}
                   className={`h-14 hover:bg-muted/50 transition-colors cursor-default ${
                     isMenuOpenForTask ? "bg-blue-600/15 hover:bg-blue-600/20 dark:bg-blue-950/30" : ""
                   }`}
@@ -334,7 +344,7 @@ export default function ProjectDashboard() {
             size="sm"
             className="h-8 px-3 rounded-full text-[11px] font-semibold"
             disabled={currentPage === 1}
-            onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+            onClick={() => { onPageChange(Math.max(1, currentPage - 1)); }}
           >
             Trước
           </Button>
@@ -345,7 +355,7 @@ export default function ProjectDashboard() {
               return (
                 <button
                   key={p}
-                  onClick={() => onPageChange(p)}
+                  onClick={() => { onPageChange(p); }}
                   className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors text-[11px] font-semibold border ${
                     currentPage === p
                       ? "bg-primary text-primary-foreground border-primary"
@@ -362,7 +372,7 @@ export default function ProjectDashboard() {
             size="sm"
             className="h-8 px-3 rounded-full text-[11px] font-semibold"
             disabled={currentPage === totalPages || totalPages === 0}
-            onClick={() => onPageChange(currentPage + 1)}
+            onClick={() => { onPageChange(currentPage + 1); }}
           >
             Sau
           </Button>
@@ -370,6 +380,8 @@ export default function ProjectDashboard() {
       </div>
     )
   }
+
+  const activeTask = contextMenu.task
 
   return (
     <div className="container p-8 space-y-6">
@@ -540,7 +552,7 @@ export default function ProjectDashboard() {
       </div>
 
       {/* Floating Context Menu */}
-      {contextMenu.isOpen && contextMenu.task && (
+      {contextMenu.isOpen && activeTask && (
         <div
           id="dashboard-context-menu"
           className="fixed z-50 min-w-[160px] bg-background border border-border rounded-lg shadow-lg p-1.5 flex flex-col select-none"
@@ -548,8 +560,8 @@ export default function ProjectDashboard() {
         >
           {/* Edit / View details */}
           <Link
-            to={`/project/tasks/${contextMenu.task.id}`}
-            onClick={() => setContextMenu({ isOpen: false, x: 0, y: 0, task: null })}
+            to={`/project/tasks/${activeTask.id}`}
+            onClick={() => { setContextMenu({ isOpen: false, x: 0, y: 0, task: null }); }}
             className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground hover:no-underline"
           >
             <User size={12} className="shrink-0" />
@@ -575,11 +587,11 @@ export default function ProjectDashboard() {
                   { name: "Hoàn thành", id: "done" },
                   { name: "Hủy bỏ", id: "cancelled" },
                 ].map((st) => {
-                  const isActive = contextMenu.task.status === st.id
+                  const isActive = activeTask.status === st.id
                   return (
                     <button
                       key={st.name}
-                      onClick={() => handleUpdateTask({ status: st.id })}
+                      onClick={() => { handleUpdateTask({ status: st.id }); }}
                       className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between"
                     >
                       <span>{st.name}</span>
@@ -608,11 +620,11 @@ export default function ProjectDashboard() {
                   { label: "Hỗ trợ", value: "support" },
                   { label: "Nhiệm vụ", value: "task" },
                 ].map((tr) => {
-                  const isActive = contextMenu.task.tracker === tr.value
+                  const isActive = activeTask.tracker === tr.value
                   return (
                     <button
                       key={tr.value}
-                      onClick={() => handleUpdateTask({ tracker: tr.value })}
+                      onClick={() => { handleUpdateTask({ tracker: tr.value }); }}
                       className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between"
                     >
                       <span>{tr.label}</span>
@@ -641,11 +653,11 @@ export default function ProjectDashboard() {
                   { label: "Cao", value: "high" },
                   { label: "Khẩn cấp", value: "urgent" },
                 ].map((pr) => {
-                  const isActive = contextMenu.task.priority === pr.value
+                  const isActive = activeTask.priority === pr.value
                   return (
                     <button
                       key={pr.value}
-                      onClick={() => handleUpdateTask({ priority: pr.value })}
+                      onClick={() => { handleUpdateTask({ priority: pr.value }); }}
                       className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between"
                     >
                       <span>{pr.label}</span>
@@ -669,18 +681,18 @@ export default function ProjectDashboard() {
             <div className="absolute left-full top-0 -ml-2 pl-3 hidden group-hover/sub:block z-50">
               <div className="bg-background border border-border rounded-lg shadow-md p-1 min-w-[150px] max-h-[180px] overflow-y-auto">
                 <button
-                  onClick={() => handleUpdateTask({ assigneeId: null })}
+                  onClick={() => { handleUpdateTask({ assigneeId: null }); }}
                   className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between border-b border-border/40 pb-1"
                 >
                   <span>Chưa phân công</span>
-                  {!contextMenu.task.assigneeId && <span className="text-[10px] font-bold">✓</span>}
+                  {!activeTask.assigneeId && <span className="text-[10px] font-bold">✓</span>}
                 </button>
                 {activeProjectMembers?.map((m) => {
-                  const isActive = contextMenu.task.assigneeId === m.employeeId
+                  const isActive = activeTask.assigneeId === m.employeeId
                   return (
                     <button
                       key={m.id}
-                      onClick={() => handleUpdateTask({ assigneeId: m.employeeId })}
+                      onClick={() => { handleUpdateTask({ assigneeId: m.employeeId }); }}
                       className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between"
                     >
                       <span className="truncate">{m.employee?.fullName || "Chưa rõ"}</span>
@@ -704,11 +716,11 @@ export default function ProjectDashboard() {
             <div className="absolute left-full top-0 -ml-2 pl-3 hidden group-hover/sub:block z-50">
               <div className="bg-background border border-border rounded-lg shadow-md p-1 min-w-[100px] max-h-[180px] overflow-y-auto">
                 {["0", "10", "20", "30", "40", "50", "60", "70", "80", "90", "100"].map((p) => {
-                  const isActive = contextMenu.task.progress === Number(p)
+                  const isActive = activeTask.progress === Number(p)
                   return (
                     <button
                       key={p}
-                      onClick={() => handleUpdateTask({ progress: Number(p) })}
+                      onClick={() => { handleUpdateTask({ progress: Number(p) }); }}
                       className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between font-mono"
                     >
                       <span>{p} %</span>
@@ -734,7 +746,11 @@ export default function ProjectDashboard() {
                 {activeProjectMembers?.map((m) => (
                   <button
                     key={m.id}
-                    onClick={() => m.employee?.fullName && toast.success(`Đang theo dõi bởi: ${m.employee.fullName}`)}
+                    onClick={() => {
+                      if (m.employee?.fullName) {
+                        toast.success(`Đang theo dõi bởi: ${m.employee.fullName}`);
+                      }
+                    }}
                     className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer text-left truncate"
                   >
                     {m.employee?.fullName || "Chưa rõ"}
@@ -749,7 +765,7 @@ export default function ProjectDashboard() {
           {/* Log Time */}
           <button
             onClick={() => {
-              setLogTimeTask({ id: contextMenu.task.id, title: contextMenu.task.title })
+              setLogTimeTask({ id: activeTask.id, title: activeTask.title })
               setIsLogTimeOpen(true)
               setContextMenu({ isOpen: false, x: 0, y: 0, task: null })
             }}
@@ -761,8 +777,8 @@ export default function ProjectDashboard() {
 
           {/* Add Subtask */}
           <Link
-            to={`/project/${contextMenu.task.projectId}/tasks/new?parentTaskId=${contextMenu.task.id}`}
-            onClick={() => setContextMenu({ isOpen: false, x: 0, y: 0, task: null })}
+            to={`/project/${activeTask.projectId}/tasks/new?parentTaskId=${activeTask.id}`}
+            onClick={() => { setContextMenu({ isOpen: false, x: 0, y: 0, task: null }); }}
             className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground hover:no-underline"
           >
             <Plus size={12} className="shrink-0" />
@@ -772,8 +788,8 @@ export default function ProjectDashboard() {
           {/* Copy Link */}
           <button
             onClick={() => {
-              const link = window.location.origin + `/project/tasks/${contextMenu.task.id}`
-              navigator.clipboard.writeText(link)
+              const link = window.location.origin + `/project/tasks/${activeTask.id}`
+              void navigator.clipboard.writeText(link)
               toast.success("Đã sao chép liên kết vào bộ nhớ tạm")
               setContextMenu({ isOpen: false, x: 0, y: 0, task: null })
             }}
