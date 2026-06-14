@@ -21,9 +21,9 @@ export class WorkingShiftsSeeder implements ISeeder {
         startTime: 8 * 60, // 480
         endTime: 17 * 60, // 1020
         gracePeriodMinutes: 15,
-        gpsLat: 10.762622, // Example coordinates (HCMC)
-        gpsLng: 106.660172,
-        gpsRadiusMeters: 200,
+        gpsLat: 15.975011, // FPT University Da Nang
+        gpsLng: 108.253215,
+        gpsRadiusMeters: 500,
         isActive: true,
         createdById: adminId,
       },
@@ -32,9 +32,9 @@ export class WorkingShiftsSeeder implements ISeeder {
         startTime: 13 * 60, // 780
         endTime: 21 * 60, // 1260
         gracePeriodMinutes: 15,
-        gpsLat: 10.762622,
-        gpsLng: 106.660172,
-        gpsRadiusMeters: 200,
+        gpsLat: 15.975011,
+        gpsLng: 108.253215,
+        gpsRadiusMeters: 500,
         isActive: true,
         createdById: adminId,
       },
@@ -43,9 +43,9 @@ export class WorkingShiftsSeeder implements ISeeder {
         startTime: 22 * 60, // 1320
         endTime: 6 * 60, // 360 (next day implicitly handled by logic)
         gracePeriodMinutes: 15,
-        gpsLat: 10.762622,
-        gpsLng: 106.660172,
-        gpsRadiusMeters: 200,
+        gpsLat: 15.975011,
+        gpsLng: 108.253215,
+        gpsRadiusMeters: 500,
         isActive: true,
         createdById: adminId,
       },
