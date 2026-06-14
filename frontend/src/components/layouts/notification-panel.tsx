@@ -98,7 +98,9 @@ export default function NotificationPanel() {
               {notifications.map((n) => (
                 <div
                   key={n.id}
-                  onClick={() => markAsRead(n.id)}
+                  onClick={() => {
+                    markAsRead(n.id)
+                  }}
                   className={`flex cursor-pointer flex-col gap-1 border-b border-border/50 px-4 py-3 transition-colors hover:bg-secondary/50 last:border-0 ${
                     !n.read ? "bg-primary/5" : ""
                   }`}

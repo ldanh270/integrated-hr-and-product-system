@@ -43,19 +43,18 @@ export function PayrollHistoryTable({ payrolls, isLoading }: PayrollHistoryTable
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
 
-  const filteredPayrolls =
-    payrolls?.filter((p) => {
-      const s = searchTerm.toLowerCase()
-      const periodStr = `${p.periodMonth}/${p.periodYear}`
-      const periodStrZero = `${String(p.periodMonth).padStart(2, "0")}/${p.periodYear}`
-      const statusStr = PAYROLL_STATUS_LABELS[p.status]?.toLowerCase() || ""
-      return (
-        p.id.toLowerCase().includes(s) ||
-        periodStr.includes(s) ||
-        periodStrZero.includes(s) ||
-        statusStr.includes(s)
-      )
-    }) || []
+  const filteredPayrolls = payrolls.filter((p) => {
+    const s = searchTerm.toLowerCase()
+    const periodStr = `${p.periodMonth}/${p.periodYear}`
+    const periodStrZero = `${String(p.periodMonth).padStart(2, "0")}/${p.periodYear}`
+    const statusStr = PAYROLL_STATUS_LABELS[p.status].toLowerCase()
+    return (
+      p.id.toLowerCase().includes(s) ||
+      periodStr.includes(s) ||
+      periodStrZero.includes(s) ||
+      statusStr.includes(s)
+    )
+  })
 
   const paginatedPayrolls = filteredPayrolls.slice((page - 1) * limit, page * limit)
   const totalPages = Math.ceil(filteredPayrolls.length / limit)
@@ -79,7 +78,7 @@ export function PayrollHistoryTable({ payrolls, isLoading }: PayrollHistoryTable
     )
   }
 
-  if (!payrolls || payrolls.length === 0) {
+  if (payrolls.length === 0) {
     return (
       <div className="w-full py-12 flex flex-col items-center justify-center border rounded-xl border-dashed">
         <Clock className="h-8 w-8 text-muted-foreground mb-4 opacity-50" />
@@ -156,13 +155,13 @@ export function PayrollHistoryTable({ payrolls, isLoading }: PayrollHistoryTable
                   </TableCell>
                   <TableCell className="px-4 py-3">
                     <Badge
-                      variant={payroll.status ? PAYROLL_STATUS_BADGE[payroll.status] : "default"}
+                      variant={PAYROLL_STATUS_BADGE[payroll.status]}
                       className="rounded-full shadow-none font-medium px-2.5 py-0.5"
                     >
                       {isDraft && <Clock className="w-3 h-3 mr-1" />}
                       {isApproved && <CheckCircle2 className="w-3 h-3 mr-1" />}
                       {!isDraft && !isApproved && <XCircle className="w-3 h-3 mr-1" />}
-                      {payroll.status ? PAYROLL_STATUS_LABELS[payroll.status] : "Không rõ"}
+                      {PAYROLL_STATUS_LABELS[payroll.status]}
                     </Badge>
                   </TableCell>
                   <TableCell className="hidden md:table-cell px-4 py-3 text-muted-foreground">

@@ -52,7 +52,7 @@ export function useGeneratePayroll() {
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { message?: string } } }
-      toast.error(error?.response?.data?.message || PAYROLL_MESSAGES.ERRORS.GENERATE_PAYROLL)
+      toast.error(error.response?.data?.message || PAYROLL_MESSAGES.ERRORS.GENERATE_PAYROLL)
     },
   })
 }
@@ -67,7 +67,7 @@ export function useApprovePayroll() {
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { message?: string } } }
-      toast.error(error?.response?.data?.message || PAYROLL_MESSAGES.ERRORS.APPROVE_PAYROLL)
+      toast.error(error.response?.data?.message || PAYROLL_MESSAGES.ERRORS.APPROVE_PAYROLL)
     },
   })
 }
@@ -82,7 +82,7 @@ export function useRejectPayroll() {
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { message?: string } } }
-      toast.error(error?.response?.data?.message || PAYROLL_MESSAGES.ERRORS.REJECT_PAYROLL)
+      toast.error(error.response?.data?.message || PAYROLL_MESSAGES.ERRORS.REJECT_PAYROLL)
     },
   })
 }

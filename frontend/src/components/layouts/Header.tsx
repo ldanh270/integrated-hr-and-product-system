@@ -38,7 +38,9 @@ export default function Header() {
               <SheetContent side="left" className="w-64 border-r-0 p-0">
                 <Sidebar
                   isMobile
-                  onNavClick={() => setMobileMenuOpen(false)}
+                  onNavClick={() => {
+                    setMobileMenuOpen(false)
+                  }}
                   className="h-full border-r-0"
                 />
               </SheetContent>

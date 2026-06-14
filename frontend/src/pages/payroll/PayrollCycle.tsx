@@ -239,7 +239,9 @@ function PayrollCycleForm({ settings }: { settings: IPayrollSettings }) {
       title="Thiết lập Chu kỳ lương"
       formId="payroll-cycle-form"
       isReadOnly={false}
-      onBack={() => navigate(-1)}
+      onBack={() => {
+        navigate(-1)
+      }}
       isPending={isPending}
       isDirty={form.formState.isDirty}
       submitLabel="Lưu thay đổi"

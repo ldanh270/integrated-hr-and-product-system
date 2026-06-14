@@ -66,7 +66,9 @@ export function useSalaryComponentForm({
       formulaValue ? 500 : 0,
     )
 
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+    }
   }, [formulaValue])
 
   // Derive formula validation status

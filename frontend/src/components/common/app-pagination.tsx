@@ -85,7 +85,9 @@ export function AppPagination({
             <span>Hiển thị</span>
             <Select
               value={itemsPerPage.toString()}
-              onValueChange={(val) => onItemsPerPageChange(Number(val))}
+              onValueChange={(val) => {
+                onItemsPerPageChange(Number(val))
+              }}
             >
               <SelectTrigger className="w-17.5 h-8 bg-background">
                 <SelectValue />
