@@ -5,6 +5,11 @@ const MainLayout = lazy(() => import("@/layouts/MainLayout.tsx"))
 // Public routes
 const publicRoutes = [
   { path: "/login", component: lazy(() => import("@/pages/auth/Login.tsx")), layout: null },
+  {
+    path: "/reset-password",
+    component: lazy(() => import("@/pages/auth/ResetPassword.tsx")),
+    layout: null,
+  },
 ]
 
 // Private routes
