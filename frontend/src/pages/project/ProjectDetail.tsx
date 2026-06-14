@@ -1,6 +1,9 @@
+// Import layout card structures and visual status display pills
 import { PageCard, StatusPill } from "@/components/common"
+// Import custom UI badge and button elements
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+// Import custom UI Dialog layouts
 import {
   Dialog,
   DialogContent,
@@ -8,14 +11,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+// Import custom UI dropdown-menu layouts
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+// Import custom UI form inputs and label components
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+// Import custom UI select controls
 import {
   Select,
   SelectContent,
@@ -23,7 +29,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+// Import Skeleton screen layout placeholder
 import { Skeleton } from "@/components/ui/skeleton"
+// Import custom UI tables
 import {
   Table,
   TableBody,
@@ -32,8 +40,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+// Import custom tabs selectors
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
+// Import project domain entity configurations lists
 import {
   PROJECT_STATUSES,
   TASK_CREATION_POLICIES,
@@ -41,14 +51,20 @@ import {
   TASK_STATUSES,
   TASK_TRACKERS,
 } from "@/config/entities/project.config"
+// Import employee roles definitions
 import { ROLE } from "@/config/entities/employee.config"
+// Import tracker type specifications
 import type { TaskTracker, TaskPriority, TaskStatus } from "@/types/task.types"
+// Import API endpoint wrappers
 import { employeeApi } from "@/lib/api/employee.api"
 import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
 import { taskCategoryApi } from "@/lib/api/task-category.api"
+// Import authorization store
 import { useAuthStore } from "@/store/auth-store"
+// Import TanStack Query hooks for querying and mutating server data
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+// Import Lucide icons
 import {
   Activity,
   AlertCircle,
@@ -63,43 +79,50 @@ import {
   UserPlus,
   Users,
 } from "lucide-react"
+// Import React hooks
 import { useState, useEffect } from "react"
+// Import routing hooks for route values, search queries, and navigate callbacks
 import { Link, useParams, useSearchParams, useNavigate } from "react-router-dom"
+// Import Toast notifications provider
 import { toast } from "sonner"
 
+// Main React component to render project details dashboard
 export default function ProjectDetail() {
+  // Extract active project ID from routing params
   const { id } = useParams<{ id: string }>()
   const projectId = id || ""
+  
+  // Initialize query client, navigator, search query parameters, and auth state store
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const openCreateParam = searchParams.get("createTask") === "true"
   const { user } = useAuthStore()
 
-  // Tab State
+  // Active Tab State: holds the name of the currently selected tab
   const [activeTab, setActiveTab] = useState("overview")
 
-  // Filters & Pagination State for Issues
-  const [issueSearch, setIssueSearch] = useState("")
-  const [trackerFilter, setTrackerFilter] = useState<string>("all")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [priorityFilter, setPriorityFilter] = useState<string>("all")
-  const [assigneeFilter, setAssigneeFilter] = useState<string>("all")
-  const [categoryIdFilter, setCategoryIdFilter] = useState<string>("all")
-  const [createdByIdFilter, setCreatedByIdFilter] = useState<string>("all")
-  const [sortBy, setSortBy] = useState<string>("createdAt")
-  const [sortOrder, setSortOrder] = useState<string>("desc")
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(25)
+  // Filter & Pagination States: variables used to filter and paginate tasks in the Issues tab
+  const [issueSearch, setIssueSearch] = useState("") // Search keyword
+  const [trackerFilter, setTrackerFilter] = useState<string>("all") // Tracker type filter
+  const [statusFilter, setStatusFilter] = useState<string>("all") // Task status filter
+  const [priorityFilter, setPriorityFilter] = useState<string>("all") // Task priority filter
+  const [assigneeFilter, setAssigneeFilter] = useState<string>("all") // Task assignee ID filter
+  const [categoryIdFilter, setCategoryIdFilter] = useState<string>("all") // Task category ID filter
+  const [createdByIdFilter, setCreatedByIdFilter] = useState<string>("all") // Task creator ID filter
+  const [sortBy, setSortBy] = useState<string>("createdAt") // Sorting field parameter
+  const [sortOrder, setSortOrder] = useState<string>("desc") // Sorting order parameter
+  const [currentPage, setCurrentPage] = useState(1) // Active page number index
+  const [pageSize, setPageSize] = useState(25) // Page size limit count
 
-  // Category management states
-  const [isOpenCreateCategoryModal, setIsOpenCreateCategoryModal] = useState(false)
-  const [newCategoryName, setNewCategoryName] = useState("")
-  const [categoryError, setCategoryError] = useState<string | null>(null)
-  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
-  const [editCategoryName, setEditCategoryName] = useState("")
+  // Category management States: fields to manage project tags/categories create/update modal
+  const [isOpenCreateCategoryModal, setIsOpenCreateCategoryModal] = useState(false) // Category modal visibility
+  const [newCategoryName, setNewCategoryName] = useState("") // Title input for category creation
+  const [categoryError, setCategoryError] = useState<string | null>(null) // Category errors warning message
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null) // Category ID currently being modified
+  const [editCategoryName, setEditCategoryName] = useState("") // Edited title input
 
-  // Reset pagination when filters change
+  // Side-effect hook: automatically resets current page index back to 1 when filters are updated
   useEffect(() => {
     setCurrentPage(1)
   }, [
@@ -112,39 +135,39 @@ export default function ProjectDetail() {
     createdByIdFilter,
   ])
 
-  // Modals state
-  const [isOpenMemberModal, setIsOpenMemberModal] = useState(false)
-  const [isOpenEditProjectModal, setIsOpenEditProjectModal] = useState(false)
+  // Modals Visibility States: handles backdrop dialog overlay overlays
+  const [isOpenMemberModal, setIsOpenMemberModal] = useState(false) // Add project member dialog
+  const [isOpenEditProjectModal, setIsOpenEditProjectModal] = useState(false) // Edit project dialog
 
-  // Add Member form state
-  const [memberEmployeeId, setMemberEmployeeId] = useState("none")
-  const [memberError, setMemberError] = useState<string | null>(null)
+  // Add Member Form States: holds details for adding a member
+  const [memberEmployeeId, setMemberEmployeeId] = useState("none") // Member employee identifier
+  const [memberError, setMemberError] = useState<string | null>(null) // Member error message
 
-  // Edit Project form state
-  const [editProjectName, setEditProjectName] = useState("")
-  const [editProjectDesc, setEditProjectDesc] = useState("")
-  const [editProjectStatus, setEditProjectStatus] = useState("")
-  const [editProjectPolicy, setEditProjectPolicy] = useState("")
-  const [editProjectLeader, setEditProjectLeader] = useState("none")
-  const [editProjectStart, setEditProjectStart] = useState("")
-  const [editProjectEnd, setEditProjectEnd] = useState("")
-  const [editProjectError, setEditProjectError] = useState<string | null>(null)
+  // Edit Project Settings Form States: binds inputs for updating project configs
+  const [editProjectName, setEditProjectName] = useState("") // Project name input
+  const [editProjectDesc, setEditProjectDesc] = useState("") // Project description input
+  const [editProjectStatus, setEditProjectStatus] = useState("") // Status select input
+  const [editProjectPolicy, setEditProjectPolicy] = useState("") // Task creation policy select input
+  const [editProjectLeader, setEditProjectLeader] = useState("none") // Team leader select input
+  const [editProjectStart, setEditProjectStart] = useState("") // Start date input
+  const [editProjectEnd, setEditProjectEnd] = useState("") // Expected end date input
+  const [editProjectError, setEditProjectError] = useState<string | null>(null) // Project update errors banner
 
-  // 1. Fetch Project Details
+  // Query hook: fetches metadata properties of the active project entity
   const { data: project, isLoading: isLoadingProject } = useQuery({
     queryKey: ["project", projectId],
     queryFn: () => projectApi.getOne(projectId),
     enabled: !!projectId,
   })
 
-  // 2a. Fetch all Tasks for Overview stats
+  // Query hook: fetches all tasks under project without pagination (for overview statistics mapping)
   const { data: overviewTasksData } = useQuery({
     queryKey: ["tasks", "overview", projectId],
     queryFn: () => taskApi.list({ projectId, limit: 1000 }),
     enabled: !!projectId,
   })
 
-  // 2b. Fetch Paginated Tasks for Issues Tab
+  // Query hook: fetches paginated, filtered lists of tasks for display in Issues tab
   const { data: tasksData, isLoading: isLoadingTasks } = useQuery({
     queryKey: [
       "tasks",
@@ -180,66 +203,67 @@ export default function ProjectDetail() {
     enabled: !!projectId,
   })
 
-  // Fetch Categories of the project
+  // Query hook: fetches project categories to populate category selection selects
   const { data: categories } = useQuery({
     queryKey: ["project-categories", projectId],
     queryFn: () => taskCategoryApi.list(projectId),
     enabled: !!projectId,
   })
 
-  // 3. Fetch Spent Time Logs of this project
+  // Query hook: fetches spent time records logs list
   const { data: spentTimes, isLoading: isLoadingSpent } = useQuery({
     queryKey: ["spentTimes", "project", projectId],
     queryFn: () => taskApi.listSpentTimes({ projectId }),
     enabled: !!projectId,
   })
 
-  // 4. Fetch Members of this project
+  // Query hook: fetches members currently assigned to the project
   const { data: members } = useQuery({
     queryKey: ["members", projectId],
     queryFn: () => projectApi.getMembers(projectId),
     enabled: !!projectId,
   })
 
-  // 5. Fetch all Employees for Add Member / Edit Project leader select
+  // Query hook: fetches all active employees database (manager settings use cases)
   const { data: allEmployeesData } = useQuery({
     queryKey: ["employees"],
     queryFn: () => employeeApi.list({ limit: 200 }),
     enabled: true,
   })
 
+  // Safely extract lists arrays, fallback to empty arrays on undefined responses
   const tasks = tasksData?.data || []
   const allEmployees = allEmployeesData?.data || []
 
-  // Check roles/permissions
+  // Check roles/permissions to verify access levels
   const isLeader = project?.teamLeaderId === user?.id
   const isAdminOrGM = user?.role === ROLE.ADMIN || user?.role === ROLE.GENERAL_MANAGER
   const isProjectMember = members?.some((m) => m.employeeId === user?.id) || isLeader
 
-  // Enforce task creation policy
-  // policy: leader_only (TL/Admin/GM only) or all_members (any member)
+  // Enforce task creation policy based on user roles and project configuration settings
+  // policy: leader_only (restricted to TL/Admin/GM) or all_members (any member can create tasks)
   const canCreateTask =
     isAdminOrGM ||
     isLeader ||
     (isProjectMember && project?.taskCreationPolicy === "all_members")
 
-  // Trigger task page if query param is set
+  // Auto-redirect to task creation screen if search parameter 'createTask' is present and user has permission
   useEffect(() => {
     if (openCreateParam && canCreateTask) {
       navigate(`/project/${projectId}/tasks/new`, { replace: true })
     }
   }, [openCreateParam, canCreateTask, projectId, navigate])
 
-  // Enforce project configuration update policy (Leader/Admin/GM only)
+  // Determine if the current user is allowed to manage project members (TL/Admin/GM only)
   const canManageMembers = isAdminOrGM || isLeader
 
-  // Calculate stats for Overview Tab using all tasks
+  // Calculate statistics for the Overview Tab using all fetched tasks
   const overviewTasks = overviewTasksData?.data || []
   const openTasksCount = overviewTasks.filter((t) => ["todo", "in_progress", "in_review", "reopened"].includes(t.status)).length
   const closedTasksCount = overviewTasks.filter((t) => ["done", "cancelled"].includes(t.status)).length
   const totalTasksCount = overviewTasks.length
 
-  // Stats by tracker
+  // Calculate task counts and statuses grouped by tracker types (e.g. bug, feature)
   const trackerStats = TASK_TRACKERS.reduce((acc, tr) => {
     const trTasks = overviewTasks.filter((t) => t.tracker === tr)
     const open = trTasks.filter((t) => ["todo", "in_progress", "in_review", "reopened"].includes(t.status)).length
@@ -248,11 +272,11 @@ export default function ProjectDetail() {
     return acc;
   }, new Map<string, { open: number; closed: number; total: number }>())
 
-  // Time tracking stats
+  // Compute total estimated time and actual spent time hours for the project
   const totalEstimatedHours = overviewTasks.reduce((sum, t) => sum + (t.estimatedTime || 0), 0)
   const totalSpentHours = spentTimes?.reduce((sum, st) => sum + st.hours, 0) || 0
 
-  // Category CRUD mutations
+  // Category CRUD mutations: Create new task category under this project
   const createCategoryMutation = useMutation({
     mutationFn: async (name: string) => {
       return taskCategoryApi.create(projectId, { name })
@@ -277,6 +301,7 @@ export default function ProjectDetail() {
     },
   })
 
+  // Category CRUD mutations: Update existing category properties
   const updateCategoryMutation = useMutation({
     mutationFn: async ({ id, name }: { id: string; name: string }) => {
       return taskCategoryApi.update(projectId, id, { name })
@@ -302,6 +327,7 @@ export default function ProjectDetail() {
     },
   })
 
+  // Category CRUD mutations: Delete category by ID
   const deleteCategoryMutation = useMutation({
     mutationFn: async (catId: string) => {
       return taskCategoryApi.delete(projectId, catId)
@@ -325,7 +351,7 @@ export default function ProjectDetail() {
     },
   })
 
-  // Add Member mutation
+  // Add Member mutation: Add selected employee to project members list
   const addMemberMutation = useMutation({
     mutationFn: async () => {
       if (memberEmployeeId === "none") throw new Error("Vui lòng chọn nhân viên")
@@ -352,7 +378,7 @@ export default function ProjectDetail() {
     },
   })
 
-  // Edit Project handlers
+  // Edit Project handlers: Open and populate edit details dialog
   const handleOpenEditProject = () => {
     if (!project) return
     setEditProjectName(project.name)
@@ -366,6 +392,7 @@ export default function ProjectDetail() {
     setIsOpenEditProjectModal(true)
   }
 
+  // Update Project configuration settings mutation
   const updateProjectMutation = useMutation({
     mutationFn: async () => {
       if (!editProjectName.trim()) throw new Error("Vui lòng nhập tên dự án")
@@ -400,7 +427,7 @@ export default function ProjectDetail() {
     },
   })
 
-  // Quick Status update mutation
+  // Quick Status update mutation for task rows in table list views
   const updateStatusMutation = useMutation({
     mutationFn: async ({ taskId, status }: { taskId: string; status: string }) => {
       return taskApi.update(taskId, { status: status as TaskStatus })
@@ -411,7 +438,7 @@ export default function ProjectDetail() {
     },
   })
 
-  // Delete project member
+  // Delete project member relationship from team membership list
   const removeMemberMutation = useMutation({
     mutationFn: async (employeeId: string) => {
       return projectApi.removeMember(projectId, employeeId)
@@ -422,6 +449,7 @@ export default function ProjectDetail() {
     },
   })
 
+  // Loading state placeholder view using Skeleton structure panels
   if (isLoadingProject) {
     return (
       <div className="container p-8 space-y-6">
@@ -435,6 +463,7 @@ export default function ProjectDetail() {
     )
   }
 
+  // Error feedback view if the target project record is not found in database
   if (!project) {
     return (
       <div className="container p-8 text-center space-y-4">
@@ -459,6 +488,7 @@ export default function ProjectDetail() {
     hours?: number
   }> = []
 
+  // Add recorded spent time sessions to activities log array
   spentTimes?.forEach((st) => {
     activitiesList.push({
       id: st.id,
@@ -471,6 +501,7 @@ export default function ProjectDetail() {
     })
   })
 
+  // Add newly created task events to activities log array
   overviewTasks.forEach((t) => {
     activitiesList.push({
       id: `task-create-${t.id}`,
@@ -481,15 +512,16 @@ export default function ProjectDetail() {
     })
   })
 
-  // Sort activities by date descending
+  // Sort consolidated activity records chronological from most recent to oldest
   activitiesList.sort((a, b) => b.date.getTime() - a.date.getTime())
 
-  // Pagination range and page helpers
+  // Pagination range parameters and total metrics calculations
   const totalItems = tasksData?.meta.total || 0
   const totalPages = tasksData?.meta.totalPages || 1
   const startRange = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1
   const endRange = Math.min(currentPage * pageSize, totalItems)
 
+  // Determine which page numbers to render in pagination controls layout (supporting ellipsis truncation)
   const getPageNumbers = () => {
     const pages: (number | string)[] = []
     if (totalPages <= 5) {
@@ -506,8 +538,7 @@ export default function ProjectDetail() {
     return pages
   }
 
-  // Formatting helpers
-
+  // Helper function to map task status values to localized Vietnamese titles
   const formatStatus = (status: string) => {
     if (status === "todo") return "Đang mở"
     if (status === "in_progress") return "Đang làm"
@@ -518,6 +549,7 @@ export default function ProjectDetail() {
     return status
   }
 
+  // Helper function to map status values to semantic visual color themes/variants
   const getStatusVariant = (status: string) => {
     if (status === "done") return "success"
     if (status === "in_progress") return "warning"
@@ -529,6 +561,7 @@ export default function ProjectDetail() {
 
   return (
     <div className="container p-8 space-y-6">
+      {/* Top Header Section displaying project title and detail summary info */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border pb-6">
         <div>
           <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
@@ -540,6 +573,7 @@ export default function ProjectDetail() {
           )}
         </div>
 
+        {/* Global project settings and creation actions row buttons */}
         <div className="flex flex-wrap items-center gap-2">
           {canCreateTask && (
             <Button
@@ -569,6 +603,7 @@ export default function ProjectDetail() {
                 <Settings className="size-4" />
                 Chỉnh sửa dự án
               </Button>
+              {/* Dialog button trigger to add new project members */}
               <Button
                 variant="outline"
                 onClick={() => { setIsOpenMemberModal(true); }}
@@ -582,6 +617,7 @@ export default function ProjectDetail() {
         </div>
       </div>
 
+      {/* Tabs navigation panel: switches between Overview, Issues, and Activity views */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="bg-secondary rounded-full p-1 border border-border/40 inline-flex">
           <TabsTrigger value="overview" className="rounded-full px-5 py-2 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
@@ -597,7 +633,7 @@ export default function ProjectDetail() {
 
         {/* -------------------- OVERVIEW TAB -------------------- */}
         <TabsContent value="overview" className="grid grid-cols-12 gap-6 outline-none">
-          {/* Issue Tracking statistics */}
+          {/* Issue Tracking statistics panel */}
           <div className="col-span-12 xl:col-span-7 space-y-6">
             <PageCard className="p-6">
               <h3 className="font-bold text-base text-foreground mb-4 border-b border-border pb-2">
@@ -614,9 +650,10 @@ export default function ProjectDetail() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+                    {/* Render status totals for each task tracker type */}
                     {TASK_TRACKERS.map((tr) => {
                       const stat = trackerStats.get(tr) || { open: 0, closed: 0, total: 0 }
-                      if (stat.total === 0) return null; // Only show trackers with tasks
+                      if (stat.total === 0) return null; // Skip showing trackers that contain no tasks
                       return (
                         <TableRow key={tr} className="h-12 hover:bg-muted/30">
                           <TableCell className="font-bold text-xs uppercase text-muted-foreground">
@@ -634,6 +671,7 @@ export default function ProjectDetail() {
                         </TableRow>
                       )
                     })}
+                    {/* Show empty placeholder text if no tasks are present in project */}
                     {totalTasksCount === 0 && (
                       <TableRow>
                         <TableCell colSpan={4} className="text-center text-xs text-muted-foreground py-6">
@@ -641,6 +679,7 @@ export default function ProjectDetail() {
                         </TableCell>
                       </TableRow>
                     )}
+                    {/* Render total summary row representing all tasks */}
                     {totalTasksCount > 0 && (
                       <TableRow className="bg-muted/20 font-bold">
                         <TableCell className="font-bold text-xs">Tổng hợp</TableCell>
@@ -660,7 +699,7 @@ export default function ProjectDetail() {
               </div>
             </PageCard>
 
-            {/* Spent Time tracking */}
+            {/* Spent Time tracking metrics summary card */}
             <PageCard className="p-6">
               <h3 className="font-bold text-base text-foreground mb-4 border-b border-border pb-2 flex items-center gap-1.5">
                 <Clock className="size-4 text-muted-foreground" />
@@ -683,7 +722,7 @@ export default function ProjectDetail() {
             </PageCard>
           </div>
 
-          {/* Members list panel */}
+          {/* Members and team assignment list panel */}
           <div className="col-span-12 xl:col-span-5 space-y-6">
             <PageCard className="p-6">
               <div className="flex items-center justify-between mb-4 border-b border-border pb-2">
@@ -693,7 +732,7 @@ export default function ProjectDetail() {
                 </h3>
               </div>
               <div className="space-y-4">
-                {/* Team Leader */}
+                {/* Team Leader details block */}
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     Trưởng dự án (Leader)
@@ -714,7 +753,7 @@ export default function ProjectDetail() {
                   )}
                 </div>
 
-                {/* Team Members */}
+                {/* Team Members scroll area mapping */}
                 <div className="space-y-2 pt-2 border-t border-border/40">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block mb-2">
                     Thành viên tham gia
@@ -735,6 +774,7 @@ export default function ProjectDetail() {
                             </div>
                           </div>
 
+                          {/* Render delete button to remove user from project team if authorized */}
                           {canManageMembers && (
                             <Button
                               variant="ghost"
@@ -760,9 +800,9 @@ export default function ProjectDetail() {
         {/* -------------------- ISSUES TAB -------------------- */}
         <TabsContent value="issues" className="outline-none">
           <div className="grid grid-cols-12 gap-6">
-            {/* Main Issues Content (col-span-9) */}
+            {/* Main Issues list table container */}
             <div className="col-span-12 lg:col-span-9 space-y-4">
-              {/* Filters Bar */}
+              {/* Filters Toolbar */}
               <PageCard className="p-4 flex flex-wrap gap-4 items-center justify-between">
                 <div className="relative w-full lg:w-64">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -775,7 +815,7 @@ export default function ProjectDetail() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                  {/* Tracker Filter */}
+                  {/* Tracker Filter dropdown list */}
                   <div className="flex items-center gap-1.5">
                     <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tracker:</Label>
                     <Select value={trackerFilter} onValueChange={setTrackerFilter}>
@@ -791,7 +831,7 @@ export default function ProjectDetail() {
                     </Select>
                   </div>
 
-                  {/* Status Filter */}
+                  {/* Status Filter dropdown select menu */}
                   <div className="flex items-center gap-1.5">
                     <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Trạng thái:</Label>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -807,7 +847,7 @@ export default function ProjectDetail() {
                     </Select>
                   </div>
 
-                  {/* Priority Filter */}
+                  {/* Priority Filter dropdown options */}
                   <div className="flex items-center gap-1.5">
                     <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Độ ưu tiên:</Label>
                     <Select value={priorityFilter} onValueChange={setPriorityFilter}>
@@ -823,7 +863,7 @@ export default function ProjectDetail() {
                     </Select>
                   </div>
 
-                  {/* Assignee Filter */}
+                  {/* Assignee Filter dropdown selection */}
                   <div className="flex items-center gap-1.5">
                     <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Người thực hiện:</Label>
                     <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
@@ -846,7 +886,7 @@ export default function ProjectDetail() {
                     </Select>
                   </div>
 
-                  {/* Category Filter */}
+                  {/* Category categorization Filter select */}
                   <div className="flex items-center gap-1.5">
                     <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Chủ đề:</Label>
                     <Select value={categoryIdFilter} onValueChange={setCategoryIdFilter}>
@@ -867,11 +907,13 @@ export default function ProjectDetail() {
               {/* Issues table card */}
               <PageCard className="p-6">
                 {isLoadingTasks ? (
+                  // Show Skeleton placeholder rows while tasks list is loading
                   <div className="space-y-4">
                     <Skeleton className="h-10 w-full rounded-full" />
                     <Skeleton className="h-12 w-full rounded-xl" />
                   </div>
                 ) : tasks.length === 0 ? (
+                  // Show empty state placeholder if no tasks match selected filters
                   <div className="flex flex-col items-center justify-center py-16 text-center">
                     <div className="rounded-full bg-secondary p-3 mb-4 text-muted-foreground">
                       <AlertCircle className="size-6" />
@@ -881,6 +923,7 @@ export default function ProjectDetail() {
                   </div>
                 ) : (
                   <>
+                    {/* Render tasks list in a responsive table layout */}
                     <div className="relative overflow-x-auto rounded-lg border border-border">
                       <Table>
                         <TableHeader>
@@ -898,11 +941,13 @@ export default function ProjectDetail() {
                         </TableHeader>
                         <TableBody>
                           {tasks.map((task) => {
+                            // Assign styling tokens according to priority values
                             let priorityColor = "bg-secondary text-secondary-foreground"
                             if (task.priority === "urgent") priorityColor = "bg-destructive/10 text-destructive border-destructive/20"
                             else if (task.priority === "high") priorityColor = "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-500"
                             else if (task.priority === "medium") priorityColor = "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400"
 
+                            // Assign styling tokens according to tracker types
                             let trackerColor = "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
                             if (task.tracker === "bug") trackerColor = "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"
                             else if (task.tracker === "feature") trackerColor = "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
@@ -910,19 +955,23 @@ export default function ProjectDetail() {
 
                             return (
                               <TableRow key={task.id} className="h-14 hover:bg-muted/30">
+                                {/* Shortened database ID */}
                                 <TableCell className="font-mono text-[10px] font-semibold text-muted-foreground">
                                   #{task.id.substring(0, 5)}
                                 </TableCell>
+                                {/* Tracker type badge */}
                                 <TableCell>
                                   <Badge variant="outline" className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${trackerColor}`}>
                                     {task.tracker}
                                   </Badge>
                                 </TableCell>
+                                {/* Title linking to task details screen */}
                                 <TableCell className="max-w-[200px] truncate font-medium">
                                   <Link to={`/project/tasks/${task.id}`} className="text-primary hover:underline flex items-center gap-1">
                                     {task.title}
                                   </Link>
                                 </TableCell>
+                                {/* Task category/subject tag */}
                                 <TableCell className="text-xs">
                                   {task.category ? (
                                     <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-[10px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30">
@@ -932,6 +981,7 @@ export default function ProjectDetail() {
                                     <span className="text-muted-foreground italic text-[11px]">Không có</span>
                                   )}
                                 </TableCell>
+                                {/* Assigned developer name */}
                                 <TableCell className="text-xs">
                                   {task.assignee ? (
                                     <span className="font-semibold text-foreground">{task.assignee.fullName}</span>
@@ -939,17 +989,21 @@ export default function ProjectDetail() {
                                     <span className="text-muted-foreground italic">Không chỉ định</span>
                                   )}
                                 </TableCell>
+                                {/* Localization and styling status pill */}
                                 <TableCell>
                                   <StatusPill label={formatStatus(task.status)} variant={getStatusVariant(task.status)} />
                                 </TableCell>
+                                {/* Priority badge indicator */}
                                 <TableCell>
                                   <Badge variant="outline" className={`rounded-full text-[9px] ${priorityColor}`}>
                                     {task.priority}
                                   </Badge>
                                 </TableCell>
+                                {/* Completion progress percentage */}
                                 <TableCell className="text-right font-bold text-xs">
                                   {task.progress}%
                                 </TableCell>
+                                {/* Actions dropdown menu containing navigation and quick status transition commands */}
                                 <TableCell>
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -980,14 +1034,16 @@ export default function ProjectDetail() {
                       </Table>
                     </div>
 
-                    {/* Pagination Controls */}
+                    {/* Pagination Controls toolbar */}
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-border">
                       <span className="text-xs text-muted-foreground font-semibold">
                         Hiện tổng: {startRange}-{endRange}/{totalItems}
                       </span>
 
+                      {/* Display page numbers only if total pages is greater than 1 */}
                       {totalPages > 1 && (
                         <div className="flex items-center gap-1 bg-secondary/40 border border-border/40 rounded-full p-0.5">
+                          {/* Previous page pagination button */}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -997,6 +1053,7 @@ export default function ProjectDetail() {
                           >
                             «
                           </Button>
+                          {/* Mapping active page numbers and ellipsis separators */}
                           {getPageNumbers().map((p, idx) => {
                             if (p === "...") {
                               return (
@@ -1023,6 +1080,7 @@ export default function ProjectDetail() {
                               </Button>
                             )
                           })}
+                          {/* Next page pagination button */}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1035,6 +1093,7 @@ export default function ProjectDetail() {
                         </div>
                       )}
 
+                      {/* Page size limit count selector */}
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground font-semibold">Mỗi trang:</span>
                         <Select
@@ -1062,13 +1121,14 @@ export default function ProjectDetail() {
               </PageCard>
             </div>
 
-            {/* Sidebar Queries (col-span-3) */}
+            {/* Sidebar Queries filters section */}
             <div className="col-span-12 lg:col-span-3">
               <PageCard className="p-4 space-y-4">
                 <h4 className="font-bold text-xs uppercase tracking-wider text-muted-foreground pb-2 border-b border-border">
                   Truy vấn nhanh
                 </h4>
                 <div className="flex flex-col gap-2">
+                  {/* Filter by tasks assigned to active user */}
                   <button
                     onClick={() => {
                       setAssigneeFilter(user?.id || "all")
@@ -1082,6 +1142,7 @@ export default function ProjectDetail() {
                   >
                     Phân công cho tôi
                   </button>
+                  {/* Filter by tasks created by active user */}
                   <button
                     onClick={() => {
                       setCreatedByIdFilter(user?.id || "all")
@@ -1095,6 +1156,7 @@ export default function ProjectDetail() {
                   >
                     Do tôi tạo
                   </button>
+                  {/* Sort by recent update timestamps */}
                   <button
                     onClick={() => {
                       setSortBy("updatedAt")
@@ -1108,9 +1170,9 @@ export default function ProjectDetail() {
                   >
                     Cập nhật gần đây
                   </button>
+                  {/* Clear all active filters and reset list back to default settings */}
                   <button
                     onClick={() => {
-                      // Reset to all filters default
                       setAssigneeFilter("all")
                       setCreatedByIdFilter("all")
                       setTrackerFilter("all")
@@ -1140,19 +1202,22 @@ export default function ProjectDetail() {
             </h3>
 
             {isLoadingSpent || isLoadingTasks ? (
+              // Loading state placeholder view for activity feed
               <div className="space-y-4">
                 <Skeleton className="h-10 w-1/3 rounded-full" />
                 <Skeleton className="h-16 w-full rounded-xl" />
               </div>
             ) : activitiesList.length === 0 ? (
+              // Empty feedback text if no events are recorded in log
               <p className="text-xs text-muted-foreground italic py-4 text-center">
                 Không có hoạt động gần đây nào.
               </p>
             ) : (
+              // Render vertical timeline tracking project events
               <div className="relative pl-6 border-l border-border space-y-6">
                 {activitiesList.map((act, idx) => (
                   <div key={`${act.id}-${idx}`} className="relative">
-                    {/* Circle bullet on line */}
+                    {/* Circle bullet on timeline vertical axis */}
                     <div className={`absolute -left-[31px] top-1.5 size-2.5 rounded-full border-2 border-background ${act.type === 'spent_time' ? 'bg-primary' : 'bg-indigo-500'}`} />
 
                     <div className="space-y-1">
@@ -1164,11 +1229,13 @@ export default function ProjectDetail() {
                           </span>
                         )}
                       </div>
+                      {/* Sub-comment log if present under the activity block */}
                       {act.comment && (
                         <div className="text-xs bg-muted/30 p-2.5 rounded-xl border border-border/40 max-w-[500px] text-muted-foreground italic">
                           "{act.comment}"
                         </div>
                       )}
+                      {/* Timestamp of the recorded action */}
                       <div className="text-[10px] text-muted-foreground">
                         {act.date.toLocaleString("vi-VN")}
                       </div>
@@ -1182,7 +1249,7 @@ export default function ProjectDetail() {
       </Tabs>
 
 
-      {/* MEMBER MODAL */}
+      {/* MEMBER MODAL: Dialog overlay to add a member to the active project team */}
       <Dialog open={isOpenMemberModal} onOpenChange={setIsOpenMemberModal}>
         <DialogContent className="sm:max-w-[450px] rounded-xl bg-background border-border p-6 shadow-lg">
           <DialogHeader>
@@ -1200,12 +1267,14 @@ export default function ProjectDetail() {
             }}
             className="space-y-4 pt-3"
           >
+            {/* Alert banner to display form verification errors */}
             {memberError && (
               <div className="rounded-full bg-destructive/10 px-4 py-2 text-xs text-destructive font-medium border border-destructive/20">
                 {memberError}
               </div>
             )}
 
+            {/* Form select wrapper to select employee from list */}
             <div className="space-y-1.5">
               <Label htmlFor="memberEmp" className="text-xs font-semibold text-muted-foreground">
                 Chọn nhân sự
@@ -1217,7 +1286,7 @@ export default function ProjectDetail() {
                 <SelectContent className="rounded-xl border-border bg-popover">
                   <SelectItem value="none" className="rounded-lg">Chọn nhân viên</SelectItem>
                   {allEmployees
-                    // Filter out already added members
+                    // Filter out employees who are already team members or team leader of the project
                     .filter((emp) => !members?.some((m) => m.employeeId === emp.id) && emp.id !== project.teamLeaderId)
                     .map((emp) => (
                       <SelectItem key={emp.id} value={emp.id} className="rounded-lg">
@@ -1228,6 +1297,7 @@ export default function ProjectDetail() {
               </Select>
             </div>
 
+            {/* Cancel and submit action buttons for member modal */}
             <div className="flex justify-end gap-2 pt-2">
               <Button
                 type="button"
@@ -1250,7 +1320,7 @@ export default function ProjectDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* EDIT PROJECT DIALOG */}
+      {/* EDIT PROJECT DIALOG: Dialog overlay to update project config properties */}
       <Dialog open={isOpenEditProjectModal} onOpenChange={setIsOpenEditProjectModal}>
         <DialogContent className="sm:max-w-[550px] rounded-xl bg-background border-border p-6 shadow-lg">
           <DialogHeader>
@@ -1268,12 +1338,14 @@ export default function ProjectDetail() {
             }}
             className="space-y-4 pt-3"
           >
+            {/* Show update warning alerts if mutation fails */}
             {editProjectError && (
               <div className="rounded-full bg-destructive/10 px-4 py-2 text-xs text-destructive font-medium border border-destructive/20">
                 {editProjectError}
               </div>
             )}
 
+            {/* Edit project name text input */}
             <div className="space-y-1.5">
               <Label htmlFor="editProjName" className="text-xs font-semibold text-muted-foreground">
                 Tên dự án <span className="text-destructive">*</span>
@@ -1287,6 +1359,7 @@ export default function ProjectDetail() {
               />
             </div>
 
+            {/* Edit project description text area input */}
             <div className="space-y-1.5">
               <Label htmlFor="editProjDesc" className="text-xs font-semibold text-muted-foreground">
                 Mô tả dự án
@@ -1301,6 +1374,7 @@ export default function ProjectDetail() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
+              {/* Edit project status select field */}
               <div className="space-y-1.5">
                 <Label htmlFor="editProjStatus" className="text-xs font-semibold text-muted-foreground">
                   Trạng thái
@@ -1328,6 +1402,7 @@ export default function ProjectDetail() {
                 </Select>
               </div>
 
+              {/* Edit task creation policy select parameter */}
               <div className="space-y-1.5">
                 <Label htmlFor="editProjPolicy" className="text-xs font-semibold text-muted-foreground">
                   Ai được tạo task?
@@ -1347,6 +1422,7 @@ export default function ProjectDetail() {
               </div>
             </div>
 
+            {/* Edit project Team Leader select dropdown option */}
             <div className="space-y-1.5">
               <Label htmlFor="editProjLeader" className="text-xs font-semibold text-muted-foreground">
                 Trưởng dự án (Team Leader)
@@ -1367,6 +1443,7 @@ export default function ProjectDetail() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
+              {/* Edit project start date datepicker input */}
               <div className="space-y-1.5">
                 <Label htmlFor="editProjStart" className="text-xs font-semibold text-muted-foreground">
                   Ngày bắt đầu
@@ -1380,6 +1457,7 @@ export default function ProjectDetail() {
                 />
               </div>
 
+              {/* Edit project expected end date datepicker input */}
               <div className="space-y-1.5">
                 <Label htmlFor="editProjEnd" className="text-xs font-semibold text-muted-foreground">
                   Ngày kết thúc dự kiến
@@ -1394,6 +1472,7 @@ export default function ProjectDetail() {
               </div>
             </div>
 
+            {/* Cancel and Submit buttons for project updates */}
             <div className="flex justify-end gap-2 pt-2">
               <Button
                 type="button"
@@ -1416,7 +1495,7 @@ export default function ProjectDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* CATEGORY MANAGE DIALOG */}
+      {/* CATEGORY MANAGE DIALOG: Dialog overlay to perform CRUD on task categories tags */}
       <Dialog open={isOpenCreateCategoryModal} onOpenChange={setIsOpenCreateCategoryModal}>
         <DialogContent className="sm:max-w-[500px] rounded-xl bg-background border-border p-6 shadow-lg">
           <DialogHeader>
@@ -1426,13 +1505,14 @@ export default function ProjectDetail() {
             </DialogDescription>
           </DialogHeader>
 
+          {/* Render error banner if category action mutation fails */}
           {categoryError && (
             <div className="rounded-full bg-destructive/10 px-4 py-2 text-xs text-destructive font-medium border border-destructive/20">
               {categoryError}
             </div>
           )}
 
-          {/* Create category form */}
+          {/* Form input fields to create a new category */}
           <div className="flex gap-2 pt-2 border-b border-border pb-4">
             <Input
               placeholder="Tên chủ đề mới..."
@@ -1452,17 +1532,20 @@ export default function ProjectDetail() {
             </Button>
           </div>
 
-          {/* Categories list */}
+          {/* List display matching all project categories */}
           <div className="space-y-3 pt-3 max-h-[300px] overflow-y-auto pr-1">
             <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Danh sách chủ đề</h4>
             {!categories || categories.length === 0 ? (
+              // Empty list fallback view
               <p className="text-xs text-muted-foreground italic py-2 text-center">Chưa có chủ đề nào.</p>
             ) : (
+              // Map categories to list items with edit/delete buttons
               categories.map((cat) => {
                 const isEditing = editingCategoryId === cat.id
                 return (
                   <div key={cat.id} className="flex items-center justify-between gap-2 p-2 rounded-xl border border-border/50 bg-muted/10">
                     {isEditing ? (
+                      // Render inputs and action buttons if item is in edit state mode
                       <div className="flex items-center gap-2 w-full">
                         <Input
                           value={editCategoryName}
@@ -1491,9 +1574,11 @@ export default function ProjectDetail() {
                         </Button>
                       </div>
                     ) : (
+                      // Render normal visual display with action edit/delete triggers
                       <>
                         <span className="text-xs font-semibold text-foreground px-2">{cat.name}</span>
                         <div className="flex items-center gap-1.5">
+                          {/* Trigger editing mode */}
                           <Button
                             variant="ghost"
                             onClick={() => {
@@ -1504,6 +1589,7 @@ export default function ProjectDetail() {
                           >
                             <Edit className="size-3" />
                           </Button>
+                          {/* Trigger deletion mutation */}
                           <Button
                             variant="ghost"
                             onClick={() => {
@@ -1524,6 +1610,7 @@ export default function ProjectDetail() {
             )}
           </div>
 
+          {/* Close dialog action button */}
           <div className="flex justify-end pt-4 border-t border-border">
             <Button
               type="button"

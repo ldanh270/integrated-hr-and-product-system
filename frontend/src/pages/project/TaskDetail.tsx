@@ -1,5 +1,8 @@
+// Import common layout containers
 import { PageCard, StatusPill } from "@/components/common"
+// Import spent time modal component
 import LogTimeModal from "@/components/features/project/LogTimeModal"
+// Import custom UI elements
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -18,18 +21,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+// Import Skeleton screen layout loading helpers
 import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
+// Import employee role specifications
 import { ROLE } from "@/config/entities/employee.config"
+// Import task property categories lists
 import { TASK_PRIORITIES, TASK_STATUSES, TASK_TRACKERS } from "@/config/entities/project.config"
+// Import API endpoint wrapper clients
 import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
 import { taskCategoryApi } from "@/lib/api/task-category.api"
+// Import authorization store
 import { useAuthStore } from "@/store/auth-store"
+// Import Spent Time log type structure
 import type { SpentTime } from "@/types/spent-time.types"
+// Import task types
 import type { TaskTracker, TaskPriority, TaskStatus } from "@/types/task.types"
+// Import React Query hooks for fetching and mutations
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+// Import toast notification client
 import { toast } from "sonner"
+// Import Lucide icons
 import {
   AlertCircle,
   Calendar,
@@ -41,73 +54,80 @@ import {
   Trash2,
   User,
 } from "lucide-react"
+// Import standard React hooks
 import { useState } from "react"
+// Import routing navigation
 import { Link, useNavigate, useParams } from "react-router-dom"
 
+// Main component to render task detailed specifications
 export default function TaskDetail() {
+  // Extract task ID from URL parameters
   const { id: taskId } = useParams<{ id: string }>()
   const id = taskId || ""
+  
+  // Initialize query client, route navigation, and auth store
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { user } = useAuthStore()
 
-  // Modals state
-  const [isOpenLogTimeModal, setIsOpenLogTimeModal] = useState(false)
-  const [isOpenEditModal, setIsOpenEditModal] = useState(false)
-  const [editingSpentTime, setEditingSpentTime] = useState<SpentTime | undefined>(undefined)
+  // State hooks to control dialog modal views
+  const [isOpenLogTimeModal, setIsOpenLogTimeModal] = useState(false) // Visibility of log time modal
+  const [isOpenEditModal, setIsOpenEditModal] = useState(false) // Visibility of edit task modal
+  const [editingSpentTime, setEditingSpentTime] = useState<SpentTime | undefined>(undefined) // Target log record to modify
 
-  // Edit Task form state
-  const [taskTitle, setTaskTitle] = useState("")
-  const [taskDesc, setTaskDesc] = useState("")
-  const [taskTracker, setTaskTracker] = useState("")
-  const [taskPriority, setTaskPriority] = useState("")
-  const [taskStatus, setTaskStatus] = useState("")
-  const [taskAssignee, setTaskAssignee] = useState("")
-  const [taskStart, setTaskStart] = useState("")
-  const [taskDue, setTaskDue] = useState("")
-  const [taskEstimate, setTaskEstimate] = useState("")
-  const [taskProgress, setTaskProgress] = useState(0)
-  const [taskCategory, setTaskCategory] = useState("")
-  const [editError, setEditError] = useState<string | null>(null)
+  // State hooks to bind edit task form inputs
+  const [taskTitle, setTaskTitle] = useState("") // Title text
+  const [taskDesc, setTaskDesc] = useState("") // Description text
+  const [taskTracker, setTaskTracker] = useState("") // Tracker choice
+  const [taskPriority, setTaskPriority] = useState("") // Priority choice
+  const [taskStatus, setTaskStatus] = useState("") // Status choice
+  const [taskAssignee, setTaskAssignee] = useState("") // Assignee member ID
+  const [taskStart, setTaskStart] = useState("") // Start date
+  const [taskDue, setTaskDue] = useState("") // Due date
+  const [taskEstimate, setTaskEstimate] = useState("") // Estimated hours
+  const [taskProgress, setTaskProgress] = useState(0) // Percent progress value
+  const [taskCategory, setTaskCategory] = useState("") // Category identification ID
+  const [editError, setEditError] = useState<string | null>(null) // Errors during form submission
 
-  // 1. Fetch Task Details
+  // 1. Query hook to fetch detailed data for the targeted task
   const { data: task, isLoading: isLoadingTask } = useQuery({
     queryKey: ["task", id],
     queryFn: () => taskApi.getOne(id),
     enabled: !!id,
   })
 
+  // Capture project ID associated with this task
   const projectId = task?.projectId || ""
 
-  // 2. Fetch Spent Time Logs of this task
+  // 2. Query hook to fetch spent time records log belonging to this task
   const { data: spentTimes, isLoading: isLoadingSpent } = useQuery({
     queryKey: ["spentTimes", id],
     queryFn: () => taskApi.listSpentTimes({ taskId: id }),
     enabled: !!id,
   })
 
-  // 3. Fetch Project Members (for assignee dropdown in edit modal)
+  // 3. Query hook to fetch active project members (populate assignee list)
   const { data: members } = useQuery({
     queryKey: ["members", projectId],
     queryFn: () => projectApi.getMembers(projectId),
     enabled: !!projectId,
   })
 
-  // 4. Fetch Project details (to check creation policy and TL)
+  // 4. Query hook to fetch parent project details (permissions validation)
   const { data: project } = useQuery({
     queryKey: ["project", projectId],
     queryFn: () => projectApi.getOne(projectId),
     enabled: !!projectId,
   })
 
-  // 5. Fetch sibling task IDs for prev/next navigation
+  // 5. Query hook to fetch siblings tasks under the same project (enables prev/next navigations)
   const { data: siblingTasksData } = useQuery({
     queryKey: ["tasks", "siblings", projectId],
     queryFn: () => taskApi.list({ projectId, limit: 1000, sortBy: "createdAt", sortOrder: "desc" }),
     enabled: !!projectId,
   })
 
-  // 6. Fetch Project Categories
+  // 6. Query hook to fetch categories linked to the project
   const { data: categories } = useQuery({
     queryKey: ["project-categories", projectId],
     queryFn: () => taskCategoryApi.list(projectId),

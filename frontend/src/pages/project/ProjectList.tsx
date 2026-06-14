@@ -1,4 +1,6 @@
+// Import layout cards, headers, and status display pills
 import { PageCard, PageHeader, StatusPill } from "@/components/common"
+// Import custom UI components
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -17,7 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+// Import Skeleton screen placeholders
 import { Skeleton } from "@/components/ui/skeleton"
+// Import custom UI tables
 import {
   Table,
   TableBody,
@@ -27,87 +31,105 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
+// Import project domain configs (statuses and creation policy list)
 import { PROJECT_STATUSES, TASK_CREATION_POLICIES } from "@/config/entities/project.config"
+// Import employee role mappings
 import { ROLE } from "@/config/entities/employee.config"
+// Import API client wrappers
 import { employeeApi } from "@/lib/api/employee.api"
 import { projectApi } from "@/lib/api/project.api"
+// Import authentication global store
 import { useAuthStore } from "@/store/auth-store"
+// Import React Query utilities for data handling and server mutations
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+// Import Lucide visual icons
 import { FolderKanban, Plus, Search, Users } from "lucide-react"
 import React, { useState } from "react"
+// Import router link navigation
 import { Link } from "react-router-dom"
 
+// Main React component to render the global list of projects
 export default function ProjectList() {
+  // Initialize query client for cache validation
   const queryClient = useQueryClient()
+  // Retrieve the logged-in user profile details
   const { user } = useAuthStore()
+  // Determine if the current user possesses administrative or managerial rights
   const isManager = user?.role === ROLE.ADMIN || user?.role === ROLE.GENERAL_MANAGER
 
-  // State for filters
-  const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
+  // Initialize state hooks to filter projects list
+  const [search, setSearch] = useState("") // Search keyword
+  const [statusFilter, setStatusFilter] = useState<string>("all") // Status filter choice
 
-  // State for Create Project Modal
-  const [isOpenCreateModal, setIsOpenCreateModal] = useState(false)
-  const [newProjectName, setNewProjectName] = useState("")
-  const [newProjectDesc, setNewProjectDesc] = useState("")
-  const [newProjectTech, setNewProjectTech] = useState("")
-  const [newProjectLeader, setNewProjectLeader] = useState("none")
-  const [newProjectPolicy, setNewProjectPolicy] = useState("all_members")
-  const [newProjectStart, setNewProjectStart] = useState("")
-  const [newProjectEnd, setNewProjectEnd] = useState("")
-  const [createError, setCreateError] = useState<string | null>(null)
+  // Initialize state hooks to manage the creation dialog form fields
+  const [isOpenCreateModal, setIsOpenCreateModal] = useState(false) // Visibility of modal
+  const [newProjectName, setNewProjectName] = useState("") // Project name
+  const [newProjectDesc, setNewProjectDesc] = useState("") // Project description text
+  const [newProjectTech, setNewProjectTech] = useState("") // Comma separated tech string
+  const [newProjectLeader, setNewProjectLeader] = useState("none") // Project team leader ID
+  const [newProjectPolicy, setNewProjectPolicy] = useState("all_members") // Who is authorized to create tasks
+  const [newProjectStart, setNewProjectStart] = useState("") // Planned start date
+  const [newProjectEnd, setNewProjectEnd] = useState("") // Planned expected end date
+  const [createError, setCreateError] = useState<string | null>(null) // Submission error warning banner
 
-  // Fetch projects list
+  // Query to fetch the list of all active projects from the server
   const { data: projectsData, isLoading } = useQuery({
     queryKey: ["projects"],
     queryFn: () => projectApi.list({ limit: 100 }),
   })
 
-  // Fetch employees list for Leader dropdown
+  // Query to fetch the list of employees, only enabled when create dialog modal is visible
   const { data: employeesData } = useQuery({
     queryKey: ["employees"],
     queryFn: () => employeeApi.list({ limit: 200 }),
     enabled: isOpenCreateModal,
   })
 
+  // Destructure arrays, fallback to empty array structures if undefined
   const projects = projectsData?.data || []
   const employees = employeesData?.data || []
 
-  // Filter projects client-side
+  // Perform client-side filter computation on the fetched projects list
   const filteredProjects = projects.filter((proj) => {
+    // Check if project name, description or tech stacks match the search term
     const matchesSearch =
       proj.name.toLowerCase().includes(search.toLowerCase()) ||
       (proj.description && proj.description.toLowerCase().includes(search.toLowerCase())) ||
       proj.techStack.some((tech) => tech.toLowerCase().includes(search.toLowerCase()))
 
+    // Check if project status matches the active filter choice
     const matchesStatus = statusFilter === "all" || proj.status === statusFilter
 
+    // Filtered result meets both query criteria
     return matchesSearch && matchesStatus
   })
 
-  // Create Project mutation
+  // Mutation to handle project creation request
   const createMutation = useMutation({
     mutationFn: async () => {
+      // Split the tech stack string into individual string arrays
       const techStack = newProjectTech
         .split(",")
         .map((t) => t.trim())
         .filter((t) => t.length > 0)
 
+      // Call the API endpoint
       return projectApi.create({
         name: newProjectName,
         description: newProjectDesc.trim() || null,
         techStack,
-        status: "planning",
+        status: "planning", // Defaults to planning status
         taskCreationPolicy: newProjectPolicy as (typeof TASK_CREATION_POLICIES)[number],
         startDate: newProjectStart || null,
         expectedEndDate: newProjectEnd || null,
         teamLeaderId: newProjectLeader === "none" ? null : newProjectLeader,
       })
     },
+    // On success, invalidate projects cache, close dialog, and clear out form state variables
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["projects"] })
       setIsOpenCreateModal(false)
-      // Reset form
+      // Reset form variables
       setNewProjectName("")
       setNewProjectDesc("")
       setNewProjectTech("")
@@ -117,6 +139,7 @@ export default function ProjectList() {
       setNewProjectEnd("")
       setCreateError(null)
     },
+    // Display error messages from the server on failure
     onError: (err: unknown) => {
       let errorMessage = "Đã xảy ra lỗi"
       if (err && typeof err === "object" && "response" in err) {
@@ -131,9 +154,11 @@ export default function ProjectList() {
     },
   })
 
+  // Submission handler for project creation form
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setCreateError(null)
+    // Enforce name input
     if (!newProjectName.trim()) {
       setCreateError("Vui lòng nhập tên dự án")
       return
@@ -141,6 +166,7 @@ export default function ProjectList() {
     createMutation.mutate()
   }
 
+  // Translation helper for project statuses
   const formatStatus = (status: string) => {
     if (status === "planning") return "Lập kế hoạch"
     if (status === "active") return "Đang hoạt động"
@@ -150,6 +176,7 @@ export default function ProjectList() {
     return status
   }
 
+  // Visual variant mapping helper based on project status
   const getStatusVariant = (status: string) => {
     if (status === "active") return "success"
     if (status === "planning") return "neutral"
@@ -160,8 +187,10 @@ export default function ProjectList() {
 
   return (
     <div className="container p-8 space-y-6">
+      {/* Top Header section layout */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader title="Danh sách dự án" description="Quản lý các dự án đang phát triển trong công ty" />
+        {/* Render create project button if user has appropriate access rights */}
         {isManager && (
           <Button
             onClick={() => { setIsOpenCreateModal(true); }}
@@ -173,8 +202,9 @@ export default function ProjectList() {
         )}
       </div>
 
-      {/* Toolbar / Filters */}
+      {/* Toolbar and filter inputs */}
       <PageCard className="p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
+        {/* Search input field */}
         <div className="relative w-full md:w-80">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
@@ -185,6 +215,7 @@ export default function ProjectList() {
           />
         </div>
 
+        {/* Status selection dropdown */}
         <div className="flex items-center gap-3 w-full md:w-auto justify-end">
           <Label className="text-xs font-semibold text-muted-foreground whitespace-nowrap">Trạng thái:</Label>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -203,8 +234,9 @@ export default function ProjectList() {
         </div>
       </PageCard>
 
-      {/* List PageCard */}
+      {/* Main content display area */}
       <PageCard className="p-6">
+        {/* Display loading screen placeholder if fetching projects */}
         {isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-10 w-full rounded-full" />
@@ -213,6 +245,7 @@ export default function ProjectList() {
             <Skeleton className="h-14 w-full rounded-xl" />
           </div>
         ) : filteredProjects.length === 0 ? (
+          // Display empty statement state if search contains no entries
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="rounded-full bg-secondary p-4 mb-4 text-muted-foreground">
               <FolderKanban className="size-8" />
@@ -221,6 +254,7 @@ export default function ProjectList() {
             <p className="text-sm text-muted-foreground mt-1">Vui lòng điều chỉnh bộ lọc hoặc tạo dự án mới.</p>
           </div>
         ) : (
+          // Projects grid listing table representation
           <div className="relative overflow-x-auto rounded-lg border border-border">
             <Table>
               <TableHeader>
@@ -236,6 +270,7 @@ export default function ProjectList() {
               <TableBody>
                 {filteredProjects.map((proj) => (
                   <TableRow key={proj.id} className="h-16 hover:bg-muted/50 transition-colors">
+                    {/* Project Name and Description link details */}
                     <TableCell className="font-semibold">
                       <Link to={`/project/${proj.id}`} className="text-primary hover:underline font-bold text-sm">
                         {proj.name}
@@ -246,6 +281,7 @@ export default function ProjectList() {
                         </p>
                       )}
                     </TableCell>
+                    {/* Team Leader details */}
                     <TableCell>
                       {proj.teamLeader ? (
                         <div className="flex items-center gap-1.5">
@@ -260,9 +296,11 @@ export default function ProjectList() {
                         <span className="text-xs text-muted-foreground italic">Chưa phân công</span>
                       )}
                     </TableCell>
+                    {/* Status badges */}
                     <TableCell>
                       <StatusPill label={formatStatus(proj.status)} variant={getStatusVariant(proj.status)} />
                     </TableCell>
+                    {/* Tech stacks layout badges */}
                     <TableCell>
                       <div className="flex flex-wrap gap-1 max-w-[200px]">
                         {proj.techStack.length > 0 ? (
@@ -276,6 +314,7 @@ export default function ProjectList() {
                         )}
                       </div>
                     </TableCell>
+                    {/* Project timeline data dates */}
                     <TableCell className="text-xs font-medium text-muted-foreground">
                       {proj.startDate ? new Date(proj.startDate).toLocaleDateString("vi-VN") : "-"}
                     </TableCell>
@@ -290,7 +329,7 @@ export default function ProjectList() {
         )}
       </PageCard>
 
-      {/* Create Project Modal */}
+      {/* Dialog modal representation to trigger new project creation */}
       <Dialog open={isOpenCreateModal} onOpenChange={setIsOpenCreateModal}>
         <DialogContent className="sm:max-w-[600px] rounded-xl bg-background border-border p-6 shadow-lg">
           <DialogHeader>
@@ -300,13 +339,16 @@ export default function ProjectList() {
             </DialogDescription>
           </DialogHeader>
 
+          {/* Creation form layout fields */}
           <form onSubmit={handleCreateSubmit} className="space-y-4 pt-3">
+            {/* Display error statement warning banner */}
             {createError && (
               <div className="rounded-full bg-destructive/10 px-4 py-2 text-xs text-destructive font-medium border border-destructive/20">
                 {createError}
               </div>
             )}
 
+            {/* Title field */}
             <div className="space-y-1.5">
               <Label htmlFor="projName" className="text-xs font-semibold text-muted-foreground">
                 Tên dự án <span className="text-destructive">*</span>
@@ -321,6 +363,7 @@ export default function ProjectList() {
               />
             </div>
 
+            {/* Description textarea */}
             <div className="space-y-1.5">
               <Label htmlFor="projDesc" className="text-xs font-semibold text-muted-foreground">
                 Mô tả dự án
@@ -334,6 +377,7 @@ export default function ProjectList() {
               />
             </div>
 
+            {/* Timeline date bounds */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="projStart" className="text-xs font-semibold text-muted-foreground">
@@ -362,6 +406,7 @@ export default function ProjectList() {
               </div>
             </div>
 
+            {/* Leader assignment and task creation policies */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="projLeader" className="text-xs font-semibold text-muted-foreground">
@@ -401,6 +446,7 @@ export default function ProjectList() {
               </div>
             </div>
 
+            {/* Tech stack string field */}
             <div className="space-y-1.5">
               <Label htmlFor="projTech" className="text-xs font-semibold text-muted-foreground">
                 Công nghệ sử dụng (Tech Stack)
@@ -414,6 +460,7 @@ export default function ProjectList() {
               />
             </div>
 
+            {/* Action buttons */}
             <div className="flex justify-end gap-2 pt-2">
               <Button
                 type="button"
@@ -438,3 +485,4 @@ export default function ProjectList() {
     </div>
   )
 }
+

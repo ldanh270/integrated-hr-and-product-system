@@ -1,4 +1,6 @@
+// Import custom page container component
 import { PageCard } from "@/components/common"
+// Import UI buttons, inputs, labels, and select components
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,67 +11,86 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+// Import entity configurations for task tracker, status, and priorities
 import { TASK_PRIORITIES, TASK_STATUSES, TASK_TRACKERS } from "@/config/entities/project.config"
+// Import API utilities for projects, tasks, and task categories
 import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
 import { taskCategoryApi } from "@/lib/api/task-category.api"
+// Import React Query hooks for fetching and caching server state
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+// Import Lucide icons for visual decorators
 import {
   UploadCloud,
   User,
   ArrowLeft,
 } from "lucide-react"
+// Import standard React hooks for component state and refs
 import { useState, useRef } from "react"
+// Import Rich Text Editor wrapper component for the task description
 import { RichTextEditor } from "@/components/ui/rich-text-editor"
+// Import routing hooks to handle URL parameters, search params, and navigation
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
+// Import Toast notifications helper
 import { toast } from "sonner"
+// Import type definitions for task tracker, priority, and status
 import type { TaskTracker, TaskPriority, TaskStatus } from "@/types/task.types"
 
+// Main component to render the "New Task" form
 export default function NewTask() {
+  // Extract project ID from the URL path parameters
   const { id: projectId } = useParams<{ id: string }>()
   const pId = projectId || ""
+  
+  // Initialize navigation, query invalidation client, and search parameter parser
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  
+  // Extract parent task ID from URL query parameters (if creating a subtask)
   const parentTaskId = searchParams.get("parentTaskId") || ""
 
-  // Form State
-  const [taskTitle, setTaskTitle] = useState("")
-  const [taskDesc, setTaskDesc] = useState("")
-  const [taskTracker, setTaskTracker] = useState<TaskTracker>("feature") // Matches mockup default "Feature"
-  const [taskStatus, setTaskStatus] = useState<TaskStatus>("todo") // Matches mockup default "New"
-  const [taskPriority, setTaskPriority] = useState<TaskPriority>("medium") // Matches mockup default "Normal"
-  const [taskAssignee, setTaskAssignee] = useState("none")
-  const [taskStart, setTaskStart] = useState("")
-  const [taskDue, setTaskDue] = useState("")
-  const [taskEstimate, setTaskEstimate] = useState("")
-  const [taskProgress, setTaskProgress] = useState("0")
-  const [parentTask, setParentTask] = useState(parentTaskId || "none")
-  const [taskCategory, setTaskCategory] = useState("none")
-  const [taskError, setTaskError] = useState<string | null>(null)
+  // Initialize state variables for the task creation form fields
+  const [taskTitle, setTaskTitle] = useState("") // Title of the task
+  const [taskDesc, setTaskDesc] = useState("") // Description details
+  const [taskTracker, setTaskTracker] = useState<TaskTracker>("feature") // Defaults to feature
+  const [taskStatus, setTaskStatus] = useState<TaskStatus>("todo") // Defaults to todo (open)
+  const [taskPriority, setTaskPriority] = useState<TaskPriority>("medium") // Defaults to normal/medium
+  const [taskAssignee, setTaskAssignee] = useState("none") // Assigned member ID
+  const [taskStart, setTaskStart] = useState("") // Start date
+  const [taskDue, setTaskDue] = useState("") // Due date
+  const [taskEstimate, setTaskEstimate] = useState("") // Estimated hours
+  const [taskProgress, setTaskProgress] = useState("0") // Progress percent
+  const [parentTask, setParentTask] = useState(parentTaskId || "none") // Parent task connection
+  const [taskCategory, setTaskCategory] = useState("none") // Category categorization
+  const [taskError, setTaskError] = useState<string | null>(null) // Errors during submission
 
-  // Watchers selection
+  // State variable to store the selected watchers' IDs
   const [selectedWatchers, setSelectedWatchers] = useState<string[]>([])
 
-  // Files drag & drop state
+  // State and ref variables to manage file upload and drag & drop activities
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isDragOver, setIsDragOver] = useState(false)
 
+  // Drag over handler to visual update the drop area
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragOver(true)
   }
 
+  // Drag leave handler to revert the visual drop area styling
   const handleDragLeave = () => {
     setIsDragOver(false)
   }
 
+  // Handle file drops on the drop zone
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragOver(false)
     if (e.dataTransfer.files.length > 0) {
       const filesArray = Array.from(e.dataTransfer.files)
+      // Filter out files that exceed the 10MB limit
       const validFiles = filesArray.filter((file) => {
         if (file.size > 10 * 1024 * 1024) {
           toast.error(`Tệp ${file.name} vượt quá dung lượng tối đa 10MB`)
@@ -84,9 +105,11 @@ export default function NewTask() {
     }
   }
 
+  // Handle file selections using the standard browser file input dialog
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const filesArray = Array.from(e.target.files)
+      // Filter out files that exceed the 10MB limit
       const validFiles = filesArray.filter((file) => {
         if (file.size > 10 * 1024 * 1024) {
           toast.error(`Tệp ${file.name} vượt quá dung lượng tối đa 10MB`)
@@ -101,43 +124,49 @@ export default function NewTask() {
     }
   }
 
+  // Remove a file from the list of selected files by index
   const removeFile = (index: number) => {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
-  // 1. Fetch Project details (to get project name and check permissions)
+  // Query to fetch active project details (to show names and check credentials)
   const { data: project } = useQuery({
     queryKey: ["project", pId],
     queryFn: () => projectApi.getOne(pId),
     enabled: !!pId,
   })
 
-  // 2. Fetch Project Members (for assignee and watchers checklist)
+  // Query to fetch project members for assignees and watchers selection
   const { data: members, isLoading: isLoadingMembers } = useQuery({
     queryKey: ["members", pId],
     queryFn: () => projectApi.getMembers(pId),
     enabled: !!pId,
   })
-  // 3. Fetch Project Categories
+
+  // Query to fetch categories associated with the current project
   const { data: categories } = useQuery({
     queryKey: ["project-categories", pId],
     queryFn: () => taskCategoryApi.list(pId),
     enabled: !!pId,
   })
-  // 4. Fetch all tasks in the project (for CÔNG VIỆC CHA select dropdown)
+
+  // Query to fetch existing tasks under this project for parent task matching
   const { data: projectTasksData } = useQuery({
     queryKey: ["project-tasks", pId],
     queryFn: () => taskApi.list({ projectId: pId, limit: 100 }),
     enabled: !!pId,
   })
   const projectTasks = projectTasksData?.data || []
-  // Create Task Mutation
+
+  // Mutation to handle task creation API request
   const createTaskMutation = useMutation({
     mutationFn: async (payload: { title: string; andAnother: boolean }) => {
+      // Validate that the estimate is not negative
       const parsedEstimate = taskEstimate ? parseFloat(taskEstimate) : null
       if (parsedEstimate !== null && (isNaN(parsedEstimate) || parsedEstimate < 0)) {
         throw new Error("Thời gian ước tính phải là một số không âm")
       }
+      // Trigger the api client with collected task data
       return taskApi.create({
         projectId: pId,
         title: payload.title.trim(),
@@ -153,21 +182,24 @@ export default function NewTask() {
         categoryId: taskCategory === "none" ? null : taskCategory,
       })
     },
+    // On success, invalidate cached tasks queries and display success toast
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({ queryKey: ["tasks", "project", pId] })
       toast.success(`Tạo công việc thành công: ${variables.title}`)
       
+      // If "Create and add another" was chosen, reset transient input fields
       if (variables.andAnother) {
-        // Reset only transient fields
         setTaskTitle("")
         setTaskDesc("")
         setParentTask("none")
         setTaskCategory("none")
         setSelectedFiles([])
       } else {
+        // Otherwise, navigate back to project detail page
         navigate(`/project/${pId}`)
       }
     },
+    // Display error details if task creation fails
     onError: (err: unknown) => {
       let message = "Tạo công việc thất bại"
       if (err instanceof Error) {
@@ -181,21 +213,25 @@ export default function NewTask() {
     },
   })
 
+  // Form submit handler with validation and action options
   const handleSubmit = (e: React.FormEvent, andAnother: boolean) => {
     e.preventDefault()
     setTaskError(null)
+    // Validate title input
     if (!taskTitle.trim()) {
       setTaskError("Vui lòng nhập tiêu đề")
       return
     }
+    // Validate that start date precedes due date
     if (taskStart && taskDue && new Date(taskStart) > new Date(taskDue)) {
       toast.warning("Ngày bắt đầu không được sau hạn hoàn thành")
       return
     }
+    // Call the create mutation
     createTaskMutation.mutate({ title: taskTitle, andAnother })
   }
 
-  // Format helpers
+  // Translation helper for trackers format mapping
   const formatTracker = (tracker: string) => {
     if (tracker === "bug") return "Lỗi"
     if (tracker === "feature") return "Tính năng"
@@ -208,6 +244,7 @@ export default function NewTask() {
     return tracker.charAt(0).toUpperCase() + tracker.slice(1)
   }
 
+  // Translation helper for status format mapping
   const formatStatus = (status: string) => {
     if (status === "todo") return "Đang mở"
     if (status === "in_progress") return "Đang thực hiện"
@@ -218,6 +255,7 @@ export default function NewTask() {
     return status.charAt(0).toUpperCase() + status.slice(1)
   }
 
+  // Translation helper for priorities format mapping
   const formatPriority = (priority: string) => {
     if (priority === "low") return "Thấp"
     if (priority === "medium") return "Bình thường"
@@ -226,6 +264,7 @@ export default function NewTask() {
     return priority.charAt(0).toUpperCase() + priority.slice(1)
   }
 
+  // Watchers multi-select select-all / deselect-all toggle handler
   const handleSelectAllWatchers = () => {
     if (!members) return
     if (selectedWatchers.length === members.length) {
@@ -235,13 +274,14 @@ export default function NewTask() {
     }
   }
 
+  // Individual watcher selection toggle handler
   const handleToggleWatcher = (empId: string) => {
     setSelectedWatchers((prev) =>
       prev.includes(empId) ? prev.filter((id) => id !== empId) : [...prev, empId]
     )
   }
 
-  // Helper to color coding initials
+  // Helper function to return a deterministic color theme class based on username string
   const getAvatarColor = (name: string) => {
     const colors = [
       "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800/30",
@@ -263,7 +303,7 @@ export default function NewTask() {
 
   return (
     <div className="container p-8 space-y-6 max-w-[1000px]">
-      {/* Top Header / Breadcrumbs */}
+      {/* Top Header / Breadcrumbs navigation structure */}
       <div className="space-y-1">
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Link to="/project/list" className="hover:text-primary transition-colors">
@@ -292,15 +332,17 @@ export default function NewTask() {
         </p>
       </div>
 
+      {/* Main submission form structure */}
       <form onSubmit={(e) => { handleSubmit(e, false) }} className="space-y-6">
         <PageCard className="p-6 border border-border/80 rounded-xl bg-card space-y-6 shadow-sm">
+          {/* Error Banner when request fails */}
           {taskError && (
             <div className="rounded-full bg-destructive/10 px-4 py-2 text-xs text-destructive font-semibold border border-destructive/20">
               {taskError}
             </div>
           )}
 
-          {/* Tracker & Status Row */}
+          {/* Tracker Type and Status Selection Dropdowns */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-1.5">
               <Label htmlFor="tracker" className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
@@ -339,7 +381,7 @@ export default function NewTask() {
             </div>
           </div>
 
-          {/* Subject Row */}
+          {/* Task Subject/Title Input Field */}
           <div className="space-y-1.5">
             <Label htmlFor="subject" className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
               TIÊU ĐỀ <span className="text-destructive">*</span>
@@ -354,7 +396,7 @@ export default function NewTask() {
             />
           </div>
 
-          {/* Description Textarea with Toolbar */}
+          {/* Rich Text Editor for detailed description */}
           <div className="space-y-1.5">
             <Label htmlFor="description" className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
               MÔ TẢ
@@ -366,7 +408,7 @@ export default function NewTask() {
             />
           </div>
 
-          {/* Priority & Start Date & Due Date */}
+          {/* Priority, Start Date, and Due Date Fields */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-1.5">
               <Label htmlFor="priority" className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
@@ -413,7 +455,7 @@ export default function NewTask() {
             </div>
           </div>
 
-          {/* Assignee & Estimated Time & % Done */}
+          {/* Assignee, Estimated Time, and Done Percent controls */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-1.5">
               <Label htmlFor="assignee" className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
@@ -473,7 +515,7 @@ export default function NewTask() {
             </div>
           </div>
 
-          {/* Parent Task & Category Row */}
+          {/* Parent Task and Project Category dropdowns */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-1.5">
               <Label htmlFor="parentTask" className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
@@ -516,9 +558,9 @@ export default function NewTask() {
 
           <div className="border-t border-border/60 my-4" />
 
-          {/* Files & Watchers section */}
+          {/* Attachments and Watchers layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* File Drag and drop zone */}
+            {/* File upload drag-and-drop zone */}
             <div className="space-y-1.5">
               <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">TÀI LIỆU ĐÍNH KÈM</Label>
               <input
@@ -547,7 +589,7 @@ export default function NewTask() {
                 <span className="text-[10px] text-muted-foreground mt-1 font-medium">PDF, PNG, JPG hoặc MP4 (tối đa 10MB)</span>
               </div>
 
-              {/* Display selected files */}
+              {/* Render lists of currently attached files */}
               {selectedFiles.length > 0 && (
                 <div className="mt-3 space-y-2">
                   <div className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
@@ -580,7 +622,7 @@ export default function NewTask() {
               )}
             </div>
 
-            {/* Watchers box */}
+            {/* Watchers list container with multi-checkbox togglers */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
                 <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">NGƯỜI THEO DÕI</Label>
@@ -612,7 +654,7 @@ export default function NewTask() {
                           onChange={() => { handleToggleWatcher(m.employeeId) }}
                           className="size-3.5 rounded border-border text-blue-600 focus:ring-blue-600"
                         />
-                        {/* Circle Avatar with styled fallback background */}
+                        {/* Circle Avatar initials identifier block */}
                         <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold border ${getAvatarColor(m.employee?.fullName || "Chưa rõ")}`}>
                           {(m.employee?.fullName || "C").charAt(0).toUpperCase()}
                         </div>
@@ -625,10 +667,9 @@ export default function NewTask() {
             </div>
           </div>
 
-
         </PageCard>
 
-        {/* Action buttons */}
+        {/* Cancel, Save, and Save & Create Another Action Buttons */}
         <div className="flex justify-end items-center gap-3">
           <Button
             type="button"
@@ -659,7 +700,7 @@ export default function NewTask() {
         </div>
       </form>
 
-
     </div>
   )
 }
+
