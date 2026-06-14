@@ -64,6 +64,7 @@ import {
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Link, useParams, useSearchParams, useNavigate } from "react-router-dom"
+import { toast } from "sonner"
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>()
@@ -259,6 +260,7 @@ export default function ProjectDetail() {
       queryClient.invalidateQueries({ queryKey: ["project-categories", projectId] })
       setNewCategoryName("")
       setCategoryError(null)
+      toast.success("Thêm chủ đề dự án thành công")
     },
     onError: (err: any) => {
       setCategoryError(err.response?.data?.error?.message || err.message || "Đã xảy ra lỗi")
@@ -274,6 +276,7 @@ export default function ProjectDetail() {
       setEditingCategoryId(null)
       setEditCategoryName("")
       setCategoryError(null)
+      toast.success("Cập nhật chủ đề dự án thành công")
     },
     onError: (err: any) => {
       setCategoryError(err.response?.data?.error?.message || err.message || "Đã xảy ra lỗi")
@@ -287,6 +290,7 @@ export default function ProjectDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project-categories", projectId] })
       setCategoryError(null)
+      toast.success("Xóa chủ đề dự án thành công")
     },
     onError: (err: any) => {
       setCategoryError(err.response?.data?.error?.message || err.message || "Đã xảy ra lỗi")
@@ -304,6 +308,7 @@ export default function ProjectDetail() {
       setIsOpenMemberModal(false)
       setMemberEmployeeId("none")
       setMemberError(null)
+      toast.success("Thêm thành viên vào dự án thành công")
     },
     onError: (err: any) => {
       setMemberError(err.response?.data?.error?.message || err.message || "Đã xảy ra lỗi")
@@ -342,6 +347,7 @@ export default function ProjectDetail() {
       queryClient.invalidateQueries({ queryKey: ["projects"] })
       setIsOpenEditProjectModal(false)
       setEditProjectError(null)
+      toast.success("Cập nhật thông tin dự án thành công")
     },
     onError: (err: any) => {
       setEditProjectError(err.response?.data?.error?.message || err.message || "Đã xảy ra lỗi")
@@ -355,6 +361,7 @@ export default function ProjectDetail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", "project", projectId] })
+      toast.success("Cập nhật trạng thái công việc thành công")
     },
   })
 
@@ -365,6 +372,7 @@ export default function ProjectDetail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members", projectId] })
+      toast.success("Đã xóa thành viên khỏi dự án")
     },
   })
 
