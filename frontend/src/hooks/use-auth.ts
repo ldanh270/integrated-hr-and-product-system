@@ -44,8 +44,28 @@ export const useAuth = () => {
    * Forgot password mutation
    */
   const forgotPasswordMutation = useMutation({
-    mutationFn: async (data: { username: string }) => {
+    mutationFn: async (data: { email: string }) => {
       const response = await apiClient.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, data)
+      return response.data
+    },
+  })
+
+  /**
+   * Validate reset token mutation
+   */
+  const validateResetTokenMutation = useMutation({
+    mutationFn: async (token: string) => {
+      const { data } = await apiClient.post(API_ENDPOINTS.AUTH.VALIDATE_RESET_TOKEN, { token })
+      return data.data // returns { isValid: boolean }
+    },
+  })
+
+  /**
+   * Reset password mutation
+   */
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (data: Record<string, unknown>) => {
+      const response = await apiClient.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, data)
       return response.data
     },
   })
@@ -58,5 +78,9 @@ export const useAuth = () => {
     isLoggingOut: logoutMutation.isPending,
     forgotPassword: forgotPasswordMutation.mutateAsync,
     isSendingForgotPassword: forgotPasswordMutation.isPending,
+    validateResetToken: validateResetTokenMutation.mutateAsync,
+    isValidatingToken: validateResetTokenMutation.isPending,
+    resetPassword: resetPasswordMutation.mutateAsync,
+    isResettingPassword: resetPasswordMutation.isPending,
   }
 }
