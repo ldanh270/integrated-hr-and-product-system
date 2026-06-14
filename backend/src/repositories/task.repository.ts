@@ -5,9 +5,20 @@ import {
   ITaskRepository,
   PaginatedTasksDto,
   UpdateTaskDto,
+  TaskTracker,
+  TaskPriority,
+  TaskStatus,
 } from "@/types"
 
-import { Prisma, PrismaClient, Task as PrismaTask, Employee as PrismaEmployee } from "@prisma/client"
+import {
+  Prisma,
+  PrismaClient,
+  Task as PrismaTask,
+  Employee as PrismaEmployee,
+  TaskTracker as PrismaTaskTracker,
+  TaskStatus as PrismaTaskStatus,
+  TaskPriority as PrismaTaskPriority,
+} from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
@@ -20,6 +31,10 @@ type PrismaTaskWithRelations = PrismaTask & {
   } | null
   assignee?: PrismaEmployee | null
   createdBy?: PrismaEmployee | null
+  category?: {
+    id: string
+    name: string
+  } | null
 }
 
 export class PrismaTaskRepository extends BaseRepository implements ITaskRepository {
@@ -37,14 +52,25 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
       projectId: task.projectId,
       title: task.title,
       description: task.description,
-      priority: task.priority as any,
-      status: task.status as any,
+      tracker: task.tracker as TaskTracker,
+      priority: task.priority as TaskPriority,
+      status: task.status as TaskStatus,
       assigneeId: task.assigneeId,
       createdById: task.createdById,
+      startDate: task.startDate,
       dueDate: task.dueDate,
       completedAt: task.completedAt,
+      estimatedTime: task.estimatedTime,
+      progress: task.progress,
       createdAt: task.createdAt,
       updatedAt: task.updatedAt,
+      categoryId: task.categoryId,
+      category: task.category
+        ? {
+            id: task.category.id,
+            name: task.category.name,
+          }
+        : null,
       project: task.project
         ? {
             id: task.project.id,
@@ -89,9 +115,10 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
         },
         assignee: true,
         createdBy: true,
+        category: true,
       },
     })
-    return task ? this.mapToDomain(task as any) : null
+    return task ? this.mapToDomain(task as PrismaTaskWithRelations) : null
   }
 
   /**
@@ -106,9 +133,11 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
       page = 1,
       limit = 10,
       search,
+      tracker,
       status,
       priority,
       assigneeId,
+      createdById,
       sortBy = "createdAt",
       sortOrder = "desc",
     } = query
@@ -119,14 +148,20 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     if (projectId) {
       where.projectId = projectId
     }
+    if (tracker) {
+      where.tracker = tracker as PrismaTaskTracker
+    }
     if (status) {
-      where.status = status as any
+      where.status = status as PrismaTaskStatus
     }
     if (priority) {
-      where.priority = priority as any
+      where.priority = priority as PrismaTaskPriority
     }
     if (assigneeId) {
       where.assigneeId = assigneeId
+    }
+    if (createdById) {
+      where.createdById = createdById
     }
 
     if (search) {
@@ -154,12 +189,13 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
           },
           assignee: true,
           createdBy: true,
+          category: true,
         },
       }),
     ])
 
     return {
-      data: tasks.map((t) => this.mapToDomain(t as any)),
+      data: tasks.map((t) => this.mapToDomain(t as PrismaTaskWithRelations)),
       meta: {
         total,
         page,
@@ -179,11 +215,16 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
         projectId: data.projectId,
         title: data.title,
         description: data.description,
-        priority: data.priority as any,
-        status: data.status as any,
+        tracker: data.tracker as PrismaTaskTracker,
+        priority: data.priority as PrismaTaskPriority,
+        status: data.status as PrismaTaskStatus,
         assigneeId: data.assigneeId,
         createdById: data.createdById,
+        startDate: data.startDate ? new Date(data.startDate) : null,
         dueDate: data.dueDate ? new Date(data.dueDate) : null,
+        estimatedTime: data.estimatedTime,
+        progress: data.progress || 0,
+        categoryId: data.categoryId,
       },
       include: {
         project: {
@@ -196,9 +237,10 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
         },
         assignee: true,
         createdBy: true,
+        category: true,
       },
     })
-    return this.mapToDomain(task as any)
+    return this.mapToDomain(task as PrismaTaskWithRelations)
   }
 
   /**
@@ -211,20 +253,30 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     const updateData: Prisma.TaskUncheckedUpdateInput = {
       title: data.title,
       description: data.description,
-      priority: data.priority as any,
-      status: data.status as any,
+      tracker: data.tracker as PrismaTaskTracker,
+      priority: data.priority as PrismaTaskPriority,
+      status: data.status as PrismaTaskStatus,
       assigneeId: data.assigneeId,
+      startDate: data.startDate ? new Date(data.startDate) : undefined,
       dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
       completedAt: data.completedAt ? new Date(data.completedAt) : undefined,
+      estimatedTime: data.estimatedTime,
+      progress: data.progress,
+      categoryId: data.categoryId,
     }
 
+    if (data.startDate === null) updateData.startDate = null
     if (data.dueDate === null) updateData.dueDate = null
     if (data.assigneeId === null) updateData.assigneeId = null
     if (data.completedAt === null) updateData.completedAt = null
+    if (data.estimatedTime === null) updateData.estimatedTime = null
+    if (data.categoryId === null) updateData.categoryId = null
 
-    // Automatically set completedAt when switching status to Done
+    // Automatically set completedAt when switching status to Done, or clear it when moving away from Done
     if (data.status === "done" && !data.completedAt) {
       updateData.completedAt = new Date()
+    } else if (data.status && data.status !== "done") {
+      updateData.completedAt = null
     }
 
     const task = await this.prisma.task.update({
@@ -241,9 +293,10 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
         },
         assignee: true,
         createdBy: true,
+        category: true,
       },
     })
-    return this.mapToDomain(task as any)
+    return this.mapToDomain(task as PrismaTaskWithRelations)
   }
 
   /**

@@ -13,9 +13,29 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient }
  */
 function createPrismaClient() {
   const isProduction = ENV_ENVIRONMENT === ENVIRONMENT.PRODUCTION
+  let cleanConnectionString = CONNECTION_STRING
+  let hasSSL = isProduction
+
+  if (CONNECTION_STRING) {
+    try {
+      const url = new URL(CONNECTION_STRING)
+      const sslMode = url.searchParams.get("sslmode")
+      if (sslMode === "require" || sslMode === "prefer" || sslMode === "allow") {
+        hasSSL = true
+        url.searchParams.delete("sslmode")
+        cleanConnectionString = url.toString()
+      }
+    } catch (e) {
+      hasSSL = CONNECTION_STRING.includes("sslmode=require") || CONNECTION_STRING.includes("sslmode=prefer")
+      if (hasSSL) {
+        cleanConnectionString = CONNECTION_STRING.replace(/[?&]sslmode=[^&]*/g, "")
+      }
+    }
+  }
+
   const pool = new Pool({
-    connectionString: CONNECTION_STRING,
-    ssl: isProduction
+    connectionString: cleanConnectionString,
+    ssl: hasSSL
       ? { rejectUnauthorized: false }
       : undefined,
   })
