@@ -69,7 +69,7 @@ export function useVirtualScanner(): {
   useEffect(() => {
     // navigator.geolocation check removed as per static analysis suggestion
     setLocating(true)
-    navigator.geolocation?.getCurrentPosition(
+    navigator.geolocation.getCurrentPosition(
       (pos) => {
         const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude }
         setLocation(coords)
@@ -94,7 +94,7 @@ export function useVirtualScanner(): {
       setIsProcessing(true)
       try {
         const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation?.getCurrentPosition(resolve, reject, { timeout: 10000 })
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 })
         })
         finalLocation = {
           lat: position.coords.latitude,

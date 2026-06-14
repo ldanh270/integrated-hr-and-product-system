@@ -67,7 +67,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     // Pre-fetch location and store in localStorage (encoded to satisfy security alerts)
-    navigator.geolocation?.getCurrentPosition(
+    navigator.geolocation.getCurrentPosition(
       (position) => {
         const locationData = JSON.stringify({
           lat: position.coords.latitude,
