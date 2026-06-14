@@ -269,7 +269,7 @@ export function ShiftChangeRequestDialog({ open, onOpenChange }: Props) {
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-primary font-semibold text-sm uppercase tracking-wider">
                 <MessageSquare size={16} />
-                <span>Lý do gửi yêu cầu</span>
+                <span>Chi tiết lý do</span>
               </div>
               <FormField
                 control={form.control}
