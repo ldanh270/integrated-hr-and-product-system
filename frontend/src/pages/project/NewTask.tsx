@@ -23,6 +23,7 @@ import { useState, useRef } from "react"
 import { RichTextEditor } from "@/components/ui/rich-text-editor"
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
+import type { TaskTracker, TaskPriority, TaskStatus } from "@/types/task.types"
 
 export default function NewTask() {
   const { id: projectId } = useParams<{ id: string }>()
@@ -35,9 +36,9 @@ export default function NewTask() {
   // Form State
   const [taskTitle, setTaskTitle] = useState("")
   const [taskDesc, setTaskDesc] = useState("")
-  const [taskTracker, setTaskTracker] = useState("feature") // Matches mockup default "Feature"
-  const [taskStatus, setTaskStatus] = useState("todo") // Matches mockup default "New"
-  const [taskPriority, setTaskPriority] = useState("medium") // Matches mockup default "Normal"
+  const [taskTracker, setTaskTracker] = useState<TaskTracker>("feature") // Matches mockup default "Feature"
+  const [taskStatus, setTaskStatus] = useState<TaskStatus>("todo") // Matches mockup default "New"
+  const [taskPriority, setTaskPriority] = useState<TaskPriority>("medium") // Matches mockup default "Normal"
   const [taskAssignee, setTaskAssignee] = useState("none")
   const [taskStart, setTaskStart] = useState("")
   const [taskDue, setTaskDue] = useState("")
@@ -67,7 +68,7 @@ export default function NewTask() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragOver(false)
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+    if (e.dataTransfer.files.length > 0) {
       const filesArray = Array.from(e.dataTransfer.files)
       const validFiles = filesArray.filter((file) => {
         if (file.size > 10 * 1024 * 1024) {
@@ -141,9 +142,9 @@ export default function NewTask() {
         projectId: pId,
         title: payload.title.trim(),
         description: taskDesc.trim() || null,
-        tracker: taskTracker as any,
-        priority: taskPriority as any,
-        status: taskStatus as any,
+        tracker: taskTracker,
+        priority: taskPriority,
+        status: taskStatus,
         assigneeId: taskAssignee === "none" ? null : taskAssignee,
         startDate: taskStart || null,
         dueDate: taskDue || null,
@@ -153,7 +154,7 @@ export default function NewTask() {
       })
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", "project", pId] })
+      void queryClient.invalidateQueries({ queryKey: ["tasks", "project", pId] })
       toast.success(`Tạo công việc thành công: ${variables.title}`)
       
       if (variables.andAnother) {
@@ -167,8 +168,16 @@ export default function NewTask() {
         navigate(`/project/${pId}`)
       }
     },
-    onError: (err: any) => {
-      setTaskError(err.response?.data?.error?.message || err.message || "Tạo công việc thất bại")
+    onError: (err: unknown) => {
+      let message = "Tạo công việc thất bại"
+      if (err instanceof Error) {
+        message = err.message
+        const axiosErr = err as { response?: { data?: { error?: { message?: string } } } }
+        if (axiosErr.response?.data?.error?.message) {
+          message = axiosErr.response.data.error.message
+        }
+      }
+      setTaskError(message)
     },
   })
 
@@ -249,7 +258,7 @@ export default function NewTask() {
       hash = name.charCodeAt(i) + ((hash << 5) - hash)
     }
     const index = Math.abs(hash) % colors.length
-    return colors[index]
+    return colors[index] ?? colors[0]
   }
 
   return (
@@ -271,7 +280,7 @@ export default function NewTask() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(-1)}
+            onClick={() => { navigate(-1) }}
             className="rounded-full size-8 p-0 border border-border"
           >
             <ArrowLeft className="size-4" />
@@ -283,7 +292,7 @@ export default function NewTask() {
         </p>
       </div>
 
-      <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-6">
+      <form onSubmit={(e) => { handleSubmit(e, false) }} className="space-y-6">
         <PageCard className="p-6 border border-border/80 rounded-xl bg-card space-y-6 shadow-sm">
           {taskError && (
             <div className="rounded-full bg-destructive/10 px-4 py-2 text-xs text-destructive font-semibold border border-destructive/20">
@@ -297,7 +306,7 @@ export default function NewTask() {
               <Label htmlFor="tracker" className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
                 LOẠI YÊU CẦU <span className="text-destructive">*</span>
               </Label>
-              <Select value={taskTracker} onValueChange={setTaskTracker}>
+              <Select value={taskTracker} onValueChange={(val) => { setTaskTracker(val as TaskTracker) }}>
                 <SelectTrigger id="tracker" className="w-full h-10 border-border rounded-full px-4 bg-background">
                   <SelectValue />
                 </SelectTrigger>
@@ -315,7 +324,7 @@ export default function NewTask() {
               <Label htmlFor="status" className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
                 TRẠNG THÁI
               </Label>
-              <Select value={taskStatus} onValueChange={setTaskStatus}>
+              <Select value={taskStatus} onValueChange={(val) => { setTaskStatus(val as TaskStatus) }}>
                 <SelectTrigger id="status" className="w-full h-10 border-border rounded-full px-4 bg-background">
                   <SelectValue />
                 </SelectTrigger>
@@ -339,7 +348,7 @@ export default function NewTask() {
               id="subject"
               placeholder="Mô tả ngắn gọn công việc"
               value={taskTitle}
-              onChange={(e) => setTaskTitle(e.target.value)}
+              onChange={(e) => { setTaskTitle(e.target.value) }}
               className="h-10 text-sm border-border rounded-full px-4"
               required
             />
@@ -363,7 +372,7 @@ export default function NewTask() {
               <Label htmlFor="priority" className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
                 ĐỘ ƯU TIÊN
               </Label>
-              <Select value={taskPriority} onValueChange={setTaskPriority}>
+              <Select value={taskPriority} onValueChange={(val) => { setTaskPriority(val as TaskPriority) }}>
                 <SelectTrigger id="priority" className="w-full h-10 border-border rounded-full px-4 bg-background">
                   <SelectValue />
                 </SelectTrigger>
@@ -385,7 +394,7 @@ export default function NewTask() {
                 id="startDate"
                 type="date"
                 value={taskStart}
-                onChange={(e) => setTaskStart(e.target.value)}
+                onChange={(e) => { setTaskStart(e.target.value) }}
                 className="w-full h-10 text-sm border-border rounded-full px-4 bg-background"
               />
             </div>
@@ -398,7 +407,7 @@ export default function NewTask() {
                 id="dueDate"
                 type="date"
                 value={taskDue}
-                onChange={(e) => setTaskDue(e.target.value)}
+                onChange={(e) => { setTaskDue(e.target.value) }}
                 className="w-full h-10 text-sm border-border rounded-full px-4 bg-background"
               />
             </div>
@@ -438,7 +447,7 @@ export default function NewTask() {
                   min="0"
                   placeholder="0.0"
                   value={taskEstimate}
-                  onChange={(e) => setTaskEstimate(e.target.value)}
+                  onChange={(e) => { setTaskEstimate(e.target.value) }}
                   className="h-10 text-sm border-border rounded-full pl-4 pr-12 bg-background"
                 />
                 <span className="absolute right-4 top-2.5 text-xs text-muted-foreground font-semibold">giờ</span>
@@ -449,7 +458,7 @@ export default function NewTask() {
               <Label htmlFor="progress" className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
                 % HOÀN THÀNH
               </Label>
-              <Select value={taskProgress} onValueChange={setTaskProgress}>
+              <Select value={taskProgress} onValueChange={(val) => { setTaskProgress(val) }}>
                 <SelectTrigger id="progress" className="w-full h-10 border-border rounded-full px-4 bg-background">
                   <SelectValue />
                 </SelectTrigger>
@@ -470,7 +479,7 @@ export default function NewTask() {
               <Label htmlFor="parentTask" className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
                 CÔNG VIỆC CHA
               </Label>
-              <Select value={parentTask} onValueChange={setParentTask}>
+              <Select value={parentTask} onValueChange={(val) => { setParentTask(val) }}>
                 <SelectTrigger id="parentTask" className="w-full h-10 border-border rounded-full px-4 bg-background">
                   <SelectValue placeholder="Chọn công việc cha" />
                 </SelectTrigger>
@@ -489,7 +498,7 @@ export default function NewTask() {
               <Label htmlFor="category" className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
                 CHỦ ĐỀ (CATEGORY)
               </Label>
-              <Select value={taskCategory} onValueChange={setTaskCategory}>
+              <Select value={taskCategory} onValueChange={(val) => { setTaskCategory(val) }}>
                 <SelectTrigger id="category" className="w-full h-10 border-border rounded-full px-4 bg-background">
                   <SelectValue placeholder="Chọn chủ đề" />
                 </SelectTrigger>
@@ -600,7 +609,7 @@ export default function NewTask() {
                         <input
                           type="checkbox"
                           checked={isChecked}
-                          onChange={() => handleToggleWatcher(m.employeeId)}
+                          onChange={() => { handleToggleWatcher(m.employeeId) }}
                           className="size-3.5 rounded border-border text-blue-600 focus:ring-blue-600"
                         />
                         {/* Circle Avatar with styled fallback background */}
@@ -624,7 +633,7 @@ export default function NewTask() {
           <Button
             type="button"
             variant="ghost"
-            onClick={() => navigate(-1)}
+            onClick={() => { navigate(-1) }}
             className="rounded-full text-sm font-semibold h-10 px-5 text-muted-foreground hover:text-foreground cursor-pointer"
           >
             Hủy
@@ -633,7 +642,7 @@ export default function NewTask() {
           <Button
             type="button"
             variant="outline"
-            onClick={(e) => handleSubmit(e, true)}
+            onClick={(e) => { handleSubmit(e, true) }}
             disabled={createTaskMutation.isPending}
             className="rounded-full text-sm font-semibold border-border hover:bg-muted/50 h-10 px-5 cursor-pointer text-blue-600 hover:text-blue-700"
           >

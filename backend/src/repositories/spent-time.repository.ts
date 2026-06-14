@@ -4,9 +4,12 @@ import {
   SpentTime,
   SpentTimeQuery,
   UpdateSpentTimeDto,
+  SpentTimeActivity,
+  SpentTimeWorkTimeType,
 } from "@/types"
 import {
   Employee as PrismaEmployee,
+  Prisma,
   PrismaClient,
   SpentTime as PrismaSpentTime,
   Task as PrismaTask,
@@ -39,8 +42,8 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
       date: spentTime.date,
       hours: spentTime.hours,
       comment: spentTime.comment,
-      activity: spentTime.activity as any,
-      workTimeType: spentTime.workTimeType as any,
+      activity: spentTime.activity as SpentTimeActivity,
+      workTimeType: spentTime.workTimeType as SpentTimeWorkTimeType,
       createdAt: spentTime.createdAt,
       updatedAt: spentTime.updatedAt,
       task: spentTime.task
@@ -93,7 +96,7 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
    * Lists spent time logs based on filters
    */
   async list(query: SpentTimeQuery): Promise<SpentTime[]> {
-    const where: any = {}
+    const where: Prisma.SpentTimeWhereInput = {}
 
     if (query.taskId) {
       where.taskId = query.taskId
@@ -149,7 +152,7 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
     const record = await this.prisma.spentTime.create({
       data: {
         taskId: data.taskId,
-        employeeId: data.employeeId!,
+        employeeId: data.employeeId ?? "",
         date: typeof data.date === "string" ? new Date(data.date) : data.date,
         hours: data.hours,
         comment: data.comment,
@@ -177,7 +180,7 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
    * Updates an existing spent time log
    */
   async update(id: string, data: UpdateSpentTimeDto): Promise<SpentTime | null> {
-    const updateData: any = {}
+    const updateData: Prisma.SpentTimeUpdateInput = {}
     if (data.date) {
       updateData.date = typeof data.date === "string" ? new Date(data.date) : data.date
     }

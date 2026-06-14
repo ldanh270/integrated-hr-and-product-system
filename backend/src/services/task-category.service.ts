@@ -6,6 +6,7 @@ import {
   IProjectRepository,
   ITaskCategoryService,
   UpdateTaskCategoryDto,
+  Project,
 } from "@/types"
 import { AppError } from "@/utils/error.util.ts"
 import { ROLE } from "@/configs/entities/employee.config.ts"
@@ -22,7 +23,7 @@ export class TaskCategoryService implements ITaskCategoryService {
     return userRole === ROLE.ADMIN || userRole === ROLE.GENERAL_MANAGER
   }
 
-  private async checkProjectAccess(projectId: string, userId: string, userRole: string): Promise<any> {
+  private async checkProjectAccess(projectId: string, userId: string, userRole: string): Promise<Project> {
     const project = await this.projectRepository.findById(projectId)
     if (!project) {
       throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
@@ -91,9 +92,10 @@ export class TaskCategoryService implements ITaskCategoryService {
     }
 
     if (data.name) {
+      const newName = data.name
       const existing = await this.repository.findByProject(projectId)
       const duplicate = existing.find(
-        (c: TaskCategory) => c.id !== categoryId && c.name.toLowerCase() === data.name!.toLowerCase()
+        (c: TaskCategory) => c.id !== categoryId && c.name.toLowerCase() === newName.toLowerCase()
       )
       if (duplicate) {
         throw new AppError("Category name already exists in this project", HttpStatusCode.BAD_REQUEST, LAYER_NAME)

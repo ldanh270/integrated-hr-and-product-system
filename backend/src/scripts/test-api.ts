@@ -11,7 +11,7 @@ async function main() {
       password: "Admin123@",
     }),
   })
-  const loginData = await loginRes.json() as any
+  const loginData = (await loginRes.json()) as { data?: { token?: string } }
   const token = loginData.data?.token
 
   const testCases = [
@@ -19,17 +19,25 @@ async function main() {
   ]
 
   for (const url of testCases) {
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-    console.log(`URL: ${url} -> Status: ${res.status}`)
-    const json = await res.json() as any
-    console.log("Response data:", JSON.stringify(json, null, 2))
+    try {
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      console.log(`URL: ${url} -> Status: ${res.status}`)
+      const json = (await res.json()) as unknown
+      console.log("Response data:", JSON.stringify(json, null, 2))
+    } catch (err) {
+      console.error(`Failed to fetch ${url}:`, err)
+    }
   }
 }
 
 main()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect())
+  .catch((err) => {
+    console.error(err)
+  })
+  .finally(() => {
+    void prisma.$disconnect()
+  })

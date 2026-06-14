@@ -24,7 +24,7 @@ export class SpentTimeController {
         })
       }
 
-      const queryParams = { ...req.query } as any
+      const queryParams: Record<string, unknown> = { ...req.query }
       if (req.params.taskId) {
         queryParams.taskId = req.params.taskId
       }

@@ -73,9 +73,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
       reader.readAsDataURL(file)
     }
     // Reset input so the same file can be selected again
-    if (e.target) {
-      e.target.value = ""
-    }
+    e.target.value = ""
   }
 
   const setLink = useCallback(() => {

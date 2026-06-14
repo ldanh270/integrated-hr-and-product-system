@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { taskApi } from "@/lib/api/task.api"
-import type { SpentTime } from "@/types/spent-time.types"
+import type { SpentTime, SpentTimeActivity, SpentTimeWorkTimeType } from "@/types/spent-time.types"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import React, { useState, useEffect } from "react"
 
@@ -42,8 +42,8 @@ export default function LogTimeModal({
   const queryClient = useQueryClient()
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0])
   const [hours, setHours] = useState("")
-  const [activity, setActivity] = useState<string>("develop")
-  const [workTimeType, setWorkTimeType] = useState<string>("working_day")
+  const [activity, setActivity] = useState<SpentTimeActivity>("develop")
+  const [workTimeType, setWorkTimeType] = useState<SpentTimeWorkTimeType>("working_day")
   const [comment, setComment] = useState("")
   const [error, setError] = useState<string | null>(null)
 
@@ -77,8 +77,8 @@ export default function LogTimeModal({
         return taskApi.updateSpentTime(spentTime.id, {
           date,
           hours: parsedHours,
-          activity: activity as any,
-          workTimeType: workTimeType as any,
+          activity,
+          workTimeType,
           comment: comment.trim() || null,
         })
       } else {
@@ -86,16 +86,16 @@ export default function LogTimeModal({
           taskId,
           date,
           hours: parsedHours,
-          activity: activity as any,
-          workTimeType: workTimeType as any,
+          activity,
+          workTimeType,
           comment: comment.trim() || null,
         })
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["spentTimes", taskId] })
-      queryClient.invalidateQueries({ queryKey: ["task", taskId] })
-      queryClient.invalidateQueries({ queryKey: ["project"] })
+      void queryClient.invalidateQueries({ queryKey: ["spentTimes", taskId] })
+      void queryClient.invalidateQueries({ queryKey: ["task", taskId] })
+      void queryClient.invalidateQueries({ queryKey: ["project"] })
       onOpenChange(false)
       // Reset form
       setHours("")
@@ -103,8 +103,16 @@ export default function LogTimeModal({
       setError(null)
       if (onSuccess) onSuccess()
     },
-    onError: (err: any) => {
-      setError(err.response?.data?.error?.message || err.message || "Đã xảy ra lỗi")
+    onError: (err: unknown) => {
+      let message = "Đã xảy ra lỗi"
+      if (err instanceof Error) {
+        message = err.message
+        const axiosErr = err as { response?: { data?: { error?: { message?: string } } } }
+        if (axiosErr.response?.data?.error?.message) {
+          message = axiosErr.response.data.error.message
+        }
+      }
+      setError(message)
     },
   })
 
@@ -161,7 +169,7 @@ export default function LogTimeModal({
                 id="date"
                 type="date"
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
+                onChange={(e) => { setDate(e.target.value) }}
                 className="h-10 text-sm border-border rounded-full px-4"
                 required
               />
@@ -179,7 +187,7 @@ export default function LogTimeModal({
                 max="24"
                 placeholder="Ví dụ: 2.5"
                 value={hours}
-                onChange={(e) => setHours(e.target.value)}
+                onChange={(e) => { setHours(e.target.value) }}
                 className="h-10 text-sm border-border rounded-full px-4"
                 required
               />
@@ -191,7 +199,7 @@ export default function LogTimeModal({
               <Label htmlFor="activity" className="text-xs font-semibold text-muted-foreground">
                 Hoạt động
               </Label>
-              <Select value={activity} onValueChange={setActivity}>
+              <Select value={activity} onValueChange={(val) => { setActivity(val as SpentTimeActivity) }}>
                 <SelectTrigger id="activity" className="w-full h-10 border-border rounded-full px-4 bg-background">
                   <SelectValue placeholder="Chọn hoạt động" />
                 </SelectTrigger>
@@ -209,7 +217,7 @@ export default function LogTimeModal({
               <Label htmlFor="workTimeType" className="text-xs font-semibold text-muted-foreground">
                 Loại giờ
               </Label>
-              <Select value={workTimeType} onValueChange={setWorkTimeType}>
+              <Select value={workTimeType} onValueChange={(val) => { setWorkTimeType(val as SpentTimeWorkTimeType) }}>
                 <SelectTrigger id="workTimeType" className="w-full h-10 border-border rounded-full px-4 bg-background">
                   <SelectValue placeholder="Chọn loại giờ" />
                 </SelectTrigger>
@@ -232,7 +240,7 @@ export default function LogTimeModal({
               id="comment"
               placeholder="Nhập nội dung công việc đã làm..."
               value={comment}
-              onChange={(e) => setComment(e.target.value)}
+              onChange={(e) => { setComment(e.target.value) }}
               className="min-h-[80px] rounded-xl border-border p-3 text-sm focus-visible:ring-1 focus-visible:ring-ring"
               maxLength={255}
             />
@@ -242,7 +250,7 @@ export default function LogTimeModal({
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={() => { onOpenChange(false) }}
               className="h-10 rounded-full px-5 text-sm"
               disabled={mutation.isPending}
             >

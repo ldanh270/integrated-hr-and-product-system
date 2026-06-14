@@ -5,9 +5,20 @@ import {
   ITaskRepository,
   PaginatedTasksDto,
   UpdateTaskDto,
+  TaskTracker,
+  TaskPriority,
+  TaskStatus,
 } from "@/types"
 
-import { Prisma, PrismaClient, Task as PrismaTask, Employee as PrismaEmployee } from "@prisma/client"
+import {
+  Prisma,
+  PrismaClient,
+  Task as PrismaTask,
+  Employee as PrismaEmployee,
+  TaskTracker as PrismaTaskTracker,
+  TaskStatus as PrismaTaskStatus,
+  TaskPriority as PrismaTaskPriority,
+} from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
@@ -41,9 +52,9 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
       projectId: task.projectId,
       title: task.title,
       description: task.description,
-      tracker: task.tracker as any,
-      priority: task.priority as any,
-      status: task.status as any,
+      tracker: task.tracker as TaskTracker,
+      priority: task.priority as TaskPriority,
+      status: task.status as TaskStatus,
       assigneeId: task.assigneeId,
       createdById: task.createdById,
       startDate: task.startDate,
@@ -138,13 +149,13 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
       where.projectId = projectId
     }
     if (tracker) {
-      where.tracker = tracker as any
+      where.tracker = tracker as PrismaTaskTracker
     }
     if (status) {
-      where.status = status as any
+      where.status = status as PrismaTaskStatus
     }
     if (priority) {
-      where.priority = priority as any
+      where.priority = priority as PrismaTaskPriority
     }
     if (assigneeId) {
       where.assigneeId = assigneeId
@@ -204,9 +215,9 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
         projectId: data.projectId,
         title: data.title,
         description: data.description,
-        tracker: data.tracker as any,
-        priority: data.priority as any,
-        status: data.status as any,
+        tracker: data.tracker as PrismaTaskTracker,
+        priority: data.priority as PrismaTaskPriority,
+        status: data.status as PrismaTaskStatus,
         assigneeId: data.assigneeId,
         createdById: data.createdById,
         startDate: data.startDate ? new Date(data.startDate) : null,
@@ -229,7 +240,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
         category: true,
       },
     })
-    return this.mapToDomain(task as any)
+    return this.mapToDomain(task as PrismaTaskWithRelations)
   }
 
   /**
@@ -242,9 +253,9 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     const updateData: Prisma.TaskUncheckedUpdateInput = {
       title: data.title,
       description: data.description,
-      tracker: data.tracker as any,
-      priority: data.priority as any,
-      status: data.status as any,
+      tracker: data.tracker as PrismaTaskTracker,
+      priority: data.priority as PrismaTaskPriority,
+      status: data.status as PrismaTaskStatus,
       assigneeId: data.assigneeId,
       startDate: data.startDate ? new Date(data.startDate) : undefined,
       dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
@@ -285,7 +296,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
         category: true,
       },
     })
-    return this.mapToDomain(task as any)
+    return this.mapToDomain(task as PrismaTaskWithRelations)
   }
 
   /**

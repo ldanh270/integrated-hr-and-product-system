@@ -57,7 +57,9 @@ export class ErrorBoundary extends Component<Props, State> {
 
             <div className="pt-2 flex justify-end">
               <button
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  window.location.reload()
+                }}
                 className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/95 transition-colors"
               >
                 Reload Page
