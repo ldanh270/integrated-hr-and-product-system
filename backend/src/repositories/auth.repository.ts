@@ -6,6 +6,7 @@ import {
   IAuthRepository,
   LockedAccountItem,
   PaginatedActivityLogsDto,
+  RefreshTokenDocument,
 } from "@/types/auth.types.ts"
 
 import {
@@ -176,6 +177,57 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
     await this.prisma.passwordResetRequest.update({
       where: { id: requestId },
       data: { status: dbStatus },
+    })
+  }
+
+  /**
+   * Creates a new refresh token
+   */
+  async createRefreshToken(data: {
+    employeeId: string
+    tokenHash: string
+    expiresAt: Date
+  }): Promise<void> {
+    await this.prisma.refreshToken.create({
+      data: {
+        employeeId: data.employeeId,
+        tokenHash: data.tokenHash,
+        expiresAt: data.expiresAt,
+      },
+    })
+  }
+
+  /**
+   * Finds a refresh token by hash
+   */
+  async findRefreshTokenByHash(tokenHash: string): Promise<RefreshTokenDocument | null> {
+    return this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
+    })
+  }
+
+  /**
+   * Revokes a specific refresh token
+   */
+  async revokeRefreshToken(id: string): Promise<void> {
+    await this.prisma.refreshToken.update({
+      where: { id },
+      data: { revokedAt: new Date() },
+    })
+  }
+
+  /**
+   * Revokes all refresh tokens for a user
+   */
+  async revokeAllUserRefreshTokens(employeeId: string): Promise<void> {
+    await this.prisma.refreshToken.updateMany({
+      where: {
+        employeeId,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
     })
   }
 

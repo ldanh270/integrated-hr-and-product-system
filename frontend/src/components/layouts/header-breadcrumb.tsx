@@ -26,7 +26,7 @@ export default function HeaderBreadcrumb() {
           const isLast = index === crumbs.length - 1
 
           return (
-            <div key={crumb.label} className="flex items-center">
+            <div key={`${crumb.label}-${index}`} className="flex items-center">
               {crumb.path && !isLast ? (
                 <Link
                   to={crumb.path}

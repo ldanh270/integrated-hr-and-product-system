@@ -51,7 +51,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     routePrefix: "/hrm",
     sidebarItems: [
       { name: "Tổng quan", path: ROUTES.HRM.DASHBOARD, icon: Users },
-      { name: "Nhân sự", path: ROUTES.HRM.EMPLOYEES, icon: Users },
+      { name: "Hồ sơ", path: ROUTES.HRM.EMPLOYEES, icon: Users },
     ],
   },
   {
