@@ -21,7 +21,7 @@ const employeeRepository = new PrismaEmployeeRepository(prisma)
 export interface AuthRequest extends Request {
   user?: {
     empId: string
-    email: string
+    username: string
     role: string
   }
 }
@@ -77,7 +77,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   // Attach decoded user info to the request object for use in controllers
   req.user = {
     empId: decoded.empId,
-    email: decoded.email,
+    username: decoded.username,
     role: decoded.role,
   }
 

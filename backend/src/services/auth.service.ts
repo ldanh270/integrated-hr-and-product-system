@@ -13,6 +13,7 @@ import { AUTH_ERROR_MESSAGES } from "@/constants/auth.constants.ts"
 import {
   ActivityLogItem,
   ActivityLogQuery,
+  AuthEmployeeDocument,
   AuthResponseDto,
   ChangePasswordDto,
   ForgotPasswordDto,
@@ -50,7 +51,7 @@ export class AuthService implements IAuthService {
    * Helper to generate tokens and save refresh token to DB
    */
   private async generateTokens(
-    employee: any,
+    employee: AuthEmployeeDocument,
     existingExpiresAt?: Date,
   ): Promise<{ accessToken: string; refreshToken: string; refreshExpiresAt: Date }> {
     const payload = {
@@ -242,7 +243,7 @@ export class AuthService implements IAuthService {
       await this.repo.logActivity({
         empId: oldToken.employeeId,
         category: ACTIVITY_CATEGORY.SECURITY,
-        actionType: ACTIVITY_ACTION.TOKEN_REUSE_DETECTED as any,
+        actionType: ACTIVITY_ACTION.TOKEN_REUSE_DETECTED,
         timestamp: new Date(),
         details: "A revoked refresh token was used. All sessions terminated.",
       })

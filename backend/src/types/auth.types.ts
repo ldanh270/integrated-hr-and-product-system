@@ -5,7 +5,7 @@ import { EmployeeRole } from "./employee.types.ts"
 export interface AuthenticatedRequest extends Request {
   user: {
     empId: string
-    email: string
+    username: string
     role: string
   }
 }
@@ -14,7 +14,8 @@ export interface JwtPayload {
   empId: string
   username: string
   role: string
-  [key: string]: any
+  iat?: number
+  exp?: number
 }
 /**
  * Data Transfer Object for Login request
@@ -267,6 +268,7 @@ export interface IAuthRepository {
       | "role_revoked"
       | "account_locked"
       | "account_unlocked"
+      | "token_reuse_detected"
     ipAddress?: string
     timestamp: Date
     details?: string
