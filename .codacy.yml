@@ -33,17 +33,6 @@ engines:
   bandit:
     enabled: false
 
-<<<<<<< HEAD
-  # ── SQL ───────────────────────────────────────────────────────────────────
-  tsqllint:
-    enabled: true
-
-=======
->>>>>>> d00ecef4197cce3f664c6687cbdcb80e102e46ee
-  # ── Shell / PowerShell ────────────────────────────────────────────────────
-  psscriptanalyzer:
-    enabled: true
-
   # ── Other ─────────────────────────────────────────────────────────────────
   jshint:
     enabled: false # superseded by ESLint in this project

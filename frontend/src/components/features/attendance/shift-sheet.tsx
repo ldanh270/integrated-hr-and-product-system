@@ -31,15 +31,15 @@ import { z } from "zod"
 const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/
 
 const formSchema = z.object({
-  name: z.string().min(2, "Tên ca phải từ 2 ký tự"),
-  startTime: z.string().regex(timeRegex, "Định dạng HH:MM"),
-  endTime: z.string().regex(timeRegex, "Định dạng HH:MM"),
+  name: z.string().min(2, "Shift name must be at least 2 characters"),
+  startTime: z.string().regex(timeRegex, "Format HH:MM"),
+  endTime: z.string().regex(timeRegex, "Format HH:MM"),
   gracePeriodMinutes: z.string(),
-  gpsLat: z.number({ message: "Vĩ độ phải là số" }).optional(),
-  gpsLng: z.number({ message: "Kinh độ phải là số" }).optional(),
+  gpsLat: z.number({ message: "Latitude must be a number" }).optional(),
+  gpsLng: z.number({ message: "Longitude must be a number" }).optional(),
   gpsRadiusMeters: z
-    .number({ message: "Bán kính phải là số" })
-    .min(1, "Bán kính tối thiểu 1m")
+    .number({ message: "Radius must be a number" })
+    .min(1, "Minimum radius is 1m")
     .optional(),
   isActive: z.boolean(),
 })
@@ -53,8 +53,8 @@ interface Props {
 }
 
 /**
- * Component hiển thị dialog để tạo mới hoặc cập nhật thông tin ca làm việc.
- * @param props - Các thuộc tính của component bao gồm trạng thái open, hàm onOpenChange và dữ liệu ban đầu (nếu có).
+ * Component that displays a dialog to create or update working shift information.
+ * @param props - Component properties including open state, onOpenChange handler, and initial data (if any).
  */
 export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
   const form = useForm<FormValues>({
@@ -108,7 +108,7 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
       values.endTime &&
       timeToMinutes(values.endTime) <= timeToMinutes(values.startTime)
     ) {
-      form.setError("endTime", { message: "Giờ kết thúc phải sau giờ bắt đầu" })
+      form.setError("endTime", { message: "End time must be after start time" })
       return
     }
 
@@ -145,12 +145,12 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
       <DialogContent className="max-w-2xl bg-popover rounded-4xl">
         <DialogHeader>
           <DialogTitle className="text-xl">
-            {initialData ? "Cập nhật ca làm việc" : "Tạo ca làm việc mới"}
+            {initialData ? "Update Working Shift" : "Create New Shift"}
           </DialogTitle>
           <DialogDescription>
             {initialData
-              ? "Chỉnh sửa thông tin ca và áp dụng thay đổi hệ thống."
-              : "Định nghĩa ca làm việc mới với quy định giờ giấc và vị trí GPS."}
+              ? "Edit shift details and apply system changes."
+              : "Define a new working shift with timing and GPS rules."}
           </DialogDescription>
         </DialogHeader>
 
@@ -160,7 +160,7 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-primary font-semibold text-sm uppercase tracking-wider">
                 <Info size={16} />
-                <span>Thông tin cơ bản</span>
+                <span>Basic Information</span>
               </div>
 
               <FormField
@@ -168,9 +168,9 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tên ca làm việc <span className="text-destructive">*</span></FormLabel>
+                    <FormLabel>Shift Name <span className="text-destructive">*</span></FormLabel>
                     <FormControl>
-                      <Input placeholder="VD: Ca sáng, Ca hành chính..." className="h-11" {...field} />
+                      <Input placeholder="e.g., Morning Shift, Office Hours..." className="h-11" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -185,7 +185,7 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <Clock size={14} className="text-muted-foreground" />
-                        Giờ bắt đầu <span className="text-destructive">*</span>
+                        Start Time <span className="text-destructive">*</span>
                       </FormLabel>
                       <FormControl>
                         <Input type="time" className="h-11" {...field} />
@@ -202,7 +202,7 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <Clock size={14} className="text-muted-foreground" />
-                        Giờ kết thúc <span className="text-destructive">*</span>
+                        End Time <span className="text-destructive">*</span>
                       </FormLabel>
                       <FormControl>
                         <Input type="time" className="h-11" {...field} />
@@ -219,7 +219,7 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
                   name="gracePeriodMinutes"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Thời gian ân hạn (phút)</FormLabel>
+                      <FormLabel>Grace Period (minutes)</FormLabel>
                       <FormControl>
                         <Input type="number" min={0} max={120} className="h-11" {...field} />
                       </FormControl>
@@ -236,7 +236,7 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
                       </FormControl>
-                      <FormLabel className="!mt-0 cursor-pointer">Kích hoạt ca</FormLabel>
+                      <FormLabel className="!mt-0 cursor-pointer">Activate Shift</FormLabel>
                     </FormItem>
                   )}
                 />
@@ -249,7 +249,7 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-primary font-semibold text-sm uppercase tracking-wider">
                 <MapPin size={16} />
-                <span>Cấu hình vị trí GPS (Tùy chọn)</span>
+                <span>GPS Configuration (Optional)</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -258,7 +258,7 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
                   name="gpsLat"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Vĩ độ (Latitude)</FormLabel>
+                      <FormLabel>Latitude</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -282,7 +282,7 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
                   name="gpsLng"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Kinh độ (Longitude)</FormLabel>
+                      <FormLabel>Longitude</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -307,11 +307,11 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
                 name="gpsRadiusMeters"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Bán kính chấm công cho phép (mét)</FormLabel>
+                    <FormLabel>Allowed Radius (meters)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
-                        placeholder="VD: 100, 200..."
+                        placeholder="e.g., 100, 200..."
                         className="h-11"
                         {...field}
                         value={field.value ?? ""}
@@ -328,7 +328,7 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
 
             <FormActionFooter
               onCancel={() => { onOpenChange(false); }}
-              submitLabel={initialData ? "Lưu thay đổi" : "Tạo ca làm việc"}
+              submitLabel={initialData ? "Save Changes" : "Create Shift"}
               isPending={isPending}
             />
           </form>

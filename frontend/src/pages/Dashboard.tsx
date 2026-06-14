@@ -9,7 +9,6 @@ import { useEffect } from "react"
  * WelcomeIllustration — minimal developer SVG, scaled down for compact layout.
  */
 const WelcomeIllustration = () => (
-// ... (I'll copy the actual text from previous read)
 
   <svg viewBox="0 0 160 120" className="h-24 w-24 text-white select-none hidden sm:block shrink-0">
     <rect x="20" y="95" width="120" height="4" rx="2" fill="#ffffff" opacity="0.25" />

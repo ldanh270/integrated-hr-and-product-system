@@ -43,11 +43,11 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 
 const formSchema = z.object({
-  reason: z.string().min(5, "Lý do phải từ 5 ký tự").max(500),
-  startDate: z.string().min(1, "Vui lòng chọn ngày"),
-  employeeShiftId: z.string().min(1, "Chọn ca hiện tại"),
-  swapWithEmployeeId: z.string().min(1, "Chọn nhân viên đổi ca"),
-  swapWithShiftId: z.string().min(1, "Chọn ca cần đổi"),
+  reason: z.string().min(5, "Reason must be at least 5 characters").max(500),
+  startDate: z.string().min(1, "Please select a date"),
+  employeeShiftId: z.string().min(1, "Select current shift"),
+  swapWithEmployeeId: z.string().min(1, "Select colleague to swap with"),
+  swapWithShiftId: z.string().min(1, "Select target shift"),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -58,8 +58,8 @@ interface Props {
 }
 
 /**
- * Component hiển thị dialog để gửi yêu cầu đổi ca làm việc với đồng nghiệp.
- * @param props - Các thuộc tính của component bao gồm trạng thái open và hàm onOpenChange.
+ * Component that displays a dialog to submit a shift change request with a colleague.
+ * @param props - Component properties including open state and onOpenChange handler.
  */
 export function ShiftChangeRequestDialog({ open, onOpenChange }: Props) {
   const [employeeSearch, setEmployeeSearch] = useState("")
@@ -77,14 +77,14 @@ export function ShiftChangeRequestDialog({ open, onOpenChange }: Props) {
   })
 
   /**
-   * useShifts - Hook lấy danh sách các ca làm việc có sẵn.
+   * useShifts - Hook to fetch the list of available working shifts.
    * Calls API: shiftsApi.getAll
    */
   const { data: shifts } = useShifts()
 
   /**
-   * useEmployees - Hook lấy danh sách nhân viên với tính năng tìm kiếm.
-   * Limit được đặt là 10 để tối ưu hiệu năng, kết hợp với tìm kiếm từ server.
+   * useEmployees - Hook to fetch the list of employees with search functionality.
+   * Limit is set to 10 for performance optimization, combined with server-side search.
    * Calls API: employeeApi.list
    */
   const { data: employeeData, isLoading: isLoadingEmployees } = useEmployees({ 
@@ -108,9 +108,9 @@ export function ShiftChangeRequestDialog({ open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl bg-popover rounded-4xl">
         <DialogHeader>
-          <DialogTitle className="text-xl">Gửi yêu cầu đổi ca làm việc</DialogTitle>
+          <DialogTitle className="text-xl">Submit Shift Change Request</DialogTitle>
           <DialogDescription>
-            Đề xuất thay đổi ca làm việc với đồng nghiệp. Yêu cầu cần được cấp trên phê duyệt.
+            Propose a shift change with a colleague. Requests require manager approval.
           </DialogDescription>
         </DialogHeader>
 
@@ -121,7 +121,7 @@ export function ShiftChangeRequestDialog({ open, onOpenChange }: Props) {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-primary font-semibold text-sm uppercase tracking-wider">
                   <Calendar size={16} />
-                  <span>Thời gian</span>
+                  <span>Schedule</span>
                 </div>
 
                 <FormField
@@ -129,7 +129,7 @@ export function ShiftChangeRequestDialog({ open, onOpenChange }: Props) {
                   name="startDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Ngày muốn đổi ca <span className="text-destructive">*</span></FormLabel>
+                      <FormLabel>Shift Date <span className="text-destructive">*</span></FormLabel>
                       <FormControl>
                         <Input type="date" className="h-11 rounded-2xl" {...field} />
                       </FormControl>
@@ -143,11 +143,11 @@ export function ShiftChangeRequestDialog({ open, onOpenChange }: Props) {
                   name="employeeShiftId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Ca hiện tại của bạn <span className="text-destructive">*</span></FormLabel>
+                      <FormLabel>Your Current Shift <span className="text-destructive">*</span></FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger className="rounded-2xl border-border h-11 bg-muted/30 shadow-none">
-                            <SelectValue placeholder="-- Chọn ca của bạn --" />
+                            <SelectValue placeholder="-- Select your shift --" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className="border-border rounded-xl">
@@ -166,7 +166,7 @@ export function ShiftChangeRequestDialog({ open, onOpenChange }: Props) {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-primary font-semibold text-sm uppercase tracking-wider">
                   <Repeat size={16} />
-                  <span>Thông tin đối ứng</span>
+                  <span>Swap Details</span>
                 </div>
 
                 <FormField
@@ -174,7 +174,7 @@ export function ShiftChangeRequestDialog({ open, onOpenChange }: Props) {
                   name="swapWithEmployeeId"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Đổi với nhân viên <span className="text-destructive">*</span></FormLabel>
+                      <FormLabel>Swap with Colleague <span className="text-destructive">*</span></FormLabel>
                       <Popover open={employeePopoverOpen} onOpenChange={setEmployeePopoverOpen}>
                         <PopoverTrigger asChild>
                           <FormControl>
@@ -187,8 +187,8 @@ export function ShiftChangeRequestDialog({ open, onOpenChange }: Props) {
                               )}
                             >
                               {field.value
-                                ? employeeData?.data.find((emp) => emp.id === field.value)?.fullName || "Nhân viên đã chọn"
-                                : "-- Chọn đồng nghiệp --"}
+                                ? employeeData?.data.find((emp) => emp.id === field.value)?.fullName || "Selected Employee"
+                                : "-- Select colleague --"}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                           </FormControl>
@@ -198,16 +198,16 @@ export function ShiftChangeRequestDialog({ open, onOpenChange }: Props) {
                             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
                             <input
                               className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                              placeholder="Tìm tên nhân viên..."
+                              placeholder="Search employee name..."
                               value={employeeSearch}
                               onChange={(e) => { setEmployeeSearch(e.target.value) }}
                             />
                           </div>
                           <div className="max-h-60 overflow-y-auto p-1">
                             {isLoadingEmployees ? (
-                              <div className="p-4 text-center text-sm text-muted-foreground">Đang tải...</div>
+                              <div className="p-4 text-center text-sm text-muted-foreground">Loading...</div>
                             ) : employeeData?.data.length === 0 ? (
-                              <div className="p-4 text-center text-sm text-muted-foreground">Không tìm thấy nhân viên.</div>
+                              <div className="p-4 text-center text-sm text-muted-foreground">No employee found.</div>
                             ) : (
                               employeeData?.data.map((emp) => (
                                 <div
@@ -244,11 +244,11 @@ export function ShiftChangeRequestDialog({ open, onOpenChange }: Props) {
                   name="swapWithShiftId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Ca muốn đổi sang <span className="text-destructive">*</span></FormLabel>
+                      <FormLabel>Target Shift <span className="text-destructive">*</span></FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger className="rounded-2xl border-border h-11 bg-muted/30 shadow-none">
-                            <SelectValue placeholder="-- Chọn ca cần đổi --" />
+                            <SelectValue placeholder="-- Select target shift --" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className="border-border rounded-xl">
@@ -269,17 +269,17 @@ export function ShiftChangeRequestDialog({ open, onOpenChange }: Props) {
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-primary font-semibold text-sm uppercase tracking-wider">
                 <MessageSquare size={16} />
-                <span>Chi tiết lý do</span>
+                <span>Reason Details</span>
               </div>
               <FormField
                 control={form.control}
                 name="reason"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Lý do gửi yêu cầu <span className="text-destructive">*</span></FormLabel>
+                    <FormLabel>Reason for Request <span className="text-destructive">*</span></FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="VD: Cần giải quyết việc gia đình, đổi ca để đi khám bệnh..."
+                        placeholder="e.g., Personal business, swapping to visit doctor..."
                         className="resize-none min-h-24 rounded-2xl p-4 bg-muted/20"
                         {...field}
                       />
@@ -292,7 +292,7 @@ export function ShiftChangeRequestDialog({ open, onOpenChange }: Props) {
 
             <FormActionFooter 
               onCancel={() => { onOpenChange(false); }}
-              submitLabel="Gửi yêu cầu"
+              submitLabel="Submit Request"
               isPending={mutation.isPending}
             />
           </form>
