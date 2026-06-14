@@ -26,9 +26,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     if (!isAuthenticated) {
       apiClient
         .get(API_ENDPOINTS.AUTH.ME)
-        .then((res) => setAuth(res.data.data))
+        .then((res) => { setAuth(res.data.data) })
         .catch(() => {})
-        .finally(() => setIsChecking(false))
+        .finally(() => { setIsChecking(false) })
     }
   }, [isAuthenticated, setAuth])
 

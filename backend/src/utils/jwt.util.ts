@@ -4,6 +4,7 @@ import {
   REFRESH_TOKEN_SECRET,
   REFRESH_TOKEN_TTL,
 } from "@/configs/auth/auth.config.ts"
+import { JwtPayload } from "@/types/auth.types.ts"
 
 import jwt from "jsonwebtoken"
 
@@ -32,9 +33,9 @@ export class JwtUtil {
   /**
    * Verifies an Access Token and returns the decoded payload if valid
    */
-  static verifyAccessToken(token: string): any {
+  static verifyAccessToken(token: string): JwtPayload | null {
     try {
-      return jwt.verify(token, ACCESS_TOKEN_SECRET)
+      return jwt.verify(token, ACCESS_TOKEN_SECRET) as JwtPayload
     } catch (error) {
       return null
     }
@@ -43,9 +44,9 @@ export class JwtUtil {
   /**
    * Verifies a Refresh Token and returns the decoded payload if valid
    */
-  static verifyRefreshToken(token: string): any {
+  static verifyRefreshToken(token: string): JwtPayload | null {
     try {
-      return jwt.verify(token, REFRESH_TOKEN_SECRET)
+      return jwt.verify(token, REFRESH_TOKEN_SECRET) as JwtPayload
     } catch (error) {
       return null
     }

@@ -19,8 +19,5 @@ CREATE INDEX "RefreshToken_employeeId_idx" ON "RefreshToken"("employeeId");
 -- CreateIndex
 CREATE INDEX "RefreshToken_expiresAt_idx" ON "RefreshToken"("expiresAt");
 
--- CreateIndex
-CREATE INDEX "RefreshToken_tokenHash_idx" ON "RefreshToken"("tokenHash");
-
 -- AddForeignKey
 ALTER TABLE "RefreshToken" ADD CONSTRAINT "RefreshToken_employeeId_fkey" FOREIGN KEY ("employeeId") REFERENCES "Employee"("id") ON DELETE CASCADE ON UPDATE CASCADE;

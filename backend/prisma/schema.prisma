@@ -780,7 +780,6 @@ model RefreshToken {
 
   @@index([employeeId])
   @@index([expiresAt])
-  @@index([tokenHash])
 }
 
 model TaskCategory {

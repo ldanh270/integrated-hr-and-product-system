@@ -9,6 +9,13 @@ export interface AuthenticatedRequest extends Request {
     role: string
   }
 }
+
+export interface JwtPayload {
+  empId: string
+  username: string
+  role: string
+  [key: string]: any
+}
 /**
  * Data Transfer Object for Login request
  */

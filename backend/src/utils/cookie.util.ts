@@ -21,7 +21,7 @@ export class CookieUtil {
       secure: isProduction,
       sameSite: isProduction ? "none" : "lax",
       expires: expiresAt,
-      path: "/api/auth/refresh",
+      path: "/api/auth",
     })
   }
 
@@ -36,7 +36,7 @@ export class CookieUtil {
       httpOnly: true,
       secure: isProduction,
       sameSite: isProduction ? "none" : "lax",
-      path: "/api/auth/refresh",
+      path: "/api/auth",
     })
   }
 }

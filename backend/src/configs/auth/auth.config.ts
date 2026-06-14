@@ -60,7 +60,7 @@ export const ACTIVITY_ACTION = {
 } as const
 
 export const AUTH_ERRORS = {
-  MISSING_TOKEN: { message: "Authorization header missing or invalid", code: "UNAUTHORIZED" },
+  MISSING_TOKEN: { message: "Authentication cookie missing or invalid", code: "UNAUTHORIZED" },
   TOKEN_EXPIRED: {
     message: "Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.",
     code: "TOKEN_EXPIRED",
