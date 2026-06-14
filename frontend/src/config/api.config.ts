@@ -3,6 +3,8 @@ export const API_ENDPOINTS = {
     LOGIN: "/auth/login",
     LOGOUT: "/auth/logout",
     FORGOT_PASSWORD: "/auth/forgot-password",
+    VALIDATE_RESET_TOKEN: "/auth/validate-reset-token",
+    RESET_PASSWORD: "/auth/reset-password",
   },
   PAYROLL: {
     BASE: "/payrolls",
