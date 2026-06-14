@@ -1,6 +1,6 @@
 import { PageCard, PageHeader } from "@/components/common"
 import { StatusPill } from "@/components/common/status-pill"
-import ShiftSheet from "@/components/features/attendance/shift-sheet"
+import ShiftDialog from "@/components/features/attendance/shift-sheet"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,

@@ -1,9 +1,8 @@
-import { Button } from "@/components/ui/button"
+import { FormActionFooter } from "@/components/common/form-action-footer"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -25,7 +24,7 @@ import type { IWorkingShift } from "@/types/attendance.types"
 import { useEffect } from "react"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Clock, Info, Loader2, MapPin } from "lucide-react"
+import { Clock, Info, MapPin } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
@@ -53,7 +52,11 @@ interface Props {
   initialData?: IWorkingShift | null
 }
 
-export default function ShiftSheet({ open, onOpenChange, initialData }: Props) {
+/**
+ * Component hiển thị dialog để tạo mới hoặc cập nhật thông tin ca làm việc.
+ * @param props - Các thuộc tính của component bao gồm trạng thái open, hàm onOpenChange và dữ liệu ban đầu (nếu có).
+ */
+export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -130,10 +133,10 @@ export default function ShiftSheet({ open, onOpenChange, initialData }: Props) {
     if (initialData) {
       updateMutation.mutate(
         { id: initialData.id, ...payload },
-        { onSuccess: () => onOpenChange(false) },
+        { onSuccess: () => { onOpenChange(false); } },
       )
     } else {
-      createMutation.mutate(payload, { onSuccess: () => onOpenChange(false) })
+      createMutation.mutate(payload, { onSuccess: () => { onOpenChange(false); } })
     }
   }
 
@@ -323,18 +326,16 @@ export default function ShiftSheet({ open, onOpenChange, initialData }: Props) {
               />
             </div>
 
-            <DialogFooter className="mt-4">
-              <Button type="button" variant="outline" className="rounded-full" onClick={() => onOpenChange(false)}>
-                Hủy bỏ
-              </Button>
-              <Button type="submit" className="rounded-full px-8 bg-primary hover:bg-primary/90 shadow-md" disabled={isPending}>
-                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {initialData ? "Lưu thay đổi" : "Tạo ca làm việc"}
-              </Button>
-            </DialogFooter>
+            <FormActionFooter
+              onCancel={() => { onOpenChange(false); }}
+              submitLabel={initialData ? "Lưu thay đổi" : "Tạo ca làm việc"}
+              isPending={isPending}
+            />
           </form>
         </Form>
       </DialogContent>
     </Dialog>
   )
 }
+
+export default ShiftDialog
