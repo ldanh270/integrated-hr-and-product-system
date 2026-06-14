@@ -9,6 +9,10 @@ import {
 } from "@/schemas/task-category.schema.ts"
 // Import shared type definitions for API responses and services
 import { ApiResponse, ITaskCategoryService, TaskCategory } from "@/types"
+// Import centralized error codes and error layers
+import { ErrorCode, ErrorLayer } from "@/configs/system/error-code.config.ts"
+// Import application error utility
+import { AppError } from "@/utils/error.util.ts"
 
 // Import Express Response type and Zod library
 import { Response } from "express"
@@ -26,7 +30,7 @@ export class TaskCategoryController {
       if (!req.user) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           data: null,
-          error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+          error: { message: "Unauthorized", code: ErrorCode.UNAUTHORIZED },
         })
       }
 
@@ -37,7 +41,16 @@ export class TaskCategoryController {
       // Return the result array
       res.status(HttpStatusCode.OK).json({ data: result, error: null })
     } catch (error) {
-      throw error
+      console.error("Error in list task categories controller:", error)
+      if (error instanceof AppError) {
+        throw error
+      }
+      throw new AppError(
+        error instanceof Error ? error.message : "Internal server error",
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
+        ErrorLayer.CONTROLLER,
+        ErrorCode.INTERNAL_SERVER_ERROR
+      )
     }
   }
 
@@ -48,7 +61,7 @@ export class TaskCategoryController {
       if (!req.user) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           data: null,
-          error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+          error: { message: "Unauthorized", code: ErrorCode.UNAUTHORIZED },
         })
       }
 
@@ -65,10 +78,19 @@ export class TaskCategoryController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
+          error: { message: "Validation error", code: ErrorCode.VALIDATION_ERROR, meta: error.issues },
         })
       }
-      throw error
+      console.error("Error in create task category controller:", error)
+      if (error instanceof AppError) {
+        throw error
+      }
+      throw new AppError(
+        error instanceof Error ? error.message : "Internal server error",
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
+        ErrorLayer.CONTROLLER,
+        ErrorCode.INTERNAL_SERVER_ERROR
+      )
     }
   }
 
@@ -79,7 +101,7 @@ export class TaskCategoryController {
       if (!req.user) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           data: null,
-          error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+          error: { message: "Unauthorized", code: ErrorCode.UNAUTHORIZED },
         })
       }
 
@@ -97,10 +119,19 @@ export class TaskCategoryController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
+          error: { message: "Validation error", code: ErrorCode.VALIDATION_ERROR, meta: error.issues },
         })
       }
-      throw error
+      console.error("Error in update task category controller:", error)
+      if (error instanceof AppError) {
+        throw error
+      }
+      throw new AppError(
+        error instanceof Error ? error.message : "Internal server error",
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
+        ErrorLayer.CONTROLLER,
+        ErrorCode.INTERNAL_SERVER_ERROR
+      )
     }
   }
 
@@ -111,7 +142,7 @@ export class TaskCategoryController {
       if (!req.user) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           data: null,
-          error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+          error: { message: "Unauthorized", code: ErrorCode.UNAUTHORIZED },
         })
       }
 
@@ -123,7 +154,16 @@ export class TaskCategoryController {
       // Return success status
       res.status(HttpStatusCode.OK).json({ data: null, error: null })
     } catch (error) {
-      throw error
+      console.error("Error in delete task category controller:", error)
+      if (error instanceof AppError) {
+        throw error
+      }
+      throw new AppError(
+        error instanceof Error ? error.message : "Internal server error",
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
+        ErrorLayer.CONTROLLER,
+        ErrorCode.INTERNAL_SERVER_ERROR
+      )
     }
   }
 }
