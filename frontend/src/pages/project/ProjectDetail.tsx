@@ -543,7 +543,7 @@ export default function ProjectDetail() {
         <div className="flex flex-wrap items-center gap-2">
           {canCreateTask && (
             <Button
-              onClick={() => navigate(`/project/${projectId}/tasks/new`)}
+              onClick={() => { navigate(`/project/${projectId}/tasks/new`); }}
               className="rounded-full bg-primary text-primary-foreground hover:bg-primary/95 flex items-center gap-1.5 h-10 text-xs px-4"
             >
               <Plus className="size-4" />
@@ -555,7 +555,7 @@ export default function ProjectDetail() {
             <>
               <Button
                 variant="outline"
-                onClick={() => setIsOpenCreateCategoryModal(true)}
+                onClick={() => { setIsOpenCreateCategoryModal(true); }}
                 className="rounded-full border-border hover:bg-muted/50 flex items-center gap-1.5 h-10 text-xs px-4"
               >
                 <Tag className="size-4" />
@@ -571,7 +571,7 @@ export default function ProjectDetail() {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => setIsOpenMemberModal(true)}
+                onClick={() => { setIsOpenMemberModal(true); }}
                 className="rounded-full border-border hover:bg-muted/50 flex items-center gap-1.5 h-10 text-xs px-4"
               >
                 <UserPlus className="size-4" />
@@ -740,7 +740,7 @@ export default function ProjectDetail() {
                               variant="ghost"
                               size="icon-xs"
                               className="text-destructive hover:bg-destructive/10 rounded-full cursor-pointer"
-                              onClick={() => removeMemberMutation.mutate(member.employeeId)}
+                              onClick={() => { removeMemberMutation.mutate(member.employeeId); }}
                             >
                               Xóa
                             </Button>
@@ -769,7 +769,7 @@ export default function ProjectDetail() {
                   <Input
                     placeholder="Tìm công việc..."
                     value={issueSearch}
-                    onChange={(e) => setIssueSearch(e.target.value)}
+                    onChange={(e) => { setIssueSearch(e.target.value); }}
                     className="pl-11 h-9 text-xs border-border rounded-full"
                   />
                 </div>
@@ -965,7 +965,7 @@ export default function ProjectDetail() {
                                         <DropdownMenuItem
                                           key={st}
                                           className="rounded-lg text-xs font-medium cursor-pointer"
-                                          onClick={() => updateStatusMutation.mutate({ taskId: task.id, status: st })}
+                                          onClick={() => { updateStatusMutation.mutate({ taskId: task.id, status: st }); }}
                                         >
                                           Đổi thành: {formatStatus(st)}
                                         </DropdownMenuItem>
@@ -992,7 +992,7 @@ export default function ProjectDetail() {
                             variant="ghost"
                             size="icon"
                             disabled={currentPage <= 1}
-                            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                            onClick={() => { setCurrentPage((p) => Math.max(1, p - 1)); }}
                             className="rounded-full size-7 p-0 text-xs font-bold disabled:opacity-40 hover:bg-background"
                           >
                             «
@@ -1012,7 +1012,7 @@ export default function ProjectDetail() {
                                 key={`page-${pageNum}`}
                                 variant={isCurrent ? "default" : "ghost"}
                                 size="icon"
-                                onClick={() => setCurrentPage(pageNum)}
+                                onClick={() => { setCurrentPage(pageNum); }}
                                 className={`rounded-full size-7 p-0 text-xs font-bold ${
                                   isCurrent
                                     ? "bg-primary text-primary-foreground hover:bg-primary/95"
@@ -1027,7 +1027,7 @@ export default function ProjectDetail() {
                             variant="ghost"
                             size="icon"
                             disabled={currentPage >= totalPages}
-                            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                            onClick={() => { setCurrentPage((p) => Math.min(totalPages, p + 1)); }}
                             className="rounded-full size-7 p-0 text-xs font-bold disabled:opacity-40 hover:bg-background"
                           >
                             »
@@ -1232,7 +1232,7 @@ export default function ProjectDetail() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsOpenMemberModal(false)}
+                onClick={() => { setIsOpenMemberModal(false); }}
                 className="h-10 rounded-full px-5 text-sm"
                 disabled={addMemberMutation.isPending}
               >
@@ -1281,7 +1281,7 @@ export default function ProjectDetail() {
               <Input
                 id="editProjName"
                 value={editProjectName}
-                onChange={(e) => setEditProjectName(e.target.value)}
+                onChange={(e) => { setEditProjectName(e.target.value); }}
                 className="h-10 text-sm border-border rounded-full px-4"
                 required
               />
@@ -1294,7 +1294,7 @@ export default function ProjectDetail() {
               <Textarea
                 id="editProjDesc"
                 value={editProjectDesc}
-                onChange={(e) => setEditProjectDesc(e.target.value)}
+                onChange={(e) => { setEditProjectDesc(e.target.value); }}
                 className="min-h-[80px] rounded-xl border-border p-3 text-sm focus-visible:ring-1 focus-visible:ring-ring"
                 placeholder="Mô tả ngắn gọn về dự án..."
               />
@@ -1311,16 +1311,16 @@ export default function ProjectDetail() {
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-border bg-popover">
                     {PROJECT_STATUSES.map((st) => {
-                      const labels: Record<string, string> = {
-                        planning: "Lên kế hoạch",
-                        active: "Đang hoạt động",
-                        on_hold: "Tạm dừng",
-                        completed: "Hoàn thành",
-                        cancelled: "Đã hủy",
-                      }
+                      const labelsMap = new Map<string, string>([
+                        ["planning", "Lên kế hoạch"],
+                        ["active", "Đang hoạt động"],
+                        ["on_hold", "Tạm dừng"],
+                        ["completed", "Hoàn thành"],
+                        ["cancelled", "Đã hủy"],
+                      ])
                       return (
                         <SelectItem key={st} value={st} className="rounded-lg">
-                          {labels[st] || st}
+                          {labelsMap.get(st) || st}
                         </SelectItem>
                       )
                     })}
@@ -1375,7 +1375,7 @@ export default function ProjectDetail() {
                   id="editProjStart"
                   type="date"
                   value={editProjectStart}
-                  onChange={(e) => setEditProjectStart(e.target.value)}
+                  onChange={(e) => { setEditProjectStart(e.target.value); }}
                   className="h-10 text-sm border-border rounded-full px-4"
                 />
               </div>
@@ -1388,7 +1388,7 @@ export default function ProjectDetail() {
                   id="editProjEnd"
                   type="date"
                   value={editProjectEnd}
-                  onChange={(e) => setEditProjectEnd(e.target.value)}
+                  onChange={(e) => { setEditProjectEnd(e.target.value); }}
                   className="h-10 text-sm border-border rounded-full px-4"
                 />
               </div>
@@ -1398,7 +1398,7 @@ export default function ProjectDetail() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsOpenEditProjectModal(false)}
+                onClick={() => { setIsOpenEditProjectModal(false); }}
                 className="h-10 rounded-full px-5 text-sm"
                 disabled={updateProjectMutation.isPending}
               >
@@ -1437,7 +1437,7 @@ export default function ProjectDetail() {
             <Input
               placeholder="Tên chủ đề mới..."
               value={newCategoryName}
-              onChange={(e) => setNewCategoryName(e.target.value)}
+              onChange={(e) => { setNewCategoryName(e.target.value); }}
               className="h-10 text-sm border-border rounded-full px-4 flex-1"
             />
             <Button
@@ -1466,7 +1466,7 @@ export default function ProjectDetail() {
                       <div className="flex items-center gap-2 w-full">
                         <Input
                           value={editCategoryName}
-                          onChange={(e) => setEditCategoryName(e.target.value)}
+                          onChange={(e) => { setEditCategoryName(e.target.value); }}
                           className="h-8 text-xs border-border rounded-full px-3 flex-1"
                         />
                         <Button
