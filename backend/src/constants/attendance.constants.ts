@@ -11,7 +11,7 @@ export const ATTENDANCE_ERROR_MESSAGES = {
   UNAUTHORIZED: "Unauthorized",
   VALIDATION_ERROR: "Validation error",
   FORBIDDEN_EXPORT: "Forbidden: Only HR and Admins can export reports",
-  SHIFT_NOT_FOUND: "No shift assignment found for today",
+  SHIFT_NOT_FOUND: "Không tìm thấy ca làm việc cho hôm nay",
   CHECK_OUT_BEFORE_IN: "Cannot check out before check in",
   ALREADY_CHECKED_OUT: "Attendance already checked out",
   INVALID_DATE_FORMAT: "Invalid date format",
