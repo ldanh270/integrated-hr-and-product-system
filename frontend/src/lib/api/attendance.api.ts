@@ -131,7 +131,12 @@ export const attendanceApi = {
   checkIn: async (data: ICheckInOutRequest): Promise<IAttendanceRecord> => {
     const res = await apiClient.post<ApiResponse<IAttendanceRecord>>(
       API_ENDPOINTS.ATTENDANCE.CHECK_IN,
-      data,
+      {
+        location: {
+          lat: Number(data.location.lat),
+          lng: Number(data.location.lng),
+        },
+      },
     )
     return res.data.data
   },
@@ -140,7 +145,12 @@ export const attendanceApi = {
   checkOut: async (data: ICheckInOutRequest): Promise<IAttendanceRecord> => {
     const res = await apiClient.post<ApiResponse<IAttendanceRecord>>(
       API_ENDPOINTS.ATTENDANCE.CHECK_OUT,
-      data,
+      {
+        location: {
+          lat: Number(data.location.lat),
+          lng: Number(data.location.lng),
+        },
+      },
     )
     return res.data.data
   },
@@ -149,7 +159,12 @@ export const attendanceApi = {
   scan: async (data: ICheckInOutRequest): Promise<IAttendanceRecord> => {
     const res = await apiClient.post<ApiResponse<IAttendanceRecord>>(
       API_ENDPOINTS.ATTENDANCE.SCAN,
-      data,
+      {
+        location: {
+          lat: Number(data.location.lat),
+          lng: Number(data.location.lng),
+        },
+      },
     )
     return res.data.data
   },

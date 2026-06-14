@@ -87,6 +87,31 @@ export class AttendanceService implements IAttendanceService {
   }
 
   /**
+   * Checks whether a minute-of-day value falls within a shift window (supports overnight shifts).
+   */
+  private isWithinShiftWindow(currentMinutes: number, startTime: number, endTime: number): boolean {
+    if (endTime >= startTime) {
+      return currentMinutes >= startTime && currentMinutes <= endTime
+    }
+    return currentMinutes >= startTime || currentMinutes <= endTime
+  }
+
+  /**
+   * Picks an active shift when schedule/assignment has no entry for today (e.g. weekend or missing schedule).
+   */
+  private async resolveFallbackShiftId(date: Date): Promise<string | undefined> {
+    const activeShifts = (await this.workingShiftRepo.listAll()).filter((shift) => shift.isActive)
+    if (activeShifts.length === 0) return undefined
+
+    const currentMinutes = date.getHours() * 60 + date.getMinutes()
+    const matchingShift = activeShifts.find((shift) =>
+      this.isWithinShiftWindow(currentMinutes, shift.startTime, shift.endTime),
+    )
+
+    return matchingShift?.id ?? activeShifts[0]?.id
+  }
+
+  /**
    * Computes attendance metrics (status, late minutes, early leave, overtime, etc.) based on record and shift.
    * @param record - The attendance record.
    * @param shift - The associated shift definition.
@@ -184,6 +209,10 @@ export class AttendanceService implements IAttendanceService {
     if (!shiftId) {
       const schedule = await this.scheduleRepo.getScheduleByEmployee(employeeId, today)
       shiftId = this.resolveShiftIdFromSchedule(schedule, today)
+    }
+
+    if (!shiftId) {
+      shiftId = await this.resolveFallbackShiftId(new Date())
     }
 
     if (!employeeShift && shiftId) {
