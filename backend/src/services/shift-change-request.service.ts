@@ -1,3 +1,4 @@
+import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
   IShiftChangeRequestRepository,
@@ -28,7 +29,7 @@ export class ShiftChangeRequestService implements IShiftChangeRequestService {
       throw new AppError(
         "Cannot request shift swap with yourself",
         HttpStatusCode.BAD_REQUEST,
-        "Service",
+        ErrorLayer.SERVICE,
       )
     }
     return this.repo.submit(data)

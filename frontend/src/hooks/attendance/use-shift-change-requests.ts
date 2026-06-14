@@ -1,5 +1,8 @@
 import { approvalsApi, shiftChangeRequestsApi } from "@/lib/api/attendance.api"
-import type { IProcessApprovalPayload, ISubmitShiftChangeRequestPayload } from "@/types/attendance.types"
+import type {
+  IProcessApprovalPayload,
+  ISubmitShiftChangeRequestPayload,
+} from "@/types/attendance.types"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
@@ -34,8 +37,10 @@ export function useProcessApproval() {
     mutationFn: ({ id, ...data }: IProcessApprovalPayload & { id: string }) =>
       approvalsApi.process(id, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: APPROVALS_KEY })
-      qc.invalidateQueries({ queryKey: SHIFT_CHANGE_REQUESTS_KEY })
+      return Promise.all([
+        qc.invalidateQueries({ queryKey: APPROVALS_KEY }),
+        qc.invalidateQueries({ queryKey: SHIFT_CHANGE_REQUESTS_KEY }),
+      ])
     },
   })
 }

@@ -1,13 +1,14 @@
 import {
+  ACCOUNT_LOCK_TTL,
   ACTIVITY_ACTION,
   ACTIVITY_CATEGORY,
   PASSWORD_RESET_STATUS,
   PASSWORD_RESET_TTL,
-  ACCOUNT_LOCK_TTL,
 } from "@/configs/auth/auth.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { ENVIRONMENT, ENV_ENVIRONMENT } from "@/configs/system/server.config.ts"
+import { AUTH_ERROR_MESSAGES } from "@/constants/auth.constants.ts"
 import {
   ActivityLogItem,
   ActivityLogQuery,
@@ -55,7 +56,11 @@ export class AuthService implements IAuthService {
 
     // Security: Generic error for non-existent username to prevent user enumeration
     if (!employee) {
-      throw new AppError("Invalid credentials", HttpStatusCode.UNAUTHORIZED, "Authentication")
+      throw new AppError(
+        AUTH_ERROR_MESSAGES.INVALID_CREDENTIALS,
+        HttpStatusCode.UNAUTHORIZED,
+        "Authentication",
+      )
     }
 
     // Status Check
@@ -136,7 +141,11 @@ export class AuthService implements IAuthService {
         timestamp: new Date(),
       })
 
-      throw new AppError("Invalid credentials", HttpStatusCode.UNAUTHORIZED, "Authentication")
+      throw new AppError(
+        AUTH_ERROR_MESSAGES.INVALID_CREDENTIALS,
+        HttpStatusCode.UNAUTHORIZED,
+        "Authentication",
+      )
     }
 
     // Successful Login

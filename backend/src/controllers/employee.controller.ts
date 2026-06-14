@@ -1,4 +1,5 @@
 import { ErrorCode } from "@/configs/system/error-code.config.ts"
+import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import {
@@ -121,7 +122,7 @@ export class EmployeeController {
       throw new AppError(
         "Employee not found",
         HttpStatusCode.NOT_FOUND,
-        "Controller",
+        ErrorLayer.CONTROLLER,
         ErrorCode.NOT_FOUND,
       )
     }

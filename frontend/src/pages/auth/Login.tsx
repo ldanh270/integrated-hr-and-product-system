@@ -111,13 +111,6 @@ export default function Login() {
           </div>
 
           <form onSubmit={onSubmit} className="space-y-6">
-            {/* Global Error Banner */}
-            {errors.root && (
-              <div className="rounded-xl bg-destructive/10 p-4 text-center text-sm font-medium text-destructive">
-                {errors.root.message}
-              </div>
-            )}
-
             {/* Username */}
             <div className="space-y-2">
               <Label htmlFor="username" className="ml-5 text-sm font-medium text-foreground">
