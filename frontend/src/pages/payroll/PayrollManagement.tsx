@@ -22,12 +22,12 @@ export default function PayrollManagement() {
   }
 
   return (
-    <div className="container px-6 py-6">
+    <div className="container px-3 sm:px-6 py-4 sm:py-6">
       <PageHeader
         title="Quản lý bảng lương"
         description="Quản lý chu kỳ lương của tổ chức, xem lịch sử và tạo bảng lương mới."
         actions={
-          <>
+          <div className="flex max-sm:items-start items-center gap-2 max-sm:flex-col flex-row">
             <Button
               variant="outline"
               onClick={handleExport}
@@ -37,7 +37,7 @@ export default function PayrollManagement() {
               Xuất CSV
             </Button>
             <GeneratePayrollModal />
-          </>
+          </div>
         }
       />
 

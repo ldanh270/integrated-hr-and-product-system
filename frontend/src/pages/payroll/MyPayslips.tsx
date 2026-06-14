@@ -1,5 +1,5 @@
-import { PageCard, PageHeader } from "@/components/common"
-import PayslipSheet from "@/components/features/payroll/payslip-sheet"
+import { AppPagination, DataTableToolbar, PageCard, PageHeader } from "@/components/common"
+import { PayslipDetailPage } from "@/components/features/payroll/payslip-detail-page"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,16 +22,50 @@ import { CalendarDays, ChevronRight, FileText, Loader2 } from "lucide-react"
 export default function MyPayslips() {
   const { data: payslips, isLoading, isError } = useMyPayslips()
 
+  const [view, setView] = useState<"list" | "detail">("list")
   const [selectedPayslip, setSelectedPayslip] = useState<IPayslip | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10)
+
+  const filteredPayslips =
+    payslips?.filter((p) => {
+      const s = searchTerm.toLowerCase()
+      const periodStr = `${p.periodMonth}/${p.periodYear}`
+      const periodStrZero = `${String(p.periodMonth).padStart(2, "0")}/${p.periodYear}`
+      const statusStr = p.status ? PAYROLL_STATUS_LABELS[p.status].toLowerCase() : ""
+      return periodStr.includes(s) || periodStrZero.includes(s) || statusStr.includes(s)
+    }) || []
+
+  const paginatedPayslips = filteredPayslips.slice((page - 1) * limit, page * limit)
+  const totalPages = Math.ceil(filteredPayslips.length / limit)
+
+  const handleCloseForm = () => {
+    setView("list")
+    setSelectedPayslip(null)
+  }
+
+  if (view !== "list") {
+    return <PayslipDetailPage payslip={selectedPayslip} onClose={handleCloseForm} />
+  }
 
   return (
-    <div className="container px-6 py-6">
+    <div className="container px-3 sm:px-6 py-4 sm:py-6">
       <PageHeader
         title="Lương của tôi"
         description="Lịch sử và chi tiết các phiếu lương của bạn."
       />
 
       <PageCard className="overflow-hidden p-0" noBorder={false}>
+        <DataTableToolbar
+          searchQuery={searchTerm}
+          onSearchChange={(val) => {
+            setSearchTerm(val)
+            setPage(1)
+          }}
+          searchPlaceholder="Tìm kiếm theo tháng/năm, trạng thái..."
+        />
+
         <div className="overflow-x-auto">
           <Table className="text-sm">
             <TableHeader className="bg-muted/40">
@@ -42,10 +76,10 @@ export default function MyPayslips() {
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                   Kỳ lương
                 </TableHead>
-                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap text-center">
+                <TableHead className="hidden sm:table-cell px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap text-center">
                   Ngày công
                 </TableHead>
-                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap text-center">
+                <TableHead className="hidden sm:table-cell px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap text-center">
                   Tăng ca
                 </TableHead>
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
@@ -77,7 +111,7 @@ export default function MyPayslips() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : !payslips || payslips.length === 0 ? (
+              ) : paginatedPayslips.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="h-32 text-center">
                     <div className="flex flex-col items-center justify-center space-y-2">
@@ -89,18 +123,21 @@ export default function MyPayslips() {
                   </TableCell>
                 </TableRow>
               ) : (
-                payslips.map((payslip, index) => (
+                paginatedPayslips.map((payslip, index) => (
                   <TableRow
                     key={payslip.id}
                     className="hover:bg-muted/30 cursor-pointer transition-colors group"
-                    onClick={() => setSelectedPayslip(payslip)}
+                    onClick={() => {
+                      setSelectedPayslip(payslip)
+                      setView("detail")
+                    }}
                   >
                     <TableCell className="px-4 py-3 text-muted-foreground text-center">
-                      {index + 1}
+                      {(page - 1) * limit + index + 1}
                     </TableCell>
                     <TableCell className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                        <div className="h-8 w-8 sm:h-10 sm:w-10 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                           <CalendarDays className="h-5 w-5" />
                         </div>
                         <div>
@@ -113,10 +150,10 @@ export default function MyPayslips() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-center font-medium text-muted-foreground">
+                    <TableCell className="hidden sm:table-cell px-4 py-3 text-center font-medium text-muted-foreground">
                       {payslip.workingDays} <span className="text-xs font-normal">ngày</span>
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-center font-medium text-muted-foreground">
+                    <TableCell className="hidden sm:table-cell px-4 py-3 text-center font-medium text-muted-foreground">
                       {payslip.overtimeMinutes} <span className="text-xs font-normal">phút</span>
                     </TableCell>
                     <TableCell className="px-4 py-3">
@@ -147,13 +184,21 @@ export default function MyPayslips() {
             </TableBody>
           </Table>
         </div>
-      </PageCard>
 
-      <PayslipSheet
-        payslip={selectedPayslip}
-        open={selectedPayslip !== null}
-        onOpenChange={(open) => !open && setSelectedPayslip(null)}
-      />
+        {filteredPayslips.length > 0 && (
+          <AppPagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            totalItems={filteredPayslips.length}
+            itemsPerPage={limit}
+            onItemsPerPageChange={(newLimit) => {
+              setLimit(newLimit)
+              setPage(1)
+            }}
+          />
+        )}
+      </PageCard>
     </div>
   )
 }

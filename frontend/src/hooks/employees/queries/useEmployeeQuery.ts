@@ -38,7 +38,7 @@ export function useCreateEmployee() {
   return useMutation({
     mutationFn: (data: CreateEmployeeDto) => employeeApi.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: employeeKeys.lists() })
+      return queryClient.invalidateQueries({ queryKey: employeeKeys.lists() })
     },
   })
 }
@@ -50,8 +50,8 @@ export function useUpdateEmployee() {
     mutationFn: ({ id, data }: { id: string; data: UpdateEmployeeDto }) =>
       employeeApi.update(id, data),
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: employeeKeys.lists() })
       queryClient.setQueryData(employeeKeys.detail(variables.id), data)
+      return queryClient.invalidateQueries({ queryKey: employeeKeys.lists() })
     },
   })
 }
@@ -63,8 +63,8 @@ export function useUpdateEmployeeStatus() {
     mutationFn: ({ id, data }: { id: string; data: UpdateStatusDto }) =>
       employeeApi.updateStatus(id, data),
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: employeeKeys.lists() })
       queryClient.setQueryData(employeeKeys.detail(variables.id), data)
+      return queryClient.invalidateQueries({ queryKey: employeeKeys.lists() })
     },
   })
 }
