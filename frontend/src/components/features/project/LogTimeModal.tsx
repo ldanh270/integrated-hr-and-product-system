@@ -1,4 +1,9 @@
-import { SPENT_TIME_ACTIVITIES, SPENT_TIME_WORK_TIME_TYPES } from "@/config/entities/project.config"
+import {
+  SPENT_TIME_ACTIVITIES,
+  SPENT_TIME_WORK_TIME_TYPES,
+  SPENT_TIME_ACTIVITY,
+  SPENT_TIME_WORK_TIME_TYPE,
+} from "@/config/entities/project.config"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -42,8 +47,8 @@ export default function LogTimeModal({
   const queryClient = useQueryClient()
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0])
   const [hours, setHours] = useState("")
-  const [activity, setActivity] = useState<SpentTimeActivity>("develop")
-  const [workTimeType, setWorkTimeType] = useState<SpentTimeWorkTimeType>("working_day")
+  const [activity, setActivity] = useState<SpentTimeActivity>(SPENT_TIME_ACTIVITY.DEVELOP)
+  const [workTimeType, setWorkTimeType] = useState<SpentTimeWorkTimeType>(SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY)
   const [comment, setComment] = useState("")
   const [error, setError] = useState<string | null>(null)
 
@@ -59,8 +64,8 @@ export default function LogTimeModal({
       } else {
         setDate(new Date().toISOString().split("T")[0])
         setHours("")
-        setActivity("develop")
-        setWorkTimeType("working_day")
+        setActivity(SPENT_TIME_ACTIVITY.DEVELOP)
+        setWorkTimeType(SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY)
         setComment("")
       }
       setError(null)
@@ -128,13 +133,13 @@ export default function LogTimeModal({
 
   // Capitalize helpers
   const formatLabel = (val: string) => {
-    if (val === "develop") return "Phát triển (Develop)"
-    if (val === "design") return "Thiết kế (Design)"
-    if (val === "test") return "Kiểm thử (Test)"
-    if (val === "manage") return "Quản lý (Manage)"
-    if (val === "other") return "Khác (Other)"
-    if (val === "working_day") return "Ngày làm việc bình thường"
-    if (val === "overtime") return "Làm thêm giờ (Overtime)"
+    if (val === SPENT_TIME_ACTIVITY.DEVELOP) return "Phát triển (Develop)"
+    if (val === SPENT_TIME_ACTIVITY.DESIGN) return "Thiết kế (Design)"
+    if (val === SPENT_TIME_ACTIVITY.TEST) return "Kiểm thử (Test)"
+    if (val === SPENT_TIME_ACTIVITY.MANAGE) return "Quản lý (Manage)"
+    if (val === SPENT_TIME_ACTIVITY.OTHER) return "Khác (Other)"
+    if (val === SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY) return "Ngày làm việc bình thường"
+    if (val === SPENT_TIME_WORK_TIME_TYPE.OVERTIME) return "Làm thêm giờ (Overtime)"
     return val
   }
 

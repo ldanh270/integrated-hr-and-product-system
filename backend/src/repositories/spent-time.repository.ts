@@ -14,6 +14,8 @@ import {
   SpentTime as PrismaSpentTime,
   Task as PrismaTask,
 } from "@prisma/client"
+import { SPENT_TIME_WORK_TIME_TYPE } from "@/configs/entities/project.config.ts"
+import { SORT_ORDER } from "@/configs/system/db.config.ts"
 import { BaseRepository } from "./base.repository.ts"
 
 type PrismaSpentTimeWithRelations = PrismaSpentTime & {
@@ -138,7 +140,7 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
         employee: true,
       },
       orderBy: {
-        date: "desc",
+        date: SORT_ORDER.DESC,
       },
     })
 
@@ -157,7 +159,7 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
         hours: data.hours,
         comment: data.comment,
         activity: data.activity,
-        workTimeType: data.workTimeType || "working_day",
+        workTimeType: data.workTimeType || SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY,
       },
       include: {
         task: {

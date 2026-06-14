@@ -1,4 +1,5 @@
 import { TASK_PRIORITIES, TASK_STATUSES, TASK_TRACKERS } from "@/configs/entities/project.config.ts"
+import { SORT_ORDER_VALUES } from "@/configs/system/db.config.ts"
 
 import { z } from "zod"
 
@@ -97,7 +98,7 @@ export const listTasksQuerySchema = z.object({
   assigneeId: z.string().optional(),
   createdById: z.string().optional(),
   sortBy: z.string().optional(),
-  sortOrder: z.enum(["asc", "desc"]).optional(),
+  sortOrder: z.enum(SORT_ORDER_VALUES).optional(),
 })
 
 export type ListTasksQuerySchemaType = z.infer<typeof listTasksQuerySchema>
