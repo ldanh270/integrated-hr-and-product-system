@@ -98,14 +98,14 @@ export default function ProjectList() {
         description: newProjectDesc.trim() || null,
         techStack,
         status: "planning",
-        taskCreationPolicy: newProjectPolicy as any,
+        taskCreationPolicy: newProjectPolicy as (typeof TASK_CREATION_POLICIES)[number],
         startDate: newProjectStart || null,
         expectedEndDate: newProjectEnd || null,
         teamLeaderId: newProjectLeader === "none" ? null : newProjectLeader,
       })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] })
+      void queryClient.invalidateQueries({ queryKey: ["projects"] })
       setIsOpenCreateModal(false)
       // Reset form
       setNewProjectName("")
@@ -117,8 +117,17 @@ export default function ProjectList() {
       setNewProjectEnd("")
       setCreateError(null)
     },
-    onError: (err: any) => {
-      setCreateError(err.response?.data?.error?.message || err.message || "Đã xảy ra lỗi")
+    onError: (err: unknown) => {
+      let errorMessage = "Đã xảy ra lỗi"
+      if (err && typeof err === "object" && "response" in err) {
+        const response = (err as { response?: { data?: { error?: { message?: string } } } }).response
+        if (response?.data?.error?.message) {
+          errorMessage = response.data.error.message
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message
+      }
+      setCreateError(errorMessage)
     },
   })
 
@@ -155,7 +164,7 @@ export default function ProjectList() {
         <PageHeader title="Danh sách dự án" description="Quản lý các dự án đang phát triển trong công ty" />
         {isManager && (
           <Button
-            onClick={() => setIsOpenCreateModal(true)}
+            onClick={() => { setIsOpenCreateModal(true); }}
             className="rounded-full bg-primary text-primary-foreground hover:bg-primary/95 flex items-center gap-1.5 h-11 px-5 text-sm"
           >
             <Plus className="size-4" />
@@ -171,7 +180,7 @@ export default function ProjectList() {
           <Input
             placeholder="Tìm theo tên, mô tả, công nghệ..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); }}
             className="pl-11 h-10 text-sm border-border rounded-full"
           />
         </div>
@@ -306,7 +315,7 @@ export default function ProjectList() {
                 id="projName"
                 placeholder="Nhập tên dự án..."
                 value={newProjectName}
-                onChange={(e) => setNewProjectName(e.target.value)}
+                onChange={(e) => { setNewProjectName(e.target.value); }}
                 className="h-10 text-sm border-border rounded-full px-4"
                 required
               />
@@ -320,7 +329,7 @@ export default function ProjectList() {
                 id="projDesc"
                 placeholder="Nhập mô tả tóm tắt dự án..."
                 value={newProjectDesc}
-                onChange={(e) => setNewProjectDesc(e.target.value)}
+                onChange={(e) => { setNewProjectDesc(e.target.value); }}
                 className="min-h-[80px] rounded-xl border-border p-3 text-sm focus-visible:ring-1 focus-visible:ring-ring"
               />
             </div>
@@ -334,7 +343,7 @@ export default function ProjectList() {
                   id="projStart"
                   type="date"
                   value={newProjectStart}
-                  onChange={(e) => setNewProjectStart(e.target.value)}
+                  onChange={(e) => { setNewProjectStart(e.target.value); }}
                   className="h-10 text-sm border-border rounded-full px-4"
                 />
               </div>
@@ -347,7 +356,7 @@ export default function ProjectList() {
                   id="projEnd"
                   type="date"
                   value={newProjectEnd}
-                  onChange={(e) => setNewProjectEnd(e.target.value)}
+                  onChange={(e) => { setNewProjectEnd(e.target.value); }}
                   className="h-10 text-sm border-border rounded-full px-4"
                 />
               </div>
@@ -400,7 +409,7 @@ export default function ProjectList() {
                 id="projTech"
                 placeholder="Ví dụ: React, Node.js, TypeScript (Ngăn cách bằng dấu phẩy)"
                 value={newProjectTech}
-                onChange={(e) => setNewProjectTech(e.target.value)}
+                onChange={(e) => { setNewProjectTech(e.target.value); }}
                 className="h-10 text-sm border-border rounded-full px-4"
               />
             </div>
@@ -409,7 +418,7 @@ export default function ProjectList() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsOpenCreateModal(false)}
+                onClick={() => { setIsOpenCreateModal(false); }}
                 className="h-10 rounded-full px-5 text-sm"
                 disabled={createMutation.isPending}
               >

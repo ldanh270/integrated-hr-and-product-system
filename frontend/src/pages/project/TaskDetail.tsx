@@ -27,6 +27,7 @@ import { taskApi } from "@/lib/api/task.api"
 import { taskCategoryApi } from "@/lib/api/task-category.api"
 import { useAuthStore } from "@/store/auth-store"
 import type { SpentTime } from "@/types/spent-time.types"
+import type { TaskTracker, TaskPriority, TaskStatus } from "@/types/task.types"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import {
@@ -147,9 +148,9 @@ export default function TaskDetail() {
       return taskApi.update(id, {
         title: taskTitle,
         description: taskDesc.trim() || null,
-        tracker: taskTracker as any,
-        priority: taskPriority as any,
-        status: taskStatus as any,
+        tracker: taskTracker as TaskTracker,
+        priority: taskPriority as TaskPriority,
+        status: taskStatus as TaskStatus,
         assigneeId: taskAssignee === "none" ? null : taskAssignee,
         startDate: taskStart || null,
         dueDate: taskDue || null,
@@ -159,13 +160,22 @@ export default function TaskDetail() {
       })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["task", id] })
-      queryClient.invalidateQueries({ queryKey: ["tasks", "project", projectId] })
+      void queryClient.invalidateQueries({ queryKey: ["task", id] })
+      void queryClient.invalidateQueries({ queryKey: ["tasks", "project", projectId] })
       setIsOpenEditModal(false)
       setEditError(null)
     },
-    onError: (err: any) => {
-      setEditError(err.response?.data?.error?.message || err.message || "Đã xảy ra lỗi")
+    onError: (err: unknown) => {
+      let errorMessage = "Đã xảy ra lỗi"
+      if (err && typeof err === "object" && "response" in err) {
+        const response = (err as { response?: { data?: { error?: { message?: string } } } }).response
+        if (response?.data?.error?.message) {
+          errorMessage = response.data.error.message
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message
+      }
+      setEditError(errorMessage)
     },
   })
 
@@ -175,8 +185,8 @@ export default function TaskDetail() {
       return taskApi.deleteSpentTime(logId)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["spentTimes", id] })
-      queryClient.invalidateQueries({ queryKey: ["project"] })
+      void queryClient.invalidateQueries({ queryKey: ["spentTimes", id] })
+      void queryClient.invalidateQueries({ queryKey: ["project"] })
     },
   })
 
@@ -186,7 +196,7 @@ export default function TaskDetail() {
       return taskApi.delete(id)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", "project", projectId] })
+      void queryClient.invalidateQueries({ queryKey: ["tasks", "project", projectId] })
       navigate(`/project/${projectId}`)
     },
   })
@@ -218,7 +228,7 @@ export default function TaskDetail() {
         <AlertCircle className="size-12 text-destructive mx-auto" />
         <h3 className="text-lg font-bold text-foreground">Không tìm thấy công việc</h3>
         <p className="text-sm text-muted-foreground">Công việc không tồn tại hoặc đã bị xóa.</p>
-        <Button onClick={() => navigate(-1)} className="rounded-full">Quay lại</Button>
+        <Button onClick={() => { navigate(-1); }} className="rounded-full">Quay lại</Button>
       </div>
     )
   }
@@ -291,7 +301,7 @@ export default function TaskDetail() {
                 <Button
                   variant="ghost"
                   disabled={!prevTaskId}
-                  onClick={() => navigate(`/project/tasks/${prevTaskId}`)}
+                  onClick={() => { navigate(`/project/tasks/${prevTaskId}`); }}
                   className="rounded-full h-5 px-1.5 text-[9px] font-bold disabled:opacity-40 hover:bg-background cursor-pointer"
                 >
                   « Trước
@@ -302,7 +312,7 @@ export default function TaskDetail() {
                 <Button
                   variant="ghost"
                   disabled={!nextTaskId}
-                  onClick={() => navigate(`/project/tasks/${nextTaskId}`)}
+                  onClick={() => { navigate(`/project/tasks/${nextTaskId}`); }}
                   className="rounded-full h-5 px-1.5 text-[9px] font-bold disabled:opacity-40 hover:bg-background cursor-pointer"
                 >
                   Sau »
@@ -607,7 +617,7 @@ export default function TaskDetail() {
               <Input
                 id="editTitle"
                 value={taskTitle}
-                onChange={(e) => setTaskTitle(e.target.value)}
+                onChange={(e) => { setTaskTitle(e.target.value); }}
                 className="h-10 text-sm border-border rounded-full px-4"
                 required
               />
@@ -620,7 +630,7 @@ export default function TaskDetail() {
               <Textarea
                 id="editDesc"
                 value={taskDesc}
-                onChange={(e) => setTaskDesc(e.target.value)}
+                onChange={(e) => { setTaskDesc(e.target.value); }}
                 className="min-h-[90px] rounded-xl border-border p-3 text-sm focus-visible:ring-1 focus-visible:ring-ring"
               />
             </div>
@@ -730,7 +740,7 @@ export default function TaskDetail() {
                   min="0"
                   max="100"
                   value={taskProgress}
-                  onChange={(e) => setTaskProgress(Number(e.target.value))}
+                  onChange={(e) => { setTaskProgress(Number(e.target.value)); }}
                   className="h-10 text-sm border-border rounded-full px-4"
                   required
                 />
@@ -746,7 +756,7 @@ export default function TaskDetail() {
                   id="editStart"
                   type="date"
                   value={taskStart}
-                  onChange={(e) => setTaskStart(e.target.value)}
+                  onChange={(e) => { setTaskStart(e.target.value); }}
                   className="h-10 text-sm border-border rounded-full px-4"
                 />
               </div>
@@ -759,7 +769,7 @@ export default function TaskDetail() {
                   id="editDue"
                   type="date"
                   value={taskDue}
-                  onChange={(e) => setTaskDue(e.target.value)}
+                  onChange={(e) => { setTaskDue(e.target.value); }}
                   className="h-10 text-sm border-border rounded-full px-4"
                 />
               </div>
@@ -774,7 +784,7 @@ export default function TaskDetail() {
                   step="0.5"
                   min="0"
                   value={taskEstimate}
-                  onChange={(e) => setTaskEstimate(e.target.value)}
+                  onChange={(e) => { setTaskEstimate(e.target.value); }}
                   className="h-10 text-sm border-border rounded-full px-4"
                 />
               </div>
@@ -784,7 +794,7 @@ export default function TaskDetail() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsOpenEditModal(false)}
+                onClick={() => { setIsOpenEditModal(false); }}
                 className="h-10 rounded-full px-5 text-sm"
                 disabled={updateMutation.isPending}
               >
