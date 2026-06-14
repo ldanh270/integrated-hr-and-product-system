@@ -1,0 +1,50 @@
+export const PAYROLL_MESSAGES = {
+  SUCCESS: {
+    UPDATE_SALARY_CONFIG: "Cập nhật cấu hình lương thành công",
+    CREATE_PAYSLIP_TEMPLATE: "Tạo mẫu bảng lương thành công.",
+    UPDATE_PAYSLIP_TEMPLATE: "Cập nhật mẫu bảng lương thành công.",
+    DELETE_PAYSLIP_TEMPLATE: "Xoá mẫu bảng lương thành công",
+    UPDATE_PAYROLL_CYCLE: "Cập nhật cấu hình thành công",
+    GENERATE_PAYROLL: "Tạo bảng lương thành công.",
+    APPROVE_PAYROLL: "Duyệt bảng lương thành công.",
+    REJECT_PAYROLL: "Từ chối bảng lương thành công.",
+    CREATE_SALARY_COMPONENT: "Tạo thành phần lương thành công.",
+    UPDATE_SALARY_COMPONENT: "Cập nhật thành phần lương thành công.",
+    CREATE_SALARY_VARIABLE: "Tạo biến số lương thành công",
+    UPDATE_SALARY_VARIABLE: "Cập nhật biến số lương thành công",
+    DELETE_SALARY_VARIABLE: "Xoá biến số lương thành công",
+  },
+  ERRORS: {
+    UPDATE_SALARY_CONFIG: "Có lỗi xảy ra khi cập nhật cấu hình lương",
+    SAVE_PAYSLIP_TEMPLATE: "Lỗi khi lưu mẫu bảng lương. Vui lòng thử lại.",
+    DELETE_PAYSLIP_TEMPLATE: "Lỗi khi xoá mẫu bảng lương",
+    UPDATE_PAYROLL_CYCLE: "Có lỗi xảy ra khi cập nhật cấu hình",
+    GENERATE_PAYROLL: "Lỗi khi tạo bảng lương",
+    APPROVE_PAYROLL: "Lỗi khi duyệt bảng lương",
+    REJECT_PAYROLL: "Lỗi khi từ chối bảng lương",
+    SAVE_SALARY_COMPONENT: "Có lỗi xảy ra khi lưu thành phần lương. Vui lòng thử lại.",
+    CREATE_SALARY_VARIABLE: "Lỗi khi tạo biến số lương",
+    UPDATE_SALARY_VARIABLE: "Lỗi khi cập nhật biến số lương",
+    DELETE_SALARY_VARIABLE: "Lỗi khi xoá biến số lương",
+  },
+  VALIDATION: {
+    COMPONENT_NAME_MIN: "Tên thành phần phải từ 2 ký tự trở lên",
+    COMPONENT_FORMULA_REQUIRED: "Vui lòng nhập công thức hoặc giá trị tĩnh",
+    TRIGGER_DAY_RANGE: "Ngày chạy phải từ 1 đến 28",
+    VARIABLE_CODE_REQUIRED: "Mã biến không được để trống",
+    VARIABLE_CODE_FORMAT:
+      "Mã biến phải viết theo kiểu camelCase (chỉ chứa chữ cái và số, bắt đầu bằng chữ thường)",
+    VARIABLE_NAME_REQUIRED: "Tên biến không được để trống",
+    VARIABLE_VALUE_MIN: "Giá trị phải lớn hơn hoặc bằng 0",
+  },
+} as const
+
+export const SALARY_VARIABLE_DESCRIPTIONS = {
+  BASE_SALARY: "Mức lương cơ bản của nhân viên",
+  STANDARD_DAYS: "Số ngày công chuẩn trong kỳ lương",
+  WORKING_DAYS: "Số ngày công thực tế đi làm",
+  OVERTIME_MINUTES: "Tổng số phút làm thêm giờ",
+  HOLIDAY_DAYS: "Tổng số ngày nghỉ được hưởng lương",
+  ABSENT_DAYS: "Tổng số ngày nghỉ không lương",
+  DELETE_TITLE: "Xóa biến số",
+} as const

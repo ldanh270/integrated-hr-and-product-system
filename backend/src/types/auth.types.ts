@@ -1,5 +1,14 @@
+import { Request } from "express"
+
 import { EmployeeRole } from "./employee.types.ts"
 
+export interface AuthenticatedRequest extends Request {
+  user: {
+    empId: string
+    email: string
+    role: string
+  }
+}
 /**
  * Data Transfer Object for Login request
  */

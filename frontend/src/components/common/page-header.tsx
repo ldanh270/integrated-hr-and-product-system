@@ -12,7 +12,10 @@ interface PageHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
  */
 export function PageHeader({ title, description, actions, className, ...props }: PageHeaderProps) {
   return (
-    <div className={cn("flex items-center justify-between mb-6", className)} {...props}>
+    <div
+      className={cn("flex flex-wrap items-start justify-between gap-3 mb-4 sm:mb-6", className)}
+      {...props}
+    >
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
         {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}

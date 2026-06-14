@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from "@/config/api.config"
+import { PAYROLL_QUERY_KEYS } from "@/config/entities/payroll.config"
 import apiClient from "@/lib/api-client"
 import type { IPayslipTemplate } from "@/types/payroll.types"
 
@@ -6,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 export function usePayslipTemplates() {
   return useQuery({
-    queryKey: ["payslip-templates"],
+    queryKey: PAYROLL_QUERY_KEYS.PAYSLIP_TEMPLATES,
     queryFn: async () => {
       const response = await apiClient.get(API_ENDPOINTS.PAYROLL.PAYSLIP_TEMPLATES)
       return response.data.data as IPayslipTemplate[]
@@ -31,7 +32,7 @@ export function useCreatePayslipTemplate() {
       return response.data.data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payslip-templates"] })
+      return queryClient.invalidateQueries({ queryKey: PAYROLL_QUERY_KEYS.PAYSLIP_TEMPLATES })
     },
   })
 }
@@ -47,7 +48,7 @@ export function useUpdatePayslipTemplate() {
       return response.data.data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payslip-templates"] })
+      return queryClient.invalidateQueries({ queryKey: PAYROLL_QUERY_KEYS.PAYSLIP_TEMPLATES })
     },
   })
 }
@@ -60,7 +61,7 @@ export function useDeletePayslipTemplate() {
       return response.data.data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payslip-templates"] })
+      return queryClient.invalidateQueries({ queryKey: PAYROLL_QUERY_KEYS.PAYSLIP_TEMPLATES })
     },
   })
 }

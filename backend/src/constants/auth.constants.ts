@@ -1,6 +1,6 @@
 export const AUTH_ERROR_MESSAGES = {
   UNAUTHORIZED: "Unauthorized",
-  INVALID_CREDENTIALS: "Invalid credentials",
+  INVALID_CREDENTIALS: "Wrong username or password",
   ACCOUNT_DISABLED: "Account is disabled or inactive",
   INVALID_TOKEN: "Invalid token",
   TOKEN_EXPIRED: "Reset link has expired",

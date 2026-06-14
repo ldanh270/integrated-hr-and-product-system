@@ -8,6 +8,7 @@ export const API_ENDPOINTS = {
     BASE: "/payrolls",
     MY_PAYSLIPS: "/payrolls/my/payslips",
     GENERATE: "/payrolls/generate",
+    SETTINGS: "/payrolls/settings",
     SALARY_COMPONENTS: "/salary-components",
     PAYSLIP_TEMPLATES: "/payslip-templates",
     EMPLOYEE_SALARY_CONFIG: "/employees",

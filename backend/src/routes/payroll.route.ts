@@ -1,4 +1,6 @@
 import { ROLE } from "@/configs/entities/employee.config.ts"
+import { ErrorLayer } from "@/configs/system/error-code.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { PayrollController } from "@/controllers/payroll.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
@@ -9,6 +11,7 @@ import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
 import { PrismaPayrollRepository } from "@/repositories/payroll.repository.ts"
 import { PrismaPayslipRepository } from "@/repositories/payslip.repository.ts"
 import { PayrollService } from "@/services/payroll.service.ts"
+import { AppError } from "@/utils/error.util.ts"
 
 import express from "express"
 
@@ -66,7 +69,16 @@ payrollRoutes.put(
     try {
       const { triggerDay, triggerHour, triggerMinute } = req.body
       const updatedById = (req as any).user?.empId
-      if (!updatedById) throw new Error("Unauthorized")
+      if (!updatedById)
+        throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.UNKNOWN)
+
+      if (triggerDay !== undefined && (Number(triggerDay) < 1 || Number(triggerDay) > 28)) {
+        throw new AppError(
+          "Trigger day must be between 1 and 28",
+          HttpStatusCode.BAD_REQUEST,
+          ErrorLayer.VALIDATION,
+        )
+      }
 
       const s = await prisma.payrollSettings.upsert({
         where: { id: "GLOBAL" },

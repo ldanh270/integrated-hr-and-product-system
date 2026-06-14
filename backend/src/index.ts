@@ -68,7 +68,7 @@ app.use("/api/", limiter)
 
 // Public routes
 app.get("/", async (req, res) =>
-  res.status(200).json({ message: "Connect to server successfully" }),
+  res.status(HttpStatusCode.OK).json({ message: "Connect to server successfully" }),
 )
 
 app.use("/api/auth", authRoutes)

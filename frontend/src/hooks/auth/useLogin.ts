@@ -22,7 +22,7 @@ export const useLogin = () => {
     resolver: zodResolver(loginSchema),
   })
 
-  const { handleSubmit, setError } = loginForm
+  const { handleSubmit } = loginForm
 
   const onSubmit = async (data: LoginSchemaType) => {
     try {
@@ -32,12 +32,11 @@ export const useLogin = () => {
       const err = error as {
         response?: { data?: { error?: { message?: string }; message?: string } }
       }
-      setError("root", {
-        message:
-          err.response?.data?.error?.message ||
+      toast.error(
+        err.response?.data?.error?.message ||
           err.response?.data?.message ||
           "Login failed. Please try again.",
-      })
+      )
     }
   }
 
