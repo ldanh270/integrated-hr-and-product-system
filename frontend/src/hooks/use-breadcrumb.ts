@@ -33,7 +33,7 @@ export function useBreadcrumb(): BreadcrumbItem[] {
       { label: subsystem.name, path: subsystem.sidebarItems[0]?.path },
     ]
 
-    if (navItem && navItem.path !== subsystem.sidebarItems[0]?.path) {
+    if (navItem) {
       crumbs.push({ label: navItem.name })
     }
 
