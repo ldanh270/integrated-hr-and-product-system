@@ -6,6 +6,7 @@ import {
   IAuthRepository,
   LockedAccountItem,
   PaginatedActivityLogsDto,
+  RefreshTokenDocument,
 } from "@/types/auth.types.ts"
 
 import {
@@ -199,7 +200,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
   /**
    * Finds a refresh token by hash
    */
-  async findRefreshTokenByHash(tokenHash: string): Promise<any | null> {
+  async findRefreshTokenByHash(tokenHash: string): Promise<RefreshTokenDocument | null> {
     return this.prisma.refreshToken.findUnique({
       where: { tokenHash },
     })

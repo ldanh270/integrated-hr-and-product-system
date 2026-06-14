@@ -43,7 +43,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
 
   // Reject if verification fails
   if (!decoded) {
-    console.error("Auth Middleware: Token verification failed or token expired", { token })
+    console.error("Auth Middleware: Token verification failed or token expired")
     res.status(HttpStatusCode.UNAUTHORIZED).json({
       data: null,
       error: AUTH_ERRORS.TOKEN_EXPIRED,

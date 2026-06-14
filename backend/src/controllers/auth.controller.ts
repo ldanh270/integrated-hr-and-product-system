@@ -10,6 +10,7 @@ import {
   validateResetTokenSchema,
 } from "@/schemas/auth.schema.ts"
 import { IAuthService } from "@/types/auth.types.ts"
+import { CookieUtil } from "@/utils/cookie.util.ts"
 
 import { Request, Response } from "express"
 import { z } from "zod"
@@ -33,12 +34,16 @@ export class AuthController {
       const validatedData = loginSchema.parse(req.body)
 
       // Delegate to service
-      const result = await this.service.login(validatedData, res, req.ip)
+      const result = await this.service.login(validatedData, req.ip)
+      const { accessToken, refreshToken, refreshExpiresAt, ...authData } = result
+
+      CookieUtil.setAccessToken(res, accessToken)
+      CookieUtil.setRefreshToken(res, refreshToken, refreshExpiresAt)
 
       // Return successful response
       res.status(HttpStatusCode.OK).json({
         status: RESPONSE_STATUS.SUCCESS,
-        data: result,
+        data: authData,
       })
     } catch (error: any) {
       // Handle validation errors (Zod) or business errors (AppError)
@@ -69,7 +74,10 @@ export class AuthController {
       }
 
       // Delegate to service
-      const result = await this.service.logout(req.user.empId, res, req.ip)
+      const rawRefreshToken = req.cookies?.["refresh_token"]
+      const result = await this.service.logout(req.user.empId, rawRefreshToken, req.ip)
+
+      CookieUtil.clearTokens(res)
 
       // Return successful response
       res.status(HttpStatusCode.OK).json({
@@ -97,11 +105,15 @@ export class AuthController {
         })
       }
 
-      const result = await this.service.refresh(rawRefreshToken, res)
+      const result = await this.service.refresh(rawRefreshToken)
+      const { accessToken, refreshToken, refreshExpiresAt, ...authData } = result
+
+      CookieUtil.setAccessToken(res, accessToken)
+      CookieUtil.setRefreshToken(res, refreshToken, refreshExpiresAt)
 
       res.status(HttpStatusCode.OK).json({
         status: RESPONSE_STATUS.SUCCESS,
-        data: result,
+        data: authData,
       })
     } catch (error: any) {
       res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({

@@ -29,7 +29,6 @@ import {
   TokenValidationResponseDto,
   ValidateResetTokenDto,
 } from "@/types/auth.types.ts"
-import { CookieUtil } from "@/utils/cookie.util.ts"
 import { EmailUtil } from "@/utils/email.util.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
@@ -48,10 +47,43 @@ export class AuthService implements IAuthService {
   constructor(private repo: IAuthRepository) {}
 
   /**
+   * Helper to generate tokens and save refresh token to DB
+   */
+  private async generateTokens(
+    employee: any,
+    existingExpiresAt?: Date,
+  ): Promise<{ accessToken: string; refreshToken: string; refreshExpiresAt: Date }> {
+    const payload = {
+      empId: employee.id,
+      username: employee.username,
+      role: employee.role,
+    }
+
+    const accessToken = JwtUtil.generateAccessToken(payload)
+    const refreshToken = JwtUtil.generateRefreshToken(payload)
+
+    const tokenHash = crypto.createHash("sha256").update(refreshToken).digest("hex")
+    const refreshExpiresAt = existingExpiresAt || new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
+
+    await this.repo.createRefreshToken({
+      employeeId: employee.id,
+      tokenHash,
+      expiresAt: refreshExpiresAt,
+    })
+
+    return { accessToken, refreshToken, refreshExpiresAt }
+  }
+
+  /**
    * Handles user login logic: credential verification, account locking, and token generation
    * Normalizes input by trimming and converting to lowercase before repository lookup
    */
-  async login(data: LoginDto, res: any, ipAddress?: string): Promise<AuthResponseDto> {
+  async login(
+    data: LoginDto,
+    ipAddress?: string,
+  ): Promise<
+    AuthResponseDto & { accessToken: string; refreshToken: string; refreshExpiresAt: Date }
+  > {
     const { username, password } = data
 
     // Fetch user through repository using normalized identifier
@@ -169,28 +201,8 @@ export class AuthService implements IAuthService {
       timestamp: new Date(),
     })
 
-    const payload = {
-      empId: employee.id,
-      username: employee.username,
-      role: employee.role,
-    }
-
     // Generate Tokens
-    const accessToken = JwtUtil.generateAccessToken(payload)
-    const rawRefreshToken = JwtUtil.generateRefreshToken(payload)
-
-    // Hash refresh token & save
-    const tokenHash = crypto.createHash("sha256").update(rawRefreshToken).digest("hex")
-    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
-
-    await this.repo.createRefreshToken({
-      employeeId: employee.id,
-      tokenHash,
-      expiresAt,
-    })
-
-    CookieUtil.setAccessToken(res, accessToken)
-    CookieUtil.setRefreshToken(res, rawRefreshToken, expiresAt)
+    const tokens = await this.generateTokens(employee)
 
     return {
       employee: {
@@ -200,10 +212,15 @@ export class AuthService implements IAuthService {
         fullName: employee.fullName,
         role: employee.role,
       },
+      ...tokens,
     }
   }
 
-  async refresh(rawRefreshToken: string, res: any): Promise<RefreshResultDto> {
+  async refresh(
+    rawRefreshToken: string,
+  ): Promise<
+    RefreshResultDto & { accessToken: string; refreshToken: string; refreshExpiresAt: Date }
+  > {
     const decoded = JwtUtil.verifyRefreshToken(rawRefreshToken)
     if (!decoded) {
       throw new AppError(
@@ -245,25 +262,9 @@ export class AuthService implements IAuthService {
       throw new AppError("Account inactive", HttpStatusCode.FORBIDDEN, "Authentication")
     }
 
-    const payload = {
-      empId: employee.id,
-      username: employee.username,
-      role: employee.role,
-    }
-
-    const newAccessToken = JwtUtil.generateAccessToken(payload)
-    const newRawRefreshToken = JwtUtil.generateRefreshToken(payload)
-    const newHash = crypto.createHash("sha256").update(newRawRefreshToken).digest("hex")
-
     await this.repo.revokeRefreshToken(oldToken.id)
-    await this.repo.createRefreshToken({
-      employeeId: employee.id,
-      tokenHash: newHash,
-      expiresAt: oldToken.expiresAt,
-    })
 
-    CookieUtil.setAccessToken(res, newAccessToken)
-    CookieUtil.setRefreshToken(res, newRawRefreshToken, oldToken.expiresAt)
+    const tokens = await this.generateTokens(employee, oldToken.expiresAt)
 
     return {
       employee: {
@@ -273,6 +274,7 @@ export class AuthService implements IAuthService {
         fullName: employee.fullName,
         role: employee.role,
       },
+      ...tokens,
     }
   }
 
@@ -296,10 +298,13 @@ export class AuthService implements IAuthService {
   }
 
   /**
-   * Handles user logout logic: currently just records the activity
+   * Handles user logout logic: revokes token and records activity
    */
-  async logout(empId: string, res: any, ipAddress?: string): Promise<LogoutResponseDto> {
-    const rawRefreshToken = res.req.cookies?.["refresh_token"]
+  async logout(
+    empId: string,
+    rawRefreshToken?: string,
+    ipAddress?: string,
+  ): Promise<LogoutResponseDto> {
     if (rawRefreshToken) {
       const tokenHash = crypto.createHash("sha256").update(rawRefreshToken).digest("hex")
       const tokenDoc = await this.repo.findRefreshTokenByHash(tokenHash)
@@ -307,8 +312,6 @@ export class AuthService implements IAuthService {
         await this.repo.revokeRefreshToken(tokenDoc.id)
       }
     }
-
-    CookieUtil.clearTokens(res)
 
     // Log logout activity through repository
     await this.repo.logActivity({

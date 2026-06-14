@@ -309,12 +309,21 @@ export interface IAuthService {
   /**
    * Authenticates a user and returns a token
    */
-  login(data: LoginDto, res: any, ipAddress?: string): Promise<AuthResponseDto>
+  login(
+    data: LoginDto,
+    ipAddress?: string,
+  ): Promise<
+    AuthResponseDto & { accessToken: string; refreshToken: string; refreshExpiresAt: Date }
+  >
 
   /**
    * Refreshes access token using refresh token
    */
-  refresh(rawRefreshToken: string, res: any): Promise<RefreshResultDto>
+  refresh(
+    rawRefreshToken: string,
+  ): Promise<
+    RefreshResultDto & { accessToken: string; refreshToken: string; refreshExpiresAt: Date }
+  >
 
   /**
    * Gets the currently authenticated user's information
@@ -324,7 +333,7 @@ export interface IAuthService {
   /**
    * Processes a logout for a user
    */
-  logout(empId: string, res: any, ipAddress?: string): Promise<LogoutResponseDto>
+  logout(empId: string, rawRefreshToken?: string, ipAddress?: string): Promise<LogoutResponseDto>
 
   /**
    * Processes a forgot password request
