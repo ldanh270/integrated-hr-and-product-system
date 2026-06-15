@@ -81,6 +81,28 @@ export class ScheduleController {
     res.status(HttpStatusCode.OK).json({ data: schedules, error: null })
   }
 
+  getEmployeeScheduleById = async (
+    req: Request<{ employeeId: string }>,
+    res: Response<ApiResponse<any>>,
+  ) => {
+    const { employeeId } = req.params
+    const dateQuery = req.query.date as string | undefined
+    const scheduleDate = dateQuery ? new Date(dateQuery) : new Date()
+
+    const schedule = await this.service.getScheduleForEmployee(employeeId, scheduleDate)
+    res.status(HttpStatusCode.OK).json({ data: schedule, error: null })
+  }
+
+  listEmployeeSchedulesById = async (
+    req: Request<{ employeeId: string }>,
+    res: Response<ApiResponse<any[]>>,
+  ) => {
+    const { employeeId } = req.params
+    const schedules = await this.service.listSchedulesForEmployee(employeeId)
+
+    res.status(HttpStatusCode.OK).json({ data: schedules, error: null })
+  }
+
   /**
    * Overrides an employee's shift for a specific date.
    * @param req - Authenticated request with override data in body.

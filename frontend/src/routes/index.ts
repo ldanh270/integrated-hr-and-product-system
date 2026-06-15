@@ -32,8 +32,18 @@ const privateRoutes = [
     layout: MainLayout,
   },
   {
+    path: "/attendance/summary",
+    component: lazy(() => import("@/pages/attendance/AttendanceSummary.tsx")),
+    layout: MainLayout,
+  },
+  {
     path: "/attendance/my-schedule",
     component: lazy(() => import("@/pages/attendance/MySchedule.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/attendance/real-shift",
+    component: lazy(() => import("@/pages/attendance/RealShift.tsx")),
     layout: MainLayout,
   },
   {

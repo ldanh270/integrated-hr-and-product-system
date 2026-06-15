@@ -17,10 +17,13 @@ import {
   ATTENDANCE_STATUS_LABELS,
   ATTENDANCE_STATUS_VARIANTS,
 } from "@/config/entities/attendance.config"
+import { ROLE } from "@/config/entities/employee.config"
+import { ROUTES } from "@/config/routes.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useAttendanceRecords } from "@/hooks/attendance/use-attendance"
 import { attendanceApi } from "@/lib/api/attendance.api"
 import { formatDate, formatTime } from "@/lib/utils"
+import { useAuthStore } from "@/store/auth-store"
 import dayjs from "dayjs"
 import type { IAttendanceStatus } from "@/config/entities/attendance.config"
 
@@ -34,6 +37,7 @@ import {
   UserCheck,
   Users,
 } from "lucide-react"
+import { Navigate } from "react-router-dom"
 
 /**
  * getMonthRange — Returns an ISO date range for the current month.
@@ -51,6 +55,16 @@ function getMonthRange() {
  * Displays aggregate stats, real-time scanner, and detailed history table.
  */
 export default function AttendanceDashboard() {
+  const user = useAuthStore((state) => state.user)
+
+  if (user && user.role !== ROLE.ADMIN) {
+    return <Navigate to={ROUTES.ATTENDANCE.MY_SCHEDULE} replace />
+  }
+
+  return <AdminAttendanceDashboard />
+}
+
+function AdminAttendanceDashboard() {
   // startDate, endDate: Filter range for attendance records (default: current month)
   const [startDate, setStartDate] = useState(getMonthRange().startDate)
   const [endDate, setEndDate] = useState(getMonthRange().endDate)
