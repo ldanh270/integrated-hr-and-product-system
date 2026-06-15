@@ -1,117 +1,75 @@
-import SubsystemDropdown from "@/components/layouts/SubsystemDropdown"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { ROUTES } from "@/config/routes.config"
-import { useAuth } from "@/hooks/use-auth.ts"
+import Sidebar from "@/components/layouts/Sidebar"
+import HeaderBreadcrumb from "@/components/layouts/header-breadcrumb"
+import NotificationPanel from "@/components/layouts/notification-panel"
+import ThemeToggle from "@/components/layouts/theme-toggle"
+import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useAuthStore } from "@/store/auth-store.ts"
+import { useSidebarStore } from "@/store/sidebar-store"
 
-import { Bell, History, LogOut, MessageSquare, User } from "lucide-react"
-import { Link, useNavigate } from "react-router-dom"
+import { useState } from "react"
+
+import { Menu, PanelLeft } from "lucide-react"
 
 /**
  * Header component
- * Minimalist top bar with page title, sub-tabs, notification bell, and user profile dropdown.
+ * Slim orchestrator managing mobile menu, sidebar toggle, breadcrumb, and actions.
+ * Height: 72px (h-18)
  */
 export default function Header() {
-  const navigate = useNavigate()
-  const { logout, isLoggingOut } = useAuth()
-  const { user, isAuthenticated } = useAuthStore()
-  const handleLogout = async () => {
-    try {
-      await logout()
-      navigate(ROUTES.AUTH.LOGIN)
-    } catch (error) {
-      console.error("Logout failed", error)
-    }
-  }
+  const { isAuthenticated } = useAuthStore()
+  const { toggleSidebar } = useSidebarStore()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   if (!isAuthenticated) return null
 
   return (
-    <header className="sticky top-0 z-40 w-full h-16 border-b border-border bg-background text-foreground px-6 flex items-center shadow-none">
+    <header className="sticky top-0 z-40 flex h-14 w-full items-center border-b border-border bg-background px-4 text-foreground shadow-none md:px-6">
       <div className="flex w-full items-center justify-between">
         {/* Left: Empty for spacing if needed */}
         <div></div>
+        {/* Left: Mobile Trigger + Desktop Toggle + Breadcrumb */}
+        <div className="flex items-center gap-2 md:gap-4">
+          <div className="flex items-center md:hidden">
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon-sm" className="-ml-2 text-muted-foreground">
+                  <Menu size={20} strokeWidth={1.5} />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-64 border-r-0 p-0">
+                <Sidebar
+                  isMobile
+                  onNavClick={() => {
+                    setMobileMenuOpen(false)
+                  }}
+                  className="h-full border-r-0"
+                />
+              </SheetContent>
+            </Sheet>
+          </div>
 
-        {/* Right: notifications + profile */}
-        <div className="flex items-center gap-4">
-          <SubsystemDropdown />
+          <div className="hidden items-center md:flex">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={toggleSidebar}
+              className="-ml-2 text-muted-foreground"
+              aria-label="Toggle Sidebar"
+            >
+              <PanelLeft size={20} strokeWidth={1.5} />
+            </Button>
+          </div>
 
-          {/* Notification bell */}
-          <button
-            className="relative flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
-            aria-label="Notifications"
-          >
-            <Bell size={16} strokeWidth={1.5} />
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
-          </button>
+          <div className="mx-1 h-5 w-px bg-border hidden md:block" />
 
-          <div className="h-4 w-px bg-border mx-1" />
+          <HeaderBreadcrumb />
+        </div>
 
-          {/* User profile */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-3 text-left focus:outline-none hover:opacity-80 transition-opacity cursor-pointer">
-                <div className="hidden flex-col items-end lg:flex leading-none">
-                  <span className="text-sm font-medium">{user?.fullName || "Lê Đức Anh"}</span>
-                  <span className="text-xs text-muted-foreground mt-1">
-                    {user?.role || "Nhân viên"}
-                  </span>
-                </div>
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-foreground text-xs font-medium border border-border">
-                  {user?.fullName?.charAt(0).toUpperCase() || "U"}
-                </div>
-              </button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent align="end" className="w-56 mt-2">
-              <DropdownMenuLabel className="px-3 py-2 font-normal">
-                <p className="text-xs text-muted-foreground">Đăng nhập với</p>
-                <p className="text-sm font-medium truncate mt-1 text-foreground">
-                  {user?.fullName}
-                </p>
-                <p className="text-xs text-muted-foreground truncate mt-0.5">{user?.email}</p>
-              </DropdownMenuLabel>
-
-              <DropdownMenuSeparator />
-
-              <DropdownMenuItem asChild className="cursor-pointer gap-3 px-3 py-2">
-                <Link to={ROUTES.HRM.PROFILE} className="w-full">
-                  <User size={14} strokeWidth={1.5} />
-                  <span>Hồ sơ cá nhân</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="cursor-pointer gap-3 px-3 py-2">
-                <Link to="#" className="w-full">
-                  <History size={14} strokeWidth={1.5} />
-                  <span>Lịch sử đăng nhập</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="cursor-pointer gap-3 px-3 py-2">
-                <Link to="#" className="w-full">
-                  <MessageSquare size={14} strokeWidth={1.5} />
-                  <span>Đóng góp ý kiến</span>
-                </Link>
-              </DropdownMenuItem>
-
-              <DropdownMenuSeparator />
-
-              <DropdownMenuItem
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                className="cursor-pointer gap-3 px-3 py-2"
-              >
-                <LogOut size={14} strokeWidth={1.5} />
-                <span>{isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        {/* Right: Actions */}
+        <div className="flex items-center gap-2 sm:gap-4">
+          <ThemeToggle />
+          <NotificationPanel />
         </div>
       </div>
     </header>
