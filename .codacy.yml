@@ -33,10 +33,6 @@ engines:
   bandit:
     enabled: false
 
-  # ── Shell / PowerShell ────────────────────────────────────────────────────
-  psscriptanalyzer:
-    enabled: true
-
   # ── Other ─────────────────────────────────────────────────────────────────
   jshint:
     enabled: false # superseded by ESLint in this project

@@ -46,4 +46,8 @@ export const ROUTES = {
   SETTINGS: {
     DASHBOARD: "/settings/dashboard",
   },
+  PROJECT: {
+    DASHBOARD: "/project/dashboard",
+    LIST: "/project/list",
+  },
 } as const

@@ -4,6 +4,7 @@ import {
   ACTIVITY_CATEGORY,
   PASSWORD_RESET_STATUS,
   PASSWORD_RESET_TTL,
+  REFRESH_TOKEN_TTL_MS,
 } from "@/configs/auth/auth.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
@@ -12,6 +13,7 @@ import { AUTH_ERROR_MESSAGES } from "@/constants/auth.constants.ts"
 import {
   ActivityLogItem,
   ActivityLogQuery,
+  AuthEmployeeDocument,
   AuthResponseDto,
   ChangePasswordDto,
   ForgotPasswordDto,
@@ -22,6 +24,7 @@ import {
   LoginDto,
   LogoutResponseDto,
   PaginatedActivityLogsDto,
+  RefreshResultDto,
   ResetPasswordDto,
   SecuritySummaryDto,
   TokenValidationResponseDto,
@@ -45,10 +48,43 @@ export class AuthService implements IAuthService {
   constructor(private repo: IAuthRepository) {}
 
   /**
+   * Helper to generate tokens and save refresh token to DB
+   */
+  private async generateTokens(
+    employee: AuthEmployeeDocument,
+    existingExpiresAt?: Date,
+  ): Promise<{ accessToken: string; refreshToken: string; refreshExpiresAt: Date }> {
+    const payload = {
+      empId: employee.id,
+      username: employee.username,
+      role: employee.role,
+    }
+
+    const accessToken = JwtUtil.generateAccessToken(payload)
+    const refreshToken = JwtUtil.generateRefreshToken(payload)
+
+    const tokenHash = crypto.createHash("sha256").update(refreshToken).digest("hex")
+    const refreshExpiresAt = existingExpiresAt || new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
+
+    await this.repo.createRefreshToken({
+      employeeId: employee.id,
+      tokenHash,
+      expiresAt: refreshExpiresAt,
+    })
+
+    return { accessToken, refreshToken, refreshExpiresAt }
+  }
+
+  /**
    * Handles user login logic: credential verification, account locking, and token generation
    * Normalizes input by trimming and converting to lowercase before repository lookup
    */
-  async login(data: LoginDto, ipAddress?: string): Promise<AuthResponseDto> {
+  async login(
+    data: LoginDto,
+    ipAddress?: string,
+  ): Promise<
+    AuthResponseDto & { accessToken: string; refreshToken: string; refreshExpiresAt: Date }
+  > {
     const { username, password } = data
 
     // Fetch user through repository using normalized identifier
@@ -166,15 +202,10 @@ export class AuthService implements IAuthService {
       timestamp: new Date(),
     })
 
-    // Generate Token
-    const token = JwtUtil.generateToken({
-      empId: employee.id,
-      username: employee.username,
-      role: employee.role,
-    })
+    // Generate Tokens
+    const tokens = await this.generateTokens(employee)
 
     return {
-      token,
       employee: {
         id: employee.id,
         username: employee.username,
@@ -182,13 +213,107 @@ export class AuthService implements IAuthService {
         fullName: employee.fullName,
         role: employee.role,
       },
+      ...tokens,
+    }
+  }
+
+  async refresh(
+    rawRefreshToken: string,
+  ): Promise<
+    RefreshResultDto & { accessToken: string; refreshToken: string; refreshExpiresAt: Date }
+  > {
+    const decoded = JwtUtil.verifyRefreshToken(rawRefreshToken)
+    if (!decoded) {
+      throw new AppError(
+        "Invalid or expired refresh token",
+        HttpStatusCode.UNAUTHORIZED,
+        "Authentication",
+      )
+    }
+
+    const tokenHash = crypto.createHash("sha256").update(rawRefreshToken).digest("hex")
+    const oldToken = await this.repo.findRefreshTokenByHash(tokenHash)
+
+    if (!oldToken) {
+      throw new AppError("Refresh token not found", HttpStatusCode.UNAUTHORIZED, "Authentication")
+    }
+
+    if (oldToken.revokedAt !== null) {
+      await this.repo.revokeAllUserRefreshTokens(oldToken.employeeId)
+      await this.repo.logActivity({
+        empId: oldToken.employeeId,
+        category: ACTIVITY_CATEGORY.SECURITY,
+        actionType: ACTIVITY_ACTION.TOKEN_REUSE_DETECTED,
+        timestamp: new Date(),
+        details: "A revoked refresh token was used. All sessions terminated.",
+      })
+      throw new AppError(
+        "Phiên đăng nhập bất thường",
+        HttpStatusCode.UNAUTHORIZED,
+        "Authentication",
+      )
+    }
+
+    if (oldToken.expiresAt < new Date()) {
+      throw new AppError("Refresh token expired", HttpStatusCode.UNAUTHORIZED, "Authentication")
+    }
+
+    const employee = await this.repo.findById(oldToken.employeeId)
+    if (!employee || employee.status !== EMPLOYEE_STATUS.ACTIVE) {
+      throw new AppError("Account inactive", HttpStatusCode.FORBIDDEN, "Authentication")
+    }
+
+    await this.repo.revokeRefreshToken(oldToken.id)
+
+    const tokens = await this.generateTokens(employee, oldToken.expiresAt)
+
+    return {
+      employee: {
+        id: employee.id,
+        username: employee.username,
+        email: employee.email,
+        fullName: employee.fullName,
+        role: employee.role,
+      },
+      ...tokens,
+    }
+  }
+
+  async getMe(empId: string): Promise<AuthResponseDto["employee"]> {
+    const employee = await this.repo.findById(empId)
+    if (!employee || employee.status !== EMPLOYEE_STATUS.ACTIVE) {
+      throw new AppError(
+        "Account inactive or not found",
+        HttpStatusCode.FORBIDDEN,
+        "Authentication",
+      )
+    }
+
+    return {
+      id: employee.id,
+      username: employee.username,
+      email: employee.email,
+      fullName: employee.fullName,
+      role: employee.role,
     }
   }
 
   /**
-   * Handles user logout logic: currently just records the activity
+   * Handles user logout logic: revokes token and records activity
    */
-  async logout(empId: string, ipAddress?: string): Promise<LogoutResponseDto> {
+  async logout(
+    empId: string,
+    rawRefreshToken?: string,
+    ipAddress?: string,
+  ): Promise<LogoutResponseDto> {
+    if (rawRefreshToken) {
+      const tokenHash = crypto.createHash("sha256").update(rawRefreshToken).digest("hex")
+      const tokenDoc = await this.repo.findRefreshTokenByHash(tokenHash)
+      if (tokenDoc && !tokenDoc.revokedAt) {
+        await this.repo.revokeRefreshToken(tokenDoc.id)
+      }
+    }
+
     // Log logout activity through repository
     await this.repo.logActivity({
       empId,

@@ -1,5 +1,10 @@
 export const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET || ""
-export const ACCESS_TOKEN_TTL = 24 * 60 * 60 * 1000 // 1 day
+export const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || ""
+
+export const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000 // 15 phút
+export const ACCESS_TOKEN_TTL = "15m"
+export const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 ngày
+export const REFRESH_TOKEN_TTL = "7d"
 export const ACTIVITY_LOG_TTL = 90 * 24 * 60 * 60 * 1000 // 90 days
 export const PASSWORD_RESET_TTL = 5 * 60 * 1000 // 5 mins
 export const ACCOUNT_LOCK_TTL = 5 * 60 * 1000 // 5 mins
@@ -51,12 +56,18 @@ export const ACTIVITY_ACTION = {
   ROLE_REVOKED: "role_revoked",
   ACCOUNT_LOCKED: "account_locked",
   ACCOUNT_UNLOCKED: "account_unlocked",
+  TOKEN_REUSE_DETECTED: "token_reuse_detected",
 } as const
 
 export const AUTH_ERRORS = {
-  MISSING_TOKEN: { message: "Authorization header missing or invalid", code: "UNAUTHORIZED" },
-  TOKEN_EXPIRED: { message: "Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.", code: "TOKEN_EXPIRED" },
-  ACCOUNT_INACTIVE: { message: "Tài khoản không tồn tại hoặc không còn hoạt động.", code: "ACCOUNT_INACTIVE" },
+  MISSING_TOKEN: { message: "Authentication cookie missing or invalid", code: "UNAUTHORIZED" },
+  TOKEN_EXPIRED: {
+    message: "Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.",
+    code: "TOKEN_EXPIRED",
+  },
+  ACCOUNT_INACTIVE: {
+    message: "Tài khoản không tồn tại hoặc không còn hoạt động.",
+    code: "ACCOUNT_INACTIVE",
+  },
   AUTH_ERROR: { message: "Không thể xác thực người dùng.", code: "AUTH_ERROR" },
 } as const
-

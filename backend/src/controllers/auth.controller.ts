@@ -10,6 +10,7 @@ import {
   validateResetTokenSchema,
 } from "@/schemas/auth.schema.ts"
 import { IAuthService } from "@/types/auth.types.ts"
+import { CookieUtil } from "@/utils/cookie.util.ts"
 
 import { Request, Response } from "express"
 import { z } from "zod"
@@ -34,11 +35,15 @@ export class AuthController {
 
       // Delegate to service
       const result = await this.service.login(validatedData, req.ip)
+      const { accessToken, refreshToken, refreshExpiresAt, ...authData } = result
+
+      CookieUtil.setAccessToken(res, accessToken)
+      CookieUtil.setRefreshToken(res, refreshToken, refreshExpiresAt)
 
       // Return successful response
       res.status(HttpStatusCode.OK).json({
         status: RESPONSE_STATUS.SUCCESS,
-        data: result,
+        data: authData,
       })
     } catch (error: any) {
       // Handle validation errors (Zod) or business errors (AppError)
@@ -69,7 +74,10 @@ export class AuthController {
       }
 
       // Delegate to service
-      const result = await this.service.logout(req.user.empId, req.ip)
+      const rawRefreshToken = req.cookies?.["refresh_token"]
+      const result = await this.service.logout(req.user.empId, rawRefreshToken, req.ip)
+
+      CookieUtil.clearTokens(res)
 
       // Return successful response
       res.status(HttpStatusCode.OK).json({
@@ -80,6 +88,63 @@ export class AuthController {
       res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
         status: RESPONSE_STATUS.ERROR,
         message: error.message || "Logout failed",
+      })
+    }
+  }
+
+  /**
+   * Refreshes the access token using a refresh token from cookies
+   */
+  refresh = async (req: Request, res: Response) => {
+    try {
+      const rawRefreshToken = req.cookies["refresh_token"]
+      if (!rawRefreshToken) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          status: RESPONSE_STATUS.ERROR,
+          message: "No refresh token provided",
+        })
+      }
+
+      const result = await this.service.refresh(rawRefreshToken)
+      const { accessToken, refreshToken, refreshExpiresAt, ...authData } = result
+
+      CookieUtil.setAccessToken(res, accessToken)
+      CookieUtil.setRefreshToken(res, refreshToken, refreshExpiresAt)
+
+      res.status(HttpStatusCode.OK).json({
+        status: RESPONSE_STATUS.SUCCESS,
+        data: authData,
+      })
+    } catch (error: any) {
+      res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
+        status: RESPONSE_STATUS.ERROR,
+        message: error.message || "Refresh failed",
+      })
+    }
+  }
+
+  /**
+   * Gets the currently authenticated user's information
+   */
+  getMe = async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          status: RESPONSE_STATUS.ERROR,
+          message: AUTH_ERROR_MESSAGES.UNAUTHORIZED,
+        })
+      }
+
+      const result = await this.service.getMe(req.user.empId)
+
+      res.status(HttpStatusCode.OK).json({
+        status: RESPONSE_STATUS.SUCCESS,
+        data: result,
+      })
+    } catch (error: any) {
+      res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
+        status: RESPONSE_STATUS.ERROR,
+        message: error.message || "Failed to get user details",
       })
     }
   }

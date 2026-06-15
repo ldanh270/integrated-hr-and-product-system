@@ -2,7 +2,7 @@
 
 import { PageCard, PageHeader } from "@/components/common"
 import { StatusPill } from "@/components/common/status-pill"
-import ShiftChangeRequestSheet from "@/components/features/attendance/shift-change-request-sheet"
+import ShiftChangeRequestDialog from "@/components/features/attendance/shift-change-request-sheet"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -864,7 +864,7 @@ export default function Applications() {
         </Tabs>
       </div>
 
-      <ShiftChangeRequestSheet open={sheetOpen} onOpenChange={setSheetOpen} />
+      <ShiftChangeRequestDialog open={sheetOpen} onOpenChange={setSheetOpen} />
       
       {showSubmitModal && (
         <SubmitApplicationModal onClose={() => setShowSubmitModal(false)} onSuccess={myApps.refetch} />

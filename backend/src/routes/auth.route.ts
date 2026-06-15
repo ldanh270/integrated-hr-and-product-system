@@ -35,14 +35,30 @@ authRoutes.post("/login", controller.login)
  * @desc Log user logout activity
  * @access Private (Requires valid token)
  */
-authRoutes.post("/logout", authenticate, controller.logout as any)
+authRoutes.post("/logout", authenticate, controller.logout as express.RequestHandler)
+
+/**
+ * POST /api/auth/refresh
+ * Refresh access token using refresh token in cookies
+ */
+authRoutes.post("/refresh", controller.refresh)
+
+/**
+ * GET /api/auth/me
+ * Get current user information
+ */
+authRoutes.get("/me", authenticate, controller.getMe as express.RequestHandler)
 
 /**
  * @route POST /api/auth/change-password
  * @desc Change password for authenticated user
  * @access Private (Requires valid token)
  */
-authRoutes.post("/change-password", authenticate, controller.changePassword as any)
+authRoutes.post(
+  "/change-password",
+  authenticate,
+  controller.changePassword as express.RequestHandler,
+)
 
 /**
  * @route POST /api/auth/forgot-password
@@ -74,7 +90,7 @@ authRoutes.get(
   "/activity-logs",
   authenticate,
   authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
-  controller.listActivityLogs as any,
+  controller.listActivityLogs as express.RequestHandler,
 )
 
 /**
@@ -86,7 +102,7 @@ authRoutes.get(
   "/activity-logs/:id",
   authenticate,
   authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
-  controller.getActivityLogDetail as any,
+  controller.getActivityLogDetail as express.RequestHandler,
 )
 
 export default authRoutes
