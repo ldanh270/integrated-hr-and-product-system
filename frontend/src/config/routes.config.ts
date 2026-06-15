@@ -41,6 +41,7 @@ export const ROUTES = {
     ROLES: "/security/roles",
     USERS: "/security/users",
     ACTIVITY_LOGS: "/security/activity-logs",
+    PERMISSION_MATRIX: "/security/permission-matrix",
   },
   SETTINGS: {
     DASHBOARD: "/settings/dashboard",
