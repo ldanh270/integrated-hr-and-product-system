@@ -1,5 +1,22 @@
+import { Request } from "express"
+
 import { EmployeeRole } from "./employee.types.ts"
 
+export interface AuthenticatedRequest extends Request {
+  user: {
+    empId: string
+    username: string
+    role: string
+  }
+}
+
+export interface JwtPayload {
+  empId: string
+  username: string
+  role: string
+  iat?: number
+  exp?: number
+}
 /**
  * Data Transfer Object for Login request
  */
@@ -42,7 +59,6 @@ export interface ValidateResetTokenDto {
  * Data Transfer Object for successful authentication response
  */
 export interface AuthResponseDto {
-  token: string
   employee: {
     id: string
     username: string
@@ -50,6 +66,19 @@ export interface AuthResponseDto {
     fullName: string
     role: EmployeeRole
   }
+}
+
+export interface RefreshTokenDocument {
+  id: string
+  employeeId: string
+  tokenHash: string
+  expiresAt: Date
+  createdAt: Date
+  revokedAt: Date | null
+}
+
+export interface RefreshResultDto {
+  employee: AuthResponseDto["employee"]
 }
 
 /**
@@ -72,6 +101,68 @@ export interface GenericAuthResponseDto {
 export interface TokenValidationResponseDto {
   isValid: boolean
   message?: string
+}
+
+/**
+ * Interface for Activity Log item
+ */
+export interface ActivityLogItem {
+  id: string
+  employeeId?: string | null
+  employeeName?: string | null
+  category: string
+  actionType: string
+  ipAddress?: string | null
+  details?: any
+  createdAt: Date
+}
+
+/**
+ * Filter for Activity Logs
+ */
+export interface ActivityLogQuery {
+  employeeId?: string
+  category?: string
+  actionType?: string
+  fromDate?: Date
+  toDate?: Date
+  page?: number
+  limit?: number
+}
+
+/**
+ * Paginated response for Activity Logs
+ */
+export interface PaginatedActivityLogsDto {
+  data: ActivityLogItem[]
+  meta: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }
+}
+
+/**
+ * Interface for Locked Account item
+ */
+export interface LockedAccountItem {
+  employeeId: string
+  employeeName: string
+  email: string
+  failedLoginCount: number
+  lockedUntil: Date | null
+}
+
+/**
+ * Interface for Security Dashboard Summary
+ */
+export interface SecuritySummaryDto {
+  lockedAccountsCount: number
+  failedLoginsToday: number
+  successfulLoginsToday: number
+  recentSecurityEvents: ActivityLogItem[]
+  recentRoleEvents: ActivityLogItem[]
 }
 
 /**
@@ -135,6 +226,30 @@ export interface IAuthRepository {
   updateResetRequestStatus(requestId: string, status: string): Promise<void>
 
   /**
+   * Creates a new refresh token
+   */
+  createRefreshToken(data: {
+    employeeId: string
+    tokenHash: string
+    expiresAt: Date
+  }): Promise<void>
+
+  /**
+   * Finds a refresh token by hash
+   */
+  findRefreshTokenByHash(tokenHash: string): Promise<RefreshTokenDocument | null>
+
+  /**
+   * Revokes a specific refresh token
+   */
+  revokeRefreshToken(id: string): Promise<void>
+
+  /**
+   * Revokes all refresh tokens for a user
+   */
+  revokeAllUserRefreshTokens(employeeId: string): Promise<void>
+
+  /**
    * Updates employee authentication fields
    */
   updateAuthEmployee(empId: string, data: Partial<AuthEmployeeDocument>): Promise<void>
@@ -144,11 +259,56 @@ export interface IAuthRepository {
    */
   logActivity(data: {
     empId?: string
-    actionType: "login" | "logout" | "failed_login"
+    category: "auth" | "role" | "security"
+    actionType:
+      | "login"
+      | "logout"
+      | "failed_login"
+      | "role_assigned"
+      | "role_revoked"
+      | "account_locked"
+      | "account_unlocked"
+      | "token_reuse_detected"
     ipAddress?: string
     timestamp: Date
     details?: string
   }): Promise<void>
+
+  /**
+   * Lists activity logs with pagination and filters
+   */
+  listActivityLogs(query: ActivityLogQuery): Promise<PaginatedActivityLogsDto>
+
+  /**
+   * Gets a single activity log by ID
+   */
+  getActivityLogById(id: string): Promise<ActivityLogItem | null>
+
+  /**
+   * Gets all currently locked employees
+   */
+  getLockedEmployees(): Promise<LockedAccountItem[]>
+
+  /**
+   * Unlocks an employee account
+   */
+  unlockEmployee(empId: string): Promise<void>
+
+  /**
+   * Counts logs by type for today
+   */
+  countActivityLogsToday(
+    category: "auth" | "role" | "security",
+    actionType: string,
+  ): Promise<number>
+
+  /**
+   * Gets recent activity logs by category
+   */
+  getRecentLogsByCategory(
+    category: "auth" | "role" | "security",
+    limit: number,
+  ): Promise<ActivityLogItem[]>
 }
 
 /**
@@ -158,12 +318,31 @@ export interface IAuthService {
   /**
    * Authenticates a user and returns a token
    */
-  login(data: LoginDto, ipAddress?: string): Promise<AuthResponseDto>
+  login(
+    data: LoginDto,
+    ipAddress?: string,
+  ): Promise<
+    AuthResponseDto & { accessToken: string; refreshToken: string; refreshExpiresAt: Date }
+  >
+
+  /**
+   * Refreshes access token using refresh token
+   */
+  refresh(
+    rawRefreshToken: string,
+  ): Promise<
+    RefreshResultDto & { accessToken: string; refreshToken: string; refreshExpiresAt: Date }
+  >
+
+  /**
+   * Gets the currently authenticated user's information
+   */
+  getMe(empId: string): Promise<AuthResponseDto["employee"]>
 
   /**
    * Processes a logout for a user
    */
-  logout(empId: string, ipAddress?: string): Promise<LogoutResponseDto>
+  logout(empId: string, rawRefreshToken?: string, ipAddress?: string): Promise<LogoutResponseDto>
 
   /**
    * Processes a forgot password request
@@ -184,4 +363,29 @@ export interface IAuthService {
    * Changes a user's password (requires current password)
    */
   changePassword(empId: string, data: ChangePasswordDto): Promise<GenericAuthResponseDto>
+
+  /**
+   * Gets activity logs
+   */
+  getActivityLogs(query: ActivityLogQuery): Promise<PaginatedActivityLogsDto>
+
+  /**
+   * Gets activity log detail
+   */
+  getActivityLogDetail(id: string): Promise<ActivityLogItem | null>
+
+  /**
+   * Gets security summary for dashboard
+   */
+  getSecuritySummary(): Promise<SecuritySummaryDto>
+
+  /**
+   * Gets locked accounts
+   */
+  getLockedAccounts(): Promise<LockedAccountItem[]>
+
+  /**
+   * Unlocks an account
+   */
+  unlockAccount(empId: string, actorId: string, ipAddress?: string): Promise<void>
 }

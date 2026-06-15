@@ -17,3 +17,14 @@ export const ErrorCode = {
 } as const
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode]
+
+export const ErrorLayer = {
+  SERVICE: "SERVICE",
+  CONTROLLER: "CONTROLLER",
+  REPOSITORY: "REPOSITORY",
+  MIDDLEWARE: "MIDDLEWARE",
+  VALIDATION: "VALIDATION",
+  UNKNOWN: "UNKNOWN",
+} as const
+
+export type ErrorLayerType = (typeof ErrorLayer)[keyof typeof ErrorLayer]

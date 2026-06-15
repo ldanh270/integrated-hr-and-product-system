@@ -15,9 +15,9 @@ engines:
 
   # ── JavaScript / TypeScript tools — ENABLED ───────────────────────────────
   eslint:
-    enabled: true         # uses eslint.config.js (flat config) via v9
+    enabled: true # uses eslint.config.js (flat config) via v9
   tslint:
-    enabled: false        # deprecated
+    enabled: false # deprecated
 
   # ── CSS ───────────────────────────────────────────────────────────────────
   stylelint:
@@ -33,19 +33,14 @@ engines:
   bandit:
     enabled: false
 
-  # ── SQL ───────────────────────────────────────────────────────────────────
-  tsqllint:
-    enabled: true
-
-  # ── Shell / PowerShell ────────────────────────────────────────────────────
-  psscriptanalyzer:
-    enabled: true
-
   # ── Other ─────────────────────────────────────────────────────────────────
   jshint:
-    enabled: false        # superseded by ESLint in this project
+    enabled: false # superseded by ESLint in this project
 
 exclude_paths:
+  # ── Prisma migrations (Auto-generated SQL) ────────────────────────────────
+  - "backend/prisma/migrations/**"
+
   # ── Build artifacts ───────────────────────────────────────────────────────
   - node_modules/**
   - "**/node_modules/**"
@@ -69,6 +64,7 @@ exclude_paths:
   - .claude/**
   - .vscode/**
   - .planning/**
+  - .github/prompts/**
 
   # ── Project-specific non-source folders ───────────────────────────────────
   - information/**

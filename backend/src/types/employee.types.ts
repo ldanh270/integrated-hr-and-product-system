@@ -110,7 +110,7 @@ export interface EmployeeListQuery {
   /** Role filter */
   role?: EmployeeRole
   /** Employee type filter */
-  employeeType?: EmployeeType
+  type?: EmployeeType
   /** Column/property to sort by */
   sortBy?: string
   /** Sort order direction */
@@ -162,9 +162,9 @@ export interface IEmployeeService {
   /** Register a new employee */
   createEmployee(data: CreateEmployeeDto & { password?: string }): Promise<Employee>
   /** Update existing employee info */
-  updateEmployee(id: string, data: UpdateEmployeeDto): Promise<Employee | null>
+  updateEmployee(id: string, data: UpdateEmployeeDto, actorId?: string, ipAddress?: string): Promise<Employee | null>
   /** Update employee status */
-  updateStatus(id: string, status: EmployeeStatus): Promise<Employee | null>
+  updateStatus(id: string, status: EmployeeStatus, actorId?: string, ipAddress?: string): Promise<Employee | null>
   /** Remove employee record (soft delete) */
   deleteEmployee(id: string): Promise<boolean>
   /** Retrieve list of approver-eligible employees for dropdown */

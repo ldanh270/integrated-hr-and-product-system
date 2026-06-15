@@ -6,6 +6,7 @@ import {
 } from "@/configs/entities/attendance.config.ts"
 import { EMPLOYEE_STATUS, ROLE } from "@/configs/entities/employee.config.ts"
 import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
+import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { prisma } from "@/libs/database.ts"
 import {
@@ -37,7 +38,7 @@ export class ApplicationService implements IApplicationService {
       throw new AppError(
         "endDate must be greater than or equal to startDate",
         HttpStatusCode.BAD_REQUEST,
-        "Service",
+        ErrorLayer.SERVICE,
         "INVALID_DATE_RANGE",
       )
     }
@@ -101,7 +102,12 @@ export class ApplicationService implements IApplicationService {
     const app = await this.applicationRepo.findById(id)
 
     if (!app) {
-      throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, "Service", "NOT_FOUND")
+      throw new AppError(
+        "Application not found",
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+        "NOT_FOUND",
+      )
     }
 
     // §V2: only owner can cancel
@@ -109,7 +115,7 @@ export class ApplicationService implements IApplicationService {
       throw new AppError(
         "Forbidden: You can only cancel your own applications",
         HttpStatusCode.FORBIDDEN,
-        "Service",
+        ErrorLayer.SERVICE,
         "FORBIDDEN",
       )
     }
@@ -119,7 +125,7 @@ export class ApplicationService implements IApplicationService {
       throw new AppError(
         `Cannot cancel application with status '${app.status}'`,
         HttpStatusCode.BAD_REQUEST,
-        "Service",
+        ErrorLayer.SERVICE,
         "INVALID_STATUS_TRANSITION",
       )
     }
@@ -129,7 +135,7 @@ export class ApplicationService implements IApplicationService {
       throw new AppError(
         "Failed to cancel application",
         HttpStatusCode.INTERNAL_SERVER_ERROR,
-        "Service",
+        ErrorLayer.SERVICE,
       )
     }
 
@@ -146,7 +152,12 @@ export class ApplicationService implements IApplicationService {
   async getApplicationById(id: string): Promise<any> {
     const app = await this.applicationRepo.findById(id)
     if (!app) {
-      throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, "Service", "NOT_FOUND")
+      throw new AppError(
+        "Application not found",
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+        "NOT_FOUND",
+      )
     }
     return app
   }
@@ -177,7 +188,7 @@ export class ApplicationService implements IApplicationService {
     query: IListApplicationsQueryDTO,
     requester?: { empId: string; role: string },
   ): Promise<{ data: any[]; total: number }> {
-    // 1. Verify target employee exists and is not soft-deleted
+    // Verify target employee exists and is not soft-deleted
     const employeeExists = await prisma.employee.findFirst({
       where: { id: employeeId, deletedAt: null } as any,
       select: { id: true },
@@ -187,12 +198,12 @@ export class ApplicationService implements IApplicationService {
       throw new AppError(
         `Employee '${employeeId}' not found`,
         HttpStatusCode.NOT_FOUND,
-        "Service",
+        ErrorLayer.SERVICE,
         "EMPLOYEE_NOT_FOUND",
       )
     }
 
-    // 2. If requester is team_leader, enforce access rules
+    // If requester is team_leader, enforce access rules
     if (requester && requester.role === ROLE.TEAM_LEADER && employeeId !== requester.empId) {
       const activeProject = await prisma.project.findFirst({
         where: {
@@ -211,7 +222,7 @@ export class ApplicationService implements IApplicationService {
         throw new AppError(
           "Forbidden: You can only view applications of employees in your projects",
           HttpStatusCode.FORBIDDEN,
-          "Service",
+          ErrorLayer.SERVICE,
           "FORBIDDEN",
         )
       }
@@ -232,7 +243,12 @@ export class ApplicationService implements IApplicationService {
     const app = await this.applicationRepo.findById(id)
 
     if (!app) {
-      throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, "Service", "NOT_FOUND")
+      throw new AppError(
+        "Application not found",
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+        "NOT_FOUND",
+      )
     }
 
     // §V8: only pending applications can be approved
@@ -240,7 +256,7 @@ export class ApplicationService implements IApplicationService {
       throw new AppError(
         `Cannot approve application with status '${app.status}'`,
         HttpStatusCode.BAD_REQUEST,
-        "Service",
+        ErrorLayer.SERVICE,
         "INVALID_STATUS_TRANSITION",
       )
     }
@@ -250,7 +266,7 @@ export class ApplicationService implements IApplicationService {
       throw new AppError(
         "Failed to approve application",
         HttpStatusCode.INTERNAL_SERVER_ERROR,
-        "Service",
+        ErrorLayer.SERVICE,
       )
     }
 
@@ -270,7 +286,12 @@ export class ApplicationService implements IApplicationService {
     const app = await this.applicationRepo.findById(id)
 
     if (!app) {
-      throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, "Service", "NOT_FOUND")
+      throw new AppError(
+        "Application not found",
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+        "NOT_FOUND",
+      )
     }
 
     // §V9: only pending applications can be rejected
@@ -278,7 +299,7 @@ export class ApplicationService implements IApplicationService {
       throw new AppError(
         `Cannot reject application with status '${app.status}'`,
         HttpStatusCode.BAD_REQUEST,
-        "Service",
+        ErrorLayer.SERVICE,
         "INVALID_STATUS_TRANSITION",
       )
     }
@@ -288,7 +309,7 @@ export class ApplicationService implements IApplicationService {
       throw new AppError(
         "Failed to reject application",
         HttpStatusCode.INTERNAL_SERVER_ERROR,
-        "Service",
+        ErrorLayer.SERVICE,
       )
     }
 
@@ -317,14 +338,14 @@ export class ApplicationService implements IApplicationService {
       throw new AppError(
         "Use rejectApplication() — rejectReason is required",
         HttpStatusCode.BAD_REQUEST,
-        "Service",
+        ErrorLayer.SERVICE,
         "USE_REJECT_ENDPOINT",
       )
     }
     throw new AppError(
       `Invalid status transition: '${status}'`,
       HttpStatusCode.BAD_REQUEST,
-      "Service",
+      ErrorLayer.SERVICE,
       "INVALID_STATUS_TRANSITION",
     )
   }
@@ -350,7 +371,7 @@ export class ApplicationService implements IApplicationService {
       throw new AppError(
         "Leave request overlaps with an existing pending or approved leave",
         HttpStatusCode.CONFLICT,
-        "Service",
+        ErrorLayer.SERVICE,
         "LEAVE_OVERLAP",
       )
     }
@@ -374,7 +395,7 @@ export class ApplicationService implements IApplicationService {
         throw new AppError(
           `Insufficient leave balance. Quota: ${quota} days/year. Used: ${usedDays} days. Requested: ${requestedDays} days.`,
           HttpStatusCode.UNPROCESSABLE_ENTITY,
-          "Service",
+          ErrorLayer.SERVICE,
           "INSUFFICIENT_LEAVE_BALANCE",
         )
       }
@@ -402,7 +423,7 @@ export class ApplicationService implements IApplicationService {
       throw new AppError(
         `Employee shift '${shiftId}' not found`,
         HttpStatusCode.NOT_FOUND,
-        "Service",
+        ErrorLayer.SERVICE,
         "SHIFT_NOT_FOUND",
       )
     }
@@ -411,7 +432,7 @@ export class ApplicationService implements IApplicationService {
       throw new AppError(
         customErrorMessage || "Forbidden: The specified shift does not belong to you",
         HttpStatusCode.FORBIDDEN,
-        "Service",
+        ErrorLayer.SERVICE,
         "SHIFT_NOT_OWNED",
       )
     }
@@ -451,7 +472,7 @@ export class ApplicationService implements IApplicationService {
       throw new AppError(
         `Overtime startDate (${startDate.toISOString().slice(0, 10)}) must match shift date (${shiftDate.toISOString().slice(0, 10)})`,
         HttpStatusCode.BAD_REQUEST,
-        "Service",
+        ErrorLayer.SERVICE,
         "OVERTIME_DATE_MISMATCH",
       )
     }
@@ -460,7 +481,7 @@ export class ApplicationService implements IApplicationService {
       throw new AppError(
         `Overtime endDate (${endDate.toISOString().slice(0, 10)}) must match shift date (${shiftDate.toISOString().slice(0, 10)})`,
         HttpStatusCode.BAD_REQUEST,
-        "Service",
+        ErrorLayer.SERVICE,
         "OVERTIME_DATE_MISMATCH",
       )
     }
@@ -482,7 +503,7 @@ export class ApplicationService implements IApplicationService {
       throw new AppError(
         `Employee '${employeeId}' not found`,
         HttpStatusCode.NOT_FOUND,
-        "Service",
+        ErrorLayer.SERVICE,
         "EMPLOYEE_NOT_FOUND",
       )
     }
@@ -491,7 +512,7 @@ export class ApplicationService implements IApplicationService {
       throw new AppError(
         `Employee '${employeeId}' is not active`,
         HttpStatusCode.BAD_REQUEST,
-        "Service",
+        ErrorLayer.SERVICE,
         "EMPLOYEE_INACTIVE",
       )
     }

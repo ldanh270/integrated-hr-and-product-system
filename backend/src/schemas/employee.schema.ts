@@ -246,7 +246,7 @@ export const listEmployeesQuerySchema = z.object({
   search: z.string().optional(),
   status: z.enum(EMPLOYEE_STATUSES).optional(),
   role: z.enum(EMPLOYEE_ROLES).optional(),
-  employeeType: z.enum(EMPLOYEE_TYPES).optional(),
+  type: z.enum(EMPLOYEE_TYPES).optional(),
   sortBy: z
     .enum([
       "id",

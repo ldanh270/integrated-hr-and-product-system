@@ -3,6 +3,7 @@ import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import { createTaskSchema, listTasksQuerySchema, updateTaskSchema } from "@/schemas/task.schema.ts"
 import { ApiResponse, ITaskService, PaginatedTasksDto, Task } from "@/types"
+import { AppError } from "@/utils/error.util.ts"
 
 import { Response } from "express"
 import { z } from "zod"
@@ -29,16 +30,15 @@ export class TaskController {
       res.status(HttpStatusCode.OK).json({ data: result, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(HttpStatusCode.BAD_REQUEST).json({
-          data: null,
-          error: {
-            message: "Validation error",
-            code: ErrorCode.VALIDATION_ERROR,
-            meta: error.issues,
-          },
-        })
+        const issues = error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join(", ")
+        throw new AppError(
+          `Validation failed: ${issues}`,
+          HttpStatusCode.BAD_REQUEST,
+          "Validation",
+          ErrorCode.VALIDATION_ERROR
+        )
       }
-      throw error
+      throw error 
     }
   }
 
@@ -83,14 +83,13 @@ export class TaskController {
       res.status(HttpStatusCode.CREATED).json({ data: task, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(HttpStatusCode.BAD_REQUEST).json({
-          data: null,
-          error: {
-            message: "Validation error",
-            code: ErrorCode.VALIDATION_ERROR,
-            meta: error.issues,
-          },
-        })
+        const issues = error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join(", ")
+        throw new AppError(
+          `Validation failed: ${issues}`,
+          HttpStatusCode.BAD_REQUEST,
+          "Validation",
+          ErrorCode.VALIDATION_ERROR
+        )
       }
       throw error
     }
@@ -126,14 +125,13 @@ export class TaskController {
       res.status(HttpStatusCode.OK).json({ data: task, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(HttpStatusCode.BAD_REQUEST).json({
-          data: null,
-          error: {
-            message: "Validation error",
-            code: ErrorCode.VALIDATION_ERROR,
-            meta: error.issues,
-          },
-        })
+        const issues = error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join(", ")
+        throw new AppError(
+          `Validation failed: ${issues}`,
+          HttpStatusCode.BAD_REQUEST,
+          "Validation",
+          ErrorCode.VALIDATION_ERROR
+        )
       }
       throw error
     }

@@ -6,6 +6,12 @@ import { useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 
+interface SidebarProps {
+  isMobile?: boolean
+  onNavClick?: () => void
+  className?: string
+}
+
 interface NavItem {
   name: string
   path: string
@@ -19,7 +25,7 @@ interface NavItem {
  * Reusable navigation panel with expand/collapse states.
  * Brand: HRP (Human Resource Platform)
  */
-export default function Sidebar() {
+export default function Sidebar({ isMobile, onNavClick, className }: SidebarProps = {}) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const location = useLocation()
 
@@ -35,7 +41,7 @@ export default function Sidebar() {
     <aside
       className={`relative flex flex-col bg-primary text-white transition-all duration-300 ${
         isCollapsed ? "w-16" : "w-[90px]"
-      }`}
+      } ${className || ""}`}
     >
       {/* Brand header */}
       <div className="flex h-16 w-full items-center justify-center border-b border-white/10">
@@ -73,6 +79,7 @@ export default function Sidebar() {
               key={item.path}
               to={item.path}
               title={item.name}
+              onClick={onNavClick}
               className={`flex w-full flex-col items-center justify-center gap-1.5 py-3 rounded-xl transition-all duration-150 ${
                 isActive
                   ? "bg-white/20 text-white shadow-sm"
@@ -99,6 +106,7 @@ export default function Sidebar() {
                       <Link
                         key={subItem.path}
                         to={subItem.path}
+                        onClick={onNavClick}
                         className={`px-3 py-2.5 text-[14px] font-medium rounded-lg transition-colors ${
                           isSubActive 
                             ? "bg-indigo-50 text-indigo-700" 

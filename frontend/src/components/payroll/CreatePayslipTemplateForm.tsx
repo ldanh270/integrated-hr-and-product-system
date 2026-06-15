@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
+import { PAYROLL_MESSAGES } from "@/config/messages/payroll.message"
 import {
   useCreatePayslipTemplate,
   useUpdatePayslipTemplate,
@@ -130,15 +131,15 @@ export function CreatePayslipTemplateForm({
       }
       if (initialData?.id) {
         await updateTemplate({ id: initialData.id, ...payload })
-        toast.success("Cập nhật mẫu bảng lương thành công.")
+        toast.success(PAYROLL_MESSAGES.SUCCESS.UPDATE_PAYSLIP_TEMPLATE)
       } else {
         await createTemplate(payload)
-        toast.success("Tạo mẫu bảng lương thành công.")
+        toast.success(PAYROLL_MESSAGES.SUCCESS.CREATE_PAYSLIP_TEMPLATE)
       }
       form.reset()
       onSuccess?.()
     } catch {
-      toast.error("Lỗi khi lưu mẫu bảng lương. Vui lòng thử lại.")
+      toast.error(PAYROLL_MESSAGES.ERRORS.SAVE_PAYSLIP_TEMPLATE)
     }
   }
 

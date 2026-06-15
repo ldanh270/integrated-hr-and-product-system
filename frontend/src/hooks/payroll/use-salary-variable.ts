@@ -1,3 +1,5 @@
+import { PAYROLL_QUERY_KEYS } from "@/config/entities/payroll.config"
+import { PAYROLL_MESSAGES } from "@/config/messages/payroll.message"
 import apiClient from "@/lib/api-client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -26,11 +28,10 @@ export interface IUpdateSalaryVariableDTO extends Partial<ICreateSalaryVariableD
 }
 
 const ENDPOINT = "/salary-variables"
-const QUERY_KEY = ["salary-variables"]
 
 export function useSalaryVariables(params?: { isActive?: boolean }) {
   return useQuery({
-    queryKey: [...QUERY_KEY, params],
+    queryKey: [...PAYROLL_QUERY_KEYS.SALARY_VARIABLES, params],
     queryFn: async () => {
       const { data } = await apiClient.get<{ data: ISalaryVariable[] }>(ENDPOINT, {
         params,
@@ -42,7 +43,7 @@ export function useSalaryVariables(params?: { isActive?: boolean }) {
 
 export function useSalaryVariable(id: string) {
   return useQuery({
-    queryKey: [...QUERY_KEY, id],
+    queryKey: [...PAYROLL_QUERY_KEYS.SALARY_VARIABLES, id],
     queryFn: async () => {
       const { data } = await apiClient.get<{ data: ISalaryVariable }>(`${ENDPOINT}/${id}`)
       return data.data
@@ -59,12 +60,14 @@ export function useCreateSalaryVariable() {
       return data.data
     },
     onSuccess: () => {
-      toast.success("Salary variable created successfully")
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      toast.success(PAYROLL_MESSAGES.SUCCESS.CREATE_SALARY_VARIABLE)
+      return queryClient.invalidateQueries({ queryKey: PAYROLL_QUERY_KEYS.SALARY_VARIABLES })
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (error: any) => {
-      toast.error(error.response?.data?.error?.message || "Failed to create variable")
+      toast.error(
+        error.response?.data?.error?.message || PAYROLL_MESSAGES.ERRORS.CREATE_SALARY_VARIABLE,
+      )
     },
   })
 }
@@ -77,12 +80,14 @@ export function useUpdateSalaryVariable() {
       return data.data
     },
     onSuccess: () => {
-      toast.success("Salary variable updated successfully")
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      toast.success(PAYROLL_MESSAGES.SUCCESS.UPDATE_SALARY_VARIABLE)
+      return queryClient.invalidateQueries({ queryKey: PAYROLL_QUERY_KEYS.SALARY_VARIABLES })
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (error: any) => {
-      toast.error(error.response?.data?.error?.message || "Failed to update variable")
+      toast.error(
+        error.response?.data?.error?.message || PAYROLL_MESSAGES.ERRORS.UPDATE_SALARY_VARIABLE,
+      )
     },
   })
 }
@@ -94,12 +99,14 @@ export function useDeleteSalaryVariable() {
       await apiClient.delete(`${ENDPOINT}/${id}`)
     },
     onSuccess: () => {
-      toast.success("Salary variable deleted successfully")
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      toast.success(PAYROLL_MESSAGES.SUCCESS.DELETE_SALARY_VARIABLE)
+      return queryClient.invalidateQueries({ queryKey: PAYROLL_QUERY_KEYS.SALARY_VARIABLES })
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (error: any) => {
-      toast.error(error.response?.data?.error?.message || "Failed to delete variable")
+      toast.error(
+        error.response?.data?.error?.message || PAYROLL_MESSAGES.ERRORS.DELETE_SALARY_VARIABLE,
+      )
     },
   })
 }

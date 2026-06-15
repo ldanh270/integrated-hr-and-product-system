@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
+import { PAYROLL_MESSAGES } from "@/config/messages/payroll.message"
 import {
   useActiveSalaryConfig,
   useAssignSalaryConfig,
@@ -125,11 +126,11 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
         effectiveFrom: new Date(values.effectiveFrom).toISOString(),
         note: values.note,
       })
-      toast.success("Cập nhật cấu hình lương thành công")
+      toast.success(PAYROLL_MESSAGES.SUCCESS.UPDATE_SALARY_CONFIG)
       onOpenChange(false)
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } }
-      toast.error(error.response?.data?.message || "Có lỗi xảy ra khi cập nhật")
+      toast.error(error.response?.data?.message || PAYROLL_MESSAGES.ERRORS.UPDATE_SALARY_CONFIG)
     }
   }
 

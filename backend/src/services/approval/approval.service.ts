@@ -1,5 +1,6 @@
 import { APPLICATION_STATUS } from "@/configs/entities/attendance.config.ts"
 import { ROLE } from "@/configs/entities/employee.config.ts"
+import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { ApprovalStrategyFactory } from "@/services/approval/approval.strategy.ts"
@@ -8,7 +9,12 @@ import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
 import { PrismaApplicationRepository } from "@/repositories/application.repository.ts"
 
-import { ApplicationStatus, ApplicationType, PasswordResetStatus, ProjectStatus } from "@prisma/client"
+import {
+  ApplicationStatus,
+  ApplicationType,
+  PasswordResetStatus,
+  ProjectStatus,
+} from "@prisma/client"
 
 /**
  * Service for managing approval workflows across different categories (applications, password resets, etc.).
@@ -16,7 +22,7 @@ import { ApplicationStatus, ApplicationType, PasswordResetStatus, ProjectStatus 
 export class ApprovalService implements IApprovalService {
   /**
    * Fetches all pending requests of all types that the current processor is authorized to approve.
-   * 
+   *
    * @param processorId - The ID of the employee processing the approvals.
    * @param role - The role of the processor.
    * @returns A sorted list of pending approval items.
@@ -25,7 +31,7 @@ export class ApprovalService implements IApprovalService {
     const list: IApprovalItem[] = []
     const strategy = ApprovalStrategyFactory.getStrategy(role)
 
-    // 1. Fetch Applications (Leaves, OT, etc.)
+    // Fetch Applications (Leaves, OT, etc.)
     if (
       role === ROLE.ADMIN ||
       role === ROLE.GENERAL_MANAGER ||
@@ -115,7 +121,7 @@ export class ApprovalService implements IApprovalService {
       }
     }
 
-    // 2. Fetch Password Reset Requests (admin and general_manager only)
+    // Fetch Password Reset Requests (admin and general_manager only)
     if (role === ROLE.ADMIN || role === ROLE.GENERAL_MANAGER) {
       const resetRequests = await prisma.passwordResetRequest.findMany({
         where: { status: PasswordResetStatus.pending },
@@ -147,7 +153,7 @@ export class ApprovalService implements IApprovalService {
 
   /**
    * Approves or rejects a specific request based on its category.
-   * 
+   *
    * @param dto - Data containing request ID, category, processor ID, and new status.
    * @returns The updated request record or a transaction result.
    * @throws {AppError} If the request or processor is not found, or if the processor is not authorized.
@@ -158,7 +164,11 @@ export class ApprovalService implements IApprovalService {
       select: { role: true },
     })
     if (!processorEmployee) {
-      throw new AppError("Processor employee not found", HttpStatusCode.NOT_FOUND, "Service")
+      throw new AppError(
+        "Processor employee not found",
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+      )
     }
 
     const strategy = ApprovalStrategyFactory.getStrategy(processorEmployee.role)
@@ -166,14 +176,15 @@ export class ApprovalService implements IApprovalService {
 
     if (dto.category === "application") {
       const app = await prisma.application.findUnique({ where: { id: dto.id } })
-      if (!app) throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, "Service")
+      if (!app)
+        throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
       applicantId = app.employeeId
 
       if (app.status !== ApplicationStatus.pending) {
         throw new AppError(
           "Request has already been processed",
           HttpStatusCode.BAD_REQUEST,
-          "Service",
+          ErrorLayer.SERVICE,
         )
       }
 
@@ -182,17 +193,60 @@ export class ApprovalService implements IApprovalService {
         throw new AppError(
           "Forbidden: You do not have permission to approve this request",
           HttpStatusCode.FORBIDDEN,
-          "Service",
+          ErrorLayer.SERVICE,
         )
       }
 
-      if (dto.status === APPLICATION_STATUS.APPROVED) {
-        const appRepo = new PrismaApplicationRepository(prisma)
-        const result = await appRepo.approve(dto.id, dto.processorId)
-        if (!result) throw new AppError("Failed to approve application", HttpStatusCode.INTERNAL_SERVER_ERROR, "Service")
-        return result
-      } else {
-        return prisma.application.update({
+      return prisma.$transaction(async (tx) => {
+        const applicationRecord = await tx.application.findUnique({
+          where: { id: dto.id },
+          include: { shiftSwapDetail: true },
+        })
+        if (!applicationRecord) {
+          throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
+        }
+
+        if (
+          applicationRecord.type === ApplicationType.shift_swap &&
+          dto.status === APPLICATION_STATUS.APPROVED
+        ) {
+          const swapDetail = applicationRecord.shiftSwapDetail
+          if (!swapDetail) {
+            throw new AppError(
+              "Shift swap detail not found",
+              HttpStatusCode.BAD_REQUEST,
+              ErrorLayer.SERVICE,
+            )
+          }
+
+          const { employeeShiftId, swapWithShiftId } = swapDetail
+          const shiftA = await tx.employeeShift.findUnique({ where: { id: employeeShiftId } })
+          const shiftB = swapWithShiftId
+            ? await tx.employeeShift.findUnique({ where: { id: swapWithShiftId } })
+            : null
+
+          if (!shiftA || !shiftB) {
+            throw new AppError(
+              "One or both employee shifts not found for swap",
+              HttpStatusCode.BAD_REQUEST,
+              ErrorLayer.SERVICE,
+            )
+          }
+
+          const tempShiftId = shiftA.shiftId
+          await tx.employeeShift.update({
+            where: { id: employeeShiftId },
+            data: { shiftId: shiftB.shiftId },
+          })
+          if (swapWithShiftId && tempShiftId) {
+            await tx.employeeShift.update({
+              where: { id: swapWithShiftId },
+              data: { shiftId: tempShiftId },
+            })
+          }
+        }
+
+        return tx.application.update({
           where: { id: dto.id },
           data: {
             status: ApplicationStatus.rejected,
@@ -201,18 +255,22 @@ export class ApprovalService implements IApprovalService {
             rejectReason: dto.rejectReason,
           },
         })
-      }
+      })
     } else if (dto.category === "password_reset") {
       const req = await prisma.passwordResetRequest.findUnique({ where: { id: dto.id } })
       if (!req)
-        throw new AppError("Password Reset Request not found", HttpStatusCode.NOT_FOUND, "Service")
+        throw new AppError(
+          "Password Reset Request not found",
+          HttpStatusCode.NOT_FOUND,
+          ErrorLayer.SERVICE,
+        )
       applicantId = req.employeeId
 
       if (req.status !== PasswordResetStatus.pending) {
         throw new AppError(
           "Request has already been processed",
           HttpStatusCode.BAD_REQUEST,
-          "Service",
+          ErrorLayer.SERVICE,
         )
       }
 
@@ -221,7 +279,7 @@ export class ApprovalService implements IApprovalService {
         throw new AppError(
           "Forbidden: You do not have permission to approve this request",
           HttpStatusCode.FORBIDDEN,
-          "Service",
+          ErrorLayer.SERVICE,
         )
       }
 
@@ -247,13 +305,13 @@ export class ApprovalService implements IApprovalService {
 
       return { ...updatedReq, tempPassword: tempPassword || undefined }
     } else {
-      throw new AppError("Invalid request category", HttpStatusCode.BAD_REQUEST, "Service")
+      throw new AppError("Invalid request category", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE)
     }
   }
 
   /**
    * Generates a random secure temporary password.
-   * 
+   *
    * @returns A 10-character random password string.
    */
   private generateSecureTempPassword(): string {

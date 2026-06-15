@@ -28,7 +28,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">
-      <Sidebar />
+      <Sidebar className="hidden md:flex shrink-0" />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header />
         <main className="flex-1 overflow-y-auto px-4 md:px-6 lg:px-8">{children}</main>

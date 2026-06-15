@@ -1,4 +1,10 @@
-import { ACCESS_TOKEN_SECRET, ACCESS_TOKEN_TTL } from "@/configs/auth/auth.config.ts"
+import {
+  ACCESS_TOKEN_SECRET,
+  ACCESS_TOKEN_TTL,
+  REFRESH_TOKEN_SECRET,
+  REFRESH_TOKEN_TTL,
+} from "@/configs/auth/auth.config.ts"
+import { JwtPayload } from "@/types/auth.types.ts"
 
 import jwt from "jsonwebtoken"
 
@@ -7,22 +13,40 @@ import jwt from "jsonwebtoken"
  */
 export class JwtUtil {
   /**
-   * Generates a new JWT for a given payload
-   * Expiration time and secret are retrieved from auth config
+   * Generates a new Access Token for a given payload
    */
-  static generateToken(payload: object): string {
+  static generateAccessToken(payload: object): string {
     return jwt.sign(payload, ACCESS_TOKEN_SECRET, {
       expiresIn: ACCESS_TOKEN_TTL as jwt.SignOptions["expiresIn"],
     })
   }
 
   /**
-   * Verifies a JWT and returns the decoded payload if valid
-   * Returns null if the token is invalid or expired to facilitate clean checks
+   * Generates a new Refresh Token for a given payload
    */
-  static verifyToken(token: string): any {
+  static generateRefreshToken(payload: object): string {
+    return jwt.sign(payload, REFRESH_TOKEN_SECRET, {
+      expiresIn: REFRESH_TOKEN_TTL as jwt.SignOptions["expiresIn"],
+    })
+  }
+
+  /**
+   * Verifies an Access Token and returns the decoded payload if valid
+   */
+  static verifyAccessToken(token: string): JwtPayload | null {
     try {
-      return jwt.verify(token, ACCESS_TOKEN_SECRET)
+      return jwt.verify(token, ACCESS_TOKEN_SECRET) as JwtPayload
+    } catch (error) {
+      return null
+    }
+  }
+
+  /**
+   * Verifies a Refresh Token and returns the decoded payload if valid
+   */
+  static verifyRefreshToken(token: string): JwtPayload | null {
+    try {
+      return jwt.verify(token, REFRESH_TOKEN_SECRET) as JwtPayload
     } catch (error) {
       return null
     }

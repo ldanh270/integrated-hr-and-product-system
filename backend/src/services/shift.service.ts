@@ -1,3 +1,4 @@
+import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
   ICreateWorkingShiftDTO,
@@ -69,7 +70,7 @@ export class ShiftService implements IShiftService {
   async deleteShift(id: string): Promise<void> {
     const shift = await this.shiftRepo.findById(id)
     if (!shift) {
-      throw new AppError("Shift not found", HttpStatusCode.NOT_FOUND, "Service")
+      throw new AppError("Shift not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
     }
     await this.shiftRepo.delete(id)
   }

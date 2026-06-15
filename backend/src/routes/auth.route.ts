@@ -1,6 +1,8 @@
+import { ROLE } from "@/configs/entities/employee.config.ts"
 import { AuthController } from "@/controllers/auth.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
+import { authorizeRoles } from "@/middlewares/role.middleware.ts"
 import { PrismaAuthRepository } from "@/repositories/auth.repository.ts"
 import { AuthService } from "@/services/auth.service.ts"
 
@@ -33,14 +35,30 @@ authRoutes.post("/login", controller.login)
  * @desc Log user logout activity
  * @access Private (Requires valid token)
  */
-authRoutes.post("/logout", authenticate, controller.logout as any)
+authRoutes.post("/logout", authenticate, controller.logout as express.RequestHandler)
+
+/**
+ * POST /api/auth/refresh
+ * Refresh access token using refresh token in cookies
+ */
+authRoutes.post("/refresh", controller.refresh)
+
+/**
+ * GET /api/auth/me
+ * Get current user information
+ */
+authRoutes.get("/me", authenticate, controller.getMe as express.RequestHandler)
 
 /**
  * @route POST /api/auth/change-password
  * @desc Change password for authenticated user
  * @access Private (Requires valid token)
  */
-authRoutes.post("/change-password", authenticate, controller.changePassword as any)
+authRoutes.post(
+  "/change-password",
+  authenticate,
+  controller.changePassword as express.RequestHandler,
+)
 
 /**
  * @route POST /api/auth/forgot-password
@@ -62,5 +80,29 @@ authRoutes.post("/validate-reset-token", controller.validateResetToken)
  * @access Public
  */
 authRoutes.post("/reset-password", controller.resetPassword)
+
+/**
+ * @route GET /api/auth/activity-logs
+ * @desc Get activity logs with filters
+ * @access Private (Admin/HR/GM only)
+ */
+authRoutes.get(
+  "/activity-logs",
+  authenticate,
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  controller.listActivityLogs as express.RequestHandler,
+)
+
+/**
+ * @route GET /api/auth/activity-logs/:id
+ * @desc Get activity log detail
+ * @access Private (Admin/HR/GM only)
+ */
+authRoutes.get(
+  "/activity-logs/:id",
+  authenticate,
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  controller.getActivityLogDetail as express.RequestHandler,
+)
 
 export default authRoutes
