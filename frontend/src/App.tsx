@@ -14,10 +14,27 @@ const NotFound = lazy(() => import("@/pages/NotFound.tsx"))
 /**
  * ProtectedRoute component
  * Redirects to /login if user is not authenticated
+ * Redirects to /hrm/dashboard if user does not have required roles
  */
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+const ProtectedRoute = ({
+  children,
+  requiredRoles,
+}: {
+  children: React.ReactNode
+  requiredRoles?: string[]
+}) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  return isAuthenticated ? <>{children}</> : <Navigate to={ROUTES.AUTH.LOGIN} replace />
+  const user = useAuthStore((state) => state.user)
+
+  if (!isAuthenticated) {
+    return <Navigate to={ROUTES.AUTH.LOGIN} replace />
+  }
+
+  if (requiredRoles && user && !requiredRoles.includes(user.role)) {
+    return <Navigate to={ROUTES.HRM.DASHBOARD} replace />
+  }
+
+  return <>{children}</>
 }
 
 /**
@@ -115,7 +132,7 @@ const App = () => {
                   key={`private-${index}`}
                   path={route.path}
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute requiredRoles={route.roles}>
                       <Layout>
                         <Page />
                       </Layout>
