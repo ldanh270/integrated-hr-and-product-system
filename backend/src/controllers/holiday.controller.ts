@@ -1,19 +1,39 @@
 import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
-import { createHolidaySchema } from "@/schemas/attendance.schema.ts"
+import { AuthRequest } from "@/middlewares/auth.middleware.ts"
+import {
+  createHolidaySchema,
+  listHolidayQuerySchema,
+  updateHolidaySchema,
+} from "@/schemas/attendance.schema.ts"
 import { ApiResponse } from "@/types"
 import { IHolidayService } from "@/types/attendance.types.ts"
 
 import { Request, Response } from "express"
+import type { HolidayCalendar } from "@prisma/client"
 import { z } from "zod"
 
 export class HolidayController {
   constructor(private service: IHolidayService) {}
 
-  create = async (req: Request, res: Response<ApiResponse<any>>) => {
+  list = async (req: Request, res: Response<ApiResponse<HolidayCalendar[]>>) => {
+    const query = listHolidayQuerySchema.parse(req.query)
+    const holidays = await this.service.listHolidays(query)
+
+    res.status(HttpStatusCode.OK).json({ data: holidays, error: null })
+  }
+
+  create = async (req: AuthRequest, res: Response<ApiResponse<HolidayCalendar | null>>) => {
     try {
       const { name, date, type } = createHolidaySchema.parse(req.body)
-      const holiday = await this.service.createHoliday(name, date, type)
+      const createdById = req.user?.empId
+      if (!createdById) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          data: null,
+          error: { message: "Unauthorized", code: ErrorCode.UNAUTHORIZED },
+        })
+      }
+      const holiday = await this.service.createHoliday(name, date, type, createdById)
       res.status(HttpStatusCode.CREATED).json({ data: holiday, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -28,6 +48,19 @@ export class HolidayController {
       }
       throw error
     }
+  }
+
+  update = async (req: Request<{ id: string }>, res: Response<ApiResponse<HolidayCalendar>>) => {
+    const data = updateHolidaySchema.parse(req.body)
+    const holiday = await this.service.updateHoliday(req.params.id, data)
+
+    res.status(HttpStatusCode.OK).json({ data: holiday, error: null })
+  }
+
+  delete = async (req: Request<{ id: string }>, res: Response<ApiResponse<null>>) => {
+    await this.service.deleteHoliday(req.params.id)
+
+    res.status(HttpStatusCode.OK).json({ data: null, error: null })
   }
 
   checkHoliday = async (req: Request, res: Response<ApiResponse<boolean>>) => {

@@ -2,6 +2,7 @@ import type {
   IApplicationStatus,
   IApplicationType,
   IAttendanceStatus,
+  IHolidayType,
 } from "@/config/entities/attendance.config"
 
 // ─── GPS ──────────────────────────────────────────────────────
@@ -51,7 +52,7 @@ export interface ICreateShiftPayload {
   isActive?: boolean
 }
 
-export interface IUpdateShiftPayload extends Partial<ICreateShiftPayload> {}
+export type IUpdateShiftPayload = Partial<ICreateShiftPayload>
 
 // ─── SCHEDULE ─────────────────────────────────────────────────
 
@@ -201,8 +202,23 @@ export interface IApplication {
 }
 
 export interface IHoliday {
-  _id: string
+  id: string
   name: string
   date: string
-  type: string
+  type: IHolidayType
+  createdById: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface IHolidayQuery {
+  startDate?: string
+  endDate?: string
+  year?: number
+}
+
+export interface IHolidayPayload {
+  name: string
+  date: string
+  type: IHolidayType
 }
