@@ -91,6 +91,19 @@ export class ProjectService implements IProjectService {
       throw new AppError("Project name already exists", HttpStatusCode.CONFLICT, "ProjectService")
     }
 
+    // Validate project dates check constraints
+    if (data.startDate && data.expectedEndDate) {
+      const start = new Date(data.startDate)
+      const end = new Date(data.expectedEndDate)
+      if (start > end) {
+        throw new AppError(
+          "Ngày bắt đầu không được lớn hơn ngày kết thúc dự kiến",
+          HttpStatusCode.BAD_REQUEST,
+          "ProjectService"
+        )
+      }
+    }
+
     return this.repository.createProject({
       ...data,
       createdById: userId,
@@ -139,6 +152,27 @@ export class ProjectService implements IProjectService {
       if (existing) {
         throw new AppError("Project name already exists", HttpStatusCode.CONFLICT, "ProjectService")
       }
+    }
+
+    // Validate project dates check constraints
+    const start = data.startDate !== undefined ? (data.startDate ? new Date(data.startDate) : null) : (project.startDate ? new Date(project.startDate) : null)
+    const end = data.expectedEndDate !== undefined ? (data.expectedEndDate ? new Date(data.expectedEndDate) : null) : (project.expectedEndDate ? new Date(project.expectedEndDate) : null)
+    const actualEnd = data.actualEndDate !== undefined ? (data.actualEndDate ? new Date(data.actualEndDate) : null) : (project.actualEndDate ? new Date(project.actualEndDate) : null)
+
+    if (start && end && start > end) {
+      throw new AppError(
+        "Ngày bắt đầu không được lớn hơn ngày kết thúc dự kiến",
+        HttpStatusCode.BAD_REQUEST,
+        "ProjectService"
+      )
+    }
+
+    if (start && actualEnd && start > actualEnd) {
+      throw new AppError(
+        "Ngày bắt đầu không được lớn hơn ngày kết thúc thực tế",
+        HttpStatusCode.BAD_REQUEST,
+        "ProjectService"
+      )
     }
 
     return this.repository.updateProject(id, data)

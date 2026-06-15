@@ -59,7 +59,6 @@ import type { TaskTracker, TaskPriority, TaskStatus } from "@/types/task.types"
 import { employeeApi } from "@/lib/api/employee.api"
 import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
-import { taskCategoryApi } from "@/lib/api/task-category.api"
 // Import authorization store
 import { useAuthStore } from "@/store/auth-store"
 // Import TanStack Query hooks for querying and mutating server data
@@ -69,13 +68,10 @@ import {
   Activity,
   AlertCircle,
   Clock,
-  Edit,
   MoreVertical,
   Plus,
   Search,
   Settings,
-  Tag,
-  Trash,
   UserPlus,
   Users,
 } from "lucide-react"
@@ -85,6 +81,47 @@ import { useState, useEffect } from "react"
 import { Link, useParams, useSearchParams, useNavigate } from "react-router-dom"
 // Import Toast notifications provider
 import { toast } from "sonner"
+
+const extractErrorMessage = (err: unknown): string => {
+  if (err && typeof err === "object" && "response" in err) {
+    const axiosError = err as {
+      response?: {
+        data?: {
+          message?: string;
+          error?: {
+            message?: string;
+            code?: string;
+            meta?: Array<{ field: string; message: string }> | any;
+          };
+        };
+      };
+    };
+    const responseData = axiosError.response?.data;
+    if (responseData) {
+      if (responseData.error) {
+        const errorObj = responseData.error;
+        if (errorObj.code === "VALIDATION_ERROR" && Array.isArray(errorObj.meta)) {
+          return errorObj.meta
+            .map((m: any) => {
+              const fieldName = m.field ? `${m.field}: ` : "";
+              return `${fieldName}${m.message}`;
+            })
+            .join(", ");
+        }
+        if (errorObj.message) {
+          return errorObj.message;
+        }
+      }
+      if (responseData.message) {
+        return responseData.message;
+      }
+    }
+  }
+  if (err instanceof Error) {
+    return err.message;
+  }
+  return "Đã xảy ra lỗi";
+};
 
 // Main React component to render project details dashboard
 export default function ProjectDetail() {
@@ -108,19 +145,11 @@ export default function ProjectDetail() {
   const [statusFilter, setStatusFilter] = useState<string>("all") // Task status filter
   const [priorityFilter, setPriorityFilter] = useState<string>("all") // Task priority filter
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all") // Task assignee ID filter
-  const [categoryIdFilter, setCategoryIdFilter] = useState<string>("all") // Task category ID filter
   const [createdByIdFilter, setCreatedByIdFilter] = useState<string>("all") // Task creator ID filter
   const [sortBy, setSortBy] = useState<string>("createdAt") // Sorting field parameter
   const [sortOrder, setSortOrder] = useState<string>("desc") // Sorting order parameter
   const [currentPage, setCurrentPage] = useState(1) // Active page number index
   const [pageSize, setPageSize] = useState(25) // Page size limit count
-
-  // Category management States: fields to manage project tags/categories create/update modal
-  const [isOpenCreateCategoryModal, setIsOpenCreateCategoryModal] = useState(false) // Category modal visibility
-  const [newCategoryName, setNewCategoryName] = useState("") // Title input for category creation
-  const [categoryError, setCategoryError] = useState<string | null>(null) // Category errors warning message
-  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null) // Category ID currently being modified
-  const [editCategoryName, setEditCategoryName] = useState("") // Edited title input
 
   // Side-effect hook: automatically resets current page index back to 1 when filters are updated
   useEffect(() => {
@@ -131,7 +160,6 @@ export default function ProjectDetail() {
     statusFilter,
     priorityFilter,
     assigneeFilter,
-    categoryIdFilter,
     createdByIdFilter,
   ])
 
@@ -180,7 +208,6 @@ export default function ProjectDetail() {
       statusFilter,
       priorityFilter,
       assigneeFilter,
-      categoryIdFilter,
       createdByIdFilter,
       sortBy,
       sortOrder,
@@ -195,18 +222,10 @@ export default function ProjectDetail() {
         status: statusFilter === "all" ? undefined : (statusFilter as TaskStatus),
         priority: priorityFilter === "all" ? undefined : (priorityFilter as TaskPriority),
         assigneeId: assigneeFilter === "all" ? undefined : assigneeFilter,
-        categoryId: categoryIdFilter === "all" ? undefined : categoryIdFilter,
         createdById: createdByIdFilter === "all" ? undefined : createdByIdFilter,
         sortBy,
         sortOrder: sortOrder as "asc" | "desc",
       }),
-    enabled: !!projectId,
-  })
-
-  // Query hook: fetches project categories to populate category selection selects
-  const { data: categories } = useQuery({
-    queryKey: ["project-categories", projectId],
-    queryFn: () => taskCategoryApi.list(projectId),
     enabled: !!projectId,
   })
 
@@ -276,80 +295,7 @@ export default function ProjectDetail() {
   const totalEstimatedHours = overviewTasks.reduce((sum, t) => sum + (t.estimatedTime || 0), 0)
   const totalSpentHours = spentTimes?.reduce((sum, st) => sum + st.hours, 0) || 0
 
-  // Category CRUD mutations: Create new task category under this project
-  const createCategoryMutation = useMutation({
-    mutationFn: async (name: string) => {
-      return taskCategoryApi.create(projectId, { name })
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["project-categories", projectId] })
-      setNewCategoryName("")
-      setCategoryError(null)
-      toast.success("Thêm chủ đề dự án thành công")
-    },
-    onError: (err: unknown) => {
-      let errorMessage = "Đã xảy ra lỗi"
-      if (err && typeof err === "object" && "response" in err) {
-        const response = (err as { response?: { data?: { error?: { message?: string } } } }).response
-        if (response?.data?.error?.message) {
-          errorMessage = response.data.error.message
-        }
-      } else if (err instanceof Error) {
-        errorMessage = err.message
-      }
-      setCategoryError(errorMessage)
-    },
-  })
 
-  // Category CRUD mutations: Update existing category properties
-  const updateCategoryMutation = useMutation({
-    mutationFn: async ({ id, name }: { id: string; name: string }) => {
-      return taskCategoryApi.update(projectId, id, { name })
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["project-categories", projectId] })
-      setEditingCategoryId(null)
-      setEditCategoryName("")
-      setCategoryError(null)
-      toast.success("Cập nhật chủ đề dự án thành công")
-    },
-    onError: (err: unknown) => {
-      let errorMessage = "Đã xảy ra lỗi"
-      if (err && typeof err === "object" && "response" in err) {
-        const response = (err as { response?: { data?: { error?: { message?: string } } } }).response
-        if (response?.data?.error?.message) {
-          errorMessage = response.data.error.message
-        }
-      } else if (err instanceof Error) {
-        errorMessage = err.message
-      }
-      setCategoryError(errorMessage)
-    },
-  })
-
-  // Category CRUD mutations: Delete category by ID
-  const deleteCategoryMutation = useMutation({
-    mutationFn: async (catId: string) => {
-      return taskCategoryApi.delete(projectId, catId)
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["project-categories", projectId] })
-      setCategoryError(null)
-      toast.success("Xóa chủ đề dự án thành công")
-    },
-    onError: (err: unknown) => {
-      let errorMessage = "Đã xảy ra lỗi"
-      if (err && typeof err === "object" && "response" in err) {
-        const response = (err as { response?: { data?: { error?: { message?: string } } } }).response
-        if (response?.data?.error?.message) {
-          errorMessage = response.data.error.message
-        }
-      } else if (err instanceof Error) {
-        errorMessage = err.message
-      }
-      setCategoryError(errorMessage)
-    },
-  })
 
   // Add Member mutation: Add selected employee to project members list
   const addMemberMutation = useMutation({
@@ -365,16 +311,7 @@ export default function ProjectDetail() {
       toast.success("Thêm thành viên vào dự án thành công")
     },
     onError: (err: unknown) => {
-      let errorMessage = "Đã xảy ra lỗi"
-      if (err && typeof err === "object" && "response" in err) {
-        const response = (err as { response?: { data?: { error?: { message?: string } } } }).response
-        if (response?.data?.error?.message) {
-          errorMessage = response.data.error.message
-        }
-      } else if (err instanceof Error) {
-        errorMessage = err.message
-      }
-      setMemberError(errorMessage)
+      setMemberError(extractErrorMessage(err))
     },
   })
 
@@ -396,6 +333,13 @@ export default function ProjectDetail() {
   const updateProjectMutation = useMutation({
     mutationFn: async () => {
       if (!editProjectName.trim()) throw new Error("Vui lòng nhập tên dự án")
+      if (editProjectStart && editProjectEnd) {
+        const start = new Date(editProjectStart)
+        const end = new Date(editProjectEnd)
+        if (start > end) {
+          throw new Error("Ngày bắt đầu không được lớn hơn ngày kết thúc dự kiến")
+        }
+      }
       return projectApi.update(projectId, {
         name: editProjectName.trim(),
         description: editProjectDesc.trim() || null,
@@ -414,16 +358,7 @@ export default function ProjectDetail() {
       toast.success("Cập nhật thông tin dự án thành công")
     },
     onError: (err: unknown) => {
-      let errorMessage = "Đã xảy ra lỗi"
-      if (err && typeof err === "object" && "response" in err) {
-        const response = (err as { response?: { data?: { error?: { message?: string } } } }).response
-        if (response?.data?.error?.message) {
-          errorMessage = response.data.error.message
-        }
-      } else if (err instanceof Error) {
-        errorMessage = err.message
-      }
-      setEditProjectError(errorMessage)
+      setEditProjectError(extractErrorMessage(err))
     },
   })
 
@@ -587,14 +522,6 @@ export default function ProjectDetail() {
 
           {canManageMembers && (
             <>
-              <Button
-                variant="outline"
-                onClick={() => { setIsOpenCreateCategoryModal(true); }}
-                className="rounded-full border-border hover:bg-muted/50 flex items-center gap-1.5 h-10 text-xs px-4"
-              >
-                <Tag className="size-4" />
-                Quản lý chủ đề
-              </Button>
               <Button
                 variant="outline"
                 onClick={handleOpenEditProject}
@@ -886,21 +813,7 @@ export default function ProjectDetail() {
                     </Select>
                   </div>
 
-                  {/* Category categorization Filter select */}
-                  <div className="flex items-center gap-1.5">
-                    <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Chủ đề:</Label>
-                    <Select value={categoryIdFilter} onValueChange={setCategoryIdFilter}>
-                      <SelectTrigger className="w-28 h-9 border-border rounded-full text-xs bg-background">
-                        <SelectValue placeholder="Tất cả" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        <SelectItem value="all">Tất cả</SelectItem>
-                        {categories?.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+
                 </div>
               </PageCard>
 
@@ -931,7 +844,6 @@ export default function ProjectDetail() {
                             <TableHead className="w-16 font-semibold text-xs">ID</TableHead>
                             <TableHead className="w-24 font-semibold text-xs">Tracker</TableHead>
                             <TableHead className="font-semibold text-xs">Tiêu đề</TableHead>
-                            <TableHead className="w-28 font-semibold text-xs">Chủ đề</TableHead>
                             <TableHead className="w-28 font-semibold text-xs">Người thực hiện</TableHead>
                             <TableHead className="w-28 font-semibold text-xs">Trạng thái</TableHead>
                             <TableHead className="w-24 font-semibold text-xs">Độ ưu tiên</TableHead>
@@ -971,16 +883,7 @@ export default function ProjectDetail() {
                                     {task.title}
                                   </Link>
                                 </TableCell>
-                                {/* Task category/subject tag */}
-                                <TableCell className="text-xs">
-                                  {task.category ? (
-                                    <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-[10px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30">
-                                      {task.category.name}
-                                    </Badge>
-                                  ) : (
-                                    <span className="text-muted-foreground italic text-[11px]">Không có</span>
-                                  )}
-                                </TableCell>
+
                                 {/* Assigned developer name */}
                                 <TableCell className="text-xs">
                                   {task.assignee ? (
@@ -1178,7 +1081,6 @@ export default function ProjectDetail() {
                       setTrackerFilter("all")
                       setStatusFilter("all")
                       setPriorityFilter("all")
-                      setCategoryIdFilter("all")
                       setIssueSearch("")
                       setSortBy("createdAt")
                       setSortOrder("desc")
@@ -1383,7 +1285,7 @@ export default function ProjectDetail() {
                   <SelectTrigger id="editProjStatus" className="w-full h-10 border-border rounded-full px-4 bg-background">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-border bg-popover">
+                  <SelectContent position="popper" className="rounded-xl border-border bg-popover">
                     {PROJECT_STATUSES.map((st) => {
                       const labelsMap = new Map<string, string>([
                         ["planning", "Lên kế hoạch"],
@@ -1411,7 +1313,7 @@ export default function ProjectDetail() {
                   <SelectTrigger id="editProjPolicy" className="w-full h-10 border-border rounded-full px-4 bg-background">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-border bg-popover">
+                  <SelectContent position="popper" className="rounded-xl border-border bg-popover">
                     {TASK_CREATION_POLICIES.map((p) => (
                       <SelectItem key={p} value={p} className="rounded-lg">
                         {p === "leader_only" ? "Chỉ trưởng nhóm" : "Tất cả thành viên"}
@@ -1431,7 +1333,7 @@ export default function ProjectDetail() {
                 <SelectTrigger id="editProjLeader" className="w-full h-10 border-border rounded-full px-4 bg-background">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-border bg-popover">
+                <SelectContent position="popper" className="rounded-xl border-border bg-popover">
                   <SelectItem value="none" className="rounded-lg">Chưa phân công</SelectItem>
                   {allEmployees.map((emp) => (
                     <SelectItem key={emp.id} value={emp.id} className="rounded-lg">
@@ -1495,137 +1397,7 @@ export default function ProjectDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* CATEGORY MANAGE DIALOG: Dialog overlay to perform CRUD on task categories tags */}
-      <Dialog open={isOpenCreateCategoryModal} onOpenChange={setIsOpenCreateCategoryModal}>
-        <DialogContent className="sm:max-w-[500px] rounded-xl bg-background border-border p-6 shadow-lg">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-foreground">Quản lý chủ đề dự án</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Tạo mới, chỉnh sửa hoặc xóa các chủ đề (category) của dự án này.
-            </DialogDescription>
-          </DialogHeader>
 
-          {/* Render error banner if category action mutation fails */}
-          {categoryError && (
-            <div className="rounded-full bg-destructive/10 px-4 py-2 text-xs text-destructive font-medium border border-destructive/20">
-              {categoryError}
-            </div>
-          )}
-
-          {/* Form input fields to create a new category */}
-          <div className="flex gap-2 pt-2 border-b border-border pb-4">
-            <Input
-              placeholder="Tên chủ đề mới..."
-              value={newCategoryName}
-              onChange={(e) => { setNewCategoryName(e.target.value); }}
-              className="h-10 text-sm border-border rounded-full px-4 flex-1"
-            />
-            <Button
-              onClick={() => {
-                if (!newCategoryName.trim()) return
-                createCategoryMutation.mutate(newCategoryName.trim())
-              }}
-              disabled={createCategoryMutation.isPending}
-              className="h-10 rounded-full px-5 text-sm bg-primary text-primary-foreground hover:bg-primary/95"
-            >
-              Thêm mới
-            </Button>
-          </div>
-
-          {/* List display matching all project categories */}
-          <div className="space-y-3 pt-3 max-h-[300px] overflow-y-auto pr-1">
-            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Danh sách chủ đề</h4>
-            {!categories || categories.length === 0 ? (
-              // Empty list fallback view
-              <p className="text-xs text-muted-foreground italic py-2 text-center">Chưa có chủ đề nào.</p>
-            ) : (
-              // Map categories to list items with edit/delete buttons
-              categories.map((cat) => {
-                const isEditing = editingCategoryId === cat.id
-                return (
-                  <div key={cat.id} className="flex items-center justify-between gap-2 p-2 rounded-xl border border-border/50 bg-muted/10">
-                    {isEditing ? (
-                      // Render inputs and action buttons if item is in edit state mode
-                      <div className="flex items-center gap-2 w-full">
-                        <Input
-                          value={editCategoryName}
-                          onChange={(e) => { setEditCategoryName(e.target.value); }}
-                          className="h-8 text-xs border-border rounded-full px-3 flex-1"
-                        />
-                        <Button
-                          onClick={() => {
-                            if (!editCategoryName.trim()) return
-                            updateCategoryMutation.mutate({ id: cat.id, name: editCategoryName.trim() })
-                          }}
-                          disabled={updateCategoryMutation.isPending}
-                          className="rounded-full text-[10px] h-7 px-3 bg-emerald-600 text-white hover:bg-emerald-700 font-bold"
-                        >
-                          Lưu
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            setEditingCategoryId(null)
-                            setEditCategoryName("")
-                          }}
-                          className="rounded-full text-[10px] h-7 px-3 border-border hover:bg-muted"
-                        >
-                          Hủy
-                        </Button>
-                      </div>
-                    ) : (
-                      // Render normal visual display with action edit/delete triggers
-                      <>
-                        <span className="text-xs font-semibold text-foreground px-2">{cat.name}</span>
-                        <div className="flex items-center gap-1.5">
-                          {/* Trigger editing mode */}
-                          <Button
-                            variant="ghost"
-                            onClick={() => {
-                              setEditingCategoryId(cat.id)
-                              setEditCategoryName(cat.name)
-                            }}
-                            className="text-primary hover:bg-primary/10 rounded-full cursor-pointer h-7 w-7 p-0"
-                          >
-                            <Edit className="size-3" />
-                          </Button>
-                          {/* Trigger deletion mutation */}
-                          <Button
-                            variant="ghost"
-                            onClick={() => {
-                              if (window.confirm(`Bạn có chắc muốn xóa chủ đề "${cat.name}"?`)) {
-                                deleteCategoryMutation.mutate(cat.id)
-                              }
-                            }}
-                            className="text-destructive hover:bg-destructive/10 rounded-full cursor-pointer h-7 w-7 p-0"
-                          >
-                            <Trash className="size-3" />
-                          </Button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )
-              })
-            )}
-          </div>
-
-          {/* Close dialog action button */}
-          <div className="flex justify-end pt-4 border-t border-border">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setIsOpenCreateCategoryModal(false)
-                setCategoryError(null)
-              }}
-              className="h-10 rounded-full px-5 text-sm border-border hover:bg-muted"
-            >
-              Đóng
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

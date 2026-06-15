@@ -23,9 +23,11 @@ interface RichTextEditorProps {
 }
 
 export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
+  "use no memo";
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit,
       UnderlineExtension,

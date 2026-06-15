@@ -48,6 +48,47 @@ import React, { useState } from "react"
 // Import router link navigation
 import { Link } from "react-router-dom"
 
+const extractErrorMessage = (err: unknown): string => {
+  if (err && typeof err === "object" && "response" in err) {
+    const axiosError = err as {
+      response?: {
+        data?: {
+          message?: string;
+          error?: {
+            message?: string;
+            code?: string;
+            meta?: Array<{ field: string; message: string }> | any;
+          };
+        };
+      };
+    };
+    const responseData = axiosError.response?.data;
+    if (responseData) {
+      if (responseData.error) {
+        const errorObj = responseData.error;
+        if (errorObj.code === "VALIDATION_ERROR" && Array.isArray(errorObj.meta)) {
+          return errorObj.meta
+            .map((m: any) => {
+              const fieldName = m.field ? `${m.field}: ` : "";
+              return `${fieldName}${m.message}`;
+            })
+            .join(", ");
+        }
+        if (errorObj.message) {
+          return errorObj.message;
+        }
+      }
+      if (responseData.message) {
+        return responseData.message;
+      }
+    }
+  }
+  if (err instanceof Error) {
+    return err.message;
+  }
+  return "Đã xảy ra lỗi";
+};
+
 // Main React component to render the global list of projects
 export default function ProjectList() {
   // Initialize query client for cache validation
@@ -113,6 +154,14 @@ export default function ProjectList() {
         .map((t) => t.trim())
         .filter((t) => t.length > 0)
 
+      if (newProjectStart && newProjectEnd) {
+        const start = new Date(newProjectStart)
+        const end = new Date(newProjectEnd)
+        if (start > end) {
+          throw new Error("Ngày bắt đầu không được lớn hơn ngày kết thúc dự kiến")
+        }
+      }
+
       // Call the API endpoint
       return projectApi.create({
         name: newProjectName,
@@ -141,16 +190,7 @@ export default function ProjectList() {
     },
     // Display error messages from the server on failure
     onError: (err: unknown) => {
-      let errorMessage = "Đã xảy ra lỗi"
-      if (err && typeof err === "object" && "response" in err) {
-        const response = (err as { response?: { data?: { error?: { message?: string } } } }).response
-        if (response?.data?.error?.message) {
-          errorMessage = response.data.error.message
-        }
-      } else if (err instanceof Error) {
-        errorMessage = err.message
-      }
-      setCreateError(errorMessage)
+      setCreateError(extractErrorMessage(err))
     },
   })
 
@@ -222,7 +262,7 @@ export default function ProjectList() {
             <SelectTrigger className="w-40 h-10 border-border rounded-full px-4 bg-background">
               <SelectValue placeholder="Tất cả" />
             </SelectTrigger>
-            <SelectContent className="rounded-xl border-border bg-popover">
+            <SelectContent position="popper" className="rounded-xl border-border bg-popover">
               <SelectItem value="all" className="rounded-lg">Tất cả</SelectItem>
               {PROJECT_STATUSES.map((st) => (
                 <SelectItem key={st} value={st} className="rounded-lg">
@@ -416,7 +456,7 @@ export default function ProjectList() {
                   <SelectTrigger id="projLeader" className="w-full h-10 border-border rounded-full px-4 bg-background">
                     <SelectValue placeholder="Chọn Trưởng nhóm" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-border bg-popover">
+                  <SelectContent position="popper" className="rounded-xl border-border bg-popover">
                     <SelectItem value="none" className="rounded-lg">Không phân công</SelectItem>
                     {employees.map((emp) => (
                       <SelectItem key={emp.id} value={emp.id} className="rounded-lg">
@@ -435,7 +475,7 @@ export default function ProjectList() {
                   <SelectTrigger id="projPolicy" className="w-full h-10 border-border rounded-full px-4 bg-background">
                     <SelectValue placeholder="Chọn quyền" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-border bg-popover">
+                  <SelectContent position="popper" className="rounded-xl border-border bg-popover">
                     {TASK_CREATION_POLICIES.map((pol) => (
                       <SelectItem key={pol} value={pol} className="rounded-lg">
                         {pol === "leader_only" ? "Chỉ trưởng nhóm (Leader)" : "Tất cả thành viên"}
