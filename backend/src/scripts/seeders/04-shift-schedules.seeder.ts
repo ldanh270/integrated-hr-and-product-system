@@ -36,11 +36,16 @@ export class ShiftSchedulesSeeder implements ISeeder {
             validFrom,
             createdById: adminId,
             days: {
-              create: [1, 2, 3, 4, 5].map((dayOfWeek) => ({
-                // Monday to Friday
-                dayOfWeek,
-                shiftId: primaryShiftId,
-              })),
+              create: [
+                ...[1, 2, 3, 4, 5].map((dayOfWeek) => ({
+                  dayOfWeek,
+                  shiftId: primaryShiftId,
+                })),
+                // Saturday: night shift when available (index 2)
+                ...(workingShiftIds[2]
+                  ? [{ dayOfWeek: 6, shiftId: workingShiftIds[2] }]
+                  : []),
+              ],
             },
           },
         })

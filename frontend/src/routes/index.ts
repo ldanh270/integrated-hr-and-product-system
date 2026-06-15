@@ -134,6 +134,32 @@ const privateRoutes = [
     component: lazy(() => import("@/pages/settings/SettingsDashboard.tsx")),
     layout: MainLayout,
   },
+  // Project & Task Management Module
+  {
+    path: "/project/dashboard",
+    component: lazy(() => import("@/pages/project/ProjectDashboard.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/project/list",
+    component: lazy(() => import("@/pages/project/ProjectList.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/project/:id",
+    component: lazy(() => import("@/pages/project/ProjectDetail.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/project/:id/tasks/new",
+    component: lazy(() => import("@/pages/project/NewTask.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/project/tasks/:id",
+    component: lazy(() => import("@/pages/project/TaskDetail.tsx")),
+    layout: MainLayout,
+  },
 ]
 
 export { privateRoutes, publicRoutes }

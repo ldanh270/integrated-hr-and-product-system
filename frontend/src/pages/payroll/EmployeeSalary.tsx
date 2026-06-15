@@ -1,4 +1,4 @@
-import { DataTableToolbar, PageCard, PageHeader } from "@/components/common"
+import { AppPagination, DataTableToolbar, PageCard, PageHeader } from "@/components/common"
 import EmployeePayslipHistoryDialog from "@/components/features/payroll/EmployeePayslipHistoryDialog"
 import EmployeeSalaryConfigDialog from "@/components/features/payroll/employee-salary-config-dialog"
 import { Button } from "@/components/ui/button"
@@ -35,6 +35,7 @@ const formatCurrency = (val: number) => {
 export default function EmployeeSalary() {
   const [searchQuery, setSearchQuery] = useState("")
   const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState<number>(SYSTEM_CONFIG.PAGINATION.SMALL_LIMIT)
 
   const [configDialogOpen, setConfigDialogOpen] = useState(false)
   const [selectedEmployee, setSelectedEmployee] = useState<{
@@ -47,7 +48,7 @@ export default function EmployeeSalary() {
 
   const { data: employeeData, isLoading: isEmployeesLoading } = useEmployees({
     page,
-    limit: SYSTEM_CONFIG.PAGINATION.SMALL_LIMIT,
+    limit,
     search: searchQuery,
   })
 
@@ -62,9 +63,9 @@ export default function EmployeeSalary() {
   }
 
   return (
-    <div className="container px-6 py-6">
+    <div className="container px-3 sm:px-6 py-4 sm:py-6">
       <PageHeader
-        title="Thiết lập lương"
+        title="Lương nhân sự"
         description="Quản lý cấu hình mức lương cơ bản và gán mẫu bảng lương cho nhân viên."
       />
 
@@ -88,10 +89,10 @@ export default function EmployeeSalary() {
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                   Nhân sự
                 </TableHead>
-                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                <TableHead className="hidden sm:table-cell px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                   Vị trí / Vai trò
                 </TableHead>
-                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                <TableHead className="hidden sm:table-cell px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                   Lương cơ bản
                 </TableHead>
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
@@ -118,7 +119,7 @@ export default function EmployeeSalary() {
                   <EmployeeRow
                     key={emp.id}
                     emp={emp}
-                    index={(page - 1) * SYSTEM_CONFIG.PAGINATION.SMALL_LIMIT + index + 1}
+                    index={(page - 1) * limit + index + 1}
                     onConfigure={handleOpenConfigDialog}
                     onViewHistory={handleOpenHistoryDialog}
                   />
@@ -128,53 +129,18 @@ export default function EmployeeSalary() {
           </Table>
         </div>
 
-        {employeeData && employeeData.meta.totalPages > 1 && (
-          <div className="p-4 border-t border-border flex items-center justify-between text-sm text-muted-foreground bg-muted/20">
-            <div>
-              Hiển thị{" "}
-              <span className="font-medium text-foreground">{employeeData.data.length}</span> trên{" "}
-              <span className="font-medium text-foreground">{employeeData.meta.total}</span> nhân
-              sự.
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                Trước
-              </Button>
-              <div className="flex items-center gap-1">
-                {Array.from({
-                  length: Math.min(
-                    SYSTEM_CONFIG.PAGINATION.MAX_VISIBLE_PAGES,
-                    employeeData.meta.totalPages,
-                  ),
-                }).map((_, i) => (
-                  <button
-                    key={i + 1}
-                    onClick={() => setPage(i + 1)}
-                    className={`w-8 h-8 rounded-md flex items-center justify-center transition-colors ${
-                      page === i + 1
-                        ? "bg-primary text-primary-foreground font-medium"
-                        : "hover:bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === employeeData.meta.totalPages}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Sau
-              </Button>
-            </div>
-          </div>
+        {employeeData && employeeData.meta.total > 0 && (
+          <AppPagination
+            currentPage={page}
+            totalPages={employeeData.meta.totalPages}
+            onPageChange={setPage}
+            totalItems={employeeData.meta.total}
+            itemsPerPage={limit}
+            onItemsPerPageChange={(newLimit) => {
+              setLimit(newLimit)
+              setPage(1)
+            }}
+          />
         )}
       </PageCard>
 
@@ -231,11 +197,11 @@ function EmployeeRow({ emp, index, onConfigure, onViewHistory }: RowProps) {
           </div>
         </div>
       </TableCell>
-      <TableCell className="px-4 py-3">
+      <TableCell className="hidden sm:table-cell px-4 py-3">
         <div className="font-semibold text-foreground/80">{emp.position || "-"}</div>
         <div className="text-[10px] text-muted-foreground uppercase">{emp.role}</div>
       </TableCell>
-      <TableCell className="px-4 py-3 font-semibold">
+      <TableCell className="hidden sm:table-cell px-4 py-3 font-semibold">
         {isLoading ? (
           <span className="text-muted-foreground">Đang tải...</span>
         ) : config ? (

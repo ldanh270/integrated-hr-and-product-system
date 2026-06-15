@@ -1,6 +1,12 @@
 import { ATTENDANCE_STATUS, EMPLOYEE_SHIFT_STATUS, PAID_LEAVE_TYPES } from "@/configs/entities/attendance.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
-import { PAYROLL_STATUS, SALARY_COMPONENT_TYPES, generateDefaultPayrollName } from "@/configs/entities/payroll.config.ts"
+import {
+  PAYROLL_STATUS,
+  SALARY_COMPONENT_TYPES,
+  generateDefaultPayrollName,
+} from "@/configs/entities/payroll.config.ts"
+import { PAYROLL_MESSAGES } from "@/configs/messages/payroll.message"
+import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { IAttendanceRepository } from "@/types/attendance.types.ts"
 import { IEmployeeRepository } from "@/types/employee.types.ts"
@@ -33,14 +39,23 @@ export class PayrollService implements IPayrollService {
     private prisma: PrismaClient,
   ) {}
 
+  /**
+   * Initialize a new payroll for a specific month and year.
+   *
+   * @param month - The month parameter
+   * @param year - The year parameter
+   * @param name - The name parameter (optional)
+   * @returns Returns the result of type Promise<{ name: string; id: string; periodMonth: number; periodYear: number; status: $Enums.PayrollStatus; totalAmount: Decimal; approvedById: string | null; approvedAt: Date | null; rejectReason: string | null; createdAt: Date; updatedAt: Date; }>
+   * @throws AppError if a business logic error occurs or data is not found
+   */
   async generatePayroll(month: number, year: number, name?: string): Promise<Payroll> {
     const finalName = name || generateDefaultPayrollName(month, year)
     const existing = await this.payrollRepo.findByPeriod(month, year, finalName)
     if (existing) {
       throw new AppError(
-        "Payroll already exists for this period",
+        PAYROLL_MESSAGES.ERRORS.PAYROLL_ALREADY_EXISTS,
         HttpStatusCode.CONFLICT,
-        "SERVICE",
+        ErrorLayer.SERVICE,
       )
     }
 
@@ -55,7 +70,11 @@ export class PayrollService implements IPayrollService {
     const periodStart = new Date(year, month - 1, 1)
     const periodEnd = new Date(year, month, 0) // last day of the month
 
-    const payroll = await this.payrollRepo.create({ periodMonth: month, periodYear: year, name: finalName })
+    const payroll = await this.payrollRepo.create({
+      periodMonth: month,
+      periodYear: year,
+      name: finalName,
+    })
 
     // Fetch all active global salary variables
     const globalVariables = await this.prisma.salaryVariable.findMany({
@@ -144,7 +163,8 @@ export class PayrollService implements IPayrollService {
       // Build context
       const context: IFormulaContext | any = {
         baseSalary: Number(config.baseSalary),
-        workingDays: attendance.workingDays,
+        workingDays: 22, // Should ideally be standard working days for the month. Currently hardcoded to 22 or fetched from config
+        actualWorkingDays: attendance.workingDays,
         absentDays: attendance.absentDays,
         overtimeMinutes: attendance.overtimeMinutes,
         lateMinutes: attendance.lateMinutes,
@@ -209,16 +229,42 @@ export class PayrollService implements IPayrollService {
     return { ...payroll, totalAmount }
   }
 
+  /**
+   * Process business logic for getPayroll.
+   *
+   * @param month - The month parameter
+   * @param year - The year parameter
+   * @param name - The name parameter (optional)
+   * @returns Returns the result of type Promise<{ name: string; id: string; periodMonth: number; periodYear: number; status: $Enums.PayrollStatus; totalAmount: Decimal; approvedById: string | null; approvedAt: Date | null; rejectReason: string | null; createdAt: Date; updatedAt: Date; }>
+   * @throws AppError if a business logic error occurs or data is not found
+   */
   async getPayroll(month: number, year: number, name?: string): Promise<Payroll> {
     const finalName = name || generateDefaultPayrollName(month, year)
     const payroll = await this.payrollRepo.findByPeriod(month, year, finalName)
-    if (!payroll) throw new AppError("Payroll not found", HttpStatusCode.NOT_FOUND, "SERVICE")
+    if (!payroll)
+      throw new AppError(
+        PAYROLL_MESSAGES.ERRORS.PAYROLL_NOT_FOUND,
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+      )
     return payroll
   }
 
+  /**
+   * Process business logic for getPayrollById.
+   *
+   * @param id - The id parameter
+   * @returns Returns the result of type Promise<any>
+   * @throws AppError if a business logic error occurs or data is not found
+   */
   async getPayrollById(id: string): Promise<any> {
     const payroll = await this.payrollRepo.findById(id)
-    if (!payroll) throw new AppError("Payroll not found", HttpStatusCode.NOT_FOUND, "SERVICE")
+    if (!payroll)
+      throw new AppError(
+        PAYROLL_MESSAGES.ERRORS.PAYROLL_NOT_FOUND,
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+      )
 
     const payslips = await this.payslipRepo.findByPayroll(id)
 
@@ -228,10 +274,23 @@ export class PayrollService implements IPayrollService {
     }
   }
 
+  /**
+   * Process business logic for listPayrolls.
+   *
+   * @param filter - The filter parameter
+   * @returns Returns the result of type Promise<{ name: string; id: string; periodMonth: number; periodYear: number; status: $Enums.PayrollStatus; totalAmount: Decimal; approvedById: string | null; approvedAt: Date | null; rejectReason: string | null; createdAt: Date; updatedAt: Date; }[]>
+   */
   async listPayrolls(filter: { status?: PayrollStatus; year?: number }): Promise<Payroll[]> {
     return this.payrollRepo.findAll(filter)
   }
 
+  /**
+   * Approve a payroll, changing its status to approved.
+   *
+   * @param payrollId - The payrollId parameter
+   * @param approverId - The approverId parameter
+   * @returns Returns the result of type Promise<{ name: string; id: string; periodMonth: number; periodYear: number; status: $Enums.PayrollStatus; totalAmount: Decimal; approvedById: string | null; approvedAt: Date | null; rejectReason: string | null; createdAt: Date; updatedAt: Date; }>
+   */
   async approvePayroll(payrollId: string, approverId: string): Promise<Payroll> {
     return this.payrollRepo.updateStatus(payrollId, {
       status: PAYROLL_STATUS.APPROVED,
@@ -240,6 +299,14 @@ export class PayrollService implements IPayrollService {
     })
   }
 
+  /**
+   * Reject a payroll and record the rejection reason.
+   *
+   * @param payrollId - The payrollId parameter
+   * @param approverId - The approverId parameter
+   * @param reason - The reason parameter
+   * @returns Returns the result of type Promise<{ name: string; id: string; periodMonth: number; periodYear: number; status: $Enums.PayrollStatus; totalAmount: Decimal; approvedById: string | null; approvedAt: Date | null; rejectReason: string | null; createdAt: Date; updatedAt: Date; }>
+   */
   async rejectPayroll(payrollId: string, approverId: string, reason: string): Promise<Payroll> {
     return this.payrollRepo.updateStatus(payrollId, {
       status: PAYROLL_STATUS.REJECTED,
@@ -249,12 +316,31 @@ export class PayrollService implements IPayrollService {
     })
   }
 
+  /**
+   * Handle the request to retrieve detailed payslip information for an employee.
+   *
+   * @param payrollId - The payrollId parameter
+   * @param employeeId - The employeeId parameter
+   * @returns Returns the result of type Promise<PayslipWithDetails>
+   * @throws AppError if a business logic error occurs or data is not found
+   */
   async getPayslip(payrollId: string, employeeId: string): Promise<PayslipWithDetails> {
     const payslip = await this.payslipRepo.findOne(payrollId, employeeId)
-    if (!payslip) throw new AppError("Payslip not found", HttpStatusCode.NOT_FOUND, "SERVICE")
+    if (!payslip)
+      throw new AppError(
+        PAYROLL_MESSAGES.ERRORS.PAYSLIP_NOT_FOUND,
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+      )
     return payslip
   }
 
+  /**
+   * Process business logic for getMyPayslips.
+   *
+   * @param employeeId - The employeeId parameter
+   * @returns Returns the result of type Promise<any[]>
+   */
   async getMyPayslips(employeeId: string): Promise<any[]> {
     const rawPayslips = await this.payslipRepo.findByEmployee(employeeId)
     // Map included payroll info to the top level for the frontend

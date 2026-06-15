@@ -1,12 +1,13 @@
 import { API_ENDPOINTS } from "@/config/api.config"
-import apiClient from "@/lib/api-client"
-import type { IEmployeeSalaryConfig, IPayslipTemplate } from "@/types/payroll.types"
+import { PAYROLL_QUERY_KEYS } from "@/config/entities/payroll.config"
+import apiClient from "@/lib/api-client.ts"
+import type { IEmployeeSalaryConfig, IPayslipTemplate } from "@/types/payroll.types.ts"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 export function useActiveSalaryConfig(employeeId: string) {
   return useQuery({
-    queryKey: ["employee-salary-config", "active", employeeId],
+    queryKey: [...PAYROLL_QUERY_KEYS.EMPLOYEE_SALARY_CONFIG, "active", employeeId],
     queryFn: async () => {
       const response = await apiClient.get(
         `${API_ENDPOINTS.PAYROLL.EMPLOYEE_SALARY_CONFIG}/${employeeId}/salary-config`,
@@ -19,7 +20,7 @@ export function useActiveSalaryConfig(employeeId: string) {
 
 export function useSalaryConfigHistory(employeeId: string) {
   return useQuery({
-    queryKey: ["employee-salary-config", "history", employeeId],
+    queryKey: [...PAYROLL_QUERY_KEYS.EMPLOYEE_SALARY_CONFIG, "history", employeeId],
     queryFn: async () => {
       const response = await apiClient.get(
         `${API_ENDPOINTS.PAYROLL.EMPLOYEE_SALARY_CONFIG}/${employeeId}/salary-config/history`,
@@ -46,15 +47,17 @@ export function useAssignSalaryConfig() {
       return response.data.data as IEmployeeSalaryConfig
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ["employee-salary-config", "active", variables.employeeId],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ["employee-salary-config", "history", variables.employeeId],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ["employees"], // Invalidate employee list to update display salaries
-      })
+      return Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [...PAYROLL_QUERY_KEYS.EMPLOYEE_SALARY_CONFIG, "active", variables.employeeId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...PAYROLL_QUERY_KEYS.EMPLOYEE_SALARY_CONFIG, "history", variables.employeeId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["employees"], // Invalidate employee list to update display salaries
+        }),
+      ])
     },
   })
 }

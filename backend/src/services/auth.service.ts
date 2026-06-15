@@ -1,17 +1,32 @@
-import { PASSWORD_RESET_STATUS } from "@/configs/auth/auth.config.ts"
+import {
+  ACCOUNT_LOCK_TTL,
+  ACTIVITY_ACTION,
+  ACTIVITY_CATEGORY,
+  PASSWORD_RESET_STATUS,
+  PASSWORD_RESET_TTL,
+  REFRESH_TOKEN_TTL_MS,
+} from "@/configs/auth/auth.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
-import { ENV_ENVIRONMENT, ENVIRONMENT } from "@/configs/system/server.config.ts"
+import { ENVIRONMENT, ENV_ENVIRONMENT } from "@/configs/system/server.config.ts"
+import { AUTH_ERROR_MESSAGES } from "@/constants/auth.constants.ts"
 import {
+  ActivityLogItem,
+  ActivityLogQuery,
+  AuthEmployeeDocument,
   AuthResponseDto,
   ChangePasswordDto,
   ForgotPasswordDto,
   GenericAuthResponseDto,
   IAuthRepository,
   IAuthService,
+  LockedAccountItem,
   LoginDto,
   LogoutResponseDto,
+  PaginatedActivityLogsDto,
+  RefreshResultDto,
   ResetPasswordDto,
+  SecuritySummaryDto,
   TokenValidationResponseDto,
   ValidateResetTokenDto,
 } from "@/types/auth.types.ts"
@@ -33,22 +48,66 @@ export class AuthService implements IAuthService {
   constructor(private repo: IAuthRepository) {}
 
   /**
+   * Helper to generate tokens and save refresh token to DB
+   */
+  private async generateTokens(
+    employee: AuthEmployeeDocument,
+    existingExpiresAt?: Date,
+  ): Promise<{ accessToken: string; refreshToken: string; refreshExpiresAt: Date }> {
+    const payload = {
+      empId: employee.id,
+      username: employee.username,
+      role: employee.role,
+    }
+
+    const accessToken = JwtUtil.generateAccessToken(payload)
+    const refreshToken = JwtUtil.generateRefreshToken(payload)
+
+    const tokenHash = crypto.createHash("sha256").update(refreshToken).digest("hex")
+    const refreshExpiresAt = existingExpiresAt || new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
+
+    await this.repo.createRefreshToken({
+      employeeId: employee.id,
+      tokenHash,
+      expiresAt: refreshExpiresAt,
+    })
+
+    return { accessToken, refreshToken, refreshExpiresAt }
+  }
+
+  /**
    * Handles user login logic: credential verification, account locking, and token generation
    * Normalizes input by trimming and converting to lowercase before repository lookup
    */
-  async login(data: LoginDto, ipAddress?: string): Promise<AuthResponseDto> {
+  async login(
+    data: LoginDto,
+    ipAddress?: string,
+  ): Promise<
+    AuthResponseDto & { accessToken: string; refreshToken: string; refreshExpiresAt: Date }
+  > {
     const { username, password } = data
 
     // Fetch user through repository using normalized identifier
-    const normalizedIdentifier = username.trim().toLowerCase()
     const employee = await this.repo.findAuthByIdentifier(username)
 
     // Security: Generic error for non-existent username to prevent user enumeration
     if (!employee) {
-      throw new AppError("Invalid credentials", HttpStatusCode.UNAUTHORIZED, "Authentication")
+      throw new AppError(
+        AUTH_ERROR_MESSAGES.INVALID_CREDENTIALS,
+        HttpStatusCode.UNAUTHORIZED,
+        "Authentication",
+      )
     }
 
     // Status Check
+    if (employee.status === EMPLOYEE_STATUS.TERMINATED) {
+      throw new AppError(
+        "Tài khoản đã bị chấm dứt do nghỉ việc (Account terminated)",
+        HttpStatusCode.FORBIDDEN,
+        "Authentication",
+      )
+    }
+
     if (employee.status !== EMPLOYEE_STATUS.ACTIVE) {
       throw new AppError(
         "Account is disabled or inactive",
@@ -60,7 +119,7 @@ export class AuthService implements IAuthService {
     // Lock Check (Brute-force protection)
     if (employee.lockedUntil && employee.lockedUntil > new Date()) {
       throw new AppError(
-        `Account is temporarily locked. Try again after ${employee.lockedUntil.toLocaleTimeString()}`,
+        `Account is temporarily locked. Try again after ${employee.lockedUntil.toLocaleString()}`,
         HttpStatusCode.FORBIDDEN,
         "Authentication",
       )
@@ -74,7 +133,34 @@ export class AuthService implements IAuthService {
       employee.failedLoginCount = (employee.failedLoginCount || 0) + 1
 
       if (employee.failedLoginCount >= 5) {
-        employee.lockedUntil = new Date(Date.now() + 15 * 60 * 1000) // 15 mins lockout
+        const isNewlyLocked = employee.failedLoginCount === 5
+        employee.lockedUntil = new Date(Date.now() + ACCOUNT_LOCK_TTL) // 5 mins lockout
+
+        // Log account lock
+        await this.repo.logActivity({
+          empId: employee.id,
+          category: ACTIVITY_CATEGORY.SECURITY,
+          actionType: ACTIVITY_ACTION.ACCOUNT_LOCKED,
+          ipAddress,
+          timestamp: new Date(),
+          details: JSON.stringify({
+            failedLoginCount: employee.failedLoginCount,
+            lockedUntil: employee.lockedUntil,
+          }),
+        })
+
+        // Send lock notification email only on transition to locked state
+        if (isNewlyLocked) {
+          try {
+            await EmailUtil.sendAccountLockedEmail(employee.email, {
+              fullName: employee.fullName,
+              lockedUntil: employee.lockedUntil,
+              failedAttempts: employee.failedLoginCount,
+            })
+          } catch (emailError) {
+            console.error("Failed to send account lock email:", emailError)
+          }
+        }
       }
 
       await this.repo.updateAuthEmployee(employee.id, {
@@ -85,39 +171,41 @@ export class AuthService implements IAuthService {
       // Log failed attempt through repository
       await this.repo.logActivity({
         empId: employee.id,
-        actionType: "failed_login",
+        category: ACTIVITY_CATEGORY.AUTH,
+        actionType: ACTIVITY_ACTION.FAILED_LOGIN,
         ipAddress,
         timestamp: new Date(),
       })
 
-      throw new AppError("Invalid credentials", HttpStatusCode.UNAUTHORIZED, "Authentication")
+      throw new AppError(
+        AUTH_ERROR_MESSAGES.INVALID_CREDENTIALS,
+        HttpStatusCode.UNAUTHORIZED,
+        "Authentication",
+      )
     }
 
     // Successful Login
     employee.failedLoginCount = 0
-    employee.lockedUntil = undefined
+    employee.lockedUntil = null
     await this.repo.updateAuthEmployee(employee.id, {
       failedLoginCount: employee.failedLoginCount,
       lockedUntil: employee.lockedUntil,
+      lastLoginAt: new Date(),
     })
 
     // Log success through repository
     await this.repo.logActivity({
       empId: employee.id,
-      actionType: "login",
+      category: ACTIVITY_CATEGORY.AUTH,
+      actionType: ACTIVITY_ACTION.LOGIN,
       ipAddress,
       timestamp: new Date(),
     })
 
-    // Generate Token
-    const token = JwtUtil.generateToken({
-      empId: employee.id,
-      username: employee.username,
-      role: employee.role,
-    })
+    // Generate Tokens
+    const tokens = await this.generateTokens(employee)
 
     return {
-      token,
       employee: {
         id: employee.id,
         username: employee.username,
@@ -125,17 +213,112 @@ export class AuthService implements IAuthService {
         fullName: employee.fullName,
         role: employee.role,
       },
+      ...tokens,
+    }
+  }
+
+  async refresh(
+    rawRefreshToken: string,
+  ): Promise<
+    RefreshResultDto & { accessToken: string; refreshToken: string; refreshExpiresAt: Date }
+  > {
+    const decoded = JwtUtil.verifyRefreshToken(rawRefreshToken)
+    if (!decoded) {
+      throw new AppError(
+        "Invalid or expired refresh token",
+        HttpStatusCode.UNAUTHORIZED,
+        "Authentication",
+      )
+    }
+
+    const tokenHash = crypto.createHash("sha256").update(rawRefreshToken).digest("hex")
+    const oldToken = await this.repo.findRefreshTokenByHash(tokenHash)
+
+    if (!oldToken) {
+      throw new AppError("Refresh token not found", HttpStatusCode.UNAUTHORIZED, "Authentication")
+    }
+
+    if (oldToken.revokedAt !== null) {
+      await this.repo.revokeAllUserRefreshTokens(oldToken.employeeId)
+      await this.repo.logActivity({
+        empId: oldToken.employeeId,
+        category: ACTIVITY_CATEGORY.SECURITY,
+        actionType: ACTIVITY_ACTION.TOKEN_REUSE_DETECTED,
+        timestamp: new Date(),
+        details: "A revoked refresh token was used. All sessions terminated.",
+      })
+      throw new AppError(
+        "Phiên đăng nhập bất thường",
+        HttpStatusCode.UNAUTHORIZED,
+        "Authentication",
+      )
+    }
+
+    if (oldToken.expiresAt < new Date()) {
+      throw new AppError("Refresh token expired", HttpStatusCode.UNAUTHORIZED, "Authentication")
+    }
+
+    const employee = await this.repo.findById(oldToken.employeeId)
+    if (!employee || employee.status !== EMPLOYEE_STATUS.ACTIVE) {
+      throw new AppError("Account inactive", HttpStatusCode.FORBIDDEN, "Authentication")
+    }
+
+    await this.repo.revokeRefreshToken(oldToken.id)
+
+    const tokens = await this.generateTokens(employee, oldToken.expiresAt)
+
+    return {
+      employee: {
+        id: employee.id,
+        username: employee.username,
+        email: employee.email,
+        fullName: employee.fullName,
+        role: employee.role,
+      },
+      ...tokens,
+    }
+  }
+
+  async getMe(empId: string): Promise<AuthResponseDto["employee"]> {
+    const employee = await this.repo.findById(empId)
+    if (!employee || employee.status !== EMPLOYEE_STATUS.ACTIVE) {
+      throw new AppError(
+        "Account inactive or not found",
+        HttpStatusCode.FORBIDDEN,
+        "Authentication",
+      )
+    }
+
+    return {
+      id: employee.id,
+      username: employee.username,
+      email: employee.email,
+      fullName: employee.fullName,
+      role: employee.role,
     }
   }
 
   /**
-   * Handles user logout logic: currently just records the activity
+   * Handles user logout logic: revokes token and records activity
    */
-  async logout(empId: string, ipAddress?: string): Promise<LogoutResponseDto> {
+  async logout(
+    empId: string,
+    rawRefreshToken?: string,
+    ipAddress?: string,
+  ): Promise<LogoutResponseDto> {
+    if (rawRefreshToken) {
+      const tokenHash = crypto.createHash("sha256").update(rawRefreshToken).digest("hex")
+      const tokenDoc = await this.repo.findRefreshTokenByHash(tokenHash)
+      if (tokenDoc && !tokenDoc.revokedAt) {
+        await this.repo.revokeRefreshToken(tokenDoc.id)
+      }
+    }
+
     // Log logout activity through repository
     await this.repo.logActivity({
       empId,
-      actionType: "logout",
+      category: ACTIVITY_CATEGORY.AUTH,
+      actionType: ACTIVITY_ACTION.LOGOUT,
       ipAddress,
       timestamp: new Date(),
     })
@@ -184,8 +367,8 @@ export class AuthService implements IAuthService {
     // Generate a secure plain-text token
     const token = crypto.randomBytes(32).toString("hex")
 
-    // Create the request with 15-minute expiration
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
+    // Create the request with expiration
+    const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL)
     await this.repo.createResetRequest({
       employeeId: employee.id,
       token,
@@ -197,7 +380,7 @@ export class AuthService implements IAuthService {
       const resendResult = await EmailUtil.sendResetPasswordEmail(employee.email, token)
 
       // Debugging: Always return token and resend info if not in production
-      if (ENV_ENVIRONMENT !== ENVIRONMENT.PRODUCTION) {
+      if (process.env.NODE_ENV !== "production") {
         return {
           message: genericResponse.message,
           debugToken: token,
@@ -208,7 +391,7 @@ export class AuthService implements IAuthService {
     } catch (error) {
       console.error("Critical error sending reset email:", error)
       // Throw error in dev to see root cause
-      if (ENV_ENVIRONMENT !== ENVIRONMENT.PRODUCTION) {
+      if (process.env.NODE_ENV !== "production") {
         throw error
       }
     }
@@ -291,7 +474,7 @@ export class AuthService implements IAuthService {
   async changePassword(empId: string, data: ChangePasswordDto): Promise<GenericAuthResponseDto> {
     const { oldPassword, newPassword } = data
 
-    // 1. Fetch employee with password hash
+    // Fetch employee with password hash
     const employee = await this.repo.findById(empId)
     if (!employee) {
       throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "Authentication")
@@ -300,7 +483,11 @@ export class AuthService implements IAuthService {
     // Verify current password
     const isMatch = await HashUtil.compare(oldPassword, employee.passwordHash)
     if (!isMatch) {
-      throw new AppError("Incorrect current password", HttpStatusCode.UNAUTHORIZED, "Authentication")
+      throw new AppError(
+        "Incorrect current password",
+        HttpStatusCode.UNAUTHORIZED,
+        "Authentication",
+      )
     }
 
     // Security: Prevent changing to the same password
@@ -318,5 +505,78 @@ export class AuthService implements IAuthService {
     await this.repo.updateAuthEmployee(employee.id, { passwordHash })
 
     return { message: "Password changed successfully." }
+  }
+
+  /**
+   * Gets activity logs with filtering and pagination
+   */
+  async getActivityLogs(query: ActivityLogQuery): Promise<PaginatedActivityLogsDto> {
+    return this.repo.listActivityLogs(query)
+  }
+
+  /**
+   * Gets a single activity log detail
+   */
+  async getActivityLogDetail(id: string): Promise<ActivityLogItem | null> {
+    return this.repo.getActivityLogById(id)
+  }
+
+  /**
+   * Gets security dashboard summary
+   */
+  async getSecuritySummary(): Promise<SecuritySummaryDto> {
+    const [
+      lockedAccounts,
+      failedLoginsToday,
+      successfulLoginsToday,
+      recentSecurityEvents,
+      recentRoleEvents,
+    ] = await Promise.all([
+      this.repo.getLockedEmployees(),
+      this.repo.countActivityLogsToday(ACTIVITY_CATEGORY.AUTH, ACTIVITY_ACTION.FAILED_LOGIN),
+      this.repo.countActivityLogsToday(ACTIVITY_CATEGORY.AUTH, ACTIVITY_ACTION.LOGIN),
+      this.repo.getRecentLogsByCategory(ACTIVITY_CATEGORY.SECURITY, 5),
+      this.repo.getRecentLogsByCategory(ACTIVITY_CATEGORY.ROLE, 5),
+    ])
+
+    return {
+      lockedAccountsCount: lockedAccounts.length,
+      failedLoginsToday,
+      successfulLoginsToday,
+      recentSecurityEvents,
+      recentRoleEvents,
+    }
+  }
+
+  /**
+   * Gets all currently locked accounts
+   */
+  async getLockedAccounts(): Promise<LockedAccountItem[]> {
+    return this.repo.getLockedEmployees()
+  }
+
+  /**
+   * Unlocks an employee account and logs the action
+   */
+  async unlockAccount(empId: string, actorId: string, ipAddress?: string): Promise<void> {
+    const employee = await this.repo.findById(empId)
+    if (!employee) {
+      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "Authentication")
+    }
+
+    await this.repo.unlockEmployee(empId)
+
+    // Log the unlock action
+    await this.repo.logActivity({
+      empId,
+      category: ACTIVITY_CATEGORY.SECURITY,
+      actionType: ACTIVITY_ACTION.ACCOUNT_UNLOCKED,
+      ipAddress,
+      timestamp: new Date(),
+      details: JSON.stringify({
+        actorId,
+        message: "Account manually unlocked by administrator",
+      }),
+    })
   }
 }

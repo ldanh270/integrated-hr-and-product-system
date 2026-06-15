@@ -2,6 +2,7 @@ import { HttpStatusCode, RESPONSE_STATUS } from "@/configs/system/http.config.ts
 import { AUTH_ERROR_MESSAGES } from "@/constants/auth.constants.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import {
+  activityLogQuerySchema,
   changePasswordSchema,
   forgotPasswordSchema,
   loginSchema,
@@ -9,8 +10,10 @@ import {
   validateResetTokenSchema,
 } from "@/schemas/auth.schema.ts"
 import { IAuthService } from "@/types/auth.types.ts"
+import { CookieUtil } from "@/utils/cookie.util.ts"
 
 import { Request, Response } from "express"
+import { z } from "zod"
 
 /**
  * AuthController handles HTTP requests related to authentication
@@ -32,23 +35,27 @@ export class AuthController {
 
       // Delegate to service
       const result = await this.service.login(validatedData, req.ip)
+      const { accessToken, refreshToken, refreshExpiresAt, ...authData } = result
+
+      CookieUtil.setAccessToken(res, accessToken)
+      CookieUtil.setRefreshToken(res, refreshToken, refreshExpiresAt)
 
       // Return successful response
       res.status(HttpStatusCode.OK).json({
         status: RESPONSE_STATUS.SUCCESS,
-        data: result,
+        data: authData,
       })
     } catch (error: any) {
       // Handle validation errors (Zod) or business errors (AppError)
       const statusCode =
-        error.name === "ZodError"
+        error instanceof z.ZodError
           ? HttpStatusCode.BAD_REQUEST
           : error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
 
       res.status(statusCode).json({
         status: RESPONSE_STATUS.ERROR,
         message: error.message || "Login failed",
-        errors: error.errors, // Include Zod validation details if present
+        errors: error instanceof z.ZodError ? error.issues : undefined,
       })
     }
   }
@@ -67,7 +74,10 @@ export class AuthController {
       }
 
       // Delegate to service
-      const result = await this.service.logout(req.user.empId, req.ip)
+      const rawRefreshToken = req.cookies?.["refresh_token"]
+      const result = await this.service.logout(req.user.empId, rawRefreshToken, req.ip)
+
+      CookieUtil.clearTokens(res)
 
       // Return successful response
       res.status(HttpStatusCode.OK).json({
@@ -78,6 +88,63 @@ export class AuthController {
       res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
         status: RESPONSE_STATUS.ERROR,
         message: error.message || "Logout failed",
+      })
+    }
+  }
+
+  /**
+   * Refreshes the access token using a refresh token from cookies
+   */
+  refresh = async (req: Request, res: Response) => {
+    try {
+      const rawRefreshToken = req.cookies["refresh_token"]
+      if (!rawRefreshToken) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          status: RESPONSE_STATUS.ERROR,
+          message: "No refresh token provided",
+        })
+      }
+
+      const result = await this.service.refresh(rawRefreshToken)
+      const { accessToken, refreshToken, refreshExpiresAt, ...authData } = result
+
+      CookieUtil.setAccessToken(res, accessToken)
+      CookieUtil.setRefreshToken(res, refreshToken, refreshExpiresAt)
+
+      res.status(HttpStatusCode.OK).json({
+        status: RESPONSE_STATUS.SUCCESS,
+        data: authData,
+      })
+    } catch (error: any) {
+      res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
+        status: RESPONSE_STATUS.ERROR,
+        message: error.message || "Refresh failed",
+      })
+    }
+  }
+
+  /**
+   * Gets the currently authenticated user's information
+   */
+  getMe = async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          status: RESPONSE_STATUS.ERROR,
+          message: AUTH_ERROR_MESSAGES.UNAUTHORIZED,
+        })
+      }
+
+      const result = await this.service.getMe(req.user.empId)
+
+      res.status(HttpStatusCode.OK).json({
+        status: RESPONSE_STATUS.SUCCESS,
+        data: result,
+      })
+    } catch (error: any) {
+      res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
+        status: RESPONSE_STATUS.ERROR,
+        message: error.message || "Failed to get user details",
       })
     }
   }
@@ -100,14 +167,14 @@ export class AuthController {
       })
     } catch (error: any) {
       const statusCode =
-        error.name === "ZodError"
+        error instanceof z.ZodError
           ? HttpStatusCode.BAD_REQUEST
           : error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
 
       res.status(statusCode).json({
         status: RESPONSE_STATUS.ERROR,
-        message: error.message || "Request failed",
-        errors: error.errors,
+        message: error.message || "Action failed",
+        errors: error instanceof z.ZodError ? error.issues : undefined,
       })
     }
   }
@@ -133,14 +200,14 @@ export class AuthController {
       })
     } catch (error: any) {
       const statusCode =
-        error.name === "ZodError"
+        error instanceof z.ZodError
           ? HttpStatusCode.BAD_REQUEST
           : error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
 
       res.status(statusCode).json({
         status: RESPONSE_STATUS.ERROR,
-        message: error.message || "Password change failed",
-        errors: error.errors,
+        message: error.message || "Action failed",
+        errors: error instanceof z.ZodError ? error.issues : undefined,
       })
     }
   }
@@ -166,14 +233,14 @@ export class AuthController {
       })
     } catch (error: any) {
       const statusCode =
-        error.name === "ZodError"
+        error instanceof z.ZodError
           ? HttpStatusCode.BAD_REQUEST
           : error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
 
       res.status(statusCode).json({
         status: RESPONSE_STATUS.ERROR,
-        message: error.message || "Token validation failed",
-        errors: error.errors,
+        message: error.message || "Action failed",
+        errors: error instanceof z.ZodError ? error.issues : undefined,
       })
     }
   }
@@ -192,14 +259,66 @@ export class AuthController {
       })
     } catch (error: any) {
       const statusCode =
-        error.name === "ZodError"
+        error instanceof z.ZodError
           ? HttpStatusCode.BAD_REQUEST
           : error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
 
       res.status(statusCode).json({
         status: RESPONSE_STATUS.ERROR,
-        message: error.message || "Password reset failed",
-        errors: error.errors,
+        message: error.message || "Action failed",
+        errors: error instanceof z.ZodError ? error.issues : undefined,
+      })
+    }
+  }
+
+  /**
+   * Lists activity logs with filters
+   */
+  listActivityLogs = async (req: AuthRequest, res: Response) => {
+    try {
+      const validatedQuery = activityLogQuerySchema.parse(req.query)
+      const result = await this.service.getActivityLogs(validatedQuery)
+
+      res.status(HttpStatusCode.OK).json({
+        status: RESPONSE_STATUS.SUCCESS,
+        data: result,
+      })
+    } catch (error: any) {
+      const statusCode =
+        error instanceof z.ZodError
+          ? HttpStatusCode.BAD_REQUEST
+          : error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
+
+      res.status(statusCode).json({
+        status: RESPONSE_STATUS.ERROR,
+        message: error.message || "Failed to fetch activity logs",
+        errors: error instanceof z.ZodError ? error.issues : undefined,
+      })
+    }
+  }
+
+  /**
+   * Gets a single activity log detail
+   */
+  getActivityLogDetail = async (req: AuthRequest, res: Response) => {
+    try {
+      const result = await this.service.getActivityLogDetail(String(req.params.id))
+
+      if (!result) {
+        return res.status(HttpStatusCode.NOT_FOUND).json({
+          status: RESPONSE_STATUS.ERROR,
+          message: "Activity log not found",
+        })
+      }
+
+      res.status(HttpStatusCode.OK).json({
+        status: RESPONSE_STATUS.SUCCESS,
+        data: result,
+      })
+    } catch (error: any) {
+      res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
+        status: RESPONSE_STATUS.ERROR,
+        message: error.message || "Failed to fetch activity log detail",
       })
     }
   }

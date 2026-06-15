@@ -1,4 +1,6 @@
 import { API_ENDPOINTS } from "@/config/api.config"
+import { PAYROLL_QUERY_KEYS } from "@/config/entities/payroll.config"
+import { PAYROLL_MESSAGES } from "@/config/messages/payroll.message"
 import apiClient from "@/lib/api-client"
 import {
   approvePayroll,
@@ -14,7 +16,7 @@ import { toast } from "sonner"
 
 export function usePayslip(payrollId: string | null, employeeId: string | null) {
   return useQuery({
-    queryKey: ["payslip", payrollId, employeeId],
+    queryKey: [...PAYROLL_QUERY_KEYS.PAYSLIP, payrollId, employeeId],
     queryFn: async () => {
       const response = await apiClient.get(
         `${API_ENDPOINTS.PAYROLL.BASE}/${payrollId}/payslips/${employeeId}`,
@@ -27,14 +29,14 @@ export function usePayslip(payrollId: string | null, employeeId: string | null) 
 
 export function usePayrolls(params?: { status?: string; year?: number }) {
   return useQuery({
-    queryKey: ["payrolls", params],
+    queryKey: [...PAYROLL_QUERY_KEYS.PAYROLLS, params],
     queryFn: () => getPayrolls(params),
   })
 }
 
 export function usePayrollDetails(id: string) {
   return useQuery({
-    queryKey: ["payrollDetails", id],
+    queryKey: [...PAYROLL_QUERY_KEYS.PAYROLL_DETAILS, id],
     queryFn: () => getPayrollDetails(id),
     enabled: !!id,
   })
@@ -45,12 +47,12 @@ export function useGeneratePayroll() {
   return useMutation({
     mutationFn: (data: { month: number; year: number; name?: string }) => generatePayroll(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payrolls"] })
-      toast.success("Payroll generated successfully.")
+      toast.success(PAYROLL_MESSAGES.SUCCESS.GENERATE_PAYROLL)
+      return queryClient.invalidateQueries({ queryKey: PAYROLL_QUERY_KEYS.PAYROLLS })
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { message?: string } } }
-      toast.error(error?.response?.data?.message || "Failed to generate payroll")
+      toast.error(error.response?.data?.message || PAYROLL_MESSAGES.ERRORS.GENERATE_PAYROLL)
     },
   })
 }
@@ -60,12 +62,12 @@ export function useApprovePayroll() {
   return useMutation({
     mutationFn: approvePayroll,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payrolls"] })
-      toast.success("Payroll approved successfully.")
+      toast.success(PAYROLL_MESSAGES.SUCCESS.APPROVE_PAYROLL)
+      return queryClient.invalidateQueries({ queryKey: PAYROLL_QUERY_KEYS.PAYROLLS })
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { message?: string } } }
-      toast.error(error?.response?.data?.message || "Failed to approve payroll")
+      toast.error(error.response?.data?.message || PAYROLL_MESSAGES.ERRORS.APPROVE_PAYROLL)
     },
   })
 }
@@ -75,19 +77,19 @@ export function useRejectPayroll() {
   return useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) => rejectPayroll(id, reason),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payrolls"] })
-      toast.success("Payroll rejected.")
+      toast.success(PAYROLL_MESSAGES.SUCCESS.REJECT_PAYROLL)
+      return queryClient.invalidateQueries({ queryKey: PAYROLL_QUERY_KEYS.PAYROLLS })
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { message?: string } } }
-      toast.error(error?.response?.data?.message || "Failed to reject payroll")
+      toast.error(error.response?.data?.message || PAYROLL_MESSAGES.ERRORS.REJECT_PAYROLL)
     },
   })
 }
 
 export function useEmployeePayslipsHistory(employeeId: string | null) {
   return useQuery({
-    queryKey: ["payslips-history", employeeId],
+    queryKey: [...PAYROLL_QUERY_KEYS.PAYSLIPS_HISTORY, employeeId],
     queryFn: async () => {
       const response = await apiClient.get(
         `${API_ENDPOINTS.PAYROLL.BASE}/employee/${employeeId}/payslips`,

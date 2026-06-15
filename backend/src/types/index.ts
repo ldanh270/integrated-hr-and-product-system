@@ -3,3 +3,6 @@ export * from "./employee.types.ts"
 export * from "./repository.interface.ts"
 export * from "./project.types.ts"
 export * from "./task.types.ts"
+export * from "./task-category.types.ts"
+export * from "./spent-time.types.ts"
+

@@ -1,4 +1,5 @@
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { AuthenticatedRequest } from "@/types/auth.types.ts"
 import { IPayrollService } from "@/types/payroll.types.ts"
 
 import { NextFunction, Request, Response } from "express"
@@ -14,6 +15,14 @@ export class PayrollController {
     this.getMyPayslips = this.getMyPayslips.bind(this)
   }
 
+  /**
+   * Initialize a new payroll for a specific month and year.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async generatePayroll(req: Request, res: Response, next: NextFunction) {
     try {
       const { month, year, name } = req.body
@@ -24,6 +33,14 @@ export class PayrollController {
     }
   }
 
+  /**
+   * Process business logic for getPayroll.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async getPayroll(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
@@ -34,6 +51,14 @@ export class PayrollController {
     }
   }
 
+  /**
+   * Process business logic for listPayrolls.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async listPayrolls(req: Request, res: Response, next: NextFunction) {
     try {
       const { status, year } = req.query
@@ -47,10 +72,18 @@ export class PayrollController {
     }
   }
 
+  /**
+   * Approve a payroll, changing its status to approved.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async approvePayroll(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
-      const approverId = (req as any).user?.empId
+      const approverId = (req as AuthenticatedRequest).user.empId
       const payroll = await this.service.approvePayroll(id, approverId)
       res.status(HttpStatusCode.OK).json({ data: payroll })
     } catch (error) {
@@ -58,10 +91,18 @@ export class PayrollController {
     }
   }
 
+  /**
+   * Reject a payroll and record the rejection reason.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async rejectPayroll(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string
-      const approverId = (req as any).user?.empId
+      const approverId = (req as AuthenticatedRequest).user.empId
       const { reason } = req.body
       const payroll = await this.service.rejectPayroll(id, approverId, reason)
       res.status(HttpStatusCode.OK).json({ data: payroll })
@@ -70,6 +111,14 @@ export class PayrollController {
     }
   }
 
+  /**
+   * Handle the request to retrieve detailed payslip information for an employee.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async getPayslip(req: Request, res: Response, next: NextFunction) {
     try {
       const payrollId = req.params.id as string
@@ -81,18 +130,34 @@ export class PayrollController {
     }
   }
 
+  /**
+   * Process business logic for getMyPayslips.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async getMyPayslips(req: Request, res: Response, next: NextFunction) {
     try {
-      const employeeId = (req as any).user?.empId
+      const employeeId = (req as AuthenticatedRequest).user.empId
       const payslips = await this.service.getMyPayslips(employeeId)
       res.status(HttpStatusCode.OK).json({ data: payslips })
     } catch (error) {
       next(error)
     }
   }
+  /**
+   * Handle the request to retrieve the payslip history for an employee.
+   *
+   * @param req - The req parameter
+   * @param res - The res parameter
+   * @param next - The next parameter
+   * @returns Returns nothing (void)
+   */
   async getEmployeePayslips(req: Request, res: Response, next: NextFunction) {
     try {
-      const { empId: employeeId } = req.body
+      const employeeId = req.params.empId as string
       // Just reuse getMyPayslips logic since it fetches payslips for a specific employeeId
       const payslips = await this.service.getMyPayslips(employeeId)
       res.status(HttpStatusCode.OK).json({ data: payslips })

@@ -1,4 +1,6 @@
 import { EMPLOYEE_STATUS, ROLE } from "@/configs/entities/employee.config.ts"
+import { ACTIVITY_ACTION, ACTIVITY_CATEGORY } from "@/configs/auth/auth.config.ts"
+import { DB_ERROR_CODES } from "@/configs/system/db.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { prisma } from "@/libs/database.ts"
 import {
@@ -11,36 +13,38 @@ import {
   PaginatedEmployeesDto,
   UpdateEmployeeDto,
 } from "@/types"
-import { handleDbUniqueError } from "@/utils/db-error.util.ts"
+import { IAuthRepository } from "@/types/auth.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
 
 /**
- * Service class implementing the application business logic for Employee management.
- * Relies on the database abstraction layer (IEmployeeRepository) using Dependency Injection.
+ * Service for managing employee-related operations.
  */
 export class EmployeeService implements IEmployeeService {
   /**
-   * Initializes the service with the employee repository.
-   * Constructor injection guarantees interface-based coupling.
-   * @param repository The abstraction of database query/actions for Employee.
+   * Creates a new EmployeeService instance.
+   * @param repository - The employee repository implementation.
+   * @param authRepository - The authentication repository for audit logging.
    */
-  constructor(private repository: IEmployeeRepository) {}
+  constructor(
+    private repository: IEmployeeRepository,
+    private authRepository?: IAuthRepository,
+  ) {}
 
   /**
-   * Fetches page-segmented employees matching criteria.
-   * @param query The page size, search criteria, sorting columns, etc.
-   * @returns Paginated results containing metadata and employee list.
+   * Lists employees with pagination and filtering based on the provided query.
+   * @param query - The list query parameters.
+   * @returns A paginated result of employees.
    */
   async listEmployees(query: EmployeeListQuery): Promise<PaginatedEmployeesDto> {
     return this.repository.listEmployeesPaginated(query)
   }
 
   /**
-   * Retrieves an employee by their ID. Throws an application error if not found.
-   * @param id Employee UUID string.
-   * @returns The Employee details if found.
-   * @throws AppError 404 if the employee does not exist.
+   * Fetches a single employee by their ID.
+   * @param id - The employee ID.
+   * @returns The employee record or null if not found.
+   * @throws {AppError} If the employee is not found.
    */
   async getEmployee(id: string): Promise<Employee | null> {
     const employee = await this.repository.findById(id)
@@ -51,12 +55,10 @@ export class EmployeeService implements IEmployeeService {
   }
 
   /**
-   * Creates a new employee after hashing the provided password.
-   * Catches unique constraint errors (like duplicate emails/usernames) and maps to structured HTTP conflicts.
-   * @param data Details to create the employee record.
-   * @returns The newly created employee domain instance.
-   * @throws AppError 400 if password is missing.
-   * @throws AppError 490 (CONFLICT) if email/username already exists.
+   * Creates a new employee record and hashes their password.
+   * @param data - The employee data including a plaintext password.
+   * @returns The created employee record.
+   * @throws {AppError} If password is missing or if a unique constraint is violated.
    */
   async createEmployee(data: CreateEmployeeDto & { password?: string }): Promise<Employee> {
     if (!data.password) {
@@ -67,10 +69,9 @@ export class EmployeeService implements IEmployeeService {
       )
     }
 
-    // Hash the password asynchronously using bcrypt
     const passwordHash = await HashUtil.hash(data.password)
 
-    // Exclude raw password from the DTO payload sent to the repository layer
+    // Remove password from data before passing to repo
     const { password, ...repoData } = data
 
     try {
@@ -79,47 +80,85 @@ export class EmployeeService implements IEmployeeService {
         passwordHash,
       })
     } catch (error: any) {
-      this.handleDbError(error)
+      if (DB_ERROR_CODES.UNIQUE_CONSTRAINT.includes(error.code)) {
+        throw new AppError(
+          "Username, email, phone, or national ID already exists",
+          HttpStatusCode.CONFLICT,
+          "EmployeeService",
+        )
+      }
+      throw error
     }
   }
 
   /**
-   * Partially updates employee info. Validates the existence of the employee beforehand.
-   * @param id Employee ID string.
-   * @param data Fields to update.
-   * @returns The updated employee entity, or null.
+   * Updates an existing employee's information.
+   * @param id - The employee ID.
+   * @param data - The updated employee data.
+   * @param actorId - The ID of the employee performing the update.
+   * @param ipAddress - The IP address from which the update is performed.
+   * @returns The updated employee record or null.
    */
-  async updateEmployee(id: string, data: UpdateEmployeeDto): Promise<Employee | null> {
-    // Check if employee exists first; throws 404 otherwise
-    await this.getEmployee(id)
+  async updateEmployee(
+    id: string,
+    data: UpdateEmployeeDto,
+    actorId?: string,
+    ipAddress?: string,
+  ): Promise<Employee | null> {
+    // Check if exists and get current data for comparison
+    const currentEmployee = await this.getEmployee(id)
+    if (!currentEmployee) return null
 
-    const { password, ...repoData } = data
-    let passwordHash: string | undefined = undefined
-
-    if (password) {
-      passwordHash = await HashUtil.hash(password)
+    let passwordHash: string | undefined
+    if (data.password) {
+      passwordHash = await HashUtil.hash(data.password)
     }
 
-    try {
-      const updated = await this.repository.updateEmployee(id, {
-        ...repoData,
-        ...(passwordHash ? { passwordHash } : {}),
+    // Remove password from data
+    const { password, ...updateData } = data
+
+    const updated = await this.repository.updateEmployee(id, {
+      ...updateData,
+      passwordHash,
+    })
+
+    // Audit Role Change
+    if (updated && this.authRepository && data.role && data.role !== currentEmployee.role) {
+      const isRevoked = this.isRoleDowngrade(currentEmployee.role, data.role)
+
+      await this.authRepository.logActivity({
+        empId: id,
+        category: ACTIVITY_CATEGORY.ROLE,
+        actionType: isRevoked ? ACTIVITY_ACTION.ROLE_REVOKED : ACTIVITY_ACTION.ROLE_ASSIGNED,
+        ipAddress,
+        timestamp: new Date(),
+        details: JSON.stringify({
+          actorId,
+          oldRole: currentEmployee.role,
+          newRole: data.role,
+          message: isRevoked ? "Role downgraded/changed" : "Role upgraded/assigned",
+        }),
       })
-      return updated
-    } catch (error: any) {
-      this.handleDbError(error)
     }
+
+    return updated
   }
 
   /**
-   * Updates an employee's status field (e.g. active, inactive).
-   * Validates existence prior to updating.
-   * @param id Employee ID.
-   * @param status Target status type.
-   * @returns The updated employee entity, or null.
+   * Updates an employee's status (e.g., active, inactive).
+   * @param id - The employee ID.
+   * @param status - The new status.
+   * @param actorId - The ID of the employee performing the update.
+   * @param ipAddress - The IP address from which the update is performed.
+   * @returns The updated employee record or null.
    */
-  async updateStatus(id: string, status: EmployeeStatus): Promise<Employee | null> {
-    // Validate employee existence; throws 404 if absent
+  async updateStatus(
+    id: string,
+    status: EmployeeStatus,
+    actorId?: string,
+    ipAddress?: string,
+  ): Promise<Employee | null> {
+    // Check if exists
     await this.getEmployee(id)
 
     const updated = await this.repository.updateStatus(id, status)
@@ -127,12 +166,12 @@ export class EmployeeService implements IEmployeeService {
   }
 
   /**
-   * Soft deletes an employee by setting status to terminated.
-   * @param id The employee ID.
-   * @returns A boolean signaling execution success.
+   * Deletes an employee from the system.
+   * @param id - The employee ID.
+   * @returns True if deletion was successful.
    */
   async deleteEmployee(id: string): Promise<boolean> {
-    // Verify existence of record; throws 404 if not found
+    // Check if exists
     await this.getEmployee(id)
 
     return this.repository.deleteEmployee(id)
@@ -159,17 +198,15 @@ export class EmployeeService implements IEmployeeService {
   /**
    * Helper to handle and format database unique constraint errors.
    */
-  private handleDbError(error: any): never {
-    handleDbUniqueError(
-      error,
-      "EmployeeService",
-      {
-        username: "Username",
-        email: "Email",
-        phone: "Phone number",
-        nationalId: "National ID",
-      },
-      "Username, email, phone, or national ID already exists",
-    )
+  private isRoleDowngrade(oldRole: string, newRole: string): boolean {
+    const roleHierarchy: Record<string, number> = {
+      admin: 100,
+      general_manager: 80,
+      hr_manager: 60,
+      team_leader: 40,
+      employee: 20,
+    }
+
+    return (roleHierarchy[newRole] || 0) < (roleHierarchy[oldRole] || 0)
   }
 }

@@ -46,4 +46,64 @@ export const TASK_PRIORITIES = ["low", "medium", "high", "urgent"] as const
  * Task status enumeration
  * Represents the workflow states of a task
  */
-export const TASK_STATUSES = ["todo", "in_progress", "in_review", "done", "cancelled"] as const
+export const TASK_STATUSES = ["todo", "in_progress", "in_review", "done", "cancelled", "reopened"] as const
+
+/**
+ * Spent time activity types
+ */
+export const SPENT_TIME_ACTIVITY = {
+  DEVELOP: "develop",
+  DESIGN: "design",
+  TEST: "test",
+  MANAGE: "manage",
+  OTHER: "other",
+} as const
+
+export const SPENT_TIME_ACTIVITIES = [
+  SPENT_TIME_ACTIVITY.DEVELOP,
+  SPENT_TIME_ACTIVITY.DESIGN,
+  SPENT_TIME_ACTIVITY.TEST,
+  SPENT_TIME_ACTIVITY.MANAGE,
+  SPENT_TIME_ACTIVITY.OTHER,
+] as const
+
+/**
+ * Spent time work time types
+ */
+export const SPENT_TIME_WORK_TIME_TYPE = {
+  WORKING_DAY: "working_day",
+  OVERTIME: "overtime",
+} as const
+
+export const SPENT_TIME_WORK_TIME_TYPES = [
+  SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY,
+  SPENT_TIME_WORK_TIME_TYPE.OVERTIME,
+] as const
+
+/**
+ * Task tracker enumeration
+ */
+export const TASK_TRACKER = {
+  FEATURE: "feature",
+  BUG: "bug",
+  SUPPORT: "support",
+  TASK: "task",
+  MEETING: "meeting",
+  TEST: "test",
+  SUBTASK: "subtask",
+  MANAGEMENT: "management",
+} as const
+
+/**
+ * Array of all valid task trackers
+ */
+export const TASK_TRACKERS = [
+  TASK_TRACKER.FEATURE,
+  TASK_TRACKER.BUG,
+  TASK_TRACKER.SUPPORT,
+  TASK_TRACKER.TASK,
+  TASK_TRACKER.MEETING,
+  TASK_TRACKER.TEST,
+  TASK_TRACKER.SUBTASK,
+  TASK_TRACKER.MANAGEMENT,
+] as const

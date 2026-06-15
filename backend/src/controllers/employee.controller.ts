@@ -1,5 +1,7 @@
 import { ErrorCode } from "@/configs/system/error-code.config.ts"
+import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import {
   CreateEmployeeSchemaType,
   ListEmployeesQuerySchemaType,
@@ -9,7 +11,7 @@ import {
 import { ApiResponse, Employee, IEmployeeService, PaginatedEmployeesDto } from "@/types"
 import { AppError } from "@/utils/error.util.ts"
 
-import { Request, Response } from "express"
+import { Response } from "express"
 
 /**
  * Controller class to handle all HTTP request adapters for the Employee resource.
@@ -30,7 +32,7 @@ export class EmployeeController {
    * @param req Express Request object containing query filters (page, limit, search, status, etc.)
    * @param res Express Response object returning paginated data
    */
-  list = async (req: Request, res: Response<ApiResponse<PaginatedEmployeesDto>>) => {
+  list = async (req: AuthRequest, res: Response<ApiResponse<PaginatedEmployeesDto>>) => {
     const query = req.query as unknown as ListEmployeesQuerySchemaType
     const paginatedEmployees = await this.service.listEmployees(query)
     res.status(HttpStatusCode.OK).json({ data: paginatedEmployees, error: null })
@@ -54,7 +56,7 @@ export class EmployeeController {
    * @param req Express Request object containing the employee ID param
    * @param res Express Response object returning the employee domain object
    */
-  getOne = async (req: Request, res: Response<ApiResponse<Employee>>) => {
+  getOne = async (req: AuthRequest, res: Response<ApiResponse<Employee>>) => {
     const employee = await this.service.getEmployee(String(req.params.id))
     if (!employee) {
       return res.status(HttpStatusCode.NOT_FOUND).json({
@@ -72,7 +74,7 @@ export class EmployeeController {
    * @param req Express Request object containing body details mapping to CreateEmployeeSchemaType
    * @param res Express Response object returning the newly created Employee record
    */
-  create = async (req: Request, res: Response<ApiResponse<Employee>>) => {
+  create = async (req: AuthRequest, res: Response<ApiResponse<Employee>>) => {
     const data = req.body as CreateEmployeeSchemaType
     const employee = await this.service.createEmployee(data)
     res.status(HttpStatusCode.CREATED).json({ data: employee, error: null })
@@ -85,9 +87,10 @@ export class EmployeeController {
    * @param req Express Request object containing ID param and partial details in body
    * @param res Express Response object returning the updated Employee record
    */
-  update = async (req: Request, res: Response<ApiResponse<Employee>>) => {
+  update = async (req: AuthRequest, res: Response<ApiResponse<Employee>>) => {
     const data = req.body as UpdateEmployeeSchemaType
-    const employee = await this.service.updateEmployee(String(req.params.id), data)
+    const actorId = req.user?.empId
+    const employee = await this.service.updateEmployee(String(req.params.id), data, actorId, req.ip)
     if (!employee) {
       return res.status(HttpStatusCode.NOT_FOUND).json({
         data: null,
@@ -104,9 +107,10 @@ export class EmployeeController {
    * @param req Express Request object containing status in body
    * @param res Express Response object returning the updated Employee record
    */
-  updateStatus = async (req: Request, res: Response<ApiResponse<Employee>>) => {
+  updateStatus = async (req: AuthRequest, res: Response<ApiResponse<Employee>>) => {
     const { status } = req.body as UpdateEmployeeStatusSchemaType
-    const employee = await this.service.updateStatus(String(req.params.id), status)
+    const actorId = req.user?.empId
+    const employee = await this.service.updateStatus(String(req.params.id), status, actorId, req.ip)
     if (!employee) {
       return res.status(HttpStatusCode.NOT_FOUND).json({
         data: null,
@@ -123,13 +127,13 @@ export class EmployeeController {
    * @param req Express Request object containing the employee ID param
    * @param res Express Response object returning success indication
    */
-  delete = async (req: Request, res: Response<ApiResponse<boolean>>) => {
+  delete = async (req: AuthRequest, res: Response<ApiResponse<boolean>>) => {
     const success = await this.service.deleteEmployee(String(req.params.id))
     if (!success) {
       throw new AppError(
         "Employee not found",
         HttpStatusCode.NOT_FOUND,
-        "Controller",
+        ErrorLayer.CONTROLLER,
         ErrorCode.NOT_FOUND,
       )
     }
