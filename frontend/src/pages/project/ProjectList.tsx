@@ -57,7 +57,7 @@ const extractErrorMessage = (err: unknown): string => {
           error?: {
             message?: string;
             code?: string;
-            meta?: Array<{ field: string; message: string }> | any;
+            meta?: Array<{ field?: string; message: string }>;
           };
         };
       };
@@ -68,7 +68,7 @@ const extractErrorMessage = (err: unknown): string => {
         const errorObj = responseData.error;
         if (errorObj.code === "VALIDATION_ERROR" && Array.isArray(errorObj.meta)) {
           return errorObj.meta
-            .map((m: any) => {
+            .map((m) => {
               const fieldName = m.field ? `${m.field}: ` : "";
               return `${fieldName}${m.message}`;
             })

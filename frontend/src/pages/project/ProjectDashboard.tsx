@@ -488,7 +488,7 @@ export default function ProjectDashboard() {
                 <PageCard
                   key={proj.id}
                   className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 border border-border/85 flex flex-col justify-between p-5 min-h-[140px] space-y-4 hover:border-primary/50 cursor-pointer group"
-                  onClick={() => navigate(`/project/${proj.id}`)}
+                  onClick={() => { navigate(`/project/${proj.id}`); }}
                 >
                   <div className="space-y-2">
                     <div className="flex items-start justify-between gap-3">
@@ -515,7 +515,7 @@ export default function ProjectDashboard() {
                       {canCreateInProj && (
                         <Link
                           to={`/project/${proj.id}?createTask=true`}
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={(e) => { e.stopPropagation(); }}
                           className="rounded-full bg-primary/10 hover:bg-primary/20 text-primary px-2.5 py-1 font-bold text-[10px] flex items-center gap-1 transition-all duration-200 cursor-pointer"
                         >
                           <Plus className="size-3" />
