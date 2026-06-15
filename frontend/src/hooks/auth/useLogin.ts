@@ -49,7 +49,7 @@ export const useLogin = () => {
 
     try {
       await forgotPassword({ email: forgotEmail })
-      toast.success("Yêu cầu reset mật khẩu đã được gửi cho admin duyệt.")
+      toast.success("Liên kết đặt lại mật khẩu đã được gửi đến email của bạn.")
       setShowForgotModal(false)
       setForgotEmail("")
     } catch (error) {
