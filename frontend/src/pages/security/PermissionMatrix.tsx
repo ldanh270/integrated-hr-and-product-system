@@ -152,7 +152,7 @@ export default function PermissionMatrix() {
             key={r}
             className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-primary/5 text-primary border border-primary/10"
           >
-            {ROLE_LABELS[r] || r}
+            {Object.entries(ROLE_LABELS).find(([k]) => k === r)?.[1] || r}
           </span>
         ))}
       </div>

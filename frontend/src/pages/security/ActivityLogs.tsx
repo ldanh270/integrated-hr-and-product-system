@@ -214,7 +214,7 @@ export default function ActivityLogs() {
                         </span>
                         <StatusPill
                           label={log.actionType}
-                          variant={ACTION_VARIANT_MAP[log.actionType] || "neutral"}
+                          variant={Object.entries(ACTION_VARIANT_MAP).find(([k]) => k === log.actionType)?.[1] ?? "neutral"}
                           className="scale-90 origin-left"
                         />
                       </div>

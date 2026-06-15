@@ -14,7 +14,8 @@ export function useActivityLogsMaster() {
 
   const categoryParam = searchParams.get("category") || undefined
   const actionTypeParam = searchParams.get("actionType") || undefined
-  const pageParam = searchParams.get("page") ? parseInt(searchParams.get("page")!, 10) : 1
+  const pageRaw = searchParams.get("page")
+  const pageParam = pageRaw ? parseInt(pageRaw, 10) : 1
 
   const [query, setQuery] = useState<ActivityLogQuery>({
     page: pageParam,

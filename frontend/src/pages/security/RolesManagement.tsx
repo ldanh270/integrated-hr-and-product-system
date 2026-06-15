@@ -124,7 +124,7 @@ export default function RolesManagement() {
       {/* Grid layout for Roles summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {ROLE_CARDS.map((roleCard, index) => {
-          const queryResult = roleQueries.at(index)!
+          const queryResult = roleQueries.at(index) || roleQueries[0]
           const count = queryResult.data?.meta.total ?? 0
           const isLoadingCount = queryResult.isLoading
           const isErrorCount = queryResult.isError

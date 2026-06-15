@@ -217,7 +217,7 @@ export default function SecurityDashboard() {
                   label={ACTION_LABELS[event.actionType] || event.actionType}
                   subtitle={`${event.employeeName || "Hệ thống"} • ${event.ipAddress || "Không rõ IP"}`}
                   statusLabel={event.actionType}
-                  statusVariant={ACTION_VARIANTS[event.actionType] ?? "neutral"}
+                  statusVariant={Object.entries(ACTION_VARIANTS).find(([k]) => k === event.actionType)?.[1] ?? "neutral"}
                   timestamp={new Date(event.createdAt).toLocaleTimeString("vi-VN", {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -262,7 +262,7 @@ export default function SecurityDashboard() {
                     }
                   })()}`}
                   statusLabel={event.actionType}
-                  statusVariant={ACTION_VARIANTS[event.actionType] ?? "neutral"}
+                  statusVariant={Object.entries(ACTION_VARIANTS).find(([k]) => k === event.actionType)?.[1] ?? "neutral"}
                   timestamp={new Date(event.createdAt).toLocaleDateString("vi-VN")}
                   colorClass={
                     event.actionType === "role_assigned"

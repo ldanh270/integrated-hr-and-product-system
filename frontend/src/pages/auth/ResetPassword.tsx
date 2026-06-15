@@ -128,7 +128,7 @@ export default function ResetPassword() {
               Liên kết đặt lại mật khẩu đã hết hạn hoặc không tồn tại. Vui lòng yêu cầu lại.
             </p>
           </div>
-          <Button onClick={() => navigate(ROUTES.AUTH.LOGIN)} className="w-full h-12 rounded-full">
+          <Button onClick={() => { navigate(ROUTES.AUTH.LOGIN) }} className="w-full h-12 rounded-full">
             Quay lại đăng nhập
           </Button>
         </div>
@@ -187,7 +187,7 @@ export default function ResetPassword() {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => { setShowPassword(!showPassword) }}
                   className="absolute right-4 text-muted-foreground hover:text-foreground focus:outline-none"
                   tabIndex={-1}
                 >
@@ -219,7 +219,7 @@ export default function ResetPassword() {
             <Button
               type="button"
               variant="ghost"
-              onClick={() => navigate(ROUTES.AUTH.LOGIN)}
+              onClick={() => { navigate(ROUTES.AUTH.LOGIN) }}
               className="w-full h-12 text-sm font-semibold flex items-center justify-center gap-2 rounded-full"
             >
               Quay lại đăng nhập
