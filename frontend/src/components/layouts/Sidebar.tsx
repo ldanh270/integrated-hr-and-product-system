@@ -11,7 +11,6 @@ interface NavItem {
   path: string
   icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>
   roles?: string[]
-  subItems?: { name: string; path: string }[]
 }
 
 interface SidebarProps {
@@ -53,17 +52,15 @@ export default function Sidebar({ className, isMobile, onNavClick }: SidebarProp
       {/* Sidebar Content (Navigation) */}
       <nav className="flex-1 space-y-1 px-3 py-6 overflow-y-auto">
         {navItems.map((item) => {
-          // Improved active matching logic taking query params into account
-          const searchParams = new URLSearchParams(location.search)
-          const tab = searchParams.get("tab")
-
-          const isActive = item.path.includes("?tab=")
-            ? location.pathname + location.search === item.path
-            : location.pathname === item.path && !tab
-
+          const dashboardPath = activeSubsystemConfig?.sidebarItems[0]?.path
+          const isActive =
+            location.pathname === item.path ||
+            (item.path !== dashboardPath &&
+              location.pathname.startsWith(item.path) &&
+              item.path !== activeSubsystemConfig?.routePrefix)
           const Icon = item.icon
 
-          const linkContent = (
+          return (
             <Link
               key={item.path}
               to={item.path}
@@ -71,8 +68,8 @@ export default function Sidebar({ className, isMobile, onNavClick }: SidebarProp
               onClick={onNavClick}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150 ${
                 isActive
-                  ? "bg-white/20 text-white shadow-sm"
-                  : "text-white/70 hover:bg-white/10 hover:text-white"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
               }`}
             >
               <Icon size={18} strokeWidth={isActive ? 2 : 1.5} className="shrink-0" />
@@ -81,34 +78,6 @@ export default function Sidebar({ className, isMobile, onNavClick }: SidebarProp
               )}
             </Link>
           )
-
-          if (item.subItems && item.subItems.length > 0) {
-            return (
-              <div key={item.path} className="relative group w-full">
-                {linkContent}
-                <div className="absolute left-[calc(100%+8px)] top-0 w-56 bg-white rounded-xl shadow-xl border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex flex-col p-2 translate-x-2 group-hover:translate-x-0">
-                  {item.subItems.map((subItem) => {
-                    const isSubActive = location.pathname + location.search === subItem.path
-                    return (
-                      <Link
-                        key={subItem.path}
-                        to={subItem.path}
-                        className={`px-3 py-2.5 text-[14px] font-medium rounded-lg transition-colors ${
-                          isSubActive
-                            ? "bg-indigo-50 text-indigo-700"
-                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                        }`}
-                      >
-                        {subItem.name}
-                      </Link>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          }
-
-          return linkContent
         })}
       </nav>
 
