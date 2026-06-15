@@ -2,12 +2,22 @@ import {
   IApplicationStatus,
   IApplicationType,
   IAttendanceStatus,
+  IHolidayType,
   ILeaveType,
   IRegimeType,
 } from "@/configs/entities/attendance.config.ts"
 
+import type { HolidayCalendar } from "@prisma/client"
+
 // Re-export for consumers that import from this module
-export type { IApplicationStatus, IApplicationType, IAttendanceStatus, ILeaveType, IRegimeType }
+export type {
+  IApplicationStatus,
+  IApplicationType,
+  IAttendanceStatus,
+  IHolidayType,
+  ILeaveType,
+  IRegimeType,
+}
 
 export interface IGpsScanDTO {
   lat: number
@@ -111,6 +121,18 @@ export interface IListApplicationsQueryDTO {
   endDate?: string
 }
 
+export interface IListHolidaysQueryDTO {
+  startDate?: string | Date
+  endDate?: string | Date
+  year?: number
+}
+
+export interface IUpdateHolidayDTO {
+  name?: string
+  date?: string | Date
+  type?: IHolidayType
+}
+
 // ─── REPOSITORY INTERFACES ────────────────────────────────────
 export interface IAttendanceMetricsDTO {
   status?: IAttendanceStatus
@@ -164,8 +186,19 @@ export interface IApplicationRepository {
  * Repository for managing holiday information.
  */
 export interface IHolidayRepository {
+  /** Lists holiday records. */
+  listHolidays(query?: IListHolidaysQueryDTO): Promise<HolidayCalendar[]>
   /** Creates a holiday record. */
-  createHoliday(name: string, date: string | Date, type: string): Promise<any>
+  createHoliday(
+    name: string,
+    date: string | Date,
+    type: IHolidayType,
+    createdById: string,
+  ): Promise<HolidayCalendar>
+  /** Updates a holiday record. */
+  updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<HolidayCalendar>
+  /** Deletes a holiday record. */
+  deleteHoliday(id: string): Promise<void>
   /** Checks if a specific date is a holiday. */
   checkIsHoliday(date: string | Date): Promise<boolean>
 }
@@ -212,8 +245,19 @@ export interface IApplicationService {
  * Service for holiday management.
  */
 export interface IHolidayService {
+  /** Lists holidays. */
+  listHolidays(query?: IListHolidaysQueryDTO): Promise<HolidayCalendar[]>
   /** Creates a holiday. */
-  createHoliday(name: string, date: string | Date, type: string): Promise<any>
+  createHoliday(
+    name: string,
+    date: string | Date,
+    type: IHolidayType,
+    createdById: string,
+  ): Promise<HolidayCalendar>
+  /** Updates a holiday. */
+  updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<HolidayCalendar>
+  /** Deletes a holiday. */
+  deleteHoliday(id: string): Promise<void>
   /** Checks if a date is a holiday. */
   isHoliday(date: string | Date): Promise<boolean>
 }
