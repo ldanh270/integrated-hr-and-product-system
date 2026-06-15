@@ -679,7 +679,6 @@ model Project {
 
   members    ProjectMember[]
   tasks      Task[]
-  categories TaskCategory[]
 
   @@index([status])
   @@index([teamLeaderId, status])
@@ -716,8 +715,6 @@ model Task {
   completedAt   DateTime?
   estimatedTime Float?
   progress      Int           @default(0)
-  categoryId    String?
-  category      TaskCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -728,7 +725,6 @@ model Task {
   @@index([assigneeId, status])
   @@index([dueDate, status])
   @@index([createdById])
-  @@index([categoryId])
 }
 
 // ── Auth ──
@@ -780,18 +776,6 @@ model RefreshToken {
 
   @@index([employeeId])
   @@index([expiresAt])
-}
-
-model TaskCategory {
-  id        String   @id @default(cuid())
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  name      String
-  createdAt DateTime @default(now())
-  tasks     Task[]
-
-  @@unique([projectId, name])
-  @@index([projectId])
 }
 
 model SpentTime {
