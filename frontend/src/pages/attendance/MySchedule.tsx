@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ROLE } from "@/config/entities/employee.config"
-import { DAY_OF_WEEK_FULL_LABELS } from "@/config/entities/attendance.config"
+import { getDayOfWeekFullLabel } from "@/config/entities/attendance.config"
 import { useAttendanceRecords } from "@/hooks/attendance/use-attendance"
 import { useEmployees } from "@/hooks/employees/queries/useEmployeeQuery"
 import { holidaysApi, schedulesApi } from "@/lib/api/attendance.api"
@@ -76,7 +76,7 @@ function getWeekDates(weekStart: Date) {
       date,
       dateKey,
       dayOfWeek,
-      label: DAY_OF_WEEK_FULL_LABELS[dayOfWeek],
+      label: getDayOfWeekFullLabel(dayOfWeek),
       shortDate: `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}`,
     }
   })

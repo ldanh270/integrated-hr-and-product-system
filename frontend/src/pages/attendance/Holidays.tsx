@@ -40,9 +40,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { CalendarDays, ChevronLeft, ChevronRight, Loader2, Pencil, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
-const HOLIDAY_TYPE_LABELS: Record<IHolidayType, string> = {
-  national: "Ngày lễ quốc gia",
-  company: "Ngày nghỉ công ty",
+function getHolidayTypeLabel(type: IHolidayType) {
+  switch (type) {
+    case "national":
+      return "Ngày lễ quốc gia"
+    case "company":
+      return "Ngày nghỉ công ty"
+    default:
+      return "Ngày nghỉ"
+  }
 }
 
 const DEFAULT_FORM: IHolidayPayload = {
@@ -166,7 +172,9 @@ export default function Holidays() {
               variant="outline"
               size="icon"
               className="h-8 w-8"
-              onClick={() => setYear((currentYear) => currentYear - 1)}
+              onClick={() => {
+                setYear((currentYear) => currentYear - 1)
+              }}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -174,7 +182,9 @@ export default function Holidays() {
               variant="outline"
               size="icon"
               className="h-8 w-8"
-              onClick={() => setYear((currentYear) => currentYear + 1)}
+              onClick={() => {
+                setYear((currentYear) => currentYear + 1)
+              }}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -202,7 +212,9 @@ export default function Holidays() {
                         variant="ghost"
                         size="icon-xs"
                         aria-label="Sửa ngày lễ"
-                        onClick={() => openEditDialog(holiday)}
+                        onClick={() => {
+                          openEditDialog(holiday)
+                        }}
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
@@ -210,7 +222,9 @@ export default function Holidays() {
                         variant="destructive"
                         size="icon-xs"
                         aria-label="Xóa ngày lễ"
-                        onClick={() => setDeletingHoliday(holiday)}
+                        onClick={() => {
+                          setDeletingHoliday(holiday)
+                        }}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -218,7 +232,7 @@ export default function Holidays() {
                   ) : null}
                 </div>
                 <p className="mt-3 w-fit rounded-full bg-success/10 px-3 py-1 text-xs font-semibold text-success">
-                  {HOLIDAY_TYPE_LABELS[holiday.type]}
+                  {getHolidayTypeLabel(holiday.type)}
                 </p>
               </div>
             ))}
@@ -230,7 +244,17 @@ export default function Holidays() {
         )}
       </PageCard>
 
-      <Dialog open={isDialogOpen} onOpenChange={(isOpen) => (isOpen ? setIsDialogOpen(true) : closeDialog())}>
+      <Dialog
+        open={isDialogOpen}
+        onOpenChange={(isOpen) => {
+          if (isOpen) {
+            setIsDialogOpen(true)
+            return
+          }
+
+          closeDialog()
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{editingHoliday ? "Sửa ngày lễ" : "Thêm ngày lễ"}</DialogTitle>
@@ -243,7 +267,9 @@ export default function Holidays() {
               <Input
                 id="holiday-name"
                 value={form.name}
-                onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+                onChange={(event) => {
+                  setForm((current) => ({ ...current, name: event.target.value }))
+                }}
                 placeholder="Ví dụ: Giải phóng miền Nam"
               />
             </div>
@@ -254,7 +280,9 @@ export default function Holidays() {
                 id="holiday-date"
                 type="date"
                 value={form.date}
-                onChange={(event) => setForm((current) => ({ ...current, date: event.target.value }))}
+                onChange={(event) => {
+                  setForm((current) => ({ ...current, date: event.target.value }))
+                }}
               />
             </div>
 
@@ -262,9 +290,9 @@ export default function Holidays() {
               <Label>Loại ngày nghỉ</Label>
               <Select
                 value={form.type}
-                onValueChange={(value) =>
+                onValueChange={(value) => {
                   setForm((current) => ({ ...current, type: value as IHolidayType }))
-                }
+                }}
               >
                 <SelectTrigger className="h-12 w-full rounded-full bg-transparent px-6">
                   <SelectValue placeholder="Chọn loại ngày nghỉ" />
@@ -272,7 +300,7 @@ export default function Holidays() {
                 <SelectContent>
                   {HOLIDAY_TYPES.map((type) => (
                     <SelectItem key={type} value={type}>
-                      {HOLIDAY_TYPE_LABELS[type]}
+                      {getHolidayTypeLabel(type)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -292,7 +320,12 @@ export default function Holidays() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={Boolean(deletingHoliday)} onOpenChange={() => setDeletingHoliday(null)}>
+      <AlertDialog
+        open={Boolean(deletingHoliday)}
+        onOpenChange={() => {
+          setDeletingHoliday(null)
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Xóa ngày lễ?</AlertDialogTitle>
@@ -305,7 +338,11 @@ export default function Holidays() {
             <AlertDialogAction
               variant="destructive"
               disabled={deleteMutation.isPending}
-              onClick={() => deletingHoliday && deleteMutation.mutate(deletingHoliday.id)}
+              onClick={() => {
+                if (!deletingHoliday) return
+
+                deleteMutation.mutate(deletingHoliday.id)
+              }}
             >
               Xóa
             </AlertDialogAction>

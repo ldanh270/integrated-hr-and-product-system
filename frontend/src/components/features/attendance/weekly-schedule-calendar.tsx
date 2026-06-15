@@ -333,7 +333,9 @@ export function WeeklyScheduleCalendar({
             <Button
               size="sm"
               className="h-8 rounded-full px-4"
-              onClick={() => setWeekStart(getWeekStart(new Date()))}
+              onClick={() => {
+                setWeekStart(getWeekStart(new Date()))
+              }}
             >
               Hôm nay
             </Button>
@@ -342,7 +344,12 @@ export function WeeklyScheduleCalendar({
       />
 
       {showTabs ? (
-        <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as CalendarTab)}>
+        <Tabs
+          value={selectedTab}
+          onValueChange={(value) => {
+            setSelectedTab(value as CalendarTab)
+          }}
+        >
           <TabsList className="bg-secondary/50">
             <TabsTrigger value="planned">Ca kế hoạch</TabsTrigger>
             <TabsTrigger value="actual">Thời gian thực</TabsTrigger>
