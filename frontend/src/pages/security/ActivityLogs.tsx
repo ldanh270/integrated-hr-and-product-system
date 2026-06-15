@@ -38,8 +38,8 @@ export default function ActivityLogs() {
 
   // Derived pagination calculations
   const totalPages = data?.meta.totalPages ?? 0
-  const pageStart = (query.page! - 1) * (query.limit || 20) + (data?.data.length ? 1 : 0)
-  const pageEnd = (query.page! - 1) * (query.limit || 20) + (data?.data.length || 0)
+  const pageStart = ((query.page || 1) - 1) * (query.limit || 20) + (data?.data.length ? 1 : 0)
+  const pageEnd = ((query.page || 1) - 1) * (query.limit || 20) + (data?.data.length || 0)
 
   // Visible pages calculation (simple array)
   const visiblePages = Array.from({ length: totalPages }, (_, i) => i + 1).slice(

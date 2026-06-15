@@ -140,7 +140,7 @@ export default function SecurityDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <PageCard
           className="cursor-pointer hover:border-rose-400 hover:shadow-md transition-all duration-200"
-          onClick={() => navigate("/security/activity-logs?category=security&actionType=account_locked")}
+          onClick={() => { navigate("/security/activity-logs?category=security&actionType=account_locked") }}
         >
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-600 shrink-0">
@@ -159,7 +159,7 @@ export default function SecurityDashboard() {
 
         <PageCard
           className="cursor-pointer hover:border-amber-400 hover:shadow-md transition-all duration-200"
-          onClick={() => navigate("/security/activity-logs?category=auth&actionType=failed_login")}
+          onClick={() => { navigate("/security/activity-logs?category=auth&actionType=failed_login") }}
         >
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 shrink-0">
@@ -178,7 +178,7 @@ export default function SecurityDashboard() {
 
         <PageCard
           className="cursor-pointer hover:border-emerald-400 hover:shadow-md transition-all duration-200"
-          onClick={() => navigate("/security/activity-logs?category=auth&actionType=login")}
+          onClick={() => { navigate("/security/activity-logs?category=auth&actionType=login") }}
         >
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 shrink-0">
@@ -217,7 +217,7 @@ export default function SecurityDashboard() {
                   label={ACTION_LABELS[event.actionType] || event.actionType}
                   subtitle={`${event.employeeName || "Hệ thống"} • ${event.ipAddress || "Không rõ IP"}`}
                   statusLabel={event.actionType}
-                  statusVariant={ACTION_VARIANTS[event.actionType] || "neutral"}
+                  statusVariant={ACTION_VARIANTS[event.actionType] ?? "neutral"}
                   timestamp={new Date(event.createdAt).toLocaleTimeString("vi-VN", {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -262,7 +262,7 @@ export default function SecurityDashboard() {
                     }
                   })()}`}
                   statusLabel={event.actionType}
-                  statusVariant={ACTION_VARIANTS[event.actionType] || "neutral"}
+                  statusVariant={ACTION_VARIANTS[event.actionType] ?? "neutral"}
                   timestamp={new Date(event.createdAt).toLocaleDateString("vi-VN")}
                   colorClass={
                     event.actionType === "role_assigned"

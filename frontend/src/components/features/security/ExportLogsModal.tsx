@@ -34,7 +34,9 @@ export function ExportLogsModal({ isOpen, onClose, query }: ExportLogsModalProps
     progress.status === "building"
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) handleClose()
+    }}>
       <DialogContent className="sm:max-w-[425px]" showCloseButton={!isExporting}>
         <DialogHeader>
           <DialogTitle>Xuất báo cáo nhật ký</DialogTitle>

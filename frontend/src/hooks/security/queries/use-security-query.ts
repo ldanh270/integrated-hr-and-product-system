@@ -33,9 +33,9 @@ export function useUnlockAccount() {
   return useMutation({
     mutationFn: (employeeId: string) => securityApi.unlockAccount(employeeId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: securityKeys.summary() })
-      queryClient.invalidateQueries({ queryKey: securityKeys.lockedAccounts() })
-      queryClient.invalidateQueries({ queryKey: employeeKeys.lists() })
+      void queryClient.invalidateQueries({ queryKey: securityKeys.summary() })
+      void queryClient.invalidateQueries({ queryKey: securityKeys.lockedAccounts() })
+      void queryClient.invalidateQueries({ queryKey: employeeKeys.lists() })
     },
   })
 }

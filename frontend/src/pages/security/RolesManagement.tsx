@@ -91,7 +91,8 @@ export default function RolesManagement() {
     limit: 8,
   })
 
-  const selectedRoleLabel = selectedRole ? ROLE_LABELS[selectedRole] : ""
+  const activeRoleCard = ROLE_CARDS.find((r) => r.code === selectedRole)
+  const selectedRoleLabel = activeRoleCard ? activeRoleCard.label : ""
 
   const handleOpenRoleDetail = (roleCode: string) => {
     setSelectedRole(roleCode)
@@ -123,7 +124,7 @@ export default function RolesManagement() {
       {/* Grid layout for Roles summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {ROLE_CARDS.map((roleCard, index) => {
-          const queryResult = roleQueries[index]
+          const queryResult = roleQueries.at(index)!
           const count = queryResult.data?.meta.total ?? 0
           const isLoadingCount = queryResult.isLoading
           const isErrorCount = queryResult.isError
@@ -163,7 +164,7 @@ export default function RolesManagement() {
                     variant="ghost"
                     size="sm"
                     className="gap-1.5 h-8 px-2.5 text-xs text-primary hover:text-primary hover:bg-primary/5"
-                    onClick={() => handleOpenRoleDetail(roleCard.code)}
+                    onClick={() => { handleOpenRoleDetail(roleCard.code) }}
                   >
                     Xem chi tiết
                     <ArrowRight size={13} />
@@ -265,7 +266,7 @@ export default function RolesManagement() {
                   size="sm"
                   className="h-7 px-2.5 text-[11px]"
                   disabled={drawerPage === 1}
-                  onClick={() => setDrawerPage((prev) => Math.max(1, prev - 1))}
+                  onClick={() => { setDrawerPage((prev) => Math.max(1, prev - 1)) }}
                 >
                   Trước
                 </Button>
@@ -274,7 +275,7 @@ export default function RolesManagement() {
                   size="sm"
                   className="h-7 px-2.5 text-[11px]"
                   disabled={drawerPage === totalPages}
-                  onClick={() => setDrawerPage((prev) => Math.min(totalPages, prev + 1))}
+                  onClick={() => { setDrawerPage((prev) => Math.min(totalPages, prev + 1)) }}
                 >
                   Sau
                 </Button>

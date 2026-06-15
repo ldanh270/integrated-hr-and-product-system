@@ -65,8 +65,9 @@ export function useUsersManagementMaster() {
 
   // Paginates locked users on the client side
   const paginatedLockedUsers = useMemo(() => {
-    const start = (query.page! - 1) * query.limit!
-    const end = start + query.limit!
+    const limit = query.limit || SYSTEM_CONFIG.PAGINATION.SMALL_LIMIT
+    const start = ((query.page || 1) - 1) * limit
+    const end = start + limit
     return filteredLockedUsers.slice(start, end)
   }, [filteredLockedUsers, query.page, query.limit])
 
@@ -96,10 +97,11 @@ export function useUsersManagementMaster() {
   const totalPages =
     activeTab === "all"
       ? (allUsers?.meta.totalPages ?? 0)
-      : Math.ceil(filteredLockedUsers.length / query.limit!)
+      : Math.ceil(filteredLockedUsers.length / (query.limit || SYSTEM_CONFIG.PAGINATION.SMALL_LIMIT))
 
-  const pageStart = (query.page! - 1) * query.limit! + (displayData?.length ? 1 : 0)
-  const pageEnd = (query.page! - 1) * query.limit! + (displayData?.length || 0)
+  const limit = query.limit || SYSTEM_CONFIG.PAGINATION.SMALL_LIMIT
+  const pageStart = ((query.page || 1) - 1) * limit + (displayData?.length ? 1 : 0)
+  const pageEnd = ((query.page || 1) - 1) * limit + (displayData?.length || 0)
 
   const visiblePages = useMemo(() => {
     return Array.from(

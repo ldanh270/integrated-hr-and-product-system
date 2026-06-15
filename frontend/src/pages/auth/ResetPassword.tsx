@@ -90,7 +90,7 @@ export default function ResetPassword() {
       }
     }
 
-    checkToken()
+    void checkToken()
   }, [token, validateResetToken])
 
   const onSubmit = async (data: ResetPasswordSchemaType) => {
