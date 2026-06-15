@@ -40,11 +40,10 @@ export function useActivityExport(baseQuery: ActivityLogQuery) {
       accessor: (log: ActivityLogItem) => {
         if (!log.details) return ""
         try {
-          // Verify it parses, then stringify flatly to save space
-          const parsed = JSON.parse(log.details)
+          const parsed = typeof log.details === "string" ? JSON.parse(log.details) : log.details
           return JSON.stringify(parsed)
         } catch {
-          return log.details // Fallback to raw string
+          return typeof log.details === "string" ? log.details : JSON.stringify(log.details)
         }
       }
     },

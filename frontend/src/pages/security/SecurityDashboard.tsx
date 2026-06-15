@@ -252,7 +252,15 @@ export default function SecurityDashboard() {
                   key={event.id}
                   icon={event.actionType === "role_assigned" ? UserCheck : UserX}
                   label={ACTION_LABELS[event.actionType] || event.actionType}
-                  subtitle={`${event.employeeName} • ${event.details ? JSON.parse(event.details).role : "N/A"}`}
+                  subtitle={`${event.employeeName} • ${(() => {
+                    if (!event.details) return "N/A"
+                    try {
+                      const parsed = typeof event.details === "string" ? JSON.parse(event.details) : event.details
+                      return parsed?.role || "N/A"
+                    } catch {
+                      return "N/A"
+                    }
+                  })()}`}
                   statusLabel={event.actionType}
                   statusVariant={ACTION_VARIANTS[event.actionType] || "neutral"}
                   timestamp={new Date(event.createdAt).toLocaleDateString("vi-VN")}

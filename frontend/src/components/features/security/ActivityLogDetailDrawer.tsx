@@ -56,9 +56,17 @@ export function ActivityLogDetailDrawer({ logId, onClose }: ActivityLogDetailDra
               <h4 className="text-sm font-bold text-foreground px-1">Thông tin chi tiết</h4>
               <div className="rounded-xl bg-slate-950 p-4 font-mono text-xs overflow-x-auto border border-slate-800">
                 <pre className="text-emerald-400">
-                  {log.details
-                    ? JSON.stringify(JSON.parse(log.details), null, 2)
-                    : "Không có dữ liệu mở rộng."}
+                  {(() => {
+                    if (!log.details) return "Không có dữ liệu mở rộng."
+                    if (typeof log.details === "string") {
+                      try {
+                        return JSON.stringify(JSON.parse(log.details), null, 2)
+                      } catch {
+                        return log.details
+                      }
+                    }
+                    return JSON.stringify(log.details, null, 2)
+                  })()}
                 </pre>
               </div>
             </div>
