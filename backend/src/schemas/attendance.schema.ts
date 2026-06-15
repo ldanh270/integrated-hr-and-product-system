@@ -228,6 +228,7 @@ export const listApplicationsQuerySchema = z
     type: z.enum(APPLICATION_TYPE_VALUES).optional(),
     status: z.enum(APPLICATION_STATUSES).optional(),
     employeeId: z.string().cuid("Invalid employee ID").optional(),
+    keyword: z.string().optional(),
     startDate: dateString.optional(),
     endDate: dateString.optional(),
   })

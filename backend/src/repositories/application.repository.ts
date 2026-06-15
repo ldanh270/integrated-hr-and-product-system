@@ -134,12 +134,13 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    */
   async approve(id: string, approvedBy: string): Promise<any | null> {
     try {
-      return await this.prisma.$transaction(async (tx) => {
-        // 1. Fetch application to check type and details
-        const app = await tx.application.findUnique({
-          where: { id, status: ApplicationStatus.pending },
-          include: APPLICATION_INCLUDE,
-        })
+      return await this.prisma.$transaction(
+        async (tx) => {
+          // 1. Fetch application to check type and details
+          const app = await tx.application.findUnique({
+            where: { id, status: ApplicationStatus.pending },
+            include: APPLICATION_INCLUDE,
+          })
 
         if (!app) return null
 
@@ -208,18 +209,20 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
           }
         }
 
-        // 3. Update application status
-        return await tx.application.update({
-          where: { id },
-          data: {
-            status: ApplicationStatus.approved,
-            approvedById: approvedBy,
-            approvedAt: new Date(),
-            rejectReason: null,
-          },
-          include: APPLICATION_INCLUDE,
-        })
-      })
+          // 3. Update application status
+          return await tx.application.update({
+            where: { id },
+            data: {
+              status: ApplicationStatus.approved,
+              approvedById: approvedBy,
+              approvedAt: new Date(),
+              rejectReason: null,
+            },
+            include: APPLICATION_INCLUDE,
+          })
+        },
+        { timeout: 15000, maxWait: 15000 }
+      )
     } catch (err) {
       console.error("[ApplicationRepository.approve] Failed:", err)
       return null
@@ -409,7 +412,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    * @param query - The filter parameters.
    * @returns The Prisma filter object.
    */
-  private _buildWhere(query: IListApplicationsQueryDTO & { employeeId?: string }) {
+  private _buildWhere(query: IListApplicationsQueryDTO & { employeeId?: string; keyword?: string }) {
     const where: Record<string, any> = {}
 
     if (query.employeeId) where.employeeId = query.employeeId
@@ -419,6 +422,16 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
       where.startDate = {}
       if (query.startDate) where.startDate.gte = new Date(query.startDate)
       if (query.endDate) where.startDate.lte = new Date(query.endDate)
+    }
+
+    if (query.keyword) {
+      const kw = query.keyword
+      where.OR = [
+        { id: { contains: kw, mode: "insensitive" } },
+        { employee: { fullName: { contains: kw, mode: "insensitive" } } },
+        { employee: { id: { contains: kw, mode: "insensitive" } } },
+        { approvedBy: { fullName: { contains: kw, mode: "insensitive" } } }
+      ]
     }
 
     return where

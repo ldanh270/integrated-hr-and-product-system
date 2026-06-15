@@ -1,681 +1,967 @@
-import { APPLICATION_TYPES, REGIME_TYPE, REGIME_TYPES } from "@/config/entities/attendance.config"
-import { ROLE_LABELS } from "@/config/entities/employee.config"
-import { APPROVAL_CATEGORY } from "@/config/rules/approval.config"
-import { useApplicationDashboard } from "@/hooks/application/useApplicationDashboard"
-import { type IApprovalItem } from "@/lib/api/approval.api"
+"use client"
+
+import { ApplicationDetail } from "@/components/features/application/ApplicationDetail"
+import { ApplicationList } from "@/components/features/application/ApplicationList"
+import { APPLICATION_TYPES, LEAVE_TYPE, REGIME_TYPE } from "@/config/entities/attendance.config"
+import { useManageApplications } from "@/hooks/application/useManageApplications"
+import { useMyApplications } from "@/hooks/application/useMyApplications"
+import { useSubmitApplication } from "@/hooks/application/useSubmitApplication"
+import type { IApplication } from "@/lib/api/application.api"
+
+import { useEffect, useState } from "react"
 
 import {
-  AlertCircle,
-  Check,
+  AlertTriangle,
+  ArrowLeft,
+  Briefcase,
+  Calendar,
+  CalendarClock,
+  ChevronDown,
+  ChevronRight,
   Clock,
-  FileText,
-  HelpCircle,
-  KeyRound,
-  Search,
-  UserPlus,
+  Laptop,
+  Plus,
+  Repeat2,
+  Send,
+  Stethoscope,
   X,
 } from "lucide-react"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
 
-export default function ApplicationDashboard() {
-  const {
-    isLoading,
-    searchTerm,
-    setSearchTerm,
-    activeCategory,
-    setActiveCategory,
-    selectedApproval,
-    setSelectedApproval,
-    rejectingItem,
-    setRejectingItem,
-    rejectReason,
-    setRejectReason,
-    isProcessing,
-    newTempPassword,
-    setNewTempPassword,
-    approvedEmployeeName,
-    setApprovedEmployeeName,
-    user,
-    handleApprove,
-    handleRejectSubmit,
-    filteredApprovals,
-    pendingCount,
-    appCount,
-    pwCount,
-    recruitmentCount,
-  } = useApplicationDashboard()
+// ─── Type metadata ────────────────────────────────────────────────────────────
 
-  const getCategoryDetails = (category: string) => {
-    switch (category) {
-      case APPROVAL_CATEGORY.APPLICATION:
-        return {
-          label: "Đơn ứng dụng",
-          icon: FileText,
-          color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
+const APP_TYPE_META: Record<
+  string,
+  {
+    label: string
+    icon: React.FC<{ size?: number; className?: string }>
+    color: string
+    bg: string
+    border: string
+    hint: string
+  }
+> = {
+  [APPLICATION_TYPES.LEAVE.LABEL]: {
+    label: "Nghỉ phép",
+    icon: Calendar,
+    color: "text-violet-600",
+    bg: "bg-violet-50",
+    border: "border-violet-200",
+    hint: "Xin nghỉ phép năm, thai sản, ốm...",
+  },
+  [APPLICATION_TYPES.OVERTIME.LABEL]: {
+    label: "Làm thêm giờ",
+    icon: Clock,
+    color: "text-amber-600",
+    bg: "bg-amber-50",
+    border: "border-amber-200",
+    hint: "Đăng ký làm thêm giờ ngoài ca",
+  },
+  [APPLICATION_TYPES.WORK_FROM_HOME.LABEL]: {
+    label: "WFH",
+    icon: Laptop,
+    color: "text-sky-600",
+    bg: "bg-sky-50",
+    border: "border-sky-200",
+    hint: "Làm việc từ xa / tại nhà",
+  },
+  [APPLICATION_TYPES.SHIFT_SWAP.LABEL]: {
+    label: "Đổi ca",
+    icon: Repeat2,
+    color: "text-teal-600",
+    bg: "bg-teal-50",
+    border: "border-teal-200",
+    hint: "Đề xuất đổi ca với đồng nghiệp",
+  },
+  [APPLICATION_TYPES.BUSINESS_TRIP.LABEL]: {
+    label: "Công tác",
+    icon: Briefcase,
+    color: "text-orange-600",
+    bg: "bg-orange-50",
+    border: "border-orange-200",
+    hint: "Đi công tác theo yêu cầu",
+  },
+  [APPLICATION_TYPES.LATE_EARLY.LABEL]: {
+    label: "Đi muộn/Về sớm",
+    icon: CalendarClock,
+    color: "text-rose-600",
+    bg: "bg-rose-50",
+    border: "border-rose-200",
+    hint: "Thông báo đi muộn hoặc về sớm",
+  },
+  [APPLICATION_TYPES.REGIME.LABEL]: {
+    label: "Thai sản/Bệnh",
+    icon: Stethoscope,
+    color: "text-pink-600",
+    bg: "bg-pink-50",
+    border: "border-pink-200",
+    hint: "Chế độ thai sản, ốm đau...",
+  },
+}
+
+// ─── Submit Modal ─────────────────────────────────────────────────────────────
+
+interface SubmitModalProps {
+  onClose: () => void
+  onSuccess: () => void
+  initialType?: string
+}
+
+/** Correct leave type values matching backend LEAVE_TYPE_VALUES enum */
+const LEAVE_TYPE_OPTIONS = [
+  { value: LEAVE_TYPE.ANNUAL_LEAVE, label: "Nghỉ phép năm" },
+  { value: LEAVE_TYPE.SICK_LEAVE, label: "Nghỉ ốm" },
+  { value: LEAVE_TYPE.MATERNITY_LEAVE, label: "Thai sản" },
+  { value: LEAVE_TYPE.BEREAVEMENT_LEAVE, label: "Nghỉ tang" },
+  { value: LEAVE_TYPE.MARRIAGE_LEAVE, label: "Nghỉ cưới" },
+  { value: LEAVE_TYPE.UNPAID_LEAVE, label: "Nghỉ không lương" },
+  { value: LEAVE_TYPE.OTHER, label: "Khác" },
+] as const
+
+function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModalProps) {
+  const navigate = useNavigate()
+  const { isSubmitting, submitApplication } = useSubmitApplication()
+
+  const [step, setStep] = useState<"type" | "details">(initialType ? "details" : "type")
+  const [selectedType] = useState<string>(initialType || "")
+  const [form, setForm] = useState({
+    startDate: "",
+    endDate: "",
+    reason: "",
+    note: "",
+    // leave
+    leaveType: LEAVE_TYPE.ANNUAL_LEAVE as string,
+    leaveRegimeType: REGIME_TYPE.PAID as "paid" | "unpaid",
+    // overtime / late_early / shift_swap
+    employeeShiftId: "",
+    // late_early specific
+    durationMinutes: 30,
+    isLate: true,
+    // shift_swap
+    swapWithEmployeeId: "",
+    swapWithShiftId: "",
+    // work_from_home
+    location: "",
+    // business_trip
+    destination: "",
+    purpose: "",
+    // regime
+    regimeType: REGIME_TYPE.PAID as "paid" | "unpaid",
+    reducedMinutesPerDay: 0,
+    applyToStart: false,
+    applyToEnd: false,
+    documentUrl: "",
+  })
+
+  const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
+    setForm((prev) => ({ ...prev, [k]: v }))
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!form.startDate) {
+      toast.error("Vui lòng chọn ngày bắt đầu")
+      return
+    }
+
+    // Build type-specific detail matching the backend Zod schemas exactly
+    let detail: Record<string, unknown> = {}
+
+    switch (selectedType) {
+      case APPLICATION_TYPES.LEAVE.LABEL:
+        // Backend: { leaveType: LEAVE_TYPE_VALUES, regimeType: REGIME_TYPES }
+        detail = {
+          leaveType: form.leaveType,
+          regimeType: form.leaveRegimeType,
         }
-      case APPROVAL_CATEGORY.PASSWORD_RESET:
-        return {
-          label: "Reset mật khẩu",
-          icon: KeyRound,
-          color: "text-blue-500 bg-blue-500/10 border-blue-500/20",
+        break
+
+      case APPLICATION_TYPES.OVERTIME.LABEL:
+        // Backend: { employeeShiftId: cuid }
+        if (!form.employeeShiftId.trim()) {
+          toast.error("Vui lòng nhập ID ca làm việc")
+          return
         }
-      case APPROVAL_CATEGORY.RECRUITMENT_PROPOSAL:
-        return {
-          label: "Tuyển dụng",
-          icon: UserPlus,
-          color: "text-purple-500 bg-purple-500/10 border-purple-500/20",
+        detail = { employeeShiftId: form.employeeShiftId.trim() }
+        break
+
+      case APPLICATION_TYPES.LATE_EARLY.LABEL:
+        // Backend: { employeeShiftId: cuid, durationMinutes: int(1-480), isLate: boolean }
+        if (!form.employeeShiftId.trim()) {
+          toast.error("Vui lòng nhập ID ca làm việc")
+          return
         }
-      default:
-        return {
-          label: "Khác",
-          icon: HelpCircle,
-          color: "text-gray-500 bg-gray-500/10 border-gray-500/20",
+        if (form.durationMinutes < 1 || form.durationMinutes > 480) {
+          toast.error("Số phút muộn/sớm phải từ 1 đến 480")
+          return
         }
+        detail = {
+          employeeShiftId: form.employeeShiftId.trim(),
+          durationMinutes: form.durationMinutes,
+          isLate: form.isLate,
+        }
+        break
+
+      case APPLICATION_TYPES.SHIFT_SWAP.LABEL:
+        // Backend: { employeeShiftId: cuid, swapWithEmployeeId?: cuid, swapWithShiftId?: cuid }
+        if (!form.employeeShiftId.trim()) {
+          toast.error("Vui lòng nhập ID ca của bạn")
+          return
+        }
+        detail = { employeeShiftId: form.employeeShiftId.trim() }
+        if (form.swapWithEmployeeId.trim())
+          detail.swapWithEmployeeId = form.swapWithEmployeeId.trim()
+        if (form.swapWithShiftId.trim()) detail.swapWithShiftId = form.swapWithShiftId.trim()
+        break
+
+      case APPLICATION_TYPES.WORK_FROM_HOME.LABEL:
+        // Backend: { location?: string }  ← key is "location" not "workLocation"
+        detail = form.location.trim() ? { location: form.location.trim() } : {}
+        break
+
+      case APPLICATION_TYPES.BUSINESS_TRIP.LABEL:
+        // Backend: { location: string(min2), purpose?: string, budget?: number }
+        if (!form.destination.trim()) {
+          toast.error("Vui lòng nhập địa điểm công tác")
+          return
+        }
+        detail = { location: form.destination.trim() }
+        if (form.purpose.trim()) detail.purpose = form.purpose.trim()
+        break
+
+      case APPLICATION_TYPES.REGIME.LABEL:
+        // Backend: { regimeType, reducedMinutesPerDay: int(0-480), applyToStart, applyToEnd, documentUrl? }
+        detail = {
+          regimeType: form.regimeType,
+          reducedMinutesPerDay: form.reducedMinutesPerDay,
+          applyToStart: form.applyToStart,
+          applyToEnd: form.applyToEnd,
+        }
+        if (form.documentUrl.trim()) detail.documentUrl = form.documentUrl.trim()
+        break
+    }
+
+    const success = await submitApplication({
+      type: selectedType,
+      startDate: form.startDate,
+      endDate: form.endDate || form.startDate,
+      reason: form.reason || undefined,
+      note: form.note || undefined,
+      detail,
+    })
+
+    if (success) {
+      onSuccess()
+      onClose()
     }
   }
 
-  const formatDetails = (item: IApprovalItem) => {
-    const { details, category } = item
-    if (category === APPROVAL_CATEGORY.APPLICATION) {
-      const appType = Object.values(APPLICATION_TYPES).find((t) => t.LABEL === details.type)
-      const label = appType ? appType.DESCRIPTION : "Yêu cầu"
-      return `${label} từ ${new Date(details.startDate!).toLocaleDateString("vi-VN")} đến ${new Date(details.endDate!).toLocaleDateString("vi-VN")}`
-    }
-    if (category === APPROVAL_CATEGORY.PASSWORD_RESET) {
-      return "Yêu cầu cấp lại mật khẩu cho tài khẩu"
-    }
-    if (category === APPROVAL_CATEGORY.RECRUITMENT_PROPOSAL) {
-      return `Yêu cầu tuyển dụng vị trí ${details.position} (Số lượng: ${details.headcount})`
-    }
-    return "Chi tiết yêu cầu"
-  }
+  const meta = APP_TYPE_META[selectedType]
 
   return (
-    <div className="flex flex-col gap-6 p-6 w-full mx-auto">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border pb-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Duyệt đơn từ</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Quản lý và phê duyệt các đơn từ của nhân viên dựa theo vai trò{" "}
-            {ROLE_LABELS[user?.role ?? ""] ?? "Nhân viên"}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-xs font-semibold">
-          <Clock size={14} />
-          <span>Có {pendingCount} đơn chờ duyệt</span>
-        </div>
-      </div>
-
-      {/* Main Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Left Filters Panel */}
-        <div className="lg:col-span-1 flex flex-col gap-4">
-          <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-4">
-            <h3 className="text-sm font-semibold text-foreground">Bộ lọc phân hệ</h3>
-
-            <div className="flex flex-col gap-1">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div
+        className={`bg-white w-full ${step === "type" ? "max-w-3xl" : "max-w-lg"} rounded-2xl shadow-2xl shadow-slate-900/20 overflow-hidden flex flex-col max-h-[90vh] transition-all duration-300`}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            {step === "details" && (
               <button
-                onClick={() => setActiveCategory("all")}
-                className={`flex justify-between items-center px-3 py-2 rounded-lg text-sm transition-all cursor-pointer ${
-                  activeCategory === "all"
-                    ? "bg-primary text-primary-foreground font-medium"
-                    : "hover:bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
+                type="button"
+                onClick={() => setStep("type")}
+                className="p-1.5 rounded-full hover:bg-slate-100 transition-colors text-slate-500"
               >
-                <span>Tất cả</span>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${activeCategory === "all" ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"}`}
-                >
-                  {pendingCount}
-                </span>
+                <ArrowLeft size={16} />
               </button>
-
-              <button
-                onClick={() => setActiveCategory(APPROVAL_CATEGORY.APPLICATION)}
-                className={`flex justify-between items-center px-3 py-2 rounded-lg text-sm transition-all cursor-pointer ${
-                  activeCategory === APPROVAL_CATEGORY.APPLICATION
-                    ? "bg-primary text-primary-foreground font-medium"
-                    : "hover:bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <FileText size={16} />
-                  <span>Đơn ứng dụng</span>
-                </div>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${activeCategory === APPROVAL_CATEGORY.APPLICATION ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"}`}
-                >
-                  {appCount}
-                </span>
-              </button>
-
-              <button
-                onClick={() => setActiveCategory(APPROVAL_CATEGORY.PASSWORD_RESET)}
-                className={`flex justify-between items-center px-3 py-2 rounded-lg text-sm transition-all cursor-pointer ${
-                  activeCategory === APPROVAL_CATEGORY.PASSWORD_RESET
-                    ? "bg-primary text-primary-foreground font-medium"
-                    : "hover:bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <KeyRound size={16} />
-                  <span>Reset mật khẩu</span>
-                </div>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${activeCategory === APPROVAL_CATEGORY.PASSWORD_RESET ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"}`}
-                >
-                  {pwCount}
-                </span>
-              </button>
-
-              <button
-                onClick={() => setActiveCategory(APPROVAL_CATEGORY.RECRUITMENT_PROPOSAL)}
-                className={`flex justify-between items-center px-3 py-2 rounded-lg text-sm transition-all cursor-pointer ${
-                  activeCategory === APPROVAL_CATEGORY.RECRUITMENT_PROPOSAL
-                    ? "bg-primary text-primary-foreground font-medium"
-                    : "hover:bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <UserPlus size={16} />
-                  <span>Tuyển dụng</span>
-                </div>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${activeCategory === APPROVAL_CATEGORY.RECRUITMENT_PROPOSAL ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"}`}
-                >
-                  {recruitmentCount}
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Content Panel */}
-        <div className="lg:col-span-3 flex flex-col gap-4">
-          {/* Search bar */}
-          <div className="relative w-full">
-            <Search
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
-              size={16}
-            />
-            <input
-              type="text"
-              placeholder="Tìm kiếm theo tên nhân viên gửi đơn..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-border bg-card text-foreground rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-            />
-          </div>
-
-          {/* List items */}
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-card rounded-xl border border-border gap-3 text-muted-foreground">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <span className="text-sm">Đang tải danh sách đơn...</span>
-            </div>
-          ) : filteredApprovals.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-card rounded-xl border border-border text-center p-6">
-              <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center text-muted-foreground mb-4">
-                <AlertCircle size={28} />
-              </div>
-              <h3 className="text-lg font-bold text-foreground">Không có đơn cần duyệt</h3>
-              <p className="text-sm text-muted-foreground max-w-sm mt-1">
-                Hiện tại không tìm thấy bất kỳ yêu cầu chờ phê duyệt nào thỏa mãn bộ lọc hiện tại.
+            )}
+            <div>
+              <h2 className="text-base font-bold text-slate-800">
+                {step === "type" ? "Tạo mới đơn từ" : `Tạo đơn ${meta?.label}`}
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {step === "type"
+                  ? "Chọn loại đơn bạn muốn gửi"
+                  : "Điền thông tin chi tiết và xác nhận"}
               </p>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4">
-              {filteredApprovals.map((item) => {
-                const cfg = getCategoryDetails(item.category)
-                const Icon = cfg.icon
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-400"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto flex-1">
+          {/* Step 1: Type picker */}
+          {step === "type" && (
+            <div className="p-6 grid grid-cols-2 gap-4">
+              {Object.entries(APP_TYPE_META).map(([type, m]) => {
+                const Icon = m.icon
                 return (
-                  <div
-                    key={item.id}
-                    onClick={() => setSelectedApproval(item)}
-                    className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 bg-card hover:bg-secondary/20 border border-border rounded-xl shadow-sm transition-all cursor-pointer group"
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => {
+                      onClose()
+                      navigate(`/application/create?type=${type}`)
+                    }}
+                    className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 text-left hover:shadow-md hover:border-primary/30 transition-all active:scale-[0.98] bg-white"
                   >
-                    <div className="flex items-start gap-4 flex-1 min-w-0">
-                      {/* Left icon badge */}
-                      <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border ${cfg.color}`}
-                      >
-                        <Icon size={18} />
-                      </div>
-
-                      {/* Content details */}
-                      <div className="flex-1 min-w-0 flex flex-col">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">
-                            {item.employeeName}
-                          </span>
-                          <span className="text-xs text-muted-foreground">•</span>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(item.createdAt).toLocaleString("vi-VN", {
-                              dateStyle: "short",
-                              timeStyle: "short",
-                            })}
-                          </span>
-                        </div>
-
-                        <p className="text-sm text-foreground font-semibold mt-1.5 line-clamp-1">
-                          {formatDetails(item)}
-                        </p>
-                        {item.details.reason && (
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-1 italic">
-                            Lý do: {item.details.reason}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Action buttons */}
                     <div
-                      className="flex items-center gap-2 mt-4 md:mt-0 w-full md:w-auto shrink-0"
-                      onClick={(e) => e.stopPropagation()} // Prevent details modal open
+                      className={`h-10 w-10 shrink-0 rounded-full flex items-center justify-center ${m.color} ${m.bg}`}
                     >
-                      <button
-                        onClick={() => handleApprove(item)}
-                        disabled={isProcessing}
-                        className="flex-1 md:flex-initial flex items-center justify-center gap-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-full px-4 py-1.5 text-xs font-semibold shadow-sm transition-colors cursor-pointer"
-                      >
-                        <Check size={14} />
-                        <span>Duyệt</span>
-                      </button>
-
-                      <button
-                        onClick={() => setRejectingItem(item)}
-                        disabled={isProcessing}
-                        className="flex-1 md:flex-initial flex items-center justify-center gap-1 bg-destructive hover:bg-destructive/90 disabled:opacity-50 text-white rounded-full px-4 py-1.5 text-xs font-semibold shadow-sm transition-colors cursor-pointer"
-                      >
-                        <X size={14} />
-                        <span>Từ chối</span>
-                      </button>
+                      <Icon size={18} />
                     </div>
-                  </div>
+                    <div>
+                      <p className="text-[14px] font-semibold text-slate-700">{m.label}</p>
+                      <p className="text-[12px] text-slate-500 mt-0.5 leading-snug">{m.hint}</p>
+                    </div>
+                  </button>
                 )
               })}
             </div>
           )}
+
+          {/* Step 2: Details form */}
+          {step === "details" && meta && (
+            <form id="submit-form" onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
+              {/* Type badge */}
+              <div
+                className={`flex items-center gap-2.5 p-3 rounded-xl border ${meta.border} ${meta.bg}`}
+              >
+                <meta.icon size={16} className={meta.color} />
+                <span className={`text-sm font-semibold ${meta.color}`}>{meta.label}</span>
+              </div>
+
+              {/* Dates */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-slate-600">Ngày bắt đầu *</label>
+                  <input
+                    type="date"
+                    required
+                    value={form.startDate}
+                    onChange={(e) => set("startDate", e.target.value)}
+                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-slate-600">Ngày kết thúc</label>
+                  <input
+                    type="date"
+                    value={form.endDate}
+                    min={form.startDate}
+                    onChange={(e) => set("endDate", e.target.value)}
+                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              {/* ── LEAVE ── */}
+              {selectedType === APPLICATION_TYPES.LEAVE.LABEL && (
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-600">Loại nghỉ phép *</label>
+                    <div className="relative">
+                      <select
+                        value={form.leaveType}
+                        onChange={(e) => set("leaveType", e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white pr-8"
+                      >
+                        {LEAVE_TYPE_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        size={13}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-600">Chế độ lương *</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {([REGIME_TYPE.PAID, REGIME_TYPE.UNPAID] as const).map((rt) => (
+                        <button
+                          key={rt}
+                          type="button"
+                          onClick={() => set("leaveRegimeType", rt)}
+                          className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
+                            form.leaveRegimeType === rt
+                              ? "border-primary bg-primary/5 text-primary"
+                              : "border-slate-200 text-slate-500 hover:border-slate-300"
+                          }`}
+                        >
+                          {rt === REGIME_TYPE.PAID ? "Có lương" : "Không lương"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ── OVERTIME ── */}
+              {selectedType === APPLICATION_TYPES.OVERTIME.LABEL && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-slate-600">ID Ca làm việc *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Nhập CUID ca làm việc..."
+                    value={form.employeeShiftId}
+                    onChange={(e) => set("employeeShiftId", e.target.value)}
+                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                  />
+                </div>
+              )}
+
+              {/* ── LATE / EARLY ── */}
+              {selectedType === APPLICATION_TYPES.LATE_EARLY.LABEL && (
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-600">ID Ca làm việc *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Nhập CUID ca làm việc..."
+                      value={form.employeeShiftId}
+                      onChange={(e) => set("employeeShiftId", e.target.value)}
+                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-600">Loại *</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {([true, false] as const).map((v) => (
+                        <button
+                          key={String(v)}
+                          type="button"
+                          onClick={() => set("isLate", v)}
+                          className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
+                            form.isLate === v
+                              ? "border-primary bg-primary/5 text-primary"
+                              : "border-slate-200 text-slate-500 hover:border-slate-300"
+                          }`}
+                        >
+                          {v ? "Đi muộn" : "Về sớm"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-600">
+                      Số phút (1–480) *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min={1}
+                      max={480}
+                      value={form.durationMinutes}
+                      onChange={(e) => set("durationMinutes", Number(e.target.value))}
+                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* ── SHIFT SWAP ── */}
+              {selectedType === APPLICATION_TYPES.SHIFT_SWAP.LABEL && (
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-600">ID Ca của bạn *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Nhập CUID ca làm việc..."
+                      value={form.employeeShiftId}
+                      onChange={(e) => set("employeeShiftId", e.target.value)}
+                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-600">
+                      ID Nhân viên muốn đổi (tùy chọn)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="CUID nhân viên..."
+                      value={form.swapWithEmployeeId}
+                      onChange={(e) => set("swapWithEmployeeId", e.target.value)}
+                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-600">
+                      ID Ca muốn đổi sang (tùy chọn)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="CUID ca làm việc..."
+                      value={form.swapWithShiftId}
+                      onChange={(e) => set("swapWithShiftId", e.target.value)}
+                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* ── WFH ── */}
+              {selectedType === APPLICATION_TYPES.WORK_FROM_HOME.LABEL && (
+                <div className="flex flex-col gap-1.5">
+                  {/* Backend field name: "location" */}
+                  <label className="text-xs font-semibold text-slate-600">Địa điểm làm việc</label>
+                  <input
+                    type="text"
+                    placeholder="VD: Tại nhà, Quán cà phê..."
+                    value={form.location}
+                    onChange={(e) => set("location", e.target.value)}
+                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                  />
+                </div>
+              )}
+
+              {/* ── BUSINESS TRIP ── */}
+              {selectedType === APPLICATION_TYPES.BUSINESS_TRIP.LABEL && (
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    {/* Backend field name: "location" */}
+                    <label className="text-xs font-semibold text-slate-600">
+                      Địa điểm công tác *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="VD: Hà Nội, TP.HCM..."
+                      value={form.destination}
+                      onChange={(e) => set("destination", e.target.value)}
+                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-600">
+                      Mục đích chuyến đi
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Mô tả mục đích..."
+                      value={form.purpose}
+                      onChange={(e) => set("purpose", e.target.value)}
+                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* ── REGIME ── */}
+              {selectedType === APPLICATION_TYPES.REGIME.LABEL && (
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-600">Chế độ lương *</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {([REGIME_TYPE.PAID, REGIME_TYPE.UNPAID] as const).map((rt) => (
+                        <button
+                          key={rt}
+                          type="button"
+                          onClick={() => set("regimeType", rt)}
+                          className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
+                            form.regimeType === rt
+                              ? "border-primary bg-primary/5 text-primary"
+                              : "border-slate-200 text-slate-500 hover:border-slate-300"
+                          }`}
+                        >
+                          {rt === REGIME_TYPE.PAID ? "Có lương" : "Không lương"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-600">
+                      Số phút giảm/ngày (0–480) *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min={0}
+                      max={480}
+                      value={form.reducedMinutesPerDay}
+                      onChange={(e) => set("reducedMinutesPerDay", Number(e.target.value))}
+                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-semibold text-slate-600">Áp dụng</label>
+                    <div className="flex gap-4">
+                      {(
+                        [
+                          { key: "applyToStart", label: "Đầu buổi" },
+                          { key: "applyToEnd", label: "Cuối buổi" },
+                        ] as const
+                      ).map(({ key, label }) => (
+                        <label key={key} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={form[key]}
+                            onChange={(e) => set(key, e.target.checked)}
+                            className="accent-primary"
+                          />
+                          <span className="text-sm text-slate-600">{label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-600">
+                      URL chứng từ (tùy chọn)
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://..."
+                      value={form.documentUrl}
+                      onChange={(e) => set("documentUrl", e.target.value)}
+                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Reason */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-600">
+                  Lý do{" "}
+                  <span className="text-slate-400 font-normal">(tối thiểu 5 ký tự nếu điền)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  minLength={5}
+                  placeholder="Nhập lý do gửi đơn..."
+                  value={form.reason}
+                  onChange={(e) => set("reason", e.target.value)}
+                  className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
+                />
+              </div>
+
+              {/* Note */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-600">Ghi chú thêm</label>
+                <input
+                  type="text"
+                  placeholder="Thông tin bổ sung (nếu có)..."
+                  value={form.note}
+                  onChange={(e) => set("note", e.target.value)}
+                  className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                />
+              </div>
+            </form>
+          )}
+        </div>
+
+        {/* Footer */}
+        {step === "details" && (
+          <div className="border-t border-slate-100 px-5 py-4 flex gap-3 bg-slate-50">
+            <button
+              type="button"
+              onClick={() => setStep("type")}
+              className="flex-1 py-2.5 border border-slate-200 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+            >
+              Quay lại
+            </button>
+            <button
+              type="submit"
+              form="submit-form"
+              disabled={isSubmitting}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white rounded-full text-sm font-bold transition-all active:scale-[0.98]"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  Đang gửi...
+                </>
+              ) : (
+                <>
+                  <Send size={15} />
+                  Gửi đơn
+                </>
+              )}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Cancel Confirm Dialog ────────────────────────────────────────────────────
+
+interface CancelDialogProps {
+  app: IApplication
+  onCancel: () => void
+  onConfirm: () => void
+  isLoading: boolean
+}
+
+function CancelDialog({ app, onCancel, onConfirm, isLoading }: CancelDialogProps) {
+  const typeMeta = APP_TYPE_META[app.type]
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 flex flex-col gap-5">
+        <div className="flex flex-col items-center text-center gap-2">
+          <div className="h-12 w-12 rounded-full bg-red-50 border border-red-100 flex items-center justify-center text-red-500 mb-1">
+            <AlertTriangle size={22} />
+          </div>
+          <h3 className="text-base font-bold text-slate-800">Xác nhận hủy đơn?</h3>
+          <p className="text-sm text-slate-500">
+            Hủy đơn <strong className={typeMeta?.color}>{typeMeta?.label ?? app.type}</strong> từ{" "}
+            {new Date(app.startDate).toLocaleDateString("vi-VN")}?
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-2.5 border border-slate-200 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-50"
+          >
+            Không
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isLoading}
+            className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white rounded-full text-sm font-bold transition-colors"
+          >
+            {isLoading ? "Đang hủy..." : "Xác nhận hủy"}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Application Card ─────────────────────────────────────────────────────────
+
+// ─── Reject Confirm Dialog ────────────────────────────────────────────────────
+
+interface RejectDialogProps {
+  app: IApplication
+  onCancel: () => void
+  onConfirm: (reason: string) => void
+  isLoading: boolean
+}
+
+function RejectDialog({ app, onCancel, onConfirm, isLoading }: RejectDialogProps) {
+  const [reason, setReason] = useState("")
+  const typeMeta = APP_TYPE_META[app.type]
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!reason.trim()) {
+      toast.error("Vui lòng nhập lý do từ chối")
+      return
+    }
+    onConfirm(reason)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 flex flex-col gap-5">
+        <div className="flex flex-col items-center text-center gap-2">
+          <div className="h-12 w-12 rounded-full bg-red-50 border border-red-100 flex items-center justify-center text-red-500 mb-1">
+            <X size={22} />
+          </div>
+          <h3 className="text-base font-bold text-slate-800">Từ chối đơn?</h3>
+          <p className="text-sm text-slate-500">
+            Từ chối đơn <strong className={typeMeta?.color}>{typeMeta?.label ?? app.type}</strong>{" "}
+            của <strong>{app.employee?.fullName}</strong>?
+          </p>
+        </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-slate-600">Lý do từ chối *</label>
+            <textarea
+              rows={3}
+              required
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Nhập lý do..."
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
+            />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 py-2.5 border border-slate-200 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white rounded-full text-sm font-bold transition-colors"
+            >
+              {isLoading ? "Đang xử lý..." : "Xác nhận từ chối"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
+export default function ApplicationDashboard() {
+  // View State: "list" | "detail"
+  const [view, setView] = useState<"list" | "detail">("list")
+  const [selectedApp, setSelectedApp] = useState<IApplication | null>(null)
+
+  const [searchParams] = useSearchParams()
+  const activeTab = (searchParams.get("tab") as "mine" | "manage") || "mine"
+  const activeType = searchParams.get("type") || "all"
+
+  const myApps = useMyApplications()
+  const manageApps = useManageApplications()
+
+  useEffect(() => {
+    setView("list")
+    setSelectedApp(null)
+    myApps.setTypeFilter(activeType)
+    manageApps.setTypeFilter(activeType)
+  }, [activeTab, activeType, myApps.setTypeFilter, manageApps.setTypeFilter])
+
+  const [showSubmitModal, setShowSubmitModal] = useState(false)
+  const [showCreateMenu, setShowCreateMenu] = useState(false)
+  const [createType, setCreateType] = useState<string | undefined>(undefined)
+  const [cancelTarget, setCancelTarget] = useState<IApplication | null>(null)
+  const [rejectTarget, setRejectTarget] = useState<IApplication | null>(null)
+
+  const handleCancelConfirm = async () => {
+    if (!cancelTarget) return
+    await myApps.handleCancel(cancelTarget.id)
+    setCancelTarget(null)
+    if (view === "detail" && selectedApp?.id === cancelTarget.id) setView("list")
+  }
+
+  const handleRejectConfirm = async (reason: string) => {
+    if (!rejectTarget) return
+    await manageApps.handleReject(rejectTarget.id, reason)
+    setRejectTarget(null)
+    if (view === "detail" && selectedApp?.id === rejectTarget.id) {
+      setView("list")
+    }
+  }
+
+  const handleApproveFromDetail = async (app: IApplication) => {
+    await manageApps.handleApprove(app.id)
+    setView("list")
+  }
+
+  const handleRowClick = (app: IApplication) => {
+    setSelectedApp(app)
+    setView("detail")
+  }
+
+  if (view === "detail") {
+    return (
+      <ApplicationDetail
+        application={selectedApp}
+        isLoading={activeTab === "mine" ? myApps.isLoading : manageApps.isLoading}
+        mode={activeTab}
+        onBack={() => setView("list")}
+        onApprove={handleApproveFromDetail}
+        onReject={setRejectTarget}
+      />
+    )
+  }
+
+  const currentTypeConfig = Object.values(APPLICATION_TYPES).find((t) => t.LABEL === activeType)
+
+  return (
+    <div className="flex flex-col gap-6 p-6 w-full mx-auto animate-in fade-in duration-300">
+      {/* Header */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <button
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-primary text-primary hover:bg-blue-50 transition-colors"
+              onClick={() => setShowCreateMenu(!showCreateMenu)}
+            >
+              <Plus size={18} strokeWidth={2.5} />
+            </button>
+
+            {showCreateMenu && (
+              <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2">
+                <button
+                  onClick={() => {
+                    setCreateType(undefined)
+                    setShowSubmitModal(true)
+                    setShowCreateMenu(false)
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-[14px] text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors"
+                >
+                  Tạo mới đơn từ
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center text-[15px]">
+            <span className="font-semibold text-slate-800">Đơn thư</span>
+            <ChevronRight className="mx-2 text-slate-400" size={16} />
+            {searchParams.get("tab") === "manage" ? (
+              <span className="text-slate-600 font-medium">Bạn duyệt</span>
+            ) : searchParams.get("tab") === "mine" ? (
+              <span className="text-slate-600 font-medium">Của bạn</span>
+            ) : (
+              <>
+                <span className="text-slate-600 font-medium">Danh sách đơn thư</span>
+                {currentTypeConfig && (
+                  <>
+                    <ChevronRight className="mx-2 text-slate-400" size={16} />
+                    <span className="text-primary font-medium">{currentTypeConfig.DESCRIPTION}</span>
+                  </>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Detail Modal */}
-      {selectedApproval && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card border border-border w-full max-w-lg rounded-xl shadow-lg p-6 flex flex-col gap-6 animate-in fade-in zoom-in-95 duration-200">
-            {/* Modal Header */}
-            <div className="flex justify-between items-start">
-              <div>
-                <span
-                  className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full border ${getCategoryDetails(selectedApproval.category).color}`}
-                >
-                  {selectedApproval.category === APPROVAL_CATEGORY.APPLICATION
-                    ? "Đơn ứng dụng"
-                    : selectedApproval.category === APPROVAL_CATEGORY.PASSWORD_RESET
-                      ? "Reset mật khẩu"
-                      : "Tuyển dụng"}
-                </span>
-                <h3 className="text-lg font-bold text-foreground mt-2">
-                  Chi tiết yêu cầu phê duyệt
-                </h3>
-              </div>
-              <button
-                onClick={() => setSelectedApproval(null)}
-                className="text-muted-foreground hover:text-foreground rounded-full hover:bg-secondary p-1 transition-colors cursor-pointer"
-              >
-                <X size={20} />
-              </button>
-            </div>
+      <div className="flex-1 w-full mt-4 min-w-0 bg-white border border-slate-200 rounded-xl px-6 pb-6 shadow-sm">
+        <ApplicationList
+          mode={activeTab}
+          onRowClick={handleRowClick}
+          hookState={activeTab === "mine" ? myApps : manageApps}
+        />
+      </div>
 
-            {/* Modal Body */}
-            <div className="flex flex-col gap-4 text-sm rounded-lg bg-secondary/20 p-4 border border-border/50">
-              <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                <span className="text-muted-foreground font-medium">Người gửi:</span>
-                <span className="col-span-2 text-foreground font-semibold">
-                  {selectedApproval.employeeName}
-                </span>
-              </div>
-
-              {selectedApproval.details.assignedTo && (
-                <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                  <span className="text-muted-foreground font-medium">Người duyệt CĐ:</span>
-                  <span className="col-span-2 text-foreground font-semibold">
-                    {selectedApproval.details.assignedTo.fullName}
-                  </span>
-                </div>
-              )}
-
-              <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                <span className="text-muted-foreground font-medium">Thời gian tạo:</span>
-                <span className="col-span-2 text-foreground font-semibold">
-                  {new Date(selectedApproval.createdAt).toLocaleString("vi-VN")}
-                </span>
-              </div>
-
-              {selectedApproval.category === APPROVAL_CATEGORY.APPLICATION && (
-                <>
-                  <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                    <span className="text-muted-foreground font-medium">Loại đơn:</span>
-                    <span className="col-span-2 text-foreground font-semibold uppercase">
-                      {selectedApproval.details.type}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                    <span className="text-muted-foreground font-medium">Thời gian nghỉ:</span>
-                    <span className="col-span-2 text-foreground font-semibold">
-                      {new Date(selectedApproval.details.startDate!).toLocaleDateString("vi-VN")} -{" "}
-                      {new Date(selectedApproval.details.endDate!).toLocaleDateString("vi-VN")}
-                    </span>
-                  </div>
-                  
-                  {/* Leave Detail */}
-                  {selectedApproval.details.leaveDetail && (
-                    <>
-                      <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                        <span className="text-muted-foreground font-medium">Loại nghỉ phép:</span>
-                        <span className="col-span-2 text-foreground font-semibold">
-                          {selectedApproval.details.leaveDetail.leaveType}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                        <span className="text-muted-foreground font-medium">Chế độ:</span>
-                        <span className="col-span-2 text-foreground font-semibold">
-                          {selectedApproval.details.leaveDetail.regimeType === REGIME_TYPE.PAID ? "Có lương" : "Không lương"}
-                        </span>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Overtime Detail */}
-                  {selectedApproval.details.overtimeDetail && (
-                    <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                      <span className="text-muted-foreground font-medium">Ca làm việc OT:</span>
-                      <span className="col-span-2 text-foreground font-semibold">
-                        {selectedApproval.details.overtimeDetail.employeeShiftId}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Late/Early Detail */}
-                  {selectedApproval.details.lateEarlyDetail && (
-                    <>
-                      <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                        <span className="text-muted-foreground font-medium">Loại vi phạm:</span>
-                        <span className="col-span-2 text-foreground font-semibold">
-                          {selectedApproval.details.lateEarlyDetail.isLate ? "Đi muộn" : "Về sớm"}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                        <span className="text-muted-foreground font-medium">Số phút:</span>
-                        <span className="col-span-2 text-foreground font-semibold">
-                          {selectedApproval.details.lateEarlyDetail.durationMinutes} phút
-                        </span>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Shift Swap Detail */}
-                  {selectedApproval.details.shiftSwapDetail && (
-                    <>
-                      <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                        <span className="text-muted-foreground font-medium">Ca của bạn:</span>
-                        <span className="col-span-2 text-foreground font-semibold">
-                          {selectedApproval.details.shiftSwapDetail.workingShift?.name || selectedApproval.details.shiftSwapDetail.employeeShiftId}
-                        </span>
-                      </div>
-                      {selectedApproval.details.shiftSwapDetail.swapWithEmployee && (
-                        <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                          <span className="text-muted-foreground font-medium">Đổi với nhân viên:</span>
-                          <span className="col-span-2 text-foreground font-semibold">
-                            {selectedApproval.details.shiftSwapDetail.swapWithEmployee.fullName}
-                          </span>
-                        </div>
-                      )}
-                      {selectedApproval.details.shiftSwapDetail.swapWithShift && (
-                        <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                          <span className="text-muted-foreground font-medium">Đổi sang ca:</span>
-                          <span className="col-span-2 text-foreground font-semibold">
-                            {selectedApproval.details.shiftSwapDetail.swapWithShift.shift?.name}
-                          </span>
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {/* Business Trip Detail */}
-                  {selectedApproval.details.businessTripDetail && (
-                    <>
-                      <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                        <span className="text-muted-foreground font-medium">Địa điểm CT:</span>
-                        <span className="col-span-2 text-foreground font-semibold">
-                          {selectedApproval.details.businessTripDetail.location}
-                        </span>
-                      </div>
-                      {selectedApproval.details.businessTripDetail.purpose && (
-                        <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                          <span className="text-muted-foreground font-medium">Mục đích:</span>
-                          <span className="col-span-2 text-foreground font-semibold">
-                            {selectedApproval.details.businessTripDetail.purpose}
-                          </span>
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {/* Work From Home Detail */}
-                  {selectedApproval.details.workFromHomeDetail && (
-                    <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                      <span className="text-muted-foreground font-medium">Địa điểm WFH:</span>
-                      <span className="col-span-2 text-foreground font-semibold">
-                        {selectedApproval.details.workFromHomeDetail.location || "Tại nhà"}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Regime Detail */}
-                  {selectedApproval.details.regimeDetail && (
-                    <>
-                      <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                        <span className="text-muted-foreground font-medium">Chế độ lương:</span>
-                        <span className="col-span-2 text-foreground font-semibold">
-                          {selectedApproval.details.regimeDetail.regimeType === REGIME_TYPE.PAID ? "Có lương" : "Không lương"}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                        <span className="text-muted-foreground font-medium">Số phút giảm/ngày:</span>
-                        <span className="col-span-2 text-foreground font-semibold">
-                          {selectedApproval.details.regimeDetail.reducedMinutesPerDay} phút
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                        <span className="text-muted-foreground font-medium">Áp dụng:</span>
-                        <span className="col-span-2 text-foreground font-semibold">
-                          {selectedApproval.details.regimeDetail.applyToStart && "Đầu buổi "}
-                          {selectedApproval.details.regimeDetail.applyToStart && selectedApproval.details.regimeDetail.applyToEnd && " & "}
-                          {selectedApproval.details.regimeDetail.applyToEnd && "Cuối buổi"}
-                        </span>
-                      </div>
-                    </>
-                  )}
-                  
-                  {/* Fallback for old schema regimeType */}
-                  {!selectedApproval.details.leaveDetail && !selectedApproval.details.regimeDetail && selectedApproval.details.regimeType && (
-                    <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                      <span className="text-muted-foreground font-medium">Chế độ:</span>
-                      <span className="col-span-2 text-foreground font-semibold">
-                        {selectedApproval.details.regimeType === REGIME_TYPES[0]
-                          ? "Có lương"
-                          : "Nghỉ không lương"}
-                      </span>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {selectedApproval.category === APPROVAL_CATEGORY.RECRUITMENT_PROPOSAL && (
-                <>
-                  <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                    <span className="text-muted-foreground font-medium">Vị trí tuyển:</span>
-                    <span className="col-span-2 text-foreground font-semibold">
-                      {selectedApproval.details.position}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                    <span className="text-muted-foreground font-medium">Số lượng tuyển:</span>
-                    <span className="col-span-2 text-foreground font-semibold">
-                      {selectedApproval.details.headcount} nhân viên
-                    </span>
-                  </div>
-                  {selectedApproval.details.expectedStart && (
-                    <div className="grid grid-cols-3 border-b border-border/30 pb-2">
-                      <span className="text-muted-foreground font-medium">Bắt đầu dự kiến:</span>
-                      <span className="col-span-2 text-foreground font-semibold">
-                        {new Date(selectedApproval.details.expectedStart!).toLocaleDateString(
-                          "vi-VN",
-                        )}
-                      </span>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {selectedApproval.details.reason && (
-                <div className="flex flex-col gap-1 border-b border-border/30 pb-2">
-                  <span className="text-muted-foreground font-medium">Lý do:</span>
-                  <span className="text-foreground">{selectedApproval.details.reason}</span>
-                </div>
-              )}
-
-              {selectedApproval.details.note && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-muted-foreground font-medium">Ghi chú:</span>
-                  <span className="text-foreground">{selectedApproval.details.note}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Actions */}
-            <div className="flex gap-3 justify-end mt-2">
-              <button
-                onClick={() => setRejectingItem(selectedApproval)}
-                disabled={isProcessing}
-                className="bg-destructive hover:bg-destructive/90 disabled:opacity-50 text-white rounded-full px-5 py-2 text-sm font-bold shadow-sm transition-colors cursor-pointer"
-              >
-                Từ chối
-              </button>
-
-              <button
-                onClick={() => handleApprove(selectedApproval)}
-                disabled={isProcessing}
-                className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-full px-5 py-2 text-sm font-bold shadow-sm transition-colors cursor-pointer"
-              >
-                Phê duyệt
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Modals */}
+      {showSubmitModal && (
+        <SubmitApplicationModal
+          onClose={() => setShowSubmitModal(false)}
+          onSuccess={() => myApps.refetch()}
+          initialType={createType}
+        />
       )}
-
-      {/* Reject Dialog Modal */}
-      {rejectingItem && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <form
-            onSubmit={handleRejectSubmit}
-            className="bg-card border border-border w-full max-w-md rounded-xl shadow-lg p-6 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200"
-          >
-            <div>
-              <h3 className="text-lg font-bold text-foreground">Nhập lý do từ chối</h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                Vui lòng cung cấp lý do chi tiết từ chối yêu cầu của{" "}
-                <strong>{rejectingItem.employeeName}</strong>.
-              </p>
-            </div>
-
-            <textarea
-              required
-              rows={3}
-              placeholder="Nhập lý do từ chối tại đây..."
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              className="w-full px-3 py-2 border border-border bg-transparent text-foreground text-sm rounded-lg focus:outline-none focus:ring-1 focus:ring-destructive focus:border-destructive"
-            />
-
-            <div className="flex gap-2 justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  setRejectingItem(null)
-                  setRejectReason("")
-                }}
-                className="px-4 py-2 border border-border text-foreground hover:bg-secondary rounded-full text-xs font-semibold cursor-pointer"
-              >
-                Hủy bỏ
-              </button>
-
-              <button
-                type="submit"
-                disabled={isProcessing}
-                className="px-4 py-2 bg-destructive hover:bg-destructive/90 disabled:opacity-50 text-white rounded-full text-xs font-semibold shadow-sm cursor-pointer"
-              >
-                Xác nhận từ chối
-              </button>
-            </div>
-          </form>
-        </div>
+      {cancelTarget && (
+        <CancelDialog
+          app={cancelTarget}
+          onCancel={() => setCancelTarget(null)}
+          onConfirm={handleCancelConfirm}
+          isLoading={myApps.cancellingId === cancelTarget.id}
+        />
       )}
-
-      {/* New Temporary Password Dialog Modal */}
-      {newTempPassword && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card border border-border w-full max-w-md rounded-xl shadow-lg p-6 flex flex-col gap-5 animate-in fade-in zoom-in-95 duration-200">
-            <div className="text-center flex flex-col items-center">
-              <div className="h-12 w-12 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-3">
-                <Check size={24} />
-              </div>
-              <h3 className="text-lg font-bold text-foreground">Phê duyệt cấp lại mật khẩu</h3>
-              <p className="text-xs text-muted-foreground mt-1 px-4">
-                Yêu cầu reset mật khẩu của <strong>{approvedEmployeeName}</strong> đã được phê
-                duyệt. Hệ thống đã tự động tạo một mật khẩu tạm thời mới.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-2 p-3 bg-secondary/35 border border-border rounded-lg text-center relative group">
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-                Mật khẩu tạm thời mới
-              </span>
-              <div className="text-lg font-mono font-bold text-primary select-all tracking-wide py-1">
-                {newTempPassword}
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(newTempPassword)
-                  toast.success("Đã sao chép mật khẩu vào clipboard!")
-                }}
-                className="mt-1 text-xs text-primary hover:underline cursor-pointer focus:outline-none"
-              >
-                Sao chép mật khẩu
-              </button>
-            </div>
-
-            <div className="bg-amber-500/15 border border-amber-500/20 text-amber-700 dark:text-amber-500 rounded-lg p-3 text-xs leading-relaxed">
-              <strong>Lưu ý:</strong> Mật khẩu này chỉ được hiển thị{" "}
-              <strong>một lần duy nhất</strong>. Hãy lưu lại hoặc sao chép và gửi trực tiếp cho nhân
-              viên để họ đăng nhập và đổi mật khẩu mới.
-            </div>
-
-            <button
-              onClick={() => {
-                setNewTempPassword("")
-                setApprovedEmployeeName("")
-              }}
-              className="w-full py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-full text-sm cursor-pointer shadow-sm"
-            >
-              Hoàn thành
-            </button>
-          </div>
-        </div>
+      {rejectTarget && (
+        <RejectDialog
+          app={rejectTarget}
+          onCancel={() => setRejectTarget(null)}
+          onConfirm={handleRejectConfirm}
+          isLoading={manageApps.processingId === rejectTarget.id}
+        />
       )}
     </div>
   )

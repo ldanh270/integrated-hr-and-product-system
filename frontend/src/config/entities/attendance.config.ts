@@ -56,6 +56,27 @@ export const REGIME_TYPE = {
 export const REGIME_TYPES = [REGIME_TYPE.PAID, REGIME_TYPE.UNPAID] as const
 export type IRegimeType = (typeof REGIME_TYPES)[number]
 
+export const LEAVE_TYPE = {
+  ANNUAL_LEAVE: "annual_leave",
+  SICK_LEAVE: "sick_leave",
+  MATERNITY_LEAVE: "maternity_leave",
+  BEREAVEMENT_LEAVE: "bereavement_leave",
+  MARRIAGE_LEAVE: "marriage_leave",
+  UNPAID_LEAVE: "unpaid_leave",
+  OTHER: "other",
+} as const
+
+export const LEAVE_TYPE_VALUES = [
+  LEAVE_TYPE.ANNUAL_LEAVE,
+  LEAVE_TYPE.SICK_LEAVE,
+  LEAVE_TYPE.MATERNITY_LEAVE,
+  LEAVE_TYPE.BEREAVEMENT_LEAVE,
+  LEAVE_TYPE.MARRIAGE_LEAVE,
+  LEAVE_TYPE.UNPAID_LEAVE,
+  LEAVE_TYPE.OTHER,
+] as const
+export type ILeaveType = (typeof LEAVE_TYPE_VALUES)[number]
+
 // ─── Label Maps ───────────────────────────────────────────────
 
 export const ATTENDANCE_STATUS_LABELS: Record<string, string> = {

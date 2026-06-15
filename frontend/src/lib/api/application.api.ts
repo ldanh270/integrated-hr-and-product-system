@@ -105,6 +105,7 @@ export interface IListApplicationsQuery {
   pageSize?: number
   status?: IApplicationStatus | "all"
   type?: string
+  keyword?: string
   startDate?: string
   endDate?: string
 }

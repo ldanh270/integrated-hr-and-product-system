@@ -10,9 +10,6 @@ import {
 import { ROUTES } from "@/config/routes.config"
 import { useAuth } from "@/hooks/use-auth.ts"
 import { useAuthStore } from "@/store/auth-store.ts"
-import { useSubsystemStore } from "@/store/subsystem-store"
-
-import { useState } from "react"
 
 import { Bell, History, LogOut, MessageSquare, User } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
@@ -25,11 +22,6 @@ export default function Header() {
   const navigate = useNavigate()
   const { logout, isLoggingOut } = useAuth()
   const { user, isAuthenticated } = useAuthStore()
-  const { getActiveSubsystemConfig } = useSubsystemStore()
-  const [activeTab, setActiveTab] = useState<"personal" | "summary">("personal")
-
-  const activeSubsystemConfig = getActiveSubsystemConfig()
-
   const handleLogout = async () => {
     try {
       await logout()
@@ -44,30 +36,8 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-40 w-full h-16 border-b border-border bg-background text-foreground px-6 flex items-center shadow-none">
       <div className="flex w-full items-center justify-between">
-        {/* Left: title + sub-tabs */}
-        <div className="flex items-center gap-8">
-          <div className="flex flex-col">
-            <h1 className="text-sm font-medium tracking-tight leading-none">
-              {activeSubsystemConfig?.name || "Hệ thống HRP"}
-            </h1>
-          </div>
-          {/* Sub-tabs */}
-          <div className="flex items-center gap-6 text-sm mt-0.5">
-            {(["personal", "summary"] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`pb-1 font-medium transition-all cursor-pointer ${
-                  activeTab === tab
-                    ? "text-primary border-b-2 border-primary"
-                    : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
-                }`}
-              >
-                {tab === "personal" ? "Cá nhân" : "Tổng hợp"}
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Left: Empty for spacing if needed */}
+        <div></div>
 
         {/* Right: notifications + profile */}
         <div className="flex items-center gap-4">

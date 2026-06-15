@@ -1,5 +1,6 @@
 import { ROLE } from "@/config/entities/employee.config"
 import { ROUTES } from "@/config/routes.config"
+import { APPLICATION_TYPES } from "@/config/entities/attendance.config"
 
 import {
   BookOpen,
@@ -11,6 +12,9 @@ import {
   Settings,
   ShieldCheck,
   Users,
+  UserCheck,
+  FilePlus2,
+  User,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
@@ -30,6 +34,7 @@ export interface NavItem {
   path: string
   icon: LucideIcon
   roles?: string[]
+  subItems?: { name: string; path: string; icon?: LucideIcon }[]
 }
 
 export interface SubsystemConfig {
@@ -59,7 +64,19 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     description: "Tạo đơn từ và duyệt đơn trực tuyến",
     icon: FileText,
     routePrefix: "/application",
-    sidebarItems: [{ name: "Tổng quan", path: ROUTES.APPLICATION.DASHBOARD, icon: FileText }],
+    sidebarItems: [
+      { name: "Bạn duyệt", path: ROUTES.APPLICATION.DASHBOARD + "?tab=manage", icon: UserCheck },
+      { 
+        name: "Đơn thư", 
+        path: ROUTES.APPLICATION.DASHBOARD, 
+        icon: FilePlus2,
+        subItems: Object.values(APPLICATION_TYPES).map(t => ({
+          name: t.DESCRIPTION,
+          path: `${ROUTES.APPLICATION.DASHBOARD}?type=${t.LABEL}`
+        }))
+      },
+      { name: "Của bạn", path: ROUTES.APPLICATION.DASHBOARD + "?tab=mine", icon: User },
+    ],
   },
   {
     id: "attendance",
@@ -70,7 +87,6 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     sidebarItems: [
       { name: "Tổng quan", path: ROUTES.ATTENDANCE.DASHBOARD, icon: CalendarClock },
       { name: "Lịch của tôi", path: ROUTES.ATTENDANCE.MY_SCHEDULE, icon: CalendarClock },
-      { name: "Đơn từ", path: ROUTES.ATTENDANCE.APPLICATIONS, icon: FileText },
       { name: "Ca làm việc", path: ROUTES.ATTENDANCE.SHIFTS, icon: CalendarClock },
       { name: "Ngày lễ", path: ROUTES.ATTENDANCE.HOLIDAYS, icon: CalendarClock },
     ],

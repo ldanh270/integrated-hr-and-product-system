@@ -15,6 +15,8 @@ interface UseMyApplicationsReturn {
   setStatusFilter: (v: StatusFilter) => void
   typeFilter: string
   setTypeFilter: (v: string) => void
+  keyword: string
+  setKeyword: (v: string) => void
   page: number
   setPage: (v: number) => void
   totalPages: number
@@ -37,6 +39,7 @@ export function useMyApplications(): UseMyApplicationsReturn {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [typeFilter, setTypeFilter] = useState<string>("all")
+  const [keyword, setKeyword] = useState<string>("")
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
@@ -58,6 +61,7 @@ export function useMyApplications(): UseMyApplicationsReturn {
 
         if (statusFilter !== "all") query.status = statusFilter
         if (typeFilter !== "all") query.type = typeFilter
+        if (keyword.trim() !== "") query.keyword = keyword.trim()
 
         const { data, meta } = await applicationApi.listMine(query)
 
@@ -79,7 +83,7 @@ export function useMyApplications(): UseMyApplicationsReturn {
         }
       }
     },
-    [statusFilter, typeFilter, page],
+    [statusFilter, typeFilter, keyword, page],
   )
 
   const fetchStats = useCallback(async () => {
@@ -92,12 +96,15 @@ export function useMyApplications(): UseMyApplicationsReturn {
       ] as const
 
       const counts = await Promise.all(
-        statuses.map((s) =>
-          applicationApi
-            .listMine({ status: s, page: 1, pageSize: 1 })
+        statuses.map((s) => {
+          const query: IListApplicationsQuery = { status: s, page: 1, pageSize: 1 }
+          if (typeFilter !== "all") query.type = typeFilter
+          if (keyword.trim() !== "") query.keyword = keyword.trim()
+          return applicationApi
+            .listMine(query)
             .then((r) => r.meta?.total ?? 0)
-            .catch(() => 0),
-        ),
+            .catch(() => 0)
+        }),
       )
 
       if (!activeRef.current) return
@@ -107,19 +114,24 @@ export function useMyApplications(): UseMyApplicationsReturn {
         approved: counts[1],
         rejected: counts[2],
         cancelled: counts[3],
-        total: counts.reduce((acc, c) => acc + c, 0),
+        total: counts.reduce((a, b) => a + b, 0),
       })
-    } catch {
-      // stats are non-critical — silently ignore
+    } catch (error) {
+      console.error("Failed to fetch application stats", error)
     }
-  }, [])
+  }, [typeFilter, keyword])
 
   useEffect(() => {
     activeRef.current = true
-    fetchApplications(true)
-    fetchStats()
+    const timer = setTimeout(() => {
+      if (activeRef.current) {
+        fetchApplications(true)
+        fetchStats()
+      }
+    }, 0)
     return () => {
       activeRef.current = false
+      clearTimeout(timer)
     }
   }, [fetchApplications, fetchStats])
 
@@ -150,6 +162,8 @@ export function useMyApplications(): UseMyApplicationsReturn {
     setStatusFilter,
     typeFilter,
     setTypeFilter,
+    keyword,
+    setKeyword,
     page,
     setPage,
     totalPages,
