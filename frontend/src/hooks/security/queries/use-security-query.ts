@@ -4,6 +4,9 @@ import { employeeKeys } from "@/hooks/employees/queries/useEmployeeQuery"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
+/**
+ * Query keys for security module
+ */
 export const securityKeys = {
   all: ["security"] as const,
   summary: () => [...securityKeys.all, "summary"] as const,
@@ -13,6 +16,9 @@ export const securityKeys = {
   logDetail: (id: string) => [...securityKeys.logs(), "detail", id] as const,
 }
 
+/**
+ * Hook to get security summary statistics
+ */
 export function useSecuritySummary() {
   return useQuery({
     queryKey: securityKeys.summary(),
@@ -20,6 +26,9 @@ export function useSecuritySummary() {
   })
 }
 
+/**
+ * Hook to get locked user accounts
+ */
 export function useLockedAccounts() {
   return useQuery({
     queryKey: securityKeys.lockedAccounts(),
@@ -27,6 +36,9 @@ export function useLockedAccounts() {
   })
 }
 
+/**
+ * Hook to unlock a user account
+ */
 export function useUnlockAccount() {
   const queryClient = useQueryClient()
 
@@ -40,6 +52,10 @@ export function useUnlockAccount() {
   })
 }
 
+/**
+ * Hook to get paginated activity logs
+ * @param query Query filters and pagination
+ */
 export function useActivityLogs(query: ActivityLogQuery) {
   return useQuery({
     queryKey: securityKeys.logList(query),
@@ -48,6 +64,10 @@ export function useActivityLogs(query: ActivityLogQuery) {
   })
 }
 
+/**
+ * Hook to get detail of a specific activity log
+ * @param id The log ID
+ */
 export function useActivityLog(id: string) {
   return useQuery({
     queryKey: securityKeys.logDetail(id),

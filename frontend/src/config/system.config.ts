@@ -22,3 +22,8 @@ export const SORT_ORDER = {
  * Array of valid sorting directions
  */
 export const SORT_ORDER_VALUES = [SORT_ORDER.ASC, SORT_ORDER.DESC] as const
+
+export const COMMON_TEXTS = {
+  NOT_AVAILABLE: "N/A",
+  SYSTEM: "Hệ thống",
+} as const

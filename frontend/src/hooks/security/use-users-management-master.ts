@@ -1,5 +1,6 @@
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useEmployees } from "@/hooks/employees/queries/useEmployeeQuery"
+import { USERS_MANAGEMENT_TABS, type IUsersManagementTab } from "@/config/entities/security.config"
 import { useLockedAccounts, useUnlockAccount } from "@/hooks/security/queries/use-security-query"
 import type { EmployeeListQuery } from "@/types/employee.types"
 
@@ -7,10 +8,8 @@ import { useCallback, useMemo, useState } from "react"
 
 import { toast } from "sonner"
 
-export type ActiveTab = "all" | "locked"
-
 export function useUsersManagementMaster() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("all")
+  const [activeTab, setActiveTab] = useState<IUsersManagementTab>(USERS_MANAGEMENT_TABS.ALL)
   const [search, setSearch] = useState("")
 
   const [query, setQuery] = useState<EmployeeListQuery>({
@@ -79,23 +78,23 @@ export function useUsersManagementMaster() {
   }, [])
 
   // Reset pagination on tab switches
-  const handleTabChange = useCallback((tab: ActiveTab) => {
+  const handleTabChange = useCallback((tab: IUsersManagementTab) => {
     setActiveTab(tab)
     setQuery((prev) => ({ ...prev, page: 1 }))
   }, [])
 
   // Unified loading & error states
-  const isLoading = activeTab === "all" ? isLoadingAll : isLoadingLocked
-  const isError = activeTab === "all" ? isErrorAll : isErrorLocked
-  const refetch = activeTab === "all" ? refetchAll : refetchLocked
+  const isLoading = activeTab === USERS_MANAGEMENT_TABS.ALL ? isLoadingAll : isLoadingLocked
+  const isError = activeTab === USERS_MANAGEMENT_TABS.ALL ? isErrorAll : isErrorLocked
+  const refetch = activeTab === USERS_MANAGEMENT_TABS.ALL ? refetchAll : refetchLocked
 
   // Paginated display data selection
-  const displayData = activeTab === "all" ? allUsers?.data : paginatedLockedUsers
+  const displayData = activeTab === USERS_MANAGEMENT_TABS.ALL ? allUsers?.data : paginatedLockedUsers
 
   // Pagination metrics
-  const total = activeTab === "all" ? (allUsers?.meta.total ?? 0) : filteredLockedUsers.length
+  const total = activeTab === USERS_MANAGEMENT_TABS.ALL ? (allUsers?.meta.total ?? 0) : filteredLockedUsers.length
   const totalPages =
-    activeTab === "all"
+    activeTab === USERS_MANAGEMENT_TABS.ALL
       ? (allUsers?.meta.totalPages ?? 0)
       : Math.ceil(filteredLockedUsers.length / (query.limit || SYSTEM_CONFIG.PAGINATION.SMALL_LIMIT))
 

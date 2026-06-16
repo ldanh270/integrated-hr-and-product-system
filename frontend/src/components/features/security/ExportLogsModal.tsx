@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { EXPORT_STATUS } from "@/config/entities/security.config"
 import { useActivityExport } from "@/hooks/security/use-activity-export"
 import type { ActivityLogQuery } from "@/types/security.types"
 
@@ -22,16 +23,16 @@ export function ExportLogsModal({ isOpen, onClose, query }: ExportLogsModalProps
   const { progress, startExport, cancelExport } = useActivityExport(query)
 
   const handleClose = () => {
-    if (progress.status === "fetching" || progress.status === "counting" || progress.status === "building") {
+    if (progress.status === EXPORT_STATUS.FETCHING || progress.status === EXPORT_STATUS.COUNTING || progress.status === EXPORT_STATUS.BUILDING) {
       cancelExport()
     }
     onClose()
   }
 
   const isExporting =
-    progress.status === "counting" ||
-    progress.status === "fetching" ||
-    progress.status === "building"
+    progress.status === EXPORT_STATUS.COUNTING ||
+    progress.status === EXPORT_STATUS.FETCHING ||
+    progress.status === EXPORT_STATUS.BUILDING
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
@@ -47,7 +48,7 @@ export function ExportLogsModal({ isOpen, onClose, query }: ExportLogsModalProps
 
         <div className="py-4">
           {/* Default / Idle state */}
-          {progress.status === "idle" && (
+          {progress.status === EXPORT_STATUS.IDLE && (
             <div className="flex flex-col gap-4 text-sm text-muted-foreground bg-muted/30 p-4 rounded-xl border border-border">
               <div className="flex justify-between border-b border-border/50 pb-2">
                 <span>Từ ngày:</span>
@@ -65,7 +66,7 @@ export function ExportLogsModal({ isOpen, onClose, query }: ExportLogsModalProps
           )}
 
           {/* Counting state */}
-          {progress.status === "counting" && (
+          {progress.status === EXPORT_STATUS.COUNTING && (
             <div className="flex flex-col items-center justify-center py-6 gap-3">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <p className="text-sm font-medium">Đang tính toán số lượng bản ghi...</p>
@@ -73,7 +74,7 @@ export function ExportLogsModal({ isOpen, onClose, query }: ExportLogsModalProps
           )}
 
           {/* Fetching / Progress state */}
-          {progress.status === "fetching" && (
+          {progress.status === EXPORT_STATUS.FETCHING && (
             <div className="flex flex-col items-center justify-center py-4 gap-4">
               <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
                 <div 
@@ -91,7 +92,7 @@ export function ExportLogsModal({ isOpen, onClose, query }: ExportLogsModalProps
           )}
 
           {/* Building state */}
-          {progress.status === "building" && (
+          {progress.status === EXPORT_STATUS.BUILDING && (
             <div className="flex flex-col items-center justify-center py-6 gap-3">
               <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
               <p className="text-sm font-medium text-emerald-600">Đang tạo file CSV...</p>
@@ -100,7 +101,7 @@ export function ExportLogsModal({ isOpen, onClose, query }: ExportLogsModalProps
           )}
 
           {/* Error state */}
-          {progress.status === "error" && (
+          {progress.status === EXPORT_STATUS.ERROR && (
             <div className="flex flex-col items-center justify-center py-4 gap-3 text-center">
               <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
                 <FileWarning className="h-6 w-6 text-destructive" />
@@ -110,7 +111,7 @@ export function ExportLogsModal({ isOpen, onClose, query }: ExportLogsModalProps
           )}
           
           {/* Success state */}
-          {progress.status === "success" && (
+          {progress.status === EXPORT_STATUS.SUCCESS && (
             <div className="flex flex-col items-center justify-center py-6 gap-3 text-center">
               <div className="h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
                 <Download className="h-6 w-6 text-emerald-500" />
@@ -130,14 +131,14 @@ export function ExportLogsModal({ isOpen, onClose, query }: ExportLogsModalProps
               <Button variant="outline" onClick={handleClose}>
                 Đóng
               </Button>
-              {progress.status !== "success" && (
+              {progress.status !== EXPORT_STATUS.SUCCESS && (
                 <Button 
                   onClick={startExport} 
                   disabled={!query.fromDate || !query.toDate}
                   className="gap-2"
                 >
                   <Download size={14} />
-                  {progress.status === "error" ? "Thử lại" : "Xác nhận tải xuống"}
+                  {progress.status === EXPORT_STATUS.ERROR ? "Thử lại" : "Xác nhận tải xuống"}
                 </Button>
               )}
             </>

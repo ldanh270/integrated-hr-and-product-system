@@ -1,5 +1,6 @@
-import { PageCard, StatusPill } from "@/components/common"
+import { PageCard } from "@/components/common"
 import { ActivityLogDetailDrawer } from "@/components/features/security/ActivityLogDetailDrawer"
+import { ActivityLogsTable } from "@/components/features/security/ActivityLogsTable"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useActivityLogsMaster } from "@/hooks/security/use-activity-logs-master"
@@ -8,7 +9,6 @@ import { cn } from "@/lib/utils"
 import {
   AlertTriangle,
   Calendar,
-  FileText,
   Filter,
   Loader2,
   RefreshCw,
@@ -47,16 +47,6 @@ export default function ActivityLogs() {
     Math.min(totalPages, (query.page || 1) + 2),
   )
 
-  const ACTION_VARIANT_MAP: Record<string, "success" | "danger" | "warning" | "neutral"> = {
-    login: "success",
-    logout: "neutral",
-    failed_login: "danger",
-    account_locked: "danger",
-    account_unlocked: "success",
-    role_assigned: "success",
-    role_revoked: "warning",
-    password_changed: "warning",
-  }
 
   if (isLoading) {
     return (
@@ -167,99 +157,7 @@ export default function ActivityLogs() {
         </div>
 
         {/* ── Table ────────────────────────────────────────────────── */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted/5">
-                <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Hành động
-                </th>
-                <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Nhân viên
-                </th>
-                <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Danh mục
-                </th>
-                <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Địa chỉ IP
-                </th>
-                <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Thời gian
-                </th>
-                <th className="px-5 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Chi tiết
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/40">
-              {data.data.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-5 py-24 text-center">
-                    <div className="flex flex-col items-center gap-3">
-                      <FileText className="h-10 w-10 text-muted-foreground opacity-20" />
-                      <p className="text-sm text-muted-foreground">Không tìm thấy bản ghi nhật ký nào.</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                data.data.map((log) => (
-                  <tr
-                    key={log.id}
-                    className="group hover:bg-muted/30 transition-colors duration-100"
-                  >
-                    <td className="px-5 py-4">
-                      <div className="flex flex-col gap-1">
-                        <span className="font-semibold text-foreground text-[13px]">
-                          {log.actionType}
-                        </span>
-                        <StatusPill
-                          label={log.actionType}
-                          variant={Object.entries(ACTION_VARIANT_MAP).find(([k]) => k === log.actionType)?.[1] ?? "neutral"}
-                          className="scale-90 origin-left"
-                        />
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="text-[13px] text-foreground font-medium">
-                        {log.employeeName || <span className="text-muted-foreground italic">Hệ thống</span>}
-                      </div>
-                      <div className="text-[11px] text-muted-foreground font-mono">
-                        {log.employeeId || "N/A"}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-muted text-muted-foreground border border-border/50">
-                        {log.category}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 font-mono text-[12px] text-muted-foreground">
-                      {log.ipAddress || "—"}
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="text-[13px] text-foreground tabular-nums">
-                        {new Date(log.createdAt).toLocaleDateString("vi-VN")}
-                      </div>
-                      <div className="text-[11px] text-muted-foreground tabular-nums">
-                        {new Date(log.createdAt).toLocaleTimeString("vi-VN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <button
-                        onClick={() => setViewingLogId(log.id)}
-                        className="text-[12px] font-bold text-primary hover:underline underline-offset-4 focus:outline-none"
-                      >
-                        Xem chi tiết
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <ActivityLogsTable logs={data.data} onViewDetail={setViewingLogId} />
 
         {/* ── Pagination ───────────────────────────────────────────── */}
         <div className="px-5 py-4 border-t border-border flex items-center justify-between bg-muted/5">

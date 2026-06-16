@@ -1,3 +1,5 @@
+import { EXPORT_STATUS, type IExportStatus } from "@/config/entities/security.config"
+import { COMMON_TEXTS } from "@/config/system.config"
 import { securityApi } from "@/lib/api/security.api"
 import type { ActivityLogItem, ActivityLogQuery } from "@/types/security.types"
 import { buildCSVChunk, buildCSVHeaders, downloadCSVFromChunks } from "@/utils/csv.util"
@@ -11,7 +13,7 @@ const MAX_EXPORT_ROWS = 50000
 const EXPORT_BATCH_SIZE = 500
 
 interface ExportProgress {
-  status: "idle" | "counting" | "fetching" | "building" | "success" | "error"
+  status: IExportStatus
   totalRows: number
   fetchedRows: number
   errorMsg: string | null
@@ -19,7 +21,7 @@ interface ExportProgress {
 
 export function useActivityExport(baseQuery: ActivityLogQuery) {
   const [progress, setProgress] = useState<ExportProgress>({
-    status: "idle",
+    status: EXPORT_STATUS.IDLE,
     totalRows: 0,
     fetchedRows: 0,
     errorMsg: null,
@@ -30,11 +32,11 @@ export function useActivityExport(baseQuery: ActivityLogQuery) {
 
   const columns = [
     { header: "Thời gian", accessor: (log: ActivityLogItem) => new Date(log.createdAt).toLocaleString("vi-VN") },
-    { header: "Mã Nhân Viên", accessor: (log: ActivityLogItem) => log.employeeId || "N/A" },
-    { header: "Họ Tên", accessor: (log: ActivityLogItem) => log.employeeName || "Hệ thống" },
+    { header: "Mã Nhân Viên", accessor: (log: ActivityLogItem) => log.employeeId || COMMON_TEXTS.NOT_AVAILABLE },
+    { header: "Họ Tên", accessor: (log: ActivityLogItem) => log.employeeName || COMMON_TEXTS.SYSTEM },
     { header: "Danh mục", accessor: (log: ActivityLogItem) => log.category },
     { header: "Hành động", accessor: (log: ActivityLogItem) => log.actionType },
-    { header: "Địa chỉ IP", accessor: (log: ActivityLogItem) => log.ipAddress || "N/A" },
+    { header: "Địa chỉ IP", accessor: (log: ActivityLogItem) => log.ipAddress || COMMON_TEXTS.NOT_AVAILABLE },
     { 
       header: "Chi tiết JSON", 
       accessor: (log: ActivityLogItem) => {
@@ -54,7 +56,7 @@ export function useActivityExport(baseQuery: ActivityLogQuery) {
       abortControllerRef.current.abort()
       abortControllerRef.current = null
     }
-    setProgress({ status: "idle", totalRows: 0, fetchedRows: 0, errorMsg: null })
+    setProgress({ status: EXPORT_STATUS.IDLE, totalRows: 0, fetchedRows: 0, errorMsg: null })
   }
 
   const startExport = async () => {
@@ -63,7 +65,7 @@ export function useActivityExport(baseQuery: ActivityLogQuery) {
       return
     }
 
-    setProgress({ status: "counting", totalRows: 0, fetchedRows: 0, errorMsg: null })
+    setProgress({ status: EXPORT_STATUS.COUNTING, totalRows: 0, fetchedRows: 0, errorMsg: null })
 
     const controller = new AbortController()
     abortControllerRef.current = controller
@@ -79,18 +81,18 @@ export function useActivityExport(baseQuery: ActivityLogQuery) {
 
       if (total === 0) {
         toast.info("Không có dữ liệu nào khớp với bộ lọc hiện tại.")
-        setProgress({ status: "idle", totalRows: 0, fetchedRows: 0, errorMsg: null })
+        setProgress({ status: EXPORT_STATUS.IDLE, totalRows: 0, fetchedRows: 0, errorMsg: null })
         return
       }
 
       if (total > MAX_EXPORT_ROWS) {
         const errorMsg = `Dữ liệu quá lớn (${total.toLocaleString()} dòng). Giới hạn xuất tối đa là ${MAX_EXPORT_ROWS.toLocaleString()} dòng. Vui lòng thu hẹp khoảng thời gian hoặc thêm bộ lọc.`
-        setProgress({ status: "error", totalRows: total, fetchedRows: 0, errorMsg })
+        setProgress({ status: EXPORT_STATUS.ERROR, totalRows: total, fetchedRows: 0, errorMsg })
         return
       }
 
       // 2. Setup batching
-      setProgress({ status: "fetching", totalRows: total, fetchedRows: 0, errorMsg: null })
+      setProgress({ status: EXPORT_STATUS.FETCHING, totalRows: total, fetchedRows: 0, errorMsg: null })
       const chunks: string[] = []
       chunks.push(buildCSVHeaders(columns))
 
@@ -124,7 +126,7 @@ export function useActivityExport(baseQuery: ActivityLogQuery) {
       }
 
       // 4. Build and download Blob
-      setProgress(prev => ({ ...prev, status: "building" }))
+      setProgress(prev => ({ ...prev, status: EXPORT_STATUS.BUILDING }))
       
       // Allow UI to render the 'building' state before freezing main thread for Blob creation
       await new Promise(resolve => setTimeout(resolve, 50))
@@ -132,13 +134,13 @@ export function useActivityExport(baseQuery: ActivityLogQuery) {
       const filename = `activity_logs_${new Date().toISOString().slice(0, 10)}.csv`
       downloadCSVFromChunks(chunks, filename)
 
-      setProgress({ status: "success", totalRows: total, fetchedRows: total, errorMsg: null })
+      setProgress({ status: EXPORT_STATUS.SUCCESS, totalRows: total, fetchedRows: total, errorMsg: null })
       toast.success(`Đã xuất thành công ${total.toLocaleString()} dòng dữ liệu.`)
       
       // Auto reset after 3s
       setTimeout(() => {
         if (abortControllerRef.current === controller) {
-          setProgress({ status: "idle", totalRows: 0, fetchedRows: 0, errorMsg: null })
+          setProgress({ status: EXPORT_STATUS.IDLE, totalRows: 0, fetchedRows: 0, errorMsg: null })
         }
       }, 3000)
 
@@ -149,7 +151,7 @@ export function useActivityExport(baseQuery: ActivityLogQuery) {
       } else {
         console.error("Export error:", error)
         toast.error("Có lỗi xảy ra khi xuất báo cáo.")
-        setProgress(prev => ({ ...prev, status: "error", errorMsg: "Có lỗi xảy ra trong quá trình tải dữ liệu." }))
+        setProgress(prev => ({ ...prev, status: EXPORT_STATUS.ERROR, errorMsg: "Có lỗi xảy ra trong quá trình tải dữ liệu." }))
       }
     } finally {
       if (abortControllerRef.current === controller) {

@@ -1,6 +1,6 @@
 import { AppDrawer, PageCard, StatusPill } from "@/components/common"
 import { Button } from "@/components/ui/button"
-import { ROLE, ROLE_LABELS } from "@/config/entities/employee.config"
+import { ROLE, ROLE_LABELS, EMPLOYEE_STATUS_VARIANTS } from "@/config/entities/employee.config"
 import { useEmployees } from "@/hooks/employees/queries/useEmployeeQuery"
 import { employeeApi } from "@/lib/api/employee.api"
 import type { EmployeeRole } from "@/types/employee.types"
@@ -19,13 +19,7 @@ import {
   FolderLock
 } from "lucide-react"
 
-// Status colors mapping
-const STATUS_VARIANT_MAP = {
-  active: "success",
-  inactive: "neutral",
-  on_leave: "warning",
-  terminated: "danger",
-} as const
+
 
 interface RoleCardConfig {
   code: string
@@ -244,7 +238,7 @@ export default function RolesManagement() {
                             ? "Nghỉ phép"
                             : "Đã nghỉ"
                         }
-                        variant={STATUS_VARIANT_MAP[employee.status] ?? "neutral"}
+                        variant={EMPLOYEE_STATUS_VARIANTS[employee.status] ?? "neutral"}
                         className="text-[10px]"
                       />
                     </div>
