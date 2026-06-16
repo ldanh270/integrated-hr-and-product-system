@@ -47,6 +47,7 @@ export const APPLICATION_STATUSES = [
   APPLICATION_STATUS.CANCELLED,
 ] as const
 export type IApplicationStatus = (typeof APPLICATION_STATUSES)[number]
+export type IApplicationFilterStatus = IApplicationStatus | "all"
 
 export const REGIME_TYPES = ["paid", "unpaid"] as const
 export type IRegimeType = (typeof REGIME_TYPES)[number]

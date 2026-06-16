@@ -1,5 +1,9 @@
 import { APPLICATION_STATUS } from "@/config/entities/attendance.config"
-import { type IApplication, type IListApplicationsQuery, applicationApi } from "@/lib/api/application.api"
+import {
+  type IApplication,
+  type IListApplicationsQuery,
+  applicationApi,
+} from "@/lib/api/application.api"
 
 import { useCallback, useEffect, useRef, useState } from "react"
 
@@ -42,13 +46,20 @@ export function useManageApplications(): UseManageApplicationsReturn {
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [processingId, setProcessingId] = useState<string | null>(null)
-  const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0, cancelled: 0, total: 0 })
+  const [stats, setStats] = useState({
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    cancelled: 0,
+    total: 0,
+  })
   const activeRef = useRef(true)
 
   const fetchApplications = useCallback(
     async (isInitial = false) => {
-      if (isInitial) setIsLoading(true)
-      else setIsRefreshing(true)
+      if (!isInitial) {
+        setIsRefreshing(true)
+      }
 
       try {
         const query: IListApplicationsQuery = {
@@ -115,6 +126,7 @@ export function useManageApplications(): UseManageApplicationsReturn {
 
   useEffect(() => {
     activeRef.current = true
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchApplications(true)
     fetchStats()
     return () => {
