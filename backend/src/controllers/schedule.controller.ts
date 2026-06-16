@@ -23,7 +23,7 @@ export class ScheduleController {
    * @param req - Authenticated request with schedule data in body.
    * @param res - API response with the created schedule.
    */
-  assignSchedule = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  assignSchedule = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
       const reqData = assignShiftScheduleSchema.parse(req.body)
       const data = { ...reqData, createdById: req.user?.empId || "system" }
@@ -49,7 +49,7 @@ export class ScheduleController {
    * @param req - Authenticated request.
    * @param res - API response with the employee's schedule.
    */
-  getEmployeeSchedule = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  getEmployeeSchedule = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     const employeeId = req.user?.empId
     if (!employeeId) {
       return res.status(HttpStatusCode.UNAUTHORIZED).json({
@@ -69,7 +69,7 @@ export class ScheduleController {
    * @param req - Authenticated request.
    * @param res - API response with a list of schedules.
    */
-  listEmployeeSchedules = async (req: AuthRequest, res: Response<ApiResponse<any[]>>) => {
+  listEmployeeSchedules = async (req: AuthRequest, res: Response<ApiResponse<unknown[]>>) => {
     const employeeId = req.user?.empId
     if (!employeeId) {
       return res.status(HttpStatusCode.UNAUTHORIZED).json({
@@ -82,11 +82,43 @@ export class ScheduleController {
   }
 
   /**
+   * Retrieves schedule for a specific employee on a given date (admin view).
+   * @param req - Request with employeeId in params and optional date query.
+   * @param res - API response with the employee's schedule for that date.
+   */
+  getEmployeeScheduleById = async (
+    req: Request<{ employeeId: string }>,
+    res: Response<ApiResponse<unknown>>,
+  ) => {
+    const { employeeId } = req.params
+    const dateQuery = req.query.date as string | undefined
+    const scheduleDate = dateQuery ? new Date(dateQuery) : new Date()
+
+    const schedule = await this.service.getScheduleForEmployee(employeeId, scheduleDate)
+    res.status(HttpStatusCode.OK).json({ data: schedule, error: null })
+  }
+
+  /**
+   * Lists all weekly schedules assigned to a specific employee (admin view).
+   * @param req - Request with employeeId in params.
+   * @param res - API response with the employee's schedule list.
+   */
+  listEmployeeSchedulesById = async (
+    req: Request<{ employeeId: string }>,
+    res: Response<ApiResponse<unknown[]>>,
+  ) => {
+    const { employeeId } = req.params
+    const schedules = await this.service.listSchedulesForEmployee(employeeId)
+
+    res.status(HttpStatusCode.OK).json({ data: schedules, error: null })
+  }
+
+  /**
    * Overrides an employee's shift for a specific date.
    * @param req - Authenticated request with override data in body.
    * @param res - API response with the created override.
    */
-  overrideShift = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  overrideShift = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
       const data = overrideEmployeeShiftSchema.parse(req.body)
       const override = await this.service.overrideEmployeeShift(data)

@@ -1,4 +1,4 @@
-import { useEditor, EditorContent } from "@tiptap/react"
+import { useEditor, EditorContent, type Editor } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Image from "@tiptap/extension-image"
 import Link from "@tiptap/extension-link"
@@ -48,7 +48,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
         class: "prose prose-sm dark:prose-invert max-w-none min-h-[120px] max-h-[400px] overflow-y-auto outline-none p-3",
       },
     },
-    onUpdate: ({ editor }) => {
+    onUpdate: ({ editor }: { editor: Editor }) => {
       onChange(editor.getHTML())
     },
   })

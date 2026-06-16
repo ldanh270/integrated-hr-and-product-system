@@ -41,4 +41,7 @@ export const API_ENDPOINTS = {
     BASE: "/approvals",
     APPLICATION: (id: string) => `/approvals/application/${id}`,
   },
+  HOLIDAYS: {
+    BASE: "/holidays",
+  },
 } as const

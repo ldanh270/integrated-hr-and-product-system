@@ -17,33 +17,33 @@ import {
   ATTENDANCE_STATUS_LABELS,
   ATTENDANCE_STATUS_VARIANTS,
 } from "@/config/entities/attendance.config"
+import { ROLE } from "@/config/entities/employee.config"
+import { ROUTES } from "@/config/routes.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useAttendanceRecords } from "@/hooks/attendance/use-attendance"
 import { attendanceApi } from "@/lib/api/attendance.api"
 import { formatDate, formatTime } from "@/lib/utils"
+import { useAuthStore } from "@/store/auth-store"
 import dayjs from "dayjs"
 import type { IAttendanceStatus } from "@/config/entities/attendance.config"
+import { getCurrentMonthRange } from "@/utils/attendance/get-current-month-range"
 
 import { useMemo, useState } from "react"
 
 import {
+  AlertTriangle,
   CalendarX2,
   Clock,
   Download,
   Loader2,
+  TimerOff,
   UserCheck,
   Users,
 } from "lucide-react"
+import { Navigate } from "react-router-dom"
 
-/**
- * getMonthRange — Returns an ISO date range for the current month.
- * @returns { startDate: string, endDate: string } format YYYY-MM-DD
- */
-function getMonthRange() {
-  const now = new Date()
-  const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10)
-  return { startDate: start, endDate: end }
+function canManageAttendance(role?: string) {
+  return role === ROLE.ADMIN || role === ROLE.HR_MANAGER || role === ROLE.GENERAL_MANAGER
 }
 
 /**
@@ -51,9 +51,19 @@ function getMonthRange() {
  * Displays aggregate stats, real-time scanner, and detailed history table.
  */
 export default function AttendanceDashboard() {
+  const user = useAuthStore((state) => state.user)
+
+  if (user && !canManageAttendance(user.role)) {
+    return <Navigate to={ROUTES.ATTENDANCE.MY_SCHEDULE} replace />
+  }
+
+  return <AdminAttendanceDashboard />
+}
+
+function AdminAttendanceDashboard() {
   // startDate, endDate: Filter range for attendance records (default: current month)
-  const [startDate, setStartDate] = useState(getMonthRange().startDate)
-  const [endDate, setEndDate] = useState(getMonthRange().endDate)
+  const [startDate, setStartDate] = useState(() => getCurrentMonthRange().startDate)
+  const [endDate, setEndDate] = useState(() => getCurrentMonthRange().endDate)
   // statusFilter: Current selection for attendance status (all, late, on_time, etc.)
   const [statusFilter, setStatusFilter] = useState<IAttendanceStatus | "all">("all")
 
@@ -85,6 +95,17 @@ export default function AttendanceDashboard() {
   const presentToday = todayRecords.filter((r) => r.checkInAt).length
   const lateToday = todayRecords.filter((r) => r.status === "late").length
   const absentToday = todayRecords.filter((r) => r.status === "absent").length
+  const openCheckoutToday = todayRecords.filter((r) => r.checkInAt && !r.checkOutAt)
+  const attentionRecords =
+    records?.filter(
+      (record) =>
+        (record.checkInAt && !record.checkOutAt) ||
+        record.status === "late" ||
+        record.status === "early_leave" ||
+        record.status === "overtime" ||
+        record.earlyLeaveMinutes > 0 ||
+        record.overtimeMinutes > 0,
+    ) ?? []
 
   /**
    * handleExport — Securely downloads the attendance report as a CSV file.
@@ -173,6 +194,112 @@ export default function AttendanceDashboard() {
           <p className="text-xs text-muted-foreground mt-1">Hôm nay</p>
         </PageCard>
       </div>
+
+      <PageCard padding="lg" className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Cần xử lý</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Các bản ghi có dấu hiệu bất thường trong khoảng lọc hiện tại.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <StatusPill label={`${openCheckoutToday.length} chưa checkout hôm nay`} variant="warning" />
+            <StatusPill label={`${attentionRecords.length} bản ghi cần xem`} variant="info" />
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-xl border bg-muted/30 p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <TimerOff className="h-4 w-4 text-warning" />
+              Chưa checkout
+            </div>
+            <p className="mt-2 text-2xl font-bold">{openCheckoutToday.length}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Nhân viên đã vào ca nhưng chưa ra ca.</p>
+          </div>
+          <div className="rounded-xl border bg-muted/30 p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <AlertTriangle className="h-4 w-4 text-warning" />
+              Đi muộn / về sớm
+            </div>
+            <p className="mt-2 text-2xl font-bold">
+              {
+                attentionRecords.filter(
+                  (record) => record.status === "late" || record.earlyLeaveMinutes > 0,
+                ).length
+              }
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Cần kiểm tra lý do hoặc đơn điều chỉnh.</p>
+          </div>
+          <div className="rounded-xl border bg-muted/30 p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Clock className="h-4 w-4 text-info-foreground" />
+              Làm thêm giờ
+            </div>
+            <p className="mt-2 text-2xl font-bold">
+              {attentionRecords.filter((record) => record.overtimeMinutes > 0).length}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Đối chiếu với đơn OT trước khi chốt công.</p>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto rounded-xl border">
+          <Table className="text-sm">
+            <TableHeader className="bg-muted/40">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="px-4 py-3 text-xs font-medium uppercase text-muted-foreground">
+                  Nhân viên
+                </TableHead>
+                <TableHead className="px-4 py-3 text-xs font-medium uppercase text-muted-foreground">
+                  Ngày
+                </TableHead>
+                <TableHead className="px-4 py-3 text-xs font-medium uppercase text-muted-foreground">
+                  Vấn đề
+                </TableHead>
+                <TableHead className="px-4 py-3 text-xs font-medium uppercase text-muted-foreground">
+                  Chi tiết
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {attentionRecords.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="h-20 text-center text-muted-foreground">
+                    Không có bản ghi bất thường trong khoảng lọc.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                attentionRecords.slice(0, 5).map((record) => (
+                  <TableRow key={`attention-${record.id}`} className="hover:bg-muted/30">
+                    <TableCell className="px-4 py-3">
+                      <p className="font-medium">{record.employee?.fullName ?? record.employeeId}</p>
+                      {record.employee?.email ? (
+                        <p className="text-xs text-muted-foreground">{record.employee.email}</p>
+                      ) : null}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                      {formatDate(record.date)}
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
+                      <StatusPill
+                        label={!record.checkOutAt && record.checkInAt ? "Chưa checkout" : ATTENDANCE_STATUS_LABELS[record.status]}
+                        variant={!record.checkOutAt && record.checkInAt ? "warning" : ATTENDANCE_STATUS_VARIANTS[record.status]}
+                      />
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-xs text-muted-foreground">
+                      {record.lateMinutes > 0 ? `${record.lateMinutes}m muộn. ` : ""}
+                      {record.earlyLeaveMinutes > 0 ? `${record.earlyLeaveMinutes}m về sớm. ` : ""}
+                      {record.overtimeMinutes > 0 ? `${record.overtimeMinutes}m OT. ` : ""}
+                      {record.checkInAt && !record.checkOutAt ? "Chưa có giờ ra." : ""}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </PageCard>
 
       {/* Main dashboard content — Scanner sidebar + Detail history table */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

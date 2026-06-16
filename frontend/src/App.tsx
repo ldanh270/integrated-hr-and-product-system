@@ -1,7 +1,7 @@
 import { ConfirmProvider } from "@/components/common"
 import { API_ENDPOINTS } from "@/config/api.config"
 import { ROUTES } from "@/config/routes.config"
-import { SUBSYSTEMS } from "@/config/subsystem"
+import { SUBSYSTEMS } from "@/config/subsystem.config"
 import apiClient from "@/lib/api-client"
 import { privateRoutes, publicRoutes } from "@/routes"
 import { useAuthStore } from "@/store/auth-store.ts"

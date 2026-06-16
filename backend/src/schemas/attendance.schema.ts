@@ -247,3 +247,13 @@ export const createHolidaySchema = z
   .strict()
 
 export type CreateHolidaySchemaType = z.infer<typeof createHolidaySchema>
+
+export const updateHolidaySchema = createHolidaySchema.partial().strict()
+
+export const listHolidayQuerySchema = z
+  .object({
+    startDate: dateString.optional(),
+    endDate: dateString.optional(),
+    year: z.coerce.number().int().min(1900).max(3000).optional(),
+  })
+  .strict()

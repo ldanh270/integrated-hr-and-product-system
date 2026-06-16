@@ -2,12 +2,22 @@ import {
   IApplicationStatus,
   IApplicationType,
   IAttendanceStatus,
+  IHolidayType,
   ILeaveType,
   IRegimeType,
 } from "@/configs/entities/attendance.config.ts"
 
+import type { HolidayCalendar } from "@prisma/client"
+
 // Re-export for consumers that import from this module
-export type { IApplicationStatus, IApplicationType, IAttendanceStatus, ILeaveType, IRegimeType }
+export type {
+  IApplicationStatus,
+  IApplicationType,
+  IAttendanceStatus,
+  IHolidayType,
+  ILeaveType,
+  IRegimeType,
+}
 
 export interface IGpsScanDTO {
   lat: number
@@ -111,6 +121,18 @@ export interface IListApplicationsQueryDTO {
   endDate?: string
 }
 
+export interface IListHolidaysQueryDTO {
+  startDate?: string | Date
+  endDate?: string | Date
+  year?: number
+}
+
+export interface IUpdateHolidayDTO {
+  name?: string
+  date?: string | Date
+  type?: IHolidayType
+}
+
 // ─── REPOSITORY INTERFACES ────────────────────────────────────
 export interface IAttendanceMetricsDTO {
   status?: IAttendanceStatus
@@ -120,18 +142,97 @@ export interface IAttendanceMetricsDTO {
   totalWorkMinutes?: number
 }
 
+export interface IRealShiftDTO {
+  id: string
+  employeeId: string
+  attendanceRecordId: string
+  date: Date | string
+  actualStartTime: number
+  actualEndTime?: number | null
+  isMatched: boolean
+}
+
+export interface IRealShiftUpsertDTO {
+  actualEndTime?: number | null
+  isMatched?: boolean
+}
+
+export interface IAttendanceShiftDTO {
+  id?: string
+  name?: string
+  startTime: number
+  endTime: number
+  gracePeriodMinutes?: number | null
+  gpsLat?: number | null
+  gpsLng?: number | null
+  gpsRadiusMeters?: number | null
+  isActive?: boolean
+}
+
+export interface IAttendanceScheduleDayDTO {
+  dayOfWeek: number
+  shiftId?: string | null
+  shift?: IAttendanceShiftDTO | null
+}
+
+export interface IAttendanceScheduleDTO {
+  days?: IAttendanceScheduleDayDTO[]
+  workingShiftId?: string | null
+}
+
+export interface IAttendanceEmployeeShiftDTO {
+  id: string
+  shiftId: string
+  shift?: IAttendanceShiftDTO | null
+}
+
+export interface IAttendanceEmployeeDTO {
+  fullName?: string | null
+  email?: string | null
+}
+
+export interface IAttendanceRecordDTO {
+  id: string
+  employeeId: string
+  employeeShiftId: string
+  date: Date | string
+  checkInAt?: Date | string | null
+  checkInLat?: number | null
+  checkInLng?: number | null
+  checkOutAt?: Date | string | null
+  checkOutLat?: number | null
+  checkOutLng?: number | null
+  status: IAttendanceStatus
+  lateMinutes: number
+  earlyLeaveMinutes: number
+  overtimeMinutes: number
+  totalWorkMinutes: number
+  employee?: IAttendanceEmployeeDTO | null
+  employeeShift?: IAttendanceEmployeeShiftDTO | null
+  realShift?: IRealShiftDTO | null
+}
+
 /**
  * Repository for managing attendance records.
  */
 export interface IAttendanceRepository {
   /** Records a check-in. */
-  checkIn(employeeId: string, location: IGpsScanDTO, employeeShiftId: string): Promise<any>
+  checkIn(
+    employeeId: string,
+    location: IGpsScanDTO,
+    employeeShiftId: string,
+  ): Promise<IAttendanceRecordDTO>
   /** Records a check-out. */
-  checkOut(employeeId: string, location: IGpsScanDTO, metrics?: IAttendanceMetricsDTO): Promise<any>
+  checkOut(
+    recordId: string,
+    location: IGpsScanDTO,
+    metrics?: IAttendanceMetricsDTO,
+    realShift?: IRealShiftUpsertDTO,
+  ): Promise<IAttendanceRecordDTO>
   /** Finds record by employee and date. */
-  findByEmployeeAndDate(employeeId: string, date: string | Date): Promise<any | null>
+  findByEmployeeAndDate(employeeId: string, date: string | Date): Promise<IAttendanceRecordDTO | null>
   /** Queries records with filters. */
-  queryRecords(query: IAttendanceRecordQueryDTO): Promise<any[]>
+  queryRecords(query: IAttendanceRecordQueryDTO): Promise<IAttendanceRecordDTO[]>
 }
 
 /**
@@ -164,8 +265,19 @@ export interface IApplicationRepository {
  * Repository for managing holiday information.
  */
 export interface IHolidayRepository {
+  /** Lists holiday records. */
+  listHolidays(query?: IListHolidaysQueryDTO): Promise<HolidayCalendar[]>
   /** Creates a holiday record. */
-  createHoliday(name: string, date: string | Date, type: string): Promise<any>
+  createHoliday(
+    name: string,
+    date: string | Date,
+    type: IHolidayType,
+    createdById: string,
+  ): Promise<HolidayCalendar>
+  /** Updates a holiday record. */
+  updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<HolidayCalendar>
+  /** Deletes a holiday record. */
+  deleteHoliday(id: string): Promise<void>
   /** Checks if a specific date is a holiday. */
   checkIsHoliday(date: string | Date): Promise<boolean>
 }
@@ -175,11 +287,21 @@ export interface IHolidayRepository {
  */
 export interface IAttendanceService {
   /** Handles check-in process. */
-  checkIn(employeeId: string, location: IGpsScanDTO, createdById: string): Promise<any>
+  checkIn(
+    employeeId: string,
+    location: IGpsScanDTO,
+    createdById: string,
+  ): Promise<IAttendanceRecordDTO>
   /** Handles check-out process. */
-  checkOut(employeeId: string, location: IGpsScanDTO): Promise<any>
+  checkOut(employeeId: string, location: IGpsScanDTO): Promise<IAttendanceRecordDTO>
+  /** Handles smart scan process. */
+  scan(
+    employeeId: string,
+    location: IGpsScanDTO,
+    createdById: string,
+  ): Promise<IAttendanceRecordDTO>
   /** Queries attendance records. */
-  getAttendanceRecords(query: IAttendanceRecordQueryDTO): Promise<any[]>
+  getAttendanceRecords(query: IAttendanceRecordQueryDTO): Promise<IAttendanceRecordDTO[]>
 }
 
 /**
@@ -212,8 +334,19 @@ export interface IApplicationService {
  * Service for holiday management.
  */
 export interface IHolidayService {
+  /** Lists holidays. */
+  listHolidays(query?: IListHolidaysQueryDTO): Promise<HolidayCalendar[]>
   /** Creates a holiday. */
-  createHoliday(name: string, date: string | Date, type: string): Promise<any>
+  createHoliday(
+    name: string,
+    date: string | Date,
+    type: IHolidayType,
+    createdById: string,
+  ): Promise<HolidayCalendar>
+  /** Updates a holiday. */
+  updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<HolidayCalendar>
+  /** Deletes a holiday. */
+  deleteHoliday(id: string): Promise<void>
   /** Checks if a date is a holiday. */
   isHoliday(date: string | Date): Promise<boolean>
 }

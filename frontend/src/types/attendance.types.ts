@@ -2,6 +2,7 @@ import type {
   IApplicationStatus,
   IApplicationType,
   IAttendanceStatus,
+  IHolidayType,
 } from "@/config/entities/attendance.config"
 
 // ─── GPS ──────────────────────────────────────────────────────
@@ -51,14 +52,17 @@ export interface ICreateShiftPayload {
   isActive?: boolean
 }
 
-export interface IUpdateShiftPayload extends Partial<ICreateShiftPayload> {}
+export type IUpdateShiftPayload = Partial<ICreateShiftPayload>
 
 // ─── SCHEDULE ─────────────────────────────────────────────────
 
 export interface IScheduleDay {
   dayOfWeek: number // 0=Sun, 1=Mon, … 6=Sat
   shiftId: string
-  shift?: Pick<IWorkingShift, "name" | "startTime" | "endTime">
+  shift?: Pick<
+    IWorkingShift,
+    "name" | "startTime" | "endTime" | "gracePeriodMinutes" | "gpsLat" | "gpsLng" | "gpsRadiusMeters"
+  >
 }
 
 export interface ISchedule {
@@ -84,6 +88,16 @@ export interface IOverrideShiftPayload {
 
 // ─── ATTENDANCE RECORD ────────────────────────────────────────
 
+export interface IRealShift {
+  id: string
+  employeeId: string
+  attendanceRecordId: string
+  date: string
+  actualStartTime: number
+  actualEndTime?: number | null
+  isMatched: boolean
+}
+
 export interface IAttendanceRecord {
   id: string
   employeeId: string
@@ -100,6 +114,7 @@ export interface IAttendanceRecord {
   earlyLeaveMinutes: number
   overtimeMinutes: number
   totalWorkMinutes: number
+  realShift?: IRealShift | null
   employee?: {
     id: string
     fullName: string
@@ -201,8 +216,23 @@ export interface IApplication {
 }
 
 export interface IHoliday {
-  _id: string
+  id: string
   name: string
   date: string
-  type: string
+  type: IHolidayType
+  createdById: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface IHolidayQuery {
+  startDate?: string
+  endDate?: string
+  year?: number
+}
+
+export interface IHolidayPayload {
+  name: string
+  date: string
+  type: IHolidayType
 }

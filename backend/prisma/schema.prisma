@@ -196,6 +196,7 @@ model Employee {
 
   // Relations
   attendanceRecords          AttendanceRecord[]
+  realShifts                 RealShift[]
   employeeShifts             EmployeeShift[]              @relation("EmployeeShiftEmployee")
   employeeShiftsCreated      EmployeeShift[]              @relation("EmployeeShiftCreator")
   applications               Application[]                @relation("ApplicationEmployee")
@@ -349,9 +350,30 @@ model AttendanceRecord {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  realShift RealShift?
+
   @@index([employeeId, date(sort: Desc)])
   // Partial index equivalent in Prisma requires raw SQL setup in migrations, but we create a standard one here
   @@index([status, date(sort: Desc)])
+}
+
+/// Snapshot of actual work times derived from check-in/out for the Real Shift calendar view.
+model RealShift {
+  id                 String           @id @default(cuid())
+  employeeId         String
+  employee           Employee         @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  attendanceRecordId String           @unique
+  attendanceRecord   AttendanceRecord @relation(fields: [attendanceRecordId], references: [id], onDelete: Cascade)
+  date               DateTime         @db.Date
+  actualStartTime    Int // minutes from midnight, derived from checkInAt
+  actualEndTime      Int? // minutes from midnight, derived from checkOutAt
+  isMatched          Boolean          @default(false) // true when actual bounds equal planned shift times
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([employeeId, date(sort: Desc)])
+  @@index([isMatched, date(sort: Desc)])
 }
 
 model Application {

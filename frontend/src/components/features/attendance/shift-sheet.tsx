@@ -1,4 +1,5 @@
 import { FormActionFooter } from "@/components/common/form-action-footer"
+import { GpsMapPicker } from "@/components/features/attendance/gps-map-picker"
 import {
   Dialog,
   DialogContent,
@@ -21,11 +22,11 @@ import { useCreateShift, useUpdateShift } from "@/hooks/attendance/use-shifts"
 import { minutesToTime, timeToMinutes } from "@/lib/utils"
 import type { IWorkingShift } from "@/types/attendance.types"
 
-import { useEffect } from "react"
+import { useCallback, useEffect } from "react"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Clock, Info, MapPin } from "lucide-react"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { z } from "zod"
 
 const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/
@@ -74,6 +75,17 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
   const createMutation = useCreateShift()
   const updateMutation = useUpdateShift()
   const isPending = createMutation.isPending || updateMutation.isPending
+  const gpsLat = useWatch({ control: form.control, name: "gpsLat" })
+  const gpsLng = useWatch({ control: form.control, name: "gpsLng" })
+  const gpsRadiusMeters = useWatch({ control: form.control, name: "gpsRadiusMeters" })
+
+  const handleMapLocationChange = useCallback(
+    (location: { lat: number; lng: number }) => {
+      form.setValue("gpsLat", location.lat, { shouldDirty: true, shouldValidate: true })
+      form.setValue("gpsLng", location.lng, { shouldDirty: true, shouldValidate: true })
+    },
+    [form],
+  )
 
   useEffect(() => {
     if (!open) return
@@ -142,7 +154,7 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-popover rounded-4xl">
+      <DialogContent className="max-h-[calc(100vh-2rem)] max-w-2xl overflow-y-auto bg-popover rounded-4xl">
         <DialogHeader>
           <DialogTitle className="text-xl">
             {initialData ? "Update Working Shift" : "Create New Shift"}
@@ -301,6 +313,13 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
                   )}
                 />
               </div>
+
+              <GpsMapPicker
+                lat={gpsLat}
+                lng={gpsLng}
+                radiusMeters={gpsRadiusMeters}
+                onChange={handleMapLocationChange}
+              />
 
               <FormField
                 control={form.control}
