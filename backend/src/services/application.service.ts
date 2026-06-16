@@ -77,7 +77,8 @@ export class ApplicationService implements IApplicationService {
         }
         break
 
-      // work_from_home, business_trip, regime — no extra ownership checks
+      // work_from_home, business_trip, regime, resignation — no extra ownership checks
+      case APPLICATION_TYPES.RESIGNATION.LABEL:
       default:
         break
     }

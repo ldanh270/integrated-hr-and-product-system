@@ -401,6 +401,9 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
           },
         }
 
+      case APPLICATION_TYPES.RESIGNATION.LABEL:
+        return {}
+
       default:
         return {}
     }

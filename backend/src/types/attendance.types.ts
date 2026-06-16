@@ -105,6 +105,7 @@ export type ISubmitApplicationDTO =
   | (IBaseApplicationDTO & { type: "business_trip"; detail: IBusinessTripDetailDTO })
   | (IBaseApplicationDTO & { type: "late_early"; detail: ILateEarlyDetailDTO })
   | (IBaseApplicationDTO & { type: "regime"; detail: IRegimeDetailDTO })
+  | (IBaseApplicationDTO & { type: "resignation"; detail: Record<string, unknown> })
 
 export interface IApproveApplicationDTO {
   status: IApplicationStatus

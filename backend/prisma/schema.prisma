@@ -68,6 +68,7 @@ enum ApplicationType {
   business_trip
   late_early
   regime
+  resignation
 }
 
 enum ApplicationStatus {

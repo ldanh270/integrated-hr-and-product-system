@@ -41,6 +41,7 @@ export const APPLICATION_TYPES = {
   BUSINESS_TRIP: { LABEL: "business_trip", DESCRIPTION: "Công tác" },
   LATE_EARLY: { LABEL: "late_early", DESCRIPTION: "Đi muộn/về sớm" },
   REGIME: { LABEL: "regime", DESCRIPTION: "Chế độ thai sản/bệnh" },
+  RESIGNATION: { LABEL: "resignation", DESCRIPTION: "Thôi việc" },
 } as const
 export type IApplicationType = (typeof APPLICATION_TYPES)[keyof typeof APPLICATION_TYPES]["LABEL"]
 
@@ -52,6 +53,7 @@ export const APPLICATION_TYPE_VALUES = [
   APPLICATION_TYPES.BUSINESS_TRIP.LABEL,
   APPLICATION_TYPES.LATE_EARLY.LABEL,
   APPLICATION_TYPES.REGIME.LABEL,
+  APPLICATION_TYPES.RESIGNATION.LABEL,
 ] as const
 
 export const APPLICATION_STATUS = {
