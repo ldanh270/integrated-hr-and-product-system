@@ -1,5 +1,5 @@
-import { SUBSYSTEMS } from "@/config/subsystem"
-import type { SubsystemConfig, SubsystemId } from "@/config/subsystem"
+import { SUBSYSTEMS } from "@/config/subsystem.config"
+import type { SubsystemConfig, SubsystemId } from "@/config/subsystem.config"
 
 import { create } from "zustand"
 

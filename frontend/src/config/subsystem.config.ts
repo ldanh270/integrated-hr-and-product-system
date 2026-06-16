@@ -5,6 +5,7 @@ import {
   BookOpen,
   Briefcase,
   CalendarClock,
+  ChartNoAxesColumn,
   CircleDollarSign,
   FileText,
   Package,
@@ -14,6 +15,9 @@ import {
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
+const NON_ADMIN_ROLES = [ROLE.EMPLOYEE, ROLE.TEAM_LEADER, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER]
+
+/** Navigation metadata for HR subsystems (routes, icons, role access). */
 export type SubsystemId =
   | "hrm"
   | "application"
@@ -70,8 +74,15 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     icon: CalendarClock,
     routePrefix: "/attendance",
     sidebarItems: [
-      { name: "Tổng quan", path: ROUTES.ATTENDANCE.DASHBOARD, icon: CalendarClock },
+      {
+        name: "Tổng quan",
+        path: ROUTES.ATTENDANCE.DASHBOARD,
+        icon: CalendarClock,
+        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
+      },
+      { name: "Tổng hợp", path: ROUTES.ATTENDANCE.SUMMARY, icon: ChartNoAxesColumn, roles: NON_ADMIN_ROLES },
       { name: "Lịch của tôi", path: ROUTES.ATTENDANCE.MY_SCHEDULE, icon: CalendarClock },
+      { name: "Thời gian thực", path: ROUTES.ATTENDANCE.REAL_SHIFT, icon: CalendarClock, roles: NON_ADMIN_ROLES },
       { name: "Đơn từ", path: ROUTES.ATTENDANCE.APPLICATIONS, icon: FileText },
       { name: "Ca làm việc", path: ROUTES.ATTENDANCE.SHIFTS, icon: CalendarClock },
       { name: "Ngày lễ", path: ROUTES.ATTENDANCE.HOLIDAYS, icon: CalendarClock },
@@ -120,7 +131,6 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         icon: Users,
         roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
       },
-
       { name: "Lương của tôi", path: ROUTES.PAYROLL.MY_PAYSLIPS, icon: CircleDollarSign },
     ],
   },

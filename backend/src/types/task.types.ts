@@ -33,11 +33,6 @@ export interface Task {
   completedAt: Date | null
   estimatedTime: number | null
   progress: number
-  categoryId?: string | null
-  category?: {
-    id: string
-    name: string
-  } | null
   createdAt: Date
   updatedAt: Date
   /**
@@ -82,7 +77,6 @@ export interface CreateTaskDto {
   dueDate?: Date | string | null
   estimatedTime?: number | null
   progress?: number
-  categoryId?: string | null
 }
 
 /**
@@ -100,7 +94,6 @@ export interface UpdateTaskDto {
   completedAt?: Date | string | null
   estimatedTime?: number | null
   progress?: number
-  categoryId?: string | null
 }
 
 /**

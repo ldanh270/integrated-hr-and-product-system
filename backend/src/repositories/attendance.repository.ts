@@ -3,11 +3,16 @@ import {
   IAttendanceRecordQueryDTO,
   IAttendanceRepository,
   IGpsScanDTO,
+  IRealShiftUpsertDTO,
 } from "@/types/attendance.types.ts"
 
 import { AttendanceStatus, Prisma, PrismaClient } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
+
+function getMinutesFromDateTime(date: Date): number {
+  return date.getHours() * 60 + date.getMinutes()
+}
 
 /**
  * Repository implementation for attendance-related data using Prisma.
@@ -51,44 +56,63 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
       },
     })
 
+    const checkInAt = record.checkInAt ?? new Date()
+    await this.prisma.realShift.upsert({
+      where: { attendanceRecordId: record.id },
+      update: {
+        actualStartTime: getMinutesFromDateTime(checkInAt),
+        actualEndTime: null,
+        isMatched: false,
+      },
+      create: {
+        employeeId,
+        attendanceRecordId: record.id,
+        date: today,
+        actualStartTime: getMinutesFromDateTime(checkInAt),
+        isMatched: false,
+      },
+    })
+
     return record
   }
 
   /**
    * Records a check-out for an employee.
-   * @param employeeId - The employee ID.
+   * @param recordId - The attendance record ID.
    * @param location - The GPS location of the check-out.
    * @param metrics - Optional attendance metrics.
    * @returns The updated attendance record.
    */
   async checkOut(
-    employeeId: string,
+    recordId: string,
     location: IGpsScanDTO,
     metrics: IAttendanceMetricsDTO = {},
+    realShift: IRealShiftUpsertDTO = {},
   ): Promise<any> {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    const checkOutAt = new Date()
 
-    const records = await this.prisma.attendanceRecord.findMany({
-      where: {
-        employeeId,
-        date: today,
-      },
-      take: 1,
-    })
+    return this.prisma.$transaction(async (tx) => {
+      const record = await tx.attendanceRecord.update({
+        where: { id: recordId },
+        data: {
+          checkOutAt,
+          checkOutLat: location.lat,
+          checkOutLng: location.lng,
+          ...metrics,
+        },
+      })
 
-    if (records.length === 0) {
-      return null // Cannot checkout if not checked in
-    }
+      if (realShift.actualEndTime != null) {
+        await tx.realShift.update({
+          where: { attendanceRecordId: recordId },
+          data: {
+            actualEndTime: realShift.actualEndTime,
+            isMatched: realShift.isMatched ?? false,
+          },
+        })
+      }
 
-    return this.prisma.attendanceRecord.update({
-      where: { id: records[0].id },
-      data: {
-        checkOutAt: new Date(),
-        checkOutLat: location.lat,
-        checkOutLng: location.lng,
-        ...metrics,
-      },
+      return record
     })
   }
 
@@ -104,7 +128,14 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
 
     return this.prisma.attendanceRecord.findFirst({
       where: { employeeId, date: targetDate },
-      include: { employeeShift: true },
+      include: {
+        employeeShift: {
+          include: {
+            shift: true,
+          },
+        },
+        realShift: true,
+      },
     })
   }
 
@@ -145,6 +176,7 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
             shift: true,
           },
         },
+        realShift: true,
       },
       orderBy: { date: "desc" },
     })

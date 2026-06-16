@@ -43,11 +43,14 @@ export const API_ENDPOINTS = {
     BASE: "/approvals",
     APPLICATION: (id: string) => `/approvals/application/${id}`,
   },
+  HOLIDAYS: {
+    BASE: "/holidays",
+  },
   SECURITY: {
     DASHBOARD: "/security/dashboard",
     LOCKED_ACCOUNTS: "/security/locked-accounts",
     UNLOCK: (employeeId: string) => `/security/unlock/${employeeId}`,
     ACTIVITY_LOGS: "/auth/activity-logs",
     ACTIVITY_LOG_DETAIL: (id: string) => `/auth/activity-logs/${id}`,
-  },
-} as const
+  } as const,
+}

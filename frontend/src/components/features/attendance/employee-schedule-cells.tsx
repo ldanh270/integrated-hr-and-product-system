@@ -1,0 +1,52 @@
+import { TableCell } from "@/components/ui/table"
+import { minutesToTime } from "@/lib/utils"
+import type { IHoliday, ISchedule } from "@/types/attendance.types"
+import type { Employee } from "@/types/employee.types"
+import type { WeekDay } from "@/utils/attendance/get-week-dates"
+
+interface EmployeeScheduleCellsProps {
+  employee: Employee
+  schedule?: ISchedule
+  weekDates: WeekDay[]
+  holidaysByDate: Map<string, IHoliday>
+}
+
+export function EmployeeScheduleCells({
+  employee,
+  schedule,
+  weekDates,
+  holidaysByDate,
+}: EmployeeScheduleCellsProps) {
+  return (
+    <>
+      <TableCell className="px-4 py-4">
+        <p className="font-medium whitespace-nowrap">{employee.fullName}</p>
+        <p className="text-xs text-muted-foreground">{employee.email}</p>
+      </TableCell>
+      {weekDates.map((day) => {
+        const holiday = holidaysByDate.get(day.dateKey)
+        const scheduleDay = schedule?.days.find((item) => item.dayOfWeek === day.dayOfWeek)
+        const shift = scheduleDay?.shift
+
+        return (
+          <TableCell key={day.dateKey} className="min-w-36 px-4 py-4 align-top">
+            {holiday ? (
+              <div className="rounded-lg bg-success/10 p-2 text-xs font-semibold text-success">
+                Nhân viên được nghỉ lễ
+              </div>
+            ) : shift ? (
+              <div className="rounded-lg bg-primary/10 p-2">
+                <p className="text-xs font-semibold text-primary">{shift.name}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {minutesToTime(shift.startTime)} – {minutesToTime(shift.endTime)}
+                </p>
+              </div>
+            ) : (
+              <span className="text-xs text-muted-foreground">—</span>
+            )}
+          </TableCell>
+        )
+      })}
+    </>
+  )
+}

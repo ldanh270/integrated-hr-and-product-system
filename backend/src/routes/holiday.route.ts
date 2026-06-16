@@ -16,8 +16,11 @@ const controller = new HolidayController(service)
 
 holidayRoutes.use(authenticate)
 
+holidayRoutes.get("/", controller.list)
 holidayRoutes.get("/check", controller.checkHoliday)
 
 holidayRoutes.post("/", authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER), controller.create)
+holidayRoutes.patch("/:id", authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER), controller.update)
+holidayRoutes.delete("/:id", authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER), controller.delete)
 
 export default holidayRoutes

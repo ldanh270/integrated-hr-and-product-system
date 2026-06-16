@@ -1,9 +1,19 @@
 import { useVirtualScanner } from "@/hooks/attendance/useVirtualScanner"
 
-import { AlertCircle, CheckCircle2, Clock, Fingerprint, Loader2 } from "lucide-react"
+import { AlertCircle, CheckCircle2, Clock, Fingerprint, Loader2, MapPin } from "lucide-react"
 
 export default function VirtualScanner() {
-  const { user, currentTime, location, locating, isProcessing, handleScan } =
+  const {
+    user,
+    currentTime,
+    location,
+    locating,
+    isProcessing,
+    nextActionLabel,
+    todayShift,
+    isShiftLoading,
+    handleScan,
+  } =
     useVirtualScanner()
 
   return (
@@ -25,6 +35,42 @@ export default function VirtualScanner() {
       </div>
 
       <div className="mt-6 w-full space-y-3">
+        <div className="rounded-xl border bg-muted/40 p-4 text-left">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-semibold text-foreground">Ca hôm nay</p>
+            {isShiftLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
+          </div>
+
+          {todayShift ? (
+            <div className="mt-3 space-y-2 text-xs text-muted-foreground">
+              <div className="flex items-center justify-between gap-3">
+                <span>Tên ca</span>
+                <span className="font-semibold text-foreground">{todayShift.name}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span>Giờ làm</span>
+                <span className="font-mono text-foreground">{todayShift.workWindow}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span>Check-in đúng giờ</span>
+                <span className="font-mono text-foreground">{todayShift.checkInWindow}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span>Check-out</span>
+                <span className="font-mono text-foreground">{todayShift.checkOutWindow}</span>
+              </div>
+              <div className="flex items-start gap-2 pt-2">
+                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                <span>{todayShift.gpsLabel}</span>
+              </div>
+            </div>
+          ) : (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Chưa có ca làm việc được phân cho hôm nay.
+            </p>
+          )}
+        </div>
+
         {locating ? (
           <div className="flex items-center justify-center gap-2 text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/30 py-2 rounded-lg border border-amber-100 dark:border-amber-900/50 font-medium">
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -53,7 +99,7 @@ export default function VirtualScanner() {
             ) : (
               <Fingerprint className="w-5 h-5" />
             )}
-            <span>{isProcessing ? "Đang xử lý..." : "Chấm Công"}</span>
+            <span>{isProcessing ? `Đang ${nextActionLabel}...` : nextActionLabel}</span>
           </button>
         </div>
       </div>
