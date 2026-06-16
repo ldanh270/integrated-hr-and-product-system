@@ -801,7 +801,7 @@ export default function Applications() {
       </div>
 
       <div className="flex flex-col gap-4">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "mine" | "manage")} className="w-full">
+        <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as "mine" | "manage") }} className="w-full">
           <div className="flex items-center justify-between mb-4">
             <TabsList>
               <TabsTrigger value="mine">Đơn của tôi</TabsTrigger>

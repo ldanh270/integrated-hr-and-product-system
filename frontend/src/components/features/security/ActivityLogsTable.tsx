@@ -92,7 +92,7 @@ export function ActivityLogsTable({ logs, onViewDetail }: ActivityLogsTableProps
                 </td>
                 <td className="px-5 py-4 text-right">
                   <button
-                    onClick={() => onViewDetail(log.id)}
+                    onClick={() => { onViewDetail(log.id) }}
                     className="text-[12px] font-bold text-primary hover:underline underline-offset-4 focus:outline-none"
                   >
                     Xem chi tiết
