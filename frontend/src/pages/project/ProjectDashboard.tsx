@@ -22,7 +22,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 // Import Lucide icons for layouts
 import { ClipboardList, ExternalLink, Inbox, Folder, User, Plus, Clock, ChevronRight } from "lucide-react"
 // Import React Router Navigation link
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 // Import standard React hooks
 import { useState, useEffect } from "react"
 // Import Toast notifications provider
@@ -36,6 +36,8 @@ import type { Task } from "@/types/task.types"
 export default function ProjectDashboard() {
   // Retrieve current user session information
   const { user } = useAuthStore()
+  // Initialize navigation
+  const navigate = useNavigate()
   // Initialize react-query client to manage caching
   const queryClient = useQueryClient()
  
@@ -485,16 +487,14 @@ export default function ProjectDashboard() {
               return (
                 <PageCard
                   key={proj.id}
-                  className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 border border-border/85 flex flex-col justify-between p-5 min-h-[140px] space-y-4 hover:border-border/100"
+                  className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 border border-border/85 flex flex-col justify-between p-5 min-h-[140px] space-y-4 hover:border-primary/50 cursor-pointer group"
+                  onClick={() => { navigate(`/project/${proj.id}`); }}
                 >
                   <div className="space-y-2">
                     <div className="flex items-start justify-between gap-3">
-                      <Link
-                        to={`/project/${proj.id}`}
-                        className="font-bold text-base text-foreground hover:text-primary transition-colors line-clamp-1"
-                      >
+                      <span className="font-bold text-base text-foreground group-hover:text-primary transition-colors line-clamp-1">
                         {proj.name}
-                      </Link>
+                      </span>
                       <StatusPill
                         label={formatProjectStatus(proj.status)}
                         variant={getProjectStatusVariant(proj.status)}
@@ -515,6 +515,7 @@ export default function ProjectDashboard() {
                       {canCreateInProj && (
                         <Link
                           to={`/project/${proj.id}?createTask=true`}
+                          onClick={(e) => { e.stopPropagation(); }}
                           className="rounded-full bg-primary/10 hover:bg-primary/20 text-primary px-2.5 py-1 font-bold text-[10px] flex items-center gap-1 transition-all duration-200 cursor-pointer"
                         >
                           <Plus className="size-3" />

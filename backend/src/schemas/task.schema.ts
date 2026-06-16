@@ -36,7 +36,6 @@ export const createTaskSchema = z
 
     estimatedTime: z.number().nonnegative().optional().nullable(),
     progress: z.number().int().min(0).max(100).optional(),
-    categoryId: z.string().optional().nullable(),
   })
   .strict()
 
@@ -81,7 +80,6 @@ export const updateTaskSchema = z
 
     estimatedTime: z.number().nonnegative().optional().nullable(),
     progress: z.number().int().min(0).max(100).optional(),
-    categoryId: z.string().optional().nullable(),
   })
   .strict()
 

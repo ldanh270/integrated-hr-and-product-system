@@ -34,6 +34,18 @@
   input[type="radio"] {
     @apply accent-primary cursor-pointer;
   }
+
+  input[type="date"] {
+    position: relative;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    position: absolute;
+    right: 1.5rem;
+    cursor: pointer;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 @theme inline {

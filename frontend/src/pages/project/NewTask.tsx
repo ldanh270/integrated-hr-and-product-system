@@ -16,7 +16,6 @@ import { TASK_PRIORITIES, TASK_STATUSES, TASK_TRACKERS } from "@/config/entities
 // Import API utilities for projects, tasks, and task categories
 import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
-import { taskCategoryApi } from "@/lib/api/task-category.api"
 // Import React Query hooks for fetching and caching server state
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 // Import Lucide icons for visual decorators
@@ -62,7 +61,6 @@ export default function NewTask() {
   const [taskEstimate, setTaskEstimate] = useState("") // Estimated hours
   const [taskProgress, setTaskProgress] = useState("0") // Progress percent
   const [parentTask, setParentTask] = useState(parentTaskId || "none") // Parent task connection
-  const [taskCategory, setTaskCategory] = useState("none") // Category categorization
   const [taskError, setTaskError] = useState<string | null>(null) // Errors during submission
 
   // State variable to store the selected watchers' IDs
@@ -143,12 +141,6 @@ export default function NewTask() {
     enabled: !!pId,
   })
 
-  // Query to fetch categories associated with the current project
-  const { data: categories } = useQuery({
-    queryKey: ["project-categories", pId],
-    queryFn: () => taskCategoryApi.list(pId),
-    enabled: !!pId,
-  })
 
   // Query to fetch existing tasks under this project for parent task matching
   const { data: projectTasksData } = useQuery({
@@ -179,7 +171,6 @@ export default function NewTask() {
         dueDate: taskDue || null,
         estimatedTime: parsedEstimate,
         progress: Number(taskProgress),
-        categoryId: taskCategory === "none" ? null : taskCategory,
       })
     },
     // On success, invalidate cached tasks queries and display success toast
@@ -192,7 +183,6 @@ export default function NewTask() {
         setTaskTitle("")
         setTaskDesc("")
         setParentTask("none")
-        setTaskCategory("none")
         setSelectedFiles([])
       } else {
         // Otherwise, navigate back to project detail page
@@ -352,7 +342,7 @@ export default function NewTask() {
                 <SelectTrigger id="tracker" className="w-full h-10 border-border rounded-full px-4 bg-background">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-border bg-popover text-popover-foreground">
+                <SelectContent position="popper" className="rounded-xl border-border bg-popover text-popover-foreground">
                   {TASK_TRACKERS.map((tr) => (
                     <SelectItem key={tr} value={tr} className="rounded-lg">
                       {formatTracker(tr)}
@@ -370,7 +360,7 @@ export default function NewTask() {
                 <SelectTrigger id="status" className="w-full h-10 border-border rounded-full px-4 bg-background">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-border bg-popover text-popover-foreground">
+                <SelectContent position="popper" className="rounded-xl border-border bg-popover text-popover-foreground">
                   {TASK_STATUSES.map((st) => (
                     <SelectItem key={st} value={st} className="rounded-lg">
                       {formatStatus(st)}
@@ -418,7 +408,7 @@ export default function NewTask() {
                 <SelectTrigger id="priority" className="w-full h-10 border-border rounded-full px-4 bg-background">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-border bg-popover text-popover-foreground">
+                <SelectContent position="popper" className="rounded-xl border-border bg-popover text-popover-foreground">
                   {TASK_PRIORITIES.map((pr) => (
                     <SelectItem key={pr} value={pr} className="rounded-lg">
                       {formatPriority(pr)}
@@ -466,7 +456,7 @@ export default function NewTask() {
                   <User className="size-3.5 text-muted-foreground shrink-0" />
                   <SelectValue placeholder="Chọn thành viên" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-border bg-popover text-popover-foreground">
+                <SelectContent position="popper" className="rounded-xl border-border bg-popover text-popover-foreground">
                   <SelectItem value="none" className="rounded-lg">Chọn thành viên</SelectItem>
                   {members?.map((m) => (
                     <SelectItem key={m.id} value={m.employeeId} className="rounded-lg">
@@ -504,7 +494,7 @@ export default function NewTask() {
                 <SelectTrigger id="progress" className="w-full h-10 border-border rounded-full px-4 bg-background">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-border bg-popover text-popover-foreground">
+                <SelectContent position="popper" className="rounded-xl border-border bg-popover text-popover-foreground">
                   {["0", "10", "20", "30", "40", "50", "60", "70", "80", "90", "100"].map((p) => (
                     <SelectItem key={p} value={p} className="rounded-lg font-mono">
                       {p} %
@@ -525,30 +515,11 @@ export default function NewTask() {
                 <SelectTrigger id="parentTask" className="w-full h-10 border-border rounded-full px-4 bg-background">
                   <SelectValue placeholder="Chọn công việc cha" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-border bg-popover text-popover-foreground">
+                <SelectContent position="popper" className="rounded-xl border-border bg-popover text-popover-foreground">
                   <SelectItem value="none" className="rounded-lg">Không có</SelectItem>
                   {projectTasks.map((t) => (
                     <SelectItem key={t.id} value={t.id} className="rounded-lg">
                       #{t.id.slice(-4)} - {t.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="category" className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
-                CHỦ ĐỀ (CATEGORY)
-              </Label>
-              <Select value={taskCategory} onValueChange={(val) => { setTaskCategory(val) }}>
-                <SelectTrigger id="category" className="w-full h-10 border-border rounded-full px-4 bg-background">
-                  <SelectValue placeholder="Chọn chủ đề" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-border bg-popover text-popover-foreground">
-                  <SelectItem value="none" className="rounded-lg">Không có</SelectItem>
-                  {categories?.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id} className="rounded-lg">
-                      {cat.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
