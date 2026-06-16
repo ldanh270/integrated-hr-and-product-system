@@ -12,7 +12,10 @@ import {
   IAttendanceMetricsDTO,
   IAttendanceRecordQueryDTO,
   IAttendanceRepository,
+  IAttendanceRecordDTO,
+  IAttendanceScheduleDTO,
   IAttendanceService,
+  IAttendanceShiftDTO,
   IHolidayRepository,
 } from "@/types/attendance.types.ts"
 import {
@@ -59,12 +62,15 @@ export class AttendanceService implements IAttendanceService {
    * @param date - The target date.
    * @returns The resolved shift ID or undefined if not found.
    */
-  private resolveShiftIdFromSchedule(schedule: any, date: Date): string | undefined {
+  private resolveShiftIdFromSchedule(
+    schedule: IAttendanceScheduleDTO | null | undefined,
+    date: Date,
+  ): string | undefined {
     if (!schedule) return undefined
 
     const dayOfWeek = date.getDay()
     if (Array.isArray(schedule.days) && schedule.days.length > 0) {
-      const day = schedule.days.find((item: any) => item.dayOfWeek === dayOfWeek)
+      const day = schedule.days.find((item) => item.dayOfWeek === dayOfWeek)
       if (day?.shiftId) {
         return day.shiftId
       }
@@ -115,15 +121,20 @@ export class AttendanceService implements IAttendanceService {
     return matchingShift?.id ?? activeShifts[0]?.id
   }
 
-  private getWindowMinutes(shift?: any): number {
+  private getWindowMinutes(shift?: IAttendanceShiftDTO | null): number {
     return shift?.gracePeriodMinutes ?? ATTENDANCE_TIME_RULES.DEFAULT_WINDOW_MINUTES
   }
 
-  private isOvernightShift(shift: any): boolean {
+  private isOvernightShift(
+    shift: IAttendanceShiftDTO | null | undefined,
+  ): shift is IAttendanceShiftDTO {
     return Boolean(shift && shift.endTime < shift.startTime)
   }
 
-  private isWithinShiftSelectionWindow(currentMinutes: number, shift: any): boolean {
+  private isWithinShiftSelectionWindow(
+    currentMinutes: number,
+    shift: IAttendanceShiftDTO,
+  ): boolean {
     const windowStart =
       (shift.startTime - this.getWindowMinutes(shift) + ATTENDANCE_TIME_RULES.MINUTES_PER_DAY) %
       ATTENDANCE_TIME_RULES.MINUTES_PER_DAY
@@ -131,7 +142,10 @@ export class AttendanceService implements IAttendanceService {
     return this.isWithinShiftWindow(currentMinutes, windowStart, shift.endTime)
   }
 
-  private getShiftDateTimes(baseDate: Date, shift: any): { start: Date; end: Date } {
+  private getShiftDateTimes(
+    baseDate: Date,
+    shift: IAttendanceShiftDTO,
+  ): { start: Date; end: Date } {
     const start = new Date(baseDate)
     start.setHours(Math.floor(shift.startTime / 60), shift.startTime % 60, 0, 0)
 
@@ -144,7 +158,11 @@ export class AttendanceService implements IAttendanceService {
     return { start, end }
   }
 
-  private assertCheckInWindow(now: Date, date: Date, shift: any): void {
+  private assertCheckInWindow(
+    now: Date,
+    date: Date,
+    shift: IAttendanceShiftDTO | null,
+  ): void {
     if (!shift) return
 
     const { start, end } = this.getShiftDateTimes(date, shift)
@@ -168,7 +186,11 @@ export class AttendanceService implements IAttendanceService {
     }
   }
 
-  private isBeforeCheckOutWindow(now: Date, record: any, shift: any): boolean {
+  private isBeforeCheckOutWindow(
+    now: Date,
+    record: IAttendanceRecordDTO,
+    shift: IAttendanceShiftDTO | null | undefined,
+  ): boolean {
     if (!shift) return false
 
     const { end } = this.getShiftDateTimes(new Date(record.date), shift)
@@ -178,7 +200,11 @@ export class AttendanceService implements IAttendanceService {
     return now.getTime() < windowStart.getTime()
   }
 
-  private isWithinOvernightCarryover(now: Date, record: any, shift: any): boolean {
+  private isWithinOvernightCarryover(
+    now: Date,
+    record: IAttendanceRecordDTO,
+    shift: IAttendanceShiftDTO | null | undefined,
+  ): boolean {
     if (!this.isOvernightShift(shift)) return false
 
     const { end } = this.getShiftDateTimes(new Date(record.date), shift)
@@ -190,7 +216,10 @@ export class AttendanceService implements IAttendanceService {
     return now.getTime() <= latestCheckoutAt.getTime()
   }
 
-  private async findActiveAttendanceRecord(employeeId: string, now: Date): Promise<any | null> {
+  private async findActiveAttendanceRecord(
+    employeeId: string,
+    now: Date,
+  ): Promise<IAttendanceRecordDTO | null> {
     const today = this.normalizeDate(now)
     const todayRecord = await this.attendanceRepo.findByEmployeeAndDate(employeeId, today)
     if (todayRecord?.checkInAt) return todayRecord
@@ -233,7 +262,10 @@ export class AttendanceService implements IAttendanceService {
     )
   }
 
-  private assertWithinShiftGps(location: { lat: number; lng: number }, shift: any): void {
+  private assertWithinShiftGps(
+    location: { lat: number; lng: number },
+    shift: IAttendanceShiftDTO | null | undefined,
+  ): void {
     if (!shift || shift.gpsLat == null || shift.gpsLng == null || shift.gpsRadiusMeters == null) {
       return
     }
@@ -258,7 +290,11 @@ export class AttendanceService implements IAttendanceService {
    * @param shift - The associated shift definition.
    * @returns Computed attendance metrics.
    */
-  private computeAttendanceMetrics(record: any, shift: any, checkOutAt: Date): IAttendanceMetricsDTO {
+  private computeAttendanceMetrics(
+    record: IAttendanceRecordDTO,
+    shift: IAttendanceShiftDTO | null | undefined,
+    checkOutAt: Date,
+  ): IAttendanceMetricsDTO {
     if (!record.checkInAt) {
       return { status: ATTENDANCE_STATUS.ABSENT, totalWorkMinutes: 0 }
     }
@@ -350,7 +386,7 @@ export class AttendanceService implements IAttendanceService {
     employeeId: string,
     location: { lat: number; lng: number },
     createdById: string,
-  ): Promise<any> {
+  ): Promise<IAttendanceRecordDTO> {
     const now = new Date()
     const today = this.normalizeDate(now)
     const existingRecord = await this.attendanceRepo.findByEmployeeAndDate(employeeId, today)
@@ -411,7 +447,10 @@ export class AttendanceService implements IAttendanceService {
    * @returns The updated attendance record.
    * @throws {AppError} If no check-in is found for today or if already checked out.
    */
-  async checkOut(employeeId: string, location: { lat: number; lng: number }): Promise<any> {
+  async checkOut(
+    employeeId: string,
+    location: { lat: number; lng: number },
+  ): Promise<IAttendanceRecordDTO> {
     const now = new Date()
     const record = await this.findActiveAttendanceRecord(employeeId, now)
 
@@ -446,7 +485,7 @@ export class AttendanceService implements IAttendanceService {
     employeeId: string,
     location: { lat: number; lng: number },
     createdById: string,
-  ): Promise<any> {
+  ): Promise<IAttendanceRecordDTO> {
     const now = new Date()
     const record = await this.findActiveAttendanceRecord(employeeId, now)
 
@@ -471,7 +510,7 @@ export class AttendanceService implements IAttendanceService {
    * @param query - The query parameters.
    * @returns An array of attendance records.
    */
-  async getAttendanceRecords(query: IAttendanceRecordQueryDTO): Promise<any[]> {
+  async getAttendanceRecords(query: IAttendanceRecordQueryDTO): Promise<IAttendanceRecordDTO[]> {
     return this.attendanceRepo.queryRecords(query)
   }
 }

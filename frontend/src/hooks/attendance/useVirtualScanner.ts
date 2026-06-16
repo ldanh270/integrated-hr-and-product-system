@@ -24,10 +24,7 @@ interface TodayShiftInfo {
 function persistLocation(location: { lat: number; lng: number }) {
   // Use localStorage and base64 encoding to satisfy security alerts
   const data = JSON.stringify({ ...location, timestamp: Date.now() })
-  localStorage.setItem(
-    SYSTEM_CONFIG.STORAGE_KEYS.LOCATION_CACHE,
-    btoa(data)
-  )
+  localStorage.setItem(SYSTEM_CONFIG.STORAGE_KEYS.LOCATION_CACHE, btoa(data))
 }
 
 function readCachedLocation(): { lat: number; lng: number } | null {
@@ -117,11 +114,12 @@ function getCurrentLocation(): Promise<{ lat: number; lng: number }> {
 
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
-      (position) =>
+      (position) => {
         resolve({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
-        }),
+        })
+      },
       reject,
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     )
@@ -143,7 +141,9 @@ export function useVirtualScanner(): {
   const { user } = useAuthStore()
   const queryClient = useQueryClient()
   const [currentTime, setCurrentTime] = useState(new Date())
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(() =>
+    readCachedLocation(),
+  )
   const [locating, setLocating] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const today = formatDateParam(currentTime)
@@ -171,30 +171,22 @@ export function useVirtualScanner(): {
   }, [])
 
   useEffect(() => {
-    const cached = readCachedLocation()
-    if (cached) setLocation(cached)
-  }, [])
-
-  useEffect(() => {
     if (!("geolocation" in navigator)) {
       toast.warning("Trình duyệt không hỗ trợ lấy vị trí GPS")
       return
     }
 
-    setLocating(true)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude }
         setLocation(coords)
         persistLocation(coords)
-        setLocating(false)
       },
       (err) => {
         console.warn("GPS mount error:", err.message)
         if (err.code === 1) {
           toast.warning("Vui lòng cho phép truy cập vị trí để chấm công")
         }
-        setLocating(false)
       },
       { enableHighAccuracy: true, timeout: 10000 },
     )
