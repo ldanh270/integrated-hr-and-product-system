@@ -132,3 +132,8 @@ export const LEAVE_TYPE_OPTIONS = [
   { value: "unpaid_leave", label: "Nghỉ không lương" },
   { value: "other", label: "Khác" },
 ] as const
+
+export const REGIME_TYPE_OPTIONS = [
+  { value: "paid", label: "Có hưởng lương" },
+  { value: "unpaid", label: "Không lương" },
+] as const

@@ -52,12 +52,46 @@ export default function Sidebar({ className, isMobile, onNavClick }: SidebarProp
       {/* Sidebar Content (Navigation) */}
       <nav className="flex-1 space-y-1 px-3 py-6 overflow-y-auto">
         {navItems.map((item) => {
-          const dashboardPath = activeSubsystemConfig?.sidebarItems[0]?.path
-          const isActive =
-            location.pathname === item.path ||
-            (item.path !== dashboardPath &&
-              location.pathname.startsWith(item.path) &&
-              item.path !== activeSubsystemConfig?.routePrefix)
+          const dashboardPath = activeSubsystemConfig?.sidebarItems[0]?.path?.split("?")[0]
+          
+          let isActive = false
+          const [itemPathname, itemQuery] = item.path.split("?")
+          
+          const isPathMatch = 
+            location.pathname === itemPathname ||
+            (itemPathname !== dashboardPath &&
+              location.pathname.startsWith(itemPathname) &&
+              itemPathname !== activeSubsystemConfig?.routePrefix)
+              
+          if (isPathMatch) {
+            if (itemQuery) {
+              const itemParams = new URLSearchParams(itemQuery)
+              const currentParams = new URLSearchParams(location.search)
+              isActive = true
+              for (const [key, value] of itemParams.entries()) {
+                if (currentParams.get(key) !== value) {
+                  isActive = false
+                  break
+                }
+              }
+            } else {
+              isActive = true
+              const currentParams = new URLSearchParams(location.search)
+              if (currentParams.toString() !== "") {
+                const betterMatchExists = navItems.some(otherItem => {
+                  if (otherItem === item) return false
+                  const [otherPathname, otherQuery] = otherItem.path.split("?")
+                  if (otherPathname !== itemPathname || !otherQuery) return false
+                  const otherParams = new URLSearchParams(otherQuery)
+                  for (const [key, value] of otherParams.entries()) {
+                    if (currentParams.get(key) !== value) return false
+                  }
+                  return true
+                })
+                if (betterMatchExists) isActive = false
+              }
+            }
+          }
           const Icon = item.icon
 
           return (

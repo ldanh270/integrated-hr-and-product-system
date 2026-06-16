@@ -261,7 +261,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
       <div
-        className={`bg-white w-full ${step === "type" ? "max-w-3xl" : "max-w-lg"} rounded-2xl shadow-2xl shadow-slate-900/20 overflow-hidden flex flex-col max-h-[90vh] transition-all duration-300`}
+        className={`bg-background w-full ${step === "type" ? "max-w-3xl" : "max-w-lg"} rounded-2xl shadow-2xl shadow-slate-900/20 overflow-hidden flex flex-col max-h-[90vh] transition-all duration-300`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
@@ -309,7 +309,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                       onClose()
                       navigate(`/application/create?type=${type}`)
                     }}
-                    className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 text-left hover:shadow-md hover:border-primary/30 transition-all active:scale-[0.98] bg-white"
+                    className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 text-left hover:shadow-md hover:border-primary/30 transition-all active:scale-[0.98] bg-background"
                   >
                     <div
                       className={`h-10 w-10 shrink-0 rounded-full flex items-center justify-center ${m.color} ${m.bg}`}
@@ -370,7 +370,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                       <select
                         value={form.leaveType}
                         onChange={(e) => set("leaveType", e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white pr-8"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-background pr-8"
                       >
                         {LEAVE_TYPE_OPTIONS.map((o) => (
                           <option key={o.value} value={o.value}>
@@ -710,7 +710,7 @@ function CancelDialog({ app, onCancel, onConfirm, isLoading }: CancelDialogProps
   const typeMeta = APP_TYPE_META[app.type]
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 flex flex-col gap-5">
+      <div className="bg-background w-full max-w-sm rounded-2xl shadow-2xl p-6 flex flex-col gap-5">
         <div className="flex flex-col items-center text-center gap-2">
           <div className="h-12 w-12 rounded-full bg-red-50 border border-red-100 flex items-center justify-center text-red-500 mb-1">
             <AlertTriangle size={22} />
@@ -767,7 +767,7 @@ function RejectDialog({ app, onCancel, onConfirm, isLoading }: RejectDialogProps
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 flex flex-col gap-5">
+      <div className="bg-background w-full max-w-md rounded-2xl shadow-2xl p-6 flex flex-col gap-5">
         <div className="flex flex-col items-center text-center gap-2">
           <div className="h-12 w-12 rounded-full bg-red-50 border border-red-100 flex items-center justify-center text-red-500 mb-1">
             <X size={22} />
@@ -887,21 +887,21 @@ export default function ApplicationDashboard() {
         <div className="flex items-center gap-4">
           <div className="relative">
             <button
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-primary text-primary hover:bg-blue-50 transition-colors"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-primary text-primary hover:bg-primary/10 transition-colors"
               onClick={() => setShowCreateMenu(!showCreateMenu)}
             >
               <Plus size={18} strokeWidth={2.5} />
             </button>
 
             {showCreateMenu && (
-              <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2">
+              <div className="absolute top-full left-0 mt-2 w-48 bg-background rounded-xl shadow-lg border border-border py-2 z-50 animate-in fade-in slide-in-from-top-2">
                 <button
                   onClick={() => {
                     setCreateType(undefined)
                     setShowSubmitModal(true)
                     setShowCreateMenu(false)
                   }}
-                  className="w-full text-left px-4 py-2.5 text-[14px] text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors"
+                  className="w-full text-left px-4 py-2.5 text-[14px] text-foreground hover:bg-muted hover:text-primary transition-colors"
                 >
                   Tạo mới đơn từ
                 </button>
@@ -910,19 +910,21 @@ export default function ApplicationDashboard() {
           </div>
 
           <div className="flex items-center text-[15px]">
-            <span className="font-semibold text-slate-800">Đơn thư</span>
-            <ChevronRight className="mx-2 text-slate-400" size={16} />
+            <span className="font-semibold text-foreground">Đơn thư</span>
+            <ChevronRight className="mx-2 text-muted-foreground/70" size={16} />
             {searchParams.get("tab") === "manage" ? (
-              <span className="text-slate-600 font-medium">Bạn duyệt</span>
+              <span className="text-muted-foreground font-medium">Bạn duyệt</span>
             ) : searchParams.get("tab") === "mine" ? (
-              <span className="text-slate-600 font-medium">Của bạn</span>
+              <span className="text-muted-foreground font-medium">Của bạn</span>
             ) : (
               <>
-                <span className="text-slate-600 font-medium">Danh sách đơn thư</span>
+                <span className="text-muted-foreground font-medium">Danh sách đơn thư</span>
                 {currentTypeConfig && (
                   <>
-                    <ChevronRight className="mx-2 text-slate-400" size={16} />
-                    <span className="text-primary font-medium">{currentTypeConfig.DESCRIPTION}</span>
+                    <ChevronRight className="mx-2 text-muted-foreground/70" size={16} />
+                    <span className="text-primary font-medium">
+                      {currentTypeConfig.DESCRIPTION}
+                    </span>
                   </>
                 )}
               </>
@@ -931,7 +933,7 @@ export default function ApplicationDashboard() {
         </div>
       </div>
 
-      <div className="flex-1 w-full mt-4 min-w-0 bg-white border border-slate-200 rounded-xl px-6 pb-6 shadow-sm">
+      <div className="flex-1 w-full mt-4 min-w-0 bg-background border border-border rounded-xl px-6 pb-6 shadow-sm">
         <ApplicationList
           mode={activeTab}
           onRowClick={handleRowClick}

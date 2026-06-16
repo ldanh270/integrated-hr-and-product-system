@@ -150,25 +150,25 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
   const meta = APP_TYPE_META[selectedType]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl shadow-slate-900/20 overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+      <div className="bg-background w-full max-w-lg rounded-2xl shadow-lg overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-3">
             {step === "details" && (
               <button
                 type="button"
                 onClick={() => setStep("type")}
-                className="p-1.5 rounded-full hover:bg-slate-100 transition-colors text-slate-500"
+                className="p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground"
               >
                 <ArrowLeft size={16} />
               </button>
             )}
             <div>
-              <h2 className="text-base font-bold text-slate-800">
+              <h2 className="text-base font-bold text-foreground">
                 {step === "type" ? "Chọn loại đơn" : `Tạo đơn ${meta?.label}`}
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {step === "type"
                   ? "Chọn loại đơn bạn muốn gửi"
                   : "Điền thông tin chi tiết và xác nhận"}
@@ -178,7 +178,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-400"
+            className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground/70"
           >
             <X size={18} />
           </button>
@@ -205,7 +205,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                     </div>
                     <div>
                       <p className={`text-sm font-semibold ${m.color}`}>{m.label}</p>
-                      <p className="text-xs text-slate-400 mt-0.5 leading-snug">{m.hint}</p>
+                      <p className="text-xs text-muted-foreground/70 mt-0.5 leading-snug">{m.hint}</p>
                     </div>
                   </button>
                 )
@@ -225,23 +225,23 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
               {/* Dates */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-slate-600">Ngày bắt đầu *</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Ngày bắt đầu *</label>
                   <input
                     type="date"
                     required
                     value={form.startDate}
                     onChange={(e) => set("startDate", e.target.value)}
-                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-slate-600">Ngày kết thúc</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Ngày kết thúc</label>
                   <input
                     type="date"
                     value={form.endDate}
                     min={form.startDate}
                     onChange={(e) => set("endDate", e.target.value)}
-                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
               </div>
@@ -250,12 +250,12 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
               {selectedType === "leave" && (
                 <>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">Loại nghỉ phép *</label>
+                    <label className="text-xs font-semibold text-muted-foreground">Loại nghỉ phép *</label>
                     <div className="relative">
                       <select
                         value={form.leaveType}
                         onChange={(e) => set("leaveType", e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white pr-8"
+                        className="w-full px-3 py-2 border border-input rounded-lg text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-background text-foreground pr-8"
                       >
                         {LEAVE_TYPE_OPTIONS.map((o) => (
                           <option key={o.value} value={o.value}>
@@ -263,11 +263,11 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                           </option>
                         ))}
                       </select>
-                      <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                      <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/70 pointer-events-none" />
                     </div>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">Chế độ lương *</label>
+                    <label className="text-xs font-semibold text-muted-foreground">Chế độ lương *</label>
                     <div className="grid grid-cols-2 gap-2">
                       {(["paid", "unpaid"] as const).map((rt) => (
                         <button
@@ -277,7 +277,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                           className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
                             form.leaveRegimeType === rt
                               ? "border-primary bg-primary/5 text-primary"
-                              : "border-slate-200 text-slate-500 hover:border-slate-300"
+                              : "border-input text-muted-foreground hover:border-primary/50"
                           }`}
                         >
                           {rt === "paid" ? "Có lương" : "Không lương"}
@@ -291,14 +291,14 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
               {/* ── OVERTIME ── */}
               {selectedType === "overtime" && (
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-slate-600">ID Ca làm việc *</label>
+                  <label className="text-xs font-semibold text-muted-foreground">ID Ca làm việc *</label>
                   <input
                     type="text"
                     required
                     placeholder="Nhập CUID ca làm việc..."
                     value={form.employeeShiftId}
                     onChange={(e) => set("employeeShiftId", e.target.value)}
-                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
               )}
@@ -307,18 +307,18 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
               {selectedType === "late_early" && (
                 <>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">ID Ca làm việc *</label>
+                    <label className="text-xs font-semibold text-muted-foreground">ID Ca làm việc *</label>
                     <input
                       type="text"
                       required
                       placeholder="Nhập CUID ca làm việc..."
                       value={form.employeeShiftId}
                       onChange={(e) => set("employeeShiftId", e.target.value)}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">Loại *</label>
+                    <label className="text-xs font-semibold text-muted-foreground">Loại *</label>
                     <div className="grid grid-cols-2 gap-2">
                       {([true, false] as const).map((v) => (
                         <button
@@ -328,7 +328,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                           className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
                             form.isLate === v
                               ? "border-primary bg-primary/5 text-primary"
-                              : "border-slate-200 text-slate-500 hover:border-slate-300"
+                              : "border-input text-muted-foreground hover:border-primary/50"
                           }`}
                         >
                           {v ? "Đi muộn" : "Về sớm"}
@@ -337,7 +337,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                     </div>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">Số phút (1–480) *</label>
+                    <label className="text-xs font-semibold text-muted-foreground">Số phút (1–480) *</label>
                     <input
                       type="number"
                       required
@@ -345,7 +345,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                       max={480}
                       value={form.durationMinutes}
                       onChange={(e) => set("durationMinutes", Number(e.target.value))}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
                 </>
@@ -355,34 +355,34 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
               {selectedType === "shift_swap" && (
                 <>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">ID Ca của bạn *</label>
+                    <label className="text-xs font-semibold text-muted-foreground">ID Ca của bạn *</label>
                     <input
                       type="text"
                       required
                       placeholder="Nhập CUID ca làm việc..."
                       value={form.employeeShiftId}
                       onChange={(e) => set("employeeShiftId", e.target.value)}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">ID Nhân viên muốn đổi (tùy chọn)</label>
+                    <label className="text-xs font-semibold text-muted-foreground">ID Nhân viên muốn đổi (tùy chọn)</label>
                     <input
                       type="text"
                       placeholder="CUID nhân viên..."
                       value={form.swapWithEmployeeId}
                       onChange={(e) => set("swapWithEmployeeId", e.target.value)}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">ID Ca muốn đổi sang (tùy chọn)</label>
+                    <label className="text-xs font-semibold text-muted-foreground">ID Ca muốn đổi sang (tùy chọn)</label>
                     <input
                       type="text"
                       placeholder="CUID ca làm việc..."
                       value={form.swapWithShiftId}
                       onChange={(e) => set("swapWithShiftId", e.target.value)}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
                 </>
@@ -391,13 +391,13 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
               {/* ── WFH ── */}
               {selectedType === "work_from_home" && (
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-slate-600">Địa điểm làm việc</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Địa điểm làm việc</label>
                   <input
                     type="text"
                     placeholder="VD: Tại nhà, Quán cà phê..."
                     value={form.location}
                     onChange={(e) => set("location", e.target.value)}
-                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
               )}
@@ -406,24 +406,24 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
               {selectedType === "business_trip" && (
                 <>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">Địa điểm công tác *</label>
+                    <label className="text-xs font-semibold text-muted-foreground">Địa điểm công tác *</label>
                     <input
                       type="text"
                       required
                       placeholder="VD: Hà Nội, TP.HCM..."
                       value={form.destination}
                       onChange={(e) => set("destination", e.target.value)}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">Mục đích chuyến đi</label>
+                    <label className="text-xs font-semibold text-muted-foreground">Mục đích chuyến đi</label>
                     <input
                       type="text"
                       placeholder="Mô tả mục đích..."
                       value={form.purpose}
                       onChange={(e) => set("purpose", e.target.value)}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
                 </>
@@ -433,7 +433,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
               {selectedType === "regime" && (
                 <>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">Chế độ lương *</label>
+                    <label className="text-xs font-semibold text-muted-foreground">Chế độ lương *</label>
                     <div className="grid grid-cols-2 gap-2">
                       {(["paid", "unpaid"] as const).map((rt) => (
                         <button
@@ -443,7 +443,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                           className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
                             form.regimeType === rt
                               ? "border-primary bg-primary/5 text-primary"
-                              : "border-slate-200 text-slate-500 hover:border-slate-300"
+                              : "border-input text-muted-foreground hover:border-primary/50"
                           }`}
                         >
                           {rt === "paid" ? "Có lương" : "Không lương"}
@@ -452,7 +452,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                     </div>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">
+                    <label className="text-xs font-semibold text-muted-foreground">
                       Số phút giảm/ngày (0–480) *
                     </label>
                     <input
@@ -462,11 +462,11 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                       max={480}
                       value={form.reducedMinutesPerDay}
                       onChange={(e) => set("reducedMinutesPerDay", Number(e.target.value))}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <label className="text-xs font-semibold text-slate-600">Áp dụng</label>
+                    <label className="text-xs font-semibold text-muted-foreground">Áp dụng</label>
                     <div className="flex gap-4">
                       {(
                         [
@@ -481,13 +481,13 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                             onChange={(e) => set(key, e.target.checked)}
                             className="accent-primary"
                           />
-                          <span className="text-sm text-slate-600">{label}</span>
+                          <span className="text-sm text-foreground">{label}</span>
                         </label>
                       ))}
                     </div>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">
+                    <label className="text-xs font-semibold text-muted-foreground">
                       URL chứng từ (tùy chọn)
                     </label>
                     <input
@@ -495,7 +495,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                       placeholder="https://..."
                       value={form.documentUrl}
                       onChange={(e) => set("documentUrl", e.target.value)}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
                 </>
@@ -503,9 +503,9 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
 
               {/* Reason */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-600">
+                <label className="text-xs font-semibold text-muted-foreground">
                   Lý do{" "}
-                  <span className="text-slate-400 font-normal">(tối thiểu 5 ký tự nếu điền)</span>
+                  <span className="text-muted-foreground/70 font-normal">(tối thiểu 5 ký tự nếu điền)</span>
                 </label>
                 <textarea
                   rows={3}
@@ -513,22 +513,22 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                   placeholder="Nhập lý do gửi đơn..."
                   value={form.reason}
                   onChange={(e) => set("reason", e.target.value)}
-                  className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
+                  className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
                 />
               </div>
 
               {/* Assigned Approver */}
               {approvers.length > 0 && (
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
                     <UserCheck size={13} className="text-primary" />
                     Người duyệt đơn
-                    <span className="text-slate-400 font-normal">(tùy chọn)</span>
+                    <span className="text-muted-foreground/70 font-normal">(tùy chọn)</span>
                   </label>
                   <select
                     value={form.assignedToId}
                     onChange={(e) => set("assignedToId", e.target.value)}
-                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white"
+                    className="px-3 py-2 border border-input bg-background rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   >
                     <option value="">-- Không chỉ định (bất kỳ ai có thẩm quyền) --</option>
                     {approvers.map((a) => (
@@ -544,13 +544,13 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
 
               {/* Note */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-600">Ghi chú thêm</label>
+                <label className="text-xs font-semibold text-muted-foreground">Ghi chú thêm</label>
                 <input
                   type="text"
                   placeholder="Thông tin bổ sung (nếu có)..."
                   value={form.note}
                   onChange={(e) => set("note", e.target.value)}
-                  className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                  className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
               </div>
             </form>
@@ -559,11 +559,11 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
 
         {/* Footer */}
         {step === "details" && (
-          <div className="border-t border-slate-100 px-5 py-4 flex gap-3 bg-slate-50">
+          <div className="border-t border-border px-5 py-4 flex gap-3 bg-muted/30">
             <button
               type="button"
               onClick={() => setStep("type")}
-              className="flex-1 py-2.5 border border-slate-200 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+              className="flex-1 py-2.5 border border-input rounded-full text-sm font-semibold text-foreground hover:bg-muted transition-colors"
             >
               Quay lại
             </button>

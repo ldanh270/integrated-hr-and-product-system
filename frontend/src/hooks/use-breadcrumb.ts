@@ -18,16 +18,35 @@ export function useBreadcrumb(): BreadcrumbItem[] {
 
   return useMemo(() => {
     const pathname = location.pathname
+    const fullPath = location.pathname + location.search
 
     const subsystem = SUBSYSTEMS.find((s) => pathname.startsWith(s.routePrefix))
     if (!subsystem) return []
 
-    const navItem = subsystem.sidebarItems.find((item) => {
-      if (pathname === item.path) return true
-      // Avoid dashboard matching everything
-      const isDashboard = item.path === subsystem.sidebarItems[0]?.path
-      return !isDashboard && pathname.startsWith(item.path)
+    let navItem = subsystem.sidebarItems.find((item) => {
+      const [itemPathname, itemQuery] = item.path.split("?")
+      if (pathname !== itemPathname) return false
+      
+      if (itemQuery) {
+        const itemParams = new URLSearchParams(itemQuery)
+        const currentParams = new URLSearchParams(location.search)
+        for (const [key, value] of itemParams.entries()) {
+          if (currentParams.get(key) !== value) return false
+        }
+        return true
+      }
+      return false
     })
+
+    // 2. Fallback to pathname match if no query params match
+    if (!navItem) {
+      navItem = subsystem.sidebarItems.find((item) => {
+        if (pathname === item.path) return true
+        // Avoid dashboard matching everything
+        const isDashboard = item.path === subsystem.sidebarItems[0]?.path
+        return !isDashboard && pathname.startsWith(item.path)
+      })
+    }
 
     const crumbs: BreadcrumbItem[] = [
       { label: subsystem.name, path: subsystem.sidebarItems[0]?.path },
@@ -38,5 +57,5 @@ export function useBreadcrumb(): BreadcrumbItem[] {
     }
 
     return crumbs
-  }, [location.pathname])
+  }, [location.pathname, location.search])
 }

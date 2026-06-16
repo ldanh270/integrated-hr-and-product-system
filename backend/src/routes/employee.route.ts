@@ -24,21 +24,19 @@ const controller = new EmployeeController(service)
 employeeRoutes.use(authenticate)
 
 employeeRoutes.get("/", validate(listEmployeesQuerySchema, "query"), controller.list as any)
-employeeRoutes.get("/:id", controller.getOne as any)
-
 /**
  * GET /employees/approvers
  * Retrieve list of employees who can approve applications (Team Leader, HR Manager, Admin, GM).
  * Accessible to all authenticated users for use in form dropdowns.
  */
-employeeRoutes.get("/approvers", controller.listApprovers)
+employeeRoutes.get("/approvers", controller.listApprovers as any)
 
 /**
  * GET /employees/:id
  * Retrieve details of a specific employee by ID.
  * Accessible to all authenticated users.
  */
-employeeRoutes.get("/:id", controller.getOne)
+employeeRoutes.get("/:id", controller.getOne as any)
 
 /**
  * POST /employees

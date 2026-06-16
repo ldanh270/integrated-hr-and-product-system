@@ -4,7 +4,12 @@ import { useAuthStore } from "@/store/auth-store"
 import { useSubmitApplication } from "@/hooks/application/useSubmitApplication"
 import { APPLICATION_STATUS, APPLICATION_TYPES, APPLICATION_TYPE_LABELS, LEAVE_TYPE, REGIME_TYPE } from "@/config/entities/attendance.config"
 import { useNavigate, useSearchParams } from "react-router-dom"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { employeeApi, type IApprover } from "@/lib/api/employee.api"
+import type { Employee } from "@/types/employee.types"
+import { shiftsApi } from "@/lib/api/attendance.api"
+import type { IWorkingShift } from "@/types/attendance.types"
+import { LEAVE_TYPE_OPTIONS, REGIME_TYPE_OPTIONS } from "@/components/attendance/attendance-ui.meta"
 import { ArrowLeft, ChevronRight, Plus, Trash2 } from "lucide-react"
 
 export default function CreateApplicationPage() {
@@ -26,6 +31,7 @@ export default function CreateApplicationPage() {
     endDate: "",
     reason: "",
     note: "",
+    assignedToId: "",
     // leave
     leaveType: LEAVE_TYPE.ANNUAL_LEAVE as string,
     leaveRegimeType: REGIME_TYPE.PAID as "paid" | "unpaid",
@@ -49,6 +55,22 @@ export default function CreateApplicationPage() {
     applyToEnd: false,
     documentUrl: "",
   })
+
+  const [approvers, setApprovers] = useState<IApprover[]>([])
+  const [shifts, setShifts] = useState<IWorkingShift[]>([])
+  const [employees, setEmployees] = useState<Employee[]>([])
+
+  useEffect(() => {
+    employeeApi.getApprovers().then(setApprovers).catch(() => {})
+    shiftsApi.getAll().then(setShifts).catch(() => {})
+    employeeApi.list({ limit: 1000 }).then(res => setEmployees(res.data)).catch(() => {})
+  }, [])
+
+  const formatTime = (minutes: number) => {
+    const h = Math.floor(minutes / 60)
+    const m = minutes % 60
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`
+  }
 
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((prev) => ({ ...prev, [k]: v }))
@@ -110,6 +132,7 @@ export default function CreateApplicationPage() {
       endDate: form.endDate || form.startDate,
       reason: form.reason || undefined,
       note: form.note || undefined,
+      assignedToId: form.assignedToId && form.assignedToId !== "none" ? form.assignedToId : undefined,
       detail,
     })
 
@@ -119,83 +142,95 @@ export default function CreateApplicationPage() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 w-full animate-in fade-in duration-300 overflow-hidden">
+    <div className="flex flex-col h-full bg-background w-full animate-in fade-in duration-300 overflow-hidden">
       {/* Header Breadcrumbs */}
-      <div className="flex items-center px-6 py-4 bg-white border-b border-slate-200 shadow-sm z-10 shrink-0">
+      <div className="flex items-center px-6 py-4 bg-background border-b border-border shadow-sm z-10 shrink-0">
         <button 
           onClick={handleBack}
-          className="flex h-7 w-7 items-center justify-center rounded-full border border-primary text-primary hover:bg-blue-50 transition-colors mr-3"
+          className="flex h-7 w-7 items-center justify-center rounded-full border border-primary text-primary hover:bg-primary/10 transition-colors mr-3"
         >
           <Plus size={16} strokeWidth={2.5} className="rotate-45" /> {/* Close/Back icon */}
         </button>
-        <span className="text-[15px] font-semibold text-slate-800">Đơn thư</span>
-        <ChevronRight size={16} className="text-slate-400 mx-2" />
-        <span className="text-[15px] text-slate-600">Tạo mới {typeLabel.toLowerCase()}</span>
+        <span className="text-[15px] font-semibold text-foreground">Đơn thư</span>
+        <ChevronRight size={16} className="text-muted-foreground/70 mx-2" />
+        <span className="text-[15px] text-muted-foreground">Tạo mới {typeLabel.toLowerCase()}</span>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-[1400px] mx-auto w-full">
         
         {/* Section 1: Thông tin đơn */}
-        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50">
-            <h3 className="font-semibold text-sm text-slate-800">Thông tin đơn</h3>
+        <div className="bg-background rounded-lg border border-border shadow-sm overflow-hidden">
+          <div className="px-5 py-3 border-b border-border bg-muted/50">
+            <h3 className="font-semibold text-sm text-foreground">Thông tin đơn</h3>
           </div>
           <div className="p-5 grid grid-cols-2 gap-6">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-700">Nhân sự <span className="text-red-500">*</span></label>
-              <select className="w-full h-9 px-3 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
-                <option>{user?.fullName || "Người dùng"} - {user?.username}</option>
-              </select>
+              <label className="text-xs font-medium text-foreground">Nhân sự <span className="text-red-500">*</span></label>
+              <input 
+                type="text" 
+                disabled 
+                value={`${user?.fullName || "Người dùng"} - ${user?.username || ""}`}
+                className="w-full h-9 px-3 text-sm border border-input rounded-md bg-muted text-muted-foreground cursor-not-allowed"
+              />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-700">Người duyệt <span className="text-red-500">*</span></label>
-              <select className="w-full h-9 px-3 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
-                <option value="">Chọn nhân sự</option>
+              <label className="text-xs font-medium text-foreground">Người duyệt <span className="text-muted-foreground/70 font-normal">(tùy chọn)</span></label>
+              <select 
+                value={form.assignedToId}
+                onChange={(e) => set("assignedToId", e.target.value)}
+                className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+              >
+                <option value="">-- Không chỉ định (bất kỳ ai có thẩm quyền) --</option>
+                {approvers.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.fullName}
+                    {a.position ? ` — ${a.position}` : ""}
+                    {" "}({a.role.replace(/_/g, " ")})
+                  </option>
+                ))}
               </select>
             </div>
           </div>
         </div>
 
         {/* Section 2: Thời gian */}
-        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50">
-            <h3 className="font-semibold text-sm text-slate-800">Thời gian</h3>
+        <div className="bg-background rounded-lg border border-border shadow-sm overflow-hidden">
+          <div className="px-5 py-3 border-b border-border bg-muted/50">
+            <h3 className="font-semibold text-sm text-foreground">Thời gian</h3>
           </div>
           <div className="p-5">
             {type === APPLICATION_TYPES.LEAVE.LABEL ? (
               <>
-                <p className="text-sm text-slate-700 mb-4">
+                <p className="text-sm text-foreground mb-4">
                   Số phép còn lại: <span className="font-semibold text-red-600">0</span> ngày phép
                 </p>
                 
-                <div className="border border-slate-200 rounded-md overflow-hidden">
+                <div className="border border-border rounded-md overflow-hidden">
                   <table className="w-full text-sm text-left">
-                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-600">
+                    <thead className="bg-muted border-b border-border text-muted-foreground">
                       <tr>
                         <th className="px-4 py-3 font-medium flex items-center gap-2">
-                          <button className="h-4 w-4 rounded-full border border-slate-400 flex items-center justify-center text-slate-500 hover:text-primary hover:border-primary">
+                          <button className="h-4 w-4 rounded-full border border-muted-foreground/70 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary">
                             <Plus size={10} />
                           </button>
                           Kiểu nghỉ <span className="text-red-500">*</span>
                         </th>
                         <th className="px-4 py-3 font-medium">Thời gian</th>
-                        <th className="px-4 py-3 font-medium">Số ngày</th>
                         <th className="px-4 py-3 font-medium">Dùng phép</th>
                         <th className="px-4 py-3 font-medium">Lý do</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 bg-white">
+                    <tbody className="divide-y divide-border bg-background">
                       <tr>
                         <td className="px-4 py-3">
                           <select 
                             value={form.leaveType}
                             onChange={(e) => set("leaveType", e.target.value)}
-                            className="w-full h-8 px-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                            className="w-full h-8 px-2 text-sm border border-input bg-background text-foreground rounded focus:outline-none focus:ring-1 focus:ring-primary"
                           >
-                            <option value={LEAVE_TYPE.ANNUAL_LEAVE}>Nghỉ phép năm</option>
-                            <option value={LEAVE_TYPE.SICK_LEAVE}>Nghỉ ốm</option>
-                            <option value={LEAVE_TYPE.MATERNITY_LEAVE}>Thai sản</option>
-                            <option value={LEAVE_TYPE.UNPAID_LEAVE}>Không lương</option>
+                            {LEAVE_TYPE_OPTIONS.map((o) => (
+                              <option key={o.value} value={o.value}>{o.label}</option>
+                            ))}
                           </select>
                         </td>
                         <td className="px-4 py-3 flex gap-2 items-center">
@@ -203,32 +238,25 @@ export default function CreateApplicationPage() {
                             type="date"
                             value={form.startDate}
                             onChange={(e) => set("startDate", e.target.value)}
-                            className="w-32 h-8 px-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                            className="w-32 h-8 px-2 text-sm border border-input bg-transparent rounded focus:outline-none focus:ring-1 focus:ring-primary"
                           />
-                          <span className="text-slate-400">-</span>
+                          <span className="text-muted-foreground/70">-</span>
                           <input 
                             type="date"
                             value={form.endDate}
                             onChange={(e) => set("endDate", e.target.value)}
-                            className="w-32 h-8 px-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-primary"
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <input 
-                            type="number"
-                            disabled
-                            placeholder="Tự động"
-                            className="w-20 h-8 px-2 text-sm border border-slate-300 bg-slate-50 rounded"
+                            className="w-32 h-8 px-2 text-sm border border-input bg-transparent rounded focus:outline-none focus:ring-1 focus:ring-primary"
                           />
                         </td>
                         <td className="px-4 py-3">
                           <select 
                             value={form.leaveRegimeType}
                             onChange={(e) => set("leaveRegimeType", e.target.value as "paid" | "unpaid")}
-                            className="w-24 h-8 px-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                            className="w-24 h-8 px-2 text-sm border border-input bg-background text-foreground rounded focus:outline-none focus:ring-1 focus:ring-primary"
                           >
-                            <option value={REGIME_TYPE.PAID}>Có hưởng lương</option>
-                            <option value={REGIME_TYPE.UNPAID}>Không lương</option>
+                            {REGIME_TYPE_OPTIONS.map((o) => (
+                              <option key={o.value} value={o.value}>{o.label}</option>
+                            ))}
                           </select>
                         </td>
                         <td className="px-4 py-3">
@@ -237,7 +265,7 @@ export default function CreateApplicationPage() {
                             placeholder="Nhập lý do"
                             value={form.reason}
                             onChange={(e) => set("reason", e.target.value)}
-                            className="w-full h-8 px-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                            className="w-full h-8 px-2 text-sm border border-input bg-transparent rounded focus:outline-none focus:ring-1 focus:ring-primary"
                           />
                         </td>
                       </tr>
@@ -249,53 +277,58 @@ export default function CreateApplicationPage() {
               <div className="grid grid-cols-2 gap-6">
                 {/* Common fields for other types */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-slate-700">Ngày bắt đầu <span className="text-red-500">*</span></label>
+                  <label className="text-xs font-medium text-foreground">Ngày bắt đầu <span className="text-red-500">*</span></label>
                   <input 
                     type="date"
                     value={form.startDate}
                     onChange={(e) => set("startDate", e.target.value)}
-                    className="w-full h-9 px-3 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-slate-700">Ngày kết thúc</label>
+                  <label className="text-xs font-medium text-foreground">Ngày kết thúc</label>
                   <input 
                     type="date"
                     value={form.endDate}
                     onChange={(e) => set("endDate", e.target.value)}
-                    className="w-full h-9 px-3 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
                 
                 {/* Specific fields */}
                 {[APPLICATION_TYPES.OVERTIME.LABEL, APPLICATION_TYPES.LATE_EARLY.LABEL, APPLICATION_TYPES.SHIFT_SWAP.LABEL].includes(type) && (
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-slate-700">Mã ca làm việc <span className="text-red-500">*</span></label>
-                    <input 
-                      type="text"
-                      placeholder="Nhập ID ca làm việc"
+                    <label className="text-xs font-medium text-foreground">Ca làm việc <span className="text-red-500">*</span></label>
+                    <select 
                       value={form.employeeShiftId}
                       onChange={(e) => set("employeeShiftId", e.target.value)}
-                      className="w-full h-9 px-3 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
+                      className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="">-- Chọn ca làm việc --</option>
+                      {shifts.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} ({formatTime(s.startTime)} - {formatTime(s.endTime)})
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 )}
                 
                 {type === APPLICATION_TYPES.LATE_EARLY.LABEL && (
                   <>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-slate-700">Số phút <span className="text-red-500">*</span></label>
+                      <label className="text-xs font-medium text-foreground">Số phút <span className="text-red-500">*</span></label>
                       <input 
                         type="number"
                         min="1"
                         max="480"
                         value={form.durationMinutes}
                         onChange={(e) => set("durationMinutes", parseInt(e.target.value))}
-                        className="w-full h-9 px-3 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </div>
                     <div className="space-y-1.5 flex flex-col justify-center">
-                      <label className="flex items-center gap-2 text-sm text-slate-700 mt-6 cursor-pointer">
+                      <label className="flex items-center gap-2 text-sm text-foreground mt-6 cursor-pointer">
                         <input 
                           type="checkbox"
                           checked={form.isLate}
@@ -310,13 +343,13 @@ export default function CreateApplicationPage() {
 
                 {type === APPLICATION_TYPES.WORK_FROM_HOME.LABEL && (
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-slate-700">Địa điểm làm việc</label>
+                    <label className="text-xs font-medium text-foreground">Địa điểm làm việc</label>
                     <input 
                       type="text"
                       placeholder="Nhập địa điểm làm việc"
                       value={form.location}
                       onChange={(e) => set("location", e.target.value)}
-                      className="w-full h-9 px-3 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
                 )}
@@ -324,23 +357,23 @@ export default function CreateApplicationPage() {
                 {type === APPLICATION_TYPES.BUSINESS_TRIP.LABEL && (
                   <>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-slate-700">Nơi công tác <span className="text-red-500">*</span></label>
+                      <label className="text-xs font-medium text-foreground">Nơi công tác <span className="text-red-500">*</span></label>
                       <input 
                         type="text"
                         placeholder="Nhập nơi công tác"
                         value={form.destination}
                         onChange={(e) => set("destination", e.target.value)}
-                        className="w-full h-9 px-3 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-slate-700">Mục đích</label>
+                      <label className="text-xs font-medium text-foreground">Mục đích</label>
                       <input 
                         type="text"
                         placeholder="Nhập mục đích công tác"
                         value={form.purpose}
                         onChange={(e) => set("purpose", e.target.value)}
-                        className="w-full h-9 px-3 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </div>
                   </>
@@ -349,24 +382,34 @@ export default function CreateApplicationPage() {
                 {type === APPLICATION_TYPES.SHIFT_SWAP.LABEL && (
                   <>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-slate-700">ID nhân sự đổi ca</label>
-                      <input 
-                        type="text"
-                        placeholder="Nhập ID nhân sự"
+                      <label className="text-xs font-medium text-foreground">Nhân sự đổi ca</label>
+                      <select 
                         value={form.swapWithEmployeeId}
                         onChange={(e) => set("swapWithEmployeeId", e.target.value)}
-                        className="w-full h-9 px-3 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
-                      />
+                        className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      >
+                        <option value="">-- Chọn nhân sự --</option>
+                        {employees.map((emp) => (
+                          <option key={emp.id} value={emp.id}>
+                            {emp.fullName} ({emp.username})
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-slate-700">ID ca làm việc của họ</label>
-                      <input 
-                        type="text"
-                        placeholder="Nhập ID ca"
+                      <label className="text-xs font-medium text-foreground">Ca làm việc của họ</label>
+                      <select 
                         value={form.swapWithShiftId}
                         onChange={(e) => set("swapWithShiftId", e.target.value)}
-                        className="w-full h-9 px-3 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
-                      />
+                        className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      >
+                        <option value="">-- Chọn ca làm việc --</option>
+                        {shifts.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name} ({formatTime(s.startTime)} - {formatTime(s.endTime)})
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </>
                 )}
@@ -374,29 +417,30 @@ export default function CreateApplicationPage() {
                 {type === APPLICATION_TYPES.REGIME.LABEL && (
                   <>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-slate-700">Chế độ <span className="text-red-500">*</span></label>
+                      <label className="text-xs font-medium text-foreground">Chế độ <span className="text-red-500">*</span></label>
                       <select 
                         value={form.regimeType}
                         onChange={(e) => set("regimeType", e.target.value as "paid" | "unpaid")}
-                        className="w-full h-9 px-3 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                       >
-                        <option value={REGIME_TYPE.PAID}>Có hưởng lương</option>
-                        <option value={REGIME_TYPE.UNPAID}>Không lương</option>
+                        {REGIME_TYPE_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
                       </select>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-slate-700">Số phút giảm mỗi ngày</label>
+                      <label className="text-xs font-medium text-foreground">Số phút giảm mỗi ngày</label>
                       <input 
                         type="number"
                         min="0"
                         max="480"
                         value={form.reducedMinutesPerDay}
                         onChange={(e) => set("reducedMinutesPerDay", parseInt(e.target.value))}
-                        className="w-full h-9 px-3 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </div>
                     <div className="space-y-1.5 col-span-2 flex items-center gap-6 mt-4">
-                      <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                      <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
                         <input 
                           type="checkbox"
                           checked={form.applyToStart}
@@ -405,7 +449,7 @@ export default function CreateApplicationPage() {
                         />
                         <span>Áp dụng vào đầu giờ</span>
                       </label>
-                      <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                      <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
                         <input 
                           type="checkbox"
                           checked={form.applyToEnd}
@@ -419,13 +463,13 @@ export default function CreateApplicationPage() {
                 )}
 
                 <div className="space-y-1.5 col-span-2">
-                  <label className="text-xs font-medium text-slate-700">Lý do/Ghi chú</label>
+                  <label className="text-xs font-medium text-foreground">Lý do/Ghi chú</label>
                   <textarea 
                     rows={2}
                     placeholder="Nhập lý do hoặc ghi chú chi tiết"
                     value={form.reason}
                     onChange={(e) => set("reason", e.target.value)}
-                    className="w-full p-3 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full p-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
               </div>
@@ -437,7 +481,7 @@ export default function CreateApplicationPage() {
         <div className="flex justify-end gap-3 pb-8">
           <button 
             onClick={handleBack}
-            className="px-6 py-2 rounded-md border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition-colors"
+            className="px-6 py-2 rounded-md border border-input text-foreground font-medium hover:bg-muted transition-colors"
           >
             Hủy
           </button>
