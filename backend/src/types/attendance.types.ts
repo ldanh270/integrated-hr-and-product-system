@@ -142,6 +142,21 @@ export interface IAttendanceMetricsDTO {
   totalWorkMinutes?: number
 }
 
+export interface IRealShiftDTO {
+  id: string
+  employeeId: string
+  attendanceRecordId: string
+  date: Date | string
+  actualStartTime: number
+  actualEndTime?: number | null
+  isMatched: boolean
+}
+
+export interface IRealShiftUpsertDTO {
+  actualEndTime?: number | null
+  isMatched?: boolean
+}
+
 export interface IAttendanceShiftDTO {
   id?: string
   name?: string
@@ -194,6 +209,7 @@ export interface IAttendanceRecordDTO {
   totalWorkMinutes: number
   employee?: IAttendanceEmployeeDTO | null
   employeeShift?: IAttendanceEmployeeShiftDTO | null
+  realShift?: IRealShiftDTO | null
 }
 
 /**
@@ -211,6 +227,7 @@ export interface IAttendanceRepository {
     recordId: string,
     location: IGpsScanDTO,
     metrics?: IAttendanceMetricsDTO,
+    realShift?: IRealShiftUpsertDTO,
   ): Promise<IAttendanceRecordDTO>
   /** Finds record by employee and date. */
   findByEmployeeAndDate(employeeId: string, date: string | Date): Promise<IAttendanceRecordDTO | null>

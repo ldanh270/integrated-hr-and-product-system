@@ -3,11 +3,16 @@ import {
   IAttendanceRecordQueryDTO,
   IAttendanceRepository,
   IGpsScanDTO,
+  IRealShiftUpsertDTO,
 } from "@/types/attendance.types.ts"
 
 import { AttendanceStatus, Prisma, PrismaClient } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
+
+function getMinutesFromDateTime(date: Date): number {
+  return date.getHours() * 60 + date.getMinutes()
+}
 
 /**
  * Repository implementation for attendance-related data using Prisma.
@@ -51,6 +56,23 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
       },
     })
 
+    const checkInAt = record.checkInAt ?? new Date()
+    await this.prisma.realShift.upsert({
+      where: { attendanceRecordId: record.id },
+      update: {
+        actualStartTime: getMinutesFromDateTime(checkInAt),
+        actualEndTime: null,
+        isMatched: false,
+      },
+      create: {
+        employeeId,
+        attendanceRecordId: record.id,
+        date: today,
+        actualStartTime: getMinutesFromDateTime(checkInAt),
+        isMatched: false,
+      },
+    })
+
     return record
   }
 
@@ -65,15 +87,32 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
     recordId: string,
     location: IGpsScanDTO,
     metrics: IAttendanceMetricsDTO = {},
+    realShift: IRealShiftUpsertDTO = {},
   ): Promise<any> {
-    return this.prisma.attendanceRecord.update({
-      where: { id: recordId },
-      data: {
-        checkOutAt: new Date(),
-        checkOutLat: location.lat,
-        checkOutLng: location.lng,
-        ...metrics,
-      },
+    const checkOutAt = new Date()
+
+    return this.prisma.$transaction(async (tx) => {
+      const record = await tx.attendanceRecord.update({
+        where: { id: recordId },
+        data: {
+          checkOutAt,
+          checkOutLat: location.lat,
+          checkOutLng: location.lng,
+          ...metrics,
+        },
+      })
+
+      if (realShift.actualEndTime != null) {
+        await tx.realShift.update({
+          where: { attendanceRecordId: recordId },
+          data: {
+            actualEndTime: realShift.actualEndTime,
+            isMatched: realShift.isMatched ?? false,
+          },
+        })
+      }
+
+      return record
     })
   }
 
@@ -95,6 +134,7 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
             shift: true,
           },
         },
+        realShift: true,
       },
     })
   }
@@ -136,6 +176,7 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
             shift: true,
           },
         },
+        realShift: true,
       },
       orderBy: { date: "desc" },
     })

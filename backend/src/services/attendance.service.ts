@@ -121,16 +121,35 @@ export class AttendanceService implements IAttendanceService {
     return matchingShift?.id ?? activeShifts[0]?.id
   }
 
+  /** Converts a timestamp to minutes-from-midnight for shift comparison. */
+  private getMinutesFromDateTime(date: Date): number {
+    return date.getHours() * 60 + date.getMinutes()
+  }
+
+  /** True when actual check-in/out minutes exactly match the planned shift bounds. */
+  private isActualShiftMatched(
+    actualStartTime: number,
+    actualEndTime: number,
+    shift: IAttendanceShiftDTO | null | undefined,
+  ): boolean {
+    return Boolean(
+      shift && actualStartTime === shift.startTime && actualEndTime === shift.endTime,
+    )
+  }
+
+  /** Resolves grace-period window length; falls back to the global default when shift has none. */
   private getWindowMinutes(shift?: IAttendanceShiftDTO | null): number {
     return shift?.gracePeriodMinutes ?? ATTENDANCE_TIME_RULES.DEFAULT_WINDOW_MINUTES
   }
 
+  /** Type guard: end time before start time means the shift spans midnight. */
   private isOvernightShift(
     shift: IAttendanceShiftDTO | null | undefined,
   ): shift is IAttendanceShiftDTO {
     return Boolean(shift && shift.endTime < shift.startTime)
   }
 
+  /** Matches current time to a shift when picking a fallback (includes pre-shift grace window). */
   private isWithinShiftSelectionWindow(
     currentMinutes: number,
     shift: IAttendanceShiftDTO,
@@ -142,6 +161,7 @@ export class AttendanceService implements IAttendanceService {
     return this.isWithinShiftWindow(currentMinutes, windowStart, shift.endTime)
   }
 
+  /** Converts minute-of-day shift bounds into concrete Date objects; rolls end to next day for overnight shifts. */
   private getShiftDateTimes(
     baseDate: Date,
     shift: IAttendanceShiftDTO,
@@ -158,6 +178,7 @@ export class AttendanceService implements IAttendanceService {
     return { start, end }
   }
 
+  /** Rejects check-in before grace window opens or after shift end. */
   private assertCheckInWindow(
     now: Date,
     date: Date,
@@ -186,6 +207,7 @@ export class AttendanceService implements IAttendanceService {
     }
   }
 
+  /** True when checkout is attempted before the allowed checkout window opens. */
   private isBeforeCheckOutWindow(
     now: Date,
     record: IAttendanceRecordDTO,
@@ -200,6 +222,7 @@ export class AttendanceService implements IAttendanceService {
     return now.getTime() < windowStart.getTime()
   }
 
+  /** Allows checkout on the morning after an overnight shift using the previous day's open record. */
   private isWithinOvernightCarryover(
     now: Date,
     record: IAttendanceRecordDTO,
@@ -216,6 +239,7 @@ export class AttendanceService implements IAttendanceService {
     return now.getTime() <= latestCheckoutAt.getTime()
   }
 
+  /** Returns today's open record, or yesterday's when still inside overnight carryover. */
   private async findActiveAttendanceRecord(
     employeeId: string,
     now: Date,
@@ -239,10 +263,12 @@ export class AttendanceService implements IAttendanceService {
     return todayRecord
   }
 
+  /** Converts degrees to radians for Haversine distance calculation. */
   private toRadians(degrees: number): number {
     return (degrees * Math.PI) / ATTENDANCE_GPS_RULES.DEGREES_TO_RADIANS_DIVISOR
   }
 
+  /** Computes great-circle distance between two GPS coordinates in meters. */
   private getDistanceMeters(
     first: { lat: number; lng: number },
     second: { lat: number; lng: number },
@@ -262,6 +288,7 @@ export class AttendanceService implements IAttendanceService {
     )
   }
 
+  /** Enforces shift GPS radius when coordinates are configured; skips when shift has no geofence. */
   private assertWithinShiftGps(
     location: { lat: number; lng: number },
     shift: IAttendanceShiftDTO | null | undefined,
@@ -473,8 +500,13 @@ export class AttendanceService implements IAttendanceService {
     this.assertWithinShiftGps(location, shift)
 
     const metrics = this.computeAttendanceMetrics(record, shift, now)
+    const actualStartTime = this.getMinutesFromDateTime(new Date(record.checkInAt))
+    const actualEndTime = this.getMinutesFromDateTime(now)
 
-    return this.attendanceRepo.checkOut(record.id, location, metrics)
+    return this.attendanceRepo.checkOut(record.id, location, metrics, {
+      actualEndTime,
+      isMatched: this.isActualShiftMatched(actualStartTime, actualEndTime, shift),
+    })
   }
 
   /**

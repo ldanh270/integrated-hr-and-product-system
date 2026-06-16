@@ -96,7 +96,54 @@ export class AttendanceRecordsSeeder implements ISeeder {
       })
     }
 
+    const seededRecords = await prisma.attendanceRecord.findMany({
+      where: {
+        employeeShiftId: { in: employeeShiftIds },
+        checkInAt: { not: null },
+      },
+      include: {
+        employeeShift: {
+          include: { shift: true },
+        },
+      },
+    })
+
+    const realShiftsToCreate = seededRecords.flatMap((record) => {
+      if (!record.checkInAt) return []
+
+      const actualStartTime =
+        record.checkInAt.getHours() * 60 + record.checkInAt.getMinutes()
+      const actualEndTime = record.checkOutAt
+        ? record.checkOutAt.getHours() * 60 + record.checkOutAt.getMinutes()
+        : null
+      const shift = record.employeeShift.shift
+      const isMatched = Boolean(
+        actualEndTime != null &&
+          actualStartTime === shift.startTime &&
+          actualEndTime === shift.endTime,
+      )
+
+      return [
+        {
+          employeeId: record.employeeId,
+          attendanceRecordId: record.id,
+          date: record.date,
+          actualStartTime,
+          actualEndTime,
+          isMatched,
+        },
+      ]
+    })
+
+    if (realShiftsToCreate.length > 0) {
+      await prisma.realShift.createMany({
+        data: realShiftsToCreate,
+        skipDuplicates: true,
+      })
+    }
+
     console.log(`  Seeded ${recordsToCreate.length} attendance records.`)
+    console.log(`  Seeded ${realShiftsToCreate.length} real shifts.`)
 
     return {}
   }
