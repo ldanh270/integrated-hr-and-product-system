@@ -13,8 +13,7 @@ export default function VirtualScanner() {
     todayShift,
     isShiftLoading,
     handleScan,
-  } =
-    useVirtualScanner()
+  } = useVirtualScanner()
 
   return (
     <div className="bg-card text-card-foreground rounded-xl border shadow-sm p-6 flex flex-col items-center max-w-sm mx-auto">
@@ -72,17 +71,17 @@ export default function VirtualScanner() {
         </div>
 
         {locating ? (
-          <div className="flex items-center justify-center gap-2 text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/30 py-2 rounded-lg border border-amber-100 dark:border-amber-900/50 font-medium">
+          <div className="flex items-center justify-center gap-2 text-sm text-warning bg-warning/10 py-2 rounded-lg border border-warning/20 font-medium">
             <Loader2 className="w-4 h-4 animate-spin" />
             <span>Đang lấy vị trí GPS...</span>
           </div>
         ) : location ? (
-          <div className="flex items-center justify-center gap-2 text-sm text-green-600 bg-green-50 dark:bg-green-950/30 py-2 rounded-lg border border-green-100 dark:border-green-900/50 font-medium">
+          <div className="flex items-center justify-center gap-2 text-sm text-success bg-success/10 py-2 rounded-lg border border-success/20 font-medium">
             <CheckCircle2 className="w-4 h-4" />
             <span>📍 Đã lấy vị trí: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}</span>
           </div>
         ) : (
-          <div className="flex items-center justify-center gap-2 text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 py-2 rounded-lg border border-amber-100 dark:border-amber-900/50">
+          <div className="flex items-center justify-center gap-2 text-xs text-warning bg-warning/10 py-2 rounded-lg border border-warning/20">
             <AlertCircle className="w-3.5 h-3.5" />
             <span>⚠️ Chưa có vị trí GPS</span>
           </div>
@@ -106,7 +105,7 @@ export default function VirtualScanner() {
 
       {!location && !locating && (
         <div className="mt-4 flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
-          <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
+          <AlertCircle className="w-4 h-4 text-warning shrink-0" />
           <p>
             Yêu cầu quyền truy cập vị trí (Location Permission) từ trình duyệt để đảm bảo chấm công
             đúng địa điểm.

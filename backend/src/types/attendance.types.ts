@@ -7,7 +7,7 @@ import {
   IRegimeType,
 } from "@/configs/entities/attendance.config.ts"
 
-import type { HolidayCalendar } from "@prisma/client"
+import type { HolidayCalendar, Prisma } from "@prisma/client"
 
 // Re-export for consumers that import from this module
 export type {
@@ -133,6 +133,37 @@ export interface IUpdateHolidayDTO {
   type?: IHolidayType
 }
 
+/** Prisma include shape for application queries with all detail relations. */
+export const APPLICATION_INCLUDE = {
+  employee: {
+    select: { id: true, fullName: true, email: true, position: true, avatarUrl: true },
+  },
+  approvedBy: { select: { id: true, fullName: true } },
+  leaveDetail: true,
+  overtimeDetail: { include: { employeeShift: { include: { shift: true } } } },
+  workFromHomeDetail: true,
+  shiftSwapDetail: {
+    include: {
+      employeeShift: { include: { shift: true } },
+      workingShift: true,
+      swapWithEmployee: { select: { id: true, fullName: true } },
+      swapWithShift: { include: { shift: true } },
+    },
+  },
+  businessTripDetail: true,
+  lateEarlyDetail: { include: { employeeShift: { include: { shift: true } } } },
+  regimeDetail: true,
+} as const
+
+export type IApplicationWithDetails = Prisma.ApplicationGetPayload<{
+  include: typeof APPLICATION_INCLUDE
+}>
+
+export type IApplicationListResult = {
+  data: IApplicationWithDetails[]
+  total: number
+}
+
 // ─── REPOSITORY INTERFACES ────────────────────────────────────
 export interface IAttendanceMetricsDTO {
   status?: IAttendanceStatus
@@ -240,18 +271,18 @@ export interface IAttendanceRepository {
  */
 export interface IApplicationRepository {
   /** Submits a new application. */
-  submit(data: ISubmitApplicationDTO): Promise<any>
-  findById(id: string): Promise<any | null>
+  submit(data: ISubmitApplicationDTO): Promise<IApplicationWithDetails>
+  findById(id: string): Promise<IApplicationWithDetails | null>
   findByEmployee(
     employeeId: string,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: any[]; total: number }>
-  findAll(query: IListApplicationsQueryDTO): Promise<{ data: any[]; total: number }>
-  cancel(id: string, employeeId: string): Promise<any | null>
+  ): Promise<IApplicationListResult>
+  findAll(query: IListApplicationsQueryDTO): Promise<IApplicationListResult>
+  cancel(id: string, employeeId: string): Promise<IApplicationWithDetails | null>
   /** Approves an application (sets status=approved). */
-  approve(id: string, approvedBy: string): Promise<any | null>
+  approve(id: string, approvedBy: string): Promise<IApplicationWithDetails | null>
   /** Rejects an application with a mandatory reason. */
-  reject(id: string, rejectedBy: string, rejectReason: string): Promise<any | null>
+  reject(id: string, rejectedBy: string, rejectReason: string): Promise<IApplicationWithDetails | null>
   checkLeaveOverlap(
     employeeId: string,
     startDate: string | Date,
@@ -309,25 +340,29 @@ export interface IAttendanceService {
  */
 export interface IApplicationService {
   /** Submits an application. */
-  submitApplication(data: ISubmitApplicationDTO): Promise<any>
-  cancelApplication(id: string, requesterId: string): Promise<any>
-  getApplicationById(id: string): Promise<any>
-  listApplications(query: IListApplicationsQueryDTO): Promise<{ data: any[]; total: number }>
+  submitApplication(data: ISubmitApplicationDTO): Promise<IApplicationWithDetails>
+  cancelApplication(id: string, requesterId: string): Promise<IApplicationWithDetails>
+  getApplicationById(id: string): Promise<IApplicationWithDetails>
+  listApplications(query: IListApplicationsQueryDTO): Promise<IApplicationListResult>
   getEmployeeApplications(
     employeeId: string,
     query: IListApplicationsQueryDTO,
     requester?: { empId: string; role: string },
-  ): Promise<{ data: any[]; total: number }>
+  ): Promise<IApplicationListResult>
   /** Approves a pending application. */
-  approveApplication(id: string, processorId: string): Promise<any>
+  approveApplication(id: string, processorId: string): Promise<IApplicationWithDetails>
   /** Rejects a pending application with a mandatory reason. */
-  rejectApplication(id: string, processorId: string, rejectReason: string): Promise<any>
+  rejectApplication(
+    id: string,
+    processorId: string,
+    rejectReason: string,
+  ): Promise<IApplicationWithDetails>
   /** @deprecated Use approveApplication / rejectApplication instead. */
   processApplication(
     id: string,
     status: IApplicationStatus,
     processorId: string,
-  ): Promise<any | null>
+  ): Promise<IApplicationWithDetails | null>
 }
 
 /**

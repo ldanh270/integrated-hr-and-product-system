@@ -53,50 +53,66 @@ export type IRegimeType = (typeof REGIME_TYPES)[number]
 
 // ─── Label Maps ───────────────────────────────────────────────
 
-export const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
-  on_time: "Đúng giờ",
-  late: "Đi muộn",
-  early_leave: "Về sớm",
-  absent: "Vắng mặt",
-  overtime: "Tăng ca",
+type StatusPillVariant = "success" | "warning" | "danger" | "info" | "neutral"
+
+export const ATTENDANCE_STATUS_LABELS = new Map<IAttendanceStatus, string>([
+  ["on_time", "Đúng giờ"],
+  ["late", "Đi muộn"],
+  ["early_leave", "Về sớm"],
+  ["absent", "Vắng mặt"],
+  ["overtime", "Tăng ca"],
+])
+
+export const ATTENDANCE_STATUS_VARIANTS = new Map<IAttendanceStatus, StatusPillVariant>([
+  ["on_time", "success"],
+  ["late", "warning"],
+  ["early_leave", "warning"],
+  ["absent", "danger"],
+  ["overtime", "info"],
+])
+
+export const APPLICATION_TYPE_LABELS = new Map<IApplicationType, string>([
+  ["leave", "Nghỉ phép"],
+  ["overtime", "Làm thêm giờ"],
+  ["work_from_home", "Làm từ xa"],
+  ["shift_swap", "Đổi ca"],
+  ["business_trip", "Công tác"],
+  ["late_early", "Đi muộn/Về sớm"],
+  ["regime", "Chế độ thai sản/bệnh"],
+])
+
+export const APPLICATION_STATUS_LABELS = new Map<IApplicationStatus, string>([
+  ["pending", "Chờ duyệt"],
+  ["approved", "Đã duyệt"],
+  ["rejected", "Từ chối"],
+  ["cancelled", "Đã hủy"],
+])
+
+export const APPLICATION_STATUS_VARIANTS = new Map<IApplicationStatus, StatusPillVariant>([
+  ["pending", "warning"],
+  ["approved", "success"],
+  ["rejected", "danger"],
+  ["cancelled", "neutral"],
+])
+
+export function getAttendanceStatusLabel(status: string): string {
+  return ATTENDANCE_STATUS_LABELS.get(status as IAttendanceStatus) ?? status
 }
 
-export const ATTENDANCE_STATUS_VARIANTS: Record<
-  string,
-  "success" | "warning" | "danger" | "info" | "neutral"
-> = {
-  on_time: "success",
-  late: "warning",
-  early_leave: "warning",
-  absent: "danger",
-  overtime: "info",
+export function getAttendanceStatusVariant(status: string): StatusPillVariant {
+  return ATTENDANCE_STATUS_VARIANTS.get(status as IAttendanceStatus) ?? "neutral"
 }
 
-export const APPLICATION_TYPE_LABELS: Record<string, string> = {
-  leave: "Nghỉ phép",
-  overtime: "Làm thêm giờ",
-  work_from_home: "Làm từ xa",
-  shift_swap: "Đổi ca",
-  business_trip: "Công tác",
-  late_early: "Đi muộn/Về sớm",
-  regime: "Chế độ thai sản/bệnh",
+export function getApplicationTypeLabel(type: string): string {
+  return APPLICATION_TYPE_LABELS.get(type as IApplicationType) ?? type
 }
 
-export const APPLICATION_STATUS_LABELS: Record<string, string> = {
-  pending: "Chờ duyệt",
-  approved: "Đã duyệt",
-  rejected: "Từ chối",
-  cancelled: "Đã hủy",
+export function getApplicationStatusLabel(status: string): string {
+  return APPLICATION_STATUS_LABELS.get(status as IApplicationStatus) ?? status
 }
 
-export const APPLICATION_STATUS_VARIANTS: Record<
-  string,
-  "success" | "warning" | "danger" | "info" | "neutral"
-> = {
-  pending: "warning",
-  approved: "success",
-  rejected: "danger",
-  cancelled: "neutral",
+export function getApplicationStatusVariant(status: string): StatusPillVariant {
+  return APPLICATION_STATUS_VARIANTS.get(status as IApplicationStatus) ?? "neutral"
 }
 
 /** Vietnamese display labels for holiday type enums. */

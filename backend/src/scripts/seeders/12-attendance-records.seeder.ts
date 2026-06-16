@@ -1,4 +1,5 @@
 import { prisma } from "@/libs/database.ts"
+import { ATTENDANCE_STATUS, type IAttendanceStatus } from "@/configs/entities/attendance.config.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
 import { ISeeder } from "@/scripts/seeders/seeder.interface.ts"
 import { registry } from "@/scripts/seeders/seeder.registry.ts"
@@ -49,15 +50,15 @@ export class AttendanceRecordsSeeder implements ISeeder {
       let checkOutAt = null
       let lateMinutes = 0
       let totalWorkMinutes = 0
-      let status = "on_time" as any
+      let status: IAttendanceStatus = ATTENDANCE_STATUS.ON_TIME
 
       if (isAbsent) {
-        status = "absent" as any
+        status = ATTENDANCE_STATUS.ABSENT
       } else {
         if (isLate) {
           lateMinutes = faker.number.int({ min: 10, max: 60 })
           checkInDate.setMinutes(checkInDate.getMinutes() + lateMinutes)
-          status = "late" as any
+          status = ATTENDANCE_STATUS.LATE
         }
 
         checkInAt = checkInDate

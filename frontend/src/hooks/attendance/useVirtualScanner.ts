@@ -39,7 +39,7 @@ function readCachedLocation(): { lat: number; lng: number } | null {
     const decoded = atob(cached)
     const parsed = JSON.parse(decoded)
     // Check if cache is older than 30 minutes
-    if (Date.now() - (parsed.timestamp || 0) > 30 * 60 * 1000) {
+    if (Date.now() - (parsed.timestamp || 0) > ATTENDANCE_TIME_RULES.LOCATION_CACHE_TTL_MS) {
       localStorage.removeItem(SYSTEM_CONFIG.STORAGE_KEYS.LOCATION_CACHE)
       return null
     }

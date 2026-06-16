@@ -10,6 +10,25 @@ import { AttendanceStatus, Prisma, PrismaClient } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
+const ATTENDANCE_RECORD_INCLUDE = {
+  employee: {
+    select: {
+      fullName: true,
+      email: true,
+    },
+  },
+  employeeShift: {
+    include: {
+      shift: true,
+    },
+  },
+  realShift: true,
+} as const
+
+type AttendanceRecordWithRelations = Prisma.AttendanceRecordGetPayload<{
+  include: typeof ATTENDANCE_RECORD_INCLUDE
+}>
+
 function getMinutesFromDateTime(date: Date): number {
   return date.getHours() * 60 + date.getMinutes()
 }
@@ -33,7 +52,11 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
    * @param employeeShiftId - The associated employee shift ID.
    * @returns The created or updated attendance record.
    */
-  async checkIn(employeeId: string, location: IGpsScanDTO, employeeShiftId: string): Promise<any> {
+  async checkIn(
+    employeeId: string,
+    location: IGpsScanDTO,
+    employeeShiftId: string,
+  ): Promise<AttendanceRecordWithRelations> {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
@@ -54,6 +77,7 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
         checkInLng: location.lng,
         status: AttendanceStatus.absent, // Default status, will be recalculated later
       },
+      include: ATTENDANCE_RECORD_INCLUDE,
     })
 
     const checkInAt = record.checkInAt ?? new Date()
@@ -88,7 +112,7 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
     location: IGpsScanDTO,
     metrics: IAttendanceMetricsDTO = {},
     realShift: IRealShiftUpsertDTO = {},
-  ): Promise<any> {
+  ): Promise<AttendanceRecordWithRelations> {
     const checkOutAt = new Date()
 
     return this.prisma.$transaction(async (tx) => {
@@ -100,6 +124,7 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
           checkOutLng: location.lng,
           ...metrics,
         },
+        include: ATTENDANCE_RECORD_INCLUDE,
       })
 
       if (realShift.actualEndTime != null) {
@@ -122,20 +147,16 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
    * @param date - The target date.
    * @returns The attendance record or null if not found.
    */
-  async findByEmployeeAndDate(employeeId: string, date: string | Date): Promise<any | null> {
+  async findByEmployeeAndDate(
+    employeeId: string,
+    date: string | Date,
+  ): Promise<AttendanceRecordWithRelations | null> {
     const targetDate = new Date(date)
     targetDate.setHours(0, 0, 0, 0)
 
     return this.prisma.attendanceRecord.findFirst({
       where: { employeeId, date: targetDate },
-      include: {
-        employeeShift: {
-          include: {
-            shift: true,
-          },
-        },
-        realShift: true,
-      },
+      include: ATTENDANCE_RECORD_INCLUDE,
     })
   }
 
@@ -144,7 +165,7 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
    * @param query - The query parameters.
    * @returns An array of matching attendance records.
    */
-  async queryRecords(query: IAttendanceRecordQueryDTO): Promise<any[]> {
+  async queryRecords(query: IAttendanceRecordQueryDTO): Promise<AttendanceRecordWithRelations[]> {
     const where: Prisma.AttendanceRecordWhereInput = {}
 
     if (query.employeeId) where.employeeId = query.employeeId
@@ -164,20 +185,7 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
 
     return this.prisma.attendanceRecord.findMany({
       where,
-      include: {
-        employee: {
-          select: {
-            fullName: true,
-            email: true,
-          },
-        },
-        employeeShift: {
-          include: {
-            shift: true,
-          },
-        },
-        realShift: true,
-      },
+      include: ATTENDANCE_RECORD_INCLUDE,
       orderBy: { date: "desc" },
     })
   }

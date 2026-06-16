@@ -1,7 +1,7 @@
 import { MonthlyAttendanceSummaryCard } from "@/components/features/attendance/monthly-attendance-summary-card"
 import { ScheduleRemindersCard } from "@/components/features/attendance/schedule-reminders-card"
 import { WeeklyScheduleCalendar } from "@/components/features/attendance/weekly-schedule-calendar"
-import VirtualScanner from "@/components/features/attendance/VirtualScanner"
+import VirtualScanner from "@/components/features/attendance/virtual-scanner"
 import { PageHeader } from "@/components/common"
 import { useAttendanceRecords } from "@/hooks/attendance/use-attendance"
 import { getMonthRange } from "@/utils/attendance/get-month-range"
