@@ -18,6 +18,10 @@ import type {
   ISubmitShiftChangeRequestPayload,
   IUpdateShiftPayload,
   IWorkingShift,
+  IWeeklyScheduleTemplate,
+  ICreateWeeklyScheduleTemplatePayload,
+  IUpdateWeeklyScheduleTemplatePayload,
+  IApplyWeeklyScheduleTemplatePayload,
 } from "@/types/attendance.types"
 
 /**
@@ -125,7 +129,10 @@ export const attendanceApi = {
   /** Fetches attendance logs filtered by date range, employee, or status. */
   getRecords: async (query?: IAttendanceQuery): Promise<IAttendanceRecord[]> => {
     const res = await apiClient.get<ApiResponse<IAttendanceRecord[]>>(API_ENDPOINTS.ATTENDANCE.BASE, {
-      params: query,
+      params: {
+        ...query,
+        personalOnly: query?.personalOnly ? "true" : undefined,
+      },
     })
     return res.data.data
   },
@@ -253,5 +260,58 @@ export const holidaysApi = {
 
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`${API_ENDPOINTS.HOLIDAYS.BASE}/${id}`)
+  },
+}
+
+/**
+ * weeklyScheduleTemplatesApi — Reusable rotating weekly shift pattern templates.
+ */
+export const weeklyScheduleTemplatesApi = {
+  getAll: async (): Promise<IWeeklyScheduleTemplate[]> => {
+    const res = await apiClient.get<ApiResponse<IWeeklyScheduleTemplate[]>>(
+      API_ENDPOINTS.WEEKLY_SCHEDULE_TEMPLATES.BASE,
+    )
+    return res.data.data
+  },
+
+  getById: async (id: string): Promise<IWeeklyScheduleTemplate> => {
+    const res = await apiClient.get<ApiResponse<IWeeklyScheduleTemplate>>(
+      `${API_ENDPOINTS.WEEKLY_SCHEDULE_TEMPLATES.BASE}/${id}`,
+    )
+    return res.data.data
+  },
+
+  create: async (data: ICreateWeeklyScheduleTemplatePayload): Promise<IWeeklyScheduleTemplate> => {
+    const res = await apiClient.post<ApiResponse<IWeeklyScheduleTemplate>>(
+      API_ENDPOINTS.WEEKLY_SCHEDULE_TEMPLATES.BASE,
+      data,
+    )
+    return res.data.data
+  },
+
+  update: async (
+    id: string,
+    data: IUpdateWeeklyScheduleTemplatePayload,
+  ): Promise<IWeeklyScheduleTemplate> => {
+    const res = await apiClient.patch<ApiResponse<IWeeklyScheduleTemplate>>(
+      `${API_ENDPOINTS.WEEKLY_SCHEDULE_TEMPLATES.BASE}/${id}`,
+      data,
+    )
+    return res.data.data
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`${API_ENDPOINTS.WEEKLY_SCHEDULE_TEMPLATES.BASE}/${id}`)
+  },
+
+  apply: async (
+    templateId: string,
+    data: IApplyWeeklyScheduleTemplatePayload,
+  ): Promise<unknown[]> => {
+    const res = await apiClient.post<ApiResponse<unknown[]>>(
+      API_ENDPOINTS.WEEKLY_SCHEDULE_TEMPLATES.APPLY(templateId),
+      data,
+    )
+    return res.data.data
   },
 }

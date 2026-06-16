@@ -1,6 +1,9 @@
 import { PageCard, PageHeader } from "@/components/common"
 import { StatusPill } from "@/components/common/status-pill"
-import VirtualScanner from "@/components/features/attendance/VirtualScanner"
+import {
+  EmployeeAttendanceSummarySheet,
+  type SelectedEmployeeSummary,
+} from "@/components/features/attendance/employee-attendance-summary-sheet"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -26,6 +29,7 @@ import { formatDate, formatTime } from "@/lib/utils"
 import { useAuthStore } from "@/store/auth-store"
 import dayjs from "dayjs"
 import type { IAttendanceStatus } from "@/config/entities/attendance.config"
+import type { IAttendanceRecord } from "@/types/attendance.types"
 import { getCurrentMonthRange } from "@/utils/attendance/get-current-month-range"
 
 import { useMemo, useState } from "react"
@@ -46,9 +50,17 @@ function canManageAttendance(role?: string) {
   return role === ROLE.ADMIN || role === ROLE.HR_MANAGER || role === ROLE.GENERAL_MANAGER
 }
 
+function toSelectedEmployee(record: IAttendanceRecord): SelectedEmployeeSummary {
+  return {
+    id: record.employeeId,
+    fullName: record.employee?.fullName ?? record.employeeId,
+    email: record.employee?.email,
+  }
+}
+
 /**
  * AttendanceDashboard — Main management page for HR attendance oversight.
- * Displays aggregate stats, real-time scanner, and detailed history table.
+ * Displays aggregate stats and detailed history table.
  */
 export default function AttendanceDashboard() {
   const user = useAuthStore((state) => state.user)
@@ -66,6 +78,7 @@ function AdminAttendanceDashboard() {
   const [endDate, setEndDate] = useState(() => getCurrentMonthRange().endDate)
   // statusFilter: Current selection for attendance status (all, late, on_time, etc.)
   const [statusFilter, setStatusFilter] = useState<IAttendanceStatus | "all">("all")
+  const [selectedEmployee, setSelectedEmployee] = useState<SelectedEmployeeSummary | null>(null)
 
   /**
    * query — Memoized object for API request parameters.
@@ -271,7 +284,13 @@ function AdminAttendanceDashboard() {
                 </TableRow>
               ) : (
                 attentionRecords.slice(0, 5).map((record) => (
-                  <TableRow key={`attention-${record.id}`} className="hover:bg-muted/30">
+                  <TableRow
+                    key={`attention-${record.id}`}
+                    className={`cursor-pointer hover:bg-muted/30 ${
+                      selectedEmployee?.id === record.employeeId ? "bg-primary/5" : ""
+                    }`}
+                    onClick={() => { setSelectedEmployee(toSelectedEmployee(record)) }}
+                  >
                     <TableCell className="px-4 py-3">
                       <p className="font-medium">{record.employee?.fullName ?? record.employeeId}</p>
                       {record.employee?.email ? (
@@ -301,13 +320,8 @@ function AdminAttendanceDashboard() {
         </div>
       </PageCard>
 
-      {/* Main dashboard content — Scanner sidebar + Detail history table */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-1">
-          <VirtualScanner />
-        </div>
-
-        <div className="lg:col-span-3 space-y-4">
+      {/* Attendance history table */}
+      <div className="space-y-4">
           {/* Filtering Toolbar — Allowing user to scope history by date and status */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
@@ -402,7 +416,13 @@ function AdminAttendanceDashboard() {
                       const workHours = Math.floor(record.totalWorkMinutes / 60)
                       const workMins = record.totalWorkMinutes % 60
                       return (
-                        <TableRow key={record.id} className="hover:bg-muted/30">
+                        <TableRow
+                          key={record.id}
+                          className={`cursor-pointer hover:bg-muted/30 ${
+                            selectedEmployee?.id === record.employeeId ? "bg-primary/5" : ""
+                          }`}
+                          onClick={() => { setSelectedEmployee(toSelectedEmployee(record)) }}
+                        >
                           <TableCell className="px-4 py-4">
                             <p className="font-medium whitespace-nowrap">
                               {record.employee?.fullName ?? record.employeeId}
@@ -451,8 +471,12 @@ function AdminAttendanceDashboard() {
               </Table>
             </div>
           </PageCard>
-        </div>
       </div>
+
+      <EmployeeAttendanceSummarySheet
+        employee={selectedEmployee}
+        onClose={() => { setSelectedEmployee(null) }}
+      />
     </div>
   )
 }

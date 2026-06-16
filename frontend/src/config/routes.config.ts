@@ -15,9 +15,12 @@ export const ROUTES = {
     DASHBOARD: "/attendance",
     SUMMARY: "/attendance/summary",
     MY_SCHEDULE: "/attendance/my-schedule",
+    WORK_SCHEDULES: "/attendance/work-schedules",
     REAL_SHIFT: "/attendance/real-shift",
     APPLICATIONS: "/attendance/applications",
     SHIFTS: "/attendance/shifts",
+    WEEKLY_SCHEDULES: "/attendance/weekly-schedules",
+    WEEKLY_SCHEDULE_CONFIG: "/attendance/weekly-schedule-config",
     HOLIDAYS: "/attendance/holidays",
   },
   PAYROLL: {

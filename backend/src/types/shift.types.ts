@@ -1,3 +1,11 @@
+import type { Prisma } from "@prisma/client"
+
+import type { IShiftScheduleWithDays, IShiftScheduleWithTemplate } from "@/types/shift-schedule.types.ts"
+
+export type IEmployeeShiftWithShift = Prisma.EmployeeShiftGetPayload<{
+  include: { shift: true }
+}>
+
 export interface IGpsLocationDTO {
   lat: number
   lng: number
@@ -23,8 +31,11 @@ export interface IAssignShiftScheduleDTO {
   validFrom: string | Date
   validTo?: string | Date | null
   createdById: string
+  templateId?: string
+  cycleWeeks?: number
   days?: {
     dayOfWeek: number
+    weekIndex?: number
     shiftId: string
   }[]
 }
@@ -72,6 +83,38 @@ export interface IOverrideEmployeeShiftDTO {
   assignedDate: string | Date
 }
 
+export type ShiftGenerateItemStatus = "pending" | "existing" | "override" | "no_schedule"
+
+export interface IGenerateShiftsDTO {
+  employeeIds: string[]
+  startDate: string | Date
+  endDate: string | Date
+  createdById?: string
+}
+
+export interface IGeneratedShiftPreviewItem {
+  date: string
+  shiftId: string | null
+  shift?: {
+    id?: string
+    name?: string
+    startTime: number
+    endTime: number
+  } | null
+  status: ShiftGenerateItemStatus
+}
+
+export interface IGeneratedShiftPreview {
+  employeeId: string
+  items: IGeneratedShiftPreviewItem[]
+}
+
+export interface IGenerateShiftsResult {
+  created: number
+  updated: number
+  skipped: number
+}
+
 // ─── REPOSITORY INTERFACES ────────────────────────────────────
 /**
  * Repository for working shift definitions.
@@ -94,11 +137,13 @@ export interface IWorkingShiftRepository {
  */
 export interface IShiftScheduleRepository {
   /** Assigns a pattern to an employee. */
-  assignSchedule(data: IAssignShiftScheduleDTO): Promise<any>
+  assignSchedule(data: IAssignShiftScheduleDTO): Promise<IShiftScheduleWithTemplate>
   /** Gets the active pattern for a date. */
-  getScheduleByEmployee(employeeId: string, date: string | Date): Promise<any | null>
+  getScheduleByEmployee(employeeId: string, date: string | Date): Promise<IShiftScheduleWithDays | null>
   /** Lists patterns for an employee. */
-  listSchedulesByEmployee(employeeId: string): Promise<any[]>
+  listSchedulesByEmployee(employeeId: string): Promise<IShiftScheduleWithDays[]>
+  /** Employee IDs with an active template-based schedule on a date. */
+  findEmployeeIdsWithActiveTemplateSchedule(date: Date): Promise<string[]>
 }
 
 /**
@@ -109,6 +154,20 @@ export interface IEmployeeShiftRepository {
   overrideShift(data: IOverrideEmployeeShiftDTO): Promise<any>
   /** Gets shift for employee on date. */
   getShiftForEmployeeDate(employeeId: string, date: string | Date): Promise<any | null>
+  /** Lists shifts for multiple employees within a date range. */
+  listByEmployeesAndDateRange(
+    employeeIds: string[],
+    startDate: Date,
+    endDate: Date,
+  ): Promise<IEmployeeShiftWithShift[]>
+  /** Creates or updates a generated shift; skips manual overrides. */
+  generateShiftForDate(
+    employeeId: string,
+    date: Date,
+    shiftId: string,
+    scheduleId: string | null,
+    createdById: string,
+  ): Promise<"created" | "updated" | "skipped">
   /** Ensures a record exists for employee on date. */
   ensureShiftForEmployeeDate(
     employeeId: string,
@@ -140,11 +199,15 @@ export interface IShiftService {
  */
 export interface IScheduleService {
   /** Assigns a schedule pattern. */
-  assignSchedule(data: IAssignShiftScheduleDTO): Promise<any>
+  assignSchedule(data: IAssignShiftScheduleDTO): Promise<IShiftScheduleWithTemplate>
   /** Gets schedule for a specific date. */
-  getScheduleForEmployee(employeeId: string, date: string | Date): Promise<any | null>
+  getScheduleForEmployee(employeeId: string, date: string | Date): Promise<IShiftScheduleWithDays | null>
   /** Lists schedules for an employee. */
-  listSchedulesForEmployee(employeeId: string): Promise<any[]>
+  listSchedulesForEmployee(employeeId: string): Promise<IShiftScheduleWithDays[]>
   /** Overrides shift for a date. */
-  overrideEmployeeShift(data: IOverrideEmployeeShiftDTO): Promise<any>
+  overrideEmployeeShift(data: IOverrideEmployeeShiftDTO): Promise<unknown>
+  /** Previews shifts that would be generated for a date range. */
+  previewGeneratedShifts(data: IGenerateShiftsDTO): Promise<IGeneratedShiftPreview[]>
+  /** Materializes planned shifts into EmployeeShift records. */
+  generateShifts(data: IGenerateShiftsDTO): Promise<IGenerateShiftsResult>
 }

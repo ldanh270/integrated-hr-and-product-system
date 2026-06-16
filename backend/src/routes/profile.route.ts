@@ -1,10 +1,10 @@
 import { ProfileController } from "@/controllers/profile.controller.ts"
 import { prisma } from "@/libs/database.ts"
-import { authenticate } from "@/middlewares/auth.middleware.ts"
+import { authenticate, type AuthRequest } from "@/middlewares/auth.middleware.ts"
 import { PrismaProfileRepository } from "@/repositories/profile.repository.ts"
 import { ProfileService } from "@/services/profile.service.ts"
 
-import express from "express"
+import express, { type RequestHandler } from "express"
 import multer from "multer"
 
 /**
@@ -67,4 +67,10 @@ profileRoutes.post(
  */
 profileRoutes.post("/me/change-password", authenticate, controller.changePassword as any)
 
+profileRoutes.patch(
+  "/me/personal-employee-link",
+  authenticate,
+  ((req, res) =>
+    controller.updatePersonalEmployeeLink(req as AuthRequest, res)) as RequestHandler,
+)
 export default profileRoutes

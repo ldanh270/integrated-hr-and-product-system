@@ -28,6 +28,12 @@ export interface ProfileDto {
   }
   createdAt: string
   updatedAt: string
+  personalEmployeeId?: string | null
+  personalEmployee?: {
+    id: string
+    fullName: string
+    email: string
+  } | null
 }
 
 export interface UpdateProfileDto {

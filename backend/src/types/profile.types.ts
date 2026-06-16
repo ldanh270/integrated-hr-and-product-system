@@ -23,6 +23,12 @@ export interface ProfileDto {
     url: string | null
     id: string | null
   }
+  personalEmployeeId: string | null
+  personalEmployee: {
+    id: string
+    fullName: string
+    email: string
+  } | null
   createdAt: string
   updatedAt: string
 }
@@ -37,6 +43,10 @@ export interface UpdateProfileDto {
   dateOfBirth?: string // ISO date string
   nationalId?: string
   address?: string
+}
+
+export interface UpdatePersonalEmployeeLinkDto {
+  personalEmployeeId: string | null
 }
 
 /**
@@ -60,6 +70,14 @@ export interface ProfileEmployeeDocument {
   avatarId: string | null
   createdAt: Date
   updatedAt: Date
+  personalEmployeeId: string | null
+  personalEmployee: {
+    id: string
+    fullName: string
+    email: string
+    status: EmployeeStatus
+    deletedAt: Date | null
+  } | null
 }
 
 export interface ProfileEmployeeDocumentWithPassword extends ProfileEmployeeDocument {
@@ -77,6 +95,10 @@ export interface IProfileRepository {
     avatar: { url: string; id: string },
   ): Promise<ProfileEmployeeDocument | null>
   updatePassword(empId: string, newPasswordHash: string): Promise<void>
+  updatePersonalEmployeeLink(
+    empId: string,
+    personalEmployeeId: string | null,
+  ): Promise<ProfileEmployeeDocument | null>
 }
 
 // ─── Service Interface ───────────────────────────────────────────────────────
@@ -86,4 +108,8 @@ export interface IProfileService {
   updateMyProfile(empId: string, data: UpdateProfileDto): Promise<ProfileDto>
   uploadAvatar(empId: string, fileBuffer: Buffer, mimeType: string): Promise<ProfileDto>
   changePassword(empId: string, oldPass: string, newPass: string): Promise<void>
+  updatePersonalEmployeeLink(
+    empId: string,
+    data: UpdatePersonalEmployeeLinkDto,
+  ): Promise<ProfileDto>
 }

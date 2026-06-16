@@ -5,6 +5,7 @@ import { ShiftOptionBlock } from "@/components/features/attendance/calendar/shif
 import { CALENDAR_HOURS, type CalendarTab } from "@/config/rules/calendar.config"
 import { cn } from "@/lib/utils"
 import type { IAttendanceRecord, IHoliday, IScheduleDay, IWorkingShift } from "@/types/attendance.types"
+import { getMinutesFromDateTime } from "@/utils/attendance/get-minutes-from-date-time"
 import type { WeekDay } from "@/utils/attendance/get-week-dates"
 
 interface CalendarDayColumnProps {
@@ -28,6 +29,20 @@ export function CalendarDayColumn({
   holiday,
   activeShifts,
 }: CalendarDayColumnProps) {
+  const hasCompleteActual =
+    activeTab === "actual" &&
+    Boolean(record?.checkInAt && record?.checkOutAt) &&
+    getMinutesFromDateTime(record?.checkInAt) !== undefined &&
+    getMinutesFromDateTime(record?.checkOutAt) !== undefined
+
+  const overlaysPlannedAndActual =
+    activeTab === "actual" && hasCompleteActual && Boolean(scheduleDay)
+
+  const showPlannedShift =
+    !holiday &&
+    Boolean(scheduleDay) &&
+    ((activeTab === "planned" && !showAllShifts) || activeTab === "actual")
+
   return (
     <div
       className={cn(
@@ -48,14 +63,19 @@ export function CalendarDayColumn({
             />
           ))
         : null}
-      {!holiday && !showAllShifts && scheduleDay ? (
-        <PlannedShiftBlock scheduleDay={scheduleDay} isMuted={activeTab === "actual"} />
+      {showPlannedShift && scheduleDay ? (
+        <PlannedShiftBlock
+          scheduleDay={scheduleDay}
+          isMuted={activeTab === "actual"}
+          labelPlacement={overlaysPlannedAndActual ? "top" : "default"}
+        />
       ) : null}
-      {!holiday && showAllShifts && activeTab === "actual" && scheduleDay ? (
-        <PlannedShiftBlock scheduleDay={scheduleDay} isMuted />
-      ) : null}
-      {!holiday && activeTab === "actual" && record ? (
-        <ActualWorkBlock record={record} scheduleDay={scheduleDay} />
+      {!holiday && activeTab === "actual" && record && hasCompleteActual ? (
+        <ActualWorkBlock
+          record={record}
+          scheduleDay={scheduleDay}
+          labelPlacement={overlaysPlannedAndActual ? "bottom" : "default"}
+        />
       ) : null}
     </div>
   )

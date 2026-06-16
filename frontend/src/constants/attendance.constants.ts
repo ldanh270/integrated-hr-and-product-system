@@ -4,4 +4,5 @@ export const ATTENDANCE_QUERY_PARAMS = {
   STATUS: "status",
   START_DATE: "startDate",
   DATE: "date",
+  PERSONAL_ONLY: "personalOnly",
 } as const

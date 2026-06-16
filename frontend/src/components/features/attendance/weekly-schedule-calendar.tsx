@@ -13,6 +13,8 @@ import { getRecordDateKey } from "@/utils/attendance/get-record-date-key"
 import { getWeekDates } from "@/utils/attendance/get-week-dates"
 import { getWeekRangeLabel } from "@/utils/attendance/get-week-range-label"
 import { getWeekStart } from "@/utils/attendance/get-week-start"
+import { resolveScheduleDay } from "@/utils/attendance/resolve-schedule-day"
+import type { IScheduleDay } from "@/types/attendance.types"
 
 import { useState } from "react"
 
@@ -56,6 +58,7 @@ export function WeeklyScheduleCalendar({
   const { data: records, isLoading: isRecordsLoading } = useAttendanceRecords({
     startDate: weekStartIso,
     endDate: weekEndIso,
+    personalOnly: true,
   })
 
   const { data: holidays, isLoading: isHolidaysLoading } = useQuery({
@@ -63,7 +66,13 @@ export function WeeklyScheduleCalendar({
     queryFn: () => holidaysApi.getAll({ startDate: weekStartIso, endDate: weekEndIso }),
   })
 
-  const scheduleDaysByDay = new Map(schedule?.days.map((day) => [day.dayOfWeek, day]) ?? [])
+  const scheduleDaysByDay = new Map<number, IScheduleDay>()
+  for (const day of weekDays) {
+    const scheduleDay = resolveScheduleDay(schedule, day.date)
+    if (scheduleDay) {
+      scheduleDaysByDay.set(day.dayOfWeek, scheduleDay)
+    }
+  }
   const activeShifts =
     shifts?.filter((shift) => shift.isActive).toSorted((a, b) => a.startTime - b.startTime) ?? []
   const recordsByDate = new Map(records?.map((record) => [getRecordDateKey(record), record]) ?? [])

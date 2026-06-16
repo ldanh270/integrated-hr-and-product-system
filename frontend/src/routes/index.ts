@@ -55,6 +55,11 @@ const privateRoutes: RouteConfig[] = [
     layout: MainLayout,
   },
   {
+    path: "/attendance/work-schedules",
+    component: lazy(() => import("@/pages/attendance/WorkSchedules.tsx")),
+    layout: MainLayout,
+  },
+  {
     path: "/attendance/real-shift",
     component: lazy(() => import("@/pages/attendance/RealShift.tsx")),
     layout: MainLayout,
@@ -67,6 +72,16 @@ const privateRoutes: RouteConfig[] = [
   {
     path: "/attendance/shifts",
     component: lazy(() => import("@/pages/attendance/ShiftManagement.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/attendance/weekly-schedules",
+    component: lazy(() => import("@/pages/attendance/WeeklySchedules.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/attendance/weekly-schedule-config",
+    component: lazy(() => import("@/pages/attendance/WeeklyScheduleConfig.tsx")),
     layout: MainLayout,
   },
   {

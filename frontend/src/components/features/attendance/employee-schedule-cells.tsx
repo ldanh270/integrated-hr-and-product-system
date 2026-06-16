@@ -2,6 +2,7 @@ import { TableCell } from "@/components/ui/table"
 import { minutesToTime } from "@/lib/utils"
 import type { IHoliday, ISchedule } from "@/types/attendance.types"
 import type { Employee } from "@/types/employee.types"
+import { resolveScheduleDay } from "@/utils/attendance/resolve-schedule-day"
 import type { WeekDay } from "@/utils/attendance/get-week-dates"
 
 interface EmployeeScheduleCellsProps {
@@ -25,7 +26,7 @@ export function EmployeeScheduleCells({
       </TableCell>
       {weekDates.map((day) => {
         const holiday = holidaysByDate.get(day.dateKey)
-        const scheduleDay = schedule?.days.find((item) => item.dayOfWeek === day.dayOfWeek)
+        const scheduleDay = resolveScheduleDay(schedule, day.date)
         const shift = scheduleDay?.shift
 
         return (

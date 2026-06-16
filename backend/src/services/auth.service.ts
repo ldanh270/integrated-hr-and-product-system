@@ -34,8 +34,23 @@ import { EmailUtil } from "@/utils/email.util.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
 import { JwtUtil } from "@/utils/jwt.util.ts"
+import { getPersonalEmployeeLink } from "@/utils/attendance/resolve-personal-employee-id.ts"
 
 import crypto from "crypto"
+
+async function toAuthEmployee(employee: AuthEmployeeDocument): Promise<AuthResponseDto["employee"]> {
+  const link = await getPersonalEmployeeLink(employee.id)
+
+  return {
+    id: employee.id,
+    username: employee.username,
+    email: employee.email,
+    fullName: employee.fullName,
+    role: employee.role,
+    personalEmployeeId: link.personalEmployeeId,
+    personalEmployee: link.personalEmployee,
+  }
+}
 
 /**
  * Authentication Service implementing the business logic for login, logout, and password management
@@ -206,13 +221,7 @@ export class AuthService implements IAuthService {
     const tokens = await this.generateTokens(employee)
 
     return {
-      employee: {
-        id: employee.id,
-        username: employee.username,
-        email: employee.email,
-        fullName: employee.fullName,
-        role: employee.role,
-      },
+      employee: await toAuthEmployee(employee),
       ...tokens,
     }
   }
@@ -268,13 +277,7 @@ export class AuthService implements IAuthService {
     const tokens = await this.generateTokens(employee, oldToken.expiresAt)
 
     return {
-      employee: {
-        id: employee.id,
-        username: employee.username,
-        email: employee.email,
-        fullName: employee.fullName,
-        role: employee.role,
-      },
+      employee: await toAuthEmployee(employee),
       ...tokens,
     }
   }
@@ -289,13 +292,7 @@ export class AuthService implements IAuthService {
       )
     }
 
-    return {
-      id: employee.id,
-      username: employee.username,
-      email: employee.email,
-      fullName: employee.fullName,
-      role: employee.role,
-    }
+    return toAuthEmployee(employee)
   }
 
   /**

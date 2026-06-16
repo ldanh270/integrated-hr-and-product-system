@@ -14,6 +14,7 @@ import {
 } from "@/schemas/attendance.schema.ts"
 import { ApiResponse } from "@/types"
 import { IAttendanceService } from "@/types/attendance.types.ts"
+import { resolvePersonalEmployeeId } from "@/utils/attendance/resolve-personal-employee-id.ts"
 
 import { Request, Response } from "express"
 import { z } from "zod"
@@ -35,8 +36,8 @@ export class AttendanceController {
    */
   checkIn = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
-      const employeeId = req.user?.empId
-      if (!employeeId) {
+      const accountId = req.user?.empId
+      if (!accountId) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           data: null,
           error: {
@@ -46,8 +47,9 @@ export class AttendanceController {
         })
       }
 
+      const employeeId = await resolvePersonalEmployeeId(accountId)
       const { location } = checkInSchema.parse(req.body)
-      const record = await this.service.checkIn(employeeId, location, employeeId)
+      const record = await this.service.checkIn(employeeId, location, accountId)
       res.status(HttpStatusCode.OK).json({ data: record, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -71,8 +73,8 @@ export class AttendanceController {
    */
   checkOut = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
-      const employeeId = req.user?.empId
-      if (!employeeId) {
+      const accountId = req.user?.empId
+      if (!accountId) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           data: null,
           error: {
@@ -82,6 +84,7 @@ export class AttendanceController {
         })
       }
 
+      const employeeId = await resolvePersonalEmployeeId(accountId)
       const { location } = checkOutSchema.parse(req.body)
 
       const record = await this.service.checkOut(employeeId, location)
@@ -108,8 +111,8 @@ export class AttendanceController {
    */
   scan = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
-      const employeeId = req.user?.empId
-      if (!employeeId) {
+      const accountId = req.user?.empId
+      if (!accountId) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           data: null,
           error: {
@@ -119,8 +122,9 @@ export class AttendanceController {
         })
       }
 
+      const employeeId = await resolvePersonalEmployeeId(accountId)
       const { location } = checkInSchema.parse(req.body)
-      const result = await this.service.scan(employeeId, location, employeeId)
+      const result = await this.service.scan(employeeId, location, accountId)
 
       res.status(HttpStatusCode.OK).json({ data: result, error: null })
     } catch (error) {
@@ -161,11 +165,14 @@ export class AttendanceController {
 
       const allowedRoles = [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER] as const
       const canViewAll = allowedRoles.includes(userRole as (typeof allowedRoles)[number])
-      if (!canViewAll) {
-        query.employeeId = userId
+      if (query.personalOnly) {
+        query.employeeId = await resolvePersonalEmployeeId(userId)
+      } else if (!canViewAll) {
+        query.employeeId = await resolvePersonalEmployeeId(userId)
       }
 
-      const records = await this.service.getAttendanceRecords(query)
+      const { personalOnly: _personalOnly, ...recordQuery } = query
+      const records = await this.service.getAttendanceRecords(recordQuery)
       res.status(HttpStatusCode.OK).json({ data: records, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {

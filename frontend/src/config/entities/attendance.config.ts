@@ -148,6 +148,29 @@ export const DAY_OF_WEEK_FULL_LABELS = new Map<number, string>([
 
 export const UNKNOWN_DAY_OF_WEEK_LABEL = "Không xác định"
 
+/** 0 = Sunday … 6 = Saturday (matches JS Date#getDay). */
+export const DAY_OF_WEEK_VALUES = [0, 1, 2, 3, 4, 5, 6] as const
+export type IDayOfWeek = (typeof DAY_OF_WEEK_VALUES)[number]
+
+/** Mon → Sun display order for weekly schedule editors. */
+export const WORK_WEEK_DISPLAY_DAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const
+
+/** Select sentinel when a template day has no assigned shift. */
+export const WEEKLY_SCHEDULE_OFF_SHIFT_VALUE = "__off__"
+
+/** Profile link: use the signed-in account as the attendance employee. */
+export const PERSONAL_EMPLOYEE_LINK_SELF = "self"
+
+export const WEEKLY_SCHEDULE_QUERY_KEYS = {
+  SETTINGS: ["weekly-schedule-settings"] as const,
+} as const
+
+export const WEEKLY_SCHEDULE_SETTINGS_FIELDS = [
+  "triggerDayOfWeek",
+  "triggerHour",
+  "triggerMinute",
+] as const
+
 export function getDayOfWeekFullLabel(dayOfWeek: number) {
   return DAY_OF_WEEK_FULL_LABELS.get(dayOfWeek) ?? UNKNOWN_DAY_OF_WEEK_LABEL
 }

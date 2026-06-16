@@ -52,3 +52,11 @@ export const changePasswordSchema = z
   .strict()
 
 export type ChangePasswordSchemaType = z.infer<typeof changePasswordSchema>
+
+export const updatePersonalEmployeeLinkSchema = z
+  .object({
+    personalEmployeeId: z.string().cuid("Invalid employee ID").nullable(),
+  })
+  .strict()
+
+export type UpdatePersonalEmployeeLinkSchemaType = z.infer<typeof updatePersonalEmployeeLinkSchema>

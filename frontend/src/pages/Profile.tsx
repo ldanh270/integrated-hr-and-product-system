@@ -1,4 +1,5 @@
 import { IconBox, PageCard, SectionHeader, StatusPill } from "@/components/common/index.ts"
+import { PersonalEmployeeLinkSection } from "@/components/features/profile/personal-employee-link-section"
 import { Button } from "@/components/ui/button.tsx"
 import { Input } from "@/components/ui/input.tsx"
 import { Label } from "@/components/ui/label.tsx"
@@ -533,6 +534,8 @@ export default function Profile() {
                 </div>
               </div>
             </PageCard>
+
+            <PersonalEmployeeLinkSection profile={profile} />
           </div>
         </div>
       ) : (
