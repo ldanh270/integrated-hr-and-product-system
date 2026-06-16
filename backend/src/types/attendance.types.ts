@@ -149,7 +149,7 @@ export interface IAttendanceRepository {
   /** Records a check-in. */
   checkIn(employeeId: string, location: IGpsScanDTO, employeeShiftId: string): Promise<any>
   /** Records a check-out. */
-  checkOut(employeeId: string, location: IGpsScanDTO, metrics?: IAttendanceMetricsDTO): Promise<any>
+  checkOut(recordId: string, location: IGpsScanDTO, metrics?: IAttendanceMetricsDTO): Promise<any>
   /** Finds record by employee and date. */
   findByEmployeeAndDate(employeeId: string, date: string | Date): Promise<any | null>
   /** Queries records with filters. */
@@ -211,6 +211,8 @@ export interface IAttendanceService {
   checkIn(employeeId: string, location: IGpsScanDTO, createdById: string): Promise<any>
   /** Handles check-out process. */
   checkOut(employeeId: string, location: IGpsScanDTO): Promise<any>
+  /** Handles smart scan process. */
+  scan(employeeId: string, location: IGpsScanDTO, createdById: string): Promise<any>
   /** Queries attendance records. */
   getAttendanceRecords(query: IAttendanceRecordQueryDTO): Promise<any[]>
 }

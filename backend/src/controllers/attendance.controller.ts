@@ -120,31 +120,7 @@ export class AttendanceController {
       }
 
       const { location } = checkInSchema.parse(req.body)
-
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-
-      const records = await this.service.getAttendanceRecords({
-        employeeId,
-        startDate: today.toISOString(),
-        endDate: today.toISOString(),
-      })
-      const todayRecord = records[0]
-
-      let result
-      if (!todayRecord || !todayRecord.checkInAt) {
-        result = await this.service.checkIn(employeeId, location, employeeId)
-      } else if (!todayRecord.checkOutAt) {
-        result = await this.service.checkOut(employeeId, location)
-      } else {
-        return res.status(HttpStatusCode.CONFLICT).json({
-          data: null,
-          error: {
-            message: ATTENDANCE_ERROR_MESSAGES.ALREADY_CHECKED_OUT,
-            code: ATTENDANCE_ERROR_CODES.CONFLICT,
-          },
-        })
-      }
+      const result = await this.service.scan(employeeId, location, employeeId)
 
       res.status(HttpStatusCode.OK).json({ data: result, error: null })
     } catch (error) {

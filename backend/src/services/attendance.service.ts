@@ -1,4 +1,8 @@
 import { ATTENDANCE_STATUS } from "@/configs/entities/attendance.config.ts"
+import {
+  ATTENDANCE_GPS_RULES,
+  ATTENDANCE_TIME_RULES,
+} from "@/configs/rules/attendance.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
   ATTENDANCE_ERROR_MESSAGES,
@@ -83,7 +87,7 @@ export class AttendanceService implements IAttendanceService {
     if (endTime >= startTime) {
       return endTime - startTime
     }
-    return 1440 - startTime + endTime
+    return ATTENDANCE_TIME_RULES.MINUTES_PER_DAY - startTime + endTime
   }
 
   /**
@@ -105,10 +109,147 @@ export class AttendanceService implements IAttendanceService {
 
     const currentMinutes = date.getHours() * 60 + date.getMinutes()
     const matchingShift = activeShifts.find((shift) =>
-      this.isWithinShiftWindow(currentMinutes, shift.startTime, shift.endTime),
+      this.isWithinShiftSelectionWindow(currentMinutes, shift),
     )
 
     return matchingShift?.id ?? activeShifts[0]?.id
+  }
+
+  private getWindowMinutes(shift?: any): number {
+    return shift?.gracePeriodMinutes ?? ATTENDANCE_TIME_RULES.DEFAULT_WINDOW_MINUTES
+  }
+
+  private isOvernightShift(shift: any): boolean {
+    return Boolean(shift && shift.endTime < shift.startTime)
+  }
+
+  private isWithinShiftSelectionWindow(currentMinutes: number, shift: any): boolean {
+    const windowStart =
+      (shift.startTime - this.getWindowMinutes(shift) + ATTENDANCE_TIME_RULES.MINUTES_PER_DAY) %
+      ATTENDANCE_TIME_RULES.MINUTES_PER_DAY
+
+    return this.isWithinShiftWindow(currentMinutes, windowStart, shift.endTime)
+  }
+
+  private getShiftDateTimes(baseDate: Date, shift: any): { start: Date; end: Date } {
+    const start = new Date(baseDate)
+    start.setHours(Math.floor(shift.startTime / 60), shift.startTime % 60, 0, 0)
+
+    const end = new Date(baseDate)
+    end.setHours(Math.floor(shift.endTime / 60), shift.endTime % 60, 0, 0)
+    if (shift.endTime < shift.startTime) {
+      end.setDate(end.getDate() + 1)
+    }
+
+    return { start, end }
+  }
+
+  private assertCheckInWindow(now: Date, date: Date, shift: any): void {
+    if (!shift) return
+
+    const { start, end } = this.getShiftDateTimes(date, shift)
+    const windowStart = new Date(start)
+    windowStart.setMinutes(windowStart.getMinutes() - this.getWindowMinutes(shift))
+
+    if (now.getTime() < windowStart.getTime()) {
+      throw new AppError(
+        ATTENDANCE_ERROR_MESSAGES.CHECK_IN_TOO_EARLY,
+        HttpStatusCode.BAD_REQUEST,
+        ATTENDANCE_LAYERS.SERVICE,
+      )
+    }
+
+    if (now.getTime() > end.getTime()) {
+      throw new AppError(
+        ATTENDANCE_ERROR_MESSAGES.CHECK_IN_TOO_LATE,
+        HttpStatusCode.BAD_REQUEST,
+        ATTENDANCE_LAYERS.SERVICE,
+      )
+    }
+  }
+
+  private isBeforeCheckOutWindow(now: Date, record: any, shift: any): boolean {
+    if (!shift) return false
+
+    const { end } = this.getShiftDateTimes(new Date(record.date), shift)
+    const windowStart = new Date(end)
+    windowStart.setMinutes(windowStart.getMinutes() - this.getWindowMinutes(shift))
+
+    return now.getTime() < windowStart.getTime()
+  }
+
+  private isWithinOvernightCarryover(now: Date, record: any, shift: any): boolean {
+    if (!this.isOvernightShift(shift)) return false
+
+    const { end } = this.getShiftDateTimes(new Date(record.date), shift)
+    const latestCheckoutAt = new Date(end)
+    latestCheckoutAt.setMinutes(
+      latestCheckoutAt.getMinutes() + this.getShiftDurationMinutes(shift.startTime, shift.endTime),
+    )
+
+    return now.getTime() <= latestCheckoutAt.getTime()
+  }
+
+  private async findActiveAttendanceRecord(employeeId: string, now: Date): Promise<any | null> {
+    const today = this.normalizeDate(now)
+    const todayRecord = await this.attendanceRepo.findByEmployeeAndDate(employeeId, today)
+    if (todayRecord?.checkInAt) return todayRecord
+
+    const previousDate = new Date(today)
+    previousDate.setDate(previousDate.getDate() - 1)
+    const previousRecord = await this.attendanceRepo.findByEmployeeAndDate(employeeId, previousDate)
+    const previousShift = previousRecord?.employeeShift?.shift
+
+    if (
+      previousRecord?.checkInAt &&
+      this.isWithinOvernightCarryover(now, previousRecord, previousShift)
+    ) {
+      return previousRecord
+    }
+
+    return todayRecord
+  }
+
+  private toRadians(degrees: number): number {
+    return (degrees * Math.PI) / ATTENDANCE_GPS_RULES.DEGREES_TO_RADIANS_DIVISOR
+  }
+
+  private getDistanceMeters(
+    first: { lat: number; lng: number },
+    second: { lat: number; lng: number },
+  ): number {
+    const latDelta = this.toRadians(second.lat - first.lat)
+    const lngDelta = this.toRadians(second.lng - first.lng)
+    const firstLat = this.toRadians(first.lat)
+    const secondLat = this.toRadians(second.lat)
+    const chord =
+      Math.sin(latDelta / 2) ** 2 +
+      Math.cos(firstLat) * Math.cos(secondLat) * Math.sin(lngDelta / 2) ** 2
+
+    return (
+      ATTENDANCE_GPS_RULES.EARTH_RADIUS_METERS *
+      2 *
+      Math.atan2(Math.sqrt(chord), Math.sqrt(1 - chord))
+    )
+  }
+
+  private assertWithinShiftGps(location: { lat: number; lng: number }, shift: any): void {
+    if (!shift || shift.gpsLat == null || shift.gpsLng == null || shift.gpsRadiusMeters == null) {
+      return
+    }
+
+    const distanceMeters = this.getDistanceMeters(location, {
+      lat: shift.gpsLat,
+      lng: shift.gpsLng,
+    })
+
+    if (distanceMeters > shift.gpsRadiusMeters) {
+      throw new AppError(
+        ATTENDANCE_ERROR_MESSAGES.OUTSIDE_GPS_RADIUS,
+        HttpStatusCode.BAD_REQUEST,
+        ATTENDANCE_LAYERS.SERVICE,
+      )
+    }
   }
 
   /**
@@ -117,16 +258,18 @@ export class AttendanceService implements IAttendanceService {
    * @param shift - The associated shift definition.
    * @returns Computed attendance metrics.
    */
-  private computeAttendanceMetrics(record: any, shift: any): IAttendanceMetricsDTO {
+  private computeAttendanceMetrics(record: any, shift: any, checkOutAt: Date): IAttendanceMetricsDTO {
     if (!record.checkInAt) {
       return { status: ATTENDANCE_STATUS.ABSENT, totalWorkMinutes: 0 }
     }
 
     const checkInAt = new Date(record.checkInAt)
-    const checkOutAt = new Date()
     const totalWorkMinutes = Math.max(
       0,
-      Math.round((checkOutAt.getTime() - checkInAt.getTime()) / 60000),
+      Math.round(
+        (checkOutAt.getTime() - checkInAt.getTime()) /
+          ATTENDANCE_TIME_RULES.MILLISECONDS_PER_MINUTE,
+      ),
     )
 
     if (!shift) {
@@ -136,13 +279,11 @@ export class AttendanceService implements IAttendanceService {
       }
     }
 
-    const shiftStart = shift.startTime as number
-    const shiftEnd = shift.endTime as number
     const gracePeriod = shift.gracePeriodMinutes ?? 0
-    const scheduledStart = new Date(checkInAt)
-    scheduledStart.setHours(Math.floor(shiftStart / 60), shiftStart % 60, 0, 0)
-    const scheduledEnd = new Date(checkInAt)
-    scheduledEnd.setHours(Math.floor(shiftEnd / 60), shiftEnd % 60, 0, 0)
+    const { start: scheduledStart, end: scheduledEnd } = this.getShiftDateTimes(
+      new Date(record.date),
+      shift,
+    )
 
     let lateMinutes = 0
     let earlyLeaveMinutes = 0
@@ -150,7 +291,10 @@ export class AttendanceService implements IAttendanceService {
 
     const minutesLate = Math.max(
       0,
-      Math.round((checkInAt.getTime() - scheduledStart.getTime()) / 60000) - gracePeriod,
+      Math.round(
+        (checkInAt.getTime() - scheduledStart.getTime()) /
+          ATTENDANCE_TIME_RULES.MILLISECONDS_PER_MINUTE,
+      ) - gracePeriod,
     )
     if (minutesLate > 0) {
       lateMinutes = minutesLate
@@ -158,7 +302,10 @@ export class AttendanceService implements IAttendanceService {
 
     const minutesEarly = Math.max(
       0,
-      Math.round((scheduledEnd.getTime() - checkOutAt.getTime()) / 60000),
+      Math.round(
+        (scheduledEnd.getTime() - checkOutAt.getTime()) /
+          ATTENDANCE_TIME_RULES.MILLISECONDS_PER_MINUTE,
+      ),
     )
     if (minutesEarly > 0) {
       earlyLeaveMinutes = minutesEarly
@@ -167,7 +314,10 @@ export class AttendanceService implements IAttendanceService {
     if (checkOutAt.getTime() > scheduledEnd.getTime()) {
       overtimeMinutes = Math.max(
         0,
-        Math.round((checkOutAt.getTime() - scheduledEnd.getTime()) / 60000),
+        Math.round(
+          (checkOutAt.getTime() - scheduledEnd.getTime()) /
+            ATTENDANCE_TIME_RULES.MILLISECONDS_PER_MINUTE,
+        ),
       )
     }
 
@@ -201,7 +351,17 @@ export class AttendanceService implements IAttendanceService {
     location: { lat: number; lng: number },
     createdById: string,
   ): Promise<any> {
-    const today = this.normalizeDate(new Date())
+    const now = new Date()
+    const today = this.normalizeDate(now)
+    const existingRecord = await this.attendanceRepo.findByEmployeeAndDate(employeeId, today)
+
+    if (existingRecord?.checkInAt) {
+      throw new AppError(
+        ATTENDANCE_ERROR_MESSAGES.ALREADY_CHECKED_IN,
+        HttpStatusCode.CONFLICT,
+        ATTENDANCE_LAYERS.SERVICE,
+      )
+    }
 
     let employeeShift = await this.employeeShiftRepo.getShiftForEmployeeDate(employeeId, today)
     let shiftId = employeeShift?.shiftId
@@ -212,8 +372,12 @@ export class AttendanceService implements IAttendanceService {
     }
 
     if (!shiftId) {
-      shiftId = await this.resolveFallbackShiftId(new Date())
+      shiftId = await this.resolveFallbackShiftId(now)
     }
+
+    const shift = shiftId ? await this.workingShiftRepo.findById(shiftId) : null
+    this.assertCheckInWindow(now, today, shift)
+    this.assertWithinShiftGps(location, shift)
 
     if (!employeeShift && shiftId) {
       employeeShift = await this.employeeShiftRepo.ensureShiftForEmployeeDate(
@@ -232,11 +396,6 @@ export class AttendanceService implements IAttendanceService {
       )
     }
 
-    const shift = shiftId ? await this.workingShiftRepo.findById(shiftId) : null
-    if (shift && shift.gpsLat != null && shift.gpsLng != null && shift.gpsRadiusMeters != null) {
-      // optional GPS validation can be inserted here
-    }
-
     const isHoliday = await this.holidayRepo.checkIsHoliday(today)
     if (isHoliday) {
       // Holiday logic can be extended here if needed
@@ -253,8 +412,8 @@ export class AttendanceService implements IAttendanceService {
    * @throws {AppError} If no check-in is found for today or if already checked out.
    */
   async checkOut(employeeId: string, location: { lat: number; lng: number }): Promise<any> {
-    const today = this.normalizeDate(new Date())
-    const record = await this.attendanceRepo.findByEmployeeAndDate(employeeId, today)
+    const now = new Date()
+    const record = await this.findActiveAttendanceRecord(employeeId, now)
 
     if (!record || !record.checkInAt) {
       throw new AppError(
@@ -264,21 +423,47 @@ export class AttendanceService implements IAttendanceService {
       )
     }
 
-    if (record.checkOutAt) {
+    const shift = record.employeeShift?.shift
+    if (this.isBeforeCheckOutWindow(now, record, shift)) {
       throw new AppError(
-        ATTENDANCE_ERROR_MESSAGES.ALREADY_CHECKED_OUT,
+        ATTENDANCE_ERROR_MESSAGES.CHECK_OUT_TOO_EARLY,
+        HttpStatusCode.BAD_REQUEST,
+        ATTENDANCE_LAYERS.SERVICE,
+      )
+    }
+    this.assertWithinShiftGps(location, shift)
+
+    const metrics = this.computeAttendanceMetrics(record, shift, now)
+
+    return this.attendanceRepo.checkOut(record.id, location, metrics)
+  }
+
+  /**
+   * Records a smart scan for the current day.
+   * First valid scan check-ins. Later scans before checkout window only report existing check-in.
+   */
+  async scan(
+    employeeId: string,
+    location: { lat: number; lng: number },
+    createdById: string,
+  ): Promise<any> {
+    const now = new Date()
+    const record = await this.findActiveAttendanceRecord(employeeId, now)
+
+    if (!record || !record.checkInAt) {
+      return this.checkIn(employeeId, location, createdById)
+    }
+
+    const shift = record.employeeShift?.shift
+    if (!record.checkOutAt && this.isBeforeCheckOutWindow(now, record, shift)) {
+      throw new AppError(
+        ATTENDANCE_ERROR_MESSAGES.ALREADY_CHECKED_IN,
         HttpStatusCode.CONFLICT,
         ATTENDANCE_LAYERS.SERVICE,
       )
     }
 
-    const employeeShift = record.employeeShift
-      ? record.employeeShift
-      : await this.employeeShiftRepo.getShiftForEmployeeDate(employeeId, today)
-
-    const metrics = this.computeAttendanceMetrics(record, employeeShift)
-
-    return this.attendanceRepo.checkOut(employeeId, location, metrics)
+    return this.checkOut(employeeId, location)
   }
 
   /**

@@ -59,7 +59,10 @@ export type IUpdateShiftPayload = Partial<ICreateShiftPayload>
 export interface IScheduleDay {
   dayOfWeek: number // 0=Sun, 1=Mon, … 6=Sat
   shiftId: string
-  shift?: Pick<IWorkingShift, "name" | "startTime" | "endTime">
+  shift?: Pick<
+    IWorkingShift,
+    "name" | "startTime" | "endTime" | "gracePeriodMinutes" | "gpsLat" | "gpsLng" | "gpsRadiusMeters"
+  >
 }
 
 export interface ISchedule {

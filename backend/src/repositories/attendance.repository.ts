@@ -56,33 +56,18 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
 
   /**
    * Records a check-out for an employee.
-   * @param employeeId - The employee ID.
+   * @param recordId - The attendance record ID.
    * @param location - The GPS location of the check-out.
    * @param metrics - Optional attendance metrics.
    * @returns The updated attendance record.
    */
   async checkOut(
-    employeeId: string,
+    recordId: string,
     location: IGpsScanDTO,
     metrics: IAttendanceMetricsDTO = {},
   ): Promise<any> {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    const records = await this.prisma.attendanceRecord.findMany({
-      where: {
-        employeeId,
-        date: today,
-      },
-      take: 1,
-    })
-
-    if (records.length === 0) {
-      return null // Cannot checkout if not checked in
-    }
-
     return this.prisma.attendanceRecord.update({
-      where: { id: records[0].id },
+      where: { id: recordId },
       data: {
         checkOutAt: new Date(),
         checkOutLat: location.lat,
@@ -104,7 +89,13 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
 
     return this.prisma.attendanceRecord.findFirst({
       where: { employeeId, date: targetDate },
-      include: { employeeShift: true },
+      include: {
+        employeeShift: {
+          include: {
+            shift: true,
+          },
+        },
+      },
     })
   }
 

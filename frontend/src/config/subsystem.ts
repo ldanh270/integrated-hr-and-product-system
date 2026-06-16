@@ -72,7 +72,12 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     icon: CalendarClock,
     routePrefix: "/attendance",
     sidebarItems: [
-      { name: "Tổng quan", path: ROUTES.ATTENDANCE.DASHBOARD, icon: CalendarClock, roles: [ROLE.ADMIN] },
+      {
+        name: "Tổng quan",
+        path: ROUTES.ATTENDANCE.DASHBOARD,
+        icon: CalendarClock,
+        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
+      },
       { name: "Tổng hợp", path: ROUTES.ATTENDANCE.SUMMARY, icon: ChartNoAxesColumn, roles: NON_ADMIN_ROLES },
       { name: "Lịch của tôi", path: ROUTES.ATTENDANCE.MY_SCHEDULE, icon: CalendarClock },
       { name: "Thời gian thực", path: ROUTES.ATTENDANCE.REAL_SHIFT, icon: CalendarClock, roles: NON_ADMIN_ROLES },
