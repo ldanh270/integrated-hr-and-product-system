@@ -5,6 +5,9 @@ import { attendanceApi, schedulesApi } from "@/lib/api/attendance.api"
 import { useAuthStore } from "@/store/auth-store"
 import type { User } from "@/store/auth-store"
 import type { IAttendanceRecord, IWorkingShift } from "@/types/attendance.types"
+import { addDays } from "@/utils/attendance/add-days"
+import { formatDateParam } from "@/utils/attendance/format-date-param"
+import { minutesToDayTime } from "@/utils/attendance/minutes-to-day-time"
 
 import { useEffect, useMemo, useState } from "react"
 
@@ -52,29 +55,6 @@ function getApiErrorMessage(error: unknown, fallback: string): string {
   return err.response?.data?.error?.message ?? fallback
 }
 
-function formatDateParam(date: Date) {
-  const day = String(date.getDate()).padStart(2, "0")
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-
-  return `${date.getFullYear()}-${month}-${day}`
-}
-
-function getDateOffset(date: Date, offsetDays: number) {
-  const nextDate = new Date(date)
-  nextDate.setDate(date.getDate() + offsetDays)
-
-  return nextDate
-}
-
-function minutesToTime(minutes: number): string {
-  const normalizedMinutes =
-    (minutes + ATTENDANCE_TIME_RULES.MINUTES_PER_DAY) % ATTENDANCE_TIME_RULES.MINUTES_PER_DAY
-  const hours = Math.floor(normalizedMinutes / 60)
-  const mins = normalizedMinutes % 60
-
-  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`
-}
-
 function getTodayShift(scheduleShift?: Partial<IWorkingShift>): TodayShiftInfo | null {
   if (!scheduleShift?.name || scheduleShift.startTime == null || scheduleShift.endTime == null) {
     return null
@@ -88,9 +68,9 @@ function getTodayShift(scheduleShift?: Partial<IWorkingShift>): TodayShiftInfo |
 
   return {
     name: scheduleShift.name,
-    workWindow: `${minutesToTime(scheduleShift.startTime)} - ${minutesToTime(scheduleShift.endTime)}`,
-    checkInWindow: `${minutesToTime(scheduleShift.startTime - gracePeriod)} - ${minutesToTime(scheduleShift.startTime + gracePeriod)}`,
-    checkOutWindow: `Từ ${minutesToTime(scheduleShift.endTime - gracePeriod)}`,
+    workWindow: `${minutesToDayTime(scheduleShift.startTime)} - ${minutesToDayTime(scheduleShift.endTime)}`,
+    checkInWindow: `${minutesToDayTime(scheduleShift.startTime - gracePeriod)} - ${minutesToDayTime(scheduleShift.startTime + gracePeriod)}`,
+    checkOutWindow: `Từ ${minutesToDayTime(scheduleShift.endTime - gracePeriod)}`,
     gpsLabel: hasGps
       ? `${scheduleShift.gpsRadiusMeters}m quanh ${scheduleShift.gpsLat?.toFixed(5)}, ${scheduleShift.gpsLng?.toFixed(5)}`
       : "Chưa cấu hình GPS",
@@ -147,7 +127,7 @@ export function useVirtualScanner(): {
   const [locating, setLocating] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const today = formatDateParam(currentTime)
-  const yesterday = formatDateParam(getDateOffset(currentTime, -1))
+  const yesterday = formatDateParam(addDays(currentTime, -1))
   const { data: schedule, isLoading: isScheduleLoading } = useQuery({
     queryKey: ["my-schedule", today],
     queryFn: () => schedulesApi.getMy(today),

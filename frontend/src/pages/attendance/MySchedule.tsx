@@ -11,7 +11,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ROLE } from "@/config/entities/employee.config"
-import { getDayOfWeekFullLabel } from "@/config/entities/attendance.config"
 import { useAttendanceRecords } from "@/hooks/attendance/use-attendance"
 import { useEmployees } from "@/hooks/employees/queries/useEmployeeQuery"
 import { holidaysApi, schedulesApi } from "@/lib/api/attendance.api"
@@ -19,79 +18,18 @@ import { minutesToTime } from "@/lib/utils"
 import { useAuthStore } from "@/store/auth-store"
 import type { IHoliday, ISchedule } from "@/types/attendance.types"
 import type { Employee } from "@/types/employee.types"
+import { addDays } from "@/utils/attendance/add-days"
+import { formatDateParam } from "@/utils/attendance/format-date-param"
+import { getMonthRange } from "@/utils/attendance/get-month-range"
+import { getScheduleByEmployeeId } from "@/utils/attendance/get-schedule-by-employee-id"
+import { getWeekDates, type WeekDay } from "@/utils/attendance/get-week-dates"
+import { getWeekRangeLabel } from "@/utils/attendance/get-week-range-label"
+import { getWeekStart } from "@/utils/attendance/get-week-start"
 
 import { useState } from "react"
 
 import { useQueries, useQuery } from "@tanstack/react-query"
 import { CalendarDays, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
-
-/**
- * getMonthRange — Returns ISO strings for the first and last day of a given month/year.
- * @param {number} year 
- * @param {number} month (0-indexed)
- * @returns { startDate: string, endDate: string } format YYYY-MM-DD
- */
-function getMonthRange(year: number, month: number) {
-  const start = new Date(year, month, 1)
-  const end = new Date(year, month + 1, 0)
-
-  return {
-    startDate: formatDateParam(start),
-    endDate: formatDateParam(end),
-  }
-}
-
-function formatDateParam(date: Date) {
-  const day = String(date.getDate()).padStart(2, "0")
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-
-  return `${date.getFullYear()}-${month}-${day}`
-}
-
-function getWeekStart(date: Date) {
-  const start = new Date(date)
-  const day = start.getDay()
-  const diff = start.getDate() - day + (day === 0 ? -6 : 1)
-
-  start.setDate(diff)
-  start.setHours(0, 0, 0, 0)
-
-  return start
-}
-
-function addDays(date: Date, days: number) {
-  const nextDate = new Date(date)
-  nextDate.setDate(date.getDate() + days)
-
-  return nextDate
-}
-
-function getWeekDates(weekStart: Date) {
-  return Array.from({ length: 7 }, (_, index) => {
-    const date = addDays(weekStart, index)
-    const dayOfWeek = date.getDay()
-    const dateKey = formatDateParam(date)
-
-    return {
-      date,
-      dateKey,
-      dayOfWeek,
-      label: getDayOfWeekFullLabel(dayOfWeek),
-      shortDate: `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}`,
-    }
-  })
-}
-
-function getWeekRangeLabel(weekDates: ReturnType<typeof getWeekDates>) {
-  const firstDay = weekDates[0]
-  const lastDay = weekDates[6]
-
-  return `${firstDay.shortDate} – ${lastDay.shortDate}/${lastDay.date.getFullYear()}`
-}
-
-function getScheduleByEmployeeId(schedules: (ISchedule | null | undefined)[]) {
-  return new Map(schedules.flatMap((schedule) => (schedule ? [[schedule.employeeId, schedule]] : [])))
-}
 
 function EmployeeScheduleCells({
   employee,
@@ -101,7 +39,7 @@ function EmployeeScheduleCells({
 }: {
   employee: Employee
   schedule?: ISchedule
-  weekDates: ReturnType<typeof getWeekDates>
+  weekDates: WeekDay[]
   holidaysByDate: Map<string, IHoliday>
 }) {
   return (

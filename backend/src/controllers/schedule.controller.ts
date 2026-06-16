@@ -81,6 +81,11 @@ export class ScheduleController {
     res.status(HttpStatusCode.OK).json({ data: schedules, error: null })
   }
 
+  /**
+   * Retrieves schedule for a specific employee on a given date (admin view).
+   * @param req - Request with employeeId in params and optional date query.
+   * @param res - API response with the employee's schedule for that date.
+   */
   getEmployeeScheduleById = async (
     req: Request<{ employeeId: string }>,
     res: Response<ApiResponse<unknown>>,
@@ -93,6 +98,11 @@ export class ScheduleController {
     res.status(HttpStatusCode.OK).json({ data: schedule, error: null })
   }
 
+  /**
+   * Lists all weekly schedules assigned to a specific employee (admin view).
+   * @param req - Request with employeeId in params.
+   * @param res - API response with the employee's schedule list.
+   */
   listEmployeeSchedulesById = async (
     req: Request<{ employeeId: string }>,
     res: Response<ApiResponse<unknown[]>>,

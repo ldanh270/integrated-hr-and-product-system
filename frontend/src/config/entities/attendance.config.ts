@@ -99,6 +99,32 @@ export const APPLICATION_STATUS_VARIANTS: Record<
   cancelled: "neutral",
 }
 
+/** Vietnamese display labels for holiday type enums. */
+export const HOLIDAY_TYPE_LABELS: Record<IHolidayType, string> = {
+  national: "Ngày lễ quốc gia",
+  company: "Ngày nghỉ công ty",
+}
+
+export const UNKNOWN_HOLIDAY_TYPE_LABEL = "Ngày nghỉ"
+
+/** Vietnamese display labels keyed by zero-based month index. */
+export const MONTH_LABELS: Record<number, string> = {
+  0: "Tháng 1",
+  1: "Tháng 2",
+  2: "Tháng 3",
+  3: "Tháng 4",
+  4: "Tháng 5",
+  5: "Tháng 6",
+  6: "Tháng 7",
+  7: "Tháng 8",
+  8: "Tháng 9",
+  9: "Tháng 10",
+  10: "Tháng 11",
+  11: "Tháng 12",
+}
+
+export const UNKNOWN_MONTH_LABEL = "Tháng không hợp lệ"
+
 export const DAY_OF_WEEK_LABELS: Record<number, string> = {
   0: "CN",
   1: "T2",
@@ -119,23 +145,8 @@ export const DAY_OF_WEEK_FULL_LABELS: Record<number, string> = {
   6: "Thứ Bảy",
 }
 
+export const UNKNOWN_DAY_OF_WEEK_LABEL = "Không xác định"
+
 export function getDayOfWeekFullLabel(dayOfWeek: number) {
-  switch (dayOfWeek) {
-    case 0:
-      return "Chủ Nhật"
-    case 1:
-      return "Thứ Hai"
-    case 2:
-      return "Thứ Ba"
-    case 3:
-      return "Thứ Tư"
-    case 4:
-      return "Thứ Năm"
-    case 5:
-      return "Thứ Sáu"
-    case 6:
-      return "Thứ Bảy"
-    default:
-      return "Không xác định"
-  }
+  return DAY_OF_WEEK_FULL_LABELS[dayOfWeek] ?? UNKNOWN_DAY_OF_WEEK_LABEL
 }

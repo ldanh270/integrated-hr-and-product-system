@@ -5,7 +5,11 @@ import { ROUTES } from "@/config/routes.config"
 import { useAttendanceRecords } from "@/hooks/attendance/use-attendance"
 import { holidaysApi, schedulesApi } from "@/lib/api/attendance.api"
 import { useAuthStore } from "@/store/auth-store"
-import type { IHoliday, ISchedule } from "@/types/attendance.types"
+import { countScheduledShiftsInMonth } from "@/utils/attendance/count-scheduled-shifts-in-month"
+import { formatDateParam } from "@/utils/attendance/format-date-param"
+import { formatHours } from "@/utils/attendance/format-hours"
+import { getMonthName } from "@/utils/attendance/get-month-name"
+import { getMonthRange } from "@/utils/attendance/get-month-range"
 
 import { useState } from "react"
 
@@ -23,81 +27,6 @@ import {
   TimerReset,
 } from "lucide-react"
 import { Navigate } from "react-router-dom"
-
-function getMonthName(month: number) {
-  switch (month) {
-    case 0:
-      return "Tháng 1"
-    case 1:
-      return "Tháng 2"
-    case 2:
-      return "Tháng 3"
-    case 3:
-      return "Tháng 4"
-    case 4:
-      return "Tháng 5"
-    case 5:
-      return "Tháng 6"
-    case 6:
-      return "Tháng 7"
-    case 7:
-      return "Tháng 8"
-    case 8:
-      return "Tháng 9"
-    case 9:
-      return "Tháng 10"
-    case 10:
-      return "Tháng 11"
-    case 11:
-      return "Tháng 12"
-    default:
-      return "Tháng không hợp lệ"
-  }
-}
-
-function formatDateParam(date: Date) {
-  const day = String(date.getDate()).padStart(2, "0")
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-
-  return `${date.getFullYear()}-${month}-${day}`
-}
-
-function getMonthRange(year: number, month: number) {
-  return {
-    startDate: formatDateParam(new Date(year, month, 1)),
-    endDate: formatDateParam(new Date(year, month + 1, 0)),
-  }
-}
-
-function countScheduledShiftsInMonth(
-  schedule: ISchedule | null | undefined,
-  year: number,
-  month: number,
-  holidaysByDate: Map<string, IHoliday>,
-) {
-  if (!schedule) return 0
-
-  const lastDay = new Date(year, month + 1, 0).getDate()
-  let count = 0
-
-  for (let day = 1; day <= lastDay; day += 1) {
-    const date = new Date(year, month, day)
-    const dateKey = formatDateParam(date)
-    const isHoliday = holidaysByDate.has(dateKey)
-    const isScheduled = schedule.days.some((item) => item.dayOfWeek === date.getDay())
-
-    if (isScheduled && !isHoliday) count += 1
-  }
-
-  return count
-}
-
-function formatHours(minutes: number) {
-  const hours = Math.floor(minutes / 60)
-  const remainingMinutes = minutes % 60
-
-  return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`
-}
 
 function StatCard({
   title,

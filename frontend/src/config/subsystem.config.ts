@@ -17,6 +17,7 @@ import type { LucideIcon } from "lucide-react"
 
 const NON_ADMIN_ROLES = [ROLE.EMPLOYEE, ROLE.TEAM_LEADER, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER]
 
+/** Navigation metadata for HR subsystems (routes, icons, role access). */
 export type SubsystemId =
   | "hrm"
   | "application"
@@ -129,7 +130,6 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         icon: Users,
         roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
       },
-
       { name: "Lương của tôi", path: ROUTES.PAYROLL.MY_PAYSLIPS, icon: CircleDollarSign },
     ],
   },

@@ -4,8 +4,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { SUBSYSTEMS } from "@/config/subsystem"
-import type { SubsystemId } from "@/config/subsystem"
+import { SUBSYSTEMS } from "@/config/subsystem.config"
+import type { SubsystemId } from "@/config/subsystem.config"
 import { useSidebarStore } from "@/store/sidebar-store"
 import { useSubsystemStore } from "@/store/subsystem-store"
 

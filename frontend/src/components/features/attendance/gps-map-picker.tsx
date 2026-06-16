@@ -1,7 +1,7 @@
 import {
-  DEFAULT_GPS_CENTER,
-  DEFAULT_GPS_ZOOM,
   GPS_COORDINATE_PRECISION,
+  MAP_INITIAL_CENTER,
+  MAP_INITIAL_ZOOM,
   OSM_MAX_ZOOM,
   OSM_TILE_ATTRIBUTION,
   OSM_TILE_LAYER_URL,
@@ -35,7 +35,7 @@ function roundCoordinate(value: number) {
 }
 
 function getMapCenter(lat?: number, lng?: number) {
-  return lat != null && lng != null ? { lat, lng } : DEFAULT_GPS_CENTER
+  return lat != null && lng != null ? { lat, lng } : MAP_INITIAL_CENTER
 }
 
 export function GpsMapPicker({ lat, lng, radiusMeters, onChange, className }: GpsMapPickerProps) {
@@ -44,7 +44,7 @@ export function GpsMapPicker({ lat, lng, radiusMeters, onChange, className }: Gp
   const markerRef = useRef<L.Marker | null>(null)
   const circleRef = useRef<L.Circle | null>(null)
   const initialCenterRef = useRef(getMapCenter(lat, lng))
-  const initialZoomRef = useRef(lat != null && lng != null ? SELECTED_GPS_ZOOM : DEFAULT_GPS_ZOOM)
+  const initialZoomRef = useRef(lat != null && lng != null ? SELECTED_GPS_ZOOM : MAP_INITIAL_ZOOM)
   const onChangeRef = useRef(onChange)
   const [isLocating, setIsLocating] = useState(false)
   const canUseGeolocation = typeof navigator !== "undefined" && "geolocation" in navigator

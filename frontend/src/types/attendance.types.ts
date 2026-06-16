@@ -88,6 +88,16 @@ export interface IOverrideShiftPayload {
 
 // ─── ATTENDANCE RECORD ────────────────────────────────────────
 
+export interface IRealShift {
+  id: string
+  employeeId: string
+  attendanceRecordId: string
+  date: string
+  actualStartTime: number
+  actualEndTime?: number | null
+  isMatched: boolean
+}
+
 export interface IAttendanceRecord {
   id: string
   employeeId: string
@@ -104,6 +114,7 @@ export interface IAttendanceRecord {
   earlyLeaveMinutes: number
   overtimeMinutes: number
   totalWorkMinutes: number
+  realShift?: IRealShift | null
   employee?: {
     id: string
     fullName: string

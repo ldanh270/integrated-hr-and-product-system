@@ -26,6 +26,7 @@ import { formatDate, formatTime } from "@/lib/utils"
 import { useAuthStore } from "@/store/auth-store"
 import dayjs from "dayjs"
 import type { IAttendanceStatus } from "@/config/entities/attendance.config"
+import { getCurrentMonthRange } from "@/utils/attendance/get-current-month-range"
 
 import { useMemo, useState } from "react"
 
@@ -40,17 +41,6 @@ import {
   Users,
 } from "lucide-react"
 import { Navigate } from "react-router-dom"
-
-/**
- * getMonthRange — Returns an ISO date range for the current month.
- * @returns { startDate: string, endDate: string } format YYYY-MM-DD
- */
-function getMonthRange() {
-  const now = new Date()
-  const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10)
-  return { startDate: start, endDate: end }
-}
 
 function canManageAttendance(role?: string) {
   return role === ROLE.ADMIN || role === ROLE.HR_MANAGER || role === ROLE.GENERAL_MANAGER
@@ -72,8 +62,8 @@ export default function AttendanceDashboard() {
 
 function AdminAttendanceDashboard() {
   // startDate, endDate: Filter range for attendance records (default: current month)
-  const [startDate, setStartDate] = useState(getMonthRange().startDate)
-  const [endDate, setEndDate] = useState(getMonthRange().endDate)
+  const [startDate, setStartDate] = useState(() => getCurrentMonthRange().startDate)
+  const [endDate, setEndDate] = useState(() => getCurrentMonthRange().endDate)
   // statusFilter: Current selection for attendance status (all, late, on_time, etc.)
   const [statusFilter, setStatusFilter] = useState<IAttendanceStatus | "all">("all")
 

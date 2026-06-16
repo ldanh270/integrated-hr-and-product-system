@@ -5,6 +5,15 @@ import { useAttendanceRecords } from "@/hooks/attendance/use-attendance"
 import { holidaysApi, schedulesApi, shiftsApi } from "@/lib/api/attendance.api"
 import { cn, minutesToTime } from "@/lib/utils"
 import type { IAttendanceRecord, IHoliday, IScheduleDay, IWorkingShift } from "@/types/attendance.types"
+import { formatDateParam } from "@/utils/attendance/format-date-param"
+import { getCalendarRangeStyle } from "@/utils/attendance/get-calendar-range-style"
+import { getDayLabel } from "@/utils/attendance/get-day-label"
+import { getMinutesFromDateTime } from "@/utils/attendance/get-minutes-from-date-time"
+import { getRecordDateKey } from "@/utils/attendance/get-record-date-key"
+import { getWeekDates } from "@/utils/attendance/get-week-dates"
+import { getWeekRangeLabel } from "@/utils/attendance/get-week-range-label"
+import { getWeekStart } from "@/utils/attendance/get-week-start"
+import { isActualShiftMatched } from "@/utils/attendance/is-actual-shift-matched"
 
 import { useRef, useState } from "react"
 
@@ -14,23 +23,11 @@ import { Calendar, Loader2 } from "lucide-react"
 const WEEK_DAY_COUNT = 7
 const CALENDAR_START_HOUR = 6
 const CALENDAR_END_HOUR = 24
-const MINUTES_PER_HOUR = 60
-const CALENDAR_START_MINUTES = CALENDAR_START_HOUR * MINUTES_PER_HOUR
-const CALENDAR_END_MINUTES = CALENDAR_END_HOUR * MINUTES_PER_HOUR
-const CALENDAR_TOTAL_MINUTES = CALENDAR_END_MINUTES - CALENDAR_START_MINUTES
 
 const HOURS = Array.from(
   { length: CALENDAR_END_HOUR - CALENDAR_START_HOUR + 1 },
   (_, index) => CALENDAR_START_HOUR + index,
 )
-
-interface WeekDay {
-  dayOfWeek: number
-  date: Date
-  dateKey: string
-  label: string
-  shortDate: string
-}
 
 interface WeeklyScheduleCalendarProps {
   className?: string
@@ -42,106 +39,9 @@ interface WeeklyScheduleCalendarProps {
 
 type CalendarTab = "planned" | "actual"
 
-function getWeekStart(date: Date) {
-  const start = new Date(date)
-  const day = start.getDay()
-  const diff = start.getDate() - day + (day === 0 ? -6 : 1)
-
-  start.setDate(diff)
-  start.setHours(0, 0, 0, 0)
-
-  return start
-}
-
-function addDays(date: Date, days: number) {
-  const nextDate = new Date(date)
-  nextDate.setDate(date.getDate() + days)
-
-  return nextDate
-}
-
-function formatShortDate(date: Date) {
-  const day = String(date.getDate()).padStart(2, "0")
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-
-  return `${day}/${month}`
-}
-
-function formatDateParam(date: Date) {
-  const day = String(date.getDate()).padStart(2, "0")
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-
-  return `${date.getFullYear()}-${month}-${day}`
-}
-
-function getDayLabel(date: Date) {
-  return date.getDay() === 0 ? "CN" : `Thứ ${date.getDay() + 1}`
-}
-
-function getWeekDates(weekStart: Date): WeekDay[] {
-  return Array.from({ length: WEEK_DAY_COUNT }, (_, index) => {
-    const date = addDays(weekStart, index)
-
-    return {
-      dayOfWeek: date.getDay(),
-      date,
-      dateKey: formatDateParam(date),
-      label: getDayLabel(date),
-      shortDate: formatShortDate(date),
-    }
-  })
-}
-
-function getWeekRangeLabel(weekDays: WeekDay[]) {
-  const firstDay = weekDays[0]
-  const lastDay = weekDays[WEEK_DAY_COUNT - 1]
-
-  return `${firstDay.shortDate} – ${lastDay.shortDate}/${lastDay.date.getFullYear()}`
-}
-
-function getRangeStyle(startTime: number, endTime: number) {
-  const normalizedEndTime = endTime <= startTime ? endTime + 24 * MINUTES_PER_HOUR : endTime
-  const startMinutes = Math.max(startTime, CALENDAR_START_MINUTES)
-  const endMinutes = Math.min(normalizedEndTime, CALENDAR_END_MINUTES)
-
-  if (endMinutes <= startMinutes) return undefined
-
-  const top = ((startMinutes - CALENDAR_START_MINUTES) / CALENDAR_TOTAL_MINUTES) * 100
-  const height = ((endMinutes - startMinutes) / CALENDAR_TOTAL_MINUTES) * 100
-
-  return {
-    top: `${top}%`,
-    height: `${height}%`,
-  }
-}
-
-function getMinutesFromDateTime(iso?: string | null) {
-  if (!iso) return undefined
-
-  const date = new Date(iso)
-
-  return date.getHours() * MINUTES_PER_HOUR + date.getMinutes()
-}
-
-function getRecordDateKey(record: IAttendanceRecord) {
-  return formatDateParam(new Date(record.date))
-}
-
-function isActualShiftMatched(record: IAttendanceRecord, scheduleDay?: IScheduleDay) {
-  const shift = scheduleDay?.shift
-  const actualStart = getMinutesFromDateTime(record.checkInAt)
-  const actualEnd = getMinutesFromDateTime(record.checkOutAt)
-
-  return Boolean(
-    shift &&
-      actualStart === shift.startTime &&
-      actualEnd === shift.endTime,
-  )
-}
-
 function PlannedShiftBlock({ scheduleDay, isMuted = false }: { scheduleDay: IScheduleDay; isMuted?: boolean }) {
   const shift = scheduleDay.shift
-  const shiftStyle = shift ? getRangeStyle(shift.startTime, shift.endTime) : undefined
+  const shiftStyle = shift ? getCalendarRangeStyle(shift.startTime, shift.endTime) : undefined
 
   if (!shift || !shiftStyle) return null
 
@@ -168,7 +68,7 @@ function ShiftOptionBlock({
   shift: IWorkingShift
   isAssigned: boolean
 }) {
-  const shiftStyle = getRangeStyle(shift.startTime, shift.endTime)
+  const shiftStyle = getCalendarRangeStyle(shift.startTime, shift.endTime)
 
   if (!shiftStyle) return null
 
@@ -211,8 +111,9 @@ function ActualWorkBlock({
 
   if (actualStart === undefined || actualEnd === undefined) return null
 
-  const isMatched = isActualShiftMatched(record, scheduleDay)
-  const actualStyle = getRangeStyle(actualStart, actualEnd)
+  const isMatched =
+    record.realShift?.isMatched ?? isActualShiftMatched(record, scheduleDay)
+  const actualStyle = getCalendarRangeStyle(actualStart, actualEnd)
 
   if (!actualStyle) return null
 
@@ -247,7 +148,7 @@ export function WeeklyScheduleCalendar({
   const activeTab = showTabs ? selectedTab : view
   const dateInputRef = useRef<HTMLInputElement>(null)
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()))
-  const weekDays = getWeekDates(weekStart)
+  const weekDays = getWeekDates(weekStart, getDayLabel)
   const today = new Date()
   const todayDayOfWeek = today.getDay()
   const weekStartIso = formatDateParam(weekStart)

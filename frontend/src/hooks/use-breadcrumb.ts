@@ -1,4 +1,4 @@
-import { SUBSYSTEMS } from "@/config/subsystem"
+import { SUBSYSTEMS } from "@/config/subsystem.config"
 
 import { useMemo } from "react"
 

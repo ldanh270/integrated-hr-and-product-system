@@ -1,6 +1,6 @@
 import Header from "@/components/layouts/Header"
 import Sidebar from "@/components/layouts/Sidebar"
-import { SUBSYSTEMS } from "@/config/subsystem"
+import { SUBSYSTEMS } from "@/config/subsystem.config"
 import { useSubsystemStore } from "@/store/subsystem-store"
 
 import type { ReactNode } from "react"

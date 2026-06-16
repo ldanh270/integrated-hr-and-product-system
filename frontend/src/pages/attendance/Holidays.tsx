@@ -33,23 +33,13 @@ import { holidaysApi } from "@/lib/api/attendance.api"
 import { formatDate } from "@/lib/utils"
 import { useAuthStore } from "@/store/auth-store"
 import type { IHoliday, IHolidayPayload } from "@/types/attendance.types"
+import { getHolidayTypeLabel } from "@/utils/attendance/get-holiday-type-label"
 
 import { type FormEvent, useState } from "react"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { CalendarDays, ChevronLeft, ChevronRight, Loader2, Pencil, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
-
-function getHolidayTypeLabel(type: IHolidayType) {
-  switch (type) {
-    case "national":
-      return "Ngày lễ quốc gia"
-    case "company":
-      return "Ngày nghỉ công ty"
-    default:
-      return "Ngày nghỉ"
-  }
-}
 
 const DEFAULT_FORM: IHolidayPayload = {
   name: "",
