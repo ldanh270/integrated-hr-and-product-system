@@ -30,6 +30,9 @@ export const API_ENDPOINTS = {
     MY_ALL: "/schedules/my/all",
     ASSIGN: "/schedules/assign",
     OVERRIDE: "/schedules/override",
+    GENERATE_PREVIEW: "/schedules/generate/preview",
+    GENERATE: "/schedules/generate",
+    SETTINGS: "/schedules/settings",
     EMPLOYEE: (employeeId: string) => `/schedules/employee/${employeeId}`,
     EMPLOYEE_ALL: (employeeId: string) => `/schedules/employee/${employeeId}/all`,
   },
@@ -43,5 +46,9 @@ export const API_ENDPOINTS = {
   },
   HOLIDAYS: {
     BASE: "/holidays",
+  },
+  WEEKLY_SCHEDULE_TEMPLATES: {
+    BASE: "/weekly-schedule-templates",
+    APPLY: (id: string) => `/weekly-schedule-templates/${id}/apply`,
   },
 } as const

@@ -1,3 +1,4 @@
+import { EmployeeWeeklyScheduleSection } from "@/components/features/employees/employee-weekly-schedule-section"
 import { AppDrawer } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,7 +12,10 @@ import {
   ROLE_LABELS,
 } from "@/config/entities/employee.config"
 import { useEmployeeEditModal } from "@/hooks/employees/useEmployeeEditModal"
+import { useEmployeeWeeklyScheduleSection } from "@/hooks/employees/use-employee-weekly-schedule-section"
 import type { Employee } from "@/types/employee.types"
+
+import { toast } from "sonner"
 
 /**
  * Prop definitions for EmployeeEditDrawer component.
@@ -31,12 +35,33 @@ interface Props {
  * Integrates useEmployeeEditModal hook to handle reactive form state and mutation updates.
  */
 export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
-  // Extract react hook form fields, submission status from custom hook
-  const { register, handleSubmit, errors, isPending } = useEmployeeEditModal(
-    employee,
-    isOpen,
-    onClose,
-  )
+  const {
+    register,
+    handleSubmit,
+    onSubmitEmployee,
+    errors,
+    isPending: isEmployeePending,
+  } = useEmployeeEditModal(employee, isOpen, onClose)
+
+  const weeklySchedule = useEmployeeWeeklyScheduleSection(employee?.id, isOpen)
+
+  const onSubmit = handleSubmit(async (data) => {
+    if (!employee) return
+    try {
+      await onSubmitEmployee(data)
+      const scheduleApplied = await weeklySchedule.applyIfNeeded()
+      toast.success(
+        scheduleApplied
+          ? "Đã cập nhật thông tin nhân sự và lịch tuần"
+          : "Đã cập nhật thông tin nhân sự",
+      )
+      onClose()
+    } catch (error) {
+      console.error(error)
+    }
+  })
+
+  const isPending = isEmployeePending || weeklySchedule.isPending
 
   // Avoid rendering if no employee is selected for editing
   if (!employee) return null
@@ -54,7 +79,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
 
         {/* Form content viewport */}
         <div className="p-10 flex-1 overflow-y-auto">
-          <form id="edit-employee-form" onSubmit={handleSubmit} className="space-y-8">
+          <form id="edit-employee-form" onSubmit={onSubmit} className="space-y-8">
             {/* Account section */}
             <section>
               <h3 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
@@ -300,6 +325,8 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                 </div>
               </div>
             </section>
+
+            <EmployeeWeeklyScheduleSection section={weeklySchedule} />
           </form>
         </div>
 

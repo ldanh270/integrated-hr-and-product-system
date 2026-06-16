@@ -6,6 +6,12 @@ export interface User {
   email: string
   fullName: string
   role: string
+  personalEmployeeId?: string | null
+  personalEmployee?: {
+    id: string
+    fullName: string
+    email: string
+  } | null
 }
 
 interface AuthState {

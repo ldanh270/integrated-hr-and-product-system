@@ -7,6 +7,8 @@ export const SYSTEM_CONFIG = {
     DEFAULT_LIMIT: 50,
     SMALL_LIMIT: 10,
     MAX_VISIBLE_PAGES: 5,
+    /** Bulk fetch for admin dropdowns and schedule grids. */
+    BULK_LIMIT: 1000,
   },
 } as const
 

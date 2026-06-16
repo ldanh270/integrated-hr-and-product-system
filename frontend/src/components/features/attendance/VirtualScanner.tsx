@@ -2,7 +2,7 @@ import { useVirtualScanner } from "@/hooks/attendance/useVirtualScanner"
 
 import { AlertCircle, CheckCircle2, Clock, Fingerprint, Loader2, MapPin } from "lucide-react"
 
-export default function VirtualScanner() {
+export function VirtualScanner() {
   const {
     user,
     currentTime,
