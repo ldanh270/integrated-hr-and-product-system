@@ -6,5 +6,5 @@ import {
 
 /** Resolves a holiday type enum to its display label. */
 export function getHolidayTypeLabel(type: IHolidayType): string {
-  return HOLIDAY_TYPE_LABELS[type] ?? UNKNOWN_HOLIDAY_TYPE_LABEL
+  return HOLIDAY_TYPE_LABELS.get(type) ?? UNKNOWN_HOLIDAY_TYPE_LABEL
 }

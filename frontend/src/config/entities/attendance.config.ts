@@ -100,53 +100,53 @@ export const APPLICATION_STATUS_VARIANTS: Record<
 }
 
 /** Vietnamese display labels for holiday type enums. */
-export const HOLIDAY_TYPE_LABELS: Record<IHolidayType, string> = {
-  national: "Ngày lễ quốc gia",
-  company: "Ngày nghỉ công ty",
-}
+export const HOLIDAY_TYPE_LABELS = new Map<IHolidayType, string>([
+  ["national", "Ngày lễ quốc gia"],
+  ["company", "Ngày nghỉ công ty"],
+])
 
 export const UNKNOWN_HOLIDAY_TYPE_LABEL = "Ngày nghỉ"
 
 /** Vietnamese display labels keyed by zero-based month index. */
-export const MONTH_LABELS: Record<number, string> = {
-  0: "Tháng 1",
-  1: "Tháng 2",
-  2: "Tháng 3",
-  3: "Tháng 4",
-  4: "Tháng 5",
-  5: "Tháng 6",
-  6: "Tháng 7",
-  7: "Tháng 8",
-  8: "Tháng 9",
-  9: "Tháng 10",
-  10: "Tháng 11",
-  11: "Tháng 12",
-}
+export const MONTH_LABELS = new Map<number, string>([
+  [0, "Tháng 1"],
+  [1, "Tháng 2"],
+  [2, "Tháng 3"],
+  [3, "Tháng 4"],
+  [4, "Tháng 5"],
+  [5, "Tháng 6"],
+  [6, "Tháng 7"],
+  [7, "Tháng 8"],
+  [8, "Tháng 9"],
+  [9, "Tháng 10"],
+  [10, "Tháng 11"],
+  [11, "Tháng 12"],
+])
 
 export const UNKNOWN_MONTH_LABEL = "Tháng không hợp lệ"
 
-export const DAY_OF_WEEK_LABELS: Record<number, string> = {
-  0: "CN",
-  1: "T2",
-  2: "T3",
-  3: "T4",
-  4: "T5",
-  5: "T6",
-  6: "T7",
-}
+export const DAY_OF_WEEK_LABELS = new Map<number, string>([
+  [0, "CN"],
+  [1, "T2"],
+  [2, "T3"],
+  [3, "T4"],
+  [4, "T5"],
+  [5, "T6"],
+  [6, "T7"],
+])
 
-export const DAY_OF_WEEK_FULL_LABELS: Record<number, string> = {
-  0: "Chủ Nhật",
-  1: "Thứ Hai",
-  2: "Thứ Ba",
-  3: "Thứ Tư",
-  4: "Thứ Năm",
-  5: "Thứ Sáu",
-  6: "Thứ Bảy",
-}
+export const DAY_OF_WEEK_FULL_LABELS = new Map<number, string>([
+  [0, "Chủ Nhật"],
+  [1, "Thứ Hai"],
+  [2, "Thứ Ba"],
+  [3, "Thứ Tư"],
+  [4, "Thứ Năm"],
+  [5, "Thứ Sáu"],
+  [6, "Thứ Bảy"],
+])
 
 export const UNKNOWN_DAY_OF_WEEK_LABEL = "Không xác định"
 
 export function getDayOfWeekFullLabel(dayOfWeek: number) {
-  return DAY_OF_WEEK_FULL_LABELS[dayOfWeek] ?? UNKNOWN_DAY_OF_WEEK_LABEL
+  return DAY_OF_WEEK_FULL_LABELS.get(dayOfWeek) ?? UNKNOWN_DAY_OF_WEEK_LABEL
 }
