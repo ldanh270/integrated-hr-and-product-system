@@ -1,0 +1,4 @@
+export const ATTENDANCE_TIME_RULES = {
+  DEFAULT_WINDOW_MINUTES: 15,
+  MINUTES_PER_DAY: 1440,
+} as const

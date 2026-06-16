@@ -8,6 +8,9 @@ import type {
   IAttendanceRecord,
   ICheckInOutRequest,
   ICreateShiftPayload,
+  IHoliday,
+  IHolidayPayload,
+  IHolidayQuery,
   IOverrideShiftPayload,
   IProcessApprovalPayload,
   ISchedule,
@@ -69,8 +72,8 @@ export const shiftsApi = {
  */
 export const schedulesApi = {
   /** Fetches the planned schedule for the authenticated user on a specific date or current week. */
-  getMy: async (date?: string): Promise<ISchedule> => {
-    const res = await apiClient.get<ApiResponse<ISchedule>>(API_ENDPOINTS.SCHEDULES.MY, {
+  getMy: async (date?: string): Promise<ISchedule | null> => {
+    const res = await apiClient.get<ApiResponse<ISchedule | null>>(API_ENDPOINTS.SCHEDULES.MY, {
       params: date ? { [ATTENDANCE_QUERY_PARAMS.DATE]: date } : undefined,
     })
     return res.data.data
@@ -83,8 +86,8 @@ export const schedulesApi = {
   },
 
   /** Fetches the planned schedule for a specific employee. */
-  getByEmployee: async (employeeId: string, date?: string): Promise<ISchedule> => {
-    const res = await apiClient.get<ApiResponse<ISchedule>>(
+  getByEmployee: async (employeeId: string, date?: string): Promise<ISchedule | null> => {
+    const res = await apiClient.get<ApiResponse<ISchedule | null>>(
       API_ENDPOINTS.SCHEDULES.EMPLOYEE(employeeId),
       { params: date ? { [ATTENDANCE_QUERY_PARAMS.DATE]: date } : undefined },
     )
@@ -221,5 +224,34 @@ export const approvalsApi = {
       data,
     )
     return res.data.data
+  },
+}
+
+/**
+ * holidaysApi — Data access layer for holiday calendar management.
+ */
+export const holidaysApi = {
+  getAll: async (query?: IHolidayQuery): Promise<IHoliday[]> => {
+    const res = await apiClient.get<ApiResponse<IHoliday[]>>(API_ENDPOINTS.HOLIDAYS.BASE, {
+      params: query,
+    })
+    return res.data.data
+  },
+
+  create: async (data: IHolidayPayload): Promise<IHoliday> => {
+    const res = await apiClient.post<ApiResponse<IHoliday>>(API_ENDPOINTS.HOLIDAYS.BASE, data)
+    return res.data.data
+  },
+
+  update: async (id: string, data: Partial<IHolidayPayload>): Promise<IHoliday> => {
+    const res = await apiClient.patch<ApiResponse<IHoliday>>(
+      `${API_ENDPOINTS.HOLIDAYS.BASE}/${id}`,
+      data,
+    )
+    return res.data.data
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`${API_ENDPOINTS.HOLIDAYS.BASE}/${id}`)
   },
 }

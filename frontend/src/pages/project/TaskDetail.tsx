@@ -31,7 +31,6 @@ import { TASK_PRIORITIES, TASK_STATUSES, TASK_TRACKERS } from "@/config/entities
 // Import API endpoint wrapper clients
 import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
-import { taskCategoryApi } from "@/lib/api/task-category.api"
 // Import authorization store
 import { useAuthStore } from "@/store/auth-store"
 // Import Spent Time log type structure
@@ -86,7 +85,6 @@ export default function TaskDetail() {
   const [taskDue, setTaskDue] = useState("") // Due date
   const [taskEstimate, setTaskEstimate] = useState("") // Estimated hours
   const [taskProgress, setTaskProgress] = useState(0) // Percent progress value
-  const [taskCategory, setTaskCategory] = useState("") // Category identification ID
   const [editError, setEditError] = useState<string | null>(null) // Errors during form submission
 
   // 1. Query hook to fetch detailed data for the targeted task
@@ -127,12 +125,6 @@ export default function TaskDetail() {
     enabled: !!projectId,
   })
 
-  // 6. Query hook to fetch categories linked to the project
-  const { data: categories } = useQuery({
-    queryKey: ["project-categories", projectId],
-    queryFn: () => taskCategoryApi.list(projectId),
-    enabled: !!projectId,
-  })
 
   const totalSpentHours = spentTimes?.reduce((sum, st) => sum + st.hours, 0) || 0
 
@@ -158,7 +150,6 @@ export default function TaskDetail() {
     setTaskDue(task.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : "")
     setTaskEstimate(task.estimatedTime ? String(task.estimatedTime) : "")
     setTaskProgress(task.progress)
-    setTaskCategory(task.categoryId || "none")
     setIsOpenEditModal(true)
   }
 
@@ -176,7 +167,6 @@ export default function TaskDetail() {
         dueDate: taskDue || null,
         estimatedTime: taskEstimate ? parseFloat(taskEstimate) : null,
         progress: Number(taskProgress),
-        categoryId: taskCategory === "none" ? null : taskCategory,
       })
     },
     onSuccess: () => {
@@ -407,16 +397,6 @@ export default function TaskDetail() {
                 </Badge>
               </div>
 
-              <div className="flex justify-between border-b border-border/40 pb-2">
-                <span className="font-medium text-muted-foreground">Chủ đề:</span>
-                {task.category ? (
-                  <Badge variant="secondary" className="rounded-full px-2.5 py-0.5 text-[11px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30">
-                    {task.category.name}
-                  </Badge>
-                ) : (
-                  <span className="text-muted-foreground italic text-xs">Không có</span>
-                )}
-              </div>
 
               <div className="flex justify-between border-b border-border/40 pb-2">
                 <span className="font-medium text-muted-foreground">Người thực hiện:</span>
@@ -664,7 +644,7 @@ export default function TaskDetail() {
                   <SelectTrigger id="editTracker" className="w-full h-10 border-border rounded-full px-4 bg-background">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-border bg-popover">
+                  <SelectContent position="popper" className="rounded-xl border-border bg-popover">
                     {TASK_TRACKERS.map((tr) => (
                       <SelectItem key={tr} value={tr} className="rounded-lg">
                         {tr}
@@ -682,7 +662,7 @@ export default function TaskDetail() {
                   <SelectTrigger id="editPriority" className="w-full h-10 border-border rounded-full px-4 bg-background">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-border bg-popover">
+                  <SelectContent position="popper" className="rounded-xl border-border bg-popover">
                     {TASK_PRIORITIES.map((pr) => (
                       <SelectItem key={pr} value={pr} className="rounded-lg">
                         {formatPriority(pr)}
@@ -700,7 +680,7 @@ export default function TaskDetail() {
                   <SelectTrigger id="editStatus" className="w-full h-10 border-border rounded-full px-4 bg-background">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-border bg-popover">
+                  <SelectContent position="popper" className="rounded-xl border-border bg-popover">
                     {TASK_STATUSES.map((st) => (
                       <SelectItem key={st} value={st} className="rounded-lg">
                         {formatStatus(st)}
@@ -720,7 +700,7 @@ export default function TaskDetail() {
                   <SelectTrigger id="editAssignee" className="w-full h-10 border-border rounded-full px-4 bg-background">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-border bg-popover">
+                  <SelectContent position="popper" className="rounded-xl border-border bg-popover">
                     <SelectItem value="none" className="rounded-lg">Không phân công</SelectItem>
                     {members?.map((m) => (
                       <SelectItem key={m.id} value={m.employeeId} className="rounded-lg">
@@ -731,24 +711,6 @@ export default function TaskDetail() {
                 </Select>
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="editCategory" className="text-xs font-semibold text-muted-foreground">
-                  Chủ đề (Category)
-                </Label>
-                <Select value={taskCategory} onValueChange={setTaskCategory}>
-                  <SelectTrigger id="editCategory" className="w-full h-10 border-border rounded-full px-4 bg-background">
-                    <SelectValue placeholder="Chọn chủ đề" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-border bg-popover">
-                    <SelectItem value="none" className="rounded-lg">Không có</SelectItem>
-                    {categories?.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id} className="rounded-lg">
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="editProgress" className="text-xs font-semibold text-muted-foreground">

@@ -38,7 +38,7 @@ export function useSubmitApplication(): UseSubmitApplicationReturn {
         const status = axiosErr.response.status
         const msg =
           axiosErr.response.data?.error?.message ??    // controller errors
-          (axiosErr.response.data as any)?.message ??  // auth middleware errors
+          axiosErr.response.data?.message ??  // auth middleware errors
           `Lỗi server (${status})`
 
         if (status === 401) {

@@ -54,3 +54,10 @@ export const EMPLOYEE_TYPE_LABELS: Record<string, string> = {
   contractor: "Hợp đồng",
   intern: "Thực tập",
 } as const
+
+export const EMPLOYEE_STATUS_VARIANTS: Record<string, "success" | "danger" | "warning" | "neutral"> = {
+  [EMPLOYEE_STATUS.ACTIVE]: "success",
+  [EMPLOYEE_STATUS.INACTIVE]: "neutral",
+  [EMPLOYEE_STATUS.ON_LEAVE]: "warning",
+  [EMPLOYEE_STATUS.TERMINATED]: "danger",
+} as const

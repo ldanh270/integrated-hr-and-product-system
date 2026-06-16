@@ -4,8 +4,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { SUBSYSTEMS } from "@/config/subsystem"
-import type { SubsystemId } from "@/config/subsystem"
+import { SUBSYSTEMS } from "@/config/subsystem.config"
+import type { SubsystemId } from "@/config/subsystem.config"
+import { useAuthStore } from "@/store/auth-store"
 import { useSidebarStore } from "@/store/sidebar-store"
 import { useSubsystemStore } from "@/store/subsystem-store"
 
@@ -16,8 +17,13 @@ export default function SubsystemDropdown() {
   const navigate = useNavigate()
   const { activeSubsystem, setActiveSubsystem, getActiveSubsystemConfig } = useSubsystemStore()
   const { isCollapsed } = useSidebarStore()
+  const user = useAuthStore((state) => state.user)
 
   const activeConfig = getActiveSubsystemConfig()
+
+  const navSubsystems = SUBSYSTEMS.filter(
+    (subsystem) => !subsystem.roles || (user && subsystem.roles.includes(user.role)),
+  )
 
   const handleSelectSubsystem = (subsystemId: string, routePrefix: string) => {
     setActiveSubsystem(subsystemId as SubsystemId)
@@ -58,7 +64,7 @@ export default function SubsystemDropdown() {
         className="w-60 rounded-xl p-1 shadow-md mt-2 ml-3"
       >
         <div className="max-h-[60vh] overflow-y-auto">
-          {SUBSYSTEMS.map((subsystem) => {
+          {navSubsystems.map((subsystem) => {
             const Icon = subsystem.icon
             const isActive = activeSubsystem === subsystem.id
 

@@ -22,6 +22,17 @@ scheduleRoutes.use(authenticate)
 scheduleRoutes.get("/my", controller.getEmployeeSchedule)
 scheduleRoutes.get("/my/all", controller.listEmployeeSchedules)
 
+scheduleRoutes.get(
+  "/employee/:employeeId",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  controller.getEmployeeScheduleById,
+)
+scheduleRoutes.get(
+  "/employee/:employeeId/all",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  controller.listEmployeeSchedulesById,
+)
+
 // HR/Admin: assign and override shifts
 scheduleRoutes.post(
   "/assign",

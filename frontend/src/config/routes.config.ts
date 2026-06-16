@@ -14,7 +14,9 @@ export const ROUTES = {
   },
   ATTENDANCE: {
     DASHBOARD: "/attendance",
+    SUMMARY: "/attendance/summary",
     MY_SCHEDULE: "/attendance/my-schedule",
+    REAL_SHIFT: "/attendance/real-shift",
     APPLICATIONS: "/attendance/applications",
     SHIFTS: "/attendance/shifts",
     HOLIDAYS: "/attendance/holidays",
@@ -42,6 +44,7 @@ export const ROUTES = {
     ROLES: "/security/roles",
     USERS: "/security/users",
     ACTIVITY_LOGS: "/security/activity-logs",
+    PERMISSION_MATRIX: "/security/permission-matrix",
   },
   SETTINGS: {
     DASHBOARD: "/settings/dashboard",

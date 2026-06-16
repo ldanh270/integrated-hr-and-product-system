@@ -4,7 +4,6 @@ import { authenticate } from "@/middlewares/auth.middleware.ts"
 import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
 import { PrismaProjectRepository } from "@/repositories/project.repository.ts"
 import { ProjectService } from "@/services/project.service.ts"
-import taskCategoryRoutes from "./task-category.route.ts"
 import express from "express"
 const projectRoutes = express.Router()
 const employeeRepository = new PrismaEmployeeRepository(prisma)
@@ -23,8 +22,5 @@ projectRoutes.delete("/:id", controller.delete)
 projectRoutes.get("/:id/members", controller.getMembers)
 projectRoutes.post("/:id/members", controller.addMember)
 projectRoutes.delete("/:id/members/:employeeId", controller.removeMember)
-
-// Project Task Categories
-projectRoutes.use("/:projectId/categories", taskCategoryRoutes)
 
 export default projectRoutes

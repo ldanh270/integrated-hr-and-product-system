@@ -11,6 +11,8 @@ import { useEmployee } from "@/hooks/employees/queries/useEmployeeQuery"
 
 import { Briefcase, Building, Calendar, Hash, Mail, MapPin, Phone, User } from "lucide-react"
 
+import type { Employee } from "@/types/employee.types"
+
 /**
  * Prop definitions for EmployeeDetailsDrawer component.
  */
@@ -20,7 +22,7 @@ interface EmployeeDetailsDrawerProps {
   /** Callback triggered to close the details drawer */
   onClose: () => void
   /** Optional callback to open the edit dialog/drawer for this employee */
-  onEdit?: (employee: any) => void
+  onEdit?: (employee: Employee) => void
 }
 
 /**

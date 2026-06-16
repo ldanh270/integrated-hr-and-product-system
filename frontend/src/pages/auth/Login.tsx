@@ -57,8 +57,8 @@ export default function Login() {
     setShowPassword,
     showForgotModal,
     setShowForgotModal,
-    forgotUsername,
-    setForgotUsername,
+    forgotEmail,
+    setForgotEmail,
     isLoggingIn,
     isSendingForgotPassword,
     onSubmit,
@@ -220,22 +220,22 @@ export default function Login() {
             <div>
               <h3 className="text-lg font-bold text-foreground">Quên Mật Khẩu</h3>
               <p className="text-xs text-muted-foreground mt-1">
-                Vui lòng nhập tên đăng nhập (username) của bạn. Hệ thống sẽ gửi yêu cầu reset mật
-                khẩu đến Admin phê duyệt.
+                Vui lòng nhập email của bạn. Hệ thống sẽ gửi liên kết đặt lại
+                mật khẩu về email này.
               </p>
             </div>
 
             <div className="space-y-2 mt-2">
-              <Label htmlFor="forgot-username" className="text-sm font-medium text-foreground">
-                Username
+              <Label htmlFor="forgot-email" className="text-sm font-medium text-foreground">
+                Email
               </Label>
               <Input
-                id="forgot-username"
-                type="text"
-                placeholder="Nhập username của bạn..."
+                id="forgot-email"
+                type="email"
+                placeholder="Nhập email của bạn..."
                 required
-                value={forgotUsername}
-                onChange={(e) => setForgotUsername(e.target.value)}
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
                 className="w-full"
               />
             </div>
@@ -245,7 +245,7 @@ export default function Login() {
                 type="button"
                 onClick={() => {
                   setShowForgotModal(false)
-                  setForgotUsername("")
+                  setForgotEmail("")
                 }}
                 className="px-4 py-2 border border-border text-foreground hover:bg-secondary rounded-full text-xs font-semibold cursor-pointer transition-colors"
               >
@@ -254,7 +254,7 @@ export default function Login() {
 
               <button
                 type="submit"
-                disabled={isSendingForgotPassword || !forgotUsername.trim()}
+                disabled={isSendingForgotPassword || !forgotEmail.trim()}
                 className="px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-full text-xs font-semibold shadow-sm cursor-pointer transition-colors"
               >
                 {isSendingForgotPassword ? "Đang gửi..." : "Gửi yêu cầu"}

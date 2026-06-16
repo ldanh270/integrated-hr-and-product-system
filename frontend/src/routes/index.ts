@@ -1,14 +1,27 @@
-import { lazy } from "react"
+import { ROLE } from "@/config/entities/employee.config.ts"
+import { lazy, type ComponentType } from "react"
 
 const MainLayout = lazy(() => import("@/layouts/MainLayout.tsx"))
 
 // Public routes
 const publicRoutes = [
   { path: "/login", component: lazy(() => import("@/pages/auth/Login.tsx")), layout: null },
+  {
+    path: "/reset-password",
+    component: lazy(() => import("@/pages/auth/ResetPassword.tsx")),
+    layout: null,
+  },
 ]
 
+export interface RouteConfig {
+  path: string
+  component: ComponentType
+  layout?: ComponentType | null
+  roles?: string[]
+}
+
 // Private routes
-const privateRoutes = [
+const privateRoutes: RouteConfig[] = [
   {
     path: "/hrm/dashboard",
     component: lazy(() => import("@/pages/Dashboard.tsx")),
@@ -32,11 +45,15 @@ const privateRoutes = [
     layout: MainLayout,
   },
   {
+    path: "/attendance/summary",
+    component: lazy(() => import("@/pages/attendance/AttendanceSummary.tsx")),
+    layout: MainLayout,
+  },
+  {
     path: "/attendance/my-schedule",
     component: lazy(() => import("@/pages/attendance/MySchedule.tsx")),
     layout: MainLayout,
   },
-
   {
     path: "/attendance/shifts",
     component: lazy(() => import("@/pages/attendance/ShiftManagement.tsx")),
@@ -61,33 +78,39 @@ const privateRoutes = [
     path: "/payroll/salary-components",
     component: lazy(() => import("@/pages/payroll/SalaryComponents.tsx")),
     layout: MainLayout,
+    roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
   },
   {
     path: "/payroll/salary-variables",
     component: lazy(() => import("@/pages/payroll/SalaryVariables.tsx")),
     layout: MainLayout,
+    roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
   },
   {
     path: "/payroll/cycle",
     component: lazy(() => import("@/pages/payroll/PayrollCycle.tsx")),
     layout: MainLayout,
+    roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
   },
   {
     path: "/payroll/employee-salary",
     component: lazy(() => import("@/pages/payroll/EmployeeSalary.tsx")),
     layout: MainLayout,
+    roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
   },
 
   {
     path: "/payroll/list",
     component: lazy(() => import("@/pages/payroll/PayrollManagement.tsx")),
     layout: MainLayout,
+    roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
   },
 
   {
     path: "/payroll/payslip-templates",
     component: lazy(() => import("@/pages/payroll/PayslipTemplates.tsx")),
     layout: MainLayout,
+    roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
   },
   {
     path: "/payroll/my-payslips",
@@ -113,21 +136,31 @@ const privateRoutes = [
     path: "/security/dashboard",
     component: lazy(() => import("@/pages/security/SecurityDashboard.tsx")),
     layout: MainLayout,
+    roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
   },
   {
     path: "/security/roles",
     component: lazy(() => import("@/pages/security/RolesManagement.tsx")),
     layout: MainLayout,
+    roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
   },
   {
     path: "/security/users",
     component: lazy(() => import("@/pages/security/UsersManagement.tsx")),
     layout: MainLayout,
+    roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
   },
   {
     path: "/security/activity-logs",
     component: lazy(() => import("@/pages/security/ActivityLogs.tsx")),
     layout: MainLayout,
+    roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
+  },
+  {
+    path: "/security/permission-matrix",
+    component: lazy(() => import("@/pages/security/PermissionMatrix.tsx")),
+    layout: MainLayout,
+    roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
   },
   {
     path: "/settings/dashboard",

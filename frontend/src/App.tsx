@@ -1,7 +1,7 @@
 import { ConfirmProvider } from "@/components/common"
 import { API_ENDPOINTS } from "@/config/api.config"
 import { ROUTES } from "@/config/routes.config"
-import { SUBSYSTEMS } from "@/config/subsystem"
+import { SUBSYSTEMS } from "@/config/subsystem.config"
 import apiClient from "@/lib/api-client"
 import { privateRoutes, publicRoutes } from "@/routes"
 import { useAuthStore } from "@/store/auth-store.ts"
@@ -16,9 +16,17 @@ const NotFound = lazy(() => import("@/pages/NotFound.tsx"))
 /**
  * ProtectedRoute component
  * Redirects to /login if user is not authenticated
+ * Redirects to /hrm/dashboard if user does not have required roles
  */
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+const ProtectedRoute = ({
+  children,
+  requiredRoles,
+}: {
+  children: React.ReactNode
+  requiredRoles?: string[]
+}) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const user = useAuthStore((state) => state.user)
   const setAuth = useAuthStore((state) => state.setAuth)
   const [isChecking, setIsChecking] = useState(!isAuthenticated)
 
@@ -40,7 +48,15 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     )
   }
 
-  return isAuthenticated ? <>{children}</> : <Navigate to={ROUTES.AUTH.LOGIN} replace />
+  if (!isAuthenticated) {
+    return <Navigate to={ROUTES.AUTH.LOGIN} replace />
+  }
+
+  if (requiredRoles && user && !requiredRoles.includes(user.role)) {
+    return <Navigate to={ROUTES.HRM.DASHBOARD} replace />
+  }
+
+  return <>{children}</>
 }
 
 /**
@@ -138,7 +154,7 @@ const App = () => {
                   key={`private-${index}`}
                   path={route.path}
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute requiredRoles={route.roles}>
                       <Layout>
                         <Page />
                       </Layout>
