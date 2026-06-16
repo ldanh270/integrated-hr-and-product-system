@@ -44,6 +44,7 @@ export interface SubsystemConfig {
   icon: LucideIcon
   routePrefix: string
   sidebarItems: NavItem[]
+  roles?: string[]
 }
 
 export const SUBSYSTEMS: SubsystemConfig[] = [
@@ -163,11 +164,38 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     description: "Phân quyền nhân sự trong hệ thống",
     icon: ShieldCheck,
     routePrefix: "/security",
+    roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
     sidebarItems: [
-      { name: "Tổng quan", path: ROUTES.SECURITY.DASHBOARD, icon: ShieldCheck },
-      { name: "Vai trò", path: ROUTES.SECURITY.ROLES, icon: ShieldCheck },
-      { name: "Người dùng", path: ROUTES.SECURITY.USERS, icon: Users },
-      { name: "Nhật ký", path: ROUTES.SECURITY.ACTIVITY_LOGS, icon: FileText },
+      {
+        name: "Tổng quan",
+        path: ROUTES.SECURITY.DASHBOARD,
+        icon: ShieldCheck,
+        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
+      },
+      {
+        name: "Vai trò",
+        path: ROUTES.SECURITY.ROLES,
+        icon: ShieldCheck,
+        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
+      },
+      {
+        name: "Người dùng",
+        path: ROUTES.SECURITY.USERS,
+        icon: Users,
+        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
+      },
+      {
+        name: "Nhật ký",
+        path: ROUTES.SECURITY.ACTIVITY_LOGS,
+        icon: FileText,
+        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
+      },
+      {
+        name: "Quản lý quyền",
+        path: ROUTES.SECURITY.PERMISSION_MATRIX,
+        icon: ShieldCheck,
+        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
+      },
     ],
   },
   {

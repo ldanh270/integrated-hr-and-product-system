@@ -5,6 +5,8 @@ export const API_ENDPOINTS = {
     REFRESH: "/auth/refresh",
     ME: "/auth/me",
     FORGOT_PASSWORD: "/auth/forgot-password",
+    VALIDATE_RESET_TOKEN: "/auth/validate-reset-token",
+    RESET_PASSWORD: "/auth/reset-password",
   },
   PAYROLL: {
     BASE: "/payrolls",
@@ -44,4 +46,11 @@ export const API_ENDPOINTS = {
   HOLIDAYS: {
     BASE: "/holidays",
   },
-} as const
+  SECURITY: {
+    DASHBOARD: "/security/dashboard",
+    LOCKED_ACCOUNTS: "/security/locked-accounts",
+    UNLOCK: (employeeId: string) => `/security/unlock/${employeeId}`,
+    ACTIVITY_LOGS: "/auth/activity-logs",
+    ACTIVITY_LOG_DETAIL: (id: string) => `/auth/activity-logs/${id}`,
+  } as const,
+}

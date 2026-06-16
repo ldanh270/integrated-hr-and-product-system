@@ -18,6 +18,7 @@ import {
   APPLICATION_STATUS_VARIANTS,
   APPLICATION_TYPE_LABELS,
   APPLICATION_STATUS,
+  type IApplicationFilterStatus,
 } from "@/config/entities/attendance.config"
 import { useManageApplications } from "@/hooks/application/useManageApplications"
 import { useMyApplications } from "@/hooks/application/useMyApplications"
@@ -800,7 +801,7 @@ export default function Applications() {
       </div>
 
       <div className="flex flex-col gap-4">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+        <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as "mine" | "manage") }} className="w-full">
           <div className="flex items-center justify-between mb-4">
             <TabsList>
               <TabsTrigger value="mine">Đơn của tôi</TabsTrigger>
@@ -819,7 +820,7 @@ export default function Applications() {
               {STATUS_TABS.map((tab) => (
                 <button
                   key={tab.value}
-                  onClick={() => { currentHook.setStatusFilter(tab.value as any); currentHook.setPage(1) }}
+                  onClick={() => { currentHook.setStatusFilter(tab.value as IApplicationFilterStatus); currentHook.setPage(1) }}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
                     currentHook.statusFilter === tab.value
                       ? "bg-white text-foreground shadow-sm"

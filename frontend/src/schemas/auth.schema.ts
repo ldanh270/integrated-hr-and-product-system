@@ -34,3 +34,28 @@ export const loginSchema = z.object({
  * Type inferred from the login schema
  */
 export type LoginSchemaType = z.infer<typeof loginSchema>
+
+/**
+ * Zod schema for token validation request body
+ */
+export const validateResetTokenSchema = z.object({
+  token: z.string().min(1, "Token is required"),
+})
+
+export type ValidateResetTokenSchemaType = z.infer<typeof validateResetTokenSchema>
+
+/**
+ * Zod schema for reset password request body validation
+ */
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Token is required"),
+  newPassword: z
+    .string()
+    .min(8, "New password must be at least 8 characters")
+    .regex(
+      PASSWORD_REGEX,
+      "New password must include at least one uppercase, one lowercase, one number, and one special character",
+    ),
+})
+
+export type ResetPasswordSchemaType = z.infer<typeof resetPasswordSchema>
