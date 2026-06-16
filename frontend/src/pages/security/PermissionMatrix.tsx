@@ -1,18 +1,19 @@
 import { PageCard } from "@/components/common"
 import { ROLE, ROLE_LABELS } from "@/config/entities/employee.config"
-import { SUBSYSTEMS } from "@/config/subsystem"
-import { privateRoutes } from "@/routes"
+import { SUBSYSTEMS } from "@/config/subsystem.config"
 import { cn } from "@/lib/utils"
+import { privateRoutes } from "@/routes"
 
 import { useMemo } from "react"
+
 import {
-  ShieldAlert,
-  ShieldCheck,
-  LayoutGrid,
-  HelpCircle,
   AlertTriangle,
   CheckCircle2,
-  EyeOff
+  EyeOff,
+  HelpCircle,
+  LayoutGrid,
+  ShieldAlert,
+  ShieldCheck,
 } from "lucide-react"
 
 interface MatrixRow {
@@ -27,7 +28,13 @@ interface MatrixRow {
   statusDetail: string
 }
 
-const ALL_ROLES = [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER, ROLE.TEAM_LEADER, ROLE.EMPLOYEE]
+const ALL_ROLES = [
+  ROLE.ADMIN,
+  ROLE.HR_MANAGER,
+  ROLE.GENERAL_MANAGER,
+  ROLE.TEAM_LEADER,
+  ROLE.EMPLOYEE,
+]
 
 export default function PermissionMatrix() {
   const matrixData = useMemo(() => {
@@ -98,7 +105,9 @@ export default function PermissionMatrix() {
       rows.push({
         name: `Trang phụ: ${route.path.split("/").pop() || route.path}`,
         path: route.path,
-        subsystemName: route.path.startsWith("/hrm") ? "Nhân sự" : route.path.split("/")[1] || "Hệ thống",
+        subsystemName: route.path.startsWith("/hrm")
+          ? "Nhân sự"
+          : route.path.split("/")[1] || "Hệ thống",
         sidebarRoles: ["hidden"],
         routeRoles,
         isSidebarRestricted: true,
@@ -168,7 +177,8 @@ export default function PermissionMatrix() {
             Kiểm tra Phân quyền (RBAC Matrix)
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Bảng ma trận đối soát quyền hiển thị giao diện (UI) và cấu hình bảo mật đường dẫn (Routes).
+            Bảng ma trận đối soát quyền hiển thị giao diện (UI) và cấu hình bảo mật đường dẫn
+            (Routes).
           </p>
         </div>
       </div>
@@ -181,32 +191,46 @@ export default function PermissionMatrix() {
               <ShieldCheck size={20} />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Trùng khớp</p>
-              <h3 className="text-lg font-extrabold text-foreground leading-none mt-1">{stats.matches}</h3>
+              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                Trùng khớp
+              </p>
+              <h3 className="text-lg font-extrabold text-foreground leading-none mt-1">
+                {stats.matches}
+              </h3>
             </div>
           </div>
         </PageCard>
 
-        <PageCard className={cn(
-          stats.mismatches > 0 
-            ? "bg-rose-50/30 dark:bg-rose-950/5 border-rose-100 dark:border-rose-900/20" 
-            : "bg-muted/20 border-border"
-        )}>
+        <PageCard
+          className={cn(
+            stats.mismatches > 0
+              ? "bg-rose-50/30 dark:bg-rose-950/5 border-rose-100 dark:border-rose-900/20"
+              : "bg-muted/20 border-border",
+          )}
+        >
           <div className="p-4 flex items-center gap-3">
-            <div className={cn(
-              "p-2 rounded-lg",
-              stats.mismatches > 0 
-                ? "bg-rose-500/10 text-rose-600 dark:text-rose-400" 
-                : "bg-muted text-muted-foreground"
-            )}>
+            <div
+              className={cn(
+                "p-2 rounded-lg",
+                stats.mismatches > 0
+                  ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                  : "bg-muted text-muted-foreground",
+              )}
+            >
               <ShieldAlert size={20} />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Không khớp (Lỗ hổng)</p>
-              <h3 className={cn(
-                "text-lg font-extrabold leading-none mt-1",
-                stats.mismatches > 0 ? "text-rose-600 dark:text-rose-400" : "text-foreground"
-              )}>{stats.mismatches}</h3>
+              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                Không khớp (Lỗ hổng)
+              </p>
+              <h3
+                className={cn(
+                  "text-lg font-extrabold leading-none mt-1",
+                  stats.mismatches > 0 ? "text-rose-600 dark:text-rose-400" : "text-foreground",
+                )}
+              >
+                {stats.mismatches}
+              </h3>
             </div>
           </div>
         </PageCard>
@@ -217,8 +241,12 @@ export default function PermissionMatrix() {
               <LayoutGrid size={20} />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Trang phụ / Details</p>
-              <h3 className="text-lg font-extrabold text-foreground leading-none mt-1">{stats.subroutes}</h3>
+              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                Trang phụ / Details
+              </p>
+              <h3 className="text-lg font-extrabold text-foreground leading-none mt-1">
+                {stats.subroutes}
+              </h3>
             </div>
           </div>
         </PageCard>
@@ -247,12 +275,16 @@ export default function PermissionMatrix() {
                     key={`${row.path}-${index}`}
                     className={cn(
                       "transition-colors",
-                      isMismatch ? "bg-rose-50/10 hover:bg-rose-50/20 dark:bg-rose-950/5 dark:hover:bg-rose-950/10" : "hover:bg-muted/20"
+                      isMismatch
+                        ? "bg-rose-50/10 hover:bg-rose-50/20 dark:bg-rose-950/5 dark:hover:bg-rose-950/10"
+                        : "hover:bg-muted/20",
                     )}
                   >
                     <td className="px-5 py-3.5">
                       <div className="flex flex-col">
-                        <span className="text-xs font-bold text-foreground leading-snug">{row.name}</span>
+                        <span className="text-xs font-bold text-foreground leading-snug">
+                          {row.name}
+                        </span>
                         <span className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">
                           Mô đun: {row.subsystemName}
                         </span>
@@ -276,17 +308,26 @@ export default function PermissionMatrix() {
                           Hợp lệ
                         </span>
                       ) : isMismatch ? (
-                        <div className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/30 px-2 py-0.5 rounded-full" title={row.statusDetail}>
+                        <div
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/30 px-2 py-0.5 rounded-full"
+                          title={row.statusDetail}
+                        >
                           <AlertTriangle size={11} />
                           Lệch quyền
                         </div>
                       ) : isSubroute ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 rounded-full" title={row.statusDetail}>
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 rounded-full"
+                          title={row.statusDetail}
+                        >
                           <EyeOff size={11} />
                           Trang phụ
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-full" title={row.statusDetail}>
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-full"
+                          title={row.statusDetail}
+                        >
                           <HelpCircle size={11} />
                           Chưa có route
                         </span>
