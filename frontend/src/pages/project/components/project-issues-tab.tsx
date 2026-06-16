@@ -286,7 +286,7 @@ export function ProjectIssuesTab({
                       {teamLeader.fullName} (TL)
                     </SelectItem>
                   )}
-                  {members?.map((m) => (
+                  {members.map((m) => (
                     <SelectItem key={m.employeeId} value={m.employeeId}>
                       {m.employee?.fullName || "Chưa rõ"}
                     </SelectItem>

@@ -106,7 +106,7 @@ export function AddMemberModal({
                 {allEmployees
                   .filter(
                     (emp) =>
-                      !members?.some((m) => m.employeeId === emp.id) &&
+                      !members.some((m) => m.employeeId === emp.id) &&
                       emp.id !== teamLeaderId
                   )
                   .map((emp) => (

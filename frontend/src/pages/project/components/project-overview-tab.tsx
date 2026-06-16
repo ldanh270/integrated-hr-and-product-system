@@ -138,7 +138,7 @@ export function ProjectOverviewTab({
           <div className="flex items-center justify-between mb-4 border-b border-border pb-2">
             <h3 className="font-bold text-base text-foreground flex items-center gap-1.5">
               <Users className="size-4 text-muted-foreground" />
-              Thành viên ({members?.length || 0})
+              Thành viên ({members.length})
             </h3>
           </div>
           <div className="space-y-4">
@@ -169,7 +169,7 @@ export function ProjectOverviewTab({
                 Thành viên tham gia
               </span>
               <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
-                {members && members.length > 0 ? (
+                {members.length > 0 ? (
                   members.map((member) => (
                     <div
                       key={member.id}
