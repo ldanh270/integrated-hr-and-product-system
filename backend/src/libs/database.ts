@@ -43,6 +43,10 @@ function createPrismaClient() {
   return new PrismaClient({ adapter })
 }
 
+if (globalForPrisma.prisma && !("weeklyScheduleSettings" in globalForPrisma.prisma)) {
+  globalForPrisma.prisma = undefined as unknown as PrismaClient
+}
+
 export const prisma = globalForPrisma.prisma ?? createPrismaClient()
 
 if (ENV_ENVIRONMENT !== ENVIRONMENT.PRODUCTION) {

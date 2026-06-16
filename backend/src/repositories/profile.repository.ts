@@ -18,7 +18,11 @@ export class PrismaProfileRepository extends BaseRepository implements IProfileR
     super(prisma)
   }
 
-  private mapToProfile(employee: PrismaEmployee): ProfileEmployeeDocument {
+  private mapToProfile(
+    employee: PrismaEmployee & {
+      personalEmployee?: PrismaEmployee | null
+    },
+  ): ProfileEmployeeDocument {
     return {
       id: employee.id,
       fullName: employee.fullName,
@@ -37,12 +41,25 @@ export class PrismaProfileRepository extends BaseRepository implements IProfileR
       avatarId: employee.avatarId,
       createdAt: employee.createdAt,
       updatedAt: employee.updatedAt,
+      personalEmployeeId: employee.personalEmployeeId,
+      personalEmployee: employee.personalEmployee
+        ? {
+            id: employee.personalEmployee.id,
+            fullName: employee.personalEmployee.fullName,
+            email: employee.personalEmployee.email,
+            status: employee.personalEmployee.status,
+            deletedAt: employee.personalEmployee.deletedAt,
+          }
+        : null,
     }
   }
 
   async findById(empId: string): Promise<ProfileEmployeeDocument | null> {
     const employee = await this.prisma.employee.findFirst({
       where: { id: empId, deletedAt: null },
+      include: {
+        personalEmployee: true,
+      },
     })
 
     if (!employee) return null
@@ -120,5 +137,22 @@ export class PrismaProfileRepository extends BaseRepository implements IProfileR
       where: { id: empId },
       data: { passwordHash: newPasswordHash },
     })
+  }
+
+  async updatePersonalEmployeeLink(
+    empId: string,
+    personalEmployeeId: string | null,
+  ): Promise<ProfileEmployeeDocument | null> {
+    try {
+      const employee = await this.prisma.employee.update({
+        where: { id: empId },
+        data: { personalEmployeeId },
+        include: { personalEmployee: true },
+      })
+
+      return this.mapToProfile(employee)
+    } catch {
+      return null
+    }
   }
 }

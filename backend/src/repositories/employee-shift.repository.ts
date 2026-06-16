@@ -82,18 +82,29 @@ export class PrismaEmployeeShiftRepository
           assignedDate: targetDate,
         },
       },
+      include: { shift: true },
     })
   }
 
-  /**
-   * Ensures a shift assignment exists for an employee on a specific date.
-   * Updates existing assignment or creates a new one.
-   * @param employeeId - The employee ID.
-   * @param date - The target date.
-   * @param shiftId - The shift ID to assign.
-   * @param createdById - The ID of the user performing the action.
-   * @returns The updated or created employee shift.
-   */
+  async listByEmployeesAndDateRange(
+    employeeIds: string[],
+    startDate: Date,
+    endDate: Date,
+  ): Promise<any[]> {
+    const start = new Date(startDate)
+    start.setHours(0, 0, 0, 0)
+    const end = new Date(endDate)
+    end.setHours(0, 0, 0, 0)
+
+    return this.prisma.employeeShift.findMany({
+      where: {
+        employeeId: { in: employeeIds },
+        assignedDate: { gte: start, lte: end },
+      },
+      include: { shift: true },
+    })
+  }
+
   async ensureShiftForEmployeeDate(
     employeeId: string,
     date: string | Date,
@@ -133,5 +144,54 @@ export class PrismaEmployeeShiftRepository
         createdById,
       },
     })
+  }
+
+  async generateShiftForDate(
+    employeeId: string,
+    date: Date,
+    shiftId: string,
+    scheduleId: string | null,
+    createdById: string,
+  ): Promise<"created" | "updated" | "skipped"> {
+    const targetDate = new Date(date)
+    targetDate.setHours(0, 0, 0, 0)
+
+    const existing = await this.prisma.employeeShift.findUnique({
+      where: {
+        employeeId_assignedDate: {
+          employeeId,
+          assignedDate: targetDate,
+        },
+      },
+    })
+
+    if (existing?.isOverride) return "skipped"
+    if (existing && existing.shiftId === shiftId) return "skipped"
+
+    if (existing) {
+      await this.prisma.employeeShift.update({
+        where: { id: existing.id },
+        data: {
+          shiftId,
+          scheduleId,
+          isOverride: false,
+          status: ShiftStatus.scheduled,
+        },
+      })
+      return "updated"
+    }
+
+    await this.prisma.employeeShift.create({
+      data: {
+        employeeId,
+        assignedDate: targetDate,
+        shiftId,
+        scheduleId,
+        isOverride: false,
+        status: ShiftStatus.scheduled,
+        createdById,
+      },
+    })
+    return "created"
   }
 }

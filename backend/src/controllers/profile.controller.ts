@@ -1,7 +1,7 @@
 import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
-import { changePasswordSchema, updateProfileSchema } from "@/schemas/profile.schema.ts"
+import { changePasswordSchema, updatePersonalEmployeeLinkSchema, updateProfileSchema } from "@/schemas/profile.schema.ts"
 import type { IProfileService } from "@/types/profile.types.ts"
 
 import { Response } from "express"
@@ -151,6 +151,39 @@ export class ProfileController {
         type:
           error.errorCode ||
           (error.name === "ZodError" ? ErrorCode.VALIDATION_ERROR : ErrorCode.INTERNAL_ERROR),
+        errors: error.errors,
+      })
+    }
+  }
+
+  updatePersonalEmployeeLink = async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          status: "error",
+          message: "Unauthorized",
+        })
+      }
+
+      const validatedData = updatePersonalEmployeeLinkSchema.parse(req.body)
+      const profile = await this.service.updatePersonalEmployeeLink(
+        req.user.empId,
+        validatedData,
+      )
+
+      return res.status(HttpStatusCode.OK).json({
+        status: "success",
+        data: profile,
+      })
+    } catch (error: any) {
+      const statusCode =
+        error.name === "ZodError"
+          ? HttpStatusCode.BAD_REQUEST
+          : error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
+
+      return res.status(statusCode).json({
+        status: "error",
+        message: error.message || "Failed to update personal employee link",
         errors: error.errors,
       })
     }

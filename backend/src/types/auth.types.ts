@@ -65,6 +65,12 @@ export interface AuthResponseDto {
     email: string
     fullName: string
     role: EmployeeRole
+    personalEmployeeId: string | null
+    personalEmployee: {
+      id: string
+      fullName: string
+      email: string
+    } | null
   }
 }
 

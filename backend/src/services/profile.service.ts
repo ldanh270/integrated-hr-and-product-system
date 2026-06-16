@@ -7,18 +7,23 @@ import type {
   ProfileEmployeeDocument,
   ProfileEmployeeDocumentWithPassword,
   UpdateProfileDto,
+  UpdatePersonalEmployeeLinkDto,
 } from "@/types/profile.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
 
 import { Readable } from "stream"
-import { ROLE } from "@/configs/entities/employee.config.ts"
+import { EMPLOYEE_STATUS, ROLE } from "@/configs/entities/employee.config.ts"
 const LAYER_NAME = "ProfileService"
 /**
  * Maps a Mongoose employee document to a clean ProfileDto
  * Centralizes the field-picking logic so controllers stay thin
  */
 function toProfileDto(emp: ProfileEmployeeDocument): ProfileDto {
+  const linked = emp.personalEmployee
+  const isLinkedActive =
+    linked && linked.deletedAt == null && linked.status === EMPLOYEE_STATUS.ACTIVE
+
   return {
     id: emp.id,
     fullName: emp.fullName,
@@ -37,6 +42,10 @@ function toProfileDto(emp: ProfileEmployeeDocument): ProfileDto {
       url: emp.avatarUrl ?? null,
       id: emp.avatarId ?? null,
     },
+    personalEmployeeId: isLinkedActive ? emp.personalEmployeeId : null,
+    personalEmployee: isLinkedActive
+      ? { id: linked.id, fullName: linked.fullName, email: linked.email }
+      : null,
     createdAt: emp.createdAt.toISOString(),
     updatedAt: emp.updatedAt.toISOString(),
   }
@@ -174,5 +183,51 @@ export class ProfileService implements IProfileService {
 
     // Hash and save new password via repository
     await this.repo.updatePassword(empId, await HashUtil.hash(newPass))
+  }
+
+  async updatePersonalEmployeeLink(
+    empId: string,
+    data: UpdatePersonalEmployeeLinkDto,
+  ): Promise<ProfileDto> {
+    const account = await this.repo.findById(empId)
+    if (!account) {
+      throw new AppError("Profile not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
+    }
+
+    const managementRoles = [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER] as const
+    if (!managementRoles.includes(account.role as (typeof managementRoles)[number])) {
+      throw new AppError(
+        "Chỉ tài khoản quản trị mới được liên kết hồ sơ chấm công",
+        HttpStatusCode.FORBIDDEN,
+        LAYER_NAME,
+      )
+    }
+
+    let personalEmployeeId = data.personalEmployeeId
+    if (personalEmployeeId === empId) {
+      personalEmployeeId = null
+    }
+
+    if (personalEmployeeId) {
+      const linked = await this.repo.findById(personalEmployeeId)
+      if (!linked || linked.status !== EMPLOYEE_STATUS.ACTIVE) {
+        throw new AppError(
+          "Hồ sơ nhân viên liên kết không hợp lệ",
+          HttpStatusCode.BAD_REQUEST,
+          LAYER_NAME,
+        )
+      }
+    }
+
+    const updated = await this.repo.updatePersonalEmployeeLink(empId, personalEmployeeId)
+    if (!updated) {
+      throw new AppError(
+        "Không thể cập nhật liên kết hồ sơ chấm công",
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
+        LAYER_NAME,
+      )
+    }
+
+    return toProfileDto(updated)
   }
 }
