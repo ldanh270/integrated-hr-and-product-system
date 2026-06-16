@@ -10,6 +10,10 @@ import { useForm } from "react-hook-form"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 
+/**
+ * Hook to handle login form state and authentication processes.
+ * Integrates with react-hook-form and zod for validation.
+ */
 export const useLogin = () => {
   const navigate = useNavigate()
   const { login, isLoggingIn, forgotPassword, isSendingForgotPassword } = useAuth()

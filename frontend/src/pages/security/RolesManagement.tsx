@@ -65,7 +65,7 @@ export default function RolesManagement() {
   const [selectedRole, setSelectedRole] = useState<string | null>(null)
   const [drawerPage, setDrawerPage] = useState(1)
 
-  // 1. Parallel queries using useQueries to get user count per role
+  // Parallel queries using useQueries to get user count per role
   const roleQueries = useQueries({
     queries: ROLE_CARDS.map((r) => ({
       queryKey: ["employees", "list", { role: r.code, limit: 1, page: 1 }],
@@ -73,7 +73,7 @@ export default function RolesManagement() {
     })),
   })
 
-  // 2. Fetch users of the selected role inside the drawer
+  // Fetch users of the selected role inside the drawer
   const {
     data: roleUsers,
     isLoading: isLoadingUsers,

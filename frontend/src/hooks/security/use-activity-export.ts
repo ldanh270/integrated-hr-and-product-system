@@ -19,6 +19,13 @@ interface ExportProgress {
   errorMsg: string | null
 }
 
+/**
+ * Hook for handling the background export of activity logs to CSV.
+ * Fetches data in batches and streams them into CSV chunks to prevent memory/DB overload.
+ *
+ * @param baseQuery The filter and sorting query to base the export on.
+ * @returns State and methods to control the export progress.
+ */
 export function useActivityExport(baseQuery: ActivityLogQuery) {
   const [progress, setProgress] = useState<ExportProgress>({
     status: EXPORT_STATUS.IDLE,
@@ -31,14 +38,26 @@ export function useActivityExport(baseQuery: ActivityLogQuery) {
   const abortControllerRef = useRef<AbortController | null>(null)
 
   const columns = [
-    { header: "Thời gian", accessor: (log: ActivityLogItem) => new Date(log.createdAt).toLocaleString("vi-VN") },
-    { header: "Mã Nhân Viên", accessor: (log: ActivityLogItem) => log.employeeId || COMMON_TEXTS.NOT_AVAILABLE },
-    { header: "Họ Tên", accessor: (log: ActivityLogItem) => log.employeeName || COMMON_TEXTS.SYSTEM },
+    {
+      header: "Thời gian",
+      accessor: (log: ActivityLogItem) => new Date(log.createdAt).toLocaleString("vi-VN"),
+    },
+    {
+      header: "Mã Nhân Viên",
+      accessor: (log: ActivityLogItem) => log.employeeId || COMMON_TEXTS.NOT_AVAILABLE,
+    },
+    {
+      header: "Họ Tên",
+      accessor: (log: ActivityLogItem) => log.employeeName || COMMON_TEXTS.SYSTEM,
+    },
     { header: "Danh mục", accessor: (log: ActivityLogItem) => log.category },
     { header: "Hành động", accessor: (log: ActivityLogItem) => log.actionType },
-    { header: "Địa chỉ IP", accessor: (log: ActivityLogItem) => log.ipAddress || COMMON_TEXTS.NOT_AVAILABLE },
-    { 
-      header: "Chi tiết JSON", 
+    {
+      header: "Địa chỉ IP",
+      accessor: (log: ActivityLogItem) => log.ipAddress || COMMON_TEXTS.NOT_AVAILABLE,
+    },
+    {
+      header: "Chi tiết JSON",
       accessor: (log: ActivityLogItem) => {
         if (!log.details) return ""
         try {
@@ -47,7 +66,7 @@ export function useActivityExport(baseQuery: ActivityLogQuery) {
         } catch {
           return typeof log.details === "string" ? log.details : JSON.stringify(log.details)
         }
-      }
+      },
     },
   ]
 
@@ -71,12 +90,12 @@ export function useActivityExport(baseQuery: ActivityLogQuery) {
     abortControllerRef.current = controller
 
     try {
-      // 1. Pre-flight count check
+      // Pre-flight count check
       const countResponse = await securityApi.listLogs(
         { ...baseQuery, limit: 1, page: 1 },
-        { signal: controller.signal }
+        { signal: controller.signal },
       )
-      
+
       const total = countResponse.meta.total
 
       if (total === 0) {
@@ -91,8 +110,13 @@ export function useActivityExport(baseQuery: ActivityLogQuery) {
         return
       }
 
-      // 2. Setup batching
-      setProgress({ status: EXPORT_STATUS.FETCHING, totalRows: total, fetchedRows: 0, errorMsg: null })
+      // Setup batching
+      setProgress({
+        status: EXPORT_STATUS.FETCHING,
+        totalRows: total,
+        fetchedRows: 0,
+        errorMsg: null,
+      })
       const chunks: string[] = []
       chunks.push(buildCSVHeaders(columns))
 
@@ -100,14 +124,14 @@ export function useActivityExport(baseQuery: ActivityLogQuery) {
       let hasMore = true
       let fetched = 0
 
-      // 3. Fetch sequentially to avoid DB lock
+      // Fetch sequentially to avoid DB lock
       while (hasMore) {
         // Exit loop if cancelled
         if (controller.signal.aborted) throw new Error("Cancelled")
 
         const batchResponse = await securityApi.listLogs(
           { ...baseQuery, limit: EXPORT_BATCH_SIZE, page: currentPage },
-          { signal: controller.signal }
+          { signal: controller.signal },
         )
 
         const logs = batchResponse.data
@@ -115,8 +139,8 @@ export function useActivityExport(baseQuery: ActivityLogQuery) {
 
         chunks.push(buildCSVChunk(logs, columns))
         fetched += logs.length
-        
-        setProgress(prev => ({ ...prev, fetchedRows: fetched }))
+
+        setProgress((prev) => ({ ...prev, fetchedRows: fetched }))
 
         if (fetched >= total || currentPage >= batchResponse.meta.totalPages) {
           hasMore = false
@@ -125,25 +149,29 @@ export function useActivityExport(baseQuery: ActivityLogQuery) {
         }
       }
 
-      // 4. Build and download Blob
-      setProgress(prev => ({ ...prev, status: EXPORT_STATUS.BUILDING }))
-      
+      // Build and download Blob
+      setProgress((prev) => ({ ...prev, status: EXPORT_STATUS.BUILDING }))
+
       // Allow UI to render the 'building' state before freezing main thread for Blob creation
-      await new Promise(resolve => setTimeout(resolve, 50))
-      
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
       const filename = `activity_logs_${new Date().toISOString().slice(0, 10)}.csv`
       downloadCSVFromChunks(chunks, filename)
 
-      setProgress({ status: EXPORT_STATUS.SUCCESS, totalRows: total, fetchedRows: total, errorMsg: null })
+      setProgress({
+        status: EXPORT_STATUS.SUCCESS,
+        totalRows: total,
+        fetchedRows: total,
+        errorMsg: null,
+      })
       toast.success(`Đã xuất thành công ${total.toLocaleString()} dòng dữ liệu.`)
-      
+
       // Auto reset after 3s
       setTimeout(() => {
         if (abortControllerRef.current === controller) {
           setProgress({ status: EXPORT_STATUS.IDLE, totalRows: 0, fetchedRows: 0, errorMsg: null })
         }
       }, 3000)
-
     } catch (error: unknown) {
       const err = error as { message?: string; code?: string }
       if (err.message === "canceled" || err.code === "ERR_CANCELED" || controller.signal.aborted) {
@@ -151,7 +179,11 @@ export function useActivityExport(baseQuery: ActivityLogQuery) {
       } else {
         console.error("Export error:", error)
         toast.error("Có lỗi xảy ra khi xuất báo cáo.")
-        setProgress(prev => ({ ...prev, status: EXPORT_STATUS.ERROR, errorMsg: "Có lỗi xảy ra trong quá trình tải dữ liệu." }))
+        setProgress((prev) => ({
+          ...prev,
+          status: EXPORT_STATUS.ERROR,
+          errorMsg: "Có lỗi xảy ra trong quá trình tải dữ liệu.",
+        }))
       }
     } finally {
       if (abortControllerRef.current === controller) {
@@ -163,6 +195,6 @@ export function useActivityExport(baseQuery: ActivityLogQuery) {
   return {
     progress,
     startExport,
-    cancelExport
+    cancelExport,
   }
 }

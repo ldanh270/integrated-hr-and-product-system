@@ -34,7 +34,7 @@ export default function PermissionMatrix() {
     const rows: MatrixRow[] = []
     const matchedRoutePaths = new Set<string>()
 
-    // 1. Scan SUBSYSTEMS and their sidebar items
+    // Scan SUBSYSTEMS and their sidebar items
     SUBSYSTEMS.forEach((subsystem) => {
       subsystem.sidebarItems.forEach((item) => {
         // Find corresponding route configuration
@@ -87,7 +87,7 @@ export default function PermissionMatrix() {
       })
     })
 
-    // 2. Scan remaining privateRoutes that do not appear in any sidebarItems
+    // Scan remaining privateRoutes that do not appear in any sidebarItems
     privateRoutes.forEach((route) => {
       if (matchedRoutePaths.has(route.path)) return
 

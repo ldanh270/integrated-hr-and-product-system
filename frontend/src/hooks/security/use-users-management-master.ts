@@ -8,6 +8,11 @@ import { useCallback, useMemo, useState } from "react"
 
 import { toast } from "sonner"
 
+/**
+ * Master hook for the Users Management dashboard page.
+ * Combines logic for viewing all employees, filtering locked accounts, 
+ * unlocking accounts, handling tabs, and client/server-side pagination.
+ */
 export function useUsersManagementMaster() {
   const [activeTab, setActiveTab] = useState<IUsersManagementTab>(USERS_MANAGEMENT_TABS.ALL)
   const [search, setSearch] = useState("")
