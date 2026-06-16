@@ -227,7 +227,7 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
                       {app.id.substring(0, 8).toUpperCase()}
                     </td>
                     {mode === "manage" && (
-                      <td className="px-4 py-4 font-medium text-foreground">
+                      <td className="px-4 py-4 font-medium text-foreground whitespace-nowrap">
                         {app.employee?.fullName || "N/A"}
                       </td>
                     )}

@@ -1,7 +1,6 @@
 import React from "react"
 
 import {
-  Briefcase,
   Calendar,
   CalendarClock,
   Clock,
@@ -10,7 +9,6 @@ import {
   Hourglass,
   Laptop,
   Repeat2,
-  Stethoscope,
 } from "lucide-react"
 
 export const APP_TYPE_META: Record<
@@ -33,12 +31,12 @@ export const APP_TYPE_META: Record<
     hint: "Xin nghỉ phép năm, thai sản, ốm...",
   },
   overtime: {
-    label: "Làm thêm giờ",
+    label: "Tăng ca",
     icon: Clock,
-    color: "text-amber-600",
-    bg: "bg-amber-50",
-    border: "border-amber-200",
-    hint: "Đăng ký làm thêm giờ ngoài ca",
+    color: "text-orange-500",
+    bg: "bg-orange-50",
+    border: "border-orange-100",
+    hint: "Đăng ký tăng ca ngoài ca",
   },
   work_from_home: {
     label: "WFH",
@@ -56,14 +54,7 @@ export const APP_TYPE_META: Record<
     border: "border-teal-200",
     hint: "Đề xuất đổi ca với đồng nghiệp",
   },
-  business_trip: {
-    label: "Công tác",
-    icon: Briefcase,
-    color: "text-orange-600",
-    bg: "bg-orange-50",
-    border: "border-orange-200",
-    hint: "Đi công tác theo yêu cầu",
-  },
+
   late_early: {
     label: "Đi muộn/Về sớm",
     icon: CalendarClock,
@@ -71,14 +62,6 @@ export const APP_TYPE_META: Record<
     bg: "bg-rose-50",
     border: "border-rose-200",
     hint: "Thông báo đi muộn hoặc về sớm",
-  },
-  regime: {
-    label: "Thai sản/Bệnh",
-    icon: Stethoscope,
-    color: "text-pink-600",
-    bg: "bg-pink-50",
-    border: "border-pink-200",
-    hint: "Chế độ thai sản, ốm đau...",
   },
 }
 

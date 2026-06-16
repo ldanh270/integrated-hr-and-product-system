@@ -14,12 +14,13 @@ export type IAttendanceStatus = (typeof ATTENDANCE_STATUSES)[number]
 
 export const APPLICATION_TYPES = {
   LEAVE: { LABEL: "leave", DESCRIPTION: "Xin nghỉ phép" },
-  OVERTIME: { LABEL: "overtime", DESCRIPTION: "Làm thêm giờ (OT)" },
+  OVERTIME: { LABEL: "overtime", DESCRIPTION: "Tăng ca (OT)" },
   WORK_FROM_HOME: { LABEL: "work_from_home", DESCRIPTION: "Làm việc từ xa (WFH)" },
   SHIFT_SWAP: { LABEL: "shift_swap", DESCRIPTION: "Đổi ca làm việc" },
   BUSINESS_TRIP: { LABEL: "business_trip", DESCRIPTION: "Công tác" },
   LATE_EARLY: { LABEL: "late_early", DESCRIPTION: "Đi muộn/về sớm" },
   REGIME: { LABEL: "regime", DESCRIPTION: "Chế độ thai sản/bệnh" },
+  RESIGNATION: { LABEL: "resignation", DESCRIPTION: "Thôi việc" },
 } as const
 export type IApplicationType = (typeof APPLICATION_TYPES)[keyof typeof APPLICATION_TYPES]["LABEL"]
 
@@ -31,6 +32,7 @@ export const APPLICATION_TYPE_VALUES = [
   APPLICATION_TYPES.BUSINESS_TRIP.LABEL,
   APPLICATION_TYPES.LATE_EARLY.LABEL,
   APPLICATION_TYPES.REGIME.LABEL,
+  APPLICATION_TYPES.RESIGNATION.LABEL,
 ] as const
 
 export const APPLICATION_STATUS = {
@@ -101,12 +103,13 @@ export const ATTENDANCE_STATUS_VARIANTS: Record<
 
 export const APPLICATION_TYPE_LABELS: Record<string, string> = {
   leave: "Nghỉ phép",
-  overtime: "Làm thêm giờ",
+  overtime: "Tăng ca",
   work_from_home: "Làm từ xa",
   shift_swap: "Đổi ca",
   business_trip: "Công tác",
   late_early: "Đi muộn/Về sớm",
   regime: "Chế độ thai sản/bệnh",
+  resignation: "Thôi việc",
 }
 
 export const APPLICATION_STATUS_LABELS: Record<string, string> = {

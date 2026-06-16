@@ -1,6 +1,6 @@
 "use client"
 
-import { APPLICATION_STATUS } from "@/config/entities/attendance.config"
+import { APPLICATION_STATUS, APPLICATION_TYPES } from "@/config/entities/attendance.config"
 import { useManageApplications } from "@/hooks/application/useManageApplications"
 import { useMyApplications } from "@/hooks/application/useMyApplications"
 import { useSubmitApplication } from "@/hooks/application/useSubmitApplication"
@@ -29,6 +29,7 @@ import {
   Repeat2,
   Send,
   Stethoscope,
+  UserMinus,
   X,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -55,12 +56,12 @@ const APP_TYPE_META: Record<
     hint: "Xin nghỉ phép năm, thai sản, ốm...",
   },
   overtime: {
-    label: "Làm thêm giờ",
+    label: "Tăng ca",
     icon: Clock,
     color: "text-amber-600",
     bg: "bg-amber-50",
     border: "border-amber-200",
-    hint: "Đăng ký làm thêm giờ ngoài ca",
+    hint: "Đăng ký tăng ca ngoài ca",
   },
   work_from_home: {
     label: "WFH",
@@ -86,13 +87,21 @@ const APP_TYPE_META: Record<
     border: "border-orange-200",
     hint: "Đi công tác theo yêu cầu",
   },
-  late_early: {
+  [APPLICATION_TYPES.LATE_EARLY.LABEL]: {
     label: "Đi muộn/Về sớm",
     icon: CalendarClock,
     color: "text-rose-600",
     bg: "bg-rose-50",
     border: "border-rose-200",
     hint: "Thông báo đi muộn hoặc về sớm",
+  },
+  [APPLICATION_TYPES.RESIGNATION.LABEL]: {
+    label: "Thôi việc",
+    icon: UserMinus,
+    color: "text-slate-600",
+    bg: "bg-slate-100",
+    border: "border-slate-200",
+    hint: "Thông báo xin nghỉ việc",
   },
   regime: {
     label: "Thai sản/Bệnh",
@@ -271,7 +280,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
         if (form.purpose.trim()) detail.purpose = form.purpose.trim()
         break
 
-      case "regime":
+      case APPLICATION_TYPES.REGIME.LABEL:
         // Backend: { regimeType, reducedMinutesPerDay: int(0-480), applyToStart, applyToEnd, documentUrl? }
         detail = {
           regimeType: form.regimeType,
@@ -280,6 +289,10 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
           applyToEnd: form.applyToEnd,
         }
         if (form.documentUrl.trim()) detail.documentUrl = form.documentUrl.trim()
+        break
+
+      case APPLICATION_TYPES.RESIGNATION.LABEL:
+        detail = {}
         break
     }
 
@@ -380,7 +393,13 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
               {/* Dates */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-slate-600">Ngày bắt đầu *</label>
+                  <label className="text-xs font-semibold text-slate-600">
+                    {selectedType === APPLICATION_TYPES.LATE_EARLY.LABEL
+                      ? "Ngày làm việc *"
+                      : selectedType === APPLICATION_TYPES.RESIGNATION.LABEL
+                        ? "Ngày thôi việc *"
+                        : "Ngày bắt đầu *"}
+                  </label>
                   <input
                     type="date"
                     required
@@ -389,16 +408,25 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-slate-600">Ngày kết thúc</label>
-                  <input
-                    type="date"
-                    value={form.endDate}
-                    min={form.startDate}
-                    onChange={(e) => set("endDate", e.target.value)}
-                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                  />
-                </div>
+                {!(
+                  [
+                    APPLICATION_TYPES.OVERTIME.LABEL,
+                    APPLICATION_TYPES.SHIFT_SWAP.LABEL,
+                    APPLICATION_TYPES.LATE_EARLY.LABEL,
+                    APPLICATION_TYPES.RESIGNATION.LABEL,
+                  ] as string[]
+                ).includes(selectedType) && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-600">Ngày kết thúc</label>
+                    <input
+                      type="date"
+                      value={form.endDate}
+                      min={form.startDate}
+                      onChange={(e) => set("endDate", e.target.value)}
+                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* ── LEAVE ── */}

@@ -13,7 +13,6 @@ import { useEffect, useState } from "react"
 import {
   AlertTriangle,
   ArrowLeft,
-  Briefcase,
   Calendar,
   CalendarClock,
   ChevronDown,
@@ -23,7 +22,7 @@ import {
   Plus,
   Repeat2,
   Send,
-  Stethoscope,
+  UserMinus,
   X,
 } from "lucide-react"
 import { useNavigate, useSearchParams } from "react-router-dom"
@@ -51,12 +50,12 @@ const APP_TYPE_META: Record<
     hint: "Xin nghỉ phép năm, thai sản, ốm...",
   },
   [APPLICATION_TYPES.OVERTIME.LABEL]: {
-    label: "Làm thêm giờ",
+    label: "Tăng ca",
     icon: Clock,
     color: "text-amber-600",
     bg: "bg-amber-50",
     border: "border-amber-200",
-    hint: "Đăng ký làm thêm giờ ngoài ca",
+    hint: "Đăng ký tăng ca ngoài ca",
   },
   [APPLICATION_TYPES.WORK_FROM_HOME.LABEL]: {
     label: "WFH",
@@ -74,14 +73,6 @@ const APP_TYPE_META: Record<
     border: "border-teal-200",
     hint: "Đề xuất đổi ca với đồng nghiệp",
   },
-  [APPLICATION_TYPES.BUSINESS_TRIP.LABEL]: {
-    label: "Công tác",
-    icon: Briefcase,
-    color: "text-orange-600",
-    bg: "bg-orange-50",
-    border: "border-orange-200",
-    hint: "Đi công tác theo yêu cầu",
-  },
   [APPLICATION_TYPES.LATE_EARLY.LABEL]: {
     label: "Đi muộn/Về sớm",
     icon: CalendarClock,
@@ -90,13 +81,13 @@ const APP_TYPE_META: Record<
     border: "border-rose-200",
     hint: "Thông báo đi muộn hoặc về sớm",
   },
-  [APPLICATION_TYPES.REGIME.LABEL]: {
-    label: "Thai sản/Bệnh",
-    icon: Stethoscope,
-    color: "text-pink-600",
-    bg: "bg-pink-50",
-    border: "border-pink-200",
-    hint: "Chế độ thai sản, ốm đau...",
+  [APPLICATION_TYPES.RESIGNATION.LABEL]: {
+    label: "Thôi việc",
+    icon: UserMinus,
+    color: "text-slate-600",
+    bg: "bg-slate-100",
+    border: "border-slate-200",
+    hint: "Thông báo xin nghỉ việc",
   },
 }
 
@@ -239,6 +230,10 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
         }
         if (form.documentUrl.trim()) detail.documentUrl = form.documentUrl.trim()
         break
+
+      case APPLICATION_TYPES.RESIGNATION.LABEL:
+        detail = {}
+        break
     }
 
     const success = await submitApplication({
@@ -340,7 +335,13 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
               {/* Dates */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-slate-600">Ngày bắt đầu *</label>
+                  <label className="text-xs font-semibold text-slate-600">
+                    {selectedType === APPLICATION_TYPES.LATE_EARLY.LABEL
+                      ? "Ngày làm việc *"
+                      : selectedType === APPLICATION_TYPES.RESIGNATION.LABEL
+                        ? "Ngày thôi việc *"
+                        : "Ngày bắt đầu *"}
+                  </label>
                   <input
                     type="date"
                     required
@@ -349,16 +350,25 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-slate-600">Ngày kết thúc</label>
-                  <input
-                    type="date"
-                    value={form.endDate}
-                    min={form.startDate}
-                    onChange={(e) => set("endDate", e.target.value)}
-                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                  />
-                </div>
+                  {!(
+                    [
+                      APPLICATION_TYPES.OVERTIME.LABEL,
+                      APPLICATION_TYPES.SHIFT_SWAP.LABEL,
+                      APPLICATION_TYPES.LATE_EARLY.LABEL,
+                      APPLICATION_TYPES.RESIGNATION.LABEL,
+                    ] as string[]
+                  ).includes(selectedType) && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-600">Ngày kết thúc</label>
+                    <input
+                      type="date"
+                      value={form.endDate}
+                      min={form.startDate}
+                      onChange={(e) => set("endDate", e.target.value)}
+                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* ── LEAVE ── */}
