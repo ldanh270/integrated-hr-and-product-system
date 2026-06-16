@@ -162,14 +162,16 @@ function WeeklyScheduleTemplateForm({
             <TemplateWeekGrid
               week={week}
               shifts={activeShifts}
-              onDayChange={(dayOfWeek, shiftId) => { void updateDay(week.weekIndex, dayOfWeek, shiftId) }}
+              onDayChange={(dayOfWeek, shiftId) => {
+                updateDay(week.weekIndex, dayOfWeek, shiftId)
+              }}
             />
           </div>
         ))}
       </div>
 
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={() => { void onOpenChange(false) }}>
+        <Button type="button" variant="outline" onClick={() => { onOpenChange(false) }}>
           Huỷ
         </Button>
         <Button type="submit" disabled={isPending || !name.trim()}>

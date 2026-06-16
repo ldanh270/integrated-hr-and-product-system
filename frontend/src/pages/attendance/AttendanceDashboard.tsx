@@ -289,7 +289,7 @@ function AdminAttendanceDashboard() {
                     className={`cursor-pointer hover:bg-muted/30 ${
                       selectedEmployee?.id === record.employeeId ? "bg-primary/5" : ""
                     }`}
-                    onClick={() => { void setSelectedEmployee(toSelectedEmployee(record)) }}
+                    onClick={() => { setSelectedEmployee(toSelectedEmployee(record)) }}
                   >
                     <TableCell className="px-4 py-3">
                       <p className="font-medium">{record.employee?.fullName ?? record.employeeId}</p>
@@ -421,7 +421,7 @@ function AdminAttendanceDashboard() {
                           className={`cursor-pointer hover:bg-muted/30 ${
                             selectedEmployee?.id === record.employeeId ? "bg-primary/5" : ""
                           }`}
-                          onClick={() => { void setSelectedEmployee(toSelectedEmployee(record)) }}
+                          onClick={() => { setSelectedEmployee(toSelectedEmployee(record)) }}
                         >
                           <TableCell className="px-4 py-4">
                             <p className="font-medium whitespace-nowrap">
@@ -475,7 +475,7 @@ function AdminAttendanceDashboard() {
 
       <EmployeeAttendanceSummarySheet
         employee={selectedEmployee}
-        onClose={() => { void setSelectedEmployee(null) }}
+        onClose={() => { setSelectedEmployee(null) }}
       />
     </div>
   )

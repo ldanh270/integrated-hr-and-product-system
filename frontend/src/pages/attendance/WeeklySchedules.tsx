@@ -107,7 +107,7 @@ export default function WeeklySchedules() {
                   <TableCell>
                     <button
                       type="button"
-                      onClick={() => handleEdit(template)}
+                      onClick={() => { handleEdit(template) }}
                       className="text-left font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                     >
                       {template.name}
@@ -132,11 +132,11 @@ export default function WeeklySchedules() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(template)}>Sửa</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { handleEdit(template) }}>Sửa</DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           className="text-destructive"
-                          onClick={() => handleDelete(template.id)}
+                          onClick={() => { handleDelete(template.id) }}
                         >
                           Xoá
                         </DropdownMenuItem>
