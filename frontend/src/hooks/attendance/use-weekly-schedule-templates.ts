@@ -19,7 +19,12 @@ export function useWeeklyScheduleTemplates() {
 export function useWeeklyScheduleTemplate(id: string | null) {
   return useQuery({
     queryKey: [...WEEKLY_SCHEDULE_TEMPLATES_KEY, id],
-    queryFn: () => weeklyScheduleTemplatesApi.getById(id!),
+    queryFn: () => {
+      if (!id) {
+        throw new Error("Template id is required")
+      }
+      return weeklyScheduleTemplatesApi.getById(id)
+    },
     enabled: Boolean(id),
   })
 }
@@ -29,7 +34,7 @@ export function useCreateWeeklyScheduleTemplate() {
   return useMutation({
     mutationFn: (data: ICreateWeeklyScheduleTemplatePayload) =>
       weeklyScheduleTemplatesApi.create(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: WEEKLY_SCHEDULE_TEMPLATES_KEY }),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: WEEKLY_SCHEDULE_TEMPLATES_KEY }) },
   })
 }
 
@@ -38,7 +43,7 @@ export function useUpdateWeeklyScheduleTemplate() {
   return useMutation({
     mutationFn: ({ id, ...data }: IUpdateWeeklyScheduleTemplatePayload & { id: string }) =>
       weeklyScheduleTemplatesApi.update(id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: WEEKLY_SCHEDULE_TEMPLATES_KEY }),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: WEEKLY_SCHEDULE_TEMPLATES_KEY }) },
   })
 }
 
@@ -46,7 +51,7 @@ export function useDeleteWeeklyScheduleTemplate() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => weeklyScheduleTemplatesApi.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: WEEKLY_SCHEDULE_TEMPLATES_KEY }),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: WEEKLY_SCHEDULE_TEMPLATES_KEY }) },
   })
 }
 
@@ -59,9 +64,9 @@ export function useApplyWeeklyScheduleTemplate() {
     }: IApplyWeeklyScheduleTemplatePayload & { templateId: string }) =>
       weeklyScheduleTemplatesApi.apply(templateId, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: WEEKLY_SCHEDULE_TEMPLATES_KEY })
-      qc.invalidateQueries({ queryKey: ["employee-schedule"] })
-      qc.invalidateQueries({ queryKey: ["my-schedule"] })
+      void qc.invalidateQueries({ queryKey: WEEKLY_SCHEDULE_TEMPLATES_KEY })
+      void qc.invalidateQueries({ queryKey: ["employee-schedule"] })
+      void qc.invalidateQueries({ queryKey: ["my-schedule"] })
     },
   })
 }

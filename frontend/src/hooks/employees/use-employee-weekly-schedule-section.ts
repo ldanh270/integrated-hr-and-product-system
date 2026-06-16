@@ -25,7 +25,12 @@ export function useEmployeeWeeklyScheduleSection(employeeId: string | undefined,
 
   const { data: activeSchedule, isLoading: isScheduleLoading } = useQuery({
     queryKey: ["employee-schedule", employeeId, "config"],
-    queryFn: () => schedulesApi.getByEmployee(employeeId!),
+    queryFn: () => {
+      if (!employeeId) {
+        throw new Error("Employee id is required")
+      }
+      return schedulesApi.getByEmployee(employeeId)
+    },
     enabled: Boolean(employeeId) && isOpen,
   })
 

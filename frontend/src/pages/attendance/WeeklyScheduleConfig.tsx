@@ -244,7 +244,7 @@ function WeeklyScheduleConfigForm({ settings }: { settings: IWeeklyScheduleSetti
       title="Cấu hình lịch tuần"
       formId="weekly-schedule-config-form"
       isReadOnly={false}
-      onBack={() => navigate(ROUTES.ATTENDANCE.WEEKLY_SCHEDULES)}
+      onBack={() => { void navigate(ROUTES.ATTENDANCE.WEEKLY_SCHEDULES) }}
       isPending={isPending}
       isDirty={form.formState.isDirty}
       submitLabel="Lưu thay đổi"

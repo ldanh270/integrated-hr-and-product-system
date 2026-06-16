@@ -7,7 +7,11 @@ import {
   updateWeeklyScheduleTemplateSchema,
 } from "@/schemas/weekly-schedule-template.schema.ts"
 import { ApiResponse } from "@/types"
-import { IWeeklyScheduleTemplateService } from "@/types/weekly-schedule-template.types.ts"
+import type { IShiftScheduleWithTemplate } from "@/types/shift-schedule.types.ts"
+import {
+  IWeeklyScheduleTemplateService,
+  IWeeklyScheduleTemplateWithWeeks,
+} from "@/types/weekly-schedule-template.types.ts"
 
 import { Request, Response } from "express"
 import { z } from "zod"
@@ -18,17 +22,17 @@ import { z } from "zod"
 export class WeeklyScheduleTemplateController {
   constructor(private service: IWeeklyScheduleTemplateService) {}
 
-  list = async (_req: Request, res: Response<ApiResponse<any[]>>) => {
+  list = async (_req: Request, res: Response<ApiResponse<IWeeklyScheduleTemplateWithWeeks[]>>) => {
     const templates = await this.service.listTemplates()
     res.status(HttpStatusCode.OK).json({ data: templates, error: null })
   }
 
-  getOne = async (req: Request, res: Response<ApiResponse<any>>) => {
+  getOne = async (req: Request, res: Response<ApiResponse<IWeeklyScheduleTemplateWithWeeks>>) => {
     const template = await this.service.getTemplate(String(req.params.id))
     res.status(HttpStatusCode.OK).json({ data: template, error: null })
   }
 
-  create = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  create = async (req: AuthRequest, res: Response<ApiResponse<IWeeklyScheduleTemplateWithWeeks>>) => {
     try {
       const reqData = createWeeklyScheduleTemplateSchema.parse(req.body)
       const template = await this.service.createTemplate({
@@ -51,7 +55,7 @@ export class WeeklyScheduleTemplateController {
     }
   }
 
-  update = async (req: Request, res: Response<ApiResponse<any>>) => {
+  update = async (req: Request, res: Response<ApiResponse<IWeeklyScheduleTemplateWithWeeks>>) => {
     try {
       const data = updateWeeklyScheduleTemplateSchema.parse(req.body)
       const template = await this.service.updateTemplate(String(req.params.id), data)
@@ -76,7 +80,7 @@ export class WeeklyScheduleTemplateController {
     res.status(HttpStatusCode.OK).json({ data: null, error: null })
   }
 
-  apply = async (req: AuthRequest, res: Response<ApiResponse<any[]>>) => {
+  apply = async (req: AuthRequest, res: Response<ApiResponse<IShiftScheduleWithTemplate[]>>) => {
     try {
       const reqData = applyWeeklyScheduleTemplateSchema.parse(req.body)
       const schedules = await this.service.applyTemplate({

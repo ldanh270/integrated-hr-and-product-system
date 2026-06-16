@@ -1,3 +1,7 @@
+import type { Prisma } from "@prisma/client"
+
+import type { IShiftScheduleWithTemplate } from "@/types/shift-schedule.types.ts"
+
 export interface IWeeklyScheduleTemplateDayDTO {
   dayOfWeek: number
   shiftId?: string | null
@@ -34,19 +38,38 @@ export interface IApplyWeeklyScheduleTemplateDTO {
   createdById: string
 }
 
+export const weeklyScheduleTemplateInclude = {
+  weeks: {
+    orderBy: { weekIndex: "asc" as const },
+    include: {
+      days: {
+        orderBy: { dayOfWeek: "asc" as const },
+        include: { shift: true },
+      },
+    },
+  },
+} as const satisfies Prisma.WeeklyScheduleTemplateInclude
+
+export type IWeeklyScheduleTemplateWithWeeks = Prisma.WeeklyScheduleTemplateGetPayload<{
+  include: typeof weeklyScheduleTemplateInclude
+}>
+
 export interface IWeeklyScheduleTemplateRepository {
-  create(data: ICreateWeeklyScheduleTemplateDTO): Promise<any>
-  update(id: string, data: IUpdateWeeklyScheduleTemplateDTO): Promise<any>
+  create(data: ICreateWeeklyScheduleTemplateDTO): Promise<IWeeklyScheduleTemplateWithWeeks>
+  update(id: string, data: IUpdateWeeklyScheduleTemplateDTO): Promise<IWeeklyScheduleTemplateWithWeeks>
   delete(id: string): Promise<void>
-  findById(id: string): Promise<any | null>
-  listAll(): Promise<any[]>
+  findById(id: string): Promise<IWeeklyScheduleTemplateWithWeeks | null>
+  listAll(): Promise<IWeeklyScheduleTemplateWithWeeks[]>
 }
 
 export interface IWeeklyScheduleTemplateService {
-  createTemplate(data: ICreateWeeklyScheduleTemplateDTO): Promise<any>
-  updateTemplate(id: string, data: IUpdateWeeklyScheduleTemplateDTO): Promise<any>
+  createTemplate(data: ICreateWeeklyScheduleTemplateDTO): Promise<IWeeklyScheduleTemplateWithWeeks>
+  updateTemplate(
+    id: string,
+    data: IUpdateWeeklyScheduleTemplateDTO,
+  ): Promise<IWeeklyScheduleTemplateWithWeeks>
   deleteTemplate(id: string): Promise<void>
-  getTemplate(id: string): Promise<any>
-  listTemplates(): Promise<any[]>
-  applyTemplate(data: IApplyWeeklyScheduleTemplateDTO): Promise<any[]>
+  getTemplate(id: string): Promise<IWeeklyScheduleTemplateWithWeeks>
+  listTemplates(): Promise<IWeeklyScheduleTemplateWithWeeks[]>
+  applyTemplate(data: IApplyWeeklyScheduleTemplateDTO): Promise<IShiftScheduleWithTemplate[]>
 }

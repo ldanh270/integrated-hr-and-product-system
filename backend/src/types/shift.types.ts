@@ -1,4 +1,10 @@
+import type { Prisma } from "@prisma/client"
+
 import type { IShiftScheduleWithDays, IShiftScheduleWithTemplate } from "@/types/shift-schedule.types.ts"
+
+export type IEmployeeShiftWithShift = Prisma.EmployeeShiftGetPayload<{
+  include: { shift: true }
+}>
 
 export interface IGpsLocationDTO {
   lat: number
@@ -153,7 +159,7 @@ export interface IEmployeeShiftRepository {
     employeeIds: string[],
     startDate: Date,
     endDate: Date,
-  ): Promise<any[]>
+  ): Promise<IEmployeeShiftWithShift[]>
   /** Creates or updates a generated shift; skips manual overrides. */
   generateShiftForDate(
     employeeId: string,

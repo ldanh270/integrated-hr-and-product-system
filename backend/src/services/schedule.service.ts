@@ -1,6 +1,7 @@
 import {
   IAssignShiftScheduleDTO,
   IEmployeeShiftRepository,
+  IEmployeeShiftWithShift,
   IGenerateShiftsDTO,
   IGeneratedShiftPreview,
   IGenerateShiftsResult,
@@ -96,7 +97,13 @@ export class ScheduleService implements IScheduleService {
           schedule?.id ?? null,
           data.createdById,
         )
-        result[action]++
+        if (action === "created") {
+          result.created++
+        } else if (action === "updated") {
+          result.updated++
+        } else {
+          result.skipped++
+        }
       }
     }
 
@@ -116,7 +123,7 @@ export class ScheduleService implements IScheduleService {
     employeeId: string,
     start: Date,
     end: Date,
-    existingByKey: Map<string, any>,
+    existingByKey: Map<string, IEmployeeShiftWithShift>,
   ) {
     const items = []
 
@@ -140,7 +147,7 @@ export class ScheduleService implements IScheduleService {
 
   private resolvePreviewStatus(
     plannedShiftId: string | null | undefined,
-    existing: any | undefined,
+    existing: IEmployeeShiftWithShift | undefined,
   ): ShiftGenerateItemStatus {
     if (!plannedShiftId) return "no_schedule"
     if (existing?.isOverride) return "override"

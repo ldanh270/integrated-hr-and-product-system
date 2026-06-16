@@ -6,6 +6,7 @@ import {
   IUpdateWeeklyScheduleTemplateDTO,
   IWeeklyScheduleTemplateRepository,
   IWeeklyScheduleTemplateService,
+  IWeeklyScheduleTemplateWithWeeks,
 } from "@/types/weekly-schedule-template.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { getCycleWeekIndex, normalizeScheduleDate } from "@/utils/schedule.util.ts"
@@ -20,11 +21,14 @@ export class WeeklyScheduleTemplateService implements IWeeklyScheduleTemplateSer
     private employeeShiftRepo: IEmployeeShiftRepository,
   ) {}
 
-  createTemplate(data: ICreateWeeklyScheduleTemplateDTO): Promise<any> {
+  createTemplate(data: ICreateWeeklyScheduleTemplateDTO): Promise<IWeeklyScheduleTemplateWithWeeks> {
     return this.templateRepo.create(data)
   }
 
-  updateTemplate(id: string, data: IUpdateWeeklyScheduleTemplateDTO): Promise<any> {
+  updateTemplate(
+    id: string,
+    data: IUpdateWeeklyScheduleTemplateDTO,
+  ): Promise<IWeeklyScheduleTemplateWithWeeks> {
     return this.templateRepo.update(id, data)
   }
 
@@ -36,7 +40,7 @@ export class WeeklyScheduleTemplateService implements IWeeklyScheduleTemplateSer
     await this.templateRepo.delete(id)
   }
 
-  async getTemplate(id: string): Promise<any> {
+  async getTemplate(id: string): Promise<IWeeklyScheduleTemplateWithWeeks> {
     const template = await this.templateRepo.findById(id)
     if (!template) {
       throw new AppError("Không tìm thấy template lịch hàng tuần", HttpStatusCode.NOT_FOUND, "service")
@@ -44,11 +48,11 @@ export class WeeklyScheduleTemplateService implements IWeeklyScheduleTemplateSer
     return template
   }
 
-  listTemplates(): Promise<any[]> {
+  listTemplates(): Promise<IWeeklyScheduleTemplateWithWeeks[]> {
     return this.templateRepo.listAll()
   }
 
-  async applyTemplate(data: IApplyWeeklyScheduleTemplateDTO): Promise<any[]> {
+  async applyTemplate(data: IApplyWeeklyScheduleTemplateDTO) {
     const template = await this.templateRepo.findById(data.templateId)
     if (!template) {
       throw new AppError("Không tìm thấy template lịch hàng tuần", HttpStatusCode.NOT_FOUND, "service")
@@ -63,10 +67,10 @@ export class WeeklyScheduleTemplateService implements IWeeklyScheduleTemplateSer
       throw new AppError("validTo phải sau validFrom", HttpStatusCode.BAD_REQUEST, "service")
     }
 
-    const scheduleDays = template.weeks.flatMap((week: any) =>
+    const scheduleDays = template.weeks.flatMap((week) =>
       week.days
-        .filter((day: any) => day.shiftId)
-        .map((day: any) => ({
+        .filter((day) => day.shiftId)
+        .map((day) => ({
           weekIndex: week.weekIndex,
           dayOfWeek: day.dayOfWeek,
           shiftId: day.shiftId as string,

@@ -1,4 +1,4 @@
-import { IEmployeeShiftRepository, IOverrideEmployeeShiftDTO } from "@/types/shift.types.ts"
+import { IEmployeeShiftRepository, IEmployeeShiftWithShift, IOverrideEmployeeShiftDTO } from "@/types/shift.types.ts"
 
 import { PrismaClient, ShiftStatus } from "@prisma/client"
 
@@ -90,7 +90,7 @@ export class PrismaEmployeeShiftRepository
     employeeIds: string[],
     startDate: Date,
     endDate: Date,
-  ): Promise<any[]> {
+  ): Promise<IEmployeeShiftWithShift[]> {
     const start = new Date(startDate)
     start.setHours(0, 0, 0, 0)
     const end = new Date(endDate)

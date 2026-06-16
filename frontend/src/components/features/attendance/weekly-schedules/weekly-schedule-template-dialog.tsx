@@ -121,7 +121,7 @@ function WeeklyScheduleTemplateForm({
           <Input
             id="template-name"
             value={name}
-            onChange={(event) => setName(event.target.value)}
+            onChange={(event) => { setName(event.target.value) }}
             placeholder="VD: Hành chính xoay 3 ca"
             required
           />
@@ -134,7 +134,7 @@ function WeeklyScheduleTemplateForm({
             min={1}
             max={12}
             value={cycleWeeks}
-            onChange={(event) => handleCycleWeeksChange(Number(event.target.value))}
+            onChange={(event) => { handleCycleWeeksChange(Number(event.target.value)) }}
           />
         </div>
       </div>
@@ -144,7 +144,7 @@ function WeeklyScheduleTemplateForm({
         <Textarea
           id="template-description"
           value={description}
-          onChange={(event) => setDescription(event.target.value)}
+          onChange={(event) => { setDescription(event.target.value) }}
           placeholder="Ghi chú về cách xoay ca..."
           rows={2}
         />
@@ -162,14 +162,14 @@ function WeeklyScheduleTemplateForm({
             <TemplateWeekGrid
               week={week}
               shifts={activeShifts}
-              onDayChange={(dayOfWeek, shiftId) => updateDay(week.weekIndex, dayOfWeek, shiftId)}
+              onDayChange={(dayOfWeek, shiftId) => { void updateDay(week.weekIndex, dayOfWeek, shiftId) }}
             />
           </div>
         ))}
       </div>
 
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+        <Button type="button" variant="outline" onClick={() => { void onOpenChange(false) }}>
           Huỷ
         </Button>
         <Button type="submit" disabled={isPending || !name.trim()}>

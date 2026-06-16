@@ -2,23 +2,13 @@ import {
   ICreateWeeklyScheduleTemplateDTO,
   IUpdateWeeklyScheduleTemplateDTO,
   IWeeklyScheduleTemplateRepository,
+  IWeeklyScheduleTemplateWithWeeks,
+  weeklyScheduleTemplateInclude,
 } from "@/types/weekly-schedule-template.types.ts"
 
 import { PrismaClient } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
-
-const templateInclude = {
-  weeks: {
-    orderBy: { weekIndex: "asc" as const },
-    include: {
-      days: {
-        orderBy: { dayOfWeek: "asc" as const },
-        include: { shift: true },
-      },
-    },
-  },
-}
 
 /**
  * Repository for reusable weekly schedule templates with rotating shift patterns.
@@ -31,7 +21,7 @@ export class PrismaWeeklyScheduleTemplateRepository
     super(prisma)
   }
 
-  async create(data: ICreateWeeklyScheduleTemplateDTO): Promise<any> {
+  async create(data: ICreateWeeklyScheduleTemplateDTO): Promise<IWeeklyScheduleTemplateWithWeeks> {
     return this.prisma.weeklyScheduleTemplate.create({
       data: {
         name: data.name,
@@ -51,11 +41,14 @@ export class PrismaWeeklyScheduleTemplateRepository
           })),
         },
       },
-      include: templateInclude,
+      include: weeklyScheduleTemplateInclude,
     })
   }
 
-  async update(id: string, data: IUpdateWeeklyScheduleTemplateDTO): Promise<any> {
+  async update(
+    id: string,
+    data: IUpdateWeeklyScheduleTemplateDTO,
+  ): Promise<IWeeklyScheduleTemplateWithWeeks> {
     return this.prisma.$transaction(async (tx) => {
       if (data.weeks) {
         await tx.weeklyScheduleTemplateWeek.deleteMany({ where: { templateId: id } })
@@ -82,7 +75,7 @@ export class PrismaWeeklyScheduleTemplateRepository
               }
             : undefined,
         },
-        include: templateInclude,
+        include: weeklyScheduleTemplateInclude,
       })
     })
   }
@@ -91,16 +84,16 @@ export class PrismaWeeklyScheduleTemplateRepository
     await this.prisma.weeklyScheduleTemplate.delete({ where: { id } })
   }
 
-  async findById(id: string): Promise<any | null> {
+  async findById(id: string): Promise<IWeeklyScheduleTemplateWithWeeks | null> {
     return this.prisma.weeklyScheduleTemplate.findUnique({
       where: { id },
-      include: templateInclude,
+      include: weeklyScheduleTemplateInclude,
     })
   }
 
-  async listAll(): Promise<any[]> {
+  async listAll(): Promise<IWeeklyScheduleTemplateWithWeeks[]> {
     return this.prisma.weeklyScheduleTemplate.findMany({
-      include: templateInclude,
+      include: weeklyScheduleTemplateInclude,
       orderBy: { createdAt: "desc" },
     })
   }

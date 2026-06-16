@@ -17,7 +17,7 @@ export function EmployeeAttendanceSummarySheet({
   onClose,
 }: EmployeeAttendanceSummarySheetProps) {
   return (
-    <Sheet open={Boolean(employee)} onOpenChange={(open) => !open && onClose()}>
+    <Sheet open={Boolean(employee)} onOpenChange={(open) => { if (!open) onClose() }}>
       <SheetContent className="w-[95vw] max-w-[95vw]! sm:max-w-300! overflow-y-auto p-6 sm:p-8">
         {employee ? (
           <>
