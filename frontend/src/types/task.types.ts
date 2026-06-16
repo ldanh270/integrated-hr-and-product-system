@@ -19,11 +19,6 @@ export interface Task {
   completedAt: string | null
   estimatedTime: number | null
   progress: number
-  categoryId?: string | null
-  category?: {
-    id: string
-    name: string
-  } | null
   createdAt: string
   updatedAt: string
   project?: {
@@ -56,7 +51,6 @@ export interface CreateTaskDto {
   dueDate?: string | null
   estimatedTime?: number | null
   progress?: number
-  categoryId?: string | null
 }
 
 export interface UpdateTaskDto {
@@ -71,7 +65,6 @@ export interface UpdateTaskDto {
   completedAt?: string | null
   estimatedTime?: number | null
   progress?: number
-  categoryId?: string | null
 }
 
 export interface TaskListQuery {
@@ -84,7 +77,6 @@ export interface TaskListQuery {
   priority?: TaskPriority
   assigneeId?: string
   createdById?: string
-  categoryId?: string
   sortBy?: string
   sortOrder?: "asc" | "desc"
 }
