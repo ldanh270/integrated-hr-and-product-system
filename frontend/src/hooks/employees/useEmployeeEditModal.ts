@@ -92,7 +92,7 @@ type EditFormValues = z.infer<typeof editSchema>
 export function useEmployeeEditModal(
   employee: Employee | null,
   isOpen: boolean,
-  onClose: () => void,
+  _onClose: () => void,
 ) {
   const updateMutation = useUpdateEmployee()
   const {
@@ -132,30 +132,26 @@ export function useEmployeeEditModal(
     }
   }, [employee, isOpen, reset])
 
-  const onSubmit = async (data: EditFormValues) => {
+  const onSubmitEmployee = async (data: EditFormValues) => {
     if (!employee) return
-    try {
-      const formattedData: UpdateEmployeeDto = {
-        ...data,
-        password: data.password === "" ? undefined : data.password,
-        phone: data.phone === "" ? null : data.phone,
-        position: data.position === "" ? null : data.position,
-        dateOfBirth: data.dateOfBirth === "" ? null : data.dateOfBirth,
-        nationalId: data.nationalId === "" ? null : data.nationalId,
-        address: data.address === "" ? null : data.address,
-        startDate: data.startDate === "" ? null : data.startDate,
-        endDate: data.endDate === "" ? null : data.endDate,
-      }
-      await updateMutation.mutateAsync({ id: employee.id, data: formattedData })
-      onClose()
-    } catch (error) {
-      console.error(error)
+    const formattedData: UpdateEmployeeDto = {
+      ...data,
+      password: data.password === "" ? undefined : data.password,
+      phone: data.phone === "" ? null : data.phone,
+      position: data.position === "" ? null : data.position,
+      dateOfBirth: data.dateOfBirth === "" ? null : data.dateOfBirth,
+      nationalId: data.nationalId === "" ? null : data.nationalId,
+      address: data.address === "" ? null : data.address,
+      startDate: data.startDate === "" ? null : data.startDate,
+      endDate: data.endDate === "" ? null : data.endDate,
     }
+    await updateMutation.mutateAsync({ id: employee.id, data: formattedData })
   }
 
   return {
     register,
-    handleSubmit: handleSubmit(onSubmit),
+    handleSubmit,
+    onSubmitEmployee,
     errors,
     isPending: updateMutation.isPending,
   }

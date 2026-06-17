@@ -1,6 +1,14 @@
+import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { IAssignShiftScheduleDTO, IShiftScheduleRepository } from "@/types/shift.types.ts"
+import {
+  type IShiftScheduleWithDays,
+  type IShiftScheduleWithTemplate,
+  shiftScheduleWithDaysInclude,
+  shiftScheduleWithTemplateInclude,
+} from "@/types/shift-schedule.types.ts"
+import { normalizeScheduleDate } from "@/utils/schedule.util.ts"
 
-import { PrismaClient } from "@prisma/client"
+import { Prisma, PrismaClient } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
@@ -11,52 +19,41 @@ export class PrismaShiftScheduleRepository
   extends BaseRepository
   implements IShiftScheduleRepository
 {
-  /**
-   * Creates a new PrismaShiftScheduleRepository instance.
-   * @param prisma - The PrismaClient instance.
-   */
   constructor(prisma: PrismaClient) {
     super(prisma)
   }
 
-  /**
-   * Assigns a recurring shift schedule to an employee.
-   * @param data - The schedule assignment data.
-   * @returns The created shift schedule.
-   */
-  async assignSchedule(data: IAssignShiftScheduleDTO): Promise<any> {
-    const { employeeId, validFrom, validTo, days, createdById } = data
+  async assignSchedule(data: IAssignShiftScheduleDTO): Promise<IShiftScheduleWithTemplate> {
+    const { employeeId, validFrom, validTo, days, createdById, templateId, cycleWeeks } = data
+
+    const scheduleData: Prisma.ShiftScheduleUncheckedCreateInput = {
+      employeeId,
+      validFrom: new Date(validFrom),
+      validTo: validTo ? new Date(validTo) : undefined,
+      createdById,
+      ...(templateId != null ? { templateId } : {}),
+      ...(cycleWeeks != null ? { cycleWeeks } : {}),
+      days: days
+        ? {
+            create: days.map((day) => ({
+              dayOfWeek: day.dayOfWeek,
+              weekIndex: day.weekIndex ?? 0,
+              shiftId: day.shiftId,
+            })),
+          }
+        : undefined,
+    }
 
     return this.prisma.shiftSchedule.create({
-      data: {
-        employeeId,
-        validFrom: new Date(validFrom),
-        validTo: validTo ? new Date(validTo) : undefined,
-        createdById,
-        days: days
-          ? {
-              create: days.map((day) => ({
-                dayOfWeek: day.dayOfWeek,
-                shiftId: day.shiftId,
-              })),
-            }
-          : undefined,
-      },
-      include: {
-        days: {
-          include: { shift: true },
-        },
-      },
+      data: scheduleData,
+      include: shiftScheduleWithTemplateInclude,
     })
   }
 
-  /**
-   * Gets the active shift schedule for an employee on a specific date.
-   * @param employeeId - The employee ID.
-   * @param date - The target date.
-   * @returns The active shift schedule or null if not found.
-   */
-  async getScheduleByEmployee(employeeId: string, date: string | Date): Promise<any | null> {
+  async getScheduleByEmployee(
+    employeeId: string,
+    date: string | Date,
+  ): Promise<IShiftScheduleWithDays | null> {
     const targetDate = new Date(date)
     return this.prisma.shiftSchedule.findFirst({
       where: {
@@ -64,29 +61,31 @@ export class PrismaShiftScheduleRepository
         validFrom: { lte: targetDate },
         OR: [{ validTo: null }, { validTo: { gte: targetDate } }],
       },
-      include: {
-        days: {
-          include: { shift: true },
-        },
-      },
+      include: shiftScheduleWithDaysInclude,
       orderBy: { validFrom: "desc" },
     })
   }
 
-  /**
-   * Lists all shift schedules for an employee.
-   * @param employeeId - The employee ID.
-   * @returns An array of shift schedules.
-   */
-  async listSchedulesByEmployee(employeeId: string): Promise<any[]> {
+  async listSchedulesByEmployee(employeeId: string): Promise<IShiftScheduleWithDays[]> {
     return this.prisma.shiftSchedule.findMany({
       where: { employeeId },
-      include: {
-        days: {
-          include: { shift: true },
-        },
-      },
+      include: shiftScheduleWithDaysInclude,
       orderBy: { validFrom: "desc" },
     })
+  }
+
+  async findEmployeeIdsWithActiveTemplateSchedule(date: Date): Promise<string[]> {
+    const targetDate = normalizeScheduleDate(date)
+    const rows = await this.prisma.shiftSchedule.findMany({
+      where: {
+        templateId: { not: null },
+        validFrom: { lte: targetDate },
+        OR: [{ validTo: null }, { validTo: { gte: targetDate } }],
+        employee: { status: EMPLOYEE_STATUS.ACTIVE, deletedAt: null },
+      },
+      select: { employeeId: true },
+      distinct: ["employeeId"],
+    })
+    return rows.map((row) => row.employeeId)
   }
 }

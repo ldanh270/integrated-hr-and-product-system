@@ -1,110 +1,26 @@
-import { ATTENDANCE_TIME_RULES } from "@/config/rules/attendance.config"
-import { SYSTEM_CONFIG } from "@/config/system.config"
 import { ATTENDANCE_KEY } from "@/hooks/attendance/use-attendance"
 import { attendanceApi, schedulesApi } from "@/lib/api/attendance.api"
 import { useAuthStore } from "@/store/auth-store"
 import type { User } from "@/store/auth-store"
-import type { IAttendanceRecord, IWorkingShift } from "@/types/attendance.types"
 import { addDays } from "@/utils/attendance/add-days"
 import { formatDateParam } from "@/utils/attendance/format-date-param"
-import { minutesToDayTime } from "@/utils/attendance/minutes-to-day-time"
+import { resolveScheduleDay } from "@/utils/attendance/resolve-schedule-day"
+import {
+  buildTodayShiftInfo,
+  GEOLOCATION_TIMEOUT_MS,
+  getCurrentScannerLocation,
+  getScannerApiErrorMessage,
+  persistScannerLocation,
+  readCachedScannerLocation,
+  resolveNextScanAction,
+  type ScanAction,
+  type TodayShiftInfo,
+} from "@/utils/attendance/virtual-scanner.utils"
 
 import { useEffect, useMemo, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-
-type ScanAction = "check_in" | "check_out"
-
-interface TodayShiftInfo {
-  name: string
-  workWindow: string
-  checkInWindow: string
-  checkOutWindow: string
-  gpsLabel: string
-}
-
-function persistLocation(location: { lat: number; lng: number }) {
-  // Use localStorage and base64 encoding to satisfy security alerts
-  const data = JSON.stringify({ ...location, timestamp: Date.now() })
-  localStorage.setItem(SYSTEM_CONFIG.STORAGE_KEYS.LOCATION_CACHE, btoa(data))
-}
-
-function readCachedLocation(): { lat: number; lng: number } | null {
-  const cached = localStorage.getItem(SYSTEM_CONFIG.STORAGE_KEYS.LOCATION_CACHE)
-  if (!cached) return null
-
-  try {
-    // Decode base64 stored value
-    const decoded = atob(cached)
-    const parsed = JSON.parse(decoded)
-    // Check if cache is older than 30 minutes
-    if (Date.now() - (parsed.timestamp || 0) > 30 * 60 * 1000) {
-      localStorage.removeItem(SYSTEM_CONFIG.STORAGE_KEYS.LOCATION_CACHE)
-      return null
-    }
-    return { lat: parsed.lat, lng: parsed.lng }
-  } catch {
-    return null
-  }
-}
-
-
-function getApiErrorMessage(error: unknown, fallback: string): string {
-  const err = error as { response?: { data?: { error?: { message?: string } } } }
-  return err.response?.data?.error?.message ?? fallback
-}
-
-function getTodayShift(scheduleShift?: Partial<IWorkingShift>): TodayShiftInfo | null {
-  if (!scheduleShift?.name || scheduleShift.startTime == null || scheduleShift.endTime == null) {
-    return null
-  }
-
-  const gracePeriod = scheduleShift.gracePeriodMinutes ?? ATTENDANCE_TIME_RULES.DEFAULT_WINDOW_MINUTES
-  const hasGps =
-    scheduleShift.gpsLat != null &&
-    scheduleShift.gpsLng != null &&
-    scheduleShift.gpsRadiusMeters != null
-
-  return {
-    name: scheduleShift.name,
-    workWindow: `${minutesToDayTime(scheduleShift.startTime)} - ${minutesToDayTime(scheduleShift.endTime)}`,
-    checkInWindow: `${minutesToDayTime(scheduleShift.startTime - gracePeriod)} - ${minutesToDayTime(scheduleShift.startTime + gracePeriod)}`,
-    checkOutWindow: `Từ ${minutesToDayTime(scheduleShift.endTime - gracePeriod)}`,
-    gpsLabel: hasGps
-      ? `${scheduleShift.gpsRadiusMeters}m quanh ${scheduleShift.gpsLat?.toFixed(5)}, ${scheduleShift.gpsLng?.toFixed(5)}`
-      : "Chưa cấu hình GPS",
-  }
-}
-
-function getNextScanAction(records?: IAttendanceRecord[]): ScanAction {
-  const openRecord = records?.find((record) => record.checkInAt && !record.checkOutAt)
-  if (openRecord) return "check_out"
-
-  const todayKey = formatDateParam(new Date())
-  const todayRecord = records?.find((record) => formatDateParam(new Date(record.date)) === todayKey)
-
-  return todayRecord?.checkInAt ? "check_out" : "check_in"
-}
-
-function getCurrentLocation(): Promise<{ lat: number; lng: number }> {
-  if (!("geolocation" in navigator)) {
-    return Promise.reject(new Error("Geolocation is not supported"))
-  }
-
-  return new Promise((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        resolve({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        })
-      },
-      reject,
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
-    )
-  })
-}
 
 export function useVirtualScanner(): {
   user: User | null
@@ -122,7 +38,7 @@ export function useVirtualScanner(): {
   const queryClient = useQueryClient()
   const [currentTime, setCurrentTime] = useState(new Date())
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(() =>
-    readCachedLocation(),
+    readCachedScannerLocation(),
   )
   const [locating, setLocating] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -135,14 +51,15 @@ export function useVirtualScanner(): {
   })
   const { data: records, isLoading: isRecordsLoading } = useQuery({
     queryKey: [...ATTENDANCE_KEY, "scanner", yesterday, today],
-    queryFn: () => attendanceApi.getRecords({ startDate: yesterday, endDate: today }),
+    queryFn: () =>
+      attendanceApi.getRecords({ startDate: yesterday, endDate: today, personalOnly: true }),
     enabled: Boolean(user),
   })
   const todayShift = useMemo(() => {
-    const scheduleDay = schedule?.days.find((item) => item.dayOfWeek === currentTime.getDay())
-    return getTodayShift(scheduleDay?.shift)
+    const scheduleDay = resolveScheduleDay(schedule, currentTime)
+    return buildTodayShiftInfo(scheduleDay?.shift)
   }, [currentTime, schedule])
-  const nextAction = getNextScanAction(records)
+  const nextAction = resolveNextScanAction(records)
   const nextActionLabel = nextAction === "check_in" ? "Check-in" : "Check-out"
 
   useEffect(() => {
@@ -160,7 +77,7 @@ export function useVirtualScanner(): {
       (pos) => {
         const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude }
         setLocation(coords)
-        persistLocation(coords)
+        persistScannerLocation(coords)
       },
       (err) => {
         console.warn("GPS mount error:", err.message)
@@ -168,7 +85,7 @@ export function useVirtualScanner(): {
           toast.warning("Vui lòng cho phép truy cập vị trí để chấm công")
         }
       },
-      { enableHighAccuracy: true, timeout: 10000 },
+      { enableHighAccuracy: true, timeout: GEOLOCATION_TIMEOUT_MS },
     )
   }, [])
 
@@ -177,15 +94,15 @@ export function useVirtualScanner(): {
     setLocating(true)
 
     try {
-      const finalLocation = await getCurrentLocation()
+      const finalLocation = await getCurrentScannerLocation()
       setLocation(finalLocation)
-      persistLocation(finalLocation)
+      persistScannerLocation(finalLocation)
       await attendanceApi.scan({ location: finalLocation })
       await queryClient.invalidateQueries({ queryKey: ATTENDANCE_KEY })
       toast.success(`${nextActionLabel} thành công!`)
     } catch (error) {
       console.error("Scan error:", error)
-      toast.error(getApiErrorMessage(error, "Lỗi khi chấm công"))
+      toast.error(getScannerApiErrorMessage(error, "Lỗi khi chấm công"))
     } finally {
       setLocating(false)
       setIsProcessing(false)

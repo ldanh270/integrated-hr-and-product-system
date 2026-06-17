@@ -32,6 +32,9 @@ export const API_ENDPOINTS = {
     MY_ALL: "/schedules/my/all",
     ASSIGN: "/schedules/assign",
     OVERRIDE: "/schedules/override",
+    GENERATE_PREVIEW: "/schedules/generate/preview",
+    GENERATE: "/schedules/generate",
+    SETTINGS: "/schedules/settings",
     EMPLOYEE: (employeeId: string) => `/schedules/employee/${employeeId}`,
     EMPLOYEE_ALL: (employeeId: string) => `/schedules/employee/${employeeId}/all`,
   },
@@ -46,11 +49,15 @@ export const API_ENDPOINTS = {
   HOLIDAYS: {
     BASE: "/holidays",
   },
+  WEEKLY_SCHEDULE_TEMPLATES: {
+    BASE: "/weekly-schedule-templates",
+    APPLY: (id: string) => `/weekly-schedule-templates/${id}/apply`,
+  },
   SECURITY: {
     DASHBOARD: "/security/dashboard",
     LOCKED_ACCOUNTS: "/security/locked-accounts",
     UNLOCK: (employeeId: string) => `/security/unlock/${employeeId}`,
     ACTIVITY_LOGS: "/auth/activity-logs",
     ACTIVITY_LOG_DETAIL: (id: string) => `/auth/activity-logs/${id}`,
-  } as const,
-}
+  },
+} as const

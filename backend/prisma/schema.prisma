@@ -190,6 +190,9 @@ model Employee {
   startDate        DateTime?      @db.Date
   endDate          DateTime?      @db.Date
   lastLoginAt      DateTime?
+  personalEmployeeId String?
+  personalEmployee   Employee?  @relation("PersonalEmployeeLink", fields: [personalEmployeeId], references: [id], onDelete: SetNull)
+  personalEmployeeLinks Employee[] @relation("PersonalEmployeeLink")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -206,14 +209,16 @@ model Employee {
   swapApplicationsAsPartner  ApplicationShiftSwapDetail[] @relation("ApplicationSwapWith")
   shiftSchedules             ShiftSchedule[]              @relation("ShiftScheduleEmployee")
   shiftSchedulesCreated      ShiftSchedule[]              @relation("ShiftScheduleCreator")
-  workingShiftsCreated       WorkingShift[]
+  workingShiftsCreated              WorkingShift[]
+  weeklyScheduleTemplatesCreated  WeeklyScheduleTemplate[]     @relation("WeeklyScheduleTemplateCreator")
   holidayCalendarsCreated    HolidayCalendar[]
   salaryVariablesCreated     SalaryVariable[]
   salaryComponentsCreated    SalaryComponent[]
   payslipTemplatesCreated    PayslipTemplate[]
   salaryConfigs              EmployeeSalaryConfig[]
   salaryConfigsCreated       EmployeeSalaryConfig[]       @relation("SalaryConfigCreator")
-  payrollSettingsUpdated     PayrollSettings[]
+  payrollSettingsUpdated        PayrollSettings[]
+  weeklyScheduleSettingsUpdated WeeklyScheduleSettings[]
   payrollsApproved           Payroll[]
   payslips                   Payslip[]
   projectsLead               Project[]                    @relation("ProjectTeamLeader")
@@ -252,7 +257,8 @@ model WorkingShift {
   employeeShifts EmployeeShift[]
 
   // Relations for ShiftSchedule weekdays
-  shiftScheduleDays           ShiftScheduleDay[]
+  shiftScheduleDays              ShiftScheduleDay[]
+  weeklyScheduleTemplateDays     WeeklyScheduleTemplateDay[]
   applicationShiftSwapDetails ApplicationShiftSwapDetail[] @relation("ShiftSwapWorkingShift")
 
   /// @db.Check("start_time >= 0 AND start_time < 1440")
@@ -264,12 +270,57 @@ model WorkingShift {
   @@index([createdById])
 }
 
+model WeeklyScheduleTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  cycleWeeks  Int      @default(1)
+  isActive    Boolean  @default(true)
+  createdById String
+  createdBy   Employee @relation("WeeklyScheduleTemplateCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  weeks          WeeklyScheduleTemplateWeek[]
+  shiftSchedules ShiftSchedule[]
+
+  @@index([isActive])
+  @@index([createdById])
+}
+
+model WeeklyScheduleTemplateWeek {
+  id         String                 @id @default(cuid())
+  templateId String
+  template   WeeklyScheduleTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  weekIndex  Int
+
+  days WeeklyScheduleTemplateDay[]
+
+  @@unique([templateId, weekIndex])
+}
+
+model WeeklyScheduleTemplateDay {
+  id        String                   @id @default(cuid())
+  weekId    String
+  week      WeeklyScheduleTemplateWeek @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  dayOfWeek Int // 0 = Sunday, 1 = Monday, ... 6 = Saturday
+  shiftId   String?
+  shift     WorkingShift?            @relation(fields: [shiftId], references: [id], onDelete: Restrict)
+
+  @@unique([weekId, dayOfWeek])
+  @@index([shiftId])
+}
+
 model ShiftSchedule {
   id          String    @id @default(cuid())
   employeeId  String
   employee    Employee  @relation("ShiftScheduleEmployee", fields: [employeeId], references: [id], onDelete: Restrict)
   validFrom   DateTime
   validTo     DateTime?
+  templateId  String?
+  template    WeeklyScheduleTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  cycleWeeks  Int?
   createdById String
   createdBy   Employee  @relation("ShiftScheduleCreator", fields: [createdById], references: [id], onDelete: Restrict)
 
@@ -282,17 +333,19 @@ model ShiftSchedule {
   @@index([employeeId, validFrom(sort: Desc)])
   @@index([validTo])
   @@index([createdById])
+  @@index([templateId])
 }
 
 model ShiftScheduleDay {
   id         String        @id @default(cuid())
   scheduleId String
   schedule   ShiftSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  weekIndex  Int           @default(0)
   dayOfWeek  Int // 0 = Sunday, 1 = Monday, ... 6 = Saturday
   shiftId    String
   shift      WorkingShift  @relation(fields: [shiftId], references: [id], onDelete: Restrict)
 
-  @@unique([scheduleId, dayOfWeek])
+  @@unique([scheduleId, weekIndex, dayOfWeek])
   @@index([shiftId])
 }
 
@@ -613,6 +666,21 @@ model PayrollSettings {
   triggerMinute Int      @default(0)
   updatedById   String
   updatedBy     Employee @relation(fields: [updatedById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([updatedById])
+}
+
+model WeeklyScheduleSettings {
+  id                   String   @id @default("GLOBAL")
+  triggerDayOfWeek     Int
+  triggerHour          Int      @default(7)
+  triggerMinute        Int      @default(0)
+  lastGeneratedWeekKey String?
+  updatedById          String
+  updatedBy            Employee @relation(fields: [updatedById], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

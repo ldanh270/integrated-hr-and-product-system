@@ -1,60 +1,157 @@
 import {
   IAssignShiftScheduleDTO,
   IEmployeeShiftRepository,
+  IEmployeeShiftWithShift,
+  IGenerateShiftsDTO,
+  IGeneratedShiftPreview,
+  IGenerateShiftsResult,
   IOverrideEmployeeShiftDTO,
   IScheduleService,
   IShiftScheduleRepository,
+  ShiftGenerateItemStatus,
 } from "@/types/shift.types.ts"
+import type {
+  IShiftScheduleWithDays,
+  IShiftScheduleWithTemplate,
+} from "@/types/shift-schedule.types.ts"
 import { AppError } from "@/utils/error.util.ts"
+import {
+  eachScheduleDate,
+  formatScheduleDateKey,
+  normalizeScheduleDate,
+  resolveShiftFromSchedule,
+} from "@/utils/schedule.util.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 
 /**
  * Service for managing employee shift schedules and overrides.
  */
 export class ScheduleService implements IScheduleService {
-  /**
-   * Creates a new ScheduleService instance.
-   * @param scheduleRepo - Repository for shift schedules.
-   * @param employeeShiftRepo - Repository for employee shift assignments.
-   */
   constructor(
     private scheduleRepo: IShiftScheduleRepository,
     private employeeShiftRepo: IEmployeeShiftRepository,
   ) {}
 
-  /**
-   * Assigns a recurring shift schedule to an employee.
-   * @param data - The schedule assignment data.
-   * @returns The created shift schedule.
-   */
-  async assignSchedule(data: IAssignShiftScheduleDTO): Promise<any> {
+  async assignSchedule(data: IAssignShiftScheduleDTO): Promise<IShiftScheduleWithTemplate> {
     return this.scheduleRepo.assignSchedule(data)
   }
 
-  /**
-   * Gets the active shift schedule for an employee on a specific date.
-   * @param employeeId - The employee ID.
-   * @param date - The target date.
-   * @returns The active shift schedule or null if not found.
-   */
-  async getScheduleForEmployee(employeeId: string, date: string | Date): Promise<any | null> {
+  async getScheduleForEmployee(
+    employeeId: string,
+    date: string | Date,
+  ): Promise<IShiftScheduleWithDays | null> {
     return this.scheduleRepo.getScheduleByEmployee(employeeId, date)
   }
 
-  /**
-   * Lists all shift schedules for a specific employee.
-   * @param employeeId - The employee ID.
-   * @returns An array of shift schedules.
-   */
-  async listSchedulesForEmployee(employeeId: string): Promise<any[]> {
+  async listSchedulesForEmployee(employeeId: string): Promise<IShiftScheduleWithDays[]> {
     return this.scheduleRepo.listSchedulesByEmployee(employeeId)
   }
 
-  /**
-   * Overrides an employee's assigned shift for a specific date.
-   * @param data - The override data.
-   * @returns The updated or created employee shift override.
-   */
-  async overrideEmployeeShift(data: IOverrideEmployeeShiftDTO): Promise<any> {
+  async overrideEmployeeShift(data: IOverrideEmployeeShiftDTO): Promise<unknown> {
     return this.employeeShiftRepo.overrideShift(data)
+  }
+
+  async previewGeneratedShifts(data: IGenerateShiftsDTO): Promise<IGeneratedShiftPreview[]> {
+    const { start, end } = this.parseDateRange(data.startDate, data.endDate)
+    const existingShifts = await this.employeeShiftRepo.listByEmployeesAndDateRange(
+      data.employeeIds,
+      start,
+      end,
+    )
+    const existingByKey = new Map(
+      existingShifts.map((shift) => [
+        `${shift.employeeId}:${formatScheduleDateKey(new Date(shift.assignedDate))}`,
+        shift,
+      ]),
+    )
+
+    return Promise.all(
+      data.employeeIds.map(async (employeeId) => ({
+        employeeId,
+        items: await this.buildPreviewItems(employeeId, start, end, existingByKey),
+      })),
+    )
+  }
+
+  async generateShifts(data: IGenerateShiftsDTO): Promise<IGenerateShiftsResult> {
+    if (!data.createdById) {
+      throw new AppError("Thiếu thông tin người thực hiện", HttpStatusCode.BAD_REQUEST, "service")
+    }
+
+    const { start, end } = this.parseDateRange(data.startDate, data.endDate)
+    const result: IGenerateShiftsResult = { created: 0, updated: 0, skipped: 0 }
+
+    for (const employeeId of data.employeeIds) {
+      for (const date of eachScheduleDate(start, end)) {
+        const schedule = await this.scheduleRepo.getScheduleByEmployee(employeeId, date)
+        const planned = resolveShiftFromSchedule(schedule, date)
+        if (!planned?.shiftId) {
+          result.skipped++
+          continue
+        }
+
+        const action = await this.employeeShiftRepo.generateShiftForDate(
+          employeeId,
+          date,
+          planned.shiftId,
+          schedule?.id ?? null,
+          data.createdById,
+        )
+        if (action === "created") {
+          result.created++
+        } else if (action === "updated") {
+          result.updated++
+        } else {
+          result.skipped++
+        }
+      }
+    }
+
+    return result
+  }
+
+  private parseDateRange(startDate: string | Date, endDate: string | Date) {
+    const start = normalizeScheduleDate(new Date(startDate))
+    const end = normalizeScheduleDate(new Date(endDate))
+    if (end < start) {
+      throw new AppError("Ngày kết thúc phải sau ngày bắt đầu", HttpStatusCode.BAD_REQUEST, "service")
+    }
+    return { start, end }
+  }
+
+  private async buildPreviewItems(
+    employeeId: string,
+    start: Date,
+    end: Date,
+    existingByKey: Map<string, IEmployeeShiftWithShift>,
+  ) {
+    const items = []
+
+    for (const date of eachScheduleDate(start, end)) {
+      const dateKey = formatScheduleDateKey(date)
+      const schedule = await this.scheduleRepo.getScheduleByEmployee(employeeId, date)
+      const planned = resolveShiftFromSchedule(schedule, date)
+      const existing = existingByKey.get(`${employeeId}:${dateKey}`)
+      const status = this.resolvePreviewStatus(planned?.shiftId, existing)
+
+      items.push({
+        date: dateKey,
+        shiftId: planned?.shiftId ?? null,
+        shift: planned?.shift ?? null,
+        status,
+      })
+    }
+
+    return items
+  }
+
+  private resolvePreviewStatus(
+    plannedShiftId: string | null | undefined,
+    existing: IEmployeeShiftWithShift | undefined,
+  ): ShiftGenerateItemStatus {
+    if (!plannedShiftId) return "no_schedule"
+    if (existing?.isOverride) return "override"
+    if (existing) return "existing"
+    return "pending"
   }
 }

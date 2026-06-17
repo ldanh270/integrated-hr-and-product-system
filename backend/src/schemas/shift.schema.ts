@@ -62,6 +62,21 @@ export const overrideEmployeeShiftSchema = z
 
 export type OverrideEmployeeShiftSchemaType = z.infer<typeof overrideEmployeeShiftSchema>
 
+// ─── SHIFT GENERATION ─────────────────────────────────────────
+export const generateShiftsSchema = z
+  .object({
+    employeeIds: z.array(z.string().min(1)).min(1),
+    startDate: z
+      .string()
+      .refine((val) => !Number.isNaN(Date.parse(val)), { message: "Invalid date format" }),
+    endDate: z
+      .string()
+      .refine((val) => !Number.isNaN(Date.parse(val)), { message: "Invalid date format" }),
+  })
+  .strict()
+
+export type GenerateShiftsSchemaType = z.infer<typeof generateShiftsSchema>
+
 // ─── SHIFT CHANGE REQUEST ─────────────────────────────────────
 export const submitShiftChangeRequestSchema = z
   .object({

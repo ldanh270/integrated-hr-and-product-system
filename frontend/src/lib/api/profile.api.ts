@@ -54,3 +54,16 @@ export const changePassword = async (oldPassword: string, newPassword: string): 
     throw new Error(response.data.message || "Failed to change password")
   }
 }
+
+export const updatePersonalEmployeeLink = async (
+  personalEmployeeId: string | null,
+): Promise<ProfileDto> => {
+  const response = await apiClient.patch<ApiResponse<ProfileDto>>(
+    "/profile/me/personal-employee-link",
+    { personalEmployeeId },
+  )
+  if (response.data.status === "error" || !response.data.data) {
+    throw new Error(response.data.message || "Failed to update personal employee link")
+  }
+  return response.data.data
+}

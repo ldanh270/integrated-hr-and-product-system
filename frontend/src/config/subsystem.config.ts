@@ -6,11 +6,13 @@ import {
   BookOpen,
   Briefcase,
   CalendarClock,
+  CalendarDays,
   ChartNoAxesColumn,
   CircleDollarSign,
   FileText,
   Package,
   Settings,
+  Settings2,
   ShieldCheck,
   Users,
   UserCheck,
@@ -18,8 +20,6 @@ import {
   User,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
-
-const NON_ADMIN_ROLES = [ROLE.EMPLOYEE, ROLE.TEAM_LEADER, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER]
 
 /** Navigation metadata for HR subsystems (routes, icons, role access). */
 export type SubsystemId =
@@ -91,15 +91,42 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     icon: CalendarClock,
     routePrefix: "/attendance",
     sidebarItems: [
+      { name: "Lịch của tôi", path: ROUTES.ATTENDANCE.MY_SCHEDULE, icon: CalendarClock },
       {
         name: "Tổng quan",
         path: ROUTES.ATTENDANCE.DASHBOARD,
         icon: CalendarClock,
         roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
       },
-      { name: "Tổng hợp", path: ROUTES.ATTENDANCE.SUMMARY, icon: ChartNoAxesColumn, roles: NON_ADMIN_ROLES },
+
+          { name: "Tổng hợp", path: ROUTES.ATTENDANCE.SUMMARY, icon: ChartNoAxesColumn, roles: NON_ADMIN_ROLES },
       { name: "Lịch của tôi", path: ROUTES.ATTENDANCE.MY_SCHEDULE, icon: CalendarClock },
-      { name: "Ca làm việc", path: ROUTES.ATTENDANCE.SHIFTS, icon: CalendarClock },
+      {
+        name: "Lịch làm việc",
+        path: ROUTES.ATTENDANCE.WORK_SCHEDULES,
+        icon: CalendarDays,
+        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
+      },
+      { name: "Đơn từ", path: ROUTES.ATTENDANCE.APPLICATIONS, icon: FileText },
+      {
+        name: "Lịch hàng tuần",
+        path: ROUTES.ATTENDANCE.WEEKLY_SCHEDULES,
+        icon: CalendarClock,
+        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
+      },
+      {
+        name: "Cấu hình lịch tuần",
+        path: ROUTES.ATTENDANCE.WEEKLY_SCHEDULE_CONFIG,
+        icon: Settings2,
+        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
+      },
+      {
+        name: "Ca làm việc",
+        path: ROUTES.ATTENDANCE.SHIFTS,
+        icon: CalendarClock,
+        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
+      },
+
       { name: "Ngày lễ", path: ROUTES.ATTENDANCE.HOLIDAYS, icon: CalendarClock },
     ],
   },

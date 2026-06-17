@@ -53,6 +53,10 @@ export const attendanceRecordQuerySchema = z
       .optional(),
     employeeId: z.string().cuid("Invalid employee ID").optional(),
     status: z.enum(ATTENDANCE_STATUSES).optional(),
+    personalOnly: z
+      .enum(["true", "false"])
+      .transform((value) => value === "true")
+      .optional(),
   })
   .strict()
 

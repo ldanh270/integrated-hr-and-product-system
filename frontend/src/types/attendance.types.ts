@@ -58,6 +58,7 @@ export type IUpdateShiftPayload = Partial<ICreateShiftPayload>
 
 export interface IScheduleDay {
   dayOfWeek: number // 0=Sun, 1=Mon, … 6=Sat
+  weekIndex?: number
   shiftId: string
   shift?: Pick<
     IWorkingShift,
@@ -70,14 +71,18 @@ export interface ISchedule {
   employeeId: string
   validFrom: string
   validTo?: string | null
+  templateId?: string | null
+  cycleWeeks?: number | null
   days: IScheduleDay[]
 }
 
 export interface IAssignSchedulePayload {
   employeeId: string
-  days: { dayOfWeek: number; shiftId: string }[]
+  days: { dayOfWeek: number; weekIndex?: number; shiftId: string }[]
   validFrom: string
   validTo?: string
+  templateId?: string
+  cycleWeeks?: number
 }
 
 export interface IOverrideShiftPayload {
@@ -127,6 +132,7 @@ export interface IAttendanceQuery {
   endDate?: string
   employeeId?: string
   status?: IAttendanceStatus
+  personalOnly?: boolean
 }
 
 // ─── SHIFT CHANGE REQUEST ─────────────────────────────────────
@@ -235,4 +241,71 @@ export interface IHolidayPayload {
   name: string
   date: string
   type: IHolidayType
+}
+
+// ─── WEEKLY SCHEDULE TEMPLATE ─────────────────────────────────
+
+export interface IWeeklyScheduleTemplateDay {
+  dayOfWeek: number
+  shiftId?: string | null
+  shift?: Pick<IWorkingShift, "id" | "name" | "startTime" | "endTime">
+}
+
+export interface IWeeklyScheduleTemplateWeek {
+  weekIndex: number
+  days: IWeeklyScheduleTemplateDay[]
+}
+
+export interface IWeeklyScheduleTemplate {
+  id: string
+  name: string
+  description?: string | null
+  cycleWeeks: number
+  isActive: boolean
+  weeks: IWeeklyScheduleTemplateWeek[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ICreateWeeklyScheduleTemplatePayload {
+  name: string
+  description?: string | null
+  cycleWeeks: number
+  isActive?: boolean
+  weeks: IWeeklyScheduleTemplateWeek[]
+}
+
+export interface IUpdateWeeklyScheduleTemplatePayload {
+  name?: string
+  description?: string | null
+  cycleWeeks?: number
+  isActive?: boolean
+  weeks?: IWeeklyScheduleTemplateWeek[]
+}
+
+export interface IApplyWeeklyScheduleTemplatePayload {
+  employeeIds: string[]
+  validFrom?: string
+  validTo?: string | null
+  generateShifts?: boolean
+}
+
+export interface IWeeklyScheduleSettings {
+  id: string
+  triggerDayOfWeek: number
+  triggerHour: number
+  triggerMinute: number
+  lastGeneratedWeekKey?: string | null
+}
+
+export interface IGenerateShiftsPayload {
+  employeeIds: string[]
+  startDate: string
+  endDate: string
+}
+
+export interface IGenerateShiftsResult {
+  created: number
+  updated: number
+  skipped: number
 }

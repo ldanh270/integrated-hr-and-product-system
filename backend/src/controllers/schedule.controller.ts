@@ -1,9 +1,14 @@
 import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import {
+  ATTENDANCE_ERROR_CODES,
+  ATTENDANCE_ERROR_MESSAGES,
+} from "@/constants/attendance.constants.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
-import { assignShiftScheduleSchema, overrideEmployeeShiftSchema } from "@/schemas/shift.schema.ts"
+import { assignShiftScheduleSchema, generateShiftsSchema, overrideEmployeeShiftSchema } from "@/schemas/shift.schema.ts"
 import { ApiResponse } from "@/types"
 import { IScheduleService } from "@/types/shift.types.ts"
+import { resolvePersonalEmployeeId } from "@/utils/attendance/resolve-personal-employee-id.ts"
 
 import { Request, Response } from "express"
 import { z } from "zod"
@@ -50,13 +55,17 @@ export class ScheduleController {
    * @param res - API response with the employee's schedule.
    */
   getEmployeeSchedule = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
-    const employeeId = req.user?.empId
-    if (!employeeId) {
+    const accountId = req.user?.empId
+    if (!accountId) {
       return res.status(HttpStatusCode.UNAUTHORIZED).json({
         data: null,
-        error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+        error: {
+          message: ATTENDANCE_ERROR_MESSAGES.UNAUTHORIZED,
+          code: ATTENDANCE_ERROR_CODES.UNAUTHORIZED,
+        },
       })
     }
+    const employeeId = await resolvePersonalEmployeeId(accountId)
     const dateQuery = req.query.date as string | undefined
     const scheduleDate = dateQuery ? new Date(dateQuery) : new Date()
 
@@ -70,13 +79,17 @@ export class ScheduleController {
    * @param res - API response with a list of schedules.
    */
   listEmployeeSchedules = async (req: AuthRequest, res: Response<ApiResponse<unknown[]>>) => {
-    const employeeId = req.user?.empId
-    if (!employeeId) {
+    const accountId = req.user?.empId
+    if (!accountId) {
       return res.status(HttpStatusCode.UNAUTHORIZED).json({
         data: null,
-        error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+        error: {
+          message: ATTENDANCE_ERROR_MESSAGES.UNAUTHORIZED,
+          code: ATTENDANCE_ERROR_CODES.UNAUTHORIZED,
+        },
       })
     }
+    const employeeId = await resolvePersonalEmployeeId(accountId)
     const schedules = await this.service.listSchedulesForEmployee(employeeId)
     res.status(HttpStatusCode.OK).json({ data: schedules, error: null })
   }
@@ -123,6 +136,49 @@ export class ScheduleController {
       const data = overrideEmployeeShiftSchema.parse(req.body)
       const override = await this.service.overrideEmployeeShift(data)
       res.status(HttpStatusCode.CREATED).json({ data: override, error: null })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: {
+            message: "Validation error",
+            code: ErrorCode.VALIDATION_ERROR,
+            meta: error.issues,
+          },
+        })
+      }
+      throw error
+    }
+  }
+
+  previewGeneratedShifts = async (req: AuthRequest, res: Response<ApiResponse<unknown[]>>) => {
+    try {
+      const data = generateShiftsSchema.parse(req.body)
+      const preview = await this.service.previewGeneratedShifts(data)
+      res.status(HttpStatusCode.OK).json({ data: preview, error: null })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: {
+            message: "Validation error",
+            code: ErrorCode.VALIDATION_ERROR,
+            meta: error.issues,
+          },
+        })
+      }
+      throw error
+    }
+  }
+
+  generateShifts = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
+    try {
+      const data = generateShiftsSchema.parse(req.body)
+      const result = await this.service.generateShifts({
+        ...data,
+        createdById: req.user?.empId || "system",
+      })
+      res.status(HttpStatusCode.CREATED).json({ data: result, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({

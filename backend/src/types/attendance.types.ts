@@ -173,11 +173,14 @@ export interface IAttendanceShiftDTO {
 
 export interface IAttendanceScheduleDayDTO {
   dayOfWeek: number
+  weekIndex?: number
   shiftId?: string | null
   shift?: IAttendanceShiftDTO | null
 }
 
 export interface IAttendanceScheduleDTO {
+  validFrom?: Date | string
+  cycleWeeks?: number | null
   days?: IAttendanceScheduleDayDTO[]
   workingShiftId?: string | null
 }

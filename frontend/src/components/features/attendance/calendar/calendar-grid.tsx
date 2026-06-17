@@ -7,35 +7,40 @@ import type { WeekDay } from "@/utils/attendance/get-week-dates"
 
 import { Loader2 } from "lucide-react"
 
-interface CalendarGridProps {
+interface CalendarGridSegmentProps {
   weekDays: WeekDay[]
   todayDayOfWeek: number
   activeTab: CalendarTab
   showAllShifts: boolean
-  isLoading: boolean
-  isEmpty: boolean
   scheduleDaysByDay: Map<number, IScheduleDay>
   recordsByDate: Map<string, IAttendanceRecord>
   holidaysByDate: Map<string, IHoliday>
   activeShifts: IWorkingShift[]
 }
 
-export function CalendarGrid({
+function CalendarGridSegment({
   weekDays,
   todayDayOfWeek,
   activeTab,
   showAllShifts,
-  isLoading,
-  isEmpty,
   scheduleDaysByDay,
   recordsByDate,
   holidaysByDate,
   activeShifts,
-}: CalendarGridProps) {
+}: CalendarGridSegmentProps) {
+  const dayColumnCount = weekDays.length
+  const gridTemplate = `7rem repeat(${dayColumnCount}, minmax(6.5rem, 1fr))`
+
   return (
     <div className="overflow-x-auto rounded-lg border border-border/70">
-      <div className="min-w-[48rem]">
-        <div className="grid grid-cols-[7rem_repeat(7,minmax(7rem,1fr))] border-b border-border/60 bg-secondary/40 text-center text-xs font-bold text-muted-foreground">
+      <div
+        className="min-w-0"
+        style={{ minWidth: `${7 + dayColumnCount * 6.5}rem` }}
+      >
+        <div
+          className="grid border-b border-border/60 bg-secondary/40 text-center text-xs font-bold text-muted-foreground"
+          style={{ gridTemplateColumns: gridTemplate }}
+        >
           <div className="px-3 py-2 text-left">Giờ</div>
           {weekDays.map((day) => (
             <div
@@ -48,23 +53,10 @@ export function CalendarGrid({
           ))}
         </div>
 
-        <div className="relative grid min-h-[33rem] grid-cols-[7rem_repeat(7,minmax(7rem,1fr))] bg-card">
-          {isLoading ? (
-            <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/60 backdrop-blur-xs">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : isEmpty ? (
-            <div className="absolute inset-0 z-20 flex items-center justify-center bg-card">
-              <EmptyState
-                message={
-                  activeTab === "planned"
-                    ? "Bạn chưa được phân ca làm việc trong tuần này"
-                    : "Chưa có dữ liệu thời gian thực trong tuần này"
-                }
-              />
-            </div>
-          ) : null}
-
+        <div
+          className="relative grid min-h-[33rem] bg-card"
+          style={{ gridTemplateColumns: gridTemplate }}
+        >
           <div className="divide-y divide-border/40 border-r border-border/60">
             {CALENDAR_HOURS.map((hour) => (
               <div
@@ -90,6 +82,77 @@ export function CalendarGrid({
             />
           ))}
         </div>
+      </div>
+    </div>
+  )
+}
+
+interface CalendarGridProps {
+  weekDays: WeekDay[]
+  todayDayOfWeek: number
+  activeTab: CalendarTab
+  showAllShifts: boolean
+  isLoading: boolean
+  isEmpty: boolean
+  scheduleDaysByDay: Map<number, IScheduleDay>
+  recordsByDate: Map<string, IAttendanceRecord>
+  holidaysByDate: Map<string, IHoliday>
+  activeShifts: IWorkingShift[]
+}
+
+export function CalendarGrid({
+  weekDays,
+  todayDayOfWeek,
+  activeTab,
+  showAllShifts,
+  isLoading,
+  isEmpty,
+  scheduleDaysByDay,
+  recordsByDate,
+  holidaysByDate,
+  activeShifts,
+}: CalendarGridProps) {
+  const segmentProps = {
+    todayDayOfWeek,
+    activeTab,
+    showAllShifts,
+    scheduleDaysByDay,
+    recordsByDate,
+    holidaysByDate,
+    activeShifts,
+  }
+  const compactSegments = [weekDays.slice(0, 4), weekDays.slice(4)]
+
+  return (
+    <div className="relative">
+      {isLoading ? (
+        <div className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-background/60 backdrop-blur-xs">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : isEmpty ? (
+        <div className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-card">
+          <EmptyState
+            message={
+              activeTab === "planned"
+                ? "Bạn chưa được phân ca làm việc trong tuần này"
+                : "Chưa có dữ liệu thời gian thực trong tuần này"
+            }
+          />
+        </div>
+      ) : null}
+
+      <div className="hidden xl:block">
+        <CalendarGridSegment weekDays={weekDays} {...segmentProps} />
+      </div>
+
+      <div className="space-y-4 xl:hidden">
+        {compactSegments.map((segmentDays, index) => (
+          <CalendarGridSegment
+            key={index}
+            weekDays={segmentDays}
+            {...segmentProps}
+          />
+        ))}
       </div>
     </div>
   )

@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "build": "bunx prisma generate",
+    "postinstall": "bunx prisma generate",
+    "typecheck": "tsc --noEmit",
     "seed": "bun run src/scripts/seed-all.ts",
     "seed:admin": "bun run src/scripts/seed-admin.ts",
     "clear": "bun run src/scripts/clear-db.ts"

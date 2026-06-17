@@ -118,3 +118,23 @@ export const LEAVE_BALANCE_DEFAULTS: Record<ILeaveType, number> = {
   unpaid_leave: 0, // unlimited (no balance check)
   other: 0, // unlimited
 }
+
+/** 0 = Sunday … 6 = Saturday (matches JS Date#getDay). */
+export const DAY_OF_WEEK_VALUES = [0, 1, 2, 3, 4, 5, 6] as const
+export type IDayOfWeek = (typeof DAY_OF_WEEK_VALUES)[number]
+
+export const WEEKLY_SCHEDULE_SETTINGS_ID = "GLOBAL" as const
+
+export const WEEKLY_SCHEDULE_DEFAULTS = {
+  TRIGGER_DAY_OF_WEEK: 1,
+  TRIGGER_HOUR: 7,
+  TRIGGER_MINUTE: 0,
+} as const
+
+export const ATTENDANCE_QUERY_PARAMS = {
+  START_DATE: "startDate",
+  END_DATE: "endDate",
+  EMPLOYEE_ID: "employeeId",
+  STATUS: "status",
+  PERSONAL_ONLY: "personalOnly",
+} as const

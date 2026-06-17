@@ -21,16 +21,26 @@ import {
   TimerReset,
 } from "lucide-react"
 
-export function AttendanceSummaryContent() {
+interface AttendanceSummaryContentProps {
+  employeeId?: string
+}
+
+export function AttendanceSummaryContent({ employeeId }: AttendanceSummaryContentProps) {
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth())
   const { startDate, endDate } = getMonthRange(year, month)
 
-  const { data: records, isLoading: isRecordsLoading } = useAttendanceRecords({ startDate, endDate })
+  const { data: records, isLoading: isRecordsLoading } = useAttendanceRecords({
+    startDate,
+    endDate,
+    ...(employeeId ? { employeeId } : { personalOnly: true }),
+  })
   const { data: schedule, isLoading: isScheduleLoading } = useQuery({
-    queryKey: ["my-schedule", startDate],
-    queryFn: () => schedulesApi.getMy(startDate),
+    queryKey: employeeId ? ["employee-schedule", employeeId, startDate] : ["my-schedule", startDate],
+    queryFn: () =>
+      employeeId ? schedulesApi.getByEmployee(employeeId, startDate) : schedulesApi.getMy(startDate),
+    enabled: employeeId ? Boolean(employeeId) : true,
   })
   const { data: holidays, isLoading: isHolidaysLoading } = useQuery({
     queryKey: ["holidays", startDate, endDate],

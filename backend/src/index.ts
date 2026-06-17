@@ -2,6 +2,7 @@ import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { PORT } from "@/configs/system/server.config.ts"
 import { connectDB } from "@/libs/database.ts"
 import { initCronJobs } from "@/libs/payroll-cron.ts"
+import { initWeeklyScheduleCron } from "@/libs/weekly-schedule-cron.ts"
 import { cors } from "@/middlewares/cors.middleware.ts"
 import { globalErrorHandler } from "@/middlewares/error.middleware.ts"
 import applicationRoutes from "@/routes/application.route.ts"
@@ -11,6 +12,7 @@ import authRoutes from "@/routes/auth.route.ts"
 import employeeSalaryConfigRoutes from "@/routes/employee-salary-config.route.ts"
 import employeeRoutes from "@/routes/employee.route.ts"
 import holidayRoutes from "@/routes/holiday.route.ts"
+import weeklyScheduleTemplateRoutes from "@/routes/weekly-schedule-template.route.ts"
 import payrollRoutes from "@/routes/payroll.route.ts"
 import payslipTemplateRoutes from "@/routes/payslip-template.route.ts"
 import profileRoutes from "@/routes/profile.route.ts"
@@ -85,6 +87,7 @@ app.use("/api/attendance", attendanceRoutes)
 app.use("/api/applications", applicationRoutes)
 app.use("/api/shift-change-requests", shiftChangeRequestRoutes)
 app.use("/api/holidays", holidayRoutes)
+app.use("/api/weekly-schedule-templates", weeklyScheduleTemplateRoutes)
 app.use("/api/approvals", approvalRoutes)
 
 // Payroll routes
@@ -115,5 +118,6 @@ connectDB().then(() => {
   app.listen(PORT, () => {
     console.log("Server start on port " + PORT)
     initCronJobs()
+    initWeeklyScheduleCron()
   })
 })

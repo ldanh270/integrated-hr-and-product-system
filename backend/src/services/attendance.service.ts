@@ -24,6 +24,7 @@ import {
   IWorkingShiftRepository,
 } from "@/types/shift.types.ts"
 import { AppError } from "@/utils/error.util.ts"
+import { resolveShiftFromSchedule } from "@/utils/schedule.util.ts"
 
 /**
  * Service for managing employee attendance, including check-in, check-out, and record querying.
@@ -68,13 +69,8 @@ export class AttendanceService implements IAttendanceService {
   ): string | undefined {
     if (!schedule) return undefined
 
-    const dayOfWeek = date.getDay()
-    if (Array.isArray(schedule.days) && schedule.days.length > 0) {
-      const day = schedule.days.find((item) => item.dayOfWeek === dayOfWeek)
-      if (day?.shiftId) {
-        return day.shiftId
-      }
-    }
+    const resolved = resolveShiftFromSchedule(schedule, date)
+    if (resolved?.shiftId) return resolved.shiftId
 
     if (schedule.workingShiftId) {
       return schedule.workingShiftId
