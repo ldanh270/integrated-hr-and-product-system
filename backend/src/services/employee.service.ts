@@ -3,6 +3,7 @@ import { ACTIVITY_ACTION, ACTIVITY_CATEGORY } from "@/configs/auth/auth.config.t
 import { DB_ERROR_CODES } from "@/configs/system/db.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { prisma } from "@/libs/database.ts"
+import { Role } from "@prisma/client"
 import {
   CreateEmployeeDto,
   Employee,
@@ -79,8 +80,8 @@ export class EmployeeService implements IEmployeeService {
         ...repoData,
         passwordHash,
       })
-    } catch (error: any) {
-      if (DB_ERROR_CODES.UNIQUE_CONSTRAINT.includes(error.code)) {
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'code' in error && (DB_ERROR_CODES.UNIQUE_CONSTRAINT as readonly string[]).includes((error as { code: string }).code)) {
         throw new AppError(
           "Username, email, phone, or national ID already exists",
           HttpStatusCode.CONFLICT,
@@ -183,7 +184,7 @@ export class EmployeeService implements IEmployeeService {
    * @returns List of approver employees with minimal fields.
    */
   async listApprovers(): Promise<{ id: string; fullName: string; role: string; position: string | null }[]> {
-    const APPROVER_ROLES = [ROLE.ADMIN, ROLE.GENERAL_MANAGER, ROLE.HR_MANAGER, ROLE.TEAM_LEADER] as any[]
+    const APPROVER_ROLES = [ROLE.ADMIN, ROLE.GENERAL_MANAGER, ROLE.HR_MANAGER, ROLE.TEAM_LEADER] as Role[]
     return prisma.employee.findMany({
       where: {
         role: { in: APPROVER_ROLES },

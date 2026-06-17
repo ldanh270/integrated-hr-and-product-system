@@ -147,6 +147,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
     }
   }
 
+  // eslint-disable-next-line security/detect-object-injection
   const meta = APP_TYPE_META[selectedType]
 
   return (
@@ -240,7 +241,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                     type="date"
                     value={form.endDate}
                     min={form.startDate}
-                    onChange={(e) => set("endDate", e.target.value)}
+                    onChange={(e) => { set("endDate", e.target.value); }}
                     className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
@@ -254,7 +255,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                     <div className="relative">
                       <select
                         value={form.leaveType}
-                        onChange={(e) => set("leaveType", e.target.value)}
+                        onChange={(e) => { set("leaveType", e.target.value); }}
                         className="w-full px-3 py-2 border border-input rounded-lg text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-background text-foreground pr-8"
                       >
                         {LEAVE_TYPE_OPTIONS.map((o) => (
@@ -273,7 +274,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                         <button
                           key={rt}
                           type="button"
-                          onClick={() => set("leaveRegimeType", rt)}
+                          onClick={() => { set("leaveRegimeType", rt); }}
                           className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
                             form.leaveRegimeType === rt
                               ? "border-primary bg-primary/5 text-primary"
@@ -297,7 +298,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                     required
                     placeholder="Nhập CUID ca làm việc..."
                     value={form.employeeShiftId}
-                    onChange={(e) => set("employeeShiftId", e.target.value)}
+                    onChange={(e) => { set("employeeShiftId", e.target.value); }}
                     className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
@@ -313,7 +314,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                       required
                       placeholder="Nhập CUID ca làm việc..."
                       value={form.employeeShiftId}
-                      onChange={(e) => set("employeeShiftId", e.target.value)}
+                      onChange={(e) => { set("employeeShiftId", e.target.value); }}
                       className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -324,7 +325,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                         <button
                           key={String(v)}
                           type="button"
-                          onClick={() => set("isLate", v)}
+                          onClick={() => { set("isLate", v); }}
                           className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
                             form.isLate === v
                               ? "border-primary bg-primary/5 text-primary"
@@ -344,7 +345,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                       min={1}
                       max={480}
                       value={form.durationMinutes}
-                      onChange={(e) => set("durationMinutes", Number(e.target.value))}
+                      onChange={(e) => { set("durationMinutes", Number(e.target.value)); }}
                       className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -361,7 +362,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                       required
                       placeholder="Nhập CUID ca làm việc..."
                       value={form.employeeShiftId}
-                      onChange={(e) => set("employeeShiftId", e.target.value)}
+                      onChange={(e) => { set("employeeShiftId", e.target.value); }}
                       className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -371,7 +372,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                       type="text"
                       placeholder="CUID nhân viên..."
                       value={form.swapWithEmployeeId}
-                      onChange={(e) => set("swapWithEmployeeId", e.target.value)}
+                      onChange={(e) => { set("swapWithEmployeeId", e.target.value); }}
                       className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -381,7 +382,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                       type="text"
                       placeholder="CUID ca làm việc..."
                       value={form.swapWithShiftId}
-                      onChange={(e) => set("swapWithShiftId", e.target.value)}
+                      onChange={(e) => { set("swapWithShiftId", e.target.value); }}
                       className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -396,7 +397,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                     type="text"
                     placeholder="VD: Tại nhà, Quán cà phê..."
                     value={form.location}
-                    onChange={(e) => set("location", e.target.value)}
+                    onChange={(e) => { set("location", e.target.value); }}
                     className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
@@ -412,7 +413,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                       required
                       placeholder="VD: Hà Nội, TP.HCM..."
                       value={form.destination}
-                      onChange={(e) => set("destination", e.target.value)}
+                      onChange={(e) => { set("destination", e.target.value); }}
                       className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -422,7 +423,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                       type="text"
                       placeholder="Mô tả mục đích..."
                       value={form.purpose}
-                      onChange={(e) => set("purpose", e.target.value)}
+                      onChange={(e) => { set("purpose", e.target.value); }}
                       className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -439,7 +440,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                         <button
                           key={rt}
                           type="button"
-                          onClick={() => set("regimeType", rt)}
+                          onClick={() => { set("regimeType", rt); }}
                           className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
                             form.regimeType === rt
                               ? "border-primary bg-primary/5 text-primary"
@@ -461,7 +462,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                       min={0}
                       max={480}
                       value={form.reducedMinutesPerDay}
-                      onChange={(e) => set("reducedMinutesPerDay", Number(e.target.value))}
+                      onChange={(e) => { set("reducedMinutesPerDay", Number(e.target.value)); }}
                       className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -477,8 +478,10 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                         <label key={key} className="flex items-center gap-2 cursor-pointer">
                           <input
                             type="checkbox"
+                            // eslint-disable-next-line security/detect-object-injection
                             checked={form[key]}
-                            onChange={(e) => set(key, e.target.checked)}
+                            // eslint-disable-next-line security/detect-object-injection
+                            onChange={(e) => { set(key, e.target.checked); }}
                             className="accent-primary"
                           />
                           <span className="text-sm text-foreground">{label}</span>
@@ -494,7 +497,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                       type="url"
                       placeholder="https://..."
                       value={form.documentUrl}
-                      onChange={(e) => set("documentUrl", e.target.value)}
+                      onChange={(e) => { set("documentUrl", e.target.value); }}
                       className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -512,7 +515,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                   minLength={5}
                   placeholder="Nhập lý do gửi đơn..."
                   value={form.reason}
-                  onChange={(e) => set("reason", e.target.value)}
+                  onChange={(e) => { set("reason", e.target.value); }}
                   className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
                 />
               </div>
@@ -527,7 +530,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                   </label>
                   <select
                     value={form.assignedToId}
-                    onChange={(e) => set("assignedToId", e.target.value)}
+                    onChange={(e) => { set("assignedToId", e.target.value); }}
                     className="px-3 py-2 border border-input bg-background rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   >
                     <option value="">-- Không chỉ định (bất kỳ ai có thẩm quyền) --</option>
@@ -549,7 +552,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                   type="text"
                   placeholder="Thông tin bổ sung (nếu có)..."
                   value={form.note}
-                  onChange={(e) => set("note", e.target.value)}
+                  onChange={(e) => { set("note", e.target.value); }}
                   className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
               </div>

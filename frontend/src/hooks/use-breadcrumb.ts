@@ -18,7 +18,6 @@ export function useBreadcrumb(): BreadcrumbItem[] {
 
   return useMemo(() => {
     const pathname = location.pathname
-    const fullPath = location.pathname + location.search
 
     const subsystem = SUBSYSTEMS.find((s) => pathname.startsWith(s.routePrefix))
     if (!subsystem) return []

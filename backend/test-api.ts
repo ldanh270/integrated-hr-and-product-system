@@ -14,8 +14,8 @@ async function run() {
     console.log("STATUS:", res.status);
     const data = await res.json();
     console.log("RESPONSE:", JSON.stringify(data, null, 2));
-  } catch (err: any) {
-    console.error("ERROR:", err.message);
+  } catch (err: unknown) {
+    console.error("ERROR:", err instanceof Error ? err.message : err);
   }
 }
-run();
+void run();

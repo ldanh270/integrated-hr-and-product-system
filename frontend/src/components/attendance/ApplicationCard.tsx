@@ -3,7 +3,7 @@ import type { IApplication } from "@/lib/api/application.api"
 
 import { useState } from "react"
 
-import { Check, ChevronDown, FileText, X } from "lucide-react"
+import { Check, ChevronDown, X } from "lucide-react"
 
 import { APP_TYPE_META, STATUS_META } from "./attendance-ui.meta"
 
@@ -25,14 +25,8 @@ export function ApplicationCard({
   processingId,
 }: ApplicationCardProps) {
   const [expanded, setExpanded] = useState(false)
-  const typeMeta = APP_TYPE_META[app.type] ?? {
-    label: app.type,
-    icon: FileText,
-    color: "text-slate-600",
-    bg: "bg-slate-50",
-    border: "border-slate-200",
-  }
-  const statusMeta = STATUS_META[app.status] ?? STATUS_META.pending
+  const typeMeta = APP_TYPE_META[app.type as keyof typeof APP_TYPE_META]
+  const statusMeta = STATUS_META[app.status as keyof typeof STATUS_META]
   const TypeIcon = typeMeta.icon
   const StatusIcon = statusMeta.icon
 
@@ -40,7 +34,7 @@ export function ApplicationCard({
     <div className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-all duration-200">
       <div
         className="flex items-center gap-4 p-4 cursor-pointer select-none"
-        onClick={() => setExpanded((v) => !v)}
+        onClick={() => { setExpanded((v) => !v); }}
       >
         <div
           className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center border ${typeMeta.bg} ${typeMeta.border} ${typeMeta.color}`}

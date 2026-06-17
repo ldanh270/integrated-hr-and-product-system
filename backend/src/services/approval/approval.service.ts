@@ -105,7 +105,7 @@ export class ApprovalService implements IApprovalService {
               reason: app.reason,
               note: app.note,
               assignedToId: app.assignedToId,
-              assignedTo: (app as any).assignedTo,
+              assignedTo: (app as unknown as { assignedTo: { id: string, fullName: string } | null }).assignedTo,
               shiftSwapDetail: app.shiftSwapDetail,
               overtimeDetail: app.overtimeDetail,
               lateEarlyDetail: app.lateEarlyDetail,

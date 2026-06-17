@@ -67,11 +67,11 @@ export function ApplicationDetail({
         const leaveDetail = application.detail as Record<string, unknown>
         return (
           <>
-            <td className="px-4 py-4 font-semibold text-foreground">{String(leaveDetail?.leaveType || "-")}</td>
+            <td className="px-4 py-4 font-semibold text-foreground">{String(leaveDetail.leaveType || "-")}</td>
             <td className="px-4 py-4 text-foreground">{new Date(application.startDate).toLocaleDateString("vi-VN")}</td>
             <td className="px-4 py-4 text-foreground">{new Date(application.endDate).toLocaleDateString("vi-VN")}</td>
             <td className="px-4 py-4 text-foreground">
-              {leaveDetail?.regimeType === REGIME_TYPE.PAID ? "Có lương" : "Không lương"}
+              {leaveDetail.regimeType === REGIME_TYPE.PAID ? "Có lương" : "Không lương"}
             </td>
             <td className="px-4 py-4 text-foreground">{application.reason || "-"}</td>
           </>

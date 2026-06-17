@@ -36,7 +36,7 @@ export function RejectDialog({ app, onCancel, onConfirm, isLoading }: RejectDial
           </div>
           <h3 className="text-base font-bold text-slate-800">Từ chối đơn?</h3>
           <p className="text-sm text-slate-500">
-            Từ chối đơn <strong className={typeMeta?.color}>{typeMeta?.label ?? app.type}</strong>{" "}
+            Từ chối đơn <strong className={typeMeta.color}>{typeMeta.label ?? app.type}</strong>{" "}
             của <strong>{app.employee?.fullName}</strong>?
           </p>
         </div>
@@ -47,7 +47,7 @@ export function RejectDialog({ app, onCancel, onConfirm, isLoading }: RejectDial
               rows={3}
               required
               value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              onChange={(e) => { setReason(e.target.value); }}
               placeholder="Nhập lý do..."
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
             />

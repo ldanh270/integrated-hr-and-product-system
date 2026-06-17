@@ -5,4 +5,4 @@ async function main() {
   console.log(employees.map(e => ({ id: e.id, fullName: e.fullName, role: e.role, status: e.status })));
 }
 
-main().catch(e => console.error(e)).finally(() => prisma.$disconnect());
+void main().catch(e => console.error(e)).finally(() => void prisma.$disconnect());

@@ -99,10 +99,10 @@ export class PayrollService implements IPayrollService {
     });
 
     // Group by employeeId in memory
-    const appsByEmployeeId: Record<string, any[]> = {};
+    const appsByEmployeeId: Record<string, any[] | undefined> = {};
     allApprovedApps.forEach(app => {
       if (!appsByEmployeeId[app.employeeId]) appsByEmployeeId[app.employeeId] = [];
-      appsByEmployeeId[app.employeeId].push(app);
+      appsByEmployeeId[app.employeeId]!.push(app);
     });
 
     for (const employee of employees) {

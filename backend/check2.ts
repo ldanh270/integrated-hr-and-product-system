@@ -9,4 +9,4 @@ async function main() {
   });
   console.log("DB Approvers:", approvers.length);
 }
-main();
+void main();

@@ -109,7 +109,7 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
             <input
               type="text"
               value={localKeyword}
-              onChange={(e) => setLocalKeyword(e.target.value)}
+              onChange={(e) => { setLocalKeyword(e.target.value); }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   setKeyword(localKeyword)
@@ -220,7 +220,7 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
                 applications.map((app) => (
                   <tr
                     key={app.id}
-                    onClick={() => onRowClick(app)}
+                    onClick={() => { onRowClick(app); }}
                     className="hover:bg-muted/50 transition-colors cursor-pointer group"
                   >
                     <td className="px-4 py-4 text-foreground font-medium">

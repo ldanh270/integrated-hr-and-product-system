@@ -251,6 +251,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
     }
   }
 
+  // eslint-disable-next-line security/detect-object-injection
   const meta = APP_TYPE_META[selectedType]
 
   return (
@@ -264,7 +265,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
             {step === "details" && (
               <button
                 type="button"
-                onClick={() => setStep("type")}
+                onClick={() => { setStep("type"); }}
                 className="p-1.5 rounded-full hover:bg-slate-100 transition-colors text-slate-500"
               >
                 <ArrowLeft size={16} />
@@ -322,7 +323,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
           )}
 
           {/* Step 2: Details form */}
-          {step === "details" && meta && (
+          {step === "details" && (
             <form id="submit-form" onSubmit={(e) => { void handleSubmit(e); }} className="p-5 flex flex-col gap-4">
               {/* Type badge */}
               <div
@@ -346,7 +347,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                     type="date"
                     required
                     value={form.startDate}
-                    onChange={(e) => set("startDate", e.target.value)}
+                    onChange={(e) => { set("startDate", e.target.value); }}
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
@@ -364,7 +365,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                       type="date"
                       value={form.endDate}
                       min={form.startDate}
-                      onChange={(e) => set("endDate", e.target.value)}
+                      onChange={(e) => { set("endDate", e.target.value); }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -379,7 +380,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                     <div className="relative">
                       <select
                         value={form.leaveType}
-                        onChange={(e) => set("leaveType", e.target.value)}
+                        onChange={(e) => { set("leaveType", e.target.value); }}
                         className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-background pr-8"
                       >
                         {LEAVE_TYPE_OPTIONS.map((o) => (
@@ -401,7 +402,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                         <button
                           key={rt}
                           type="button"
-                          onClick={() => set("leaveRegimeType", rt)}
+                          onClick={() => { set("leaveRegimeType", rt); }}
                           className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
                             form.leaveRegimeType === rt
                               ? "border-primary bg-primary/5 text-primary"
@@ -425,7 +426,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                     required
                     placeholder="Nhập CUID ca làm việc..."
                     value={form.employeeShiftId}
-                    onChange={(e) => set("employeeShiftId", e.target.value)}
+                    onChange={(e) => { set("employeeShiftId", e.target.value); }}
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
@@ -441,7 +442,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                       required
                       placeholder="Nhập CUID ca làm việc..."
                       value={form.employeeShiftId}
-                      onChange={(e) => set("employeeShiftId", e.target.value)}
+                      onChange={(e) => { set("employeeShiftId", e.target.value); }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -452,7 +453,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                         <button
                           key={String(v)}
                           type="button"
-                          onClick={() => set("isLate", v)}
+                          onClick={() => { set("isLate", v); }}
                           className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
                             form.isLate === v
                               ? "border-primary bg-primary/5 text-primary"
@@ -474,7 +475,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                       min={1}
                       max={480}
                       value={form.durationMinutes}
-                      onChange={(e) => set("durationMinutes", Number(e.target.value))}
+                      onChange={(e) => { set("durationMinutes", Number(e.target.value)); }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -491,7 +492,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                       required
                       placeholder="Nhập CUID ca làm việc..."
                       value={form.employeeShiftId}
-                      onChange={(e) => set("employeeShiftId", e.target.value)}
+                      onChange={(e) => { set("employeeShiftId", e.target.value); }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -503,7 +504,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                       type="text"
                       placeholder="CUID nhân viên..."
                       value={form.swapWithEmployeeId}
-                      onChange={(e) => set("swapWithEmployeeId", e.target.value)}
+                      onChange={(e) => { set("swapWithEmployeeId", e.target.value); }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -515,7 +516,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                       type="text"
                       placeholder="CUID ca làm việc..."
                       value={form.swapWithShiftId}
-                      onChange={(e) => set("swapWithShiftId", e.target.value)}
+                      onChange={(e) => { set("swapWithShiftId", e.target.value); }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -531,7 +532,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                     type="text"
                     placeholder="VD: Tại nhà, Quán cà phê..."
                     value={form.location}
-                    onChange={(e) => set("location", e.target.value)}
+                    onChange={(e) => { set("location", e.target.value); }}
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
@@ -550,7 +551,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                       required
                       placeholder="VD: Hà Nội, TP.HCM..."
                       value={form.destination}
-                      onChange={(e) => set("destination", e.target.value)}
+                      onChange={(e) => { set("destination", e.target.value); }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -562,7 +563,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                       type="text"
                       placeholder="Mô tả mục đích..."
                       value={form.purpose}
-                      onChange={(e) => set("purpose", e.target.value)}
+                      onChange={(e) => { set("purpose", e.target.value); }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -579,7 +580,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                         <button
                           key={rt}
                           type="button"
-                          onClick={() => set("regimeType", rt)}
+                          onClick={() => { set("regimeType", rt); }}
                           className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
                             form.regimeType === rt
                               ? "border-primary bg-primary/5 text-primary"
@@ -601,7 +602,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                       min={0}
                       max={480}
                       value={form.reducedMinutesPerDay}
-                      onChange={(e) => set("reducedMinutesPerDay", Number(e.target.value))}
+                      onChange={(e) => { set("reducedMinutesPerDay", Number(e.target.value)); }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -618,7 +619,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                           <input
                             type="checkbox"
                             checked={form[key]}
-                            onChange={(e) => set(key, e.target.checked)}
+                            onChange={(e) => { set(key, e.target.checked); }}
                             className="accent-primary"
                           />
                           <span className="text-sm text-slate-600">{label}</span>
@@ -634,7 +635,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                       type="url"
                       placeholder="https://..."
                       value={form.documentUrl}
-                      onChange={(e) => set("documentUrl", e.target.value)}
+                      onChange={(e) => { set("documentUrl", e.target.value); }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -652,7 +653,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                   minLength={5}
                   placeholder="Nhập lý do gửi đơn..."
                   value={form.reason}
-                  onChange={(e) => set("reason", e.target.value)}
+                  onChange={(e) => { set("reason", e.target.value); }}
                   className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
                 />
               </div>
@@ -664,7 +665,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                   type="text"
                   placeholder="Thông tin bổ sung (nếu có)..."
                   value={form.note}
-                  onChange={(e) => set("note", e.target.value)}
+                  onChange={(e) => { set("note", e.target.value); }}
                   className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
               </div>
@@ -677,7 +678,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
           <div className="border-t border-slate-100 px-5 py-4 flex gap-3 bg-slate-50">
             <button
               type="button"
-              onClick={() => setStep("type")}
+              onClick={() => { setStep("type"); }}
               className="flex-1 py-2.5 border border-slate-200 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
             >
               Quay lại
@@ -795,7 +796,7 @@ function RejectDialog({ app, onCancel, onConfirm, isLoading }: RejectDialogProps
               rows={3}
               required
               value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              onChange={(e) => { setReason(e.target.value); }}
               placeholder="Nhập lý do..."
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
             />
