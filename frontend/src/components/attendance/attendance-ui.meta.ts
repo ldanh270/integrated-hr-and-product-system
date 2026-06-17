@@ -9,6 +9,7 @@ import {
   Hourglass,
   Laptop,
   Repeat2,
+  UserMinus,
 } from "lucide-react"
 
 export const APP_TYPE_META: Record<
@@ -62,6 +63,14 @@ export const APP_TYPE_META: Record<
     bg: "bg-rose-50",
     border: "border-rose-200",
     hint: "Thông báo đi muộn hoặc về sớm",
+  },
+  resignation: {
+    label: "Thôi việc",
+    icon: UserMinus,
+    color: "text-slate-600",
+    bg: "bg-slate-100",
+    border: "border-slate-200",
+    hint: "Thông báo xin nghỉ việc",
   },
 }
 

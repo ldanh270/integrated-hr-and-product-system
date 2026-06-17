@@ -323,7 +323,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
 
           {/* Step 2: Details form */}
           {step === "details" && meta && (
-            <form id="submit-form" onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
+            <form id="submit-form" onSubmit={(e) => { void handleSubmit(e); }} className="p-5 flex flex-col gap-4">
               {/* Type badge */}
               <div
                 className={`flex items-center gap-2.5 p-3 rounded-xl border ${meta.border} ${meta.bg}`}

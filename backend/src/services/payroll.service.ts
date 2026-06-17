@@ -20,7 +20,7 @@ import {
 } from "@/types/payroll.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 
-import { Payroll, PayrollStatus, Prisma, PrismaClient } from "@prisma/client"
+import { ApplicationType, Payroll, PayrollStatus, Prisma, PrismaClient } from "@prisma/client"
 import * as math from "mathjs"
 
 // Need an interface for SettingsRepository
@@ -86,6 +86,25 @@ export class PayrollService implements IPayrollService {
     })
     let totalAmount = new Prisma.Decimal(0)
 
+    // Fetch all approved applications for the period ONCE (N+1 fix)
+    const allApprovedApps = await this.prisma.application.findMany({
+      where: {
+        employeeId: { in: employees.map(e => e.id) },
+        status: "approved",
+        type: { in: [ApplicationType.leave, ApplicationType.late_early] },
+        startDate: { lte: periodEnd },
+        endDate: { gte: periodStart },
+      },
+      include: { leaveDetail: true, lateEarlyDetail: true }
+    });
+
+    // Group by employeeId in memory
+    const appsByEmployeeId: Record<string, any[]> = {};
+    allApprovedApps.forEach(app => {
+      if (!appsByEmployeeId[app.employeeId]) appsByEmployeeId[app.employeeId] = [];
+      appsByEmployeeId[app.employeeId].push(app);
+    });
+
     for (const employee of employees) {
       const config = await this.salaryConfigRepo.findActiveByEmployee(employee.id, periodStart)
       if (!config) {
@@ -123,17 +142,8 @@ export class PayrollService implements IPayrollService {
         attendance.earlyLeaveMinutes += record.earlyLeaveMinutes || 0
       })
 
-      // Query approved applications for Paid Leaves and Excused Late/Early
-      const approvedApps = await this.prisma.application.findMany({
-        where: {
-          employeeId: employee.id,
-          status: "approved",
-          type: { in: ["leave", "late_early"] },
-          startDate: { lte: periodEnd },
-          endDate: { gte: periodStart },
-        },
-        include: { leaveDetail: true, lateEarlyDetail: true }
-      })
+      // Use pre-fetched applications to prevent N+1
+      const approvedApps = appsByEmployeeId[employee.id] || [];
 
       let paidLeaveDays = 0
       let excusedLateMinutes = 0
@@ -144,8 +154,16 @@ export class PayrollService implements IPayrollService {
           if ((PAID_LEAVE_TYPES as string[]).includes(app.leaveDetail.leaveType)) {
             const start = app.startDate > periodStart ? app.startDate : periodStart
             const end = app.endDate < periodEnd ? app.endDate : periodEnd
-            const diffMs = end.getTime() - start.getTime()
-            paidLeaveDays += Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
+            let days = 0;
+            let current = new Date(start);
+            while (current <= end) {
+              const day = current.getDay();
+              if (day !== 0 && day !== 6) { // Skip Sunday (0) and Saturday (6)
+                days++;
+              }
+              current.setDate(current.getDate() + 1);
+            }
+            paidLeaveDays += Math.max(1, days);
           }
         } else if (app.type === "late_early" && app.lateEarlyDetail) {
           if (app.lateEarlyDetail.isLate) {

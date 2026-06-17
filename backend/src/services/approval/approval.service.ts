@@ -20,6 +20,7 @@ import {
  * Service for managing approval workflows across different categories (applications, password resets, etc.).
  */
 export class ApprovalService implements IApprovalService {
+  constructor(private appRepo: PrismaApplicationRepository) {}
   /**
    * Fetches all pending requests of all types that the current processor is authorized to approve.
    *
@@ -195,8 +196,7 @@ export class ApprovalService implements IApprovalService {
       }
 
       if (dto.status === APPLICATION_STATUS.APPROVED) {
-        const appRepo = new PrismaApplicationRepository(prisma)
-        const result = await appRepo.approve(dto.id, dto.processorId)
+        const result = await this.appRepo.approve(dto.id, dto.processorId)
         if (!result)
           throw new AppError(
             "Failed to approve application",

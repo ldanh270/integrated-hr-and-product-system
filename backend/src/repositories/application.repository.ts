@@ -44,7 +44,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    * @returns A promise that resolves to the newly created application with all included relations.
    */
   async submit(data: ISubmitApplicationDTO): Promise<any> {
-    const { employeeId, type, startDate, endDate, reason, note, assignedToId, detail } = data as any
+    const { employeeId, type, startDate, endDate, reason, note, assignedToId, detail } = data
 
     return this.prisma.application.create({
       data: {
@@ -157,7 +157,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
             })
 
             if (shift1 && shift2) {
-              const tempDate = new Date("1970-01-01")
+              const tempDate = new Date(Date.now() + Math.floor(Math.random() * 1000000))
               // Step 1: Move shift1 to a temp date to avoid unique constraint violations [employeeId, assignedDate]
               await tx.employeeShift.update({
                 where: { id: shift1.id },
@@ -198,7 +198,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
                   employeeId: shift.employeeId,
                   employeeShiftId: shift.id,
                   date: shift.assignedDate,
-                  status: AttendanceStatus.absent,
+                  status: AttendanceStatus.overtime,
                   overtimeMinutes: minutes,
                 },
                 update: {
