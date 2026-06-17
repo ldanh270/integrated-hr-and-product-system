@@ -20,7 +20,7 @@ import {
 } from "@/types/payroll.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 
-import { ApplicationType, Payroll, PayrollStatus, Prisma, PrismaClient } from "@prisma/client"
+import { Application, ApplicationType, Payroll, PayrollStatus, Prisma, PrismaClient } from "@prisma/client"
 import * as math from "mathjs"
 
 // Need an interface for SettingsRepository
@@ -99,10 +99,13 @@ export class PayrollService implements IPayrollService {
     });
 
     // Group by employeeId in memory
-    const appsByEmployeeId: Record<string, any[] | undefined> = {};
+    const appsByEmployeeId: Record<string, Prisma.ApplicationGetPayload<{ include: { leaveDetail: true, lateEarlyDetail: true } }>[] | undefined> = {};
     allApprovedApps.forEach(app => {
       if (!appsByEmployeeId[app.employeeId]) appsByEmployeeId[app.employeeId] = [];
-      appsByEmployeeId[app.employeeId]!.push(app);
+      const employeeApps = appsByEmployeeId[app.employeeId];
+      if (employeeApps) {
+        employeeApps.push(app);
+      }
     });
 
     for (const employee of employees) {

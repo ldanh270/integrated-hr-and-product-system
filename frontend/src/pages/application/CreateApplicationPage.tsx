@@ -27,7 +27,7 @@ export default function CreateApplicationPage() {
   const { user } = useAuthStore()
   const { isSubmitting, submitApplication } = useSubmitApplication()
 
-  const typeLabel = APPLICATION_TYPE_LABELS[type] || "đơn từ"
+  const typeLabel = Object.entries(APPLICATION_TYPE_LABELS).find(([k]) => k === type)?.[1] || "đơn từ"
 
   const handleBack = () => {
     navigate(-1)
@@ -80,7 +80,7 @@ export default function CreateApplicationPage() {
       .catch(() => {})
     employeeApi
       .list({ limit: 1000 })
-      .then((res) => setEmployees(res.data))
+      .then((res) => { setEmployees(res.data); })
       .catch(() => {})
   }, [])
 
@@ -90,8 +90,9 @@ export default function CreateApplicationPage() {
     return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`
   }
 
-  const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
+  const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => {
     setForm((prev) => ({ ...prev, [k]: v }))
+  }
 
   const handleSubmit = async () => {
     if (!form.startDate) return
@@ -202,7 +203,7 @@ export default function CreateApplicationPage() {
               <label className="text-xs font-medium text-foreground">Người duyệt</label>
               <select
                 value={form.assignedToId}
-                onChange={(e) => set("assignedToId", e.target.value)}
+                onChange={(e) => { set("assignedToId", e.target.value); }}
                 className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
               >
                 <option value="">-- Không chỉ định (bất kỳ ai có thẩm quyền) --</option>
@@ -279,7 +280,7 @@ export default function CreateApplicationPage() {
                           <td className="px-4 py-3">
                             <select
                               value={form.leaveType}
-                              onChange={(e) => set("leaveType", e.target.value)}
+                              onChange={(e) => { set("leaveType", e.target.value); }}
                               className="w-full h-8 px-2 text-sm border border-input bg-background text-foreground rounded focus:outline-none focus:ring-1 focus:ring-primary"
                             >
                               {LEAVE_TYPE_OPTIONS.map((o) => (
@@ -293,23 +294,23 @@ export default function CreateApplicationPage() {
                             <input
                               type="date"
                               value={form.startDate}
-                              onChange={(e) => set("startDate", e.target.value)}
+                              onChange={(e) => { set("startDate", e.target.value); }}
                               className="w-36 h-8 px-2 text-sm border border-input bg-transparent rounded focus:outline-none focus:ring-1 focus:ring-primary"
                             />
                             <span className="text-muted-foreground/70">-</span>
                             <input
                               type="date"
                               value={form.endDate}
-                              onChange={(e) => set("endDate", e.target.value)}
+                              onChange={(e) => { set("endDate", e.target.value); }}
                               className="w-36 h-8 px-2 text-sm border border-input bg-transparent rounded focus:outline-none focus:ring-1 focus:ring-primary"
                             />
                           </td>
                           <td className="px-4 py-3">
                             <select
                               value={form.leaveRegimeType}
-                              onChange={(e) =>
-                                set("leaveRegimeType", e.target.value as "paid" | "unpaid")
-                              }
+                              onChange={(e) => {
+                                set("leaveRegimeType", e.target.value as "paid" | "unpaid");
+                              }}
                               className="w-36 h-8 px-2 text-sm border border-input bg-background text-foreground rounded focus:outline-none focus:ring-1 focus:ring-primary"
                             >
                               {REGIME_TYPE_OPTIONS.map((o) => (
@@ -324,7 +325,7 @@ export default function CreateApplicationPage() {
                               type="text"
                               placeholder="Nhập lý do"
                               value={form.reason}
-                              onChange={(e) => set("reason", e.target.value)}
+                              onChange={(e) => { set("reason", e.target.value); }}
                               className="w-full h-8 px-2 text-sm border border-input bg-transparent rounded focus:outline-none focus:ring-1 focus:ring-primary"
                             />
                           </td>
@@ -352,7 +353,7 @@ export default function CreateApplicationPage() {
                     <input
                       type="date"
                       value={form.startDate}
-                      onChange={(e) => set("startDate", e.target.value)}
+                      onChange={(e) => { set("startDate", e.target.value); }}
                       className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
@@ -369,7 +370,7 @@ export default function CreateApplicationPage() {
                       <input
                         type="date"
                         value={form.endDate}
-                        onChange={(e) => set("endDate", e.target.value)}
+                        onChange={(e) => { set("endDate", e.target.value); }}
                         className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </div>
@@ -390,7 +391,7 @@ export default function CreateApplicationPage() {
                       </label>
                       <select
                         value={form.employeeShiftId}
-                        onChange={(e) => set("employeeShiftId", e.target.value)}
+                        onChange={(e) => { set("employeeShiftId", e.target.value); }}
                         className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                       >
                         <option value="">-- Chọn ca làm việc --</option>
@@ -413,7 +414,7 @@ export default function CreateApplicationPage() {
                         min="0.5"
                         step="0.5"
                         value={form.overtimeHours || ""}
-                        onChange={(e) => set("overtimeHours", parseFloat(e.target.value))}
+                        onChange={(e) => { set("overtimeHours", parseFloat(e.target.value)); }}
                         placeholder="Nhập số giờ"
                         className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                       />
@@ -431,7 +432,7 @@ export default function CreateApplicationPage() {
                           min="1"
                           max="480"
                           value={form.durationMinutes}
-                          onChange={(e) => set("durationMinutes", parseInt(e.target.value))}
+                          onChange={(e) => { set("durationMinutes", parseInt(e.target.value)); }}
                           className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                         />
                       </div>
@@ -441,7 +442,7 @@ export default function CreateApplicationPage() {
                         </label>
                         <select
                           value={form.isLate ? "true" : "false"}
-                          onChange={(e) => set("isLate", e.target.value === "true")}
+                          onChange={(e) => { set("isLate", e.target.value === "true"); }}
                           className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                         >
                           <option value="true">Đi muộn</option>
@@ -458,7 +459,7 @@ export default function CreateApplicationPage() {
                       </label>
                       <select
                         value={form.location}
-                        onChange={(e) => set("location", e.target.value)}
+                        onChange={(e) => { set("location", e.target.value); }}
                         className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                       >
                         <option value="">Chọn</option>
@@ -479,7 +480,7 @@ export default function CreateApplicationPage() {
                         <input
                           type="date"
                           value={form.swapWithDate}
-                          onChange={(e) => set("swapWithDate", e.target.value)}
+                          onChange={(e) => { set("swapWithDate", e.target.value); }}
                           className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                         />
                       </div>
@@ -489,7 +490,7 @@ export default function CreateApplicationPage() {
                         </label>
                         <select
                           value={form.swapWithShiftId}
-                          onChange={(e) => set("swapWithShiftId", e.target.value)}
+                          onChange={(e) => { set("swapWithShiftId", e.target.value); }}
                           className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                         >
                           <option value="">-- Chọn ca làm việc --</option>
@@ -506,7 +507,7 @@ export default function CreateApplicationPage() {
                         </label>
                         <select
                           value={form.swapWithEmployeeId}
-                          onChange={(e) => set("swapWithEmployeeId", e.target.value)}
+                          onChange={(e) => { set("swapWithEmployeeId", e.target.value); }}
                           className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                         >
                           <option value="">-- Chọn nhân sự --</option>
@@ -526,7 +527,7 @@ export default function CreateApplicationPage() {
                       rows={2}
                       placeholder="Nhập lý do hoặc ghi chú chi tiết"
                       value={form.reason}
-                      onChange={(e) => set("reason", e.target.value)}
+                      onChange={(e) => { set("reason", e.target.value); }}
                       className="w-full p-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
@@ -544,7 +545,7 @@ export default function CreateApplicationPage() {
             Hủy
           </button>
           <button
-            onClick={handleSubmit}
+              onClick={(e) => { e.preventDefault(); void handleSubmit(); }}
             disabled={isSubmitting || !form.startDate}
             className="px-6 py-2 rounded-md bg-primary text-white font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
           >

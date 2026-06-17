@@ -36,7 +36,7 @@ export function RejectDialog({ app, onCancel, onConfirm, isLoading }: RejectDial
           </div>
           <h3 className="text-base font-bold text-slate-800">Từ chối đơn?</h3>
           <p className="text-sm text-slate-500">
-            Từ chối đơn <strong className={typeMeta.color}>{typeMeta.label ?? app.type}</strong>{" "}
+            Từ chối đơn <strong className={typeMeta.color}>{typeMeta.label}</strong>{" "}
             của <strong>{app.employee?.fullName}</strong>?
           </p>
         </div>

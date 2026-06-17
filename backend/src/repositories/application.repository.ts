@@ -157,7 +157,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
             })
 
             if (shift1 && shift2) {
-              const tempDate = new Date(Date.now() + Math.floor(Math.random() * 1000000))
+              const tempDate = new Date(Date.now() + 1000000 + (Date.now() % 100000))
               // Step 1: Move shift1 to a temp date to avoid unique constraint violations [employeeId, assignedDate]
               await tx.employeeShift.update({
                 where: { id: shift1.id },

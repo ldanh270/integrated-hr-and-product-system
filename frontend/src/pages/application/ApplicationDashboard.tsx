@@ -145,8 +145,9 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
     documentUrl: "",
   })
 
-  const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
+  const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => {
     setForm((prev) => ({ ...prev, [k]: v }))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -251,8 +252,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
     }
   }
 
-  // eslint-disable-next-line security/detect-object-injection
-  const meta = APP_TYPE_META[selectedType]
+  const meta = APP_TYPE_META[selectedType] || APP_TYPE_META["leave"]
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
@@ -273,7 +273,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
             )}
             <div>
               <h2 className="text-base font-bold text-slate-800">
-                {step === "type" ? "Tạo mới đơn từ" : `Tạo đơn ${meta?.label}`}
+                {step === "type" ? "Tạo mới đơn từ" : `Tạo đơn ${meta.label}`}
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
                 {step === "type"
@@ -618,7 +618,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
                         <label key={key} className="flex items-center gap-2 cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={form[key]}
+                            checked={key === "applyToStart" ? form.applyToStart : form.applyToEnd}
                             onChange={(e) => { set(key, e.target.checked); }}
                             className="accent-primary"
                           />
@@ -728,7 +728,7 @@ function CancelDialog({ app, onCancel, onConfirm, isLoading }: CancelDialogProps
           </div>
           <h3 className="text-base font-bold text-slate-800">Xác nhận hủy đơn?</h3>
           <p className="text-sm text-slate-500">
-            Hủy đơn <strong className={typeMeta?.color}>{typeMeta?.label ?? app.type}</strong> từ{" "}
+            Hủy đơn <strong className={typeMeta.color}>{typeMeta.label}</strong> từ{" "}
             {new Date(app.startDate).toLocaleDateString("vi-VN")}?
           </p>
         </div>
@@ -785,7 +785,7 @@ function RejectDialog({ app, onCancel, onConfirm, isLoading }: RejectDialogProps
           </div>
           <h3 className="text-base font-bold text-slate-800">Từ chối đơn?</h3>
           <p className="text-sm text-slate-500">
-            Từ chối đơn <strong className={typeMeta?.color}>{typeMeta?.label ?? app.type}</strong>{" "}
+            Từ chối đơn <strong className={typeMeta.color}>{typeMeta.label}</strong>{" "}
             của <strong>{app.employee?.fullName}</strong>?
           </p>
         </div>
@@ -899,7 +899,7 @@ export default function ApplicationDashboard() {
           <div className="relative">
             <button
               className="flex h-8 w-8 items-center justify-center rounded-full border border-primary text-primary hover:bg-primary/10 transition-colors"
-              onClick={() => setShowCreateMenu(!showCreateMenu)}
+              onClick={() => { setShowCreateMenu(!showCreateMenu); }}
             >
               <Plus size={18} strokeWidth={2.5} />
             </button>
@@ -955,24 +955,24 @@ export default function ApplicationDashboard() {
       {/* Modals */}
       {showSubmitModal && (
         <SubmitApplicationModal
-          onClose={() => setShowSubmitModal(false)}
-          onSuccess={() => myApps.refetch()}
+          onClose={() => { setShowSubmitModal(false); }}
+          onSuccess={() => { void myApps.refetch(); }}
           initialType={createType}
         />
       )}
       {cancelTarget && (
         <CancelDialog
           app={cancelTarget}
-          onCancel={() => setCancelTarget(null)}
-          onConfirm={handleCancelConfirm}
+          onCancel={() => { setCancelTarget(null); }}
+          onConfirm={() => { void handleCancelConfirm(); }}
           isLoading={myApps.cancellingId === cancelTarget.id}
         />
       )}
       {rejectTarget && (
         <RejectDialog
           app={rejectTarget}
-          onCancel={() => setRejectTarget(null)}
-          onConfirm={handleRejectConfirm}
+          onCancel={() => { setRejectTarget(null); }}
+          onConfirm={(reason) => { void handleRejectConfirm(reason); }}
           isLoading={manageApps.processingId === rejectTarget.id}
         />
       )}

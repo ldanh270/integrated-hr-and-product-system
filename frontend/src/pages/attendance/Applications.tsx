@@ -322,7 +322,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
             {step === "details" && (
               <button
                 type="button"
-                onClick={() => setStep("type")}
+                onClick={() => { setStep("type"); }}
                 className="p-1.5 rounded-full hover:bg-slate-100 transition-colors text-slate-500"
               >
                 <ArrowLeft size={16} />
@@ -404,7 +404,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                     type="date"
                     required
                     value={form.startDate}
-                    onChange={(e) => set("startDate", e.target.value)}
+                    onChange={(e) => { set("startDate", e.target.value); }}
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
@@ -422,7 +422,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                       type="date"
                       value={form.endDate}
                       min={form.startDate}
-                      onChange={(e) => set("endDate", e.target.value)}
+                      onChange={(e) => { set("endDate", e.target.value); }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -437,7 +437,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                     <div className="relative">
                       <select
                         value={form.leaveType}
-                        onChange={(e) => set("leaveType", e.target.value)}
+                        onChange={(e) => { set("leaveType", e.target.value); }}
                         className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white pr-8"
                       >
                         {LEAVE_TYPE_OPTIONS.map((o) => (
@@ -459,7 +459,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                         <button
                           key={rt}
                           type="button"
-                          onClick={() => set("leaveRegimeType", rt)}
+                          onClick={() => { set("leaveRegimeType", rt); }}
                           className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
                             form.leaveRegimeType === rt
                               ? "border-primary bg-primary/5 text-primary"
@@ -483,7 +483,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                     required
                     placeholder="Nhập CUID ca làm việc..."
                     value={form.employeeShiftId}
-                    onChange={(e) => set("employeeShiftId", e.target.value)}
+                    onChange={(e) => { set("employeeShiftId", e.target.value); }}
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
@@ -499,7 +499,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                       required
                       placeholder="Nhập CUID ca làm việc..."
                       value={form.employeeShiftId}
-                      onChange={(e) => set("employeeShiftId", e.target.value)}
+                      onChange={(e) => { set("employeeShiftId", e.target.value); }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -510,7 +510,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                         <button
                           key={String(v)}
                           type="button"
-                          onClick={() => set("isLate", v)}
+                          onClick={() => { set("isLate", v); }}
                           className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
                             form.isLate === v
                               ? "border-primary bg-primary/5 text-primary"
@@ -532,7 +532,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                       min={1}
                       max={480}
                       value={form.durationMinutes}
-                      onChange={(e) => set("durationMinutes", Number(e.target.value))}
+                      onChange={(e) => { set("durationMinutes", Number(e.target.value)); }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -549,7 +549,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                       required
                       placeholder="Nhập CUID ca làm việc..."
                       value={form.employeeShiftId}
-                      onChange={(e) => set("employeeShiftId", e.target.value)}
+                      onChange={(e) => { set("employeeShiftId", e.target.value); }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -561,7 +561,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                       type="text"
                       placeholder="CUID nhân viên..."
                       value={form.swapWithEmployeeId}
-                      onChange={(e) => set("swapWithEmployeeId", e.target.value)}
+                      onChange={(e) => { set("swapWithEmployeeId", e.target.value); }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -573,7 +573,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                       type="text"
                       placeholder="CUID ca làm việc..."
                       value={form.swapWithShiftId}
-                      onChange={(e) => set("swapWithShiftId", e.target.value)}
+                      onChange={(e) => { set("swapWithShiftId", e.target.value); }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -589,7 +589,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                     type="text"
                     placeholder="VD: Tại nhà, Quán cà phê..."
                     value={form.location}
-                    onChange={(e) => set("location", e.target.value)}
+                    onChange={(e) => { set("location", e.target.value); }}
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
@@ -608,7 +608,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                       required
                       placeholder="VD: Hà Nội, TP.HCM..."
                       value={form.destination}
-                      onChange={(e) => set("destination", e.target.value)}
+                      onChange={(e) => { set("destination", e.target.value); }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -620,7 +620,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                       type="text"
                       placeholder="Mô tả mục đích..."
                       value={form.purpose}
-                      onChange={(e) => set("purpose", e.target.value)}
+                      onChange={(e) => { set("purpose", e.target.value); }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -637,7 +637,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                         <button
                           key={rt}
                           type="button"
-                          onClick={() => set("regimeType", rt)}
+                          onClick={() => { set("regimeType", rt); }}
                           className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
                             form.regimeType === rt
                               ? "border-primary bg-primary/5 text-primary"
@@ -659,7 +659,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                       min={0}
                       max={480}
                       value={form.reducedMinutesPerDay}
-                      onChange={(e) => set("reducedMinutesPerDay", Number(e.target.value))}
+                      onChange={(e) => { set("reducedMinutesPerDay", Number(e.target.value)); }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -675,8 +675,8 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                         <label key={key} className="flex items-center gap-2 cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={form[key]}
-                            onChange={(e) => set(key, e.target.checked)}
+                            checked={key === "applyToStart" ? form.applyToStart : form.applyToEnd}
+                            onChange={(e) => { set(key, e.target.checked); }}
                             className="accent-primary"
                           />
                           <span className="text-sm text-slate-600">{label}</span>
@@ -692,7 +692,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                       type="url"
                       placeholder="https://..."
                       value={form.documentUrl}
-                      onChange={(e) => set("documentUrl", e.target.value)}
+                      onChange={(e) => { set("documentUrl", e.target.value); }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -710,7 +710,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                   minLength={5}
                   placeholder="Nhập lý do gửi đơn..."
                   value={form.reason}
-                  onChange={(e) => set("reason", e.target.value)}
+                  onChange={(e) => { set("reason", e.target.value); }}
                   className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
                 />
               </div>
@@ -722,7 +722,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                   type="text"
                   placeholder="Thông tin bổ sung (nếu có)..."
                   value={form.note}
-                  onChange={(e) => set("note", e.target.value)}
+                  onChange={(e) => { set("note", e.target.value); }}
                   className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
               </div>
@@ -735,7 +735,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
           <div className="border-t border-slate-100 px-5 py-4 flex gap-3 bg-slate-50">
             <button
               type="button"
-              onClick={() => setStep("type")}
+              onClick={() => { setStep("type"); }}
               className="flex-1 py-2.5 border border-slate-200 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
             >
               Quay lại
@@ -1004,7 +1004,7 @@ function RejectDialog({ app, onCancel, onConfirm, isLoading }: RejectDialogProps
               rows={3}
               required
               value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              onChange={(e) => { setReason(e.target.value); }}
               placeholder="Nhập lý do..."
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
             />
@@ -1110,7 +1110,7 @@ export default function Applications() {
           </p>
         </div>
         <button
-          onClick={() => setShowSubmitModal(true)}
+          onClick={() => { setShowSubmitModal(true); }}
           className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white rounded-full px-5 py-2.5 text-sm font-bold shadow-sm transition-all active:scale-[0.98]"
         >
           <FilePlus2 size={16} />
@@ -1121,7 +1121,7 @@ export default function Applications() {
       {isManager && (
         <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-full overflow-x-auto self-start">
           <button
-            onClick={() => setActiveTab("mine")}
+            onClick={() => { setActiveTab("mine"); }}
             className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
               activeTab === "mine"
                 ? "bg-white text-foreground shadow-sm"
@@ -1131,7 +1131,7 @@ export default function Applications() {
             Đơn của tôi
           </button>
           <button
-            onClick={() => setActiveTab("manage")}
+            onClick={() => { setActiveTab("manage"); }}
             className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
               activeTab === "manage"
                 ? "bg-white text-foreground shadow-sm"
@@ -1268,7 +1268,7 @@ export default function Applications() {
               </p>
             </div>
             <button
-              onClick={() => setShowSubmitModal(true)}
+              onClick={() => { setShowSubmitModal(true); }}
               className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white rounded-full px-5 py-2.5 text-sm font-bold"
             >
               <FilePlus2 size={15} />
@@ -1299,7 +1299,7 @@ export default function Applications() {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <button
-            onClick={() => setPage(page - 1)}
+            onClick={() => { setPage(page - 1); }}
             disabled={page <= 1}
             className="flex items-center gap-1 px-4 py-2 border border-slate-200 rounded-full text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
           >
@@ -1310,7 +1310,7 @@ export default function Applications() {
             {page} / {totalPages}
           </span>
           <button
-            onClick={() => setPage(page + 1)}
+            onClick={() => { setPage(page + 1); }}
             disabled={page >= totalPages}
             className="flex items-center gap-1 px-4 py-2 border border-slate-200 rounded-full text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
           >
@@ -1322,21 +1322,21 @@ export default function Applications() {
 
       {/* Modals */}
       {showSubmitModal && (
-        <SubmitApplicationModal onClose={() => setShowSubmitModal(false)} onSuccess={refetch} />
+        <SubmitApplicationModal onClose={() => { setShowSubmitModal(false); }} onSuccess={refetch} />
       )}
       {cancelTarget && (
         <CancelDialog
           app={cancelTarget}
-          onCancel={() => setCancelTarget(null)}
-          onConfirm={handleCancelConfirm}
+          onCancel={() => { setCancelTarget(null); }}
+          onConfirm={() => { void handleCancelConfirm(); }}
           isLoading={myApps.cancellingId === cancelTarget.id}
         />
       )}
       {rejectTarget && (
         <RejectDialog
           app={rejectTarget}
-          onCancel={() => setRejectTarget(null)}
-          onConfirm={handleRejectConfirm}
+          onCancel={() => { setRejectTarget(null); }}
+          onConfirm={(reason) => { void handleRejectConfirm(reason); }}
           isLoading={manageApps.processingId === rejectTarget.id}
         />
       )}

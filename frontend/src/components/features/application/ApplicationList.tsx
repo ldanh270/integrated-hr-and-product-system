@@ -11,7 +11,7 @@ import { useState } from "react"
 
 import { ChevronLeft, ChevronRight, FileText, Filter, RefreshCw } from "lucide-react"
 
-const STATUS_LABELS: Record<string, { label: string; colorClass: string }> = {
+const STATUS_LABELS: Record<string, { label: string; colorClass: string } | undefined> = {
   [APPLICATION_STATUS.PENDING]: {
     label: "Chờ duyệt",
     colorClass: "text-amber-600 border-amber-600 font-medium",

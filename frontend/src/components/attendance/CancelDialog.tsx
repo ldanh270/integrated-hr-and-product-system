@@ -22,7 +22,7 @@ export function CancelDialog({ app, onCancel, onConfirm, isLoading }: CancelDial
           </div>
           <h3 className="text-base font-bold text-slate-800">Xác nhận hủy đơn?</h3>
           <p className="text-sm text-slate-500">
-            Hủy đơn <strong className={typeMeta.color}>{typeMeta.label ?? app.type}</strong> từ{" "}
+            Hủy đơn <strong className={typeMeta.color}>{typeMeta.label}</strong> từ{" "}
             {new Date(app.startDate).toLocaleDateString("vi-VN")}?
           </p>
         </div>

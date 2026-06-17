@@ -18,4 +18,4 @@ async function run() {
     console.error("ERROR:", err instanceof Error ? err.message : err);
   }
 }
-void run();
+run();

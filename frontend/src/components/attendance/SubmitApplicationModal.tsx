@@ -52,8 +52,9 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
     employeeApi.getApprovers().then(setApprovers).catch(() => {})
   }, [])
 
-  const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
+  const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => {
     setForm((prev) => ({ ...prev, [k]: v }))
+  }
 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -147,8 +148,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
     }
   }
 
-  // eslint-disable-next-line security/detect-object-injection
-  const meta = APP_TYPE_META[selectedType]
+  const meta = APP_TYPE_META[selectedType] || APP_TYPE_META["leave"]
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
@@ -159,7 +159,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
             {step === "details" && (
               <button
                 type="button"
-                onClick={() => setStep("type")}
+                onClick={() => { setStep("type"); }}
                 className="p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground"
               >
                 <ArrowLeft size={16} />
@@ -167,7 +167,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
             )}
             <div>
               <h2 className="text-base font-bold text-foreground">
-                {step === "type" ? "Chọn loại đơn" : `Tạo đơn ${meta?.label}`}
+                {step === "type" ? "Chọn loại đơn" : `Tạo đơn ${meta.label}`}
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {step === "type"
@@ -215,7 +215,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
           )}
 
           {/* Step 2: Details form */}
-          {step === "details" && meta && (
+          {step === "details" && (
             <form id="submit-form" onSubmit={(e) => { void handleSubmit(e); }} className="p-5 flex flex-col gap-4">
               {/* Type badge */}
               <div className={`flex items-center gap-2.5 p-3 rounded-xl border ${meta.border} ${meta.bg}`}>
@@ -231,7 +231,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                     type="date"
                     required
                     value={form.startDate}
-                    onChange={(e) => set("startDate", e.target.value)}
+                    onChange={(e) => { set("startDate", e.target.value); }}
                     className="px-3 py-2 border border-input bg-transparent rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
@@ -478,9 +478,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
                         <label key={key} className="flex items-center gap-2 cursor-pointer">
                           <input
                             type="checkbox"
-                            // eslint-disable-next-line security/detect-object-injection
-                            checked={form[key]}
-                            // eslint-disable-next-line security/detect-object-injection
+                            checked={key === "applyToStart" ? form.applyToStart : form.applyToEnd}
                             onChange={(e) => { set(key, e.target.checked); }}
                             className="accent-primary"
                           />
