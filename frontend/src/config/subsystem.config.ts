@@ -99,7 +99,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
       },
 
-          { name: "Tổng hợp", path: ROUTES.ATTENDANCE.SUMMARY, icon: ChartNoAxesColumn, roles: NON_ADMIN_ROLES },
+          { name: "Tổng hợp", path: ROUTES.ATTENDANCE.SUMMARY, icon: ChartNoAxesColumn, roles: [ROLE.EMPLOYEE, ROLE.TEAM_LEADER] },
       { name: "Lịch của tôi", path: ROUTES.ATTENDANCE.MY_SCHEDULE, icon: CalendarClock },
       {
         name: "Lịch làm việc",
