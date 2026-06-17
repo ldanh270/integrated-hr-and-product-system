@@ -225,7 +225,7 @@ export default function CreateApplicationPage() {
                   <input
                     type="date"
                     value={form.startDate}
-                    onChange={(e) => set("startDate", e.target.value)}
+                    onChange={(e) => { set("startDate", e.target.value); }}
                     className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
@@ -238,7 +238,7 @@ export default function CreateApplicationPage() {
                     required
                     placeholder="Nhập lý do hoặc ghi chú chi tiết"
                     value={form.reason}
-                    onChange={(e) => set("reason", e.target.value)}
+                    onChange={(e) => { set("reason", e.target.value); }}
                     className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>

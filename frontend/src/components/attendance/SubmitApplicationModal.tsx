@@ -148,7 +148,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
     }
   }
 
-  const meta = APP_TYPE_META[selectedType] || APP_TYPE_META["leave"]
+  const meta = Object.entries(APP_TYPE_META).find(([k]) => k === selectedType)?.[1] || APP_TYPE_META["leave"]
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
@@ -563,7 +563,7 @@ export function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps)
           <div className="border-t border-border px-5 py-4 flex gap-3 bg-muted/30">
             <button
               type="button"
-              onClick={() => setStep("type")}
+              onClick={() => { setStep("type"); }}
               className="flex-1 py-2.5 border border-input rounded-full text-sm font-semibold text-foreground hover:bg-muted transition-colors"
             >
               Quay lại

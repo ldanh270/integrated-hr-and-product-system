@@ -252,7 +252,7 @@ function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModal
     }
   }
 
-  const meta = APP_TYPE_META[selectedType] || APP_TYPE_META["leave"]
+  const meta = Object.entries(APP_TYPE_META).find(([k]) => k === selectedType)?.[1] || APP_TYPE_META["leave"]
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
@@ -831,7 +831,7 @@ export default function ApplicationDashboard() {
   const [selectedApp, setSelectedApp] = useState<IApplication | null>(null)
 
   const [searchParams] = useSearchParams()
-  const activeTab = (searchParams.get("tab") as "mine" | "manage") || "mine"
+  const activeTab = (searchParams.get("tab") || "mine") as "mine" | "manage"
   const activeType = searchParams.get("type") || "all"
 
   const myApps = useMyApplications()
@@ -882,7 +882,7 @@ export default function ApplicationDashboard() {
         application={selectedApp}
         isLoading={activeTab === "mine" ? myApps.isLoading : manageApps.isLoading}
         mode={activeTab}
-        onBack={() => setView("list")}
+        onBack={() => { setView("list"); }}
         onApprove={handleApproveFromDetail}
         onReject={setRejectTarget}
       />

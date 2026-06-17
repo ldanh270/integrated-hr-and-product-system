@@ -785,7 +785,7 @@ function CancelDialog({ app, onCancel, onConfirm, isLoading }: CancelDialogProps
           </div>
           <h3 className="text-base font-bold text-slate-800">Xác nhận hủy đơn?</h3>
           <p className="text-sm text-slate-500">
-            Hủy đơn <strong className={typeMeta?.color}>{typeMeta?.label ?? app.type}</strong> từ{" "}
+            Hủy đơn <strong className={typeMeta.color}>{typeMeta.label}</strong> từ{" "}
             {new Date(app.startDate).toLocaleDateString("vi-VN")}?
           </p>
         </div>
@@ -829,14 +829,8 @@ function ApplicationCard({
   processingId,
 }: ApplicationCardProps) {
   const [expanded, setExpanded] = useState(false)
-  const typeMeta = APP_TYPE_META[app.type] ?? {
-    label: app.type,
-    icon: FileText,
-    color: "text-slate-600",
-    bg: "bg-slate-50",
-    border: "border-slate-200",
-  }
-  const statusMeta = STATUS_META[app.status] ?? STATUS_META.pending
+  const typeMeta = APP_TYPE_META[app.type]
+  const statusMeta = STATUS_META[app.status]
   const TypeIcon = typeMeta.icon
   const StatusIcon = statusMeta.icon
 
@@ -844,7 +838,7 @@ function ApplicationCard({
     <div className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-all duration-200">
       <div
         className="flex items-center gap-4 p-4 cursor-pointer select-none"
-        onClick={() => setExpanded((v) => !v)}
+        onClick={() => { setExpanded((v) => !v); }}
       >
         <div
           className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center border ${typeMeta.bg} ${typeMeta.border} ${typeMeta.color}`}
@@ -993,7 +987,7 @@ function RejectDialog({ app, onCancel, onConfirm, isLoading }: RejectDialogProps
           </div>
           <h3 className="text-base font-bold text-slate-800">Từ chối đơn?</h3>
           <p className="text-sm text-slate-500">
-            Từ chối đơn <strong className={typeMeta?.color}>{typeMeta?.label ?? app.type}</strong>{" "}
+            Từ chối đơn <strong className={typeMeta.color}>{typeMeta.label}</strong>{" "}
             của <strong>{app.employee?.fullName}</strong>?
           </p>
         </div>
