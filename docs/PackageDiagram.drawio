@@ -1,0 +1,43 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/28.2.5 Chrome/138.0.7204.251 Electron/37.6.1 Safari/537.36" version="28.2.5">
+  <diagram name="Page-1" id="d3Bkw5FLA7M_z0s3mMSy">
+    <mxGraphModel dx="1783" dy="1051" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="4681" pageHeight="3300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="m6CRUtPc0drBg8PryMvM-14" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;" edge="1" parent="1" source="m6CRUtPc0drBg8PryMvM-4" target="m6CRUtPc0drBg8PryMvM-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m6CRUtPc0drBg8PryMvM-4" value="Route" style="shape=folder;fontStyle=1;tabWidth=80;tabHeight=30;tabPosition=left;html=1;boundedLbl=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="680" y="580" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="m6CRUtPc0drBg8PryMvM-5" value="Controller" style="shape=folder;fontStyle=1;tabWidth=80;tabHeight=30;tabPosition=left;html=1;boundedLbl=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="910" y="680" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="m6CRUtPc0drBg8PryMvM-6" value="Service" style="shape=folder;fontStyle=1;tabWidth=80;tabHeight=30;tabPosition=left;html=1;boundedLbl=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="770" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="m6CRUtPc0drBg8PryMvM-7" value="Repository" style="shape=folder;fontStyle=1;tabWidth=80;tabHeight=30;tabPosition=left;html=1;boundedLbl=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1500" y="800" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="m6CRUtPc0drBg8PryMvM-8" value="Repository" style="shape=folder;fontStyle=1;tabWidth=80;tabHeight=30;tabPosition=left;html=1;boundedLbl=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1260" y="880" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="m6CRUtPc0drBg8PryMvM-9" value="Utils" style="shape=folder;fontStyle=1;tabWidth=80;tabHeight=30;tabPosition=left;html=1;boundedLbl=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="700" y="750" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="m6CRUtPc0drBg8PryMvM-10" value="Schema" style="shape=folder;fontStyle=1;tabWidth=80;tabHeight=30;tabPosition=left;html=1;boundedLbl=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1130" y="440" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="m6CRUtPc0drBg8PryMvM-11" value="Middleware" style="shape=folder;fontStyle=1;tabWidth=80;tabHeight=30;tabPosition=left;html=1;boundedLbl=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="920" y="490" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="m6CRUtPc0drBg8PryMvM-12" value="Lib" style="shape=folder;fontStyle=1;tabWidth=80;tabHeight=30;tabPosition=left;html=1;boundedLbl=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="650" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="m6CRUtPc0drBg8PryMvM-13" value="Entity" style="shape=folder;fontStyle=1;tabWidth=80;tabHeight=30;tabPosition=left;html=1;boundedLbl=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1310" y="430" width="150" height="80" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
