@@ -3,12 +3,13 @@
 import { APPLICATION_TYPES } from "@/config/entities/attendance.config"
 import type { IApprover } from "@/lib/api/employee.api"
 import type { ApplicationFormState } from "../hooks/useCreateApplicationForm"
+import type { User } from "@/store/auth-store"
 
 interface Props {
   type: string
   form: ApplicationFormState
   set: <K extends keyof ApplicationFormState>(k: K, v: ApplicationFormState[K]) => void
-  user: any
+  user: User | null
   approvers: IApprover[]
 }
 
