@@ -3,6 +3,7 @@ import { registerAuthTools } from "./tools/auth.tools.js";
 import { registerAttendanceTools } from "./tools/attendance.tools.js";
 import { registerProjectTools } from "./tools/project.tools.js";
 import { registerPayrollTools } from "./tools/payroll.tools.js";
+import { registerApplicationTools } from "./tools/application.tools.js";
 
 // Initialize MCP Server
 export const mcpServer = new McpServer({
@@ -16,4 +17,5 @@ export const registerTools = () => {
 	registerAttendanceTools();
 	registerProjectTools();
 	registerPayrollTools();
+	registerApplicationTools();
 };
