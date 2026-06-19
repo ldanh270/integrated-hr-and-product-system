@@ -1,10 +1,6 @@
 -- Idempotent: safe if an earlier duplicate migration already dropped these objects.
-ALTER TABLE "Task" DROP CONSTRAINT IF EXISTS "Task_categoryId_fkey";
-
-DROP INDEX IF EXISTS "Task_categoryId_idx";
-
-ALTER TABLE "Task" DROP COLUMN IF EXISTS "categoryId";
-
-ALTER TABLE "TaskCategory" DROP CONSTRAINT IF EXISTS "TaskCategory_projectId_fkey";
-
-DROP TABLE IF EXISTS "TaskCategory";
+-- ALTER TABLE "Task" DROP CONSTRAINT IF EXISTS "Task_categoryId_fkey";
+-- DROP INDEX IF EXISTS "Task_categoryId_idx";
+-- ALTER TABLE "Task" DROP COLUMN IF EXISTS "categoryId";
+-- ALTER TABLE "TaskCategory" DROP CONSTRAINT IF EXISTS "TaskCategory_projectId_fkey";
+-- DROP TABLE IF EXISTS "TaskCategory";

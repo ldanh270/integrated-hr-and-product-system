@@ -1,5 +1,7 @@
 import React from "react"
 
+import { APPLICATION_TYPES, LEAVE_TYPE } from "@/config/entities/attendance.config"
+
 import {
   Calendar,
   CalendarClock,
@@ -23,7 +25,7 @@ export const APP_TYPE_META: Record<
     hint: string
   }
 > = {
-  leave: {
+  [APPLICATION_TYPES.LEAVE.LABEL]: {
     label: "Nghỉ phép",
     icon: Calendar,
     color: "text-violet-600",
@@ -31,15 +33,15 @@ export const APP_TYPE_META: Record<
     border: "border-violet-200",
     hint: "Xin nghỉ phép năm, thai sản, ốm...",
   },
-  overtime: {
+  [APPLICATION_TYPES.OVERTIME.LABEL]: {
     label: "Tăng ca",
     icon: Clock,
-    color: "text-orange-500",
-    bg: "bg-orange-50",
-    border: "border-orange-100",
+    color: "text-amber-600",
+    bg: "bg-amber-50",
+    border: "border-amber-200",
     hint: "Đăng ký tăng ca ngoài ca",
   },
-  work_from_home: {
+  [APPLICATION_TYPES.WORK_FROM_HOME.LABEL]: {
     label: "WFH",
     icon: Laptop,
     color: "text-sky-600",
@@ -47,7 +49,7 @@ export const APP_TYPE_META: Record<
     border: "border-sky-200",
     hint: "Làm việc từ xa / tại nhà",
   },
-  shift_swap: {
+  [APPLICATION_TYPES.SHIFT_SWAP.LABEL]: {
     label: "Đổi ca",
     icon: Repeat2,
     color: "text-teal-600",
@@ -55,8 +57,7 @@ export const APP_TYPE_META: Record<
     border: "border-teal-200",
     hint: "Đề xuất đổi ca với đồng nghiệp",
   },
-
-  late_early: {
+  [APPLICATION_TYPES.LATE_EARLY.LABEL]: {
     label: "Đi muộn/Về sớm",
     icon: CalendarClock,
     color: "text-rose-600",
@@ -64,7 +65,8 @@ export const APP_TYPE_META: Record<
     border: "border-rose-200",
     hint: "Thông báo đi muộn hoặc về sớm",
   },
-  resignation: {
+
+  [APPLICATION_TYPES.RESIGNATION.LABEL]: {
     label: "Thôi việc",
     icon: UserMinus,
     color: "text-slate-600",
@@ -116,13 +118,13 @@ export const STATUS_META: Record<
 
 /** Correct leave type values matching backend LEAVE_TYPE_VALUES enum */
 export const LEAVE_TYPE_OPTIONS = [
-  { value: "annual_leave", label: "Nghỉ phép năm" },
-  { value: "sick_leave", label: "Nghỉ ốm" },
-  { value: "maternity_leave", label: "Thai sản" },
-  { value: "bereavement_leave", label: "Nghỉ tang" },
-  { value: "marriage_leave", label: "Nghỉ cưới" },
-  { value: "unpaid_leave", label: "Nghỉ không lương" },
-  { value: "other", label: "Khác" },
+  { value: LEAVE_TYPE.ANNUAL_LEAVE, label: "Nghỉ phép năm" },
+  { value: LEAVE_TYPE.SICK_LEAVE, label: "Nghỉ ốm" },
+  { value: LEAVE_TYPE.MATERNITY_LEAVE, label: "Thai sản" },
+  { value: LEAVE_TYPE.BEREAVEMENT_LEAVE, label: "Nghỉ tang" },
+  { value: LEAVE_TYPE.MARRIAGE_LEAVE, label: "Nghỉ cưới" },
+  { value: LEAVE_TYPE.UNPAID_LEAVE, label: "Nghỉ không lương" },
+  { value: LEAVE_TYPE.OTHER, label: "Khác" },
 ] as const
 
 export const REGIME_TYPE_OPTIONS = [

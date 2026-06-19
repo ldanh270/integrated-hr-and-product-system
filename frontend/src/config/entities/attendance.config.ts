@@ -17,9 +17,7 @@ export const APPLICATION_TYPES = {
   OVERTIME: { LABEL: "overtime", DESCRIPTION: "Tăng ca (OT)" },
   WORK_FROM_HOME: { LABEL: "work_from_home", DESCRIPTION: "Làm việc từ xa (WFH)" },
   SHIFT_SWAP: { LABEL: "shift_swap", DESCRIPTION: "Đổi ca làm việc" },
-  BUSINESS_TRIP: { LABEL: "business_trip", DESCRIPTION: "Công tác" },
   LATE_EARLY: { LABEL: "late_early", DESCRIPTION: "Đi muộn/về sớm" },
-  REGIME: { LABEL: "regime", DESCRIPTION: "Chế độ thai sản/bệnh" },
   RESIGNATION: { LABEL: "resignation", DESCRIPTION: "Thôi việc" },
 } as const
 export type IApplicationType = (typeof APPLICATION_TYPES)[keyof typeof APPLICATION_TYPES]["LABEL"]
@@ -29,9 +27,7 @@ export const APPLICATION_TYPE_VALUES = [
   APPLICATION_TYPES.OVERTIME.LABEL,
   APPLICATION_TYPES.WORK_FROM_HOME.LABEL,
   APPLICATION_TYPES.SHIFT_SWAP.LABEL,
-  APPLICATION_TYPES.BUSINESS_TRIP.LABEL,
   APPLICATION_TYPES.LATE_EARLY.LABEL,
-  APPLICATION_TYPES.REGIME.LABEL,
   APPLICATION_TYPES.RESIGNATION.LABEL,
 ] as const
 

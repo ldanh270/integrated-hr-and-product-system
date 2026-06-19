@@ -194,15 +194,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
     swapWithShiftId: "",
     // work_from_home
     location: "",
-    // business_trip
-    destination: "",
-    purpose: "",
-    // regime
-    regimeType: "paid" as "paid" | "unpaid",
-    reducedMinutesPerDay: 0,
-    applyToStart: false,
-    applyToEnd: false,
-    documentUrl: "",
+
   })
 
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
@@ -270,26 +262,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
         detail = form.location.trim() ? { location: form.location.trim() } : {}
         break
 
-      case "business_trip":
-        // Backend: { location: string(min2), purpose?: string, budget?: number }
-        if (!form.destination.trim()) {
-          toast.error("Vui lòng nhập địa điểm công tác")
-          return
-        }
-        detail = { location: form.destination.trim() }
-        if (form.purpose.trim()) detail.purpose = form.purpose.trim()
-        break
 
-      case APPLICATION_TYPES.REGIME.LABEL:
-        // Backend: { regimeType, reducedMinutesPerDay: int(0-480), applyToStart, applyToEnd, documentUrl? }
-        detail = {
-          regimeType: form.regimeType,
-          reducedMinutesPerDay: form.reducedMinutesPerDay,
-          applyToStart: form.applyToStart,
-          applyToEnd: form.applyToEnd,
-        }
-        if (form.documentUrl.trim()) detail.documentUrl = form.documentUrl.trim()
-        break
 
       case APPLICATION_TYPES.RESIGNATION.LABEL:
         detail = {}
@@ -595,109 +568,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                 </div>
               )}
 
-              {/* ── BUSINESS TRIP ── */}
-              {selectedType === "business_trip" && (
-                <>
-                  <div className="flex flex-col gap-1.5">
-                    {/* Backend field name: "location" */}
-                    <label className="text-xs font-semibold text-slate-600">
-                      Địa điểm công tác *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="VD: Hà Nội, TP.HCM..."
-                      value={form.destination}
-                      onChange={(e) => { set("destination", e.target.value); }}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">
-                      Mục đích chuyến đi
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Mô tả mục đích..."
-                      value={form.purpose}
-                      onChange={(e) => { set("purpose", e.target.value); }}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                    />
-                  </div>
-                </>
-              )}
 
-              {/* ── REGIME ── */}
-              {selectedType === "regime" && (
-                <>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">Chế độ lương *</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {(["paid", "unpaid"] as const).map((rt) => (
-                        <button
-                          key={rt}
-                          type="button"
-                          onClick={() => { set("regimeType", rt); }}
-                          className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
-                            form.regimeType === rt
-                              ? "border-primary bg-primary/5 text-primary"
-                              : "border-slate-200 text-slate-500 hover:border-slate-300"
-                          }`}
-                        >
-                          {rt === "paid" ? "Có lương" : "Không lương"}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">
-                      Số phút giảm/ngày (0–480) *
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      min={0}
-                      max={480}
-                      value={form.reducedMinutesPerDay}
-                      onChange={(e) => { set("reducedMinutesPerDay", Number(e.target.value)); }}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-semibold text-slate-600">Áp dụng</label>
-                    <div className="flex gap-4">
-                      {(
-                        [
-                          { key: "applyToStart", label: "Đầu buổi" },
-                          { key: "applyToEnd", label: "Cuối buổi" },
-                        ] as const
-                      ).map(({ key, label }) => (
-                        <label key={key} className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={key === "applyToStart" ? form.applyToStart : form.applyToEnd}
-                            onChange={(e) => { set(key, e.target.checked); }}
-                            className="accent-primary"
-                          />
-                          <span className="text-sm text-slate-600">{label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-600">
-                      URL chứng từ (tùy chọn)
-                    </label>
-                    <input
-                      type="url"
-                      placeholder="https://..."
-                      value={form.documentUrl}
-                      onChange={(e) => { set("documentUrl", e.target.value); }}
-                      className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                    />
-                  </div>
-                </>
-              )}
 
               {/* Reason */}
               <div className="flex flex-col gap-1.5">

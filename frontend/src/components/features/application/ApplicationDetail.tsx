@@ -48,8 +48,6 @@ export function ApplicationDetail({
       case "late_early":
       case "shift_swap":
       case "work_from_home":
-      case "business_trip":
-      case "regime":
       default:
         return (
           <>

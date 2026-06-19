@@ -130,19 +130,6 @@ const shiftSwapApplicationSchema = z
   })
   .strict()
 
-/** business_trip: công tác — requires location */
-const businessTripApplicationSchema = z
-  .object({
-    type: z.literal("business_trip"),
-    ...baseApplicationFields,
-    detail: z.object({
-      location: z.string().min(2).max(255),
-      purpose: z.string().max(500).optional(),
-      budget: z.number().positive().optional(),
-    }),
-  })
-  .strict()
-
 /** late_early: đi muộn/về sớm — requires shift ref + duration */
 const lateEarlyApplicationSchema = z
   .object({
@@ -156,21 +143,6 @@ const lateEarlyApplicationSchema = z
   })
   .strict()
 
-/** regime: thai sản/bệnh — requires regimeType + reduced time */
-const regimeApplicationSchema = z
-  .object({
-    type: z.literal("regime"),
-    ...baseApplicationFields,
-    detail: z.object({
-      regimeType: z.enum(REGIME_TYPES),
-      reducedMinutesPerDay: z.number().int().min(0).max(480),
-      applyToStart: z.boolean().default(false),
-      applyToEnd: z.boolean().default(false),
-      documentUrl: z.string().url("Invalid URL").optional(),
-    }),
-  })
-  .strict()
-
 // ─── DISCRIMINATED UNION ─────────────────────────────────────
 
 export const submitApplicationSchema = z.discriminatedUnion("type", [
@@ -178,9 +150,7 @@ export const submitApplicationSchema = z.discriminatedUnion("type", [
   overtimeApplicationSchema,
   workFromHomeApplicationSchema,
   shiftSwapApplicationSchema,
-  businessTripApplicationSchema,
   lateEarlyApplicationSchema,
-  regimeApplicationSchema,
 ])
 
 export type SubmitApplicationSchemaType = z.infer<typeof submitApplicationSchema>

@@ -366,17 +366,6 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
           },
         }
 
-      case APPLICATION_TYPES.BUSINESS_TRIP.LABEL:
-        return {
-          businessTripDetail: {
-            create: {
-              location: data.detail.location,
-              purpose: data.detail.purpose ?? null,
-              budget: data.detail.budget ?? null,
-            },
-          },
-        }
-
       case APPLICATION_TYPES.LATE_EARLY.LABEL:
         return {
           lateEarlyDetail: {
@@ -384,19 +373,6 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
               employeeShiftId: data.detail.employeeShiftId,
               durationMinutes: data.detail.durationMinutes,
               isLate: data.detail.isLate,
-            },
-          },
-        }
-
-      case APPLICATION_TYPES.REGIME.LABEL:
-        return {
-          regimeDetail: {
-            create: {
-              regimeType: data.detail.regimeType,
-              reducedMinutesPerDay: data.detail.reducedMinutesPerDay,
-              applyToStart: data.detail.applyToStart ?? false,
-              applyToEnd: data.detail.applyToEnd ?? false,
-              documentUrl: data.detail.documentUrl ?? null,
             },
           },
         }
