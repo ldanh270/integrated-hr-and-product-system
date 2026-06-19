@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerAuthTools } from "./tools/auth.tools.js";
+import { registerAttendanceTools } from "./tools/attendance.tools.js";
 
 // Initialize MCP Server
 export const mcpServer = new McpServer({
@@ -10,4 +11,5 @@ export const mcpServer = new McpServer({
 // Function to register all tools
 export const registerTools = () => {
 	registerAuthTools();
+	registerAttendanceTools();
 };
