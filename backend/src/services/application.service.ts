@@ -1,9 +1,10 @@
 import {
   APPLICATION_STATUS,
+  APPLICATION_TYPES,
   LEAVE_BALANCE_DEFAULTS,
   PAID_LEAVE_TYPES,
 } from "@/configs/entities/attendance.config.ts"
-import { ROLE } from "@/configs/entities/employee.config.ts"
+import { EMPLOYEE_STATUS, ROLE } from "@/configs/entities/employee.config.ts"
 import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
@@ -44,7 +45,7 @@ export class ApplicationService implements IApplicationService {
 
     // Type-specific business rule validation
     switch (data.type) {
-      case "leave":
+      case APPLICATION_TYPES.LEAVE.LABEL:
         await this._validateLeaveApplication(
           data.employeeId,
           data.detail.leaveType,
@@ -53,16 +54,16 @@ export class ApplicationService implements IApplicationService {
         )
         break
 
-      case "overtime":
+      case APPLICATION_TYPES.OVERTIME.LABEL:
         await this._validateShiftOwnership(data.detail.employeeShiftId, data.employeeId)
         await this._validateOvertimeDates(data.detail.employeeShiftId, startDate, endDate)
         break
 
-      case "late_early":
+      case APPLICATION_TYPES.LATE_EARLY.LABEL:
         await this._validateShiftOwnership(data.detail.employeeShiftId, data.employeeId)
         break
 
-      case "shift_swap":
+      case APPLICATION_TYPES.SHIFT_SWAP.LABEL:
         await this._validateShiftOwnership(data.detail.employeeShiftId, data.employeeId)
         if (data.detail.swapWithEmployeeId) {
           await this._validateEmployeeExists(data.detail.swapWithEmployeeId)
@@ -71,13 +72,20 @@ export class ApplicationService implements IApplicationService {
           await this._validateShiftOwnership(
             data.detail.swapWithShiftId,
             data.detail.swapWithEmployeeId,
+            "Forbidden: The swap-with shift does not belong to the target employee",
           )
         }
         break
 
-      // work_from_home, business_trip, regime — no extra ownership checks
+      // work_from_home, business_trip, regime, resignation — no extra ownership checks
+      case APPLICATION_TYPES.RESIGNATION.LABEL:
       default:
         break
+    }
+
+    // §V7: If assignedToId is provided, validate that the person exists and has an approver role
+    if (data.assignedToId) {
+      await this._validateApproverRole(data.assignedToId)
     }
 
     return this.applicationRepo.submit(data)
@@ -402,7 +410,11 @@ export class ApplicationService implements IApplicationService {
    * @param employeeId - The ID of the employee.
    * @throws {AppError} If the shift doesn't exist or is not owned by the employee.
    */
-  private async _validateShiftOwnership(shiftId: string, employeeId: string): Promise<void> {
+  private async _validateShiftOwnership(
+    shiftId: string,
+    employeeId: string,
+    customErrorMessage?: string,
+  ): Promise<void> {
     const shift = await prisma.employeeShift.findUnique({
       where: { id: shiftId },
       select: { employeeId: true },
@@ -419,7 +431,7 @@ export class ApplicationService implements IApplicationService {
 
     if (shift.employeeId !== employeeId) {
       throw new AppError(
-        "Forbidden: The specified shift does not belong to you",
+        customErrorMessage || "Forbidden: The specified shift does not belong to you",
         HttpStatusCode.FORBIDDEN,
         ErrorLayer.SERVICE,
         "SHIFT_NOT_OWNED",
@@ -497,12 +509,51 @@ export class ApplicationService implements IApplicationService {
       )
     }
 
-    if (employee.status !== "active") {
+    if (employee.status !== EMPLOYEE_STATUS.ACTIVE) {
       throw new AppError(
         `Employee '${employeeId}' is not active`,
         HttpStatusCode.BAD_REQUEST,
         ErrorLayer.SERVICE,
         "EMPLOYEE_INACTIVE",
+      )
+    }
+  }
+
+  /**
+   * §V8: Validates that the assigned-to employee exists and holds an approver-eligible role.
+   * Approver roles: ADMIN, GENERAL_MANAGER, HR_MANAGER, TEAM_LEADER.
+   *
+   * @param employeeId - The ID of the employee to assign as approver.
+   * @throws {AppError} If not found or role is not approver-eligible.
+   */
+  private async _validateApproverRole(employeeId: string): Promise<void> {
+    const APPROVER_ROLES = [
+      ROLE.ADMIN,
+      ROLE.GENERAL_MANAGER,
+      ROLE.HR_MANAGER,
+      ROLE.TEAM_LEADER,
+    ] as string[]
+
+    const employee = await prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { id: true, role: true, status: true },
+    })
+
+    if (!employee) {
+      throw new AppError(
+        `Assigned approver '${employeeId}' not found`,
+        HttpStatusCode.NOT_FOUND,
+        "Service",
+        "APPROVER_NOT_FOUND",
+      )
+    }
+
+    if (!APPROVER_ROLES.includes(employee.role)) {
+      throw new AppError(
+        "The selected assignee does not have permission to approve applications",
+        HttpStatusCode.BAD_REQUEST,
+        "Service",
+        "INVALID_APPROVER_ROLE",
       )
     }
   }

@@ -19,6 +19,8 @@ interface UseManageApplicationsReturn {
   setStatusFilter: (v: StatusFilter) => void
   typeFilter: string
   setTypeFilter: (v: string) => void
+  keyword: string
+  setKeyword: (v: string) => void
   page: number
   setPage: (v: number) => void
   totalPages: number
@@ -42,6 +44,7 @@ export function useManageApplications(): UseManageApplicationsReturn {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending") // Default to pending for managers
   const [typeFilter, setTypeFilter] = useState<string>("all")
+  const [keyword, setKeyword] = useState<string>("")
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
@@ -69,6 +72,7 @@ export function useManageApplications(): UseManageApplicationsReturn {
 
         if (statusFilter !== "all") query.status = statusFilter
         if (typeFilter !== "all") query.type = typeFilter
+        if (keyword.trim() !== "") query.keyword = keyword.trim()
 
         const { data, meta } = await applicationApi.listAll(query)
 
@@ -89,7 +93,7 @@ export function useManageApplications(): UseManageApplicationsReturn {
         }
       }
     },
-    [statusFilter, typeFilter, page],
+    [statusFilter, typeFilter, keyword, page],
   )
 
   const fetchStats = useCallback(async () => {
@@ -102,12 +106,15 @@ export function useManageApplications(): UseManageApplicationsReturn {
       ] as const
 
       const counts = await Promise.all(
-        statuses.map((s) =>
-          applicationApi
-            .listAll({ status: s, page: 1, pageSize: 1 })
+        statuses.map((s) => {
+          const query: IListApplicationsQuery = { status: s, page: 1, pageSize: 1 }
+          if (typeFilter !== "all") query.type = typeFilter
+          if (keyword.trim() !== "") query.keyword = keyword.trim()
+          return applicationApi
+            .listAll(query)
             .then((r) => r.meta?.total ?? 0)
-            .catch(() => 0),
-        ),
+            .catch(() => 0)
+        }),
       )
 
       if (!activeRef.current) return
@@ -117,20 +124,24 @@ export function useManageApplications(): UseManageApplicationsReturn {
         approved: counts[1],
         rejected: counts[2],
         cancelled: counts[3],
-        total: counts.reduce((acc, c) => acc + c, 0),
+        total: counts.reduce((a, b) => a + b, 0),
       })
-    } catch {
-      // stats are non-critical
+    } catch (error) {
+      console.error("Failed to fetch application stats", error)
     }
-  }, [])
+  }, [typeFilter, keyword])
 
   useEffect(() => {
     activeRef.current = true
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchApplications(true)
-    fetchStats()
+    const timer = setTimeout(() => {
+      if (activeRef.current) {
+        fetchApplications(true)
+        fetchStats()
+      }
+    }, 0)
     return () => {
       activeRef.current = false
+      clearTimeout(timer)
     }
   }, [fetchApplications, fetchStats])
 
@@ -175,6 +186,8 @@ export function useManageApplications(): UseManageApplicationsReturn {
     setStatusFilter,
     typeFilter,
     setTypeFilter,
+    keyword,
+    setKeyword,
     page,
     setPage,
     totalPages,

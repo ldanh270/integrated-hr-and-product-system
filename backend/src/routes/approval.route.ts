@@ -1,12 +1,15 @@
 import { ApprovalController } from "@/controllers/approval.controller.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
 import { ApprovalService } from "@/services/approval/approval.service.ts"
+import { PrismaApplicationRepository } from "@/repositories/application.repository.ts"
+import { prisma } from "@/libs/database.ts"
 
 import express from "express"
 
 const approvalRoutes = express.Router()
 
-const service = new ApprovalService()
+const appRepo = new PrismaApplicationRepository(prisma)
+const service = new ApprovalService(appRepo)
 const controller = new ApprovalController(service)
 
 approvalRoutes.use(authenticate)

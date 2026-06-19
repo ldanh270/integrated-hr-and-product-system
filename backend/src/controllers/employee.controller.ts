@@ -39,6 +39,17 @@ export class EmployeeController {
   }
 
   /**
+   * HTTP GET /employees/approvers
+   * Returns a flat list of employees who hold approver-eligible roles.
+   * Used to populate the "Người duyệt đơn" dropdown in the application form.
+   * @route GET /employees/approvers
+   */
+  listApprovers = async (req: AuthRequest, res: Response<ApiResponse<unknown[]>>) => {
+    const approvers = await this.service.listApprovers()
+    res.status(HttpStatusCode.OK).json({ data: approvers, error: null })
+  }
+
+  /**
    * HTTP GET /employees/:id
    * Retrieves a single employee by their unique ID.
    * @route GET /employees/:id
