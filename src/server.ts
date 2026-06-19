@@ -1,6 +1,7 @@
+#!/usr/bin/env node
 import 'dotenv/config';
 import express from 'express';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { mcpServer, registerTools } from './mcp.js';
 
@@ -11,31 +12,21 @@ const startSSEServer = () => {
   const app = express();
   const PORT = process.env.PORT || 3001;
 
-  let transport: SSEServerTransport | null = null;
-
-  app.get('/sse', async (req, res) => {
-    console.log('Received SSE connection request');
-    transport = new SSEServerTransport('/message', res);
+  app.post('/mcp', async (req, res) => {
+    console.log('Received MCP connection request');
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     await mcpServer.server.connect(transport);
     
-    // Clean up when client disconnects
     req.on('close', () => {
-      console.log('Client disconnected from SSE');
-      transport = null;
+      console.log('Client disconnected from MCP stream');
     });
-  });
 
-  app.post('/message', async (req, res) => {
-    if (!transport) {
-      res.status(400).json({ error: 'SSE connection not established' });
-      return;
-    }
-    await transport.handlePostMessage(req, res);
+    await transport.handleRequest(req, res, req.body);
   });
 
   app.listen(PORT, () => {
     console.log(`HRP MCP Server is running on port ${PORT}`);
-    console.log(`SSE endpoint: http://localhost:${PORT}/sse`);
+    console.log(`HTTP Stream endpoint: http://localhost:${PORT}/mcp`);
     console.log(`To run in STDIO mode, pass the --stdio flag`);
   });
 };

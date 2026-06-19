@@ -1,12 +1,20 @@
 {
-	"name": "hrp-mcp-server",
+	"name": "@yourorg/hrp-mcp-server",
 	"version": "1.0.0",
-	"description": "",
-	"main": "index.js",
+	"description": "MCP Server for HRP System",
+	"main": "dist/server.js",
+	"bin": {
+		"hrp-mcp-server": "dist/server.js"
+	},
+	"files": [
+		"dist",
+		"README.md"
+	],
 	"scripts": {
 		"dev": "tsx watch src/server.ts",
 		"build": "tsc",
-		"start": "node dist/server.js"
+		"start": "node dist/server.js",
+		"prepublishOnly": "npm run build"
 	},
 	"keywords": [],
 	"author": "",
