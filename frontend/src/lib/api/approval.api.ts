@@ -11,6 +11,15 @@ export interface IApprovalDetails {
   expectedStart?: string
   reason?: string
   note?: string
+  assignedToId?: string | null
+  assignedTo?: { id: string; fullName: string } | null
+  shiftSwapDetail?: any
+  overtimeDetail?: any
+  lateEarlyDetail?: any
+  businessTripDetail?: any
+  workFromHomeDetail?: any
+  regimeDetail?: any
+  leaveDetail?: any
 }
 
 export interface IApprovalItem {

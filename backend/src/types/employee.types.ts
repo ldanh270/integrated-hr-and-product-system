@@ -167,4 +167,6 @@ export interface IEmployeeService {
   updateStatus(id: string, status: EmployeeStatus, actorId?: string, ipAddress?: string): Promise<Employee | null>
   /** Remove employee record (soft delete) */
   deleteEmployee(id: string): Promise<boolean>
+  /** Retrieve list of approver-eligible employees for dropdown */
+  listApprovers(): Promise<{ id: string; fullName: string; role: string; position: string | null }[]>
 }

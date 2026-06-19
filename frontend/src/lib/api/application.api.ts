@@ -93,6 +93,7 @@ export interface ISubmitApplicationDTO {
   endDate: string
   reason?: string
   note?: string
+  assignedToId?: string
   detail: IApplicationDetail & Record<string, unknown>
 }
 
@@ -104,6 +105,7 @@ export interface IListApplicationsQuery {
   pageSize?: number
   status?: IApplicationStatus | "all"
   type?: string
+  keyword?: string
   startDate?: string
   endDate?: string
 }

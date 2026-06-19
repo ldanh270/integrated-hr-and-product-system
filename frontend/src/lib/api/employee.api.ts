@@ -41,4 +41,16 @@ export const employeeApi = {
     const response = await apiClient.patch<ApiResponse<Employee>>(`/employees/${id}/status`, data)
     return response.data.data
   },
+
+  getApprovers: async (): Promise<IApprover[]> => {
+    const response = await apiClient.get<ApiResponse<IApprover[]>>("/employees/approvers")
+    return response.data.data
+  },
+}
+
+export interface IApprover {
+  id: string
+  fullName: string
+  role: string
+  position: string | null
 }
