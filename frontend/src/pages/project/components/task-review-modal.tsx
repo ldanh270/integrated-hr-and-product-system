@@ -345,7 +345,7 @@ export function TaskReviewModal({
                 Công việc chưa gửi kết quả đánh giá. Là Team Leader, bạn có thể phê duyệt hoàn thành trực tiếp:
               </p>
               <Button
-                onClick={() => handleApprove()}
+                onClick={() => { handleApprove(); }}
                 className="w-full rounded-full text-xs font-bold bg-green-600 hover:bg-green-700 text-white"
                 disabled={submitReviewMutation.isPending}
               >
