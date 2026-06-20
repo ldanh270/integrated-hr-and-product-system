@@ -1,6 +1,6 @@
 # HRM Application - Endpoints
 
-Base path: /api/1.0/hrm/application
+Base path: /api/applications
 
 ## Required headers (all endpoints)
 
@@ -23,7 +23,7 @@ Base path: /api/1.0/hrm/application
 
 ## POST / (Tạo đơn)
 
-Full URL: https://api-staging-lm.vnbro.com/api/1.0/hrm/application
+Full URL: https://api-staging-lm.vnbro.com/api/applications
 Create a new application. Body: JSON.
 _Lưu ý: `employeeId` được hệ thống tự động trích xuất từ JWT token._
 
@@ -78,7 +78,7 @@ Optional base fields:
 
 ## GET /me (Danh sách đơn của tôi)
 
-Full URL: https://api-staging-lm.vnbro.com/api/1.0/hrm/application/me
+Full URL: https://api-staging-lm.vnbro.com/api/applications/me
 List own applications with pagination and filters.
 
 Query parameters (optional):
@@ -94,14 +94,14 @@ Query parameters (optional):
 
 ## GET /:id (Chi tiết đơn)
 
-Full URL: https://api-staging-lm.vnbro.com/api/1.0/hrm/application/{id}
+Full URL: https://api-staging-lm.vnbro.com/api/applications/{id}
 Get specific application by ID (dành cho người nộp hoặc Quản lý).
 
 ---
 
 ## PATCH /:id/cancel (Hủy đơn)
 
-Full URL: https://api-staging-lm.vnbro.com/api/1.0/hrm/application/{id}/cancel
+Full URL: https://api-staging-lm.vnbro.com/api/applications/{id}/cancel
 Cancel own pending application. Body: JSON.
 
 Optional fields:
@@ -112,7 +112,7 @@ Optional fields:
 
 ## GET / (Danh sách toàn bộ đơn)
 
-Full URL: https://api-staging-lm.vnbro.com/api/1.0/hrm/application
+Full URL: https://api-staging-lm.vnbro.com/api/applications
 List all applications across the organization.
 _Yêu cầu quyền: Admin, HR Manager, General Manager, hoặc Team Leader._
 
@@ -130,7 +130,7 @@ Query parameters (optional):
 
 ## GET /employee/:employeeId (Danh sách đơn theo nhân viên)
 
-Full URL: https://api-staging-lm.vnbro.com/api/1.0/hrm/application/employee/{employeeId}
+Full URL: https://api-staging-lm.vnbro.com/api/applications/employee/{employeeId}
 List applications for a specific employee.
 _Yêu cầu quyền: Admin, HR Manager, General Manager, hoặc Team Leader._
 
@@ -146,7 +146,7 @@ Query parameters (optional):
 
 ## PATCH /:id/approve (Duyệt đơn)
 
-Full URL: https://api-staging-lm.vnbro.com/api/1.0/hrm/application/{id}/approve
+Full URL: https://api-staging-lm.vnbro.com/api/applications/{id}/approve
 Approve a pending application.
 _Yêu cầu quyền: Admin, HR Manager, General Manager, hoặc Team Leader._
 Body: JSON.
@@ -159,7 +159,7 @@ Required fields:
 
 ## PATCH /:id/reject (Từ chối đơn)
 
-Full URL: https://api-staging-lm.vnbro.com/api/1.0/hrm/application/{id}/reject
+Full URL: https://api-staging-lm.vnbro.com/api/applications/{id}/reject
 Reject a pending application.
 _Yêu cầu quyền: Admin, HR Manager, General Manager, hoặc Team Leader._
 Body: JSON.
