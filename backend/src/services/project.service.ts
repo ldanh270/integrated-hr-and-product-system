@@ -8,6 +8,7 @@ import {
   IProjectService,
   PaginatedProjectsDto,
   UpdateProjectDto,
+  GanttDataDto,
 } from "@/types"
 import { AppError } from "@/utils/error.util.ts"
 
@@ -292,5 +293,20 @@ export class ProjectService implements IProjectService {
     }
 
     return this.repository.getMembers(projectId)
+  }
+
+  /**
+   * Retrieves Gantt Chart data including tasks, members, and approved leave days
+   * Access control: Admins/GMs can view any project
+   * Others can only view if they are the team leader or project member
+   */
+  async getGanttData(projectId: string, userId: string, userRole: string): Promise<GanttDataDto> {
+    // Check project existence and access permissions (reuses getProject checks)
+    const project = await this.getProject(projectId, userId, userRole)
+    if (!project) {
+      throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "ProjectService")
+    }
+
+    return this.repository.getGanttData(projectId)
   }
 }

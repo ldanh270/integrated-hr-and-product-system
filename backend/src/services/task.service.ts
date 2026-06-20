@@ -141,6 +141,13 @@ export class TaskService implements ITaskService {
       }
     }
 
+    if (data.parentTaskId) {
+      const parent = await this.repository.findById(data.parentTaskId)
+      if (!parent) {
+        throw new AppError("Parent task not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
+      }
+    }
+
     return this.repository.createTask({
       ...data,
       createdById: userId,
@@ -198,6 +205,44 @@ export class TaskService implements ITaskService {
           HttpStatusCode.BAD_REQUEST,
           LAYER_NAME
         )
+      }
+    }
+
+    if (data.parentTaskId) {
+      const parent = await this.repository.findById(data.parentTaskId)
+      if (!parent) {
+        throw new AppError("Parent task not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
+      }
+      if (data.parentTaskId === id) {
+        throw new AppError("A task cannot be its own parent", HttpStatusCode.BAD_REQUEST, LAYER_NAME)
+      }
+    }
+
+    // Validate status transitions and deliverables
+    if (data.status && data.status !== task.status) {
+      // 1. Enforce that only Team Leader or GM/Admin can approve task completion (status = done)
+      if (data.status === "done") {
+        if (!isGM && !isTL) {
+          throw new AppError(
+            "Chỉ Team Leader hoặc Manager mới có quyền phê duyệt hoàn thành công việc",
+            HttpStatusCode.FORBIDDEN,
+            LAYER_NAME
+          )
+        }
+      }
+
+      // 2. Enforce deliverables when transitioning to in_review (waiting for review)
+      if (data.status === "in_review") {
+        const hasResultUrl = data.resultUrl !== undefined ? !!data.resultUrl : !!task.resultUrl
+        const hasResultNotes = data.resultNotes !== undefined ? !!data.resultNotes : !!task.resultNotes
+        
+        if (!hasResultUrl && !hasResultNotes) {
+          throw new AppError(
+            "Bắt buộc phải đính kèm link sản phẩm hoặc ghi chú kết quả khi gửi yêu cầu đánh giá công việc (in_review)",
+            HttpStatusCode.BAD_REQUEST,
+            LAYER_NAME
+          )
+        }
       }
     }
 

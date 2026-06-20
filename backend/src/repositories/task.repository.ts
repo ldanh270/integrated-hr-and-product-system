@@ -58,6 +58,10 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
       completedAt: task.completedAt,
       estimatedTime: task.estimatedTime,
       progress: task.progress,
+      resultUrl: task.resultUrl,
+      resultNotes: task.resultNotes,
+      rejectionReason: task.rejectionReason,
+      parentTaskId: task.parentTaskId,
       createdAt: task.createdAt,
       updatedAt: task.updatedAt,
       project: task.project
@@ -211,6 +215,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
         dueDate: data.dueDate ? new Date(data.dueDate) : null,
         estimatedTime: data.estimatedTime,
         progress: data.progress || 0,
+        parentTaskId: data.parentTaskId,
       },
       include: {
         project: {
@@ -247,6 +252,10 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
       completedAt: data.completedAt ? new Date(data.completedAt) : undefined,
       estimatedTime: data.estimatedTime,
       progress: data.progress,
+      resultUrl: data.resultUrl,
+      resultNotes: data.resultNotes,
+      rejectionReason: data.rejectionReason,
+      parentTaskId: data.parentTaskId,
     }
 
     if (data.startDate === null) updateData.startDate = null
@@ -254,6 +263,10 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     if (data.assigneeId === null) updateData.assigneeId = null
     if (data.completedAt === null) updateData.completedAt = null
     if (data.estimatedTime === null) updateData.estimatedTime = null
+    if (data.resultUrl === null) updateData.resultUrl = null
+    if (data.resultNotes === null) updateData.resultNotes = null
+    if (data.rejectionReason === null) updateData.rejectionReason = null
+    if (data.parentTaskId === null) updateData.parentTaskId = null
 
     // Automatically set completedAt when switching status to Done, or clear it when moving away from Done
     if (data.status === "done" && !data.completedAt) {

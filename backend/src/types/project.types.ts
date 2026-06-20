@@ -118,6 +118,13 @@ export interface IProjectRepository {
   removeMember(projectId: string, employeeId: string): Promise<boolean>
   isMember(projectId: string, employeeId: string): Promise<boolean>
   getMembers(projectId: string): Promise<any[]>
+  getGanttData(projectId: string): Promise<GanttDataDto>
+}
+
+export interface GanttDataDto {
+  tasks: any[]
+  members: any[]
+  leaveDays: any[]
 }
 
 /**
@@ -151,4 +158,5 @@ export interface IProjectService {
     userRole: string,
   ): Promise<boolean>
   getMembers(projectId: string, userId: string, userRole: string): Promise<any[]>
+  getGanttData(projectId: string, userId: string, userRole: string): Promise<GanttDataDto>
 }

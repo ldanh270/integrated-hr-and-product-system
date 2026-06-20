@@ -12,7 +12,7 @@ const spentTimeRoutes = express.Router({ mergeParams: true })
 
 const spentTimeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per window
+  max: process.env.NODE_ENV === "development" ? 100000 : 100, // limit each IP to 100 requests per window in prod
 })
 
 const projectRepository = new PrismaProjectRepository(prisma)
