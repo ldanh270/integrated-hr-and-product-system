@@ -23,12 +23,8 @@ import securityRoutes from "@/routes/security.route.ts"
 import shiftChangeRequestRoutes from "@/routes/shift-change-request.route.ts"
 import shiftRoutes from "@/routes/shift.route.ts"
 import taskRoutes from "@/routes/task.route.ts"
-<<<<<<< HEAD
 import customQueryRoutes from "@/routes/custom-query.route.ts"
-
-=======
 import weeklyScheduleTemplateRoutes from "@/routes/weekly-schedule-template.route.ts"
->>>>>>> origin/main
 
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
