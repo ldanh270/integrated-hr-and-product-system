@@ -24,6 +24,8 @@ import securityRoutes from "@/routes/security.route.ts"
 import shiftChangeRequestRoutes from "@/routes/shift-change-request.route.ts"
 import shiftRoutes from "@/routes/shift.route.ts"
 import taskRoutes from "@/routes/task.route.ts"
+import customQueryRoutes from "@/routes/custom-query.route.ts"
+
 
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
@@ -53,10 +55,10 @@ app.use(cookieParser())
 app.use(cors)
 app.use(express.json())
 
-// Set up rate limiter: maximum of 100 requests per 15 minutes
+// Set up rate limiter: maximum of 100 requests per 15 minutes (relaxed in development)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // max 100 requests per windowMs
+  max: process.env.NODE_ENV === "development" ? 100000 : 100, // max 100 requests per windowMs in prod
   message: {
     status: "error",
     message: "Too many requests, please try again later.",
@@ -100,6 +102,8 @@ app.use("/api/payrolls", payrollRoutes)
 // Private routes
 app.use("/api/projects", projectRoutes)
 app.use("/api/tasks", taskRoutes)
+app.use("/api/custom-queries", customQueryRoutes)
+
 // 404 handler
 app.use((req, res) => {
   res.status(HttpStatusCode.NOT_FOUND).json({
