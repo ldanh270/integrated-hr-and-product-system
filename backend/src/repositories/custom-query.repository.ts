@@ -12,8 +12,8 @@ export class PrismaCustomQueryRepository extends BaseRepository implements ICust
     return this.prisma.customQuery.findMany({
       where: {
         employeeId,
-        projectId: projectId || undefined,
-        type: type || undefined,
+        projectId: projectId === undefined ? undefined : projectId,
+        type: type === undefined ? undefined : type,
       },
       orderBy: {
         createdAt: "desc",
