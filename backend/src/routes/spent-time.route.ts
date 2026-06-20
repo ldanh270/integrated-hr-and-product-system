@@ -8,11 +8,13 @@ import { SpentTimeService } from "@/services/spent-time.service.ts"
 import express from "express"
 import rateLimit from "express-rate-limit"
 
+import { ENVIRONMENT, RATE_LIMIT, ENV_ENVIRONMENT } from "@/configs/system/server.config.ts"
+
 const spentTimeRoutes = express.Router({ mergeParams: true })
 
 const spentTimeLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === "development" ? 100000 : 100, // limit each IP to 100 requests per window in prod
+  windowMs: RATE_LIMIT.WINDOW_MS,
+  max: ENV_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT ? RATE_LIMIT.MAX_LIMIT_DEV : RATE_LIMIT.MAX_LIMIT_PROD,
 })
 
 const projectRepository = new PrismaProjectRepository(prisma)

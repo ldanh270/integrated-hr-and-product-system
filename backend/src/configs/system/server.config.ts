@@ -6,3 +6,9 @@ export const ENVIRONMENT = {
   DEVELOPMENT: "development",
   PRODUCTION: "production",
 } as const
+
+export const RATE_LIMIT = {
+  WINDOW_MS: 15 * 60 * 1000, // 15 minutes
+  MAX_LIMIT_PROD: 100,
+  MAX_LIMIT_DEV: 100000,
+} as const

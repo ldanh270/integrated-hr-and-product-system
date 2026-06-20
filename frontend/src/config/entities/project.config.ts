@@ -40,12 +40,44 @@ export const TASK_CREATION_POLICIES = [
 /**
  * Task priority levels enumeration
  */
-export const TASK_PRIORITIES = ["low", "medium", "high", "urgent"] as const
+export const TASK_PRIORITY = {
+  LOW: "low",
+  MEDIUM: "medium",
+  HIGH: "high",
+  URGENT: "urgent",
+} as const
+
+export const TASK_PRIORITIES = [
+  TASK_PRIORITY.LOW,
+  TASK_PRIORITY.MEDIUM,
+  TASK_PRIORITY.HIGH,
+  TASK_PRIORITY.URGENT,
+] as const
 
 /**
  * Task status enumeration
  */
-export const TASK_STATUSES = ["todo", "in_progress", "in_review", "done", "cancelled", "reopened"] as const
+export const TASK_STATUS = {
+  TODO: "todo",
+  IN_PROGRESS: "in_progress",
+  IN_REVIEW: "in_review",
+  DONE: "done",
+  CANCELLED: "cancelled",
+  REOPENED: "reopened",
+} as const
+
+export const TASK_STATUSES = [
+  TASK_STATUS.TODO,
+  TASK_STATUS.IN_PROGRESS,
+  TASK_STATUS.IN_REVIEW,
+  TASK_STATUS.DONE,
+  TASK_STATUS.CANCELLED,
+  TASK_STATUS.REOPENED,
+] as const
+
+export const CUSTOM_QUERY_TYPE = {
+  GANTT: "gantt",
+} as const
 
 /**
  * Task tracker enumeration

@@ -1,5 +1,3 @@
-import { useState, useMemo } from "react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { 
   AlertTriangle, 
   Clock, 
@@ -18,23 +16,21 @@ import {
   X,
   Trash2
 } from "lucide-react"
-import { toast } from "sonner"
-import { format, differenceInDays, addDays, eachDayOfInterval } from "date-fns"
+import { format, addDays, differenceInDays } from "date-fns"
 import { vi } from "date-fns/locale"
 
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { projectApi } from "@/lib/api/project.api"
-import { taskApi } from "@/lib/api/task.api"
-import { customQueryApi } from "@/lib/api/custom-query.api"
 import type { CustomQuery } from "@/lib/api/custom-query.api"
-import { ROLE } from "@/config/entities/employee.config"
-import { useAuthStore } from "@/store/auth-store"
-import { extractErrorMessage } from "@/utils/error-helper"
 import { TaskReviewModal } from "./task-review-modal"
-import type { Project, GanttLeaveDay } from "@/types/project.types"
-import type { Task, UpdateTaskDto, TaskSpentTime } from "@/types/task.types"
+import type { Project } from "@/types/project.types"
+import type { Task, TaskSpentTime } from "@/types/task.types"
+import { useProjectGantt } from "../hooks/use-project-gantt"
+import { FILTER_DEFINITIONS } from "../constants/gantt.constants"
+import { TASK_STATUS, TASK_PRIORITY, TASK_TRACKER } from "@/config/entities/project.config"
+
+const filterDefinitions = FILTER_DEFINITIONS
 
 interface ProjectGanttTabProps {
   projectId: string
@@ -42,507 +38,64 @@ interface ProjectGanttTabProps {
 }
 
 export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
-  const queryClient = useQueryClient()
-  const { user } = useAuthStore()
-
-  // Timeline view range configuration (timeline start date)
-  const [timelineStart, setTimelineStart] = useState<Date>(() => {
-    if (project.startDate) {
-      return new Date(project.startDate)
-    }
-    return new Date()
-  })
-
-  // Selected task state for completion / review modal
-  const [selectedTaskForReview, setSelectedTaskForReview] = useState<Task | null>(null)
-
-  // Options Panel states
-  const [isOptionsExpanded, setIsOptionsExpanded] = useState(false)
-  const [showEstTime, setShowEstTime] = useState(true)
-  const [showAssignee, setShowAssignee] = useState(true)
-  const [showProgress, setShowProgress] = useState(true)
-  const [showLeaves, setShowLeaves] = useState(true)
-  const [showConflicts, setShowConflicts] = useState(true)
-
-  // Filter form states
-  const [monthsInput, setMonthsInput] = useState("6") // default 6 months from project start as in the Redmine image
-  const [monthInput, setMonthInput] = useState<number>(() => timelineStart.getMonth())
-  const [yearInput, setYearInput] = useState<number>(() => timelineStart.getFullYear())
-  const [monthsRange, setMonthsRange] = useState(6) // actual range applied (months)
-
-  // Redmine Filters State
-  const [isFiltersExpanded, setIsFiltersExpanded] = useState(true)
-  const [activeFilterKeys, setActiveFilterKeys] = useState<string[]>(["status"])
-  const [filterStates, setFilterStates] = useState<Record<string, {
-    enabled: boolean
-    operator: string
-    value: string
-  } | undefined>>({
-    status: { enabled: true, operator: "open", value: "" },
-    tracker: { enabled: true, operator: "is", value: "task" },
-    priority: { enabled: true, operator: "is", value: "medium" },
-    assignee: { enabled: true, operator: "is", value: "" },
-  })
-
-  const [appliedFilterKeys, setAppliedFilterKeys] = useState<string[]>(["status"])
-  const [appliedFilterStates, setAppliedFilterStates] = useState<Record<string, {
-    enabled: boolean
-    operator: string
-    value: string
-  } | undefined>>({
-    status: { enabled: true, operator: "open", value: "" },
-    tracker: { enabled: true, operator: "is", value: "task" },
-    priority: { enabled: true, operator: "is", value: "medium" },
-    assignee: { enabled: true, operator: "is", value: "" },
-  })
-
-  // Sidebar collapsible state
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true)
-
-  // Zoom state (column width in pixels)
-  const [dayWidth, setDayWidth] = useState(28)
-
-  // Fetch consolidated Gantt data (tasks, members, leave records)
-  const { data: ganttData, isLoading } = useQuery({
-    queryKey: ["projectGantt", projectId],
-    queryFn: () => projectApi.getGanttData(projectId),
-    enabled: !!projectId,
-  })
-
-  // Fetch saved custom queries
-  const { data: savedQueries = [], refetch: refetchSavedQueries } = useQuery({
-    queryKey: ["customQueries", projectId],
-    queryFn: () => customQueryApi.list(projectId),
-    enabled: !!projectId,
-  })
-
-  // Mutation to save custom query
-  const saveQueryMutation = useMutation({
-    mutationFn: async (data: { name: string; queryData: string }) => {
-      return customQueryApi.create({
-        name: data.name,
-        type: "gantt",
-        projectId,
-        queryData: data.queryData,
-      })
-    },
-    onSuccess: () => {
-      void refetchSavedQueries()
-      toast.success("Đã lưu truy vấn thành công")
-    },
-    onError: (err: unknown) => {
-      toast.error(extractErrorMessage(err))
-    },
-  })
-
-  // Mutation to delete custom query
-  const deleteQueryMutation = useMutation({
-    mutationFn: async (id: string) => {
-      return customQueryApi.delete(id)
-    },
-    onSuccess: () => {
-      void refetchSavedQueries()
-      toast.success("Đã xóa truy vấn thành công")
-    },
-    onError: (err: unknown) => {
-      toast.error(extractErrorMessage(err))
-    },
-  })
-
-  // Apply a custom query filters
-  const applySavedQuery = (savedQuery: CustomQuery) => {
-    try {
-      const data = JSON.parse(savedQuery.queryData)
-      if (data && Array.isArray(data.activeFilterKeys) && data.filterStates) {
-        setActiveFilterKeys(data.activeFilterKeys)
-        setFilterStates(data.filterStates)
-        setAppliedFilterKeys(data.activeFilterKeys)
-        setAppliedFilterStates(data.filterStates)
-        toast.success(`Đã áp dụng truy vấn: ${savedQuery.name}`)
-      } else {
-        toast.error("Dữ liệu truy vấn không hợp lệ")
-      }
-    } catch (e) {
-      toast.error("Không thể đọc dữ liệu truy vấn đã lưu")
-    }
-  }
-
-  // Handle saving new custom query
-  const handleSaveQuery = () => {
-    const name = prompt("Nhập tên truy vấn riêng cần lưu:")
-    if (!name || !name.trim()) return
-
-    const queryDataObj = {
-      activeFilterKeys,
-      filterStates,
-    }
-
-    saveQueryMutation.mutate({
-      name: name.trim(),
-      queryData: JSON.stringify(queryDataObj),
-    })
-  }
-
-  // Find all unique assignees (team leader + project members)
-  const assignees = useMemo(() => {
-    const list: { id: string; fullName: string }[] = []
-    
-    // Add team leader
-    if (project?.teamLeader) {
-      list.push({ id: project.teamLeader.id, fullName: project.teamLeader.fullName })
-    } else if (project?.teamLeaderId) {
-      list.push({ id: project.teamLeaderId, fullName: "Team Leader" })
-    }
-    
-    // Add members
-    const members = ganttData?.members || []
-    members.forEach((m) => {
-      if (m && !list.some((item) => item.id === m.id)) {
-        list.push({ id: m.id, fullName: m.fullName })
-      }
-    })
-    
-    return list
-  }, [project, ganttData])
-
-  const filterDefinitions = {
-    status: { label: "Trạng thái", type: "status", group: "" },
-    tracker: { label: "Kiểu vấn đề", type: "tracker", group: "" },
-    priority: { label: "Mức ưu tiên", type: "priority", group: "" },
-    author: { label: "Tác giả", type: "employee", group: "" },
-    assignee: { label: "Phân công cho", type: "employee", group: "" },
-    target_version: { label: "Phiên bản", type: "version", group: "" },
-    subject: { label: "Chủ đề", type: "text", group: "" },
-    progress: { label: "Tiến độ", type: "progress", group: "" },
-    updated_by: { label: "Cập nhật bởi", type: "employee", group: "" },
-    last_updated_by: { label: "Cập nhật lần cuối bởi", type: "employee", group: "" },
-    subproject: { label: "Dự án con", type: "text", group: "" },
-    issue: { label: "Vấn đề", type: "text", group: "" },
-    
-    // Group: Văn bản
-    txt_subject: { label: "Chủ đề", type: "text", group: "Văn bản" },
-    txt_desc: { label: "Mô tả", type: "text", group: "Văn bản" },
-    txt_notes: { label: "Ghi chú", type: "text", group: "Văn bản" },
-    txt_any: { label: "Any searchable text", type: "text", group: "Văn bản" },
-
-    // Group: Ngày
-    date_created: { label: "Tạo", type: "date", group: "Ngày" },
-    date_updated: { label: "Cập nhật", type: "date", group: "Ngày" },
-    date_closed: { label: "Đã đóng", type: "date", group: "Ngày" },
-    date_start: { label: "Bắt đầu", type: "date", group: "Ngày" },
-    date_due: { label: "Hết hạn", type: "date", group: "Ngày" },
-
-    // Group: Theo dõi thời gian
-    time_est: { label: "Thời gian ước lượng", type: "number", group: "Theo dõi thời gian" },
-    time_spent: { label: "Thời gian", type: "number", group: "Theo dõi thời gian" },
-
-    // Group: Tập tin
-    file_name: { label: "Tập tin", type: "text", group: "Tập tin" },
-    file_desc: { label: "File description", type: "text", group: "Tập tin" },
-
-    // Group: Tác giả
-    author_group: { label: "Của tác giả : Nhóm", type: "text", group: "Tác giả" },
-    author_role: { label: "Của tác giả : Quyền", type: "text", group: "Tác giả" },
-
-    // Group: Phân công cho
-    assignee_group: { label: "Nhóm thụ hưởng", type: "text", group: "Phân công cho" },
-    assignee_role: { label: "Quyền thụ hưởng", type: "text", group: "Phân công cho" },
-
-    // Group: Phiên bản
-    ver_date: { label: "Phiên bản mục tiêu của Ngày", type: "date", group: "Phiên bản" },
-    ver_status: { label: "Phiên bản mục tiêu của Trạng thái", type: "text", group: "Phiên bản" },
-
-    // Group: Dự án
-    proj_status: { label: "Của dự án : Trạng thái", type: "text", group: "Dự án" },
-
-    // Group: Mối quan hệ
-    rel_related: { label: "liên quan", type: "relation", group: "Mối quan hệ" },
-    rel_duplicate: { label: "trùng với", type: "relation", group: "Mối quan hệ" },
-    rel_duplicated_by: { label: "bị trùng bởi", type: "relation", group: "Mối quan hệ" },
-    rel_blocks: { label: "chặn", type: "relation", group: "Mối quan hệ" },
-    rel_blocked_by: { label: "chặn bởi", type: "relation", group: "Mối quan hệ" },
-    rel_precedes: { label: "đi trước", type: "relation", group: "Mối quan hệ" },
-    rel_follows: { label: "đi sau", type: "relation", group: "Mối quan hệ" },
-    rel_copied_to: { label: "Sao chép đến", type: "relation", group: "Mối quan hệ" },
-    rel_copied_from: { label: "Sao chép từ", type: "relation", group: "Mối quan hệ" },
-    rel_parent: { label: "Tác vụ cha", type: "relation", group: "Mối quan hệ" },
-    rel_child: { label: "Tác vụ con", type: "relation", group: "Mối quan hệ" },
-  }
-
-  const getDefaultOperator = (key: string) => {
-    const def = Reflect.get(filterDefinitions, key) as { label: string; type: string; group: string } | undefined
-    if (def === undefined) return "is"
-    if (key === "status") return "open"
-    if (key === "tracker" || key === "priority") return "is"
-    if (def.type === "employee") return "là"
-    if (def.type === "text") return "chứa"
-    if (def.type === "progress" || def.type === "number") return "="
-    if (def.type === "date") return "any"
-    if (def.type === "relation") return "any"
-    return "is"
-  }
-
-  const getDefaultValue = (key: string) => {
-    const def = Reflect.get(filterDefinitions, key) as { label: string; type: string; group: string } | undefined
-    if (def === undefined) return ""
-    if (key === "tracker") return "task"
-    if (key === "priority") return "medium"
-    if (def.type === "employee") return assignees[0]?.id || ""
-    if (def.type === "progress") return "50"
-    if (def.type === "number") return "0"
-    if (def.type === "date") return ""
-    return ""
-  }
-
-  // Update Task mutation (used to quickly adjust task dates)
-  const updateTaskMutation = useMutation({
-    mutationFn: async ({ taskId, data }: { taskId: string; data: UpdateTaskDto }) => {
-      return taskApi.update(taskId, data)
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["projectGantt", projectId] })
-      void queryClient.invalidateQueries({ queryKey: ["tasks", "overview", projectId] })
-      toast.success("Đã cập nhật công việc")
-    },
-    onError: (err) => {
-      toast.error(extractErrorMessage(err))
-    },
-  })
-
-  // Timeline days calculation (monthsRange months starting from timelineStart)
-  const timelineDays = useMemo(() => {
-    const end = addDays(addDays(timelineStart, monthsRange * 30), -1)
-    const daysInterval = eachDayOfInterval({ start: timelineStart, end })
-    return daysInterval.slice(0, 180) // Cap at 180 days max
-  }, [timelineStart, monthsRange])
-
-  // Month spans grouping for timeline header
-  const monthSpans = useMemo(() => {
-    if (timelineDays.length === 0) return []
-    const spans: { label: string; colSpan: number }[] = []
-    
-    let currentLabel = format(timelineDays[0], "yyyy-M")
-    let currentCount = 0
-    
-    timelineDays.forEach((day) => {
-      const label = format(day, "yyyy-M")
-      if (label === currentLabel) {
-        currentCount++
-      } else {
-        spans.push({ label: currentLabel, colSpan: currentCount })
-        currentLabel = label
-        currentCount = 1
-      }
-    })
-    
-    if (currentCount > 0) {
-      spans.push({ label: currentLabel, colSpan: currentCount })
-    }
-    
-    return spans
-  }, [timelineDays])
-
-  const tasks = ganttData?.tasks || []
-  const leaveDays = ganttData?.leaveDays || []
-
-  // Apply filters to tasks at client side
-  const filteredTasks = useMemo(() => {
-    return tasks.filter((task: Task) => {
-      for (const key of appliedFilterKeys) {
-        if (!Object.prototype.hasOwnProperty.call(appliedFilterStates, key)) continue
-        const filter = Reflect.get(appliedFilterStates, key) as { enabled: boolean; operator: string; value: string } | undefined
-        if (!filter?.enabled) continue
-
-        if (key === "status") {
-          const statusVal = task.status
-          if (filter.operator === "open") {
-            const isOpen = ["todo", "in_progress", "in_review", "reopened"].includes(statusVal)
-            if (!isOpen) return false
-          } else if (filter.operator === "đóng") {
-            const isClosed = ["done", "cancelled"].includes(statusVal)
-            if (!isClosed) return false
-          } else if (filter.operator === "tất cả") {
-            // matches all
-          } else if (filter.operator === "là") {
-            if (statusVal !== filter.value) return false
-          } else if (filter.operator === "không là") {
-            if (statusVal === filter.value) return false
-          }
-        }
-
-        if (key === "tracker") {
-          const trackerVal = task.tracker
-          if (filter.operator === "is") {
-            if (trackerVal !== filter.value) return false
-          } else if (filter.operator === "is_not") {
-            if (trackerVal === filter.value) return false
-          }
-        }
-
-        if (key === "priority") {
-          const priorityVal = task.priority
-          if (filter.operator === "is") {
-            if (priorityVal !== filter.value) return false
-          } else if (filter.operator === "is_not") {
-            if (priorityVal === filter.value) return false
-          }
-        }
-
-        if (key === "assignee") {
-          const assigneeIdVal = task.assigneeId
-          if (filter.operator === "là") {
-            if (assigneeIdVal !== filter.value) return false
-          } else if (filter.operator === "không là") {
-            if (assigneeIdVal === filter.value) return false
-          } else if (filter.operator === "tôi") {
-            if (assigneeIdVal !== user?.id) return false
-          } else if (filter.operator === "none") {
-            if (assigneeIdVal) return false
-          }
-        }
-
-        if (key === "author") {
-          const authorVal = task.createdById
-          if (filter.operator === "là") {
-            if (authorVal !== filter.value) return false
-          } else if (filter.operator === "không là") {
-            if (authorVal === filter.value) return false
-          } else if (filter.operator === "tôi") {
-            if (authorVal !== user?.id) return false
-          }
-        }
-
-        if (key === "subject" || key === "txt_subject") {
-          const subjectVal = (task.title || "").toLowerCase()
-          const val = (filter.value || "").toLowerCase()
-          if (filter.operator === "chứa") {
-            if (!subjectVal.includes(val)) return false
-          } else if (filter.operator === "không chứa") {
-            if (subjectVal.includes(val)) return false
-          } else if (filter.operator === "bắt đầu bằng") {
-            if (!subjectVal.startsWith(val)) return false
-          } else if (filter.operator === "kết thúc bằng") {
-            if (!subjectVal.endsWith(val)) return false
-          } else if (filter.operator === "none") {
-            if (subjectVal.trim()) return false
-          } else if (filter.operator === "any") {
-            if (!subjectVal.trim()) return false
-          }
-        }
-
-        if (key === "txt_desc") {
-          const descVal = (task.description || "").toLowerCase()
-          const val = (filter.value || "").toLowerCase()
-          if (filter.operator === "chứa") {
-            if (!descVal.includes(val)) return false
-          } else if (filter.operator === "không chứa") {
-            if (descVal.includes(val)) return false
-          }
-        }
-
-        if (key === "progress") {
-          const progVal = task.progress || 0
-          const val = Number(filter.value || 0)
-          if (filter.operator === "=") {
-            if (progVal !== val) return false
-          } else if (filter.operator === ">=") {
-            if (progVal < val) return false
-          } else if (filter.operator === "<=") {
-            if (progVal > val) return false
-          }
-        }
-
-        if (key === "date_start") {
-          if (!task.startDate) return false
-          const taskStart = new Date(task.startDate)
-          if (filter.operator === "after" && filter.value) {
-            if (taskStart <= new Date(filter.value)) return false
-          } else if (filter.operator === "before" && filter.value) {
-            if (taskStart >= new Date(filter.value)) return false
-          }
-        }
-
-        if (key === "date_due") {
-          if (!task.dueDate) return false
-          const taskDue = new Date(task.dueDate)
-          if (filter.operator === "after" && filter.value) {
-            if (taskDue <= new Date(filter.value)) return false
-          } else if (filter.operator === "before" && filter.value) {
-            if (taskDue >= new Date(filter.value)) return false
-          }
-        }
-
-        if (key === "rel_parent") {
-          const hasParent = !!task.parentTaskId
-          if (filter.operator === "any") {
-            if (!hasParent) return false
-          } else if (filter.operator === "none") {
-            if (hasParent) return false
-          }
-        }
-
-        // Custom hidden filters for Quick Queries
-        if (key === "_reported") {
-          if (task.createdById !== filter.value) return false
-        }
-        if (key === "_updated") {
-          if (!task.updatedAt) return false
-          const updatedDate = new Date(task.updatedAt)
-          const diff = differenceInDays(new Date(), updatedDate)
-          if (diff > 7) return false
-        }
-        if (key === "_watched") {
-          const myId = filter.value
-          if (task.assigneeId !== myId && task.createdById !== myId) return false
-        }
-      }
-      return true
-    })
-  }, [tasks, appliedFilterKeys, appliedFilterStates, user?.id])
-
-  // Flatten tree array builder (subtask tree structure support)
-  const treeTasks = useMemo(() => {
-    const rootTasks = filteredTasks.filter((t: Task) => !t.parentTaskId)
-    const childTasks = filteredTasks.filter((t: Task) => t.parentTaskId)
-
-    const result: (Task & { depth: number })[] = []
-
-    const traverse = (parent: Task, depth: number) => {
-      result.push({ ...parent, depth })
-      const children = childTasks.filter((t: Task) => t.parentTaskId === parent.id)
-      children.forEach((child: Task) => {
-        traverse(child, depth + 1)
-      })
-    }
-
-    rootTasks.forEach((root: Task) => {
-      traverse(root, 0)
-    })
-
-    // Include orphan child tasks (if parentTask is missing from project tasks somehow)
-    const processedIds = new Set(result.map((r) => r.id))
-    filteredTasks.forEach((t: Task) => {
-      if (!processedIds.has(t.id)) {
-        result.push({ ...t, depth: 0 })
-      }
-    })
-
-    return result
-  }, [filteredTasks])
-
-  // Navigate timeline view
-  const shiftTimeline = (days: number) => {
-    setTimelineStart((prev) => addDays(prev, days))
-  }
-
-  // Reset timeline to project start
-  const resetTimelineToProjectStart = () => {
-    if (project.startDate) {
-      setTimelineStart(new Date(project.startDate))
-    } else {
-      setTimelineStart(new Date())
-    }
-  }
+  const {
+    timelineStart,
+    selectedTaskForReview,
+    setSelectedTaskForReview,
+    isOptionsExpanded,
+    setIsOptionsExpanded,
+    showEstTime,
+    setShowEstTime,
+    showAssignee,
+    setShowAssignee,
+    showProgress,
+    setShowProgress,
+    showLeaves,
+    setShowLeaves,
+    showConflicts,
+    setShowConflicts,
+    monthsInput,
+    setMonthsInput,
+    monthInput,
+    setMonthInput,
+    yearInput,
+    setYearInput,
+    isFiltersExpanded,
+    setIsFiltersExpanded,
+    activeFilterKeys,
+    setActiveFilterKeys,
+    filterStates,
+    setFilterStates,
+    isSidebarExpanded,
+    setIsSidebarExpanded,
+    dayWidth,
+    isLoading,
+    savedQueries,
+    deleteQueryMutation,
+    applySavedQuery,
+    handleSaveQuery,
+    assignees,
+    getDefaultOperator,
+    getDefaultValue,
+    timelineDays,
+    monthSpans,
+    treeTasks,
+    shiftTimeline,
+    resetTimelineToProjectStart,
+    isLeader,
+    isAdminOrGM,
+    getLeaveConflict,
+    isEmployeeOnLeaveOnDay,
+    getTaskGridStyle,
+    shiftTaskDates,
+    shiftTimelineByMonth,
+    getMonthOffsetLabel,
+    handleZoomIn,
+    handleZoomOut,
+    handleApplyFilters,
+    handleClearFilters,
+    handleQuickQuery,
+  } = useProjectGantt({ projectId, project })
 
   if (isLoading) {
     return (
@@ -553,301 +106,72 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
     )
   }
 
-
-  // Check roles/permissions
-  const isLeader = project.teamLeaderId === user?.id
-  const isAdminOrGM = user?.role === ROLE.ADMIN || user?.role === ROLE.GENERAL_MANAGER
-
-  // Find overlap leave days for a task and its assignee
-  const getLeaveConflict = (task: Task) => {
-    if (!task.assigneeId || !task.startDate || !task.dueDate) return null
-
-    const taskStart = new Date(task.startDate)
-    const taskDue = new Date(task.dueDate)
-
-    // Filter approved leaves for this assignee
-    const assigneeLeaves = leaveDays.filter((l: GanttLeaveDay) => l.employeeId === task.assigneeId)
-
-    const conflictingLeaves = assigneeLeaves.filter((leave: GanttLeaveDay) => {
-      const leaveStart = new Date(leave.startDate)
-      const leaveEnd = new Date(leave.endDate)
-
-      // Check interval overlap
-      return (
-        taskStart <= leaveEnd && taskDue >= leaveStart
-      )
-    })
-
-    if (conflictingLeaves.length === 0) return null
-
-    // Format leave dates for tooltips
-    return conflictingLeaves.map((l: GanttLeaveDay) => {
-      const startStr = format(new Date(l.startDate), "dd/MM")
-      const endStr = format(new Date(l.endDate), "dd/MM")
-      return `${startStr} - ${endStr}${l.reason ? ` (${l.reason})` : ""}`
-    }).join(", ")
-  }
-
-  // Helper to check if a member is on leave on a specific day
-  const isEmployeeOnLeaveOnDay = (employeeId: string, day: Date) => {
-    const employeeLeaves = leaveDays.filter((l: GanttLeaveDay) => l.employeeId === employeeId)
-    return employeeLeaves.some((leave: GanttLeaveDay) => {
-      const start = new Date(leave.startDate)
-      const end = new Date(leave.endDate)
-      // Check if day is within [start, end]
-      return day >= start && day <= end
-    })
-  }
-
-  // Helper to render task bar position and duration
-  const getTaskGridStyle = (task: Task) => {
-    if (!task.startDate || !task.dueDate) return null
-
-    const taskStart = new Date(task.startDate)
-    const taskDue = new Date(task.dueDate)
-
-    // Check if task falls completely out of timeline view
-    const timelineEnd = addDays(timelineStart, 29)
-    if (taskDue < timelineStart || taskStart > timelineEnd) {
-      return null
-    }
-
-    // Calculate grid positions (1-indexed columns, 1 column per day)
-    let startCol = differenceInDays(taskStart, timelineStart) + 1
-    let span = differenceInDays(taskDue, taskStart) + 1
-
-    // Crop to timeline bounds
-    if (startCol < 1) {
-      span += startCol - 1
-      startCol = 1
-    }
-    if (startCol + span > 30) {
-      span = 31 - startCol
-    }
-
-    if (span <= 0) return null
-
-    return {
-      gridColumnStart: startCol,
-      gridColumnEnd: startCol + span,
-    }
-  }
-
-  // Change task date duration (shifting task days)
-  const shiftTaskDates = (task: Task, days: number) => {
-    if (!task.startDate || !task.dueDate) return
-    const newStart = addDays(new Date(task.startDate), days)
-    const newDue = addDays(new Date(task.dueDate), days)
-
-    updateTaskMutation.mutate({
-      taskId: task.id,
-      data: {
-        startDate: format(newStart, "yyyy-MM-dd"),
-        dueDate: format(newDue, "yyyy-MM-dd"),
-      },
-    })
-  }
-
-  // Shift timeline start by a specific number of months
-  const shiftTimelineByMonth = (months: number) => {
-    setTimelineStart((prev) => {
-      const newDate = new Date(prev.getFullYear(), prev.getMonth() + months, 1)
-      setMonthInput(newDate.getMonth())
-      setYearInput(newDate.getFullYear())
-      return newDate
-    })
-  }
-
-  // Helper to get month label relative to current timelineStart
-  const getMonthOffsetLabel = (offset: number) => {
-    const d = new Date(timelineStart.getFullYear(), timelineStart.getMonth() + offset, 1)
-    const months = [
-      "Tháng một", "Tháng hai", "Tháng ba", "Tháng tư", "Tháng năm", "Tháng sáu",
-      "Tháng bảy", "Tháng tám", "Tháng chín", "Tháng mười", "Tháng mười một", "Tháng mười hai"
-    ]
-    return months[d.getMonth()]
-  }
-
-  // Zoom handlers
-  const handleZoomIn = () => {
-    setDayWidth((prev) => Math.min(prev + 4, 48))
-  }
-  const handleZoomOut = () => {
-    setDayWidth((prev) => Math.max(prev - 4, 16))
-  }
-
-  // Apply filters
-  const handleApplyFilters = () => {
-    const range = parseInt(monthsInput) || 6
-    setMonthsRange(range)
-    const newStart = new Date(yearInput, monthInput, 1)
-    setTimelineStart(newStart)
-    
-    // Apply filters
-    setAppliedFilterKeys([...activeFilterKeys])
-    setAppliedFilterStates(JSON.parse(JSON.stringify(filterStates)))
-    
-    toast.success("Đã áp dụng bộ lọc và dòng thời gian")
-  }
-
-  // Clear/Reset filters
-  const handleClearFilters = () => {
-    setMonthsInput("6")
-    setMonthsRange(6)
-    if (project.startDate) {
-      const pStart = new Date(project.startDate)
-      setTimelineStart(pStart)
-      setMonthInput(pStart.getMonth())
-      setYearInput(pStart.getFullYear())
-    } else {
-      const today = new Date()
-      setTimelineStart(today)
-      setMonthInput(today.getMonth())
-      setYearInput(today.getFullYear())
-    }
-
-    // Reset filters
-    setActiveFilterKeys(["status"])
-    const defaultStates = {
-      status: { enabled: true, operator: "open", value: "" },
-      tracker: { enabled: true, operator: "is", value: "task" },
-      priority: { enabled: true, operator: "is", value: "medium" },
-      assignee: { enabled: true, operator: "is", value: "" },
-    }
-    setFilterStates(defaultStates)
-    setAppliedFilterKeys(["status"])
-    setAppliedFilterStates(defaultStates)
-    
-    toast.info("Đã khôi phục bộ lọc mặc định")
-  }
-
-  // Quick Query Sidebar Handler
-  const handleQuickQuery = (type: string) => {
-    if (type === "assigned_to_me") {
-      setActiveFilterKeys(["status", "assignee"])
-      const states = {
-        status: { enabled: true, operator: "open", value: "" },
-        tracker: { enabled: false, operator: "is", value: "task" },
-        priority: { enabled: false, operator: "is", value: "medium" },
-        assignee: { enabled: true, operator: "tôi", value: "" },
-      }
-      setFilterStates(states)
-      setAppliedFilterKeys(["status", "assignee"])
-      setAppliedFilterStates(states)
-      toast.success("Đã áp dụng: Công việc phân công cho tôi")
-    } else if (type === "reported_issues") {
-      setActiveFilterKeys(["status"])
-      const states = {
-        status: { enabled: true, operator: "open", value: "" },
-        tracker: { enabled: false, operator: "is", value: "task" },
-        priority: { enabled: false, operator: "is", value: "medium" },
-        assignee: { enabled: false, operator: "is", value: "" },
-      }
-      setFilterStates(states)
-      setAppliedFilterKeys(["status", "_reported"])
-      setAppliedFilterStates({
-        ...states,
-        _reported: { enabled: true, operator: "is", value: user?.id || "" }
-      })
-      toast.success("Đã áp dụng: Công việc do tôi tạo")
-    } else if (type === "updated_issues") {
-      setActiveFilterKeys(["status"])
-      const states = {
-        status: { enabled: true, operator: "open", value: "" },
-        tracker: { enabled: false, operator: "is", value: "task" },
-        priority: { enabled: false, operator: "is", value: "medium" },
-        assignee: { enabled: false, operator: "is", value: "" },
-      }
-      setFilterStates(states)
-      setAppliedFilterKeys(["status", "_updated"])
-      setAppliedFilterStates({
-        ...states,
-        _updated: { enabled: true, operator: "is", value: "" }
-      })
-      toast.success("Đã áp dụng: Công việc được cập nhật gần đây")
-    } else if (type === "watched_issues") {
-      setActiveFilterKeys(["status"])
-      const states = {
-        status: { enabled: true, operator: "open", value: "" },
-        tracker: { enabled: false, operator: "is", value: "task" },
-        priority: { enabled: false, operator: "is", value: "medium" },
-        assignee: { enabled: false, operator: "is", value: "" },
-      }
-      setFilterStates(states)
-      setAppliedFilterKeys(["status", "_watched"])
-      setAppliedFilterStates({
-        ...states,
-        _watched: { enabled: true, operator: "is", value: user?.id || "" }
-      })
-      toast.success("Đã áp dụng: Công việc tôi quan tâm")
-    }
-  }
-
   // Render values selector dynamically
   const renderValueSelector = (key: string, operator: string, value: string, onChange: (val: string) => void) => {
-    const def = Reflect.get(filterDefinitions, key) as { label: string; type: string; group: string } | undefined
+    const def = Reflect.get(FILTER_DEFINITIONS, key) as { label: string; type: string; group: string } | undefined
     if (def === undefined) return null
 
     if (key === "status") {
       if (operator !== "là" && operator !== "không là") return null
       return (
         <select
-          value={value || "todo"}
+          value={value || TASK_STATUS.TODO}
           onChange={(e) => { onChange(e.target.value); }}
           className="h-8 rounded-full border border-border/40 px-3 text-xs font-semibold focus:outline-none focus:border-primary bg-background cursor-pointer"
         >
-          <option value="todo">New</option>
-          <option value="in_progress">In Progress</option>
-          <option value="in_review">Resolved</option>
-          <option value="reopened">Feedback</option>
-          <option value="done">Closed</option>
-          <option value="cancelled">Rejected</option>
+          <option value={TASK_STATUS.TODO}>New</option>
+          <option value={TASK_STATUS.IN_PROGRESS}>In Progress</option>
+          <option value={TASK_STATUS.IN_REVIEW}>In Review</option>
+          <option value={TASK_STATUS.DONE}>Done</option>
+          <option value={TASK_STATUS.CANCELLED}>Cancelled</option>
+          <option value={TASK_STATUS.REOPENED}>Reopened</option>
         </select>
       )
     }
 
     if (key === "tracker") {
+      if (operator !== "is" && operator !== "is_not") return null
       return (
         <select
-          value={value || "task"}
+          value={value || TASK_TRACKER.TASK}
           onChange={(e) => { onChange(e.target.value); }}
           className="h-8 rounded-full border border-border/40 px-3 text-xs font-semibold focus:outline-none focus:border-primary bg-background cursor-pointer"
         >
-          <option value="feature">Feature</option>
-          <option value="bug">Bug</option>
-          <option value="support">Support</option>
-          <option value="task">Task</option>
-          <option value="meeting">Meeting</option>
-          <option value="test">Test</option>
-          <option value="subtask">Subtask</option>
-          <option value="management">Management</option>
+          <option value={TASK_TRACKER.FEATURE}>Feature</option>
+          <option value={TASK_TRACKER.BUG}>Bug</option>
+          <option value={TASK_TRACKER.SUPPORT}>Support</option>
+          <option value={TASK_TRACKER.TASK}>Task</option>
+          <option value={TASK_TRACKER.MEETING}>Meeting</option>
+          <option value={TASK_TRACKER.TEST}>Test</option>
+          <option value={TASK_TRACKER.SUBTASK}>Subtask</option>
+          <option value={TASK_TRACKER.MANAGEMENT}>Management</option>
         </select>
       )
     }
 
     if (key === "priority") {
+      if (operator !== "is" && operator !== "is_not") return null
       return (
         <select
-          value={value || "medium"}
+          value={value || TASK_PRIORITY.MEDIUM}
           onChange={(e) => { onChange(e.target.value); }}
           className="h-8 rounded-full border border-border/40 px-3 text-xs font-semibold focus:outline-none focus:border-primary bg-background cursor-pointer"
         >
-          <option value="low">Thấp</option>
-          <option value="medium">Trung bình</option>
-          <option value="high">Cao</option>
-          <option value="urgent">Khẩn cấp</option>
+          <option value={TASK_PRIORITY.LOW}>Low</option>
+          <option value={TASK_PRIORITY.MEDIUM}>Medium</option>
+          <option value={TASK_PRIORITY.HIGH}>High</option>
+          <option value={TASK_PRIORITY.URGENT}>Urgent</option>
         </select>
       )
     }
 
-    // Dynamic checks based on type definition
     if (def.type === "employee") {
       if (operator !== "là" && operator !== "không là") return null
       return (
         <select
           value={value || (assignees[0]?.id || "")}
           onChange={(e) => { onChange(e.target.value); }}
-          className="h-8 rounded-full border border-border/40 px-3 text-xs font-semibold focus:outline-none focus:border-primary bg-background cursor-pointer max-w-[200px]"
+          className="h-8 rounded-full border border-border/40 px-3 text-xs font-semibold focus:outline-none focus:border-primary bg-background cursor-pointer min-w-[120px]"
         >
           {assignees.map((a) => (
             <option key={a.id} value={a.id}>{a.fullName}</option>
@@ -863,8 +187,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
           type="text"
           value={value || ""}
           onChange={(e) => { onChange(e.target.value); }}
-          placeholder="..."
-          className="h-8 rounded-full border border-border/40 px-3 text-xs focus:outline-none focus:border-primary bg-background w-32 font-semibold"
+          className="h-8 rounded-full border border-border/40 px-3 text-xs focus:outline-none focus:border-primary bg-background"
         />
       )
     }
@@ -876,7 +199,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
           type="number"
           value={value || "0"}
           onChange={(e) => { onChange(e.target.value); }}
-          className="h-8 rounded-full border border-border/40 px-3 text-xs font-semibold focus:outline-none focus:border-primary bg-background w-20"
+          className="h-8 rounded-full border border-border/40 px-3 text-xs focus:outline-none focus:border-primary bg-background w-16"
         />
       )
     }

@@ -6,6 +6,8 @@ import { ICustomQueryService } from "@/types/custom-query.types.ts"
 import { ApiResponse } from "@/types"
 import { CustomQuery } from "@/types/custom-query.types.ts"
 
+import { CUSTOM_QUERY_TYPE } from "@/configs/entities/project.config.ts"
+
 export class CustomQueryController {
   constructor(private service: ICustomQueryService) {}
 
@@ -20,7 +22,7 @@ export class CustomQueryController {
       }
 
       const projectId = (req.query.projectId as string) || null
-      const type = (req.query.type as string) || "gantt"
+      const type = (req.query.type as string) || CUSTOM_QUERY_TYPE.GANTT
 
       const queries = await this.service.getQueries(employeeId, projectId, type)
       res.status(HttpStatusCode.OK).json({ data: queries, error: null })

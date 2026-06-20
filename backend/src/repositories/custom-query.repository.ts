@@ -1,6 +1,7 @@
 import { ICustomQueryRepository, CustomQuery, CreateCustomQueryDto } from "@/types/custom-query.types.ts"
 import { PrismaClient } from "@prisma/client"
 import { BaseRepository } from "./base.repository.ts"
+import { CUSTOM_QUERY_TYPE } from "@/configs/entities/project.config.ts"
 
 export class PrismaCustomQueryRepository extends BaseRepository implements ICustomQueryRepository {
   constructor(prisma: PrismaClient) {
@@ -30,7 +31,7 @@ export class PrismaCustomQueryRepository extends BaseRepository implements ICust
     return this.prisma.customQuery.create({
       data: {
         name: data.name,
-        type: data.type || "gantt",
+        type: data.type || CUSTOM_QUERY_TYPE.GANTT,
         projectId: data.projectId || null,
         employeeId: data.employeeId,
         queryData: data.queryData,

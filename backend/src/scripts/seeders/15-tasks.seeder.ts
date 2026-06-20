@@ -2,6 +2,8 @@ import { prisma } from "@/libs/database.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
 import { ISeeder } from "@/scripts/seeders/seeder.interface.ts"
 import { registry } from "@/scripts/seeders/seeder.registry.ts"
+import { TASK_PRIORITY, TASK_STATUS, TASK_TRACKER, SPENT_TIME_ACTIVITY } from "@/configs/entities/project.config.ts"
+import { APPLICATION_STATUS, APPLICATION_TYPES } from "@/configs/entities/attendance.config.ts"
 
 export class TasksSeeder implements ISeeder {
   readonly name = "Tasks"
@@ -37,9 +39,9 @@ export class TasksSeeder implements ISeeder {
 
       // Define structured parent features to demonstrate the subtask tree
       const parentFeatures = [
-        { title: "Feature: [201001] Admin - Danh sách doanh nghiệp", tracker: "feature" },
-        { title: "Feature: [201002] Admin - Tạo/Sửa/Xóa doanh nghiệp", tracker: "feature" },
-        { title: "Feature: [201003] User - Đăng ký thông tin doanh nghiệp", tracker: "feature" },
+        { title: "Feature: [201001] Admin - Danh sách doanh nghiệp", tracker: TASK_TRACKER.FEATURE },
+        { title: "Feature: [201002] Admin - Tạo/Sửa/Xóa doanh nghiệp", tracker: TASK_TRACKER.FEATURE },
+        { title: "Feature: [201003] User - Đăng ký thông tin doanh nghiệp", tracker: TASK_TRACKER.FEATURE },
       ]
 
       for (const [fIdx, feat] of parentFeatures.entries()) {
@@ -50,15 +52,15 @@ export class TasksSeeder implements ISeeder {
             projectId,
             title: feat.title,
             description: `Tính năng cha quản lý cấu trúc nghiệp vụ của phân hệ doanh nghiệp.`,
-            priority: "high",
-            status: "in_progress",
+            priority: TASK_PRIORITY.HIGH,
+            status: TASK_STATUS.IN_PROGRESS,
             assigneeId: members[0].employeeId,
             createdById: adminId,
             startDate: projStart,
             dueDate: new Date(projStart.getTime() + 15 * 24 * 60 * 60 * 1000), // 15 days duration
             estimatedTime: 40,
             progress: 30,
-            tracker: "feature",
+            tracker: TASK_TRACKER.FEATURE,
           }
         })
 
@@ -69,8 +71,8 @@ export class TasksSeeder implements ISeeder {
             projectId,
             title: `Task: [Dev][${201001 + fIdx}] Code giao diện danh sách`,
             description: "Thiết kế và code UI React cho danh sách.",
-            priority: "medium",
-            status: "done",
+            priority: TASK_PRIORITY.MEDIUM,
+            status: TASK_STATUS.DONE,
             assigneeId: members[0].employeeId,
             createdById: adminId,
             startDate: projStart,
@@ -78,7 +80,7 @@ export class TasksSeeder implements ISeeder {
             completedAt: new Date(projStart.getTime() + 3 * 24 * 60 * 60 * 1000),
             estimatedTime: 12,
             progress: 100,
-            tracker: "task",
+            tracker: TASK_TRACKER.TASK,
             parentTaskId: parentTask.id,
             // Spent time mock
             spentTimes: {
@@ -86,7 +88,7 @@ export class TasksSeeder implements ISeeder {
                 employeeId: members[0].employeeId,
                 hours: 10,
                 comment: "Hoàn thành code UI danh sách sớm hơn dự kiến",
-                activity: "development",
+                activity: SPENT_TIME_ACTIVITY.DEVELOP,
                 date: projStart,
               }
             }
@@ -99,15 +101,15 @@ export class TasksSeeder implements ISeeder {
             projectId,
             title: `Task: [TEST][${201001 + fIdx}] Viết test case tự động`,
             description: "Viết Integration test Playwright cho UI.",
-            priority: "medium",
-            status: "in_review",
+            priority: TASK_PRIORITY.MEDIUM,
+            status: TASK_STATUS.IN_REVIEW,
             assigneeId: members.length > 1 ? members[1].employeeId : members[0].employeeId,
             createdById: adminId,
             startDate: new Date(projStart.getTime() + 4 * 24 * 60 * 60 * 1000),
             dueDate: new Date(projStart.getTime() + 8 * 24 * 60 * 60 * 1000),
             estimatedTime: 8,
             progress: 95,
-            tracker: "test",
+            tracker: TASK_TRACKER.TEST,
             parentTaskId: parentTask.id,
             resultUrl: "https://github.com/ldanh270/integrated-hr-and-product-system/pull/42",
             resultNotes: "Đã pass toàn bộ test case ở local. Nhờ Team Leader review hộ.",
@@ -123,15 +125,15 @@ export class TasksSeeder implements ISeeder {
             projectId,
             title: `Task: [Dev][${201001 + fIdx}] Code logic API & Database`,
             description: "Xây dựng các repository và controllers cho API.",
-            priority: "urgent",
-            status: "in_progress",
+            priority: TASK_PRIORITY.URGENT,
+            status: TASK_STATUS.IN_PROGRESS,
             assigneeId: members.length > 2 ? members[2].employeeId : members[0].employeeId,
             createdById: adminId,
             startDate: pastStart,
             dueDate: pastDue,
             estimatedTime: 16,
             progress: 60, // Not finished yet (Overdue)
-            tracker: "task",
+            tracker: TASK_TRACKER.TASK,
             parentTaskId: parentTask.id,
           }
         })
@@ -142,8 +144,8 @@ export class TasksSeeder implements ISeeder {
         const employeeLeaves = await prisma.application.findMany({
           where: {
             employeeId: assigneeIdForConflict,
-            status: "approved",
-            type: "leave",
+            status: APPLICATION_STATUS.APPROVED,
+            type: APPLICATION_TYPES.LEAVE.LABEL,
           },
           take: 1
         })
@@ -162,15 +164,15 @@ export class TasksSeeder implements ISeeder {
             projectId,
             title: `Task: [Support][${201001 + fIdx}] Hướng dẫn sử dụng & Deploy`,
             description: "Deploy sản phẩm lên môi trường Staging.",
-            priority: "low",
-            status: "todo",
+            priority: TASK_PRIORITY.LOW,
+            status: TASK_STATUS.TODO,
             assigneeId: assigneeIdForConflict,
             createdById: adminId,
             startDate: conflictStart,
             dueDate: conflictDue,
             estimatedTime: 6,
             progress: 0,
-            tracker: "support",
+            tracker: TASK_TRACKER.SUPPORT,
             parentTaskId: parentTask.id,
           }
         })

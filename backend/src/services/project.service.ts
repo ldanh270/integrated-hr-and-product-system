@@ -11,6 +11,7 @@ import {
   GanttDataDto,
 } from "@/types"
 import { AppError } from "@/utils/error.util.ts"
+import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 
 export class ProjectService implements IProjectService {
   constructor(
@@ -304,7 +305,7 @@ export class ProjectService implements IProjectService {
     // Check project existence and access permissions (reuses getProject checks)
     const project = await this.getProject(projectId, userId, userRole)
     if (!project) {
-      throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "ProjectService")
+      throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
     }
 
     return this.repository.getGanttData(projectId)
