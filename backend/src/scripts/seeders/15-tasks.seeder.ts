@@ -42,8 +42,7 @@ export class TasksSeeder implements ISeeder {
         { title: "Feature: [201003] User - Đăng ký thông tin doanh nghiệp", tracker: "feature" },
       ]
 
-      for (let fIdx = 0; fIdx < parentFeatures.length; fIdx++) {
-        const feat = parentFeatures[fIdx]
+      for (const [fIdx, feat] of parentFeatures.entries()) {
         
         // 1. Create Parent Feature Task
         const parentTask = await prisma.task.create({

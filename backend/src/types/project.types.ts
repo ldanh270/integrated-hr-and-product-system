@@ -1,4 +1,5 @@
 import { PROJECT_STATUS, TASK_CREATION_POLICY } from "@/configs/entities/project.config.ts"
+import { Task } from "./task.types.ts"
 
 /**
  * Type representing the status of a Project (e.g., active, completed, suspended)
@@ -121,10 +122,25 @@ export interface IProjectRepository {
   getGanttData(projectId: string): Promise<GanttDataDto>
 }
 
+export interface GanttMemberDto {
+  id: string
+  fullName: string
+  email: string
+  position: string | null
+}
+
+export interface GanttLeaveDayDto {
+  id: string
+  employeeId: string
+  startDate: Date
+  endDate: Date
+  reason: string | null
+}
+
 export interface GanttDataDto {
-  tasks: any[]
-  members: any[]
-  leaveDays: any[]
+  tasks: Task[]
+  members: GanttMemberDto[]
+  leaveDays: GanttLeaveDayDto[]
 }
 
 /**
