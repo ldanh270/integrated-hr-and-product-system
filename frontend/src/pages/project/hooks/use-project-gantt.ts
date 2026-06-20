@@ -12,7 +12,7 @@ import { useAuthStore } from "@/store/auth-store"
 import { extractErrorMessage } from "@/utils/error-helper"
 import type { Project, GanttLeaveDay } from "@/types/project.types"
 import type { Task, UpdateTaskDto } from "@/types/task.types"
-import { FILTER_DEFINITIONS, GANTT_FILTER_KEY } from "../constants/gantt.constants"
+import { FILTER_DEFINITIONS, GANTT_FILTER_KEY, QUICK_QUERY_TYPE } from "../constants/gantt.constants"
 
 interface UseProjectGanttProps {
   projectId: string
@@ -305,16 +305,16 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
         }
 
         // Custom internal filters from sidebar quick links
-        else if (key === "_reported") {
+        else if (key === GANTT_FILTER_KEY.QUICK_REPORTED) {
           if (task.createdById !== filter.value) return false
         }
-        else if (key === "_updated") {
+        else if (key === GANTT_FILTER_KEY.QUICK_UPDATED) {
           // just filter active tasks updated recently
           const updateDate = new Date(task.updatedAt)
           const diff = differenceInDays(new Date(), updateDate)
           if (diff > 7) return false // updated more than 7 days ago
         }
-        else if (key === "_watched") {
+        else if (key === GANTT_FILTER_KEY.QUICK_WATCHED) {
           // not fully implemented watch model, simulate by assignee or creator
           if (task.assigneeId !== filter.value && task.createdById !== filter.value) return false
         }
@@ -610,61 +610,61 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
 
   // Quick Query Sidebar Handler
   const handleQuickQuery = (type: string) => {
-    if (type === "assigned_to_me") {
-      setActiveFilterKeys(["status", "assignee"])
+    if (type === QUICK_QUERY_TYPE.ASSIGNED_TO_ME) {
+      setActiveFilterKeys([GANTT_FILTER_KEY.STATUS, GANTT_FILTER_KEY.ASSIGNEE])
       const states = {
-        status: { enabled: true, operator: "open", value: "" },
-        tracker: { enabled: false, operator: "is", value: TASK_TRACKER.TASK },
-        priority: { enabled: false, operator: "is", value: TASK_PRIORITY.MEDIUM },
-        assignee: { enabled: true, operator: "tôi", value: "" },
+        [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: "open", value: "" },
+        [GANTT_FILTER_KEY.TRACKER]: { enabled: false, operator: "is", value: TASK_TRACKER.TASK },
+        [GANTT_FILTER_KEY.PRIORITY]: { enabled: false, operator: "is", value: TASK_PRIORITY.MEDIUM },
+        [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: true, operator: "tôi", value: "" },
       }
       setFilterStates(states)
-      setAppliedFilterKeys(["status", "assignee"])
+      setAppliedFilterKeys([GANTT_FILTER_KEY.STATUS, GANTT_FILTER_KEY.ASSIGNEE])
       setAppliedFilterStates(states)
       toast.success("Đã áp dụng: Công việc phân công cho tôi")
-    } else if (type === "reported_issues") {
-      setActiveFilterKeys(["status"])
+    } else if (type === QUICK_QUERY_TYPE.REPORTED_ISSUES) {
+      setActiveFilterKeys([GANTT_FILTER_KEY.STATUS])
       const states = {
-        status: { enabled: true, operator: "open", value: "" },
-        tracker: { enabled: false, operator: "is", value: TASK_TRACKER.TASK },
-        priority: { enabled: false, operator: "is", value: TASK_PRIORITY.MEDIUM },
-        assignee: { enabled: false, operator: "is", value: "" },
+        [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: "open", value: "" },
+        [GANTT_FILTER_KEY.TRACKER]: { enabled: false, operator: "is", value: TASK_TRACKER.TASK },
+        [GANTT_FILTER_KEY.PRIORITY]: { enabled: false, operator: "is", value: TASK_PRIORITY.MEDIUM },
+        [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: false, operator: "is", value: "" },
       }
       setFilterStates(states)
-      setAppliedFilterKeys(["status", "_reported"])
+      setAppliedFilterKeys([GANTT_FILTER_KEY.STATUS, GANTT_FILTER_KEY.QUICK_REPORTED])
       setAppliedFilterStates({
         ...states,
-        _reported: { enabled: true, operator: "is", value: user?.id || "" }
+        [GANTT_FILTER_KEY.QUICK_REPORTED]: { enabled: true, operator: "is", value: user?.id || "" }
       })
       toast.success("Đã áp dụng: Công việc do tôi tạo")
-    } else if (type === "updated_issues") {
-      setActiveFilterKeys(["status"])
+    } else if (type === QUICK_QUERY_TYPE.UPDATED_ISSUES) {
+      setActiveFilterKeys([GANTT_FILTER_KEY.STATUS])
       const states = {
-        status: { enabled: true, operator: "open", value: "" },
-        tracker: { enabled: false, operator: "is", value: TASK_TRACKER.TASK },
-        priority: { enabled: false, operator: "is", value: TASK_PRIORITY.MEDIUM },
-        assignee: { enabled: false, operator: "is", value: "" },
+        [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: "open", value: "" },
+        [GANTT_FILTER_KEY.TRACKER]: { enabled: false, operator: "is", value: TASK_TRACKER.TASK },
+        [GANTT_FILTER_KEY.PRIORITY]: { enabled: false, operator: "is", value: TASK_PRIORITY.MEDIUM },
+        [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: false, operator: "is", value: "" },
       }
       setFilterStates(states)
-      setAppliedFilterKeys(["status", "_updated"])
+      setAppliedFilterKeys([GANTT_FILTER_KEY.STATUS, GANTT_FILTER_KEY.QUICK_UPDATED])
       setAppliedFilterStates({
         ...states,
-        _updated: { enabled: true, operator: "is", value: "" }
+        [GANTT_FILTER_KEY.QUICK_UPDATED]: { enabled: true, operator: "is", value: "" }
       })
       toast.success("Đã áp dụng: Công việc được cập nhật gần đây")
-    } else if (type === "watched_issues") {
-      setActiveFilterKeys(["status"])
+    } else if (type === QUICK_QUERY_TYPE.WATCHED_ISSUES) {
+      setActiveFilterKeys([GANTT_FILTER_KEY.STATUS])
       const states = {
-        status: { enabled: true, operator: "open", value: "" },
-        tracker: { enabled: false, operator: "is", value: TASK_TRACKER.TASK },
-        priority: { enabled: false, operator: "is", value: TASK_PRIORITY.MEDIUM },
-        assignee: { enabled: false, operator: "is", value: "" },
+        [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: "open", value: "" },
+        [GANTT_FILTER_KEY.TRACKER]: { enabled: false, operator: "is", value: TASK_TRACKER.TASK },
+        [GANTT_FILTER_KEY.PRIORITY]: { enabled: false, operator: "is", value: TASK_PRIORITY.MEDIUM },
+        [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: false, operator: "is", value: "" },
       }
       setFilterStates(states)
-      setAppliedFilterKeys(["status", "_watched"])
+      setAppliedFilterKeys([GANTT_FILTER_KEY.STATUS, GANTT_FILTER_KEY.QUICK_WATCHED])
       setAppliedFilterStates({
         ...states,
-        _watched: { enabled: true, operator: "is", value: user?.id || "" }
+        [GANTT_FILTER_KEY.QUICK_WATCHED]: { enabled: true, operator: "is", value: user?.id || "" }
       })
       toast.success("Đã áp dụng: Công việc tôi quan tâm")
     }

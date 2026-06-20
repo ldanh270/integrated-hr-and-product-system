@@ -27,7 +27,7 @@ import { TaskReviewModal } from "./task-review-modal"
 import type { Project } from "@/types/project.types"
 import type { Task, TaskSpentTime } from "@/types/task.types"
 import { useProjectGantt } from "../hooks/use-project-gantt"
-import { FILTER_DEFINITIONS, GANTT_FILTER_KEY } from "../constants/gantt.constants"
+import { FILTER_DEFINITIONS, GANTT_FILTER_KEY, QUICK_QUERY_TYPE } from "../constants/gantt.constants"
 import { TASK_STATUS, TASK_PRIORITY, TASK_TRACKER } from "@/config/entities/project.config"
 
 const filterDefinitions = FILTER_DEFINITIONS
@@ -1160,7 +1160,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
           <ul className="space-y-2 text-xs">
             <li>
               <button
-                onClick={() => { handleQuickQuery("assigned_to_me"); }}
+                onClick={() => { handleQuickQuery(QUICK_QUERY_TYPE.ASSIGNED_TO_ME); }}
                 className="text-blue-600 dark:text-blue-400 hover:underline text-left font-medium block w-full"
               >
                 Issues assigned to me
@@ -1168,7 +1168,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
             </li>
             <li>
               <button
-                onClick={() => { handleQuickQuery("reported_issues"); }}
+                onClick={() => { handleQuickQuery(QUICK_QUERY_TYPE.REPORTED_ISSUES); }}
                 className="text-blue-600 dark:text-blue-400 hover:underline text-left font-medium block w-full"
               >
                 Reported issues
@@ -1176,7 +1176,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
             </li>
             <li>
               <button
-                onClick={() => { handleQuickQuery("updated_issues"); }}
+                onClick={() => { handleQuickQuery(QUICK_QUERY_TYPE.UPDATED_ISSUES); }}
                 className="text-blue-600 dark:text-blue-400 hover:underline text-left font-medium block w-full"
               >
                 Updated issues
@@ -1184,7 +1184,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
             </li>
             <li>
               <button
-                onClick={() => { handleQuickQuery("watched_issues"); }}
+                onClick={() => { handleQuickQuery(QUICK_QUERY_TYPE.WATCHED_ISSUES); }}
                 className="text-rose-600 dark:text-rose-400 hover:underline text-left font-medium block w-full"
               >
                 Watched issues

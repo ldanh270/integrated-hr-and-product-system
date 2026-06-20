@@ -42,6 +42,16 @@ export const GANTT_FILTER_KEY = {
   REL_COPIED_FROM: "rel_copied_from",
   REL_PARENT: "rel_parent",
   REL_CHILD: "rel_child",
+  QUICK_REPORTED: "_reported",
+  QUICK_UPDATED: "_updated",
+  QUICK_WATCHED: "_watched",
+} as const
+
+export const QUICK_QUERY_TYPE = {
+  ASSIGNED_TO_ME: "assigned_to_me",
+  REPORTED_ISSUES: "reported_issues",
+  UPDATED_ISSUES: "updated_issues",
+  WATCHED_ISSUES: "watched_issues",
 } as const
 
 export const FILTER_DEFINITIONS = {
