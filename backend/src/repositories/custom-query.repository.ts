@@ -2,6 +2,7 @@ import { ICustomQueryRepository, CustomQuery, CreateCustomQueryDto } from "@/typ
 import { PrismaClient } from "@prisma/client"
 import { BaseRepository } from "./base.repository.ts"
 import { CUSTOM_QUERY_TYPE } from "@/configs/entities/project.config.ts"
+import { SORT_ORDER } from "@/configs/system/db.config.ts"
 
 export class PrismaCustomQueryRepository extends BaseRepository implements ICustomQueryRepository {
   constructor(prisma: PrismaClient) {
@@ -16,7 +17,7 @@ export class PrismaCustomQueryRepository extends BaseRepository implements ICust
         type: type === undefined ? undefined : type,
       },
       orderBy: {
-        createdAt: "desc",
+        createdAt: SORT_ORDER.DESC,
       },
     })
   }
