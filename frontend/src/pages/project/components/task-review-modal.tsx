@@ -27,10 +27,12 @@ import { Badge } from "@/components/ui/badge"
 import { taskApi } from "@/lib/api/task.api"
 import { extractErrorMessage } from "@/utils/error-helper"
 
+import type { Task, UpdateTaskDto } from "@/types/task.types"
+
 interface TaskReviewModalProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
-  task: any
+  task: Task
   projectId: string
   isLeader: boolean
   isAdminOrGM: boolean
@@ -60,7 +62,7 @@ export function TaskReviewModal({
 
   // Task update mutation
   const submitReviewMutation = useMutation({
-    mutationFn: async (payload: any) => {
+    mutationFn: async (payload: UpdateTaskDto) => {
       return taskApi.update(task.id, payload)
     },
     onSuccess: () => {
@@ -200,7 +202,7 @@ export function TaskReviewModal({
                   id="resultUrl"
                   placeholder="https://..."
                   value={resultUrl}
-                  onChange={(e) => setResultUrl(e.target.value)}
+                  onChange={(e) => { setResultUrl(e.target.value); }}
                   className="rounded-full text-xs"
                 />
               </div>
@@ -214,7 +216,7 @@ export function TaskReviewModal({
                   id="resultNotes"
                   placeholder="Ghi chú ngắn về kết quả công việc của bạn..."
                   value={resultNotes}
-                  onChange={(e) => setResultNotes(e.target.value)}
+                  onChange={(e) => { setResultNotes(e.target.value); }}
                   className="rounded-xl text-xs resize-none h-20"
                 />
               </div>
@@ -283,14 +285,14 @@ export function TaskReviewModal({
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   <Button
                     variant="outline"
-                    onClick={() => setIsRejecting(true)}
+                    onClick={() => { setIsRejecting(true); }}
                     className="rounded-full text-xs font-bold border-rose-500/40 text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
                     disabled={submitReviewMutation.isPending}
                   >
                     <XCircle className="size-4 mr-1.5 shrink-0" /> Yêu cầu sửa đổi
                   </Button>
                   <Button
-                    onClick={() => handleApprove()}
+                    onClick={() => { handleApprove(); }}
                     className="rounded-full text-xs font-bold bg-green-600 hover:bg-green-700 text-white"
                     disabled={submitReviewMutation.isPending}
                   >
@@ -307,7 +309,7 @@ export function TaskReviewModal({
                       id="rejectionReason"
                       placeholder="Giải thích chi tiết các điểm cần chỉnh sửa cho nhân sự..."
                       value={rejectionReason}
-                      onChange={(e) => setRejectionReason(e.target.value)}
+                      onChange={(e) => { setRejectionReason(e.target.value); }}
                       className="rounded-xl text-xs resize-none h-20"
                     />
                   </div>
@@ -316,7 +318,7 @@ export function TaskReviewModal({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => setIsRejecting(false)}
+                      onClick={() => { setIsRejecting(false); }}
                       className="rounded-full text-xs font-semibold"
                     >
                       Hủy bỏ

@@ -270,7 +270,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
   }
 
   const getDefaultOperator = (key: string) => {
-    const def = (filterDefinitions as Record<string, { label: string; type: string; group: string } | undefined>)[key]
+    const def = Reflect.get(filterDefinitions, key) as { label: string; type: string; group: string } | undefined
     if (def === undefined) return "is"
     if (key === "status") return "open"
     if (key === "tracker" || key === "priority") return "is"
@@ -283,7 +283,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
   }
 
   const getDefaultValue = (key: string) => {
-    const def = (filterDefinitions as Record<string, { label: string; type: string; group: string } | undefined>)[key]
+    const def = Reflect.get(filterDefinitions, key) as { label: string; type: string; group: string } | undefined
     if (def === undefined) return ""
     if (key === "tracker") return "task"
     if (key === "priority") return "medium"
@@ -350,7 +350,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
     return tasks.filter((task: Task) => {
       for (const key of appliedFilterKeys) {
         if (!Object.prototype.hasOwnProperty.call(appliedFilterStates, key)) continue
-        const filter = appliedFilterStates[key]
+        const filter = Reflect.get(appliedFilterStates, key) as { enabled: boolean; operator: string; value: string } | undefined
         if (!filter?.enabled) continue
 
         if (key === "status") {
@@ -785,7 +785,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
 
   // Render values selector dynamically
   const renderValueSelector = (key: string, operator: string, value: string, onChange: (val: string) => void) => {
-    const def = filterDefinitions[key as keyof typeof filterDefinitions]
+    const def = Reflect.get(filterDefinitions, key) as { label: string; type: string; group: string } | undefined
     if (def === undefined) return null
 
     if (key === "status") {
@@ -889,7 +889,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
             <input
               type="number"
               value={value || "0"}
-              onChange={(e) => onChange(e.target.value)}
+              onChange={(e) => { onChange(e.target.value); }}
               className="h-8 rounded-full border border-border/40 px-3 text-xs focus:outline-none focus:border-primary bg-background w-16"
             />
             <span>ngày trước</span>
@@ -903,14 +903,14 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
             <input
               type="date"
               value={d1}
-              onChange={(e) => onChange(`${e.target.value},${d2}`)}
+              onChange={(e) => { onChange(`${e.target.value},${d2}`); }}
               className="h-8 rounded-full border border-border/40 px-3 text-[10px] focus:outline-none focus:border-primary bg-background"
             />
             <span>và</span>
             <input
               type="date"
               value={d2}
-              onChange={(e) => onChange(`${d1},${e.target.value}`)}
+              onChange={(e) => { onChange(`${d1},${e.target.value}`); }}
               className="h-8 rounded-full border border-border/40 px-3 text-[10px] focus:outline-none focus:border-primary bg-background"
             />
           </div>
@@ -951,7 +951,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => resetTimelineToProjectStart()}
+                onClick={() => { resetTimelineToProjectStart(); }}
                 className="rounded-full text-xs"
               >
                 Về ngày bắt đầu dự án
@@ -961,7 +961,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                   variant="ghost"
                   size="icon"
                   className="size-8 rounded-full"
-                  onClick={() => shiftTimeline(-7)}
+                  onClick={() => { shiftTimeline(-7); }}
                 >
                   <ChevronLeft className="size-4" />
                 </Button>
@@ -970,7 +970,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                   variant="ghost"
                   size="icon"
                   className="size-8 rounded-full"
-                  onClick={() => shiftTimeline(7)}
+                  onClick={() => { shiftTimeline(7); }}
                 >
                   <ChevronRight className="size-4" />
                 </Button>
@@ -981,7 +981,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
           {/* Collapsible Filters Link Toggle */}
           <div className="flex items-center">
             <button 
-              onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
+              onClick={() => { setIsFiltersExpanded(!isFiltersExpanded); }}
               className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors select-none"
             >
               {isFiltersExpanded ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
@@ -997,10 +997,10 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                 <div className="space-y-3 flex-1">
                   {activeFilterKeys.map((key) => {
                     if (!Object.prototype.hasOwnProperty.call(filterDefinitions, key)) return null
-                    const filter = (filterStates as Record<string, { enabled: boolean; operator: string; value: string } | undefined>)[key]
+                    const filter = Reflect.get(filterStates, key) as { enabled: boolean; operator: string; value: string } | undefined
                     if (filter === undefined) return null
                     
-                    const def = (filterDefinitions as Record<string, { label: string; type: string; group: string } | undefined>)[key]
+                    const def = Reflect.get(filterDefinitions, key) as { label: string; type: string; group: string } | undefined
                     
                     return (
                       <div key={key} className="flex flex-wrap items-center gap-2 md:gap-4 py-1">
@@ -1012,12 +1012,11 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                             onChange={(e) => {
                               setFilterStates(prev => {
                                 if (!Object.prototype.hasOwnProperty.call(prev, key)) return prev
-                                const existing = prev[key]
+                                const existing = Reflect.get(prev, key) as { enabled: boolean; operator: string; value: string } | undefined
                                 if (existing === undefined) return prev
-                                return {
-                                  ...prev,
-                                  [key]: { ...existing, enabled: e.target.checked }
-                                }
+                                const next = { ...prev }
+                                Reflect.set(next, key, { ...existing, enabled: e.target.checked })
+                                return next
                               })
                             }} 
                             className="rounded border-border/40 size-3.5 text-primary focus:ring-0 focus:ring-offset-0"
@@ -1047,12 +1046,11 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
 
                             setFilterStates(prev => {
                               if (!Object.prototype.hasOwnProperty.call(prev, key)) return prev
-                              const existing = prev[key]
+                              const existing = Reflect.get(prev, key) as { enabled: boolean; operator: string; value: string } | undefined
                               if (existing === undefined) return prev
-                              return {
-                                ...prev,
-                                [key]: { ...existing, operator: op, value: val }
-                              }
+                              const next = { ...prev }
+                              Reflect.set(next, key, { ...existing, operator: op, value: val })
+                              return next
                             })
                           }}
                           className="h-8 rounded-full border border-border/40 px-3 text-xs font-semibold focus:outline-none focus:border-primary bg-background cursor-pointer"
@@ -1143,12 +1141,11 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                         {renderValueSelector(key, filter.operator, filter.value, (val) => {
                           setFilterStates(prev => {
                             if (!Object.prototype.hasOwnProperty.call(prev, key)) return prev
-                            const existing = prev[key]
+                            const existing = Reflect.get(prev, key) as { enabled: boolean; operator: string; value: string } | undefined
                             if (existing === undefined) return prev
-                            return {
-                              ...prev,
-                              [key]: { ...existing, value: val }
-                            }
+                            const next = { ...prev }
+                            Reflect.set(next, key, { ...existing, value: val })
+                            return next
                           })
                         })}
 
@@ -1176,14 +1173,15 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                       const selected = e.target.value
                       if (selected && !activeFilterKeys.includes(selected)) {
                         setActiveFilterKeys(prev => [...prev, selected])
-                        setFilterStates(prev => ({
-                          ...prev,
-                          [selected]: {
+                        setFilterStates(prev => {
+                          const next = { ...prev }
+                          Reflect.set(next, selected, {
                             enabled: true,
                             operator: getDefaultOperator(selected),
                             value: getDefaultValue(selected)
-                          }
-                        }))
+                          })
+                          return next
+                        })
                       }
                     }}
                     className="h-8 rounded-full border border-border/40 px-3 text-xs font-semibold focus:outline-none focus:border-primary bg-background cursor-pointer min-w-[140px]"
@@ -1586,7 +1584,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
 
                 {/* Rows: Task bars display */}
                 <div className="divide-y divide-border/40 relative">
-                  {treeTasks.map((task: any) => {
+                  {treeTasks.map((task: Task) => {
                     const gridStyle = getTaskGridStyle(task)
                     const conflict = getLeaveConflict(task)
                     const isOverdue = task.status !== "done" && task.dueDate && new Date(task.dueDate) < new Date()
@@ -1651,20 +1649,24 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                       >
                         
                         {/* Vùng mờ nghỉ phép (Leave shadow zones) for this employee under the timeline */}
-                        {showLeaves && task.assigneeId && timelineDays.map((day, idx) => {
-                          const onLeave = isEmployeeOnLeaveOnDay(task.assigneeId, day)
-                          if (onLeave) {
-                            return (
-                              <div 
-                                key={idx} 
-                                style={{ gridColumnStart: idx + 1, gridColumnEnd: idx + 2 }}
-                                className="h-full bg-[repeating-linear-gradient(45deg,rgba(239,68,68,0.1)_0px,rgba(239,68,68,0.1)_2px,transparent_2px,transparent_8px)] border-r border-border/10 pointer-events-none"
-                                title={`${task.assignee.fullName} nghỉ phép`}
-                              />
-                            )
-                          }
-                          return null
-                        })}
+                        {(() => {
+                          const assigneeId = task.assigneeId
+                          if (!showLeaves || !assigneeId) return null
+                          return timelineDays.map((day, idx) => {
+                            const onLeave = isEmployeeOnLeaveOnDay(assigneeId, day)
+                            if (onLeave) {
+                              return (
+                                <div 
+                                  key={idx} 
+                                  style={{ gridColumnStart: idx + 1, gridColumnEnd: idx + 2 }}
+                                  className="h-full bg-[repeating-linear-gradient(45deg,rgba(239,68,68,0.1)_0px,rgba(239,68,68,0.1)_2px,transparent_2px,transparent_8px)] border-r border-border/10 pointer-events-none"
+                                  title={`${task.assignee?.fullName || "Nhân viên"} nghỉ phép`}
+                                />
+                              )
+                            }
+                            return null
+                          })
+                        })()}
 
                         {/* Task Bar */}
                         {gridStyle ? (
@@ -1678,7 +1680,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                                   <TooltipTrigger asChild>
                                     <div 
                                       className={`h-7 w-full ${containerBg} ${textColor} rounded-full px-2.5 flex items-center justify-between text-[10px] font-medium shadow-sm select-none relative overflow-hidden group cursor-pointer`}
-                                      onDoubleClick={() => setSelectedTaskForReview(task)}
+                                      onDoubleClick={() => { setSelectedTaskForReview(task); }}
                                     >
                                       {/* Progress bar inside task bar */}
                                       {showProgress && (
@@ -1809,7 +1811,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
       {/* Sidebar for Quick Queries */}
       {!isSidebarExpanded && (
         <button
-          onClick={() => setIsSidebarExpanded(true)}
+          onClick={() => { setIsSidebarExpanded(true); }}
           className="p-2.5 border border-border/40 bg-background rounded-full shadow-sm hover:bg-muted transition-colors shrink-0 font-bold text-xs flex items-center justify-center hover:scale-102"
           title="Mở rộng truy vấn riêng"
         >
@@ -1821,7 +1823,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
       {isSidebarExpanded && (
         <div className="w-56 shrink-0 bg-background p-4 rounded-xl border border-border/40 shadow-sm space-y-4 relative transition-all duration-200">
           <button
-            onClick={() => setIsSidebarExpanded(false)}
+            onClick={() => { setIsSidebarExpanded(false); }}
             className="absolute top-3 right-3 text-muted-foreground hover:text-foreground text-xs font-bold"
             title="Thu nhỏ truy vấn riêng"
           >
@@ -1835,7 +1837,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
           <ul className="space-y-2 text-xs">
             <li>
               <button
-                onClick={() => handleQuickQuery("assigned_to_me")}
+                onClick={() => { handleQuickQuery("assigned_to_me"); }}
                 className="text-blue-600 dark:text-blue-400 hover:underline text-left font-medium block w-full"
               >
                 Issues assigned to me
@@ -1843,7 +1845,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
             </li>
             <li>
               <button
-                onClick={() => handleQuickQuery("reported_issues")}
+                onClick={() => { handleQuickQuery("reported_issues"); }}
                 className="text-blue-600 dark:text-blue-400 hover:underline text-left font-medium block w-full"
               >
                 Reported issues
@@ -1851,7 +1853,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
             </li>
             <li>
               <button
-                onClick={() => handleQuickQuery("updated_issues")}
+                onClick={() => { handleQuickQuery("updated_issues"); }}
                 className="text-blue-600 dark:text-blue-400 hover:underline text-left font-medium block w-full"
               >
                 Updated issues
@@ -1859,7 +1861,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
             </li>
             <li>
               <button
-                onClick={() => handleQuickQuery("watched_issues")}
+                onClick={() => { handleQuickQuery("watched_issues"); }}
                 className="text-rose-600 dark:text-rose-400 hover:underline text-left font-medium block w-full"
               >
                 Watched issues
@@ -1871,10 +1873,10 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                 <li className="border-t border-border/10 my-2 pt-2 text-[10px] uppercase tracking-wider text-muted-foreground font-bold select-none">
                   Truy vấn đã lưu
                 </li>
-                {savedQueries.map((q: any) => (
+                {savedQueries.map((q: CustomQuery) => (
                   <li key={q.id} className="flex items-center justify-between group">
                     <button
-                      onClick={() => applySavedQuery(q)}
+                      onClick={() => { applySavedQuery(q); }}
                       className="text-sky-600 dark:text-sky-400 hover:underline text-left font-medium block truncate max-w-[150px]"
                       title={q.name}
                     >
