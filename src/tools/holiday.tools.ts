@@ -14,7 +14,7 @@ export const registerHolidayTools = () => {
 		async ({ sessionId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await holidayService.list(session.jwt);
+				const data = await holidayService.list(session);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to list holidays", error.message);
@@ -32,7 +32,7 @@ export const registerHolidayTools = () => {
 		async ({ sessionId, holidayId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await holidayService.getOne(session.jwt, holidayId);
+				const data = await holidayService.getOne(session, holidayId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch holiday", error.message);
@@ -50,7 +50,7 @@ export const registerHolidayTools = () => {
 		async ({ sessionId, date }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await holidayService.check(session.jwt, date);
+				const data = await holidayService.check(session, date);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to check holiday", error.message);
@@ -73,7 +73,7 @@ export const registerHolidayTools = () => {
 		async ({ sessionId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await holidayService.create(session.jwt, payload);
+				const data = await holidayService.create(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to create holiday", error.message);
@@ -97,7 +97,7 @@ export const registerHolidayTools = () => {
 		async ({ sessionId, holidayId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await holidayService.update(session.jwt, holidayId, payload);
+				const data = await holidayService.update(session, holidayId, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to update holiday", error.message);
@@ -115,7 +115,7 @@ export const registerHolidayTools = () => {
 		async ({ sessionId, holidayId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await holidayService.delete(session.jwt, holidayId);
+				const data = await holidayService.delete(session, holidayId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to delete holiday", error.message);

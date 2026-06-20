@@ -14,7 +14,7 @@ export const registerShiftTools = () => {
 		async ({ sessionId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await shiftService.list(session.jwt);
+				const data = await shiftService.list(session);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to list shifts", error.message);
@@ -32,7 +32,7 @@ export const registerShiftTools = () => {
 		async ({ sessionId, shiftId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await shiftService.getOne(session.jwt, shiftId);
+				const data = await shiftService.getOne(session, shiftId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch shift", error.message);
@@ -54,7 +54,7 @@ export const registerShiftTools = () => {
 		async ({ sessionId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await shiftService.create(session.jwt, payload);
+				const data = await shiftService.create(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to create shift", error.message);
@@ -77,7 +77,7 @@ export const registerShiftTools = () => {
 		async ({ sessionId, shiftId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await shiftService.update(session.jwt, shiftId, payload);
+				const data = await shiftService.update(session, shiftId, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to update shift", error.message);
@@ -95,7 +95,7 @@ export const registerShiftTools = () => {
 		async ({ sessionId, shiftId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await shiftService.delete(session.jwt, shiftId);
+				const data = await shiftService.delete(session, shiftId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to delete shift", error.message);

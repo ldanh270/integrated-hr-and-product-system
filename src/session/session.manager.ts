@@ -13,7 +13,7 @@ export class SessionManager {
   }
 
   public create(authInfo: AuthInfo): string {
-    const sessionId = uuidv4();
+    const sessionId = `session-${uuidv4()}`;
     const expiresAt = Date.now() + this.DEFAULT_TTL;
 
     this.sessions.set(sessionId, {

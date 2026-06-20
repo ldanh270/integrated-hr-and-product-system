@@ -46,7 +46,7 @@ export const registerApplicationTools = () => {
 					assignedToId,
 					detail: { leaveType, regimeType },
 				};
-				const data = await applicationService.createApplication(session.jwt, payload);
+				const data = await applicationService.createApplication(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to create leave application", error.message);
@@ -76,7 +76,7 @@ export const registerApplicationTools = () => {
 					assignedToId,
 					detail: { employeeShiftId },
 				};
-				const data = await applicationService.createApplication(session.jwt, payload);
+				const data = await applicationService.createApplication(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to create overtime application", error.message);
@@ -106,7 +106,7 @@ export const registerApplicationTools = () => {
 					assignedToId,
 					detail: { ...(location && { location }) },
 				};
-				const data = await applicationService.createApplication(session.jwt, payload);
+				const data = await applicationService.createApplication(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to create WFH application", error.message);
@@ -154,7 +154,7 @@ export const registerApplicationTools = () => {
 						...(swapWithShiftId && { swapWithShiftId }),
 					},
 				};
-				const data = await applicationService.createApplication(session.jwt, payload);
+				const data = await applicationService.createApplication(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to create shift swap application", error.message);
@@ -190,7 +190,7 @@ export const registerApplicationTools = () => {
 						...(budget !== undefined && { budget }),
 					},
 				};
-				const data = await applicationService.createApplication(session.jwt, payload);
+				const data = await applicationService.createApplication(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to create business trip application", error.message);
@@ -231,7 +231,7 @@ export const registerApplicationTools = () => {
 					assignedToId,
 					detail: { employeeShiftId, durationMinutes, isLate },
 				};
-				const data = await applicationService.createApplication(session.jwt, payload);
+				const data = await applicationService.createApplication(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to create late/early application", error.message);
@@ -282,7 +282,7 @@ export const registerApplicationTools = () => {
 						...(documentUrl && { documentUrl }),
 					},
 				};
-				const data = await applicationService.createApplication(session.jwt, payload);
+				const data = await applicationService.createApplication(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to create regime application", error.message);
@@ -320,7 +320,7 @@ export const registerApplicationTools = () => {
 			try {
 				const session = requireSession(sessionId);
 				const data = await applicationService.getMyApplications(
-					session.jwt,
+					session,
 					Object.keys(params).length > 0 ? params : undefined,
 				);
 				return buildSuccess(data);
@@ -340,7 +340,7 @@ export const registerApplicationTools = () => {
 		async ({ sessionId, applicationId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await applicationService.getApplication(session.jwt, applicationId);
+				const data = await applicationService.getApplication(session, applicationId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch application", error.message);
@@ -359,7 +359,7 @@ export const registerApplicationTools = () => {
 		async ({ sessionId, applicationId, reason }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await applicationService.cancelApplication(session.jwt, applicationId, reason);
+				const data = await applicationService.cancelApplication(session, applicationId, reason);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to cancel application", error.message);
@@ -394,7 +394,7 @@ export const registerApplicationTools = () => {
 			try {
 				const session = requireSession(sessionId);
 				const data = await applicationService.listAllApplications(
-					session.jwt,
+					session,
 					Object.keys(params).length > 0 ? params : undefined,
 				);
 				return buildSuccess(data);
@@ -431,7 +431,7 @@ export const registerApplicationTools = () => {
 			try {
 				const session = requireSession(sessionId);
 				const data = await applicationService.listApplicationsByEmployee(
-					session.jwt,
+					session,
 					employeeId,
 					Object.keys(params).length > 0 ? params : undefined,
 				);
@@ -452,7 +452,7 @@ export const registerApplicationTools = () => {
 		async ({ sessionId, applicationId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await applicationService.approveApplication(session.jwt, applicationId);
+				const data = await applicationService.approveApplication(session, applicationId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to approve application", error.message);
@@ -472,7 +472,7 @@ export const registerApplicationTools = () => {
 			try {
 				const session = requireSession(sessionId);
 				const data = await applicationService.rejectApplication(
-					session.jwt,
+					session,
 					applicationId,
 					rejectReason,
 				);

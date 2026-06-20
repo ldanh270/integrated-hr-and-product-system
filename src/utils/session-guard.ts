@@ -21,7 +21,8 @@ export class ForbiddenError extends Error {
 export const requireSession = (sessionId: string): SessionData => {
   const session = sessionManager.get(sessionId);
   if (!session) {
-    throw new UnauthorizedError();
+    console.error(`[Guard] requireSession failed: Session not found for ID '${sessionId}'`);
+    throw new UnauthorizedError(`Invalid or expired session. Make sure you are passing the correct sessionId (which starts with 'session-') and not the loginId.`);
   }
   return session;
 };

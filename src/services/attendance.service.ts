@@ -1,4 +1,5 @@
 import { createAuthedClient } from "../utils/hrp-client.js";
+import { SessionData } from "../types/session.types.js";
 import { HRP_API_CONSTANTS } from "../constants/hrp-api.constants.js";
 import type {
 	LocationInput,
@@ -11,8 +12,8 @@ import type {
 } from "../schemas/attendance.schema.js";
 
 export class AttendanceService {
-	private client(jwt: string) {
-		return createAuthedClient(jwt);
+	private client(session: SessionData) {
+		return createAuthedClient(session);
 	}
 
 	private handleError(error: any, fallback: string): never {
@@ -27,9 +28,9 @@ export class AttendanceService {
 	// ─── Attendance (Chấm công) ─────────────────────────────────────────────────
 
 	/** POST /api/attendance/check-in */
-	async checkIn(jwt: string, location: LocationInput) {
+	async checkIn(session: SessionData, location: LocationInput) {
 		try {
-			const res = await this.client(jwt).post(HRP_API_CONSTANTS.ENDPOINTS.ATTENDANCE.CHECK_IN, {
+			const res = await this.client(session).post(HRP_API_CONSTANTS.ENDPOINTS.ATTENDANCE.CHECK_IN, {
 				location,
 			});
 			return res.data;
@@ -39,9 +40,9 @@ export class AttendanceService {
 	}
 
 	/** POST /api/attendance/check-out */
-	async checkOut(jwt: string, location: LocationInput) {
+	async checkOut(session: SessionData, location: LocationInput) {
 		try {
-			const res = await this.client(jwt).post(HRP_API_CONSTANTS.ENDPOINTS.ATTENDANCE.CHECK_OUT, {
+			const res = await this.client(session).post(HRP_API_CONSTANTS.ENDPOINTS.ATTENDANCE.CHECK_OUT, {
 				location,
 			});
 			return res.data;
@@ -51,9 +52,9 @@ export class AttendanceService {
 	}
 
 	/** POST /api/attendance/scan — smart scan (auto check-in or check-out) */
-	async scan(jwt: string, location: LocationInput) {
+	async scan(session: SessionData, location: LocationInput) {
 		try {
-			const res = await this.client(jwt).post(HRP_API_CONSTANTS.ENDPOINTS.ATTENDANCE.SCAN, {
+			const res = await this.client(session).post(HRP_API_CONSTANTS.ENDPOINTS.ATTENDANCE.SCAN, {
 				location,
 			});
 			return res.data;
@@ -63,9 +64,9 @@ export class AttendanceService {
 	}
 
 	/** GET /api/attendance — history with optional filters */
-	async getHistory(jwt: string, params?: GetAttendanceInput) {
+	async getHistory(session: SessionData, params?: GetAttendanceInput) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.ATTENDANCE.BASE, {
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.ATTENDANCE.BASE, {
 				params,
 			});
 			return res.data;
@@ -77,9 +78,9 @@ export class AttendanceService {
 	// ─── Shifts (Ca làm việc) ───────────────────────────────────────────────────
 
 	/** GET /api/shifts */
-	async listShifts(jwt: string) {
+	async listShifts(session: SessionData) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.BASE);
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.BASE);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch shifts");
@@ -87,9 +88,9 @@ export class AttendanceService {
 	}
 
 	/** GET /api/shifts/:id */
-	async getShift(jwt: string, id: string) {
+	async getShift(session: SessionData, id: string) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.BY_ID(id));
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.BY_ID(id));
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch shift");
@@ -97,9 +98,9 @@ export class AttendanceService {
 	}
 
 	/** POST /api/shifts */
-	async createShift(jwt: string, data: CreateShiftInput) {
+	async createShift(session: SessionData, data: CreateShiftInput) {
 		try {
-			const res = await this.client(jwt).post(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.BASE, data);
+			const res = await this.client(session).post(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.BASE, data);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to create shift");
@@ -107,9 +108,9 @@ export class AttendanceService {
 	}
 
 	/** PATCH /api/shifts/:id */
-	async updateShift(jwt: string, id: string, data: UpdateShiftInput) {
+	async updateShift(session: SessionData, id: string, data: UpdateShiftInput) {
 		try {
-			const res = await this.client(jwt).patch(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.BY_ID(id), data);
+			const res = await this.client(session).patch(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.BY_ID(id), data);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to update shift");
@@ -119,9 +120,9 @@ export class AttendanceService {
 	// ─── Schedules (Lịch ca) ────────────────────────────────────────────────────
 
 	/** GET /api/schedules/my */
-	async getMySchedule(jwt: string) {
+	async getMySchedule(session: SessionData) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SCHEDULES_MY);
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SCHEDULES_MY);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch current schedule");
@@ -129,9 +130,9 @@ export class AttendanceService {
 	}
 
 	/** GET /api/schedules/my/all */
-	async getMyScheduleHistory(jwt: string) {
+	async getMyScheduleHistory(session: SessionData) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SCHEDULES_MY_ALL);
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SCHEDULES_MY_ALL);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch schedule history");
@@ -139,9 +140,9 @@ export class AttendanceService {
 	}
 
 	/** POST /api/schedules/assign */
-	async assignSchedule(jwt: string, data: AssignScheduleInput) {
+	async assignSchedule(session: SessionData, data: AssignScheduleInput) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SCHEDULES_ASSIGN,
 				data,
 			);
@@ -152,9 +153,9 @@ export class AttendanceService {
 	}
 
 	/** POST /api/schedules/override */
-	async overrideSchedule(jwt: string, data: OverrideScheduleInput) {
+	async overrideSchedule(session: SessionData, data: OverrideScheduleInput) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SCHEDULES_OVERRIDE,
 				data,
 			);
@@ -167,9 +168,9 @@ export class AttendanceService {
 	// ─── Shift Change Requests (Đổi ca) ─────────────────────────────────────────
 
 	/** GET /api/shift-change-requests/mine */
-	async getMyShiftChangeRequests(jwt: string) {
+	async getMyShiftChangeRequests(session: SessionData) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SHIFT_CHANGE_MINE);
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SHIFT_CHANGE_MINE);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch shift change requests");
@@ -177,9 +178,9 @@ export class AttendanceService {
 	}
 
 	/** POST /api/shift-change-requests */
-	async submitShiftChangeRequest(jwt: string, data: SubmitShiftChangeInput) {
+	async submitShiftChangeRequest(session: SessionData, data: SubmitShiftChangeInput) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SHIFT_CHANGE_REQUESTS,
 				data,
 			);
@@ -190,9 +191,9 @@ export class AttendanceService {
 	}
 
 	/** PATCH /api/shift-change-requests/:id/approve */
-	async approveShiftChangeRequest(jwt: string, id: string) {
+	async approveShiftChangeRequest(session: SessionData, id: string) {
 		try {
-			const res = await this.client(jwt).patch(
+			const res = await this.client(session).patch(
 				HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SHIFT_CHANGE_APPROVE(id),
 				{ status: "approved" },
 			);
@@ -203,9 +204,9 @@ export class AttendanceService {
 	}
 
 	/** PATCH /api/shift-change-requests/:id/reject */
-	async rejectShiftChangeRequest(jwt: string, id: string, rejectReason: string) {
+	async rejectShiftChangeRequest(session: SessionData, id: string, rejectReason: string) {
 		try {
-			const res = await this.client(jwt).patch(
+			const res = await this.client(session).patch(
 				HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SHIFT_CHANGE_REJECT(id),
 				{ rejectReason },
 			);

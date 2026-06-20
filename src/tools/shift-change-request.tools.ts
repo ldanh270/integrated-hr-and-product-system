@@ -14,7 +14,7 @@ export const registerShiftChangeRequestTools = () => {
 		async ({ sessionId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await shiftChangeRequestService.getMine(session.jwt);
+				const data = await shiftChangeRequestService.getMine(session);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch my shift change requests", error.message);
@@ -39,7 +39,7 @@ export const registerShiftChangeRequestTools = () => {
 		async ({ sessionId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await shiftChangeRequestService.create(session.jwt, payload);
+				const data = await shiftChangeRequestService.create(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to create shift change request", error.message);
@@ -57,7 +57,7 @@ export const registerShiftChangeRequestTools = () => {
 		async ({ sessionId, requestId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await shiftChangeRequestService.approve(session.jwt, requestId);
+				const data = await shiftChangeRequestService.approve(session, requestId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to approve shift change request", error.message);
@@ -75,7 +75,7 @@ export const registerShiftChangeRequestTools = () => {
 		async ({ sessionId, requestId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await shiftChangeRequestService.reject(session.jwt, requestId);
+				const data = await shiftChangeRequestService.reject(session, requestId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to reject shift change request", error.message);

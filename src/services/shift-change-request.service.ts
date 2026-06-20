@@ -1,10 +1,11 @@
 import { createAuthedClient } from "../utils/hrp-client.js";
+import { SessionData } from "../types/session.types.js";
 import { HRP_API_CONSTANTS } from "../constants/hrp-api.constants.js";
 import type { CreateShiftChangeRequestInput } from "../schemas/shift.schema.js";
 
 export class ShiftChangeRequestService {
-	private client(jwt: string) {
-		return createAuthedClient(jwt);
+	private client(session: SessionData) {
+		return createAuthedClient(session);
 	}
 
 	private handleError(error: any, fallback: string): never {
@@ -16,18 +17,18 @@ export class ShiftChangeRequestService {
 		throw new Error(`Connection error: ${error.message}`);
 	}
 
-	async getMine(jwt: string) {
+	async getMine(session: SessionData) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SHIFT_CHANGE_MINE);
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SHIFT_CHANGE_MINE);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch my shift change requests");
 		}
 	}
 
-	async create(jwt: string, data: CreateShiftChangeRequestInput) {
+	async create(session: SessionData, data: CreateShiftChangeRequestInput) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SHIFT_CHANGE_REQUESTS,
 				data,
 			);
@@ -39,9 +40,9 @@ export class ShiftChangeRequestService {
 
 	// Note: Approve and Reject are usually under Approval endpoints or specific Application endpoints,
 	// but keeping them available if we need to call them directly
-	async approve(jwt: string, id: string) {
+	async approve(session: SessionData, id: string) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SHIFT_CHANGE_APPROVE(id),
 			);
 			return res.data;
@@ -50,9 +51,9 @@ export class ShiftChangeRequestService {
 		}
 	}
 
-	async reject(jwt: string, id: string) {
+	async reject(session: SessionData, id: string) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SHIFT_CHANGE_REJECT(id),
 			);
 			return res.data;

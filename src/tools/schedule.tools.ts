@@ -14,7 +14,7 @@ export const registerScheduleTools = () => {
 		async ({ sessionId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await scheduleService.getMySchedule(session.jwt);
+				const data = await scheduleService.getMySchedule(session);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch my schedule", error.message);
@@ -31,7 +31,7 @@ export const registerScheduleTools = () => {
 		async ({ sessionId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await scheduleService.listMySchedules(session.jwt);
+				const data = await scheduleService.listMySchedules(session);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to list my schedules", error.message);
@@ -49,7 +49,7 @@ export const registerScheduleTools = () => {
 		async ({ sessionId, employeeId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await scheduleService.getEmployeeSchedule(session.jwt, employeeId);
+				const data = await scheduleService.getEmployeeSchedule(session, employeeId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch employee schedule", error.message);
@@ -67,7 +67,7 @@ export const registerScheduleTools = () => {
 		async ({ sessionId, employeeId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await scheduleService.listEmployeeSchedules(session.jwt, employeeId);
+				const data = await scheduleService.listEmployeeSchedules(session, employeeId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to list employee schedules", error.message);
@@ -88,7 +88,7 @@ export const registerScheduleTools = () => {
 		async ({ sessionId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await scheduleService.assign(session.jwt, payload);
+				const data = await scheduleService.assign(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to assign schedule", error.message);
@@ -109,7 +109,7 @@ export const registerScheduleTools = () => {
 		async ({ sessionId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await scheduleService.override(session.jwt, payload);
+				const data = await scheduleService.override(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to override shift", error.message);
@@ -128,7 +128,7 @@ export const registerScheduleTools = () => {
 		async ({ sessionId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await scheduleService.previewGenerate(session.jwt, payload);
+				const data = await scheduleService.previewGenerate(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to preview generated schedule", error.message);
@@ -147,7 +147,7 @@ export const registerScheduleTools = () => {
 		async ({ sessionId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await scheduleService.generate(session.jwt, payload);
+				const data = await scheduleService.generate(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to generate schedule", error.message);
@@ -164,7 +164,7 @@ export const registerScheduleTools = () => {
 		async ({ sessionId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await scheduleService.getSettings(session.jwt);
+				const data = await scheduleService.getSettings(session);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch schedule settings", error.message);
@@ -189,7 +189,7 @@ export const registerScheduleTools = () => {
 		async ({ sessionId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await scheduleService.updateSettings(session.jwt, payload);
+				const data = await scheduleService.updateSettings(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to update schedule settings", error.message);

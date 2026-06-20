@@ -18,7 +18,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.listSalaryComponents(session.jwt);
+				const data = await payrollService.listSalaryComponents(session);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch salary components", error.message);
@@ -40,7 +40,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.createSalaryComponent(session.jwt, payload);
+				const data = await payrollService.createSalaryComponent(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to create salary component", error.message);
@@ -67,7 +67,7 @@ export const registerPayrollTools = () => {
 			try {
 				const session = requireSession(sessionId);
 				const data = await payrollService.updateSalaryComponent(
-					session.jwt,
+					session,
 					componentId,
 					Object.keys(payload).length > 0 ? payload : {},
 				);
@@ -88,7 +88,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId, componentId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.deleteSalaryComponent(session.jwt, componentId);
+				const data = await payrollService.deleteSalaryComponent(session, componentId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to delete salary component", error.message);
@@ -106,7 +106,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId, formula }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.validateFormula(session.jwt, { formula });
+				const data = await payrollService.validateFormula(session, { formula });
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to validate formula", error.message);
@@ -127,7 +127,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.listSalaryVariables(session.jwt);
+				const data = await payrollService.listSalaryVariables(session);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch salary variables", error.message);
@@ -145,7 +145,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId, variableId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.getSalaryVariable(session.jwt, variableId);
+				const data = await payrollService.getSalaryVariable(session, variableId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch salary variable", error.message);
@@ -166,7 +166,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.createSalaryVariable(session.jwt, payload);
+				const data = await payrollService.createSalaryVariable(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to create salary variable", error.message);
@@ -189,7 +189,7 @@ export const registerPayrollTools = () => {
 			try {
 				const session = requireSession(sessionId);
 				const data = await payrollService.updateSalaryVariable(
-					session.jwt,
+					session,
 					variableId,
 					Object.keys(payload).length > 0 ? payload : {},
 				);
@@ -213,7 +213,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.listPayslipTemplates(session.jwt);
+				const data = await payrollService.listPayslipTemplates(session);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch payslip templates", error.message);
@@ -237,7 +237,7 @@ export const registerPayrollTools = () => {
 					.split(",")
 					.map((s) => s.trim())
 					.filter((s) => s.length > 0);
-				const data = await payrollService.createPayslipTemplate(session.jwt, {
+				const data = await payrollService.createPayslipTemplate(session, {
 					name,
 					componentIds: componentIdsArray,
 					...(description && { description }),
@@ -274,7 +274,7 @@ export const registerPayrollTools = () => {
 						.map((s) => s.trim())
 						.filter((s) => s.length > 0);
 				}
-				const data = await payrollService.updatePayslipTemplate(session.jwt, templateId, payload);
+				const data = await payrollService.updatePayslipTemplate(session, templateId, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to update payslip template", error.message);
@@ -292,7 +292,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId, templateId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.deletePayslipTemplate(session.jwt, templateId);
+				const data = await payrollService.deletePayslipTemplate(session, templateId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to delete payslip template", error.message);
@@ -314,7 +314,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId, employeeId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.getEmployeeSalaryConfig(session.jwt, employeeId);
+				const data = await payrollService.getEmployeeSalaryConfig(session, employeeId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch employee salary config", error.message);
@@ -332,7 +332,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId, employeeId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.getEmployeeSalaryConfigHistory(session.jwt, employeeId);
+				const data = await payrollService.getEmployeeSalaryConfigHistory(session, employeeId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch employee salary config history", error.message);
@@ -355,7 +355,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId, employeeId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.setEmployeeSalaryConfig(session.jwt, employeeId, payload);
+				const data = await payrollService.setEmployeeSalaryConfig(session, employeeId, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to set employee salary config", error.message);
@@ -376,7 +376,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.getPayrollSettings(session.jwt);
+				const data = await payrollService.getPayrollSettings(session);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch payroll settings", error.message);
@@ -406,7 +406,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.updatePayrollSettings(session.jwt, payload);
+				const data = await payrollService.updatePayrollSettings(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to update payroll settings", error.message);
@@ -426,7 +426,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.generatePayroll(session.jwt, payload);
+				const data = await payrollService.generatePayroll(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to generate payroll", error.message);
@@ -443,7 +443,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.listPayrolls(session.jwt);
+				const data = await payrollService.listPayrolls(session);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch payrolls", error.message);
@@ -461,7 +461,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId, payrollId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.getPayroll(session.jwt, payrollId);
+				const data = await payrollService.getPayroll(session, payrollId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch payroll details", error.message);
@@ -479,7 +479,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId, payrollId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.approvePayroll(session.jwt, payrollId);
+				const data = await payrollService.approvePayroll(session, payrollId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to approve payroll", error.message);
@@ -498,7 +498,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId, payrollId, rejectReason }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.rejectPayroll(session.jwt, payrollId, { rejectReason });
+				const data = await payrollService.rejectPayroll(session, payrollId, { rejectReason });
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to reject payroll", error.message);
@@ -518,7 +518,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId, payrollId, employeeId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.getPayslip(session.jwt, payrollId, employeeId);
+				const data = await payrollService.getPayslip(session, payrollId, employeeId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch payslip", error.message);
@@ -536,7 +536,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId, employeeId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.getEmployeePayslips(session.jwt, employeeId);
+				const data = await payrollService.getEmployeePayslips(session, employeeId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch employee payslips", error.message);
@@ -553,7 +553,7 @@ export const registerPayrollTools = () => {
 		async ({ sessionId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await payrollService.getMyPayslips(session.jwt);
+				const data = await payrollService.getMyPayslips(session);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch my payslips", error.message);

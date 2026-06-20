@@ -14,7 +14,7 @@ export const registerProfileTools = () => {
 		async ({ sessionId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await profileService.getMe(session.jwt);
+				const data = await profileService.getMe(session);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch profile", error.message);
@@ -40,7 +40,7 @@ export const registerProfileTools = () => {
 		async ({ sessionId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await profileService.updateMe(session.jwt, payload);
+				const data = await profileService.updateMe(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to update profile", error.message);
@@ -59,7 +59,7 @@ export const registerProfileTools = () => {
 		async ({ sessionId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await profileService.changePassword(session.jwt, payload);
+				const data = await profileService.changePassword(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to change password", error.message);

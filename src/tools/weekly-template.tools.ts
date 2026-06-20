@@ -14,7 +14,7 @@ export const registerWeeklyTemplateTools = () => {
 		async ({ sessionId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await weeklyTemplateService.list(session.jwt);
+				const data = await weeklyTemplateService.list(session);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to list weekly templates", error.message);
@@ -32,7 +32,7 @@ export const registerWeeklyTemplateTools = () => {
 		async ({ sessionId, templateId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await weeklyTemplateService.getOne(session.jwt, templateId);
+				const data = await weeklyTemplateService.getOne(session, templateId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch weekly template", error.message);
@@ -60,7 +60,7 @@ export const registerWeeklyTemplateTools = () => {
 		async ({ sessionId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await weeklyTemplateService.create(session.jwt, payload);
+				const data = await weeklyTemplateService.create(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to create weekly template", error.message);
@@ -89,7 +89,7 @@ export const registerWeeklyTemplateTools = () => {
 		async ({ sessionId, templateId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await weeklyTemplateService.update(session.jwt, templateId, payload);
+				const data = await weeklyTemplateService.update(session, templateId, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to update weekly template", error.message);
@@ -107,7 +107,7 @@ export const registerWeeklyTemplateTools = () => {
 		async ({ sessionId, templateId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await weeklyTemplateService.delete(session.jwt, templateId);
+				const data = await weeklyTemplateService.delete(session, templateId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to delete weekly template", error.message);
@@ -126,7 +126,7 @@ export const registerWeeklyTemplateTools = () => {
 		async ({ sessionId, templateId, employeeIds }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await weeklyTemplateService.apply(session.jwt, templateId, employeeIds);
+				const data = await weeklyTemplateService.apply(session, templateId, employeeIds);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to apply weekly template", error.message);

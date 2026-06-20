@@ -1,4 +1,5 @@
 import { createAuthedClient } from "../utils/hrp-client.js";
+import { SessionData } from "../types/session.types.js";
 import { HRP_API_CONSTANTS } from "../constants/hrp-api.constants.js";
 import type {
 	CreateProjectInput,
@@ -13,8 +14,8 @@ import type {
 } from "../schemas/project.schema.js";
 
 export class ProjectService {
-	private client(jwt: string) {
-		return createAuthedClient(jwt);
+	private client(session: SessionData) {
+		return createAuthedClient(session);
 	}
 
 	private handleError(error: any, fallback: string): never {
@@ -28,36 +29,36 @@ export class ProjectService {
 
 	// ─── Projects ────────────────────────────────────────────────────────────────
 
-	async listProjects(jwt: string, params?: ListProjectsInput) {
+	async listProjects(session: SessionData, params?: ListProjectsInput) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.BASE, { params });
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.BASE, { params });
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch projects");
 		}
 	}
 
-	async getProject(jwt: string, id: string) {
+	async getProject(session: SessionData, id: string) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.BY_ID(id));
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.BY_ID(id));
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch project");
 		}
 	}
 
-	async createProject(jwt: string, data: CreateProjectInput) {
+	async createProject(session: SessionData, data: CreateProjectInput) {
 		try {
-			const res = await this.client(jwt).post(HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.BASE, data);
+			const res = await this.client(session).post(HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.BASE, data);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to create project");
 		}
 	}
 
-	async updateProject(jwt: string, id: string, data: UpdateProjectInput) {
+	async updateProject(session: SessionData, id: string, data: UpdateProjectInput) {
 		try {
-			const res = await this.client(jwt).patch(
+			const res = await this.client(session).patch(
 				HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.BY_ID(id),
 				data,
 			);
@@ -67,27 +68,27 @@ export class ProjectService {
 		}
 	}
 
-	async deleteProject(jwt: string, id: string) {
+	async deleteProject(session: SessionData, id: string) {
 		try {
-			const res = await this.client(jwt).delete(HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.BY_ID(id));
+			const res = await this.client(session).delete(HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.BY_ID(id));
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to delete project");
 		}
 	}
 
-	async getProjectMembers(jwt: string, id: string) {
+	async getProjectMembers(session: SessionData, id: string) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.MEMBERS(id));
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.MEMBERS(id));
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch project members");
 		}
 	}
 
-	async addProjectMember(jwt: string, projectId: string, employeeId: string) {
+	async addProjectMember(session: SessionData, projectId: string, employeeId: string) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.MEMBERS(projectId),
 				{ employeeId },
 			);
@@ -97,9 +98,9 @@ export class ProjectService {
 		}
 	}
 
-	async removeProjectMember(jwt: string, projectId: string, employeeId: string) {
+	async removeProjectMember(session: SessionData, projectId: string, employeeId: string) {
 		try {
-			const res = await this.client(jwt).delete(
+			const res = await this.client(session).delete(
 				HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.MEMBER_BY_ID(projectId, employeeId),
 			);
 			return res.data;
@@ -110,9 +111,9 @@ export class ProjectService {
 
 	// ─── Tasks ────────────────────────────────────────────────────────────────────
 
-	async listTasks(jwt: string, params?: ListTasksInput) {
+	async listTasks(session: SessionData, params?: ListTasksInput) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.TASKS, {
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.TASKS, {
 				params,
 			});
 			return res.data;
@@ -121,27 +122,27 @@ export class ProjectService {
 		}
 	}
 
-	async getTask(jwt: string, id: string) {
+	async getTask(session: SessionData, id: string) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.TASK_BY_ID(id));
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.TASK_BY_ID(id));
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch task");
 		}
 	}
 
-	async createTask(jwt: string, data: CreateTaskInput) {
+	async createTask(session: SessionData, data: CreateTaskInput) {
 		try {
-			const res = await this.client(jwt).post(HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.TASKS, data);
+			const res = await this.client(session).post(HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.TASKS, data);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to create task");
 		}
 	}
 
-	async updateTask(jwt: string, id: string, data: UpdateTaskInput) {
+	async updateTask(session: SessionData, id: string, data: UpdateTaskInput) {
 		try {
-			const res = await this.client(jwt).patch(
+			const res = await this.client(session).patch(
 				HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.TASK_BY_ID(id),
 				data,
 			);
@@ -151,9 +152,9 @@ export class ProjectService {
 		}
 	}
 
-	async deleteTask(jwt: string, id: string) {
+	async deleteTask(session: SessionData, id: string) {
 		try {
-			const res = await this.client(jwt).delete(
+			const res = await this.client(session).delete(
 				HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.TASK_BY_ID(id),
 			);
 			return res.data;
@@ -164,9 +165,9 @@ export class ProjectService {
 
 	// ─── Categories ───────────────────────────────────────────────────────────────
 
-	async listCategories(jwt: string, projectId: string) {
+	async listCategories(session: SessionData, projectId: string) {
 		try {
-			const res = await this.client(jwt).get(
+			const res = await this.client(session).get(
 				HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.CATEGORIES(projectId),
 			);
 			return res.data;
@@ -175,9 +176,9 @@ export class ProjectService {
 		}
 	}
 
-	async createCategory(jwt: string, projectId: string, name: string) {
+	async createCategory(session: SessionData, projectId: string, name: string) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.CATEGORIES(projectId),
 				{ name },
 			);
@@ -187,9 +188,9 @@ export class ProjectService {
 		}
 	}
 
-	async updateCategory(jwt: string, projectId: string, categoryId: string, name: string) {
+	async updateCategory(session: SessionData, projectId: string, categoryId: string, name: string) {
 		try {
-			const res = await this.client(jwt).patch(
+			const res = await this.client(session).patch(
 				HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.CATEGORY_BY_ID(projectId, categoryId),
 				{ name },
 			);
@@ -199,9 +200,9 @@ export class ProjectService {
 		}
 	}
 
-	async deleteCategory(jwt: string, projectId: string, categoryId: string) {
+	async deleteCategory(session: SessionData, projectId: string, categoryId: string) {
 		try {
-			const res = await this.client(jwt).delete(
+			const res = await this.client(session).delete(
 				HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.CATEGORY_BY_ID(projectId, categoryId),
 			);
 			return res.data;
@@ -212,9 +213,9 @@ export class ProjectService {
 
 	// ─── Spent Times ──────────────────────────────────────────────────────────────
 
-	async listSpentTimes(jwt: string, params?: ListSpentTimesInput) {
+	async listSpentTimes(session: SessionData, params?: ListSpentTimesInput) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.SPENT_TIMES, {
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.SPENT_TIMES, {
 				params,
 			});
 			return res.data;
@@ -223,9 +224,9 @@ export class ProjectService {
 		}
 	}
 
-	async getSpentTime(jwt: string, id: string) {
+	async getSpentTime(session: SessionData, id: string) {
 		try {
-			const res = await this.client(jwt).get(
+			const res = await this.client(session).get(
 				HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.SPENT_TIME_BY_ID(id),
 			);
 			return res.data;
@@ -234,9 +235,9 @@ export class ProjectService {
 		}
 	}
 
-	async logSpentTime(jwt: string, data: LogSpentTimeInput) {
+	async logSpentTime(session: SessionData, data: LogSpentTimeInput) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.SPENT_TIMES,
 				data,
 			);
@@ -246,9 +247,9 @@ export class ProjectService {
 		}
 	}
 
-	async updateSpentTime(jwt: string, id: string, data: UpdateSpentTimeInput) {
+	async updateSpentTime(session: SessionData, id: string, data: UpdateSpentTimeInput) {
 		try {
-			const res = await this.client(jwt).patch(
+			const res = await this.client(session).patch(
 				HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.SPENT_TIME_BY_ID(id),
 				data,
 			);
@@ -258,9 +259,9 @@ export class ProjectService {
 		}
 	}
 
-	async deleteSpentTime(jwt: string, id: string) {
+	async deleteSpentTime(session: SessionData, id: string) {
 		try {
-			const res = await this.client(jwt).delete(
+			const res = await this.client(session).delete(
 				HRP_API_CONSTANTS.ENDPOINTS.PROJECTS.SPENT_TIME_BY_ID(id),
 			);
 			return res.data;

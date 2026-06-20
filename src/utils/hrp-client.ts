@@ -14,6 +14,10 @@ function attachLoggingInterceptors(client: AxiosInstance, label: string): void {
     if (process.env.DEBUG === "true" && config.data) {
       logger.debug(`  Body:`, config.data);
     }
+    const authHeader = config.headers?.["Authorization"] || config.headers?.authorization;
+    if (label === "authed") {
+      logger.debug(`  Auth Header:`, authHeader);
+    }
     // Attach start time for duration tracking
     (config as any)._startTime = Date.now();
     return config;
@@ -55,15 +59,25 @@ export const hrpClient = axios.create({
 attachLoggingInterceptors(hrpClient, "public");
 
 /**
- * Create an HTTP Client with a Bearer token (Used for authenticated requests)
+ * Create an HTTP Client with a Bearer token and optional Cookies (Used for authenticated requests)
  */
-export const createAuthedClient = (jwtToken: string) => {
+export const createAuthedClient = (session: { jwt: string, cookies?: string[] }) => {
+  const headers: any = {
+    "Content-Type": "application/json",
+  };
+
+  if (session.jwt) {
+    headers["Authorization"] = `Bearer ${session.jwt}`;
+  }
+
+  if (session.cookies && session.cookies.length > 0) {
+    headers["Cookie"] = session.cookies.join("; ");
+  }
+
   const client = axios.create({
     baseURL: HRP_API_CONSTANTS.BASE_URL,
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${jwtToken}`,
-    },
+    headers,
+    withCredentials: true,
   });
   attachLoggingInterceptors(client, "authed");
   return client;

@@ -1,4 +1,5 @@
 import { createAuthedClient } from "../utils/hrp-client.js";
+import { SessionData } from "../types/session.types.js";
 import { HRP_API_CONSTANTS } from "../constants/hrp-api.constants.js";
 import type {
 	ChangePasswordInput,
@@ -7,8 +8,8 @@ import type {
 } from "../schemas/profile.schema.js";
 
 export class ProfileService {
-	private client(jwt: string) {
-		return createAuthedClient(jwt);
+	private client(session: SessionData) {
+		return createAuthedClient(session);
 	}
 
 	private handleError(error: any, fallback: string): never {
@@ -20,25 +21,25 @@ export class ProfileService {
 		throw new Error(`Connection error: ${error.message}`);
 	}
 
-	async getMe(jwt: string) {
+	async getMe(session: SessionData) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.PROFILE.ME);
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.PROFILE.ME);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch profile");
 		}
 	}
 
-	async updateMe(jwt: string, data: UpdateProfileInput) {
+	async updateMe(session: SessionData, data: UpdateProfileInput) {
 		try {
-			const res = await this.client(jwt).patch(HRP_API_CONSTANTS.ENDPOINTS.PROFILE.ME, data);
+			const res = await this.client(session).patch(HRP_API_CONSTANTS.ENDPOINTS.PROFILE.ME, data);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to update profile");
 		}
 	}
 
-	async uploadAvatar(jwt: string, avatarPath: string) {
+	async uploadAvatar(session: SessionData, avatarPath: string) {
 		try {
 			// This will likely require reading the file and sending it as multipart/form-data
 			// In MCP context, maybe we don't implement file upload directly, but we can provide the base implementation
@@ -48,9 +49,9 @@ export class ProfileService {
 		}
 	}
 
-	async changePassword(jwt: string, data: ChangePasswordInput) {
+	async changePassword(session: SessionData, data: ChangePasswordInput) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.PROFILE.CHANGE_PASSWORD,
 				data,
 			);
@@ -60,9 +61,9 @@ export class ProfileService {
 		}
 	}
 
-	async linkEmployee(jwt: string, data: LinkEmployeeInput) {
+	async linkEmployee(session: SessionData, data: LinkEmployeeInput) {
 		try {
-			const res = await this.client(jwt).patch(
+			const res = await this.client(session).patch(
 				HRP_API_CONSTANTS.ENDPOINTS.PROFILE.LINK_EMPLOYEE,
 				data,
 			);

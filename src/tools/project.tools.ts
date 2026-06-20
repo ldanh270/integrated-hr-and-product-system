@@ -36,7 +36,7 @@ export const registerProjectTools = () => {
 					...(sortBy && { sortBy }),
 					...(sortOrder && { sortOrder }),
 				};
-				const data = await projectService.listProjects(session.jwt, params);
+				const data = await projectService.listProjects(session, params);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch projects", error.message);
@@ -55,7 +55,7 @@ export const registerProjectTools = () => {
 		async ({ sessionId, projectId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await projectService.getProject(session.jwt, projectId);
+				const data = await projectService.getProject(session, projectId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch project", error.message);
@@ -114,7 +114,7 @@ export const registerProjectTools = () => {
 					...(expectedEndDate && { expectedEndDate }),
 					...(teamLeaderId && { teamLeaderId }),
 				};
-				const data = await projectService.createProject(session.jwt, payload);
+				const data = await projectService.createProject(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to create project", error.message);
@@ -178,7 +178,7 @@ export const registerProjectTools = () => {
 						.filter((s) => s.length > 0);
 				}
 
-				const data = await projectService.updateProject(session.jwt, projectId, payload);
+				const data = await projectService.updateProject(session, projectId, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to update project", error.message);
@@ -197,7 +197,7 @@ export const registerProjectTools = () => {
 		async ({ sessionId, projectId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await projectService.deleteProject(session.jwt, projectId);
+				const data = await projectService.deleteProject(session, projectId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to delete project", error.message);
@@ -216,7 +216,7 @@ export const registerProjectTools = () => {
 		async ({ sessionId, projectId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await projectService.getProjectMembers(session.jwt, projectId);
+				const data = await projectService.getProjectMembers(session, projectId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch project members", error.message);
@@ -236,7 +236,7 @@ export const registerProjectTools = () => {
 		async ({ sessionId, projectId, employeeId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await projectService.addProjectMember(session.jwt, projectId, employeeId);
+				const data = await projectService.addProjectMember(session, projectId, employeeId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to add project member", error.message);
@@ -256,7 +256,7 @@ export const registerProjectTools = () => {
 		async ({ sessionId, projectId, employeeId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await projectService.removeProjectMember(session.jwt, projectId, employeeId);
+				const data = await projectService.removeProjectMember(session, projectId, employeeId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to remove project member", error.message);
@@ -296,7 +296,7 @@ export const registerProjectTools = () => {
 			try {
 				const session = requireSession(sessionId);
 				const data = await projectService.listTasks(
-					session.jwt,
+					session,
 					Object.keys(params).length > 0 ? params : undefined,
 				);
 				return buildSuccess(data);
@@ -317,7 +317,7 @@ export const registerProjectTools = () => {
 		async ({ sessionId, taskId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await projectService.getTask(session.jwt, taskId);
+				const data = await projectService.getTask(session, taskId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch task", error.message);
@@ -350,7 +350,7 @@ export const registerProjectTools = () => {
 		async ({ sessionId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await projectService.createTask(session.jwt, payload);
+				const data = await projectService.createTask(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to create task", error.message);
@@ -385,7 +385,7 @@ export const registerProjectTools = () => {
 			try {
 				const session = requireSession(sessionId);
 				const data = await projectService.updateTask(
-					session.jwt,
+					session,
 					taskId,
 					Object.keys(payload).length > 0 ? payload : {},
 				);
@@ -407,7 +407,7 @@ export const registerProjectTools = () => {
 		async ({ sessionId, taskId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await projectService.deleteTask(session.jwt, taskId);
+				const data = await projectService.deleteTask(session, taskId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to delete task", error.message);
@@ -430,7 +430,7 @@ export const registerProjectTools = () => {
 		async ({ sessionId, projectId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await projectService.listCategories(session.jwt, projectId);
+				const data = await projectService.listCategories(session, projectId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch categories", error.message);
@@ -450,7 +450,7 @@ export const registerProjectTools = () => {
 		async ({ sessionId, projectId, name }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await projectService.createCategory(session.jwt, projectId, name);
+				const data = await projectService.createCategory(session, projectId, name);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to create category", error.message);
@@ -471,7 +471,7 @@ export const registerProjectTools = () => {
 		async ({ sessionId, projectId, categoryId, name }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await projectService.updateCategory(session.jwt, projectId, categoryId, name);
+				const data = await projectService.updateCategory(session, projectId, categoryId, name);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to update category", error.message);
@@ -491,7 +491,7 @@ export const registerProjectTools = () => {
 		async ({ sessionId, projectId, categoryId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await projectService.deleteCategory(session.jwt, projectId, categoryId);
+				const data = await projectService.deleteCategory(session, projectId, categoryId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to delete category", error.message);
@@ -519,7 +519,7 @@ export const registerProjectTools = () => {
 			try {
 				const session = requireSession(sessionId);
 				const data = await projectService.listSpentTimes(
-					session.jwt,
+					session,
 					Object.keys(params).length > 0 ? params : undefined,
 				);
 				return buildSuccess(data);
@@ -540,7 +540,7 @@ export const registerProjectTools = () => {
 		async ({ sessionId, spentTimeId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await projectService.getSpentTime(session.jwt, spentTimeId);
+				const data = await projectService.getSpentTime(session, spentTimeId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch spent time", error.message);
@@ -573,7 +573,7 @@ export const registerProjectTools = () => {
 		async ({ sessionId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await projectService.logSpentTime(session.jwt, payload);
+				const data = await projectService.logSpentTime(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to log spent time", error.message);
@@ -604,7 +604,7 @@ export const registerProjectTools = () => {
 			try {
 				const session = requireSession(sessionId);
 				const data = await projectService.updateSpentTime(
-					session.jwt,
+					session,
 					spentTimeId,
 					Object.keys(payload).length > 0 ? payload : {},
 				);
@@ -626,7 +626,7 @@ export const registerProjectTools = () => {
 		async ({ sessionId, spentTimeId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await projectService.deleteSpentTime(session.jwt, spentTimeId);
+				const data = await projectService.deleteSpentTime(session, spentTimeId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to delete spent time", error.message);

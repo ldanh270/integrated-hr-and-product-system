@@ -1,4 +1,5 @@
 import { createAuthedClient } from "../utils/hrp-client.js";
+import { SessionData } from "../types/session.types.js";
 import { HRP_API_CONSTANTS } from "../constants/hrp-api.constants.js";
 import type {
 	CreateSalaryComponentInput,
@@ -15,8 +16,8 @@ import type {
 } from "../schemas/payroll.schema.js";
 
 export class PayrollService {
-	private client(jwt: string) {
-		return createAuthedClient(jwt);
+	private client(session: SessionData) {
+		return createAuthedClient(session);
 	}
 
 	private handleError(error: any, fallback: string): never {
@@ -30,18 +31,18 @@ export class PayrollService {
 
 	// ─── Salary Components ────────────────────────────────────────────────────────
 
-	async listSalaryComponents(jwt: string) {
+	async listSalaryComponents(session: SessionData) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.SALARY_COMPONENTS);
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.SALARY_COMPONENTS);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch salary components");
 		}
 	}
 
-	async createSalaryComponent(jwt: string, data: CreateSalaryComponentInput) {
+	async createSalaryComponent(session: SessionData, data: CreateSalaryComponentInput) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.SALARY_COMPONENTS,
 				data,
 			);
@@ -51,9 +52,9 @@ export class PayrollService {
 		}
 	}
 
-	async updateSalaryComponent(jwt: string, id: string, data: UpdateSalaryComponentInput) {
+	async updateSalaryComponent(session: SessionData, id: string, data: UpdateSalaryComponentInput) {
 		try {
-			const res = await this.client(jwt).put(
+			const res = await this.client(session).put(
 				HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.SALARY_COMPONENT_BY_ID(id),
 				data,
 			);
@@ -63,9 +64,9 @@ export class PayrollService {
 		}
 	}
 
-	async deleteSalaryComponent(jwt: string, id: string) {
+	async deleteSalaryComponent(session: SessionData, id: string) {
 		try {
-			const res = await this.client(jwt).delete(
+			const res = await this.client(session).delete(
 				HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.SALARY_COMPONENT_BY_ID(id),
 			);
 			return res.data;
@@ -74,9 +75,9 @@ export class PayrollService {
 		}
 	}
 
-	async validateFormula(jwt: string, data: ValidateFormulaInput) {
+	async validateFormula(session: SessionData, data: ValidateFormulaInput) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.SALARY_COMPONENT_VALIDATE,
 				data,
 			);
@@ -88,18 +89,18 @@ export class PayrollService {
 
 	// ─── Salary Variables ─────────────────────────────────────────────────────────
 
-	async listSalaryVariables(jwt: string) {
+	async listSalaryVariables(session: SessionData) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.SALARY_VARIABLES);
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.SALARY_VARIABLES);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch salary variables");
 		}
 	}
 
-	async getSalaryVariable(jwt: string, id: string) {
+	async getSalaryVariable(session: SessionData, id: string) {
 		try {
-			const res = await this.client(jwt).get(
+			const res = await this.client(session).get(
 				HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.SALARY_VARIABLE_BY_ID(id),
 			);
 			return res.data;
@@ -108,9 +109,9 @@ export class PayrollService {
 		}
 	}
 
-	async createSalaryVariable(jwt: string, data: CreateSalaryVariableInput) {
+	async createSalaryVariable(session: SessionData, data: CreateSalaryVariableInput) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.SALARY_VARIABLES,
 				data,
 			);
@@ -120,9 +121,9 @@ export class PayrollService {
 		}
 	}
 
-	async updateSalaryVariable(jwt: string, id: string, data: UpdateSalaryVariableInput) {
+	async updateSalaryVariable(session: SessionData, id: string, data: UpdateSalaryVariableInput) {
 		try {
-			const res = await this.client(jwt).put(
+			const res = await this.client(session).put(
 				HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.SALARY_VARIABLE_BY_ID(id),
 				data,
 			);
@@ -132,9 +133,9 @@ export class PayrollService {
 		}
 	}
 
-	async deleteSalaryVariable(jwt: string, id: string) {
+	async deleteSalaryVariable(session: SessionData, id: string) {
 		try {
-			const res = await this.client(jwt).delete(
+			const res = await this.client(session).delete(
 				HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.SALARY_VARIABLE_BY_ID(id),
 			);
 			return res.data;
@@ -145,18 +146,18 @@ export class PayrollService {
 
 	// ─── Payslip Templates ────────────────────────────────────────────────────────
 
-	async listPayslipTemplates(jwt: string) {
+	async listPayslipTemplates(session: SessionData) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.PAYSLIP_TEMPLATES);
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.PAYSLIP_TEMPLATES);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch payslip templates");
 		}
 	}
 
-	async createPayslipTemplate(jwt: string, data: CreatePayslipTemplateInput) {
+	async createPayslipTemplate(session: SessionData, data: CreatePayslipTemplateInput) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.PAYSLIP_TEMPLATES,
 				data,
 			);
@@ -166,9 +167,9 @@ export class PayrollService {
 		}
 	}
 
-	async updatePayslipTemplate(jwt: string, id: string, data: UpdatePayslipTemplateInput) {
+	async updatePayslipTemplate(session: SessionData, id: string, data: UpdatePayslipTemplateInput) {
 		try {
-			const res = await this.client(jwt).put(
+			const res = await this.client(session).put(
 				HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.PAYSLIP_TEMPLATE_BY_ID(id),
 				data,
 			);
@@ -178,9 +179,9 @@ export class PayrollService {
 		}
 	}
 
-	async deletePayslipTemplate(jwt: string, id: string) {
+	async deletePayslipTemplate(session: SessionData, id: string) {
 		try {
-			const res = await this.client(jwt).delete(
+			const res = await this.client(session).delete(
 				HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.PAYSLIP_TEMPLATE_BY_ID(id),
 			);
 			return res.data;
@@ -191,9 +192,9 @@ export class PayrollService {
 
 	// ─── Employee Salary Config ───────────────────────────────────────────────────
 
-	async getEmployeeSalaryConfig(jwt: string, empId: string) {
+	async getEmployeeSalaryConfig(session: SessionData, empId: string) {
 		try {
-			const res = await this.client(jwt).get(
+			const res = await this.client(session).get(
 				HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.EMPLOYEE_SALARY_CONFIG(empId),
 			);
 			return res.data;
@@ -202,9 +203,9 @@ export class PayrollService {
 		}
 	}
 
-	async getEmployeeSalaryConfigHistory(jwt: string, empId: string) {
+	async getEmployeeSalaryConfigHistory(session: SessionData, empId: string) {
 		try {
-			const res = await this.client(jwt).get(
+			const res = await this.client(session).get(
 				HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.EMPLOYEE_SALARY_CONFIG_HISTORY(empId),
 			);
 			return res.data;
@@ -213,9 +214,9 @@ export class PayrollService {
 		}
 	}
 
-	async setEmployeeSalaryConfig(jwt: string, empId: string, data: SetSalaryConfigInput) {
+	async setEmployeeSalaryConfig(session: SessionData, empId: string, data: SetSalaryConfigInput) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.EMPLOYEE_SALARY_CONFIG(empId),
 				data,
 			);
@@ -227,18 +228,18 @@ export class PayrollService {
 
 	// ─── Payrolls & Payslips ──────────────────────────────────────────────────────
 
-	async getPayrollSettings(jwt: string) {
+	async getPayrollSettings(session: SessionData) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.PAYROLL_SETTINGS);
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.PAYROLL_SETTINGS);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch payroll settings");
 		}
 	}
 
-	async updatePayrollSettings(jwt: string, data: UpdatePayrollSettingsInput) {
+	async updatePayrollSettings(session: SessionData, data: UpdatePayrollSettingsInput) {
 		try {
-			const res = await this.client(jwt).put(
+			const res = await this.client(session).put(
 				HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.PAYROLL_SETTINGS,
 				data,
 			);
@@ -248,9 +249,9 @@ export class PayrollService {
 		}
 	}
 
-	async generatePayroll(jwt: string, data: GeneratePayrollInput) {
+	async generatePayroll(session: SessionData, data: GeneratePayrollInput) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.PAYROLL_GENERATE,
 				data,
 			);
@@ -260,27 +261,27 @@ export class PayrollService {
 		}
 	}
 
-	async listPayrolls(jwt: string) {
+	async listPayrolls(session: SessionData) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.PAYROLLS);
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.PAYROLLS);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch payrolls");
 		}
 	}
 
-	async getPayroll(jwt: string, id: string) {
+	async getPayroll(session: SessionData, id: string) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.PAYROLL_BY_ID(id));
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.PAYROLL_BY_ID(id));
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch payroll");
 		}
 	}
 
-	async approvePayroll(jwt: string, id: string) {
+	async approvePayroll(session: SessionData, id: string) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.PAYROLL_APPROVE(id),
 			);
 			return res.data;
@@ -289,9 +290,9 @@ export class PayrollService {
 		}
 	}
 
-	async rejectPayroll(jwt: string, id: string, data: RejectPayrollInput) {
+	async rejectPayroll(session: SessionData, id: string, data: RejectPayrollInput) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.PAYROLL_REJECT(id),
 				data,
 			);
@@ -301,9 +302,9 @@ export class PayrollService {
 		}
 	}
 
-	async getPayslip(jwt: string, payrollId: string, empId: string) {
+	async getPayslip(session: SessionData, payrollId: string, empId: string) {
 		try {
-			const res = await this.client(jwt).get(
+			const res = await this.client(session).get(
 				HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.PAYROLL_PAYSLIP(payrollId, empId),
 			);
 			return res.data;
@@ -312,9 +313,9 @@ export class PayrollService {
 		}
 	}
 
-	async getEmployeePayslips(jwt: string, empId: string) {
+	async getEmployeePayslips(session: SessionData, empId: string) {
 		try {
-			const res = await this.client(jwt).get(
+			const res = await this.client(session).get(
 				HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.EMPLOYEE_PAYSLIPS(empId),
 			);
 			return res.data;
@@ -323,9 +324,9 @@ export class PayrollService {
 		}
 	}
 
-	async getMyPayslips(jwt: string) {
+	async getMyPayslips(session: SessionData) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.MY_PAYSLIPS);
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.PAYROLL.MY_PAYSLIPS);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch my payslips");

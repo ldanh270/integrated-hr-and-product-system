@@ -1,4 +1,5 @@
 import { createAuthedClient } from "../utils/hrp-client.js";
+import { SessionData } from "../types/session.types.js";
 import { HRP_API_CONSTANTS } from "../constants/hrp-api.constants.js";
 import type {
 	AssignScheduleInput,
@@ -8,8 +9,8 @@ import type {
 } from "../schemas/shift.schema.js";
 
 export class ScheduleService {
-	private client(jwt: string) {
-		return createAuthedClient(jwt);
+	private client(session: SessionData) {
+		return createAuthedClient(session);
 	}
 
 	private handleError(error: any, fallback: string): never {
@@ -21,27 +22,27 @@ export class ScheduleService {
 		throw new Error(`Connection error: ${error.message}`);
 	}
 
-	async getMySchedule(jwt: string) {
+	async getMySchedule(session: SessionData) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SCHEDULES_MY);
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SCHEDULES_MY);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch my schedule");
 		}
 	}
 
-	async listMySchedules(jwt: string) {
+	async listMySchedules(session: SessionData) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SCHEDULES_MY_ALL);
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SCHEDULES_MY_ALL);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to list my schedules");
 		}
 	}
 
-	async getEmployeeSchedule(jwt: string, employeeId: string) {
+	async getEmployeeSchedule(session: SessionData, employeeId: string) {
 		try {
-			const res = await this.client(jwt).get(
+			const res = await this.client(session).get(
 				HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SCHEDULES_EMPLOYEE(employeeId),
 			);
 			return res.data;
@@ -50,9 +51,9 @@ export class ScheduleService {
 		}
 	}
 
-	async listEmployeeSchedules(jwt: string, employeeId: string) {
+	async listEmployeeSchedules(session: SessionData, employeeId: string) {
 		try {
-			const res = await this.client(jwt).get(
+			const res = await this.client(session).get(
 				HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SCHEDULES_EMPLOYEE_ALL(employeeId),
 			);
 			return res.data;
@@ -61,9 +62,9 @@ export class ScheduleService {
 		}
 	}
 
-	async assign(jwt: string, data: AssignScheduleInput) {
+	async assign(session: SessionData, data: AssignScheduleInput) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SCHEDULES_ASSIGN,
 				data,
 			);
@@ -73,9 +74,9 @@ export class ScheduleService {
 		}
 	}
 
-	async override(jwt: string, data: OverrideShiftInput) {
+	async override(session: SessionData, data: OverrideShiftInput) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SCHEDULES_OVERRIDE,
 				data,
 			);
@@ -85,9 +86,9 @@ export class ScheduleService {
 		}
 	}
 
-	async previewGenerate(jwt: string, data: GenerateScheduleInput) {
+	async previewGenerate(session: SessionData, data: GenerateScheduleInput) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SCHEDULES_GENERATE_PREVIEW,
 				data,
 			);
@@ -97,9 +98,9 @@ export class ScheduleService {
 		}
 	}
 
-	async generate(jwt: string, data: GenerateScheduleInput) {
+	async generate(session: SessionData, data: GenerateScheduleInput) {
 		try {
-			const res = await this.client(jwt).post(
+			const res = await this.client(session).post(
 				HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SCHEDULES_GENERATE,
 				data,
 			);
@@ -109,18 +110,18 @@ export class ScheduleService {
 		}
 	}
 
-	async getSettings(jwt: string) {
+	async getSettings(session: SessionData) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SCHEDULES_SETTINGS);
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SCHEDULES_SETTINGS);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch schedule settings");
 		}
 	}
 
-	async updateSettings(jwt: string, data: UpdateScheduleSettingsInput) {
+	async updateSettings(session: SessionData, data: UpdateScheduleSettingsInput) {
 		try {
-			const res = await this.client(jwt).put(
+			const res = await this.client(session).put(
 				HRP_API_CONSTANTS.ENDPOINTS.SHIFTS.SCHEDULES_SETTINGS,
 				data,
 			);

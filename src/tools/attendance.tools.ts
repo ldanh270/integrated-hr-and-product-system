@@ -21,7 +21,7 @@ export const registerAttendanceTools = () => {
 		async ({ sessionId, lat, lng }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await attendanceService.checkIn(session.jwt, { lat, lng });
+				const data = await attendanceService.checkIn(session, { lat, lng });
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Check-in failed", error.message);
@@ -41,7 +41,7 @@ export const registerAttendanceTools = () => {
 		async ({ sessionId, lat, lng }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await attendanceService.checkOut(session.jwt, { lat, lng });
+				const data = await attendanceService.checkOut(session, { lat, lng });
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Check-out failed", error.message);
@@ -61,7 +61,7 @@ export const registerAttendanceTools = () => {
 		async ({ sessionId, lat, lng }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await attendanceService.scan(session.jwt, { lat, lng });
+				const data = await attendanceService.scan(session, { lat, lng });
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Attendance scan failed", error.message);
@@ -103,7 +103,7 @@ export const registerAttendanceTools = () => {
 					...(employeeId && { employeeId }),
 					...(status && { status }),
 				};
-				const data = await attendanceService.getHistory(session.jwt, params);
+				const data = await attendanceService.getHistory(session, params);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch attendance history", error.message);

@@ -1,4 +1,5 @@
 import { createAuthedClient } from "../utils/hrp-client.js";
+import { SessionData } from "../types/session.types.js";
 import { HRP_API_CONSTANTS } from "../constants/hrp-api.constants.js";
 import type {
 	CreateEmployeeInput,
@@ -8,8 +9,8 @@ import type {
 } from "../schemas/employee.schema.js";
 
 export class EmployeeService {
-	private client(jwt: string) {
-		return createAuthedClient(jwt);
+	private client(session: SessionData) {
+		return createAuthedClient(session);
 	}
 
 	private handleError(error: any, fallback: string): never {
@@ -21,45 +22,45 @@ export class EmployeeService {
 		throw new Error(`Connection error: ${error.message}`);
 	}
 
-	async list(jwt: string, params?: ListEmployeesInput) {
+	async list(session: SessionData, params?: ListEmployeesInput) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.EMPLOYEE.BASE, { params });
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.EMPLOYEE.BASE, { params });
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to list employees");
 		}
 	}
 
-	async listApprovers(jwt: string) {
+	async listApprovers(session: SessionData) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.EMPLOYEE.APPROVERS);
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.EMPLOYEE.APPROVERS);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to list approvers");
 		}
 	}
 
-	async getOne(jwt: string, id: string) {
+	async getOne(session: SessionData, id: string) {
 		try {
-			const res = await this.client(jwt).get(HRP_API_CONSTANTS.ENDPOINTS.EMPLOYEE.BY_ID(id));
+			const res = await this.client(session).get(HRP_API_CONSTANTS.ENDPOINTS.EMPLOYEE.BY_ID(id));
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to fetch employee");
 		}
 	}
 
-	async create(jwt: string, data: CreateEmployeeInput) {
+	async create(session: SessionData, data: CreateEmployeeInput) {
 		try {
-			const res = await this.client(jwt).post(HRP_API_CONSTANTS.ENDPOINTS.EMPLOYEE.BASE, data);
+			const res = await this.client(session).post(HRP_API_CONSTANTS.ENDPOINTS.EMPLOYEE.BASE, data);
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to create employee");
 		}
 	}
 
-	async update(jwt: string, id: string, data: UpdateEmployeeInput) {
+	async update(session: SessionData, id: string, data: UpdateEmployeeInput) {
 		try {
-			const res = await this.client(jwt).patch(
+			const res = await this.client(session).patch(
 				HRP_API_CONSTANTS.ENDPOINTS.EMPLOYEE.BY_ID(id),
 				data,
 			);
@@ -69,9 +70,9 @@ export class EmployeeService {
 		}
 	}
 
-	async updateStatus(jwt: string, id: string, data: UpdateEmployeeStatusInput) {
+	async updateStatus(session: SessionData, id: string, data: UpdateEmployeeStatusInput) {
 		try {
-			const res = await this.client(jwt).patch(
+			const res = await this.client(session).patch(
 				HRP_API_CONSTANTS.ENDPOINTS.EMPLOYEE.STATUS(id),
 				data,
 			);
@@ -81,9 +82,9 @@ export class EmployeeService {
 		}
 	}
 
-	async delete(jwt: string, id: string) {
+	async delete(session: SessionData, id: string) {
 		try {
-			const res = await this.client(jwt).delete(HRP_API_CONSTANTS.ENDPOINTS.EMPLOYEE.BY_ID(id));
+			const res = await this.client(session).delete(HRP_API_CONSTANTS.ENDPOINTS.EMPLOYEE.BY_ID(id));
 			return res.data;
 		} catch (e: any) {
 			this.handleError(e, "Failed to delete employee");

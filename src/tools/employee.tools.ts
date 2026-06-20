@@ -20,7 +20,7 @@ export const registerEmployeeTools = () => {
 			try {
 				const session = requireSession(sessionId);
 				const data = await employeeService.list(
-					session.jwt,
+					session,
 					Object.keys(params).length > 0 ? params : undefined,
 				);
 				return buildSuccess(data);
@@ -39,7 +39,7 @@ export const registerEmployeeTools = () => {
 		async ({ sessionId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await employeeService.listApprovers(session.jwt);
+				const data = await employeeService.listApprovers(session);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to list approvers", error.message);
@@ -57,7 +57,7 @@ export const registerEmployeeTools = () => {
 		async ({ sessionId, employeeId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await employeeService.getOne(session.jwt, employeeId);
+				const data = await employeeService.getOne(session, employeeId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to fetch employee", error.message);
@@ -79,7 +79,7 @@ export const registerEmployeeTools = () => {
 		async ({ sessionId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await employeeService.create(session.jwt, payload);
+				const data = await employeeService.create(session, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to create employee", error.message);
@@ -100,7 +100,7 @@ export const registerEmployeeTools = () => {
 		async ({ sessionId, employeeId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await employeeService.update(session.jwt, employeeId, payload);
+				const data = await employeeService.update(session, employeeId, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to update employee", error.message);
@@ -120,7 +120,7 @@ export const registerEmployeeTools = () => {
 		async ({ sessionId, employeeId, ...payload }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await employeeService.updateStatus(session.jwt, employeeId, payload);
+				const data = await employeeService.updateStatus(session, employeeId, payload);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to update employee status", error.message);
@@ -138,7 +138,7 @@ export const registerEmployeeTools = () => {
 		async ({ sessionId, employeeId }) => {
 			try {
 				const session = requireSession(sessionId);
-				const data = await employeeService.delete(session.jwt, employeeId);
+				const data = await employeeService.delete(session, employeeId);
 				return buildSuccess(data);
 			} catch (error: any) {
 				return buildError("Failed to delete employee", error.message);
