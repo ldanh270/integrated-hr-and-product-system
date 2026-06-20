@@ -27,7 +27,7 @@ import { TaskReviewModal } from "./task-review-modal"
 import type { Project } from "@/types/project.types"
 import type { Task, TaskSpentTime } from "@/types/task.types"
 import { useProjectGantt } from "../hooks/use-project-gantt"
-import { FILTER_DEFINITIONS } from "../constants/gantt.constants"
+import { FILTER_DEFINITIONS, GANTT_FILTER_KEY } from "../constants/gantt.constants"
 import { TASK_STATUS, TASK_PRIORITY, TASK_TRACKER } from "@/config/entities/project.config"
 
 const filterDefinitions = FILTER_DEFINITIONS
@@ -111,7 +111,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
     const def = Reflect.get(FILTER_DEFINITIONS, key) as { label: string; type: string; group: string } | undefined
     if (def === undefined) return null
 
-    if (key === "status") {
+    if (key === GANTT_FILTER_KEY.STATUS) {
       if (operator !== "là" && operator !== "không là") return null
       return (
         <select
@@ -129,7 +129,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
       )
     }
 
-    if (key === "tracker") {
+    if (key === GANTT_FILTER_KEY.TRACKER) {
       if (operator !== "is" && operator !== "is_not") return null
       return (
         <select
@@ -149,7 +149,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
       )
     }
 
-    if (key === "priority") {
+    if (key === GANTT_FILTER_KEY.PRIORITY) {
       if (operator !== "is" && operator !== "is_not") return null
       return (
         <select
@@ -358,8 +358,8 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                             if (def !== undefined) {
                               if (def.type === "employee" && (op === "là" || op === "không là") && !val) {
                                 val = assignees[0]?.id || ""
-                              } else if (key === "status" && (op === "là" || op === "không là") && !val) {
-                                val = "todo"
+                              } else if (key === GANTT_FILTER_KEY.STATUS && (op === "là" || op === "không là") && !val) {
+                                val = TASK_STATUS.TODO
                               } else if (def.type === "progress" && !val) {
                                 val = "50"
                               } else if (def.type === "number" && !val) {
@@ -382,7 +382,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                           {(() => {
                             if (def === undefined) return <option value="is">là</option>
 
-                            if (key === "status") {
+                            if (key === GANTT_FILTER_KEY.STATUS) {
                               return (
                                 <>
                                   <option value="open">mở</option>
@@ -393,7 +393,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                                 </>
                               )
                             }
-                            if (key === "tracker" || key === "priority") {
+                            if (key === GANTT_FILTER_KEY.TRACKER || key === GANTT_FILTER_KEY.PRIORITY) {
                               return (
                                 <>
                                   <option value="is">là</option>

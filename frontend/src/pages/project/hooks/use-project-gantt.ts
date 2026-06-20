@@ -12,7 +12,7 @@ import { useAuthStore } from "@/store/auth-store"
 import { extractErrorMessage } from "@/utils/error-helper"
 import type { Project, GanttLeaveDay } from "@/types/project.types"
 import type { Task, UpdateTaskDto } from "@/types/task.types"
-import { FILTER_DEFINITIONS } from "../constants/gantt.constants"
+import { FILTER_DEFINITIONS, GANTT_FILTER_KEY } from "../constants/gantt.constants"
 
 interface UseProjectGanttProps {
   projectId: string
@@ -50,28 +50,28 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
 
   // Redmine Filters State
   const [isFiltersExpanded, setIsFiltersExpanded] = useState(true)
-  const [activeFilterKeys, setActiveFilterKeys] = useState<string[]>(["status"])
+  const [activeFilterKeys, setActiveFilterKeys] = useState<string[]>([GANTT_FILTER_KEY.STATUS])
   const [filterStates, setFilterStates] = useState<Record<string, {
     enabled: boolean
     operator: string
     value: string
   } | undefined>>({
-    status: { enabled: true, operator: "open", value: "" },
-    tracker: { enabled: true, operator: "is", value: TASK_TRACKER.TASK },
-    priority: { enabled: true, operator: "is", value: TASK_PRIORITY.MEDIUM },
-    assignee: { enabled: true, operator: "is", value: "" },
+    [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: "open", value: "" },
+    [GANTT_FILTER_KEY.TRACKER]: { enabled: true, operator: "is", value: TASK_TRACKER.TASK },
+    [GANTT_FILTER_KEY.PRIORITY]: { enabled: true, operator: "is", value: TASK_PRIORITY.MEDIUM },
+    [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: true, operator: "is", value: "" },
   })
 
-  const [appliedFilterKeys, setAppliedFilterKeys] = useState<string[]>(["status"])
+  const [appliedFilterKeys, setAppliedFilterKeys] = useState<string[]>([GANTT_FILTER_KEY.STATUS])
   const [appliedFilterStates, setAppliedFilterStates] = useState<Record<string, {
     enabled: boolean
     operator: string
     value: string
   } | undefined>>({
-    status: { enabled: true, operator: "open", value: "" },
-    tracker: { enabled: true, operator: "is", value: TASK_TRACKER.TASK },
-    priority: { enabled: true, operator: "is", value: TASK_PRIORITY.MEDIUM },
-    assignee: { enabled: true, operator: "is", value: "" },
+    [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: "open", value: "" },
+    [GANTT_FILTER_KEY.TRACKER]: { enabled: true, operator: "is", value: TASK_TRACKER.TASK },
+    [GANTT_FILTER_KEY.PRIORITY]: { enabled: true, operator: "is", value: TASK_PRIORITY.MEDIUM },
+    [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: true, operator: "is", value: "" },
   })
 
   // Sidebar collapsible state
@@ -189,8 +189,8 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   const getDefaultOperator = (key: string) => {
     const def = Reflect.get(FILTER_DEFINITIONS, key) as { label: string; type: string; group: string } | undefined
     if (def === undefined) return "is"
-    if (key === "status") return "open"
-    if (key === "tracker" || key === "priority") return "is"
+    if (key === GANTT_FILTER_KEY.STATUS) return "open"
+    if (key === GANTT_FILTER_KEY.TRACKER || key === GANTT_FILTER_KEY.PRIORITY) return "is"
     if (def.type === "employee") return "là"
     if (def.type === "text") return "chứa"
     if (def.type === "progress" || def.type === "number") return "="
@@ -202,8 +202,8 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   const getDefaultValue = (key: string) => {
     const def = Reflect.get(FILTER_DEFINITIONS, key) as { label: string; type: string; group: string } | undefined
     if (def === undefined) return ""
-    if (key === "tracker") return TASK_TRACKER.TASK
-    if (key === "priority") return TASK_PRIORITY.MEDIUM
+    if (key === GANTT_FILTER_KEY.TRACKER) return TASK_TRACKER.TASK
+    if (key === GANTT_FILTER_KEY.PRIORITY) return TASK_PRIORITY.MEDIUM
     if (def.type === "employee") return assignees[0]?.id || ""
     if (def.type === "progress") return "50"
     if (def.type === "number") return "0"
@@ -267,7 +267,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
         const filter = Reflect.get(appliedFilterStates, key) as { enabled: boolean; operator: string; value: string } | undefined
         if (!filter?.enabled) continue
 
-        if (key === "status") {
+        if (key === GANTT_FILTER_KEY.STATUS) {
           const statusVal = task.status
           if (filter.operator === "open") {
             const isOpen = ([TASK_STATUS.TODO, TASK_STATUS.IN_PROGRESS, TASK_STATUS.IN_REVIEW, TASK_STATUS.REOPENED] as string[]).includes(statusVal)
@@ -284,19 +284,19 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
           }
         }
 
-        else if (key === "tracker") {
+        else if (key === GANTT_FILTER_KEY.TRACKER) {
           const val = task.tracker
           if (filter.operator === "is" && val !== filter.value) return false
           if (filter.operator === "is_not" && val === filter.value) return false
         }
 
-        else if (key === "priority") {
+        else if (key === GANTT_FILTER_KEY.PRIORITY) {
           const val = task.priority
           if (filter.operator === "is" && val !== filter.value) return false
           if (filter.operator === "is_not" && val === filter.value) return false
         }
 
-        else if (key === "assignee") {
+        else if (key === GANTT_FILTER_KEY.ASSIGNEE) {
           const assigneeVal = task.assigneeId
           if (filter.operator === "là" && assigneeVal !== filter.value) return false
           if (filter.operator === "không là" && assigneeVal === filter.value) return false
@@ -320,7 +320,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
         }
 
         // Subject / Description text search
-        else if (key === "subject" || key === "txt_subject") {
+        else if (key === GANTT_FILTER_KEY.SUBJECT || key === GANTT_FILTER_KEY.TXT_SUBJECT) {
           const val = task.title.toLowerCase()
           const search = filter.value.toLowerCase()
           if (filter.operator === "chứa" && !val.includes(search)) return false
@@ -330,7 +330,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
           if (filter.operator === "none" && val.trim() !== "") return false
           if (filter.operator === "any" && val.trim() === "") return false
         }
-        else if (key === "txt_desc") {
+        else if (key === GANTT_FILTER_KEY.TXT_DESC) {
           const val = (task.description || "").toLowerCase()
           const search = filter.value.toLowerCase()
           if (filter.operator === "chứa" && !val.includes(search)) return false
@@ -340,7 +340,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
         }
 
         // Progress
-        else if (key === "progress") {
+        else if (key === GANTT_FILTER_KEY.PROGRESS) {
           const val = task.progress
           const comp = parseInt(filter.value) || 0
           if (filter.operator === "=" && val !== comp) return false
@@ -349,7 +349,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
         }
 
         // Estimated Time
-        else if (key === "time_est") {
+        else if (key === GANTT_FILTER_KEY.TIME_EST) {
           const val = task.estimatedTime || 0
           const comp = parseFloat(filter.value) || 0
           if (filter.operator === "=" && val !== comp) return false
@@ -360,8 +360,8 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
         }
 
         // Date logic (Start Date & Due Date)
-        else if (key === "date_start" || key === "date_due") {
-          const taskDateStr = key === "date_start" ? task.startDate : task.dueDate
+        else if (key === GANTT_FILTER_KEY.DATE_START || key === GANTT_FILTER_KEY.DATE_DUE) {
+          const taskDateStr = key === GANTT_FILTER_KEY.DATE_START ? task.startDate : task.dueDate
           if (!taskDateStr) {
             if (filter.operator === "any") continue // matches any
             return false
