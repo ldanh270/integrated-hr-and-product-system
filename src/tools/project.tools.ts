@@ -3,6 +3,15 @@ import { z } from "zod";
 import { projectService } from "../services/project.service.js";
 import { buildSuccess, buildError } from "../utils/tool-response.js";
 import { requireSession } from "../utils/session-guard.js";
+import {
+	PROJECT_STATUSES,
+	TASK_CREATION_POLICIES,
+	TASK_TRACKERS,
+	TASK_STATUSES,
+	TASK_PRIORITIES,
+	SPENT_TIME_ACTIVITIES,
+	SPENT_TIME_WORK_TIME_TYPES,
+} from "../constants/entities/project.config.js";
 
 export const registerProjectTools = () => {
 	// ═══════════════════════════════════════════════════════════════════════════
@@ -19,7 +28,7 @@ export const registerProjectTools = () => {
 			limit: z.number().int().positive().optional().describe("Items per page"),
 			search: z.string().optional().describe("Keyword string matching title/description/techStack"),
 			status: z
-				.enum(["planning", "active", "on_hold", "completed", "cancelled"])
+				.enum(PROJECT_STATUSES)
 				.optional()
 				.describe("Filter by project status"),
 			sortBy: z.string().optional().describe("Sorting field key (e.g. createdAt)"),
@@ -75,11 +84,11 @@ export const registerProjectTools = () => {
 				.describe('Comma-separated list of technologies (e.g. "React, Node.js")'),
 			description: z.string().max(500).optional().describe("Project description"),
 			status: z
-				.enum(["planning", "active", "on_hold", "completed", "cancelled"])
+				.enum(PROJECT_STATUSES)
 				.optional()
 				.describe("Project status"),
 			taskCreationPolicy: z
-				.enum(["leader_only", "all_members"])
+				.enum(TASK_CREATION_POLICIES)
 				.optional()
 				.describe("Task creation policy"),
 			startDate: z.string().datetime().optional().describe("Start date (ISO 8601)"),
@@ -133,11 +142,11 @@ export const registerProjectTools = () => {
 			techStack: z.string().optional().describe("Comma-separated list of technologies"),
 			description: z.string().max(500).optional().describe("Project description"),
 			status: z
-				.enum(["planning", "active", "on_hold", "completed", "cancelled"])
+				.enum(PROJECT_STATUSES)
 				.optional()
 				.describe("Project status"),
 			taskCreationPolicy: z
-				.enum(["leader_only", "all_members"])
+				.enum(TASK_CREATION_POLICIES)
 				.optional()
 				.describe("Task creation policy"),
 			startDate: z.string().datetime().optional().describe("Start date (ISO 8601)"),
@@ -278,13 +287,13 @@ export const registerProjectTools = () => {
 			page: z.number().int().positive().optional().describe("Page index"),
 			limit: z.number().int().positive().optional().describe("Items per page"),
 			search: z.string().optional().describe("Keyword string matching task title"),
-			tracker: z.enum(["bug", "feature", "support"]).optional().describe("Filter by task tracker"),
+			tracker: z.enum(TASK_TRACKERS).optional().describe("Filter by task tracker"),
 			status: z
-				.enum(["todo", "in_progress", "in_review", "done", "cancelled", "reopened"])
+				.enum(TASK_STATUSES)
 				.optional()
 				.describe("Filter by task status"),
 			priority: z
-				.enum(["low", "medium", "high", "urgent"])
+				.enum(TASK_PRIORITIES)
 				.optional()
 				.describe("Filter by task priority"),
 			assigneeId: z.string().optional().describe("Filter tasks by assignee ID"),
@@ -334,10 +343,10 @@ export const registerProjectTools = () => {
 			projectId: z.string().describe("ID of the project"),
 			title: z.string().min(2).max(150).describe("Task title"),
 			description: z.string().max(1000).optional().describe("Task description"),
-			tracker: z.enum(["bug", "feature", "support"]).optional().describe("Task tracker type"),
-			priority: z.enum(["low", "medium", "high", "urgent"]).optional().describe("Task priority"),
+			tracker: z.enum(TASK_TRACKERS).optional().describe("Task tracker type"),
+			priority: z.enum(TASK_PRIORITIES).optional().describe("Task priority"),
 			status: z
-				.enum(["todo", "in_progress", "in_review", "done", "cancelled", "reopened"])
+				.enum(TASK_STATUSES)
 				.optional()
 				.describe("Task status"),
 			assigneeId: z.string().optional().describe("ID of the assigned employee"),
@@ -367,10 +376,10 @@ export const registerProjectTools = () => {
 			taskId: z.string().describe("ID of the task to update"),
 			title: z.string().min(2).max(150).optional().describe("Task title"),
 			description: z.string().max(1000).optional().describe("Task description"),
-			tracker: z.enum(["bug", "feature", "support"]).optional().describe("Task tracker type"),
-			priority: z.enum(["low", "medium", "high", "urgent"]).optional().describe("Task priority"),
+			tracker: z.enum(TASK_TRACKERS).optional().describe("Task tracker type"),
+			priority: z.enum(TASK_PRIORITIES).optional().describe("Task priority"),
 			status: z
-				.enum(["todo", "in_progress", "in_review", "done", "cancelled", "reopened"])
+				.enum(TASK_STATUSES)
 				.optional()
 				.describe("Task status"),
 			assigneeId: z.string().optional().describe("ID of the assigned employee"),
@@ -558,7 +567,7 @@ export const registerProjectTools = () => {
 			date: z.string().datetime().describe("Date of the work (ISO 8601)"),
 			hours: z.number().min(0.01).max(24).describe("Hours spent (e.g. 4.5)"),
 			activity: z
-				.enum(["design", "development", "testing", "documentation", "management", "other"])
+				.enum(SPENT_TIME_ACTIVITIES)
 				.describe("Activity type"),
 			employeeId: z
 				.string()
@@ -566,7 +575,7 @@ export const registerProjectTools = () => {
 				.describe("ID of the employee (defaults to authenticated user)"),
 			comment: z.string().max(255).optional().describe("Comment describing the work"),
 			workTimeType: z
-				.enum(["working_day", "overtime", "weekend", "holiday"])
+				.enum(SPENT_TIME_WORK_TIME_TYPES)
 				.optional()
 				.describe("Type of work time"),
 		},
@@ -591,12 +600,12 @@ export const registerProjectTools = () => {
 			date: z.string().datetime().optional().describe("Date of the work (ISO 8601)"),
 			hours: z.number().min(0.01).max(24).optional().describe("Hours spent (e.g. 4.5)"),
 			activity: z
-				.enum(["design", "development", "testing", "documentation", "management", "other"])
+				.enum(SPENT_TIME_ACTIVITIES)
 				.optional()
 				.describe("Activity type"),
 			comment: z.string().max(255).optional().describe("Comment describing the work"),
 			workTimeType: z
-				.enum(["working_day", "overtime", "weekend", "holiday"])
+				.enum(SPENT_TIME_WORK_TIME_TYPES)
 				.optional()
 				.describe("Type of work time"),
 		},

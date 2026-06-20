@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ATTENDANCE_STATUSES } from "../constants/entities/attendance.config.js";
 
 // ─── Attendance ───────────────────────────────────────────────────────────────
 
@@ -6,15 +7,9 @@ import { z } from "zod";
 export const LocationSchema = z.object({
 	lat: z.number().min(-90).max(90).describe("Latitude (-90 to 90)"),
 	lng: z.number().min(-180).max(180).describe("Longitude (-180 to 180)"),
-});
+}).strict();
 
-export const AttendanceStatusEnum = z.enum([
-	"on_time",
-	"late",
-	"early_leave",
-	"absent",
-	"overtime",
-]);
+export const AttendanceStatusEnum = z.enum(ATTENDANCE_STATUSES);
 
 /** Params for GET /api/attendance */
 export const GetAttendanceSchema = z.object({
@@ -22,7 +17,7 @@ export const GetAttendanceSchema = z.object({
 	endDate: z.string().datetime({ message: "endDate must be an ISO 8601 datetime" }).optional(),
 	employeeId: z.string().optional(),
 	status: AttendanceStatusEnum.optional(),
-});
+}).strict();
 
 // ─── Shifts ───────────────────────────────────────────────────────────────────
 
@@ -38,13 +33,13 @@ export const CreateShiftSchema = z.object({
 	name: z.string().min(1).describe("Name of the shift"),
 	startTime: minutesFromMidnight.describe("Shift start time in minutes from midnight"),
 	endTime: minutesFromMidnight.describe("Shift end time in minutes from midnight"),
-});
+}).strict();
 
 export const UpdateShiftSchema = z.object({
 	name: z.string().min(1).optional(),
 	startTime: minutesFromMidnight.optional(),
 	endTime: minutesFromMidnight.optional(),
-});
+}).strict();
 
 // ─── Schedules ────────────────────────────────────────────────────────────────
 
@@ -55,13 +50,13 @@ export const AssignScheduleSchema = z.object({
 		.string()
 		.datetime()
 		.describe("Date from which this schedule takes effect (ISO 8601)"),
-});
+}).strict();
 
 export const OverrideScheduleSchema = z.object({
 	employeeId: z.string().describe("ID of the employee"),
 	workingShiftId: z.string().describe("ID of the working shift for this specific date"),
 	date: z.string().datetime().describe("The specific date to override (ISO 8601)"),
-});
+}).strict();
 
 // ─── Shift Change Requests ────────────────────────────────────────────────────
 
@@ -73,11 +68,11 @@ export const SubmitShiftChangeSchema = z.object({
 		.string()
 		.optional()
 		.describe("ID of that employee's specific shift (optional)"),
-});
+}).strict();
 
 export const RejectShiftChangeSchema = z.object({
 	rejectReason: z.string().min(5).max(500).describe("Reason for rejection (5–500 characters)"),
-});
+}).strict();
 
 // ─── Inferred types ───────────────────────────────────────────────────────────
 

@@ -1,8 +1,17 @@
 import { z } from "zod";
+import {
+	PROJECT_STATUSES,
+	TASK_CREATION_POLICIES,
+	TASK_TRACKERS,
+	TASK_STATUSES,
+	TASK_PRIORITIES,
+	SPENT_TIME_ACTIVITIES,
+	SPENT_TIME_WORK_TIME_TYPES,
+} from "../constants/entities/project.config.js";
 
 // ─── Projects ────────────────────────────────────────────────────────────────
-const ProjectStatusEnum = z.enum(["planning", "active", "on_hold", "completed", "cancelled"]);
-const TaskCreationPolicyEnum = z.enum(["leader_only", "all_members"]);
+const ProjectStatusEnum = z.enum(PROJECT_STATUSES);
+const TaskCreationPolicyEnum = z.enum(TASK_CREATION_POLICIES);
 
 export const CreateProjectSchema = z.object({
 	name: z.string().min(2).max(100),
@@ -13,7 +22,7 @@ export const CreateProjectSchema = z.object({
 	startDate: z.string().datetime().optional(),
 	expectedEndDate: z.string().datetime().optional(),
 	teamLeaderId: z.string().optional(),
-});
+}).strict();
 
 export const UpdateProjectSchema = z.object({
 	name: z.string().min(2).max(100).optional(),
@@ -25,7 +34,7 @@ export const UpdateProjectSchema = z.object({
 	expectedEndDate: z.string().datetime().optional(),
 	actualEndDate: z.string().datetime().nullable().optional(),
 	teamLeaderId: z.string().nullable().optional(),
-});
+}).strict();
 
 export const ListProjectsSchema = z.object({
 	page: z.number().int().positive().optional(),
@@ -34,19 +43,12 @@ export const ListProjectsSchema = z.object({
 	status: ProjectStatusEnum.optional(),
 	sortBy: z.string().optional(),
 	sortOrder: z.enum(["asc", "desc"]).optional(),
-});
+}).strict();
 
 // ─── Tasks ────────────────────────────────────────────────────────────────────
-const TaskTrackerEnum = z.enum(["bug", "feature", "support"]);
-const TaskStatusEnum = z.enum([
-	"todo",
-	"in_progress",
-	"in_review",
-	"done",
-	"cancelled",
-	"reopened",
-]);
-const TaskPriorityEnum = z.enum(["low", "medium", "high", "urgent"]);
+const TaskTrackerEnum = z.enum(TASK_TRACKERS);
+const TaskStatusEnum = z.enum(TASK_STATUSES);
+const TaskPriorityEnum = z.enum(TASK_PRIORITIES);
 
 export const CreateTaskSchema = z.object({
 	projectId: z.string(),
@@ -61,7 +63,7 @@ export const CreateTaskSchema = z.object({
 	estimatedTime: z.number().nonnegative().optional(),
 	progress: z.number().int().min(0).max(100).optional(),
 	categoryId: z.string().optional(),
-});
+}).strict();
 
 export const UpdateTaskSchema = z.object({
 	title: z.string().min(2).max(150).optional(),
@@ -76,7 +78,7 @@ export const UpdateTaskSchema = z.object({
 	estimatedTime: z.number().nonnegative().optional(),
 	progress: z.number().int().min(0).max(100).optional(),
 	categoryId: z.string().nullable().optional(),
-});
+}).strict();
 
 export const ListTasksSchema = z.object({
 	projectId: z.string().optional(),
@@ -90,18 +92,11 @@ export const ListTasksSchema = z.object({
 	createdById: z.string().optional(),
 	sortBy: z.string().optional(),
 	sortOrder: z.enum(["asc", "desc"]).optional(),
-});
+}).strict();
 
 // ─── Spent Times ──────────────────────────────────────────────────────────────
-const ActivityEnum = z.enum([
-	"design",
-	"development",
-	"testing",
-	"documentation",
-	"management",
-	"other",
-]);
-const WorkTimeTypeEnum = z.enum(["working_day", "overtime", "weekend", "holiday"]);
+const ActivityEnum = z.enum(SPENT_TIME_ACTIVITIES);
+const WorkTimeTypeEnum = z.enum(SPENT_TIME_WORK_TIME_TYPES);
 
 export const LogSpentTimeSchema = z.object({
 	taskId: z.string(),
@@ -111,7 +106,7 @@ export const LogSpentTimeSchema = z.object({
 	employeeId: z.string().optional(),
 	comment: z.string().max(255).optional(),
 	workTimeType: WorkTimeTypeEnum.optional(),
-});
+}).strict();
 
 export const UpdateSpentTimeSchema = z.object({
 	date: z.string().datetime().optional(),
@@ -119,7 +114,7 @@ export const UpdateSpentTimeSchema = z.object({
 	comment: z.string().max(255).nullable().optional(),
 	activity: ActivityEnum.optional(),
 	workTimeType: WorkTimeTypeEnum.optional(),
-});
+}).strict();
 
 export const ListSpentTimesSchema = z.object({
 	taskId: z.string().optional(),
@@ -127,7 +122,7 @@ export const ListSpentTimesSchema = z.object({
 	projectId: z.string().optional(),
 	startDate: z.string().datetime().optional(),
 	endDate: z.string().datetime().optional(),
-});
+}).strict();
 
 // ─── Inferred types ───────────────────────────────────────────────────────────
 export type CreateProjectInput = z.infer<typeof CreateProjectSchema>;

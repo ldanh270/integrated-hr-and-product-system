@@ -3,6 +3,7 @@ import { z } from "zod";
 import { payrollService } from "../services/payroll.service.js";
 import { buildSuccess, buildError } from "../utils/tool-response.js";
 import { requireSession } from "../utils/session-guard.js";
+import { SALARY_COMPONENT_TYPES } from "../constants/entities/payroll.config.js";
 
 export const registerPayrollTools = () => {
 	// ═══════════════════════════════════════════════════════════════════════════
@@ -32,7 +33,7 @@ export const registerPayrollTools = () => {
 		{
 			sessionId: z.string().describe("Active session ID"),
 			name: z.string().min(1).describe('Name of the component (e.g. "Lunch Allowance")'),
-			type: z.enum(["addition", "deduction"]).describe("Component type"),
+			type: z.enum(SALARY_COMPONENT_TYPES).describe("Component type"),
 			valueType: z.enum(["currency", "number", "percentage"]).describe("Value type format"),
 			formula: z.string().min(1).describe("Calculation formula"),
 			description: z.string().optional().describe("Description of the component"),
@@ -55,7 +56,7 @@ export const registerPayrollTools = () => {
 			sessionId: z.string().describe("Active session ID"),
 			componentId: z.string().describe("ID of the salary component to update"),
 			name: z.string().min(1).optional().describe("Name of the component"),
-			type: z.enum(["addition", "deduction"]).optional().describe("Component type"),
+			type: z.enum(SALARY_COMPONENT_TYPES).optional().describe("Component type"),
 			valueType: z
 				.enum(["currency", "number", "percentage"])
 				.optional()

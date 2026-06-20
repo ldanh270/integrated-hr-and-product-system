@@ -1,35 +1,32 @@
 import { z } from "zod";
+import {
+	APPLICATION_TYPE_VALUES,
+	APPLICATION_STATUSES,
+	LEAVE_TYPE_VALUES,
+	REGIME_TYPES,
+} from "../constants/entities/attendance.config.js";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
-const ApplicationTypeEnum = z.enum([
-	"leave",
-	"overtime",
-	"work_from_home",
-	"shift_swap",
-	"business_trip",
-	"late_early",
-	"regime",
-]);
-
-const ApplicationStatusEnum = z.enum(["pending", "approved", "rejected", "cancelled"]);
+const ApplicationTypeEnum = z.enum(APPLICATION_TYPE_VALUES);
+const ApplicationStatusEnum = z.enum(APPLICATION_STATUSES);
 
 // ─── Detail schemas per type ──────────────────────────────────────────────────
 
 // leave
 export const LeaveDetailSchema = z.object({
-	leaveType: z.string(), // enum from backend
-	regimeType: z.string(), // enum from backend
-});
+	leaveType: z.enum(LEAVE_TYPE_VALUES),
+	regimeType: z.enum(REGIME_TYPES),
+}).strict();
 
 // overtime
 export const OvertimeDetailSchema = z.object({
 	employeeShiftId: z.string(),
-});
+}).strict();
 
 // work_from_home
 export const WFHDetailSchema = z.object({
 	location: z.string().max(255).optional(),
-});
+}).strict();
 
 // shift_swap
 export const ShiftSwapDetailSchema = z.object({
@@ -37,30 +34,17 @@ export const ShiftSwapDetailSchema = z.object({
 	workingShiftId: z.string().optional(),
 	swapWithEmployeeId: z.string().optional(),
 	swapWithShiftId: z.string().optional(),
-});
-
-// business_trip
-export const BusinessTripDetailSchema = z.object({
-	location: z.string().min(2).max(255),
-	purpose: z.string().max(500).optional(),
-	budget: z.number().optional(),
-});
+}).strict();
 
 // late_early
 export const LateEarlyDetailSchema = z.object({
 	employeeShiftId: z.string(),
 	durationMinutes: z.number().int().min(1).max(480),
 	isLate: z.boolean(),
-});
+}).strict();
 
-// regime
-export const RegimeDetailSchema = z.object({
-	regimeType: z.string(),
-	reducedMinutesPerDay: z.number().int().min(0).max(480),
-	applyToStart: z.boolean().optional(),
-	applyToEnd: z.boolean().optional(),
-	documentUrl: z.string().url().optional(),
-});
+// resignation
+export const ResignationDetailSchema = z.object({}).strict();
 
 // ─── Base fields ──────────────────────────────────────────────────────────────
 // Shared optional fields in all application types
@@ -68,7 +52,7 @@ export const ApplicationBaseOptionalSchema = z.object({
 	reason: z.string().min(5).max(500).optional(),
 	note: z.string().max(1000).optional(),
 	assignedToId: z.string().optional(),
-});
+}).strict();
 
 // ─── List filter schema ───────────────────────────────────────────────────────
 export const ListApplicationsSchema = z.object({
@@ -79,16 +63,16 @@ export const ListApplicationsSchema = z.object({
 	startDate: z.string().datetime().optional(),
 	endDate: z.string().datetime().optional(),
 	employeeId: z.string().optional(),
-});
+}).strict();
 
 // ─── Approve / Reject ─────────────────────────────────────────────────────────
 export const ApproveApplicationSchema = z.object({
 	status: z.literal("approved"),
-});
+}).strict();
 
 export const RejectApplicationSchema = z.object({
 	rejectReason: z.string().min(5).max(500),
-});
+}).strict();
 
 // ─── Create Payload Type ───────────────────────────────────────────────────────
 // This is the combined payload that the service will expect
@@ -99,14 +83,13 @@ export type CreateApplicationPayload = {
 	reason?: string;
 	note?: string;
 	assignedToId?: string;
-	detail:
+	detail?:
 		| z.infer<typeof LeaveDetailSchema>
 		| z.infer<typeof OvertimeDetailSchema>
 		| z.infer<typeof WFHDetailSchema>
 		| z.infer<typeof ShiftSwapDetailSchema>
-		| z.infer<typeof BusinessTripDetailSchema>
 		| z.infer<typeof LateEarlyDetailSchema>
-		| z.infer<typeof RegimeDetailSchema>;
+		| z.infer<typeof ResignationDetailSchema>;
 };
 
 // ─── Inferred Types ───────────────────────────────────────────────────────────

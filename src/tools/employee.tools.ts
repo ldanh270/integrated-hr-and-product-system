@@ -3,6 +3,7 @@ import { z } from "zod";
 import { employeeService } from "../services/employee.service.js";
 import { buildSuccess, buildError } from "../utils/tool-response.js";
 import { requireSession } from "../utils/session-guard.js";
+import { EMPLOYEE_STATUSES } from "../constants/entities/employee.config.js";
 
 export const registerEmployeeTools = () => {
 	mcpServer.tool(
@@ -14,7 +15,7 @@ export const registerEmployeeTools = () => {
 			pageSize: z.number().int().positive().optional(),
 			search: z.string().optional().describe("Search term for name or email"),
 			role: z.string().optional().describe("Filter by employee role"),
-			status: z.enum(["active", "inactive", "resigned", "suspended", "on_leave"]).optional(),
+			status: z.enum(EMPLOYEE_STATUSES).optional(),
 		},
 		async ({ sessionId, ...params }) => {
 			try {
@@ -114,7 +115,7 @@ export const registerEmployeeTools = () => {
 		{
 			sessionId: z.string().describe("Active session ID"),
 			employeeId: z.string().describe("ID of the employee"),
-			status: z.enum(["active", "inactive", "resigned", "suspended", "on_leave"]),
+			status: z.enum(EMPLOYEE_STATUSES),
 			reason: z.string().optional().describe("Reason for status change"),
 		},
 		async ({ sessionId, employeeId, ...payload }) => {

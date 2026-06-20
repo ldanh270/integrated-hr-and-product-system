@@ -3,6 +3,7 @@ import { z } from "zod";
 import { applicationService } from "../services/application.service.js";
 import { buildSuccess, buildError } from "../utils/tool-response.js";
 import { requireSession } from "../utils/session-guard.js";
+import { LEAVE_TYPE_VALUES, REGIME_TYPES } from "../constants/entities/attendance.config.js";
 
 export const registerApplicationTools = () => {
 	// ═══════════════════════════════════════════════════════════════════════════
@@ -16,8 +17,8 @@ export const registerApplicationTools = () => {
 			sessionId: z.string().describe("Active session ID"),
 			startDate: z.string().datetime().describe("Start date (ISO 8601)"),
 			endDate: z.string().datetime().describe("End date (ISO 8601)"),
-			leaveType: z.string().describe("Type of leave (e.g., annual_leave, unpaid_leave)"),
-			regimeType: z.string().describe("Regime type for leave"),
+			leaveType: z.enum(LEAVE_TYPE_VALUES).describe("Type of leave (e.g., annual_leave, unpaid_leave)"),
+			regimeType: z.enum(REGIME_TYPES).describe("Regime type for leave"),
 			reason: z.string().min(5).max(500).optional().describe("Reason for application"),
 			note: z.string().max(1000).optional().describe("Additional notes"),
 			assignedToId: z
@@ -163,42 +164,6 @@ export const registerApplicationTools = () => {
 	);
 
 	mcpServer.tool(
-		"application_create_business_trip",
-		"Create a business trip application (đơn công tác).",
-		{
-			sessionId: z.string().describe("Active session ID"),
-			startDate: z.string().datetime().describe("Start date (ISO 8601)"),
-			location: z.string().min(2).max(255).describe("Trip location"),
-			purpose: z.string().max(500).optional().describe("Purpose of the trip"),
-			budget: z.number().optional().describe("Estimated budget"),
-			reason: z.string().min(5).max(500).optional().describe("Reason for application"),
-			note: z.string().max(1000).optional().describe("Additional notes"),
-			assignedToId: z.string().optional().describe("ID of employee to assign tasks to"),
-		},
-		async ({ sessionId, startDate, location, purpose, budget, reason, note, assignedToId }) => {
-			try {
-				const session = requireSession(sessionId);
-				const payload = {
-					type: "business_trip" as const,
-					startDate,
-					reason,
-					note,
-					assignedToId,
-					detail: {
-						location,
-						...(purpose && { purpose }),
-						...(budget !== undefined && { budget }),
-					},
-				};
-				const data = await applicationService.createApplication(session, payload);
-				return buildSuccess(data);
-			} catch (error: any) {
-				return buildError("Failed to create business trip application", error.message);
-			}
-		},
-	);
-
-	mcpServer.tool(
 		"application_create_late_early",
 		"Create an application for arriving late or leaving early (đơn đi muộn/về sớm).",
 		{
@@ -239,56 +204,7 @@ export const registerApplicationTools = () => {
 		},
 	);
 
-	mcpServer.tool(
-		"application_create_regime",
-		"Create a regime application, e.g., maternity, sick child (đơn chế độ).",
-		{
-			sessionId: z.string().describe("Active session ID"),
-			startDate: z.string().datetime().describe("Start date (ISO 8601)"),
-			regimeType: z.string().describe("Type of regime"),
-			reducedMinutesPerDay: z.number().int().min(0).max(480).describe("Reduced minutes per day"),
-			applyToStart: z.boolean().optional().describe("Apply to start of shift"),
-			applyToEnd: z.boolean().optional().describe("Apply to end of shift"),
-			documentUrl: z.string().url().optional().describe("URL to supporting document"),
-			reason: z.string().min(5).max(500).optional().describe("Reason for application"),
-			note: z.string().max(1000).optional().describe("Additional notes"),
-			assignedToId: z.string().optional().describe("ID of employee to assign tasks to"),
-		},
-		async ({
-			sessionId,
-			startDate,
-			regimeType,
-			reducedMinutesPerDay,
-			applyToStart,
-			applyToEnd,
-			documentUrl,
-			reason,
-			note,
-			assignedToId,
-		}) => {
-			try {
-				const session = requireSession(sessionId);
-				const payload = {
-					type: "regime" as const,
-					startDate,
-					reason,
-					note,
-					assignedToId,
-					detail: {
-						regimeType,
-						reducedMinutesPerDay,
-						...(applyToStart !== undefined && { applyToStart }),
-						...(applyToEnd !== undefined && { applyToEnd }),
-						...(documentUrl && { documentUrl }),
-					},
-				};
-				const data = await applicationService.createApplication(session, payload);
-				return buildSuccess(data);
-			} catch (error: any) {
-				return buildError("Failed to create regime application", error.message);
-			}
-		},
-	);
+
 
 	// ═══════════════════════════════════════════════════════════════════════════
 	// GROUP B — MANAGE APPLICATION (7 tools)
@@ -307,9 +223,8 @@ export const registerApplicationTools = () => {
 					"overtime",
 					"work_from_home",
 					"shift_swap",
-					"business_trip",
 					"late_early",
-					"regime",
+					"resignation",
 				])
 				.optional(),
 			status: z.enum(["pending", "approved", "rejected", "cancelled"]).optional(),
@@ -380,9 +295,8 @@ export const registerApplicationTools = () => {
 					"overtime",
 					"work_from_home",
 					"shift_swap",
-					"business_trip",
 					"late_early",
-					"regime",
+					"resignation",
 				])
 				.optional(),
 			status: z.enum(["pending", "approved", "rejected", "cancelled"]).optional(),
@@ -418,9 +332,8 @@ export const registerApplicationTools = () => {
 					"overtime",
 					"work_from_home",
 					"shift_swap",
-					"business_trip",
 					"late_early",
-					"regime",
+					"resignation",
 				])
 				.optional(),
 			status: z.enum(["pending", "approved", "rejected", "cancelled"]).optional(),

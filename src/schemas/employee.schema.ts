@@ -1,9 +1,11 @@
+import { IEmployeeStatus } from "../constants/entities/employee.config.js";
+
 export interface ListEmployeesInput {
 	page?: number;
 	pageSize?: number;
 	search?: string;
 	role?: string;
-	status?: "active" | "inactive" | "resigned" | "suspended" | "on_leave";
+	status?: IEmployeeStatus;
 }
 
 export interface CreateEmployeeInput {
@@ -21,6 +23,6 @@ export interface UpdateEmployeeInput {
 }
 
 export interface UpdateEmployeeStatusInput {
-	status: "active" | "inactive" | "resigned" | "suspended" | "on_leave";
+	status: IEmployeeStatus;
 	reason?: string;
 }
