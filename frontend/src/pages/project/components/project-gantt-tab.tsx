@@ -27,7 +27,13 @@ import { TaskReviewModal } from "./task-review-modal"
 import type { Project } from "@/types/project.types"
 import type { Task, TaskSpentTime } from "@/types/task.types"
 import { useProjectGantt } from "../hooks/use-project-gantt"
-import { FILTER_DEFINITIONS, GANTT_FILTER_KEY, QUICK_QUERY_TYPE } from "../constants/gantt.constants"
+import {
+  FILTER_DEFINITIONS,
+  GANTT_FILTER_KEY,
+  QUICK_QUERY_TYPE,
+  GANTT_FILTER_TYPE,
+  GANTT_FILTER_OPERATOR,
+} from "../constants/gantt.constants"
 import { TASK_STATUS, TASK_PRIORITY, TASK_TRACKER } from "@/config/entities/project.config"
 
 const filterDefinitions = FILTER_DEFINITIONS
@@ -112,7 +118,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
     if (def === undefined) return null
 
     if (key === GANTT_FILTER_KEY.STATUS) {
-      if (operator !== "là" && operator !== "không là") return null
+      if (operator !== GANTT_FILTER_OPERATOR.LA && operator !== GANTT_FILTER_OPERATOR.KHONG_LA) return null
       return (
         <select
           value={value || TASK_STATUS.TODO}
@@ -130,7 +136,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
     }
 
     if (key === GANTT_FILTER_KEY.TRACKER) {
-      if (operator !== "is" && operator !== "is_not") return null
+      if (operator !== GANTT_FILTER_OPERATOR.IS && operator !== GANTT_FILTER_OPERATOR.IS_NOT) return null
       return (
         <select
           value={value || TASK_TRACKER.TASK}
@@ -150,7 +156,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
     }
 
     if (key === GANTT_FILTER_KEY.PRIORITY) {
-      if (operator !== "is" && operator !== "is_not") return null
+      if (operator !== GANTT_FILTER_OPERATOR.IS && operator !== GANTT_FILTER_OPERATOR.IS_NOT) return null
       return (
         <select
           value={value || TASK_PRIORITY.MEDIUM}
@@ -165,8 +171,8 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
       )
     }
 
-    if (def.type === "employee") {
-      if (operator !== "là" && operator !== "không là") return null
+    if (def.type === GANTT_FILTER_TYPE.EMPLOYEE) {
+      if (operator !== GANTT_FILTER_OPERATOR.LA && operator !== GANTT_FILTER_OPERATOR.KHONG_LA) return null
       return (
         <select
           value={value || (assignees[0]?.id || "")}
@@ -180,8 +186,8 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
       )
     }
 
-    if (def.type === "text") {
-      if (operator === "none" || operator === "any") return null
+    if (def.type === GANTT_FILTER_TYPE.TEXT) {
+      if (operator === GANTT_FILTER_OPERATOR.NONE || operator === GANTT_FILTER_OPERATOR.ANY) return null
       return (
         <input
           type="text"
@@ -192,8 +198,8 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
       )
     }
 
-    if (def.type === "number" || def.type === "progress") {
-      if (operator === "none" || operator === "any") return null
+    if (def.type === GANTT_FILTER_TYPE.NUMBER || def.type === GANTT_FILTER_TYPE.PROGRESS) {
+      if (operator === GANTT_FILTER_OPERATOR.NONE || operator === GANTT_FILTER_OPERATOR.ANY) return null
       return (
         <input
           type="number"
@@ -204,9 +210,9 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
       )
     }
 
-    if (def.type === "date") {
-      if (operator === "any" || operator === "today" || operator === "yesterday") return null
-      if (operator === "in_days" || operator === "more_than_days") {
+    if (def.type === GANTT_FILTER_TYPE.DATE) {
+      if (operator === GANTT_FILTER_OPERATOR.ANY || operator === GANTT_FILTER_OPERATOR.TODAY || operator === GANTT_FILTER_OPERATOR.YESTERDAY) return null
+      if (operator === GANTT_FILTER_OPERATOR.IN_DAYS || operator === GANTT_FILTER_OPERATOR.MORE_THAN_DAYS) {
         return (
           <div className="flex items-center gap-1 font-semibold">
             <input
@@ -219,7 +225,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
           </div>
         )
       }
-      if (operator === "between") {
+      if (operator === GANTT_FILTER_OPERATOR.BETWEEN) {
         const [d1 = "", d2 = ""] = (value || "").split(",")
         return (
           <div className="flex items-center gap-1 font-semibold">
@@ -356,13 +362,13 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                             
                             // Initialize default value when changing operators if needed
                             if (def !== undefined) {
-                              if (def.type === "employee" && (op === "là" || op === "không là") && !val) {
+                              if (def.type === GANTT_FILTER_TYPE.EMPLOYEE && (op === GANTT_FILTER_OPERATOR.LA || op === GANTT_FILTER_OPERATOR.KHONG_LA) && !val) {
                                 val = assignees[0]?.id || ""
-                              } else if (key === GANTT_FILTER_KEY.STATUS && (op === "là" || op === "không là") && !val) {
+                              } else if (key === GANTT_FILTER_KEY.STATUS && (op === GANTT_FILTER_OPERATOR.LA || op === GANTT_FILTER_OPERATOR.KHONG_LA) && !val) {
                                 val = TASK_STATUS.TODO
-                              } else if (def.type === "progress" && !val) {
+                              } else if (def.type === GANTT_FILTER_TYPE.PROGRESS && !val) {
                                 val = "50"
-                              } else if (def.type === "number" && !val) {
+                              } else if (def.type === GANTT_FILTER_TYPE.NUMBER && !val) {
                                 val = "0"
                               }
                             }
@@ -380,83 +386,83 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                         >
                           {/* Render operators based on type */}
                           {(() => {
-                            if (def === undefined) return <option value="is">là</option>
+                            if (def === undefined) return <option value={GANTT_FILTER_OPERATOR.IS}>là</option>
 
                             if (key === GANTT_FILTER_KEY.STATUS) {
                               return (
                                 <>
-                                  <option value="open">mở</option>
-                                  <option value="đóng">đóng</option>
-                                  <option value="tất cả">tất cả</option>
-                                  <option value="là">là</option>
-                                  <option value="không là">không là</option>
+                                  <option value={GANTT_FILTER_OPERATOR.OPEN}>mở</option>
+                                  <option value={GANTT_FILTER_OPERATOR.DONG}>đóng</option>
+                                  <option value={GANTT_FILTER_OPERATOR.TAT_CA}>tất cả</option>
+                                  <option value={GANTT_FILTER_OPERATOR.LA}>là</option>
+                                  <option value={GANTT_FILTER_OPERATOR.KHONG_LA}>không là</option>
                                 </>
                               )
                             }
                             if (key === GANTT_FILTER_KEY.TRACKER || key === GANTT_FILTER_KEY.PRIORITY) {
                               return (
                                 <>
-                                  <option value="is">là</option>
-                                  <option value="is_not">không là</option>
+                                  <option value={GANTT_FILTER_OPERATOR.IS}>là</option>
+                                  <option value={GANTT_FILTER_OPERATOR.IS_NOT}>không là</option>
                                 </>
                               )
                             }
-                            if (def.type === "employee") {
+                            if (def.type === GANTT_FILTER_TYPE.EMPLOYEE) {
                               return (
                                 <>
-                                  <option value="là">là</option>
-                                  <option value="không là">không là</option>
-                                  <option value="tôi">tôi</option>
-                                  <option value="none">không phân công</option>
+                                  <option value={GANTT_FILTER_OPERATOR.LA}>là</option>
+                                  <option value={GANTT_FILTER_OPERATOR.KHONG_LA}>không là</option>
+                                  <option value={GANTT_FILTER_OPERATOR.TOI}>tôi</option>
+                                  <option value={GANTT_FILTER_OPERATOR.NONE}>không phân công</option>
                                 </>
                               )
                             }
-                            if (def.type === "text") {
+                            if (def.type === GANTT_FILTER_TYPE.TEXT) {
                               return (
                                 <>
-                                  <option value="chứa">chứa</option>
-                                  <option value="không chứa">không chứa</option>
-                                  <option value="bắt đầu bằng">bắt đầu bằng</option>
-                                  <option value="kết thúc bằng">kết thúc bằng</option>
-                                  <option value="none">rỗng</option>
-                                  <option value="any">không rỗng</option>
+                                  <option value={GANTT_FILTER_OPERATOR.CHUA}>chứa</option>
+                                  <option value={GANTT_FILTER_OPERATOR.KHONG_CHUA}>không chứa</option>
+                                  <option value={GANTT_FILTER_OPERATOR.BAT_DAU_BANG}>bắt đầu bằng</option>
+                                  <option value={GANTT_FILTER_OPERATOR.KET_THUC_BANG}>kết thúc bằng</option>
+                                  <option value={GANTT_FILTER_OPERATOR.NONE}>rỗng</option>
+                                  <option value={GANTT_FILTER_OPERATOR.ANY}>không rỗng</option>
                                 </>
                               )
                             }
-                            if (def.type === "number" || def.type === "progress") {
+                            if (def.type === GANTT_FILTER_TYPE.NUMBER || def.type === GANTT_FILTER_TYPE.PROGRESS) {
                               return (
                                 <>
-                                  <option value="=">=</option>
-                                  <option value=">=">&gt;=</option>
-                                  <option value="<=">&lt;=</option>
-                                  <option value="none">rỗng</option>
-                                  <option value="any">không rỗng</option>
+                                  <option value={GANTT_FILTER_OPERATOR.EQUAL}>=</option>
+                                  <option value={GANTT_FILTER_OPERATOR.GREATER_THAN_EQUAL}>&gt;=</option>
+                                  <option value={GANTT_FILTER_OPERATOR.LESS_THAN_EQUAL}>&lt;=</option>
+                                  <option value={GANTT_FILTER_OPERATOR.NONE}>rỗng</option>
+                                  <option value={GANTT_FILTER_OPERATOR.ANY}>không rỗng</option>
                                 </>
                               )
                             }
-                            if (def.type === "date") {
+                            if (def.type === GANTT_FILTER_TYPE.DATE) {
                               return (
                                 <>
-                                  <option value="any">bất kỳ lúc nào</option>
-                                  <option value="today">hôm nay</option>
-                                  <option value="yesterday">hôm qua</option>
-                                  <option value="in_days">trong vòng</option>
-                                  <option value="more_than_days">hơn</option>
-                                  <option value="between">giữa</option>
-                                  <option value="after">sau</option>
-                                  <option value="before">trước</option>
+                                  <option value={GANTT_FILTER_OPERATOR.ANY}>bất kỳ lúc nào</option>
+                                  <option value={GANTT_FILTER_OPERATOR.TODAY}>hôm nay</option>
+                                  <option value={GANTT_FILTER_OPERATOR.YESTERDAY}>hôm qua</option>
+                                  <option value={GANTT_FILTER_OPERATOR.IN_DAYS}>trong vòng</option>
+                                  <option value={GANTT_FILTER_OPERATOR.MORE_THAN_DAYS}>hơn</option>
+                                  <option value={GANTT_FILTER_OPERATOR.BETWEEN}>giữa</option>
+                                  <option value={GANTT_FILTER_OPERATOR.AFTER}>sau</option>
+                                  <option value={GANTT_FILTER_OPERATOR.BEFORE}>trước</option>
                                 </>
                               )
                             }
-                            if (def.type === "relation") {
+                            if (def.type === GANTT_FILTER_TYPE.RELATION) {
                               return (
                                 <>
-                                  <option value="any">có</option>
-                                  <option value="none">không</option>
+                                  <option value={GANTT_FILTER_OPERATOR.ANY}>có</option>
+                                  <option value={GANTT_FILTER_OPERATOR.NONE}>không</option>
                                 </>
                               )
                             }
-                            return <option value="is">là</option>
+                            return <option value={GANTT_FILTER_OPERATOR.IS}>là</option>
                           })()}
                         </select>
 

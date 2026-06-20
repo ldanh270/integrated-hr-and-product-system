@@ -5,6 +5,7 @@ import { taskApi } from "@/lib/api/task.api"
 import { extractErrorMessage } from "@/utils/error-helper"
 import type { Task, UpdateTaskDto } from "@/types/task.types"
 import { TASK_STATUS } from "@/config/entities/project.config"
+import { PROJECT_QUERY_KEY } from "../constants/gantt.constants"
 
 interface UseTaskReviewProps {
   task: Task
@@ -31,8 +32,8 @@ export function useTaskReview({ task, projectId, onOpenChange }: UseTaskReviewPr
       return taskApi.update(task.id, payload)
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["projectGantt", projectId] })
-      void queryClient.invalidateQueries({ queryKey: ["tasks", "overview", projectId] })
+      void queryClient.invalidateQueries({ queryKey: [PROJECT_QUERY_KEY.GANTT, projectId] })
+      void queryClient.invalidateQueries({ queryKey: [PROJECT_QUERY_KEY.TASKS, PROJECT_QUERY_KEY.OVERVIEW, projectId] })
       toast.success("Đã cập nhật trạng thái công việc")
       onOpenChange(false)
     },

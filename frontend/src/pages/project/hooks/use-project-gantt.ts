@@ -12,7 +12,17 @@ import { useAuthStore } from "@/store/auth-store"
 import { extractErrorMessage } from "@/utils/error-helper"
 import type { Project, GanttLeaveDay } from "@/types/project.types"
 import type { Task, UpdateTaskDto } from "@/types/task.types"
-import { FILTER_DEFINITIONS, GANTT_FILTER_KEY, QUICK_QUERY_TYPE } from "../constants/gantt.constants"
+import {
+  FILTER_DEFINITIONS,
+  GANTT_FILTER_KEY,
+  QUICK_QUERY_TYPE,
+  GANTT_FILTER_TYPE,
+  GANTT_FILTER_OPERATOR,
+  PROJECT_QUERY_KEY,
+  DEFAULT_MONTHS_RANGE,
+  DEFAULT_MONTHS_RANGE_STRING,
+  DEFAULT_RECENT_DAYS_RANGE,
+} from "../constants/gantt.constants"
 
 interface UseProjectGanttProps {
   projectId: string
@@ -43,10 +53,10 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   const [showConflicts, setShowConflicts] = useState(true)
 
   // Filter form states
-  const [monthsInput, setMonthsInput] = useState("6") // default 6 months from project start
+  const [monthsInput, setMonthsInput] = useState(DEFAULT_MONTHS_RANGE_STRING) // default 6 months from project start
   const [monthInput, setMonthInput] = useState<number>(() => timelineStart.getMonth())
   const [yearInput, setYearInput] = useState<number>(() => timelineStart.getFullYear())
-  const [monthsRange, setMonthsRange] = useState(6) // actual range applied (months)
+  const [monthsRange, setMonthsRange] = useState(DEFAULT_MONTHS_RANGE) // actual range applied (months)
 
   // Redmine Filters State
   const [isFiltersExpanded, setIsFiltersExpanded] = useState(true)
@@ -56,10 +66,10 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     operator: string
     value: string
   } | undefined>>({
-    [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: "open", value: "" },
-    [GANTT_FILTER_KEY.TRACKER]: { enabled: true, operator: "is", value: TASK_TRACKER.TASK },
-    [GANTT_FILTER_KEY.PRIORITY]: { enabled: true, operator: "is", value: TASK_PRIORITY.MEDIUM },
-    [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: true, operator: "is", value: "" },
+    [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: GANTT_FILTER_OPERATOR.OPEN, value: "" },
+    [GANTT_FILTER_KEY.TRACKER]: { enabled: true, operator: GANTT_FILTER_OPERATOR.IS, value: TASK_TRACKER.TASK },
+    [GANTT_FILTER_KEY.PRIORITY]: { enabled: true, operator: GANTT_FILTER_OPERATOR.IS, value: TASK_PRIORITY.MEDIUM },
+    [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: true, operator: GANTT_FILTER_OPERATOR.IS, value: "" },
   })
 
   const [appliedFilterKeys, setAppliedFilterKeys] = useState<string[]>([GANTT_FILTER_KEY.STATUS])
@@ -68,10 +78,10 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     operator: string
     value: string
   } | undefined>>({
-    [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: "open", value: "" },
-    [GANTT_FILTER_KEY.TRACKER]: { enabled: true, operator: "is", value: TASK_TRACKER.TASK },
-    [GANTT_FILTER_KEY.PRIORITY]: { enabled: true, operator: "is", value: TASK_PRIORITY.MEDIUM },
-    [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: true, operator: "is", value: "" },
+    [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: GANTT_FILTER_OPERATOR.OPEN, value: "" },
+    [GANTT_FILTER_KEY.TRACKER]: { enabled: true, operator: GANTT_FILTER_OPERATOR.IS, value: TASK_TRACKER.TASK },
+    [GANTT_FILTER_KEY.PRIORITY]: { enabled: true, operator: GANTT_FILTER_OPERATOR.IS, value: TASK_PRIORITY.MEDIUM },
+    [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: true, operator: GANTT_FILTER_OPERATOR.IS, value: "" },
   })
 
   // Sidebar collapsible state
@@ -82,14 +92,14 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
 
   // Fetch consolidated Gantt data (tasks, members, leave records)
   const { data: ganttData, isLoading } = useQuery({
-    queryKey: ["projectGantt", projectId],
+    queryKey: [PROJECT_QUERY_KEY.GANTT, projectId],
     queryFn: () => projectApi.getGanttData(projectId),
     enabled: !!projectId,
   })
 
   // Fetch saved custom queries
   const { data: savedQueries = [], refetch: refetchSavedQueries } = useQuery({
-    queryKey: ["customQueries", projectId],
+    queryKey: [PROJECT_QUERY_KEY.CUSTOM_QUERIES, projectId],
     queryFn: () => customQueryApi.list(projectId),
     enabled: !!projectId,
   })
@@ -188,15 +198,15 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
 
   const getDefaultOperator = (key: string) => {
     const def = Reflect.get(FILTER_DEFINITIONS, key) as { label: string; type: string; group: string } | undefined
-    if (def === undefined) return "is"
-    if (key === GANTT_FILTER_KEY.STATUS) return "open"
-    if (key === GANTT_FILTER_KEY.TRACKER || key === GANTT_FILTER_KEY.PRIORITY) return "is"
-    if (def.type === "employee") return "là"
-    if (def.type === "text") return "chứa"
-    if (def.type === "progress" || def.type === "number") return "="
-    if (def.type === "date") return "any"
-    if (def.type === "relation") return "any"
-    return "is"
+    if (def === undefined) return GANTT_FILTER_OPERATOR.IS
+    if (key === GANTT_FILTER_KEY.STATUS) return GANTT_FILTER_OPERATOR.OPEN
+    if (key === GANTT_FILTER_KEY.TRACKER || key === GANTT_FILTER_KEY.PRIORITY) return GANTT_FILTER_OPERATOR.IS
+    if (def.type === GANTT_FILTER_TYPE.EMPLOYEE) return GANTT_FILTER_OPERATOR.LA
+    if (def.type === GANTT_FILTER_TYPE.TEXT) return GANTT_FILTER_OPERATOR.CHUA
+    if (def.type === GANTT_FILTER_TYPE.PROGRESS || def.type === GANTT_FILTER_TYPE.NUMBER) return GANTT_FILTER_OPERATOR.EQUAL
+    if (def.type === GANTT_FILTER_TYPE.DATE) return GANTT_FILTER_OPERATOR.ANY
+    if (def.type === GANTT_FILTER_TYPE.RELATION) return GANTT_FILTER_OPERATOR.ANY
+    return GANTT_FILTER_OPERATOR.IS
   }
 
   const getDefaultValue = (key: string) => {
@@ -204,10 +214,10 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     if (def === undefined) return ""
     if (key === GANTT_FILTER_KEY.TRACKER) return TASK_TRACKER.TASK
     if (key === GANTT_FILTER_KEY.PRIORITY) return TASK_PRIORITY.MEDIUM
-    if (def.type === "employee") return assignees[0]?.id || ""
-    if (def.type === "progress") return "50"
-    if (def.type === "number") return "0"
-    if (def.type === "date") return ""
+    if (def.type === GANTT_FILTER_TYPE.EMPLOYEE) return assignees[0]?.id || ""
+    if (def.type === GANTT_FILTER_TYPE.PROGRESS) return "50"
+    if (def.type === GANTT_FILTER_TYPE.NUMBER) return "0"
+    if (def.type === GANTT_FILTER_TYPE.DATE) return ""
     return ""
   }
 
@@ -217,8 +227,8 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
       return taskApi.update(taskId, data)
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["projectGantt", projectId] })
-      void queryClient.invalidateQueries({ queryKey: ["tasks", "overview", projectId] })
+      void queryClient.invalidateQueries({ queryKey: [PROJECT_QUERY_KEY.GANTT, projectId] })
+      void queryClient.invalidateQueries({ queryKey: [PROJECT_QUERY_KEY.TASKS, PROJECT_QUERY_KEY.OVERVIEW, projectId] })
       toast.success("Đã cập nhật công việc")
     },
     onError: (err) => {
@@ -269,39 +279,39 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
 
         if (key === GANTT_FILTER_KEY.STATUS) {
           const statusVal = task.status
-          if (filter.operator === "open") {
+          if (filter.operator === GANTT_FILTER_OPERATOR.OPEN) {
             const isOpen = ([TASK_STATUS.TODO, TASK_STATUS.IN_PROGRESS, TASK_STATUS.IN_REVIEW, TASK_STATUS.REOPENED] as string[]).includes(statusVal)
             if (!isOpen) return false
-          } else if (filter.operator === "đóng") {
+          } else if (filter.operator === GANTT_FILTER_OPERATOR.DONG) {
             const isClosed = ([TASK_STATUS.DONE, TASK_STATUS.CANCELLED] as string[]).includes(statusVal)
             if (!isClosed) return false
-          } else if (filter.operator === "tất cả") {
+          } else if (filter.operator === GANTT_FILTER_OPERATOR.TAT_CA) {
             // matches all
-          } else if (filter.operator === "là") {
+          } else if (filter.operator === GANTT_FILTER_OPERATOR.LA) {
             if (statusVal !== filter.value) return false
-          } else if (filter.operator === "không là") {
+          } else if (filter.operator === GANTT_FILTER_OPERATOR.KHONG_LA) {
             if (statusVal === filter.value) return false
           }
         }
 
         else if (key === GANTT_FILTER_KEY.TRACKER) {
           const val = task.tracker
-          if (filter.operator === "is" && val !== filter.value) return false
-          if (filter.operator === "is_not" && val === filter.value) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.IS && val !== filter.value) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.IS_NOT && val === filter.value) return false
         }
 
         else if (key === GANTT_FILTER_KEY.PRIORITY) {
           const val = task.priority
-          if (filter.operator === "is" && val !== filter.value) return false
-          if (filter.operator === "is_not" && val === filter.value) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.IS && val !== filter.value) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.IS_NOT && val === filter.value) return false
         }
 
         else if (key === GANTT_FILTER_KEY.ASSIGNEE) {
           const assigneeVal = task.assigneeId
-          if (filter.operator === "là" && assigneeVal !== filter.value) return false
-          if (filter.operator === "không là" && assigneeVal === filter.value) return false
-          if (filter.operator === "tôi" && assigneeVal !== user?.id) return false
-          if (filter.operator === "none" && assigneeVal !== null) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.LA && assigneeVal !== filter.value) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.KHONG_LA && assigneeVal === filter.value) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.TOI && assigneeVal !== user?.id) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.NONE && assigneeVal !== null) return false
         }
 
         // Custom internal filters from sidebar quick links
@@ -312,7 +322,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
           // just filter active tasks updated recently
           const updateDate = new Date(task.updatedAt)
           const diff = differenceInDays(new Date(), updateDate)
-          if (diff > 7) return false // updated more than 7 days ago
+          if (diff > DEFAULT_RECENT_DAYS_RANGE) return false // updated more than 7 days ago
         }
         else if (key === GANTT_FILTER_KEY.QUICK_WATCHED) {
           // not fully implemented watch model, simulate by assignee or creator
@@ -323,70 +333,70 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
         else if (key === GANTT_FILTER_KEY.SUBJECT || key === GANTT_FILTER_KEY.TXT_SUBJECT) {
           const val = task.title.toLowerCase()
           const search = filter.value.toLowerCase()
-          if (filter.operator === "chứa" && !val.includes(search)) return false
-          if (filter.operator === "không chứa" && val.includes(search)) return false
-          if (filter.operator === "bắt đầu bằng" && !val.startsWith(search)) return false
-          if (filter.operator === "kết thúc bằng" && !val.endsWith(search)) return false
-          if (filter.operator === "none" && val.trim() !== "") return false
-          if (filter.operator === "any" && val.trim() === "") return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.CHUA && !val.includes(search)) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.KHONG_CHUA && val.includes(search)) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.BAT_DAU_BANG && !val.startsWith(search)) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.KET_THUC_BANG && !val.endsWith(search)) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.NONE && val.trim() !== "") return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.ANY && val.trim() === "") return false
         }
         else if (key === GANTT_FILTER_KEY.TXT_DESC) {
           const val = (task.description || "").toLowerCase()
           const search = filter.value.toLowerCase()
-          if (filter.operator === "chứa" && !val.includes(search)) return false
-          if (filter.operator === "không chứa" && val.includes(search)) return false
-          if (filter.operator === "none" && val.trim() !== "") return false
-          if (filter.operator === "any" && val.trim() === "") return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.CHUA && !val.includes(search)) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.KHONG_CHUA && val.includes(search)) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.NONE && val.trim() !== "") return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.ANY && val.trim() === "") return false
         }
 
         // Progress
         else if (key === GANTT_FILTER_KEY.PROGRESS) {
           const val = task.progress
           const comp = parseInt(filter.value) || 0
-          if (filter.operator === "=" && val !== comp) return false
-          if (filter.operator === ">=" && val < comp) return false
-          if (filter.operator === "<=" && val > comp) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.EQUAL && val !== comp) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.GREATER_THAN_EQUAL && val < comp) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.LESS_THAN_EQUAL && val > comp) return false
         }
 
         // Estimated Time
         else if (key === GANTT_FILTER_KEY.TIME_EST) {
           const val = task.estimatedTime || 0
           const comp = parseFloat(filter.value) || 0
-          if (filter.operator === "=" && val !== comp) return false
-          if (filter.operator === ">=" && val < comp) return false
-          if (filter.operator === "<=" && val > comp) return false
-          if (filter.operator === "none" && task.estimatedTime !== null) return false
-          if (filter.operator === "any" && task.estimatedTime === null) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.EQUAL && val !== comp) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.GREATER_THAN_EQUAL && val < comp) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.LESS_THAN_EQUAL && val > comp) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.NONE && task.estimatedTime !== null) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.ANY && task.estimatedTime === null) return false
         }
 
         // Date logic (Start Date & Due Date)
         else if (key === GANTT_FILTER_KEY.DATE_START || key === GANTT_FILTER_KEY.DATE_DUE) {
           const taskDateStr = key === GANTT_FILTER_KEY.DATE_START ? task.startDate : task.dueDate
           if (!taskDateStr) {
-            if (filter.operator === "any") continue // matches any
+            if (filter.operator === GANTT_FILTER_OPERATOR.ANY) continue // matches any
             return false
           }
           
           const taskDate = new Date(taskDateStr)
           const today = new Date()
 
-          if (filter.operator === "today") {
+          if (filter.operator === GANTT_FILTER_OPERATOR.TODAY) {
             if (differenceInDays(taskDate, today) !== 0) return false
-          } else if (filter.operator === "yesterday") {
+          } else if (filter.operator === GANTT_FILTER_OPERATOR.YESTERDAY) {
             if (differenceInDays(today, taskDate) !== 1) return false
-          } else if (filter.operator === "in_days") {
+          } else if (filter.operator === GANTT_FILTER_OPERATOR.IN_DAYS) {
             const days = parseInt(filter.value) || 0
             const diff = differenceInDays(today, taskDate)
             if (diff < 0 || diff > days) return false
-          } else if (filter.operator === "more_than_days") {
+          } else if (filter.operator === GANTT_FILTER_OPERATOR.MORE_THAN_DAYS) {
             const days = parseInt(filter.value) || 0
             const diff = differenceInDays(today, taskDate)
             if (diff <= days) return false
-          } else if (filter.operator === "after") {
+          } else if (filter.operator === GANTT_FILTER_OPERATOR.AFTER) {
             if (!filter.value || taskDate <= new Date(filter.value)) return false
-          } else if (filter.operator === "before") {
+          } else if (filter.operator === GANTT_FILTER_OPERATOR.BEFORE) {
             if (!filter.value || taskDate >= new Date(filter.value)) return false
-          } else if (filter.operator === "between") {
+          } else if (filter.operator === GANTT_FILTER_OPERATOR.BETWEEN) {
             const [d1, d2] = filter.value.split(",")
             if (d1 && taskDate < new Date(d1)) return false
             if (d2 && taskDate > new Date(d2)) return false
