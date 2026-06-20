@@ -85,3 +85,9 @@ export interface ProjectMember {
     status: string
   }
 }
+
+export interface GanttData {
+  tasks: any[]
+  members: any[]
+  leaveDays: any[]
+}

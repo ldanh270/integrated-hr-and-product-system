@@ -6,6 +6,7 @@ import type {
   ProjectListQuery,
   ProjectMember,
   UpdateProjectDto,
+  GanttData,
 } from "@/types/project.types"
 
 interface ApiResponse<T> {
@@ -52,5 +53,10 @@ export const projectApi = {
 
   removeMember: async (projectId: string, employeeId: string): Promise<void> => {
     await apiClient.delete<ApiResponse<null>>(`/projects/${projectId}/members/${employeeId}`)
+  },
+  
+  getGanttData: async (projectId: string): Promise<GanttData> => {
+    const response = await apiClient.get<ApiResponse<GanttData>>(`/projects/${projectId}/gantt`)
+    return response.data.data
   },
 }

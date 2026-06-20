@@ -19,6 +19,9 @@ export interface Task {
   completedAt: string | null
   estimatedTime: number | null
   progress: number
+  resultUrl?: string | null
+  resultNotes?: string | null
+  rejectionReason?: string | null
   createdAt: string
   updatedAt: string
   project?: {
@@ -65,6 +68,9 @@ export interface UpdateTaskDto {
   completedAt?: string | null
   estimatedTime?: number | null
   progress?: number
+  resultUrl?: string | null
+  resultNotes?: string | null
+  rejectionReason?: string | null
 }
 
 export interface TaskListQuery {
