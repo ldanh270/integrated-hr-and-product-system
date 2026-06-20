@@ -16,6 +16,18 @@ export const HRP_API_CONSTANTS = {
 			LOCKED_ACCOUNTS: "/api/security/locked-accounts",
 			UNLOCK: (employeeId: string) => `/api/security/unlock/${employeeId}`,
 		},
+		EMPLOYEE: {
+			BASE: "/api/employees",
+			APPROVERS: "/api/employees/approvers",
+			BY_ID: (id: string) => `/api/employees/${id}`,
+			STATUS: (id: string) => `/api/employees/${id}/status`,
+		},
+		PROFILE: {
+			ME: "/api/profile/me",
+			AVATAR: "/api/profile/me/avatar",
+			CHANGE_PASSWORD: "/api/profile/me/change-password",
+			LINK_EMPLOYEE: "/api/profile/me/personal-employee-link",
+		},
 		APPLICATION: {
 			BASE: "/api/applications",
 			ME: "/api/applications/me",

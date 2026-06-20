@@ -1,5 +1,5 @@
 {
-	"name": "@yourorg/hrp-mcp-server",
+	"name": "@ldanh270/hrp-mcp-server",
 	"version": "1.0.0",
 	"description": "MCP Server for HRP System",
 	"main": "dist/server.js",
