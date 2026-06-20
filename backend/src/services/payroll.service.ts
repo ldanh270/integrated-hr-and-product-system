@@ -1,4 +1,4 @@
-import { ATTENDANCE_STATUS, EMPLOYEE_SHIFT_STATUS } from "@/configs/entities/attendance.config.ts"
+import { ATTENDANCE_STATUS, EMPLOYEE_SHIFT_STATUS, PAID_LEAVE_TYPES } from "@/configs/entities/attendance.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import {
   PAYROLL_STATUS,
@@ -20,7 +20,7 @@ import {
 } from "@/types/payroll.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 
-import { Payroll, PayrollStatus, Prisma, PrismaClient } from "@prisma/client"
+import { Application, ApplicationType, Payroll, PayrollStatus, Prisma, PrismaClient } from "@prisma/client"
 import * as math from "mathjs"
 
 // Need an interface for SettingsRepository
@@ -86,6 +86,28 @@ export class PayrollService implements IPayrollService {
     })
     let totalAmount = new Prisma.Decimal(0)
 
+    // Fetch all approved applications for the period ONCE (N+1 fix)
+    const allApprovedApps = await this.prisma.application.findMany({
+      where: {
+        employeeId: { in: employees.map(e => e.id) },
+        status: "approved",
+        type: { in: [ApplicationType.leave, ApplicationType.late_early] },
+        startDate: { lte: periodEnd },
+        endDate: { gte: periodStart },
+      },
+      include: { leaveDetail: true, lateEarlyDetail: true }
+    });
+
+    // Group by employeeId in memory
+    const appsByEmployeeId: Record<string, Prisma.ApplicationGetPayload<{ include: { leaveDetail: true, lateEarlyDetail: true } }>[] | undefined> = {};
+    allApprovedApps.forEach(app => {
+      if (!appsByEmployeeId[app.employeeId]) appsByEmployeeId[app.employeeId] = [];
+      const employeeApps = appsByEmployeeId[app.employeeId];
+      if (employeeApps) {
+        employeeApps.push(app);
+      }
+    });
+
     for (const employee of employees) {
       const config = await this.salaryConfigRepo.findActiveByEmployee(employee.id, periodStart)
       if (!config) {
@@ -114,13 +136,50 @@ export class PayrollService implements IPayrollService {
         if (record.status === ATTENDANCE_STATUS.ON_TIME || record.status === ATTENDANCE_STATUS.LATE)
           attendance.workingDays += 1
         if (record.status === ATTENDANCE_STATUS.ABSENT) attendance.absentDays += 1
-        if (record.status === ATTENDANCE_STATUS.OVERTIME) attendance.workingDays += 1 // or separate counting
+        if (record.status === ATTENDANCE_STATUS.OVERTIME) attendance.workingDays += 1
         if (record.status === (EMPLOYEE_SHIFT_STATUS.HOLIDAY_PENDING as string))
-          attendance.holidayDays += 1 // adjust based on actual logic
+          attendance.holidayDays += 1
 
         attendance.overtimeMinutes += record.overtimeMinutes || 0
         attendance.lateMinutes += record.lateMinutes || 0
+        attendance.earlyLeaveMinutes += record.earlyLeaveMinutes || 0
       })
+
+      // Use pre-fetched applications to prevent N+1
+      const approvedApps = appsByEmployeeId[employee.id] || [];
+
+      let paidLeaveDays = 0
+      let excusedLateMinutes = 0
+      let excusedEarlyMinutes = 0
+
+      for (const app of approvedApps) {
+        if (app.type === "leave" && app.leaveDetail) {
+          if ((PAID_LEAVE_TYPES as string[]).includes(app.leaveDetail.leaveType)) {
+            const start = app.startDate > periodStart ? app.startDate : periodStart
+            const end = app.endDate < periodEnd ? app.endDate : periodEnd
+            let days = 0;
+            let current = new Date(start);
+            while (current <= end) {
+              const day = current.getDay();
+              if (day !== 0 && day !== 6) { // Skip Sunday (0) and Saturday (6)
+                days++;
+              }
+              current.setDate(current.getDate() + 1);
+            }
+            paidLeaveDays += Math.max(1, days);
+          }
+        } else if (app.type === "late_early" && app.lateEarlyDetail) {
+          if (app.lateEarlyDetail.isLate) {
+            excusedLateMinutes += app.lateEarlyDetail.durationMinutes
+          } else {
+            excusedEarlyMinutes += app.lateEarlyDetail.durationMinutes
+          }
+        }
+      }
+
+      attendance.workingDays += paidLeaveDays
+      attendance.lateMinutes = Math.max(0, attendance.lateMinutes - excusedLateMinutes)
+      attendance.earlyLeaveMinutes = Math.max(0, attendance.earlyLeaveMinutes - excusedEarlyMinutes)
 
       // Build context
       const context: IFormulaContext | any = {

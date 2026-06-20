@@ -95,6 +95,11 @@ const privateRoutes: RouteConfig[] = [
     layout: MainLayout,
   },
   {
+    path: "/application/create",
+    component: lazy(() => import("@/pages/application/CreateApplicationPage.tsx")),
+    layout: MainLayout,
+  },
+  {
     path: "/payroll/salary-components",
     component: lazy(() => import("@/pages/payroll/SalaryComponents.tsx")),
     layout: MainLayout,

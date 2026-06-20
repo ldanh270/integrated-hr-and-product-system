@@ -10,6 +10,7 @@ export const ROUTES = {
   },
   APPLICATION: {
     DASHBOARD: "/application/dashboard",
+    CREATE: "/application/create",
   },
   ATTENDANCE: {
     DASHBOARD: "/attendance",

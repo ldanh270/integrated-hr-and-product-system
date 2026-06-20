@@ -23,28 +23,45 @@ const controller = new EmployeeController(service)
 
 employeeRoutes.use(authenticate)
 
-employeeRoutes.get("/", validate(listEmployeesQuerySchema, "query"), controller.list as any)
-employeeRoutes.get("/:id", controller.getOne as any)
+employeeRoutes.get("/", validate(listEmployeesQuerySchema, "query"), controller.list as express.RequestHandler)
+/**
+ * GET /employees/approvers
+ * Retrieve list of employees who can approve applications (Team Leader, HR Manager, Admin, GM).
+ * Accessible to all authenticated users for use in form dropdowns.
+ */
+employeeRoutes.get("/approvers", controller.listApprovers as express.RequestHandler)
 
+/**
+ * GET /employees/:id
+ * Retrieve details of a specific employee by ID.
+ * Accessible to all authenticated users.
+ */
+employeeRoutes.get("/:id", controller.getOne as express.RequestHandler)
+
+/**
+ * POST /employees
+ * Create a new employee.
+ * Access restricted to Admin, HR Manager, and General Manager roles.
+ */
 employeeRoutes.post(
   "/",
   authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
-  controller.create as any,
+  controller.create as express.RequestHandler,
 )
 employeeRoutes.patch(
   "/:id",
   authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
-  controller.update as any,
+  controller.update as express.RequestHandler,
 )
 employeeRoutes.patch(
   "/:id/status",
   authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
-  controller.updateStatus as any,
+  controller.updateStatus as express.RequestHandler,
 )
 employeeRoutes.delete(
   "/:id",
   authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
-  controller.delete as any,
+  controller.delete as express.RequestHandler,
 )
 
 export default employeeRoutes
