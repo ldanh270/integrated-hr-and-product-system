@@ -1,0 +1,47 @@
+import { ICustomQueryRepository, CustomQuery, CreateCustomQueryDto } from "@/types/custom-query.types.ts"
+import { PrismaClient } from "@prisma/client"
+import { BaseRepository } from "./base.repository.ts"
+
+export class PrismaCustomQueryRepository extends BaseRepository implements ICustomQueryRepository {
+  constructor(prisma: PrismaClient) {
+    super(prisma)
+  }
+
+  async findByEmployee(employeeId: string, projectId?: string | null, type?: string): Promise<CustomQuery[]> {
+    return this.prisma.customQuery.findMany({
+      where: {
+        employeeId,
+        projectId: projectId || undefined,
+        type: type || undefined,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    })
+  }
+
+  async findById(id: string): Promise<CustomQuery | null> {
+    return this.prisma.customQuery.findUnique({
+      where: { id },
+    })
+  }
+
+  async create(data: CreateCustomQueryDto & { employeeId: string }): Promise<CustomQuery> {
+    return this.prisma.customQuery.create({
+      data: {
+        name: data.name,
+        type: data.type || "gantt",
+        projectId: data.projectId || null,
+        employeeId: data.employeeId,
+        queryData: data.queryData,
+      },
+    })
+  }
+
+  async delete(id: string): Promise<boolean> {
+    const deleted = await this.prisma.customQuery.delete({
+      where: { id },
+    })
+    return !!deleted
+  }
+}
