@@ -24,10 +24,11 @@ export class CustomQueryController {
 
       const queries = await this.service.getQueries(employeeId, projectId, type)
       res.status(HttpStatusCode.OK).json({ data: queries, error: null })
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Lỗi máy chủ"
       res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
         data: null,
-        error: { message: error.message || "Lỗi máy chủ", code: ErrorCode.INTERNAL_SERVER_ERROR },
+        error: { message, code: ErrorCode.INTERNAL_SERVER_ERROR },
       })
     }
   }
@@ -49,11 +50,12 @@ export class CustomQueryController {
       )
 
       res.status(HttpStatusCode.CREATED).json({ data: newQuery, error: null })
-    } catch (error: any) {
-      const statusCode = error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Lỗi máy chủ"
+      const statusCode = (error as { statusCode?: number }).statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
       res.status(statusCode).json({
         data: null,
-        error: { message: error.message || "Lỗi máy chủ", code: ErrorCode.BAD_REQUEST },
+        error: { message, code: ErrorCode.BAD_REQUEST },
       })
     }
   }
@@ -72,11 +74,12 @@ export class CustomQueryController {
       const success = await this.service.deleteQuery(id, employeeId)
 
       res.status(HttpStatusCode.OK).json({ data: success, error: null })
-    } catch (error: any) {
-      const statusCode = error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Lỗi máy chủ"
+      const statusCode = (error as { statusCode?: number }).statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
       res.status(statusCode).json({
         data: false,
-        error: { message: error.message || "Lỗi máy chủ", code: ErrorCode.BAD_REQUEST },
+        error: { message, code: ErrorCode.BAD_REQUEST },
       })
     }
   }
