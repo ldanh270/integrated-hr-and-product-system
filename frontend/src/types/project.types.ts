@@ -86,8 +86,25 @@ export interface ProjectMember {
   }
 }
 
+import type { Task } from "./task.types"
+
+export interface GanttMember {
+  id: string
+  fullName: string
+  email: string
+  position: string | null
+}
+
+export interface GanttLeaveDay {
+  id: string
+  employeeId: string
+  startDate: string | Date
+  endDate: string | Date
+  reason: string | null
+}
+
 export interface GanttData {
-  tasks: any[]
-  members: any[]
-  leaveDays: any[]
+  tasks: Task[]
+  members: GanttMember[]
+  leaveDays: GanttLeaveDay[]
 }

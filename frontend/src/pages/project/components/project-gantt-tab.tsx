@@ -28,14 +28,17 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
 import { customQueryApi } from "@/lib/api/custom-query.api"
+import type { CustomQuery } from "@/lib/api/custom-query.api"
 import { ROLE } from "@/config/entities/employee.config"
 import { useAuthStore } from "@/store/auth-store"
 import { extractErrorMessage } from "@/utils/error-helper"
 import { TaskReviewModal } from "./task-review-modal"
+import type { Project, GanttLeaveDay } from "@/types/project.types"
+import type { Task, UpdateTaskDto } from "@/types/task.types"
 
 interface ProjectGanttTabProps {
   projectId: string
-  project: any
+  project: Project
 }
 
 export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
@@ -51,7 +54,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
   })
 
   // Selected task state for completion / review modal
-  const [selectedTaskForReview, setSelectedTaskForReview] = useState<any | null>(null)
+  const [selectedTaskForReview, setSelectedTaskForReview] = useState<Task | null>(null)
 
   // Options Panel states
   const [isOptionsExpanded, setIsOptionsExpanded] = useState(false)
@@ -127,7 +130,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
       void refetchSavedQueries()
       toast.success("Đã lưu truy vấn thành công")
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       toast.error(extractErrorMessage(err))
     },
   })
@@ -141,13 +144,13 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
       void refetchSavedQueries()
       toast.success("Đã xóa truy vấn thành công")
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       toast.error(extractErrorMessage(err))
     },
   })
 
   // Apply a custom query filters
-  const applySavedQuery = (savedQuery: any) => {
+  const applySavedQuery = (savedQuery: CustomQuery) => {
     try {
       const data = JSON.parse(savedQuery.queryData)
       if (data && Array.isArray(data.activeFilterKeys) && data.filterStates) {
@@ -193,9 +196,9 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
     
     // Add members
     const members = ganttData?.members || []
-    members.forEach((m: any) => {
-      if (m.employee && !list.some((item) => item.id === m.employee.id)) {
-        list.push({ id: m.employee.id, fullName: m.employee.fullName })
+    members.forEach((m) => {
+      if (m && !list.some((item) => item.id === m.id)) {
+        list.push({ id: m.id, fullName: m.fullName })
       }
     })
     
@@ -268,7 +271,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
 
   const getDefaultOperator = (key: string) => {
     const def = filterDefinitions[key as keyof typeof filterDefinitions]
-    if (!def) return "is"
+    if (def === undefined) return "is"
     if (key === "status") return "open"
     if (key === "tracker" || key === "priority") return "is"
     if (def.type === "employee") return "là"
@@ -281,7 +284,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
 
   const getDefaultValue = (key: string) => {
     const def = filterDefinitions[key as keyof typeof filterDefinitions]
-    if (!def) return ""
+    if (def === undefined) return ""
     if (key === "tracker") return "task"
     if (key === "priority") return "medium"
     if (def.type === "employee") return assignees[0]?.id || ""
@@ -293,7 +296,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
 
   // Update Task mutation (used to quickly adjust task dates)
   const updateTaskMutation = useMutation({
-    mutationFn: async ({ taskId, data }: { taskId: string; data: any }) => {
+    mutationFn: async ({ taskId, data }: { taskId: string; data: UpdateTaskDto }) => {
       return taskApi.update(taskId, data)
     },
     onSuccess: () => {
@@ -344,10 +347,11 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
 
   // Apply filters to tasks at client side
   const filteredTasks = useMemo(() => {
-    return tasks.filter((task: any) => {
+    return tasks.filter((task: Task) => {
       for (const key of appliedFilterKeys) {
+        if (!Object.prototype.hasOwnProperty.call(filterDefinitions, key)) continue
         const filter = appliedFilterStates[key]
-        if (!filter || !filter.enabled) continue
+        if (filter === undefined || !filter.enabled) continue
 
         if (key === "status") {
           const statusVal = task.status
@@ -498,22 +502,26 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
 
   // Flatten tree array builder (subtask tree structure support)
   const treeTasks = useMemo(() => {
-    const rootTasks = filteredTasks.filter((t: any) => !t.parentTaskId)
-    const childTasks = filteredTasks.filter((t: any) => t.parentTaskId)
+    const rootTasks = filteredTasks.filter((t: Task) => !t.parentTaskId)
+    const childTasks = filteredTasks.filter((t: Task) => t.parentTaskId)
 
-    const result: any[] = []
+    const result: (Task & { depth: number })[] = []
 
-    const traverse = (parent: any, depth: number) => {
+    const traverse = (parent: Task, depth: number) => {
       result.push({ ...parent, depth })
-      const children = childTasks.filter((t: any) => t.parentTaskId === parent.id)
-      children.forEach((child: any) => traverse(child, depth + 1))
+      const children = childTasks.filter((t: Task) => t.parentTaskId === parent.id)
+      children.forEach((child: Task) => {
+        traverse(child, depth + 1)
+      })
     }
 
-    rootTasks.forEach((root: any) => traverse(root, 0))
+    rootTasks.forEach((root: Task) => {
+      traverse(root, 0)
+    })
 
     // Include orphan child tasks (if parentTask is missing from project tasks somehow)
     const processedIds = new Set(result.map((r) => r.id))
-    filteredTasks.forEach((t: any) => {
+    filteredTasks.forEach((t: Task) => {
       if (!processedIds.has(t.id)) {
         result.push({ ...t, depth: 0 })
       }
@@ -551,16 +559,16 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
   const isAdminOrGM = user?.role === ROLE.ADMIN || user?.role === ROLE.GENERAL_MANAGER
 
   // Find overlap leave days for a task and its assignee
-  const getLeaveConflict = (task: any) => {
+  const getLeaveConflict = (task: Task) => {
     if (!task.assigneeId || !task.startDate || !task.dueDate) return null
 
     const taskStart = new Date(task.startDate)
     const taskDue = new Date(task.dueDate)
 
     // Filter approved leaves for this assignee
-    const assigneeLeaves = leaveDays.filter((l: any) => l.employeeId === task.assigneeId)
+    const assigneeLeaves = leaveDays.filter((l: GanttLeaveDay) => l.employeeId === task.assigneeId)
 
-    const conflictingLeaves = assigneeLeaves.filter((leave: any) => {
+    const conflictingLeaves = assigneeLeaves.filter((leave: GanttLeaveDay) => {
       const leaveStart = new Date(leave.startDate)
       const leaveEnd = new Date(leave.endDate)
 
@@ -573,7 +581,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
     if (conflictingLeaves.length === 0) return null
 
     // Format leave dates for tooltips
-    return conflictingLeaves.map((l: any) => {
+    return conflictingLeaves.map((l: GanttLeaveDay) => {
       const startStr = format(new Date(l.startDate), "dd/MM")
       const endStr = format(new Date(l.endDate), "dd/MM")
       return `${startStr} - ${endStr}${l.reason ? ` (${l.reason})` : ""}`
@@ -582,8 +590,8 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
 
   // Helper to check if a member is on leave on a specific day
   const isEmployeeOnLeaveOnDay = (employeeId: string, day: Date) => {
-    const employeeLeaves = leaveDays.filter((l: any) => l.employeeId === employeeId)
-    return employeeLeaves.some((leave: any) => {
+    const employeeLeaves = leaveDays.filter((l: GanttLeaveDay) => l.employeeId === employeeId)
+    return employeeLeaves.some((leave: GanttLeaveDay) => {
       const start = new Date(leave.startDate)
       const end = new Date(leave.endDate)
       // Check if day is within [start, end]
@@ -592,7 +600,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
   }
 
   // Helper to render task bar position and duration
-  const getTaskGridStyle = (task: any) => {
+  const getTaskGridStyle = (task: Task) => {
     if (!task.startDate || !task.dueDate) return null
 
     const taskStart = new Date(task.startDate)
@@ -626,7 +634,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
   }
 
   // Change task date duration (shifting task days)
-  const shiftTaskDates = (task: any, days: number) => {
+  const shiftTaskDates = (task: Task, days: number) => {
     if (!task.startDate || !task.dueDate) return
     const newStart = addDays(new Date(task.startDate), days)
     const newDue = addDays(new Date(task.dueDate), days)
@@ -778,7 +786,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
   // Render values selector dynamically
   const renderValueSelector = (key: string, operator: string, value: string, onChange: (val: string) => void) => {
     const def = filterDefinitions[key as keyof typeof filterDefinitions]
-    if (!def) return null
+    if (def === undefined) return null
 
     if (key === "status") {
       if (operator !== "là" && operator !== "không là") return null
