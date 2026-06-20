@@ -34,7 +34,7 @@ import { useAuthStore } from "@/store/auth-store"
 import { extractErrorMessage } from "@/utils/error-helper"
 import { TaskReviewModal } from "./task-review-modal"
 import type { Project, GanttLeaveDay } from "@/types/project.types"
-import type { Task, UpdateTaskDto } from "@/types/task.types"
+import type { Task, UpdateTaskDto, TaskSpentTime } from "@/types/task.types"
 
 interface ProjectGanttTabProps {
   projectId: string
@@ -77,7 +77,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
     enabled: boolean
     operator: string
     value: string
-  }>>({
+  } | undefined>>({
     status: { enabled: true, operator: "open", value: "" },
     tracker: { enabled: true, operator: "is", value: "task" },
     priority: { enabled: true, operator: "is", value: "medium" },
@@ -89,7 +89,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
     enabled: boolean
     operator: string
     value: string
-  }>>({
+  } | undefined>>({
     status: { enabled: true, operator: "open", value: "" },
     tracker: { enabled: true, operator: "is", value: "task" },
     priority: { enabled: true, operator: "is", value: "medium" },
@@ -270,7 +270,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
   }
 
   const getDefaultOperator = (key: string) => {
-    const def = filterDefinitions[key as keyof typeof filterDefinitions]
+    const def = (filterDefinitions as Record<string, { label: string; type: string; group: string } | undefined>)[key]
     if (def === undefined) return "is"
     if (key === "status") return "open"
     if (key === "tracker" || key === "priority") return "is"
@@ -283,7 +283,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
   }
 
   const getDefaultValue = (key: string) => {
-    const def = filterDefinitions[key as keyof typeof filterDefinitions]
+    const def = (filterDefinitions as Record<string, { label: string; type: string; group: string } | undefined>)[key]
     if (def === undefined) return ""
     if (key === "tracker") return "task"
     if (key === "priority") return "medium"
@@ -349,9 +349,9 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
   const filteredTasks = useMemo(() => {
     return tasks.filter((task: Task) => {
       for (const key of appliedFilterKeys) {
-        if (!Object.prototype.hasOwnProperty.call(filterDefinitions, key)) continue
+        if (!Object.prototype.hasOwnProperty.call(appliedFilterStates, key)) continue
         const filter = appliedFilterStates[key]
-        if (filter === undefined || !filter.enabled) continue
+        if (!filter?.enabled) continue
 
         if (key === "status") {
           const statusVal = task.status
@@ -793,7 +793,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
       return (
         <select
           value={value || "todo"}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => { onChange(e.target.value); }}
           className="h-8 rounded-full border border-border/40 px-3 text-xs font-semibold focus:outline-none focus:border-primary bg-background cursor-pointer"
         >
           <option value="todo">New</option>
@@ -810,7 +810,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
       return (
         <select
           value={value || "task"}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => { onChange(e.target.value); }}
           className="h-8 rounded-full border border-border/40 px-3 text-xs font-semibold focus:outline-none focus:border-primary bg-background cursor-pointer"
         >
           <option value="feature">Feature</option>
@@ -829,7 +829,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
       return (
         <select
           value={value || "medium"}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => { onChange(e.target.value); }}
           className="h-8 rounded-full border border-border/40 px-3 text-xs font-semibold focus:outline-none focus:border-primary bg-background cursor-pointer"
         >
           <option value="low">Thấp</option>
@@ -846,7 +846,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
       return (
         <select
           value={value || (assignees[0]?.id || "")}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => { onChange(e.target.value); }}
           className="h-8 rounded-full border border-border/40 px-3 text-xs font-semibold focus:outline-none focus:border-primary bg-background cursor-pointer max-w-[200px]"
         >
           {assignees.map((a) => (
@@ -862,7 +862,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
         <input
           type="text"
           value={value || ""}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => { onChange(e.target.value); }}
           placeholder="..."
           className="h-8 rounded-full border border-border/40 px-3 text-xs focus:outline-none focus:border-primary bg-background w-32 font-semibold"
         />
@@ -875,7 +875,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
         <input
           type="number"
           value={value || "0"}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => { onChange(e.target.value); }}
           className="h-8 rounded-full border border-border/40 px-3 text-xs font-semibold focus:outline-none focus:border-primary bg-background w-20"
         />
       )
@@ -920,7 +920,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
         <input
           type="date"
           value={value || ""}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => { onChange(e.target.value); }}
           className="h-8 rounded-full border border-border/40 px-3 text-xs font-semibold focus:outline-none focus:border-primary bg-background"
         />
       )
@@ -996,8 +996,11 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                 {/* Active filters list */}
                 <div className="space-y-3 flex-1">
                   {activeFilterKeys.map((key) => {
-                    const filter = filterStates[key]
-                    if (!filter) return null
+                    if (!Object.prototype.hasOwnProperty.call(filterDefinitions, key)) return null
+                    const filter = (filterStates as Record<string, { enabled: boolean; operator: string; value: string } | undefined>)[key]
+                    if (filter === undefined) return null
+                    
+                    const def = (filterDefinitions as Record<string, { label: string; type: string; group: string } | undefined>)[key]
                     
                     return (
                       <div key={key} className="flex flex-wrap items-center gap-2 md:gap-4 py-1">
@@ -1007,14 +1010,19 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                             type="checkbox" 
                             checked={filter.enabled} 
                             onChange={(e) => {
-                              setFilterStates(prev => ({
-                                ...prev,
-                                [key]: { ...prev[key], enabled: e.target.checked }
-                              }))
+                              setFilterStates(prev => {
+                                if (!Object.prototype.hasOwnProperty.call(prev, key)) return prev
+                                const existing = prev[key]
+                                if (existing === undefined) return prev
+                                return {
+                                  ...prev,
+                                  [key]: { ...existing, enabled: e.target.checked }
+                                }
+                              })
                             }} 
                             className="rounded border-border/40 size-3.5 text-primary focus:ring-0 focus:ring-offset-0"
                           />
-                          <span>{filterDefinitions[key as keyof typeof filterDefinitions]?.label || key}</span>
+                          <span>{def?.label || key}</span>
                         </label>
 
                         {/* Operator Select */}
@@ -1023,10 +1031,9 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                           onChange={(e) => {
                             const op = e.target.value
                             let val = filter.value
-                            const def = filterDefinitions[key as keyof typeof filterDefinitions]
                             
                             // Initialize default value when changing operators if needed
-                            if (def) {
+                            if (def !== undefined) {
                               if (def.type === "employee" && (op === "là" || op === "không là") && !val) {
                                 val = assignees[0]?.id || ""
                               } else if (key === "status" && (op === "là" || op === "không là") && !val) {
@@ -1038,17 +1045,21 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                               }
                             }
 
-                            setFilterStates(prev => ({
-                              ...prev,
-                              [key]: { ...prev[key], operator: op, value: val }
-                            }))
+                            setFilterStates(prev => {
+                              if (!Object.prototype.hasOwnProperty.call(prev, key)) return prev
+                              const existing = prev[key]
+                              if (existing === undefined) return prev
+                              return {
+                                ...prev,
+                                [key]: { ...existing, operator: op, value: val }
+                              }
+                            })
                           }}
                           className="h-8 rounded-full border border-border/40 px-3 text-xs font-semibold focus:outline-none focus:border-primary bg-background cursor-pointer"
                         >
                           {/* Render operators based on type */}
                           {(() => {
-                            const def = filterDefinitions[key as keyof typeof filterDefinitions]
-                            if (!def) return <option value="is">là</option>
+                            if (def === undefined) return <option value="is">là</option>
 
                             if (key === "status") {
                               return (
@@ -1130,10 +1141,15 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
 
                         {/* Value Select (Conditional) */}
                         {renderValueSelector(key, filter.operator, filter.value, (val) => {
-                          setFilterStates(prev => ({
-                            ...prev,
-                            [key]: { ...prev[key], value: val }
-                          }))
+                          setFilterStates(prev => {
+                            if (!Object.prototype.hasOwnProperty.call(prev, key)) return prev
+                            const existing = prev[key]
+                            if (existing === undefined) return prev
+                            return {
+                              ...prev,
+                              [key]: { ...existing, value: val }
+                            }
+                          })
                         })}
 
                         {/* Delete Button */}
@@ -1202,7 +1218,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
           {/* Collapsible Options Link Toggle */}
           <div className="flex items-center">
             <button 
-              onClick={() => setIsOptionsExpanded(!isOptionsExpanded)}
+              onClick={() => { setIsOptionsExpanded(!isOptionsExpanded); }}
               className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors select-none"
             >
               {isOptionsExpanded ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
@@ -1223,7 +1239,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                     <input 
                       type="checkbox" 
                       checked={showEstTime} 
-                      onChange={(e) => setShowEstTime(e.target.checked)} 
+                      onChange={(e) => { setShowEstTime(e.target.checked); }} 
                       className="rounded border-border/40 size-3.5 text-primary focus:ring-0 focus:ring-offset-0"
                     />
                     <span>Ước lượng thời gian & log time (Est)</span>
@@ -1232,7 +1248,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                     <input 
                       type="checkbox" 
                       checked={showAssignee} 
-                      onChange={(e) => setShowAssignee(e.target.checked)} 
+                      onChange={(e) => { setShowAssignee(e.target.checked); }} 
                       className="rounded border-border/40 size-3.5 text-primary focus:ring-0 focus:ring-offset-0"
                     />
                     <span>Người thực hiện nhiệm vụ (Assignee)</span>
@@ -1250,7 +1266,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                     <input 
                       type="checkbox" 
                       checked={showLeaves} 
-                      onChange={(e) => setShowLeaves(e.target.checked)} 
+                      onChange={(e) => { setShowLeaves(e.target.checked); }} 
                       className="rounded border-border/40 size-3.5 text-primary focus:ring-0 focus:ring-offset-0"
                     />
                     <span>Hiển thị ngày nghỉ phép nhân sự (HR)</span>
@@ -1259,7 +1275,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                     <input 
                       type="checkbox" 
                       checked={showConflicts} 
-                      onChange={(e) => setShowConflicts(e.target.checked)} 
+                      onChange={(e) => { setShowConflicts(e.target.checked); }} 
                       className="rounded border-border/40 size-3.5 text-primary focus:ring-0 focus:ring-offset-0"
                     />
                     <span>Cảnh báo xung đột trùng lịch nghỉ phép ⚠️</span>
@@ -1277,7 +1293,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                     <input 
                       type="checkbox" 
                       checked={showProgress} 
-                      onChange={(e) => setShowProgress(e.target.checked)} 
+                      onChange={(e) => { setShowProgress(e.target.checked); }} 
                       className="rounded border-border/40 size-3.5 text-primary focus:ring-0 focus:ring-offset-0"
                     />
                     <span>Hiển thị nhãn tiến độ dòng thời gian</span>
@@ -1293,7 +1309,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
               <input 
                 type="number" 
                 value={monthsInput} 
-                onChange={(e) => setMonthsInput(e.target.value)} 
+                onChange={(e) => { setMonthsInput(e.target.value); }} 
                 className="w-12 h-8 rounded-md border border-border/40 px-2 text-center text-xs font-semibold focus:outline-none focus:border-primary bg-background"
                 min="1"
                 max="12"
@@ -1301,7 +1317,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
               <span className="text-muted-foreground font-medium">tháng từ</span>
               <select 
                 value={monthInput} 
-                onChange={(e) => setMonthInput(parseInt(e.target.value))} 
+                onChange={(e) => { setMonthInput(parseInt(e.target.value)); }} 
                 className="h-8 rounded-md border border-border/40 px-2 text-xs font-semibold focus:outline-none focus:border-primary bg-background cursor-pointer"
               >
                 <option value={0}>Tháng một</option>
@@ -1319,7 +1335,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
               </select>
               <select 
                 value={yearInput} 
-                onChange={(e) => setYearInput(parseInt(e.target.value))} 
+                onChange={(e) => { setYearInput(parseInt(e.target.value)); }} 
                 className="h-8 rounded-md border border-border/40 px-2 text-xs font-semibold focus:outline-none focus:border-primary bg-background cursor-pointer"
               >
                 <option value={2025}>2025</option>
@@ -1377,7 +1393,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
 
               <div className="flex items-center gap-2">
                 <button 
-                  onClick={() => shiftTimelineByMonth(-1)} 
+                  onClick={() => { shiftTimelineByMonth(-1); }} 
                   className="text-blue-600 dark:text-blue-400 hover:underline font-normal flex items-center gap-0.5"
                 >
                   <ChevronLeft className="size-3.5" />
@@ -1385,7 +1401,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                 </button>
                 <span className="text-muted-foreground/30">|</span>
                 <button 
-                  onClick={() => shiftTimelineByMonth(1)} 
+                  onClick={() => { shiftTimelineByMonth(1); }} 
                   className="text-blue-600 dark:text-blue-400 hover:underline font-normal flex items-center gap-0.5"
                 >
                   {getMonthOffsetLabel(1)}
@@ -1451,7 +1467,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                     Chưa có công việc nào khớp với bộ lọc
                   </div>
                 ) : (
-                  treeTasks.map((task: any) => (
+                  treeTasks.map((task: Task & { depth: number }) => (
                     <div key={task.id} className="h-16 flex items-center justify-between px-4 hover:bg-muted/5 transition-colors">
                       <div 
                         className="flex flex-col min-w-0 pr-2"
@@ -1464,7 +1480,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                             </span>
                           )}
                           <button
-                            onClick={() => setSelectedTaskForReview(task)}
+                            onClick={() => { setSelectedTaskForReview(task); }}
                             className="text-blue-600 dark:text-blue-400 hover:underline font-normal shrink-0 mr-1"
                           >
                             {task.tracker ? task.tracker.charAt(0).toUpperCase() + task.tracker.slice(1) : "Task"} #{task.id.slice(-5)}
@@ -1483,7 +1499,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                           {task.estimatedTime && showEstTime ? (
                             <div className="flex items-center gap-1 font-normal">
                               <Clock className="size-3 text-muted-foreground" />
-                              <span>{task.spentTimes?.reduce((s: number, st: any) => s + st.hours, 0) || 0}h / {task.estimatedTime}h</span>
+                              <span>{task.spentTimes?.reduce((s: number, st: TaskSpentTime) => s + st.hours, 0) || 0}h / {task.estimatedTime}h</span>
                             </div>
                           ) : null}
                         </div>

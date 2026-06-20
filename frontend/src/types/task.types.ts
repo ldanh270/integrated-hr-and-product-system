@@ -23,6 +23,7 @@ export interface Task {
   resultNotes?: string | null
   rejectionReason?: string | null
   parentTaskId?: string | null
+  spentTimes?: TaskSpentTime[]
   createdAt: string
   updatedAt: string
   project?: {
@@ -98,4 +99,12 @@ export interface PaginatedTasksDto {
     limit: number
     totalPages: number
   }
+}
+export interface TaskSpentTime {
+  id: string
+  employeeId: string
+  hours: number
+  comment: string | null
+  activity: string
+  date: string
 }
