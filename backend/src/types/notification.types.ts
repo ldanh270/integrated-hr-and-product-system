@@ -1,3 +1,5 @@
+import type { Notification } from "@prisma/client"
+
 export interface ICreateNotificationDTO {
   userId: string
   title: string
@@ -7,15 +9,15 @@ export interface ICreateNotificationDTO {
 }
 
 export interface INotificationRepository {
-  create(data: ICreateNotificationDTO): Promise<any>
-  findByUserId(userId: string): Promise<any[]>
+  create(data: ICreateNotificationDTO): Promise<Notification>
+  findByUserId(userId: string): Promise<Notification[]>
   markAsRead(id: string, userId: string): Promise<any>
   markAllAsRead(userId: string): Promise<any>
 }
 
 export interface INotificationService {
-  createNotification(data: ICreateNotificationDTO): Promise<any>
-  getUserNotifications(userId: string): Promise<any[]>
+  createNotification(data: ICreateNotificationDTO): Promise<Notification>
+  getUserNotifications(userId: string): Promise<Notification[]>
   markAsRead(id: string, userId: string): Promise<any>
   markAllAsRead(userId: string): Promise<any>
 }

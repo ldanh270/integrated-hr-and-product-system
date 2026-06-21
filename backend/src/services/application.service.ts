@@ -385,10 +385,7 @@ export class ApplicationService implements IApplicationService {
 
     if (isApproved) {
       // Update partner approval status
-      await prisma.applicationShiftSwapDetail.update({
-        where: { applicationId: id },
-        data: { partnerApprovalStatus: PARTNER_APPROVAL_STATUS.APPROVED }
-      })
+      await this.applicationRepo.updateShiftSwapPartnerApproval(id, PARTNER_APPROVAL_STATUS.APPROVED)
 
       // Notify manager if assignedToId exists
       if (app.assignedToId) {
@@ -401,10 +398,7 @@ export class ApplicationService implements IApplicationService {
       }
     } else {
       // Partner rejects -> reject the whole application
-      await prisma.applicationShiftSwapDetail.update({
-        where: { applicationId: id },
-        data: { partnerApprovalStatus: PARTNER_APPROVAL_STATUS.REJECTED }
-      })
+      await this.applicationRepo.updateShiftSwapPartnerApproval(id, PARTNER_APPROVAL_STATUS.REJECTED)
       await this.rejectApplication(id, partnerId, SERVICE_ERRORS.SWAP_REJECTED_REASON)
 
       // Notify requester
@@ -443,7 +437,7 @@ export class ApplicationService implements IApplicationService {
       throw new AppError(
         SERVICE_ERRORS.APPROVER_NOT_FOUND(employeeId),
         HttpStatusCode.NOT_FOUND,
-        "Service",
+        ErrorLayer.SERVICE,
         "APPROVER_NOT_FOUND",
       )
     }
@@ -452,7 +446,7 @@ export class ApplicationService implements IApplicationService {
       throw new AppError(
         SERVICE_ERRORS.INVALID_APPROVER_ROLE,
         HttpStatusCode.BAD_REQUEST,
-        "Service",
+        ErrorLayer.SERVICE,
         "INVALID_APPROVER_ROLE",
       )
     }

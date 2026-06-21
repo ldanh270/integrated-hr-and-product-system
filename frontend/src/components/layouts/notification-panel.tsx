@@ -62,7 +62,7 @@ export default function NotificationPanel() {
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] })
+      void queryClient.invalidateQueries({ queryKey: ["notifications"] })
     },
   })
 
@@ -88,7 +88,7 @@ export default function NotificationPanel() {
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] })
+      void queryClient.invalidateQueries({ queryKey: ["notifications"] })
     },
   })
 

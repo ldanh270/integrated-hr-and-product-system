@@ -1,4 +1,4 @@
-import { ErrorCode } from "@/configs/system/error-code.config.ts"
+import { ErrorCode, ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import {
@@ -28,7 +28,8 @@ export class ApplicationController {
    */
   submit = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
-      const employeeId = req.user!.empId // §SEC: always from JWT, never from body
+      const employeeId = req.user?.empId // §SEC: always from JWT, never from body
+      if (!employeeId) throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
       const data = submitApplicationSchema.parse(req.body)
       const app = await this.service.submitApplication({ ...data, employeeId } as any)
       res.status(HttpStatusCode.CREATED).json({ data: app, error: null })
@@ -87,7 +88,7 @@ export class ApplicationController {
           data: null,
           error: {
             message: "Invalid query parameters",
-            code: "VALIDATION_ERROR",
+            code: ErrorCode.VALIDATION_ERROR,
             meta: error.issues,
           },
         })
@@ -106,7 +107,8 @@ export class ApplicationController {
    */
   listMine = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
-      const employeeId = req.user!.empId
+      const employeeId = req.user?.empId
+      if (!employeeId) throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
       const query = listApplicationsQuerySchema.parse(req.query)
       const result = await this.service.getEmployeeApplications(employeeId, query)
       res.status(HttpStatusCode.OK).json({
@@ -125,7 +127,7 @@ export class ApplicationController {
           data: null,
           error: {
             message: "Invalid query parameters",
-            code: "VALIDATION_ERROR",
+            code: ErrorCode.VALIDATION_ERROR,
             meta: error.issues,
           },
         })
@@ -150,7 +152,7 @@ export class ApplicationController {
           data: null,
           error: {
             message: "Missing employeeId in request body",
-            code: "VALIDATION_ERROR",
+            code: ErrorCode.VALIDATION_ERROR,
           },
         })
       }
@@ -174,7 +176,7 @@ export class ApplicationController {
           data: null,
           error: {
             message: "Invalid query parameters",
-            code: "VALIDATION_ERROR",
+            code: ErrorCode.VALIDATION_ERROR,
             meta: error.issues,
           },
         })
@@ -192,7 +194,8 @@ export class ApplicationController {
    */
   cancel = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
-      const employeeId = req.user!.empId
+      const employeeId = req.user?.empId
+      if (!employeeId) throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
       cancelApplicationSchema.parse(req.body ?? {}) // validates optional reason field
       const app = await this.service.cancelApplication(String(req.params.id), employeeId)
       res.status(HttpStatusCode.OK).json({ data: app, error: null })
@@ -221,7 +224,8 @@ export class ApplicationController {
    */
   approve = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
-      const processorId = req.user!.empId // §SEC: from JWT
+      const processorId = req.user?.empId // §SEC: from JWT
+      if (!processorId) throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
       approveApplicationSchema.parse(req.body) // validates status=approved only
 
       const app = await this.service.approveApplication(String(req.params.id), processorId)
@@ -230,7 +234,7 @@ export class ApplicationController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
+          error: { message: "Validation error", code: ErrorCode.VALIDATION_ERROR, meta: error.issues },
         })
       }
       throw error
@@ -247,7 +251,8 @@ export class ApplicationController {
    */
   reject = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
-      const processorId = req.user!.empId // §SEC: from JWT
+      const processorId = req.user?.empId // §SEC: from JWT
+      if (!processorId) throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
       const { rejectReason } = rejectApplicationSchema.parse(req.body)
 
       const app = await this.service.rejectApplication(
@@ -260,7 +265,7 @@ export class ApplicationController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
+          error: { message: "Validation error", code: ErrorCode.VALIDATION_ERROR, meta: error.issues },
         })
       }
       throw error
@@ -272,8 +277,11 @@ export class ApplicationController {
    */
   partnerApprove = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
-      const partnerId = req.user!.empId
-      const isApproved = req.body.isApproved === true
+      const partnerId = req.user?.empId
+      if (!partnerId) throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
+
+      const schema = z.object({ isApproved: z.boolean() })
+      const { isApproved } = schema.parse(req.body)
 
       const app = await this.service.partnerApproveSwap(
         String(req.params.id),
@@ -282,6 +290,12 @@ export class ApplicationController {
       )
       res.status(HttpStatusCode.OK).json({ data: app, error: null })
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: { message: "Validation error", code: ErrorCode.VALIDATION_ERROR, meta: error.issues },
+        })
+      }
       throw error
     }
   }

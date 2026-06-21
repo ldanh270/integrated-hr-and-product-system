@@ -264,6 +264,8 @@ export interface IApplicationRepository {
     excludeId?: string,
   ): Promise<boolean>
   getUsedLeaveDays(employeeId: string, leaveType: ILeaveType, year: number): Promise<number>
+  /** Updates partner approval status for shift swap applications. */
+  updateShiftSwapPartnerApproval(applicationId: string, status: any): Promise<any>
 }
 
 /**

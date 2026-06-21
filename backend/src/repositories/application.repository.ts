@@ -1,4 +1,5 @@
-import { APPLICATION_TYPES, PAID_LEAVE_TYPES } from "@/configs/entities/attendance.config.ts"
+import { APPLICATION_TYPES, PAID_LEAVE_TYPES, EMPLOYEE_SHIFT_STATUS } from "@/configs/entities/attendance.config.ts"
+import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import {
   IApplicationRepository,
   ILeaveType,
@@ -6,7 +7,7 @@ import {
   ISubmitApplicationDTO,
 } from "@/types/attendance.types.ts"
 
-import { ApplicationStatus, ApplicationType, AttendanceStatus, PrismaClient } from "@prisma/client"
+import { ApplicationStatus, ApplicationType, AttendanceStatus, PrismaClient, Prisma } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
@@ -192,19 +193,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
               where: { id: detail.employeeShiftId },
             })
             if (shift) {
-              await tx.attendanceRecord.upsert({
-                where: { employeeShiftId: shift.id },
-                create: {
-                  employeeId: shift.employeeId,
-                  employeeShiftId: shift.id,
-                  date: shift.assignedDate,
-                  status: AttendanceStatus.overtime,
-                  overtimeMinutes: minutes,
-                },
-                update: {
-                  overtimeMinutes: { increment: minutes },
-                },
-              })
+              await this._upsertAttendanceRecord(tx, shift, AttendanceStatus.overtime, undefined, minutes)
             }
           }
         } else if (app.type === ApplicationType.leave || app.type === ApplicationType.work_from_home) {
@@ -221,20 +210,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
             const leaveTypeStr = app.leaveDetail?.leaveType || ""
             const newNote = isLeave ? `Nghỉ phép có phê duyệt: ${leaveTypeStr}` : "WFH có phê duyệt"
             
-            await tx.attendanceRecord.upsert({
-              where: { employeeShiftId: shift.id },
-              create: {
-                employeeId: shift.employeeId,
-                employeeShiftId: shift.id,
-                date: shift.assignedDate,
-                status: newStatus,
-                note: newNote,
-              },
-              update: {
-                status: newStatus,
-                note: newNote,
-              }
-            })
+            await this._upsertAttendanceRecord(tx, shift, newStatus, newNote)
           }
         } else if (app.type === ApplicationType.late_early && app.lateEarlyDetail) {
           const detail = app.lateEarlyDetail
@@ -243,27 +219,14 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
           })
           if (shift) {
             const noteText = `Được duyệt ${detail.isLate ? "đi muộn" : "về sớm"}: ${detail.durationMinutes} phút`
-            await tx.attendanceRecord.upsert({
-              where: { employeeShiftId: shift.id },
-              create: {
-                employeeId: shift.employeeId,
-                employeeShiftId: shift.id,
-                date: shift.assignedDate,
-                status: AttendanceStatus.on_time,
-                note: noteText,
-              },
-              update: {
-                note: noteText,
-              }
-            })
+            await this._upsertAttendanceRecord(tx, shift, AttendanceStatus.on_time, noteText)
           }
         } else if (app.type === ApplicationType.resignation) {
           await tx.employee.update({
             where: { id: app.employeeId },
             data: {
-              status: "inactive",
+              status: EMPLOYEE_STATUS.INACTIVE,
               endDate: app.endDate,
-              deletedAt: app.endDate // soft delete
             }
           })
           
@@ -274,7 +237,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
           
           await tx.employeeShift.updateMany({
             where: { employeeId: app.employeeId, assignedDate: { gt: app.endDate } },
-            data: { status: "cancelled" }
+            data: { status: EMPLOYEE_SHIFT_STATUS.CANCELLED }
           })
         }
 
@@ -512,5 +475,40 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     ])
 
     return { data, total }
+  }
+
+  /**
+   * Helper to upsert an attendance record.
+   */
+  private async _upsertAttendanceRecord(
+    tx: Prisma.TransactionClient,
+    shift: any,
+    status: AttendanceStatus,
+    note?: string,
+    overtimeMinutes?: number
+  ) {
+    return tx.attendanceRecord.upsert({
+      where: { employeeShiftId: shift.id },
+      create: {
+        employeeId: shift.employeeId,
+        employeeShiftId: shift.id,
+        date: shift.assignedDate,
+        status,
+        ...(note && { note }),
+        ...(overtimeMinutes && { overtimeMinutes }),
+      },
+      update: {
+        status,
+        ...(note && { note }),
+        ...(overtimeMinutes && { overtimeMinutes: { increment: overtimeMinutes } }),
+      }
+    })
+  }
+
+  async updateShiftSwapPartnerApproval(applicationId: string, status: any): Promise<any> {
+    return this.prisma.applicationShiftSwapDetail.update({
+      where: { applicationId },
+      data: { partnerApprovalStatus: status }
+    })
   }
 }
