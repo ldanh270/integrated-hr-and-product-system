@@ -207,6 +207,75 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
               })
             }
           }
+        } else if (app.type === ApplicationType.leave || app.type === ApplicationType.work_from_home) {
+          const shifts = await tx.employeeShift.findMany({
+            where: {
+              employeeId: app.employeeId,
+              assignedDate: { gte: app.startDate, lte: app.endDate },
+            },
+          })
+          
+          for (const shift of shifts) {
+            const isLeave = app.type === ApplicationType.leave
+            const newStatus = isLeave ? AttendanceStatus.absent : AttendanceStatus.on_time
+            const leaveTypeStr = app.leaveDetail?.leaveType || ""
+            const newNote = isLeave ? `Nghỉ phép có phê duyệt: ${leaveTypeStr}` : "WFH có phê duyệt"
+            
+            await tx.attendanceRecord.upsert({
+              where: { employeeShiftId: shift.id },
+              create: {
+                employeeId: shift.employeeId,
+                employeeShiftId: shift.id,
+                date: shift.assignedDate,
+                status: newStatus,
+                note: newNote,
+              },
+              update: {
+                status: newStatus,
+                note: newNote,
+              }
+            })
+          }
+        } else if (app.type === ApplicationType.late_early && app.lateEarlyDetail) {
+          const detail = app.lateEarlyDetail
+          const shift = await tx.employeeShift.findUnique({
+            where: { id: detail.employeeShiftId },
+          })
+          if (shift) {
+            const noteText = `Được duyệt ${detail.isLate ? "đi muộn" : "về sớm"}: ${detail.durationMinutes} phút`
+            await tx.attendanceRecord.upsert({
+              where: { employeeShiftId: shift.id },
+              create: {
+                employeeId: shift.employeeId,
+                employeeShiftId: shift.id,
+                date: shift.assignedDate,
+                status: AttendanceStatus.on_time,
+                note: noteText,
+              },
+              update: {
+                note: noteText,
+              }
+            })
+          }
+        } else if (app.type === ApplicationType.resignation) {
+          await tx.employee.update({
+            where: { id: app.employeeId },
+            data: {
+              status: "inactive",
+              endDate: app.endDate,
+              deletedAt: app.endDate // soft delete
+            }
+          })
+          
+          await tx.projectMember.updateMany({
+            where: { employeeId: app.employeeId, removedAt: null },
+            data: { removedAt: app.endDate }
+          })
+          
+          await tx.employeeShift.updateMany({
+            where: { employeeId: app.employeeId, assignedDate: { gt: app.endDate } },
+            data: { status: "cancelled" }
+          })
         }
 
           // 3. Update application status

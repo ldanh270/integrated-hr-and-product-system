@@ -8,10 +8,15 @@ import { ApplicationService } from "@/services/application.service.ts"
 
 import express from "express"
 
+import { NotificationService } from "@/services/notification.service.ts"
+import { NotificationRepository } from "@/repositories/notification.repository.ts"
+
 const applicationRoutes = express.Router()
 
+const notifRepo = new NotificationRepository()
+const notifService = new NotificationService(notifRepo)
 const repository = new PrismaApplicationRepository(prisma)
-const service = new ApplicationService(repository)
+const service = new ApplicationService(repository, notifService)
 const controller = new ApplicationController(service)
 
 // All routes require authentication
@@ -30,6 +35,9 @@ applicationRoutes.get("/:id", controller.getById)
 
 // Cancel own pending application
 applicationRoutes.patch("/:id/cancel", controller.cancel)
+
+// Partner approves shift swap
+applicationRoutes.patch("/:id/partner-approve", controller.partnerApprove)
 
 // ─── Manager endpoints ────────────────────────────────────────
 

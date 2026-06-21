@@ -333,6 +333,9 @@ export interface IApplicationService {
     status: IApplicationStatus,
     processorId: string,
   ): Promise<any | null>
+  
+  /** Approves/rejects a shift swap as a partner */
+  partnerApproveSwap(id: string, partnerId: string, isApproved: boolean): Promise<any>
 }
 
 /**

@@ -3,9 +3,11 @@ import {
   APPLICATION_TYPES,
   LEAVE_BALANCE_DEFAULTS,
   PAID_LEAVE_TYPES,
+  PARTNER_APPROVAL_STATUS,
 } from "@/configs/entities/attendance.config.ts"
 import { EMPLOYEE_STATUS, ROLE } from "@/configs/entities/employee.config.ts"
 import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
+import { NOTIFICATION_TYPE } from "@/configs/entities/notification.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { prisma } from "@/libs/database.ts"
@@ -18,8 +20,13 @@ import {
 } from "@/types/attendance.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 
+import { NotificationService } from "@/services/notification.service.ts"
+
 export class ApplicationService implements IApplicationService {
-  constructor(private applicationRepo: IApplicationRepository) {}
+  constructor(
+    private applicationRepo: IApplicationRepository,
+    private notificationService: NotificationService
+  ) {}
 
   /**
    * Submits a new application after validating the specific business rules
@@ -88,7 +95,19 @@ export class ApplicationService implements IApplicationService {
       await this._validateApproverRole(data.assignedToId)
     }
 
-    return this.applicationRepo.submit(data)
+    const submittedApp = await this.applicationRepo.submit(data)
+
+    // Notify partner if it's a shift swap with a specific employee
+    if (data.type === APPLICATION_TYPES.SHIFT_SWAP.LABEL && data.detail.swapWithEmployeeId) {
+      await this.notificationService.createNotification({
+        userId: data.detail.swapWithEmployeeId,
+        title: "Yêu cầu đổi ca làm việc",
+        message: `Bạn nhận được yêu cầu đổi ca làm việc từ một nhân viên. Vui lòng kiểm tra ứng dụng để xác nhận.`,
+        type: NOTIFICATION_TYPE.APPROVAL
+      })
+    }
+
+    return submittedApp
   }
 
   /**
@@ -262,6 +281,17 @@ export class ApplicationService implements IApplicationService {
       )
     }
 
+    if (app.type === APPLICATION_TYPES.SHIFT_SWAP.LABEL && app.shiftSwapDetail?.swapWithEmployeeId) {
+      if (app.shiftSwapDetail.partnerApprovalStatus !== PARTNER_APPROVAL_STATUS.APPROVED) {
+        throw new AppError(
+          "Không thể duyệt: Nhân viên được đổi ca chưa đồng ý",
+          HttpStatusCode.BAD_REQUEST,
+          ErrorLayer.SERVICE,
+          "PARTNER_NOT_APPROVED",
+        )
+      }
+    }
+
     const updated = await this.applicationRepo.approve(id, processorId)
     if (!updated) {
       throw new AppError(
@@ -269,6 +299,13 @@ export class ApplicationService implements IApplicationService {
         HttpStatusCode.INTERNAL_SERVER_ERROR,
         ErrorLayer.SERVICE,
       )
+    }
+
+    // Send notifications if it's a shift swap
+    if (updated.type === APPLICATION_TYPES.SHIFT_SWAP.LABEL && updated.shiftSwapDetail?.swapWithEmployeeId) {
+      const msg = "Đơn đổi ca của bạn đã được quản lý phê duyệt. Lịch làm việc đã được thay đổi."
+      await this.notificationService.createNotification({ userId: updated.employeeId, title: "Đổi ca thành công", message: msg, type: NOTIFICATION_TYPE.SYSTEM })
+      await this.notificationService.createNotification({ userId: updated.shiftSwapDetail.swapWithEmployeeId, title: "Đổi ca thành công", message: msg, type: NOTIFICATION_TYPE.SYSTEM })
     }
 
     return updated
@@ -349,6 +386,60 @@ export class ApplicationService implements IApplicationService {
       ErrorLayer.SERVICE,
       "INVALID_STATUS_TRANSITION",
     )
+  }
+
+  /**
+   * Approves or rejects a shift swap application as a partner.
+   */
+  async partnerApproveSwap(id: string, partnerId: string, isApproved: boolean): Promise<any> {
+    const app = await this.applicationRepo.findById(id)
+
+    if (!app || app.type !== APPLICATION_TYPES.SHIFT_SWAP.LABEL || !app.shiftSwapDetail) {
+      throw new AppError("Invalid application or not a shift swap", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE)
+    }
+
+    if (app.shiftSwapDetail.swapWithEmployeeId !== partnerId) {
+      throw new AppError("Forbidden: You are not the partner for this swap", HttpStatusCode.FORBIDDEN, ErrorLayer.SERVICE)
+    }
+
+    if (app.shiftSwapDetail.partnerApprovalStatus !== PARTNER_APPROVAL_STATUS.PENDING) {
+      throw new AppError("Partner has already responded", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE)
+    }
+
+    if (isApproved) {
+      // Update partner approval status
+      await prisma.applicationShiftSwapDetail.update({
+        where: { applicationId: id },
+        data: { partnerApprovalStatus: PARTNER_APPROVAL_STATUS.APPROVED }
+      })
+
+      // Notify manager if assignedToId exists
+      if (app.assignedToId) {
+        await this.notificationService.createNotification({
+          userId: app.assignedToId,
+          title: "Đơn đổi ca đã được 2 bên đồng ý",
+          message: `Đơn đổi ca đã được cả 2 nhân viên đồng ý. Vui lòng kiểm tra và duyệt.`,
+          type: NOTIFICATION_TYPE.APPROVAL
+        })
+      }
+    } else {
+      // Partner rejects -> reject the whole application
+      await prisma.applicationShiftSwapDetail.update({
+        where: { applicationId: id },
+        data: { partnerApprovalStatus: PARTNER_APPROVAL_STATUS.REJECTED }
+      })
+      await this.rejectApplication(id, partnerId, "Nhân viên được yêu cầu đổi ca đã từ chối.")
+
+      // Notify requester
+      await this.notificationService.createNotification({
+        userId: app.employeeId,
+        title: "Đơn đổi ca bị từ chối",
+        message: `Nhân viên bạn muốn đổi ca cùng đã từ chối yêu cầu của bạn.`,
+        type: NOTIFICATION_TYPE.SYSTEM
+      })
+    }
+
+    return this.applicationRepo.findById(id)
   }
 
   /**

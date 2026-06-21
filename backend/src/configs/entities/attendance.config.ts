@@ -67,6 +67,14 @@ export const APPLICATION_STATUSES = [
 ] as const
 export type IApplicationStatus = (typeof APPLICATION_STATUSES)[number]
 
+export const PARTNER_APPROVAL_STATUS = {
+  PENDING: "pending",
+  APPROVED: "approved",
+  REJECTED: "rejected",
+} as const
+
+export type IPartnerApprovalStatus = (typeof PARTNER_APPROVAL_STATUS)[keyof typeof PARTNER_APPROVAL_STATUS]
+
 export const REGIME_TYPE = {
   PAID: "paid",
   UNPAID: "unpaid",

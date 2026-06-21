@@ -1,6 +1,10 @@
 import { APPLICATION_STATUS, APPLICATION_TYPE_LABELS, REGIME_TYPE } from "@/config/entities/attendance.config"
 import type { IApplication } from "@/lib/api/application.api"
 import { Check, FileText, Home, RefreshCw, X } from "lucide-react"
+import { useAuthStore } from "@/store/auth-store"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import apiClient from "@/lib/api-client"
+import { toast } from "sonner"
 
 interface ApplicationDetailProps {
   application: IApplication | null
@@ -19,6 +23,23 @@ export function ApplicationDetail({
   onApprove,
   onReject,
 }: ApplicationDetailProps) {
+  const { user } = useAuthStore()
+  const queryClient = useQueryClient()
+
+  const partnerApproveMutation = useMutation({
+    mutationFn: async ({ id, isApproved }: { id: string; isApproved: boolean }) => {
+      const res = await apiClient.patch(`/applications/${id}/partner-approve`, { isApproved })
+      return res.data
+    },
+    onSuccess: () => {
+      toast.success("Đã phản hồi yêu cầu đổi ca")
+      queryClient.invalidateQueries({ queryKey: ["applications"] })
+      onBack()
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error?.message || "Lỗi khi xử lý")
+    }
+  })
   if (isLoading || !application) {
     return (
       <div className="flex flex-col items-center justify-center h-[600px] w-full text-muted-foreground animate-in fade-in">
@@ -46,8 +67,23 @@ export function ApplicationDetail({
         )
       case "overtime":
       case "late_early":
-      case "shift_swap":
       case "work_from_home":
+        return (
+          <>
+            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Từ ngày</th>
+            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Đến ngày</th>
+            <th className="px-4 py-3 font-medium text-muted-foreground text-left w-full">Chi tiết / Lý do</th>
+          </>
+        )
+      case "shift_swap":
+        return (
+          <>
+            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Ngày</th>
+            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Ca hiện tại</th>
+            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Người/Ca muốn đổi</th>
+            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Phản hồi của đối tác</th>
+          </>
+        )
       default:
         return (
           <>
@@ -72,6 +108,29 @@ export function ApplicationDetail({
               {leaveDetail.regimeType === REGIME_TYPE.PAID ? "Có lương" : "Không lương"}
             </td>
             <td className="px-4 py-4 text-foreground">{application.reason || "-"}</td>
+          </>
+        )
+      }
+      case "shift_swap": {
+        const swapDetail = application.detail as any
+        let partnerStatusLabel = "-"
+        let partnerStatusColor = "text-slate-600"
+        if (swapDetail?.partnerApprovalStatus === "pending") {
+          partnerStatusLabel = "Đang chờ"
+          partnerStatusColor = "text-amber-600 font-medium"
+        } else if (swapDetail?.partnerApprovalStatus === "approved") {
+          partnerStatusLabel = "Đã đồng ý"
+          partnerStatusColor = "text-emerald-600 font-medium"
+        } else if (swapDetail?.partnerApprovalStatus === "rejected") {
+          partnerStatusLabel = "Đã từ chối"
+          partnerStatusColor = "text-red-600 font-medium"
+        }
+        return (
+          <>
+            <td className="px-4 py-4 text-foreground">{new Date(application.startDate).toLocaleDateString("vi-VN")}</td>
+            <td className="px-4 py-4 text-foreground">{swapDetail?.employeeShiftId || "-"}</td>
+            <td className="px-4 py-4 text-foreground">{swapDetail?.swapWithEmployeeId ? `NV: ${swapDetail.swapWithEmployeeId}` : `Ca: ${swapDetail?.swapWithShiftId || "-"}`}</td>
+            <td className={`px-4 py-4 ${partnerStatusColor}`}>{partnerStatusLabel}</td>
           </>
         )
       }
@@ -128,6 +187,34 @@ export function ApplicationDetail({
                   <X size={12} strokeWidth={3} />
                 </div>
                 Không duyệt
+              </button>
+            </div>
+          )}
+
+          {/* Actions for Partner (Shift Swap) */}
+          {application.type === "shift_swap" && 
+           (application.detail as any)?.swapWithEmployeeId === user?.personalEmployeeId && 
+           (application.detail as any)?.partnerApprovalStatus === "pending" && (
+            <div className="flex items-center gap-3 ml-4 border-l border-border pl-4">
+              <button
+                onClick={() => partnerApproveMutation.mutate({ id: application.id, isApproved: true })}
+                disabled={partnerApproveMutation.isPending}
+                className="flex items-center gap-2 text-sm font-semibold text-emerald-600 hover:bg-emerald-50 px-3 py-1.5 rounded-full border border-transparent hover:border-emerald-200 transition-all disabled:opacity-50"
+              >
+                <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                  <Check size={12} strokeWidth={3} />
+                </div>
+                Đồng ý đổi ca
+              </button>
+              <button
+                onClick={() => partnerApproveMutation.mutate({ id: application.id, isApproved: false })}
+                disabled={partnerApproveMutation.isPending}
+                className="flex items-center gap-2 text-sm font-semibold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-full border border-transparent hover:border-red-200 transition-all disabled:opacity-50"
+              >
+                <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+                  <X size={12} strokeWidth={3} />
+                </div>
+                Từ chối đổi
               </button>
             </div>
           )}

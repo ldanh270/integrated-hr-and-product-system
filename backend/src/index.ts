@@ -24,6 +24,7 @@ import securityRoutes from "@/routes/security.route.ts"
 import shiftChangeRequestRoutes from "@/routes/shift-change-request.route.ts"
 import shiftRoutes from "@/routes/shift.route.ts"
 import taskRoutes from "@/routes/task.route.ts"
+import notificationRoutes from "@/routes/notification.route.ts"
 
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
@@ -100,6 +101,7 @@ app.use("/api/payrolls", payrollRoutes)
 // Private routes
 app.use("/api/projects", projectRoutes)
 app.use("/api/tasks", taskRoutes)
+app.use("/api/notifications", notificationRoutes)
 // 404 handler
 app.use((req, res) => {
   res.status(HttpStatusCode.NOT_FOUND).json({

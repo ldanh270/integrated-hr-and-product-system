@@ -266,4 +266,23 @@ export class ApplicationController {
       throw error
     }
   }
+
+  /**
+   * Partner approves or rejects a shift swap application.
+   */
+  partnerApprove = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+    try {
+      const partnerId = req.user!.empId
+      const isApproved = req.body.isApproved === true
+
+      const app = await this.service.partnerApproveSwap(
+        String(req.params.id),
+        partnerId,
+        isApproved,
+      )
+      res.status(HttpStatusCode.OK).json({ data: app, error: null })
+    } catch (error) {
+      throw error
+    }
+  }
 }
