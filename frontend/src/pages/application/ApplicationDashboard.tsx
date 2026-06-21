@@ -12,9 +12,9 @@ import { useEffect, useState } from "react"
 import { ChevronRight, Plus } from "lucide-react"
 import { useSearchParams } from "react-router-dom"
 
-import { SubmitApplicationModal } from "./components/SubmitApplicationModal"
 import { CancelDialog } from "./components/CancelDialog"
 import { RejectDialog } from "./components/RejectDialog"
+import { SubmitApplicationModal } from "./components/SubmitApplicationModal"
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
@@ -24,7 +24,7 @@ export default function ApplicationDashboard() {
   const [selectedApp, setSelectedApp] = useState<IApplication | null>(null)
 
   const [searchParams] = useSearchParams()
-  const activeTab = (searchParams.get("tab") || "mine") as "mine" | "manage"
+  const activeTab = (searchParams.get("tab") || "manage") as "mine" | "manage"
   const activeType = searchParams.get("type") || "all"
 
   const myApps = useMyApplications()
@@ -75,7 +75,9 @@ export default function ApplicationDashboard() {
         application={selectedApp}
         isLoading={activeTab === "mine" ? myApps.isLoading : manageApps.isLoading}
         mode={activeTab}
-        onBack={() => { setView("list"); }}
+        onBack={() => {
+          setView("list")
+        }}
         onApprove={handleApproveFromDetail}
         onReject={setRejectTarget}
       />
@@ -92,7 +94,9 @@ export default function ApplicationDashboard() {
           <div className="relative">
             <button
               className="flex h-8 w-8 items-center justify-center rounded-full border border-primary text-primary hover:bg-primary/10 transition-colors"
-              onClick={() => { setShowCreateMenu(!showCreateMenu); }}
+              onClick={() => {
+                setShowCreateMenu(!showCreateMenu)
+              }}
             >
               <Plus size={18} strokeWidth={2.5} />
             </button>
@@ -148,24 +152,36 @@ export default function ApplicationDashboard() {
       {/* Modals */}
       {showSubmitModal && (
         <SubmitApplicationModal
-          onClose={() => { setShowSubmitModal(false); }}
-          onSuccess={() => { void myApps.refetch(); }}
+          onClose={() => {
+            setShowSubmitModal(false)
+          }}
+          onSuccess={() => {
+            void myApps.refetch()
+          }}
           initialType={createType}
         />
       )}
       {cancelTarget && (
         <CancelDialog
           app={cancelTarget}
-          onCancel={() => { setCancelTarget(null); }}
-          onConfirm={() => { void handleCancelConfirm(); }}
+          onCancel={() => {
+            setCancelTarget(null)
+          }}
+          onConfirm={() => {
+            void handleCancelConfirm()
+          }}
           isLoading={myApps.cancellingId === cancelTarget.id}
         />
       )}
       {rejectTarget && (
         <RejectDialog
           app={rejectTarget}
-          onCancel={() => { setRejectTarget(null); }}
-          onConfirm={(reason) => { void handleRejectConfirm(reason); }}
+          onCancel={() => {
+            setRejectTarget(null)
+          }}
+          onConfirm={(reason) => {
+            void handleRejectConfirm(reason)
+          }}
           isLoading={manageApps.processingId === rejectTarget.id}
         />
       )}

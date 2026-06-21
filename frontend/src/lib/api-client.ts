@@ -31,6 +31,23 @@ const processQueue = (error: unknown, token: string | null = null) => {
 }
 
 /**
+ * Public auth endpoints that must propagate their own 401 to the caller.
+ * Auto-refresh on these would swallow the real error (e.g. "Invalid username or password").
+ */
+const PUBLIC_AUTH_PATHS = [
+  "/auth/refresh",
+  "/auth/login",
+  "/auth/forgot-password",
+  "/auth/validate-reset-token",
+  "/auth/reset-password",
+]
+
+const isPublicAuthPath = (url?: string): boolean => {
+  if (!url) return false
+  return PUBLIC_AUTH_PATHS.some((path) => url === path || url.startsWith(`${path}?`))
+}
+
+/**
  * Request interceptor
  */
 apiClient.interceptors.request.use(
@@ -50,7 +67,7 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
-    if (error.response?.status === 401 && originalRequest?.url !== "/auth/refresh") {
+    if (error.response?.status === 401 && !isPublicAuthPath(originalRequest?.url)) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
@@ -82,7 +99,7 @@ apiClient.interceptors.response.use(
           localStorage.removeItem("auth-storage")
           window.location.href = "/login"
         }
-        return Promise.reject(refreshError)
+        return Promise.reject(error)
       } finally {
         isRefreshing = false
       }
