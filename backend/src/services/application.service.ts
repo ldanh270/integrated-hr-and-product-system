@@ -1,11 +1,9 @@
 import {
   APPLICATION_STATUS,
   APPLICATION_TYPES,
-  LEAVE_BALANCE_DEFAULTS,
-  PAID_LEAVE_TYPES,
   PARTNER_APPROVAL_STATUS,
 } from "@/configs/entities/attendance.config.ts"
-import { EMPLOYEE_STATUS, ROLE } from "@/configs/entities/employee.config.ts"
+import { ROLE } from "@/configs/entities/employee.config.ts"
 import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
 import { NOTIFICATION_TYPE } from "@/configs/entities/notification.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
@@ -21,6 +19,37 @@ import {
 import { AppError } from "@/utils/error.util.ts"
 
 import { NotificationService } from "@/services/notification.service.ts"
+import {
+  ApplicationTypeStrategyFactory,
+  IStrategyDeps,
+} from "@/services/application-type.strategy.ts"
+
+const SERVICE_ERRORS = {
+  INVALID_DATE_RANGE: "endDate must be greater than or equal to startDate",
+  NOT_FOUND: "Application not found",
+  CANCEL_FORBIDDEN: "Forbidden: You can only cancel your own applications",
+  INVALID_STATUS_TRANSITION: (status: string) => `Cannot transition application with status '${status}'`,
+  CANCEL_FAILED: "Failed to cancel application",
+  EMPLOYEE_NOT_FOUND: (id: string) => `Employee '${id}' not found`,
+  VIEW_FORBIDDEN: "Forbidden: You can only view applications of employees in your projects",
+  APPROVE_FAILED: "Failed to approve application",
+  REJECT_FAILED: "Failed to reject application",
+  USE_REJECT_ENDPOINT: "Use rejectApplication() — rejectReason is required",
+  INVALID_TRANSITION_TARGET: (status: string) => `Invalid status transition: '${status}'`,
+  INVALID_SWAP_APP: "Invalid application or not a shift swap",
+  SWAP_PARTNER_FORBIDDEN: "Forbidden: You are not the partner for this swap",
+  SWAP_PARTNER_RESPONDED: "Partner has already responded",
+  SWAP_REJECTED_REASON: "Nhân viên được yêu cầu đổi ca đã từ chối.",
+  APPROVER_NOT_FOUND: (id: string) => `Assigned approver '${id}' not found`,
+  INVALID_APPROVER_ROLE: "The selected assignee does not have permission to approve applications",
+} as const
+
+const SERVICE_NOTIFICATIONS = {
+  SWAP_AGREED_TITLE: "Đơn đổi ca đã được 2 bên đồng ý",
+  SWAP_AGREED_MSG: "Đơn đổi ca đã được cả 2 nhân viên đồng ý. Vui lòng kiểm tra và duyệt.",
+  SWAP_REJECTED_TITLE: "Đơn đổi ca bị từ chối",
+  SWAP_REJECTED_MSG: "Nhân viên bạn muốn đổi ca cùng đã từ chối yêu cầu của bạn.",
+} as const
 
 export class ApplicationService implements IApplicationService {
   constructor(
@@ -43,52 +72,20 @@ export class ApplicationService implements IApplicationService {
     // §V1: endDate must be >= startDate
     if (endDate < startDate) {
       throw new AppError(
-        "endDate must be greater than or equal to startDate",
+        SERVICE_ERRORS.INVALID_DATE_RANGE,
         HttpStatusCode.BAD_REQUEST,
         ErrorLayer.SERVICE,
         "INVALID_DATE_RANGE",
       )
     }
 
-    // Type-specific business rule validation
-    switch (data.type) {
-      case APPLICATION_TYPES.LEAVE.LABEL:
-        await this._validateLeaveApplication(
-          data.employeeId,
-          data.detail.leaveType,
-          startDate,
-          endDate,
-        )
-        break
-
-      case APPLICATION_TYPES.OVERTIME.LABEL:
-        await this._validateShiftOwnership(data.detail.employeeShiftId, data.employeeId)
-        await this._validateOvertimeDates(data.detail.employeeShiftId, startDate, endDate)
-        break
-
-      case APPLICATION_TYPES.LATE_EARLY.LABEL:
-        await this._validateShiftOwnership(data.detail.employeeShiftId, data.employeeId)
-        break
-
-      case APPLICATION_TYPES.SHIFT_SWAP.LABEL:
-        await this._validateShiftOwnership(data.detail.employeeShiftId, data.employeeId)
-        if (data.detail.swapWithEmployeeId) {
-          await this._validateEmployeeExists(data.detail.swapWithEmployeeId)
-        }
-        if (data.detail.swapWithShiftId && data.detail.swapWithEmployeeId) {
-          await this._validateShiftOwnership(
-            data.detail.swapWithShiftId,
-            data.detail.swapWithEmployeeId,
-            "Forbidden: The swap-with shift does not belong to the target employee",
-          )
-        }
-        break
-
-      // work_from_home, business_trip, regime, resignation — no extra ownership checks
-      case APPLICATION_TYPES.RESIGNATION.LABEL:
-      default:
-        break
+    // Type-specific validation & side-effects via Strategy Pattern
+    const strategyDeps: IStrategyDeps = {
+      applicationRepo: this.applicationRepo,
+      notificationService: this.notificationService,
     }
+    const strategy = ApplicationTypeStrategyFactory.getStrategy(data.type)
+    await strategy.validate(data, strategyDeps)
 
     // §V7: If assignedToId is provided, validate that the person exists and has an approver role
     if (data.assignedToId) {
@@ -96,17 +93,7 @@ export class ApplicationService implements IApplicationService {
     }
 
     const submittedApp = await this.applicationRepo.submit(data)
-
-    // Notify partner if it's a shift swap with a specific employee
-    if (data.type === APPLICATION_TYPES.SHIFT_SWAP.LABEL && data.detail.swapWithEmployeeId) {
-      await this.notificationService.createNotification({
-        userId: data.detail.swapWithEmployeeId,
-        title: "Yêu cầu đổi ca làm việc",
-        message: `Bạn nhận được yêu cầu đổi ca làm việc từ một nhân viên. Vui lòng kiểm tra ứng dụng để xác nhận.`,
-        type: NOTIFICATION_TYPE.APPROVAL
-      })
-    }
-
+    await strategy.onSubmit(submittedApp, strategyDeps)
     return submittedApp
   }
 
@@ -123,7 +110,7 @@ export class ApplicationService implements IApplicationService {
 
     if (!app) {
       throw new AppError(
-        "Application not found",
+        SERVICE_ERRORS.NOT_FOUND,
         HttpStatusCode.NOT_FOUND,
         ErrorLayer.SERVICE,
         "NOT_FOUND",
@@ -133,7 +120,7 @@ export class ApplicationService implements IApplicationService {
     // §V2: only owner can cancel
     if (app.employeeId !== requesterId) {
       throw new AppError(
-        "Forbidden: You can only cancel your own applications",
+        SERVICE_ERRORS.CANCEL_FORBIDDEN,
         HttpStatusCode.FORBIDDEN,
         ErrorLayer.SERVICE,
         "FORBIDDEN",
@@ -143,7 +130,7 @@ export class ApplicationService implements IApplicationService {
     // §V3: only pending applications can be cancelled
     if (app.status !== APPLICATION_STATUS.PENDING) {
       throw new AppError(
-        `Cannot cancel application with status '${app.status}'`,
+        SERVICE_ERRORS.INVALID_STATUS_TRANSITION(app.status),
         HttpStatusCode.BAD_REQUEST,
         ErrorLayer.SERVICE,
         "INVALID_STATUS_TRANSITION",
@@ -153,7 +140,7 @@ export class ApplicationService implements IApplicationService {
     const cancelled = await this.applicationRepo.cancel(id, requesterId)
     if (!cancelled) {
       throw new AppError(
-        "Failed to cancel application",
+        SERVICE_ERRORS.CANCEL_FAILED,
         HttpStatusCode.INTERNAL_SERVER_ERROR,
         ErrorLayer.SERVICE,
       )
@@ -173,7 +160,7 @@ export class ApplicationService implements IApplicationService {
     const app = await this.applicationRepo.findById(id)
     if (!app) {
       throw new AppError(
-        "Application not found",
+        SERVICE_ERRORS.NOT_FOUND,
         HttpStatusCode.NOT_FOUND,
         ErrorLayer.SERVICE,
         "NOT_FOUND",
@@ -216,7 +203,7 @@ export class ApplicationService implements IApplicationService {
 
     if (!employeeExists) {
       throw new AppError(
-        `Employee '${employeeId}' not found`,
+        SERVICE_ERRORS.EMPLOYEE_NOT_FOUND(employeeId),
         HttpStatusCode.NOT_FOUND,
         ErrorLayer.SERVICE,
         "EMPLOYEE_NOT_FOUND",
@@ -240,7 +227,7 @@ export class ApplicationService implements IApplicationService {
 
       if (!activeProject) {
         throw new AppError(
-          "Forbidden: You can only view applications of employees in your projects",
+          SERVICE_ERRORS.VIEW_FORBIDDEN,
           HttpStatusCode.FORBIDDEN,
           ErrorLayer.SERVICE,
           "FORBIDDEN",
@@ -264,7 +251,7 @@ export class ApplicationService implements IApplicationService {
 
     if (!app) {
       throw new AppError(
-        "Application not found",
+        SERVICE_ERRORS.NOT_FOUND,
         HttpStatusCode.NOT_FOUND,
         ErrorLayer.SERVICE,
         "NOT_FOUND",
@@ -274,40 +261,30 @@ export class ApplicationService implements IApplicationService {
     // §V8: only pending applications can be approved
     if (app.status !== APPLICATION_STATUS.PENDING) {
       throw new AppError(
-        `Cannot approve application with status '${app.status}'`,
+        SERVICE_ERRORS.INVALID_STATUS_TRANSITION(app.status),
         HttpStatusCode.BAD_REQUEST,
         ErrorLayer.SERVICE,
         "INVALID_STATUS_TRANSITION",
       )
     }
 
-    if (app.type === APPLICATION_TYPES.SHIFT_SWAP.LABEL && app.shiftSwapDetail?.swapWithEmployeeId) {
-      if (app.shiftSwapDetail.partnerApprovalStatus !== PARTNER_APPROVAL_STATUS.APPROVED) {
-        throw new AppError(
-          "Không thể duyệt: Nhân viên được đổi ca chưa đồng ý",
-          HttpStatusCode.BAD_REQUEST,
-          ErrorLayer.SERVICE,
-          "PARTNER_NOT_APPROVED",
-        )
-      }
+    const strategyDeps: IStrategyDeps = {
+      applicationRepo: this.applicationRepo,
+      notificationService: this.notificationService,
     }
+    const strategy = ApplicationTypeStrategyFactory.getStrategy(app.type)
+    await strategy.preApprove(app, strategyDeps)
 
     const updated = await this.applicationRepo.approve(id, processorId)
     if (!updated) {
       throw new AppError(
-        "Failed to approve application",
+        SERVICE_ERRORS.APPROVE_FAILED,
         HttpStatusCode.INTERNAL_SERVER_ERROR,
         ErrorLayer.SERVICE,
       )
     }
 
-    // Send notifications if it's a shift swap
-    if (updated.type === APPLICATION_TYPES.SHIFT_SWAP.LABEL && updated.shiftSwapDetail?.swapWithEmployeeId) {
-      const msg = "Đơn đổi ca của bạn đã được quản lý phê duyệt. Lịch làm việc đã được thay đổi."
-      await this.notificationService.createNotification({ userId: updated.employeeId, title: "Đổi ca thành công", message: msg, type: NOTIFICATION_TYPE.SYSTEM })
-      await this.notificationService.createNotification({ userId: updated.shiftSwapDetail.swapWithEmployeeId, title: "Đổi ca thành công", message: msg, type: NOTIFICATION_TYPE.SYSTEM })
-    }
-
+    await strategy.onApprove(updated, strategyDeps)
     return updated
   }
 
@@ -325,7 +302,7 @@ export class ApplicationService implements IApplicationService {
 
     if (!app) {
       throw new AppError(
-        "Application not found",
+        SERVICE_ERRORS.NOT_FOUND,
         HttpStatusCode.NOT_FOUND,
         ErrorLayer.SERVICE,
         "NOT_FOUND",
@@ -335,7 +312,7 @@ export class ApplicationService implements IApplicationService {
     // §V9: only pending applications can be rejected
     if (app.status !== APPLICATION_STATUS.PENDING) {
       throw new AppError(
-        `Cannot reject application with status '${app.status}'`,
+        SERVICE_ERRORS.INVALID_STATUS_TRANSITION(app.status),
         HttpStatusCode.BAD_REQUEST,
         ErrorLayer.SERVICE,
         "INVALID_STATUS_TRANSITION",
@@ -345,7 +322,7 @@ export class ApplicationService implements IApplicationService {
     const updated = await this.applicationRepo.reject(id, processorId, rejectReason)
     if (!updated) {
       throw new AppError(
-        "Failed to reject application",
+        SERVICE_ERRORS.REJECT_FAILED,
         HttpStatusCode.INTERNAL_SERVER_ERROR,
         ErrorLayer.SERVICE,
       )
@@ -374,14 +351,14 @@ export class ApplicationService implements IApplicationService {
     }
     if (status === APPLICATION_STATUS.REJECTED) {
       throw new AppError(
-        "Use rejectApplication() — rejectReason is required",
+        SERVICE_ERRORS.USE_REJECT_ENDPOINT,
         HttpStatusCode.BAD_REQUEST,
         ErrorLayer.SERVICE,
         "USE_REJECT_ENDPOINT",
       )
     }
     throw new AppError(
-      `Invalid status transition: '${status}'`,
+      SERVICE_ERRORS.INVALID_TRANSITION_TARGET(status as string),
       HttpStatusCode.BAD_REQUEST,
       ErrorLayer.SERVICE,
       "INVALID_STATUS_TRANSITION",
@@ -395,15 +372,15 @@ export class ApplicationService implements IApplicationService {
     const app = await this.applicationRepo.findById(id)
 
     if (!app || app.type !== APPLICATION_TYPES.SHIFT_SWAP.LABEL || !app.shiftSwapDetail) {
-      throw new AppError("Invalid application or not a shift swap", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE)
+      throw new AppError(SERVICE_ERRORS.INVALID_SWAP_APP, HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE)
     }
 
     if (app.shiftSwapDetail.swapWithEmployeeId !== partnerId) {
-      throw new AppError("Forbidden: You are not the partner for this swap", HttpStatusCode.FORBIDDEN, ErrorLayer.SERVICE)
+      throw new AppError(SERVICE_ERRORS.SWAP_PARTNER_FORBIDDEN, HttpStatusCode.FORBIDDEN, ErrorLayer.SERVICE)
     }
 
     if (app.shiftSwapDetail.partnerApprovalStatus !== PARTNER_APPROVAL_STATUS.PENDING) {
-      throw new AppError("Partner has already responded", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE)
+      throw new AppError(SERVICE_ERRORS.SWAP_PARTNER_RESPONDED, HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE)
     }
 
     if (isApproved) {
@@ -417,8 +394,8 @@ export class ApplicationService implements IApplicationService {
       if (app.assignedToId) {
         await this.notificationService.createNotification({
           userId: app.assignedToId,
-          title: "Đơn đổi ca đã được 2 bên đồng ý",
-          message: `Đơn đổi ca đã được cả 2 nhân viên đồng ý. Vui lòng kiểm tra và duyệt.`,
+          title: SERVICE_NOTIFICATIONS.SWAP_AGREED_TITLE,
+          message: SERVICE_NOTIFICATIONS.SWAP_AGREED_MSG,
           type: NOTIFICATION_TYPE.APPROVAL
         })
       }
@@ -428,186 +405,18 @@ export class ApplicationService implements IApplicationService {
         where: { applicationId: id },
         data: { partnerApprovalStatus: PARTNER_APPROVAL_STATUS.REJECTED }
       })
-      await this.rejectApplication(id, partnerId, "Nhân viên được yêu cầu đổi ca đã từ chối.")
+      await this.rejectApplication(id, partnerId, SERVICE_ERRORS.SWAP_REJECTED_REASON)
 
       // Notify requester
       await this.notificationService.createNotification({
         userId: app.employeeId,
-        title: "Đơn đổi ca bị từ chối",
-        message: `Nhân viên bạn muốn đổi ca cùng đã từ chối yêu cầu của bạn.`,
+        title: SERVICE_NOTIFICATIONS.SWAP_REJECTED_TITLE,
+        message: SERVICE_NOTIFICATIONS.SWAP_REJECTED_MSG,
         type: NOTIFICATION_TYPE.SYSTEM
       })
     }
 
     return this.applicationRepo.findById(id)
-  }
-
-  /**
-   * §V4: Leave application validator. Checks for date overlaps and leave balance quotas.
-   *
-   * @param employeeId - The ID of the employee submitting the leave.
-   * @param leaveType - The type of leave (annual, sick, etc.).
-   * @param startDate - The starting date of the leave.
-   * @param endDate - The ending date of the leave.
-   * @throws {AppError} If overlap is detected or the employee has insufficient leave balance.
-   */
-  private async _validateLeaveApplication(
-    employeeId: string,
-    leaveType: string,
-    startDate: Date,
-    endDate: Date,
-  ): Promise<void> {
-    // §V4a: no overlap with pending/approved leave
-    const hasOverlap = await this.applicationRepo.checkLeaveOverlap(employeeId, startDate, endDate)
-    if (hasOverlap) {
-      throw new AppError(
-        "Leave request overlaps with an existing pending or approved leave",
-        HttpStatusCode.CONFLICT,
-        ErrorLayer.SERVICE,
-        "LEAVE_OVERLAP",
-      )
-    }
-
-    // §V4b: check leave balance for paid leave types
-    if (PAID_LEAVE_TYPES.includes(leaveType as any)) {
-      const quota = LEAVE_BALANCE_DEFAULTS[leaveType as keyof typeof LEAVE_BALANCE_DEFAULTS] ?? 0
-      if (quota === 0) return // unlimited
-
-      const year = startDate.getFullYear()
-      const usedDays = await this.applicationRepo.getUsedLeaveDays(
-        employeeId,
-        leaveType as any,
-        year,
-      )
-
-      const requestedDays =
-        Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
-
-      if (usedDays + requestedDays > quota) {
-        throw new AppError(
-          `Insufficient leave balance. Quota: ${quota} days/year. Used: ${usedDays} days. Requested: ${requestedDays} days.`,
-          HttpStatusCode.UNPROCESSABLE_ENTITY,
-          ErrorLayer.SERVICE,
-          "INSUFFICIENT_LEAVE_BALANCE",
-        )
-      }
-    }
-  }
-
-  /**
-   * §V5: Verifies that the specified employeeShift belongs to the requester.
-   *
-   * @param shiftId - The ID of the employee shift to check.
-   * @param employeeId - The ID of the employee.
-   * @throws {AppError} If the shift doesn't exist or is not owned by the employee.
-   */
-  private async _validateShiftOwnership(
-    shiftId: string,
-    employeeId: string,
-    customErrorMessage?: string,
-  ): Promise<void> {
-    const shift = await prisma.employeeShift.findUnique({
-      where: { id: shiftId },
-      select: { employeeId: true },
-    })
-
-    if (!shift) {
-      throw new AppError(
-        `Employee shift '${shiftId}' not found`,
-        HttpStatusCode.NOT_FOUND,
-        ErrorLayer.SERVICE,
-        "SHIFT_NOT_FOUND",
-      )
-    }
-
-    if (shift.employeeId !== employeeId) {
-      throw new AppError(
-        customErrorMessage || "Forbidden: The specified shift does not belong to you",
-        HttpStatusCode.FORBIDDEN,
-        ErrorLayer.SERVICE,
-        "SHIFT_NOT_OWNED",
-      )
-    }
-  }
-
-  /**
-   * §V6: Overtime application validator. Verifies that the application dates match the shift date.
-   *
-   * @param employeeShiftId - The ID of the employee shift.
-   * @param startDate - The starting date of the overtime.
-   * @param endDate - The ending date of the overtime.
-   * @throws {AppError} If either the start or end date does not match the shift's assigned date.
-   */
-  private async _validateOvertimeDates(
-    employeeShiftId: string,
-    startDate: Date,
-    endDate: Date,
-  ): Promise<void> {
-    const shift = await prisma.employeeShift.findUnique({
-      where: { id: employeeShiftId },
-      select: { assignedDate: true },
-    })
-
-    if (!shift) return // already caught by _validateShiftOwnership
-
-    const shiftDate = new Date(shift.assignedDate)
-
-    // Normalize to date-only for comparison (strip time)
-    const toDateOnly = (d: Date) =>
-      new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
-
-    const shiftDateOnly = toDateOnly(shiftDate)
-    const startDateOnly = toDateOnly(startDate)
-    const endDateOnly = toDateOnly(endDate)
-
-    if (startDateOnly.getTime() !== shiftDateOnly.getTime()) {
-      throw new AppError(
-        `Overtime startDate (${startDate.toISOString().slice(0, 10)}) must match shift date (${shiftDate.toISOString().slice(0, 10)})`,
-        HttpStatusCode.BAD_REQUEST,
-        ErrorLayer.SERVICE,
-        "OVERTIME_DATE_MISMATCH",
-      )
-    }
-
-    if (endDateOnly.getTime() !== shiftDateOnly.getTime()) {
-      throw new AppError(
-        `Overtime endDate (${endDate.toISOString().slice(0, 10)}) must match shift date (${shiftDate.toISOString().slice(0, 10)})`,
-        HttpStatusCode.BAD_REQUEST,
-        ErrorLayer.SERVICE,
-        "OVERTIME_DATE_MISMATCH",
-      )
-    }
-  }
-
-  /**
-   * §V7: Validates that the swap target employee exists, is active, and is not deleted.
-   *
-   * @param employeeId - The ID of the swap target employee.
-   * @throws {AppError} If the target employee is not found, deleted, or not active.
-   */
-  private async _validateEmployeeExists(employeeId: string): Promise<void> {
-    const employee = await prisma.employee.findUnique({
-      where: { id: employeeId },
-      select: { id: true, status: true, deletedAt: true },
-    })
-
-    if (!employee || employee.deletedAt) {
-      throw new AppError(
-        `Employee '${employeeId}' not found`,
-        HttpStatusCode.NOT_FOUND,
-        ErrorLayer.SERVICE,
-        "EMPLOYEE_NOT_FOUND",
-      )
-    }
-
-    if (employee.status !== EMPLOYEE_STATUS.ACTIVE) {
-      throw new AppError(
-        `Employee '${employeeId}' is not active`,
-        HttpStatusCode.BAD_REQUEST,
-        ErrorLayer.SERVICE,
-        "EMPLOYEE_INACTIVE",
-      )
-    }
   }
 
   /**
@@ -632,7 +441,7 @@ export class ApplicationService implements IApplicationService {
 
     if (!employee) {
       throw new AppError(
-        `Assigned approver '${employeeId}' not found`,
+        SERVICE_ERRORS.APPROVER_NOT_FOUND(employeeId),
         HttpStatusCode.NOT_FOUND,
         "Service",
         "APPROVER_NOT_FOUND",
@@ -641,7 +450,7 @@ export class ApplicationService implements IApplicationService {
 
     if (!APPROVER_ROLES.includes(employee.role)) {
       throw new AppError(
-        "The selected assignee does not have permission to approve applications",
+        SERVICE_ERRORS.INVALID_APPROVER_ROLE,
         HttpStatusCode.BAD_REQUEST,
         "Service",
         "INVALID_APPROVER_ROLE",
