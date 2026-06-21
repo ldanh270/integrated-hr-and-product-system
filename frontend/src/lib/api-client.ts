@@ -72,10 +72,11 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest)
       } catch (refreshError) {
         processQueue(refreshError, null)
-        const token = localStorage.getItem(SYSTEM_CONFIG.STORAGE_KEYS.AUTH_TOKEN)
         
-        // Only treat as session expiration if the user was actually logged in (had a token)
-        if (token) {
+        // Only treat as session expiration if the user was actually logged in
+        const isAuthenticated = useAuthStore.getState().isAuthenticated
+        
+        if (isAuthenticated) {
           useAuthStore.getState().clearAuth()
           toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.")
           localStorage.removeItem("auth-storage")
