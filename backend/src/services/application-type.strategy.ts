@@ -211,20 +211,20 @@ async function validateShiftOwnership(
     select: { employeeId: true },
   })
   if (!shift) {
-    throw new AppError(
+    return Promise.reject(new AppError(
       STRATEGY_ERRORS.SHIFT_NOT_FOUND(shiftId),
       HttpStatusCode.NOT_FOUND,
       ErrorLayer.SERVICE,
       "SHIFT_NOT_FOUND",
-    )
+    ) as Error)
   }
   if (shift.employeeId !== employeeId) {
-    throw new AppError(
+    return Promise.reject(new AppError(
       customErrorMessage || STRATEGY_ERRORS.SHIFT_NOT_OWNED,
       HttpStatusCode.FORBIDDEN,
       ErrorLayer.SERVICE,
       "SHIFT_NOT_OWNED",
-    )
+    ) as Error)
   }
 }
 
@@ -234,20 +234,20 @@ async function validateEmployeeExists(employeeId: string): Promise<void> {
     select: { id: true, status: true, deletedAt: true },
   })
   if (!employee || employee.deletedAt) {
-    throw new AppError(
+    return Promise.reject(new AppError(
       STRATEGY_ERRORS.EMPLOYEE_NOT_FOUND(employeeId),
       HttpStatusCode.NOT_FOUND,
       ErrorLayer.SERVICE,
       "EMPLOYEE_NOT_FOUND",
-    )
+    ) as Error)
   }
   if (employee.status !== EMPLOYEE_STATUS.ACTIVE) {
-    throw new AppError(
+    return Promise.reject(new AppError(
       STRATEGY_ERRORS.EMPLOYEE_INACTIVE(employeeId),
       HttpStatusCode.BAD_REQUEST,
       ErrorLayer.SERVICE,
       "EMPLOYEE_INACTIVE",
-    )
+    ) as Error)
   }
 }
 
@@ -269,19 +269,19 @@ async function validateOvertimeDates(
   const shiftDateOnly = toDateOnly(shiftDate)
 
   if (toDateOnly(startDate).getTime() !== shiftDateOnly.getTime()) {
-    throw new AppError(
+    return Promise.reject(new AppError(
       STRATEGY_ERRORS.OVERTIME_START_MISMATCH(startDate.toISOString().slice(0, 10), shiftDate.toISOString().slice(0, 10)),
       HttpStatusCode.BAD_REQUEST,
       ErrorLayer.SERVICE,
       "OVERTIME_DATE_MISMATCH",
-    )
+    ) as Error)
   }
   if (toDateOnly(endDate).getTime() !== shiftDateOnly.getTime()) {
-    throw new AppError(
+    return Promise.reject(new AppError(
       STRATEGY_ERRORS.OVERTIME_END_MISMATCH(endDate.toISOString().slice(0, 10), shiftDate.toISOString().slice(0, 10)),
       HttpStatusCode.BAD_REQUEST,
       ErrorLayer.SERVICE,
       "OVERTIME_DATE_MISMATCH",
-    )
+    ) as Error)
   }
 }
