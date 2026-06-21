@@ -10,8 +10,11 @@ import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { prisma } from "@/libs/database.ts"
 import type { NotificationService } from "@/services/notification.service.ts"
-import type { IApplicationRepository, ISubmitApplicationDTO } from "@/types/attendance.types.ts"
+import type { IApplicationRepository, ISubmitApplicationDTO, ILeaveType } from "@/types/attendance.types.ts"
 import { AppError } from "@/utils/error.util.ts"
+import { Application, ApplicationShiftSwapDetail } from "@prisma/client"
+
+type AppWithDetails = Application & { shiftSwapDetail?: ApplicationShiftSwapDetail | null }
 
 // ─── Deps injected by ApplicationService ──────────────────────
 export interface IStrategyDeps {
@@ -47,19 +50,19 @@ export interface IApplicationTypeStrategy {
   /** Pre-submit type-specific validation */
   validate(data: ISubmitApplicationDTO, deps: IStrategyDeps): Promise<void>
   /** Pre-approve type-specific guard (e.g. partner consent) */
-  preApprove(app: any, deps: IStrategyDeps): Promise<void>
+  preApprove(app: AppWithDetails, deps: IStrategyDeps): Promise<void>
   /** Post-submit side-effects (e.g. notifications) */
-  onSubmit(app: any, deps: IStrategyDeps): Promise<void>
+  onSubmit(app: AppWithDetails, deps: IStrategyDeps): Promise<void>
   /** Post-approve side-effects (e.g. notifications) */
-  onApprove(app: any, deps: IStrategyDeps): Promise<void>
+  onApprove(app: AppWithDetails, deps: IStrategyDeps): Promise<void>
 }
 
 // ─── Base (no-op defaults) ─────────────────────────────────────
 abstract class BaseApplicationTypeStrategy implements IApplicationTypeStrategy {
   async validate(_data: ISubmitApplicationDTO, _deps: IStrategyDeps): Promise<void> {}
-  async preApprove(_app: any, _deps: IStrategyDeps): Promise<void> {}
-  async onSubmit(_app: any, _deps: IStrategyDeps): Promise<void> {}
-  async onApprove(_app: any, _deps: IStrategyDeps): Promise<void> {}
+  async preApprove(_app: AppWithDetails, _deps: IStrategyDeps): Promise<void> {}
+  async onSubmit(_app: AppWithDetails, _deps: IStrategyDeps): Promise<void> {}
+  async onApprove(_app: AppWithDetails, _deps: IStrategyDeps): Promise<void> {}
 }
 
 // ─── Concrete Strategies ───────────────────────────────────────
@@ -83,12 +86,12 @@ class LeaveStrategy extends BaseApplicationTypeStrategy {
     }
 
     // §V4b: check balance for paid leave types
-    if (!PAID_LEAVE_TYPES.includes(leaveType as any)) return
+    if (!PAID_LEAVE_TYPES.includes(leaveType as ILeaveType)) return
     const quota = LEAVE_BALANCE_DEFAULTS[leaveType as keyof typeof LEAVE_BALANCE_DEFAULTS] ?? 0
     if (quota === 0) return // unlimited
 
     const year = startDate.getFullYear()
-    const usedDays = await deps.applicationRepo.getUsedLeaveDays(data.employeeId, leaveType as any, year)
+    const usedDays = await deps.applicationRepo.getUsedLeaveDays(data.employeeId, leaveType as ILeaveType, year)
     const requestedDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
 
     if (usedDays + requestedDays > quota) {
@@ -137,7 +140,7 @@ class ShiftSwapStrategy extends BaseApplicationTypeStrategy {
     }
   }
 
-  async preApprove(app: any, _deps: IStrategyDeps): Promise<void> {
+  async preApprove(app: AppWithDetails, _deps: IStrategyDeps): Promise<void> {
     if (!app.shiftSwapDetail?.swapWithEmployeeId) return
     if (app.shiftSwapDetail.partnerApprovalStatus !== PARTNER_APPROVAL_STATUS.APPROVED) {
       throw new AppError(
@@ -149,7 +152,7 @@ class ShiftSwapStrategy extends BaseApplicationTypeStrategy {
     }
   }
 
-  async onSubmit(app: any, deps: IStrategyDeps): Promise<void> {
+  async onSubmit(app: AppWithDetails, deps: IStrategyDeps): Promise<void> {
     if (!app.shiftSwapDetail?.swapWithEmployeeId) return
     await deps.notificationService.createNotification({
       userId: app.shiftSwapDetail.swapWithEmployeeId,
@@ -159,7 +162,7 @@ class ShiftSwapStrategy extends BaseApplicationTypeStrategy {
     })
   }
 
-  async onApprove(app: any, deps: IStrategyDeps): Promise<void> {
+  async onApprove(app: AppWithDetails, deps: IStrategyDeps): Promise<void> {
     if (!app.shiftSwapDetail?.swapWithEmployeeId) return
     await deps.notificationService.createNotification({
       userId: app.employeeId,
@@ -208,20 +211,20 @@ async function validateShiftOwnership(
     select: { employeeId: true },
   })
   if (!shift) {
-    throw new AppError(
+    return Promise.reject(new AppError(
       STRATEGY_ERRORS.SHIFT_NOT_FOUND(shiftId),
       HttpStatusCode.NOT_FOUND,
       ErrorLayer.SERVICE,
       "SHIFT_NOT_FOUND",
-    )
+    ))
   }
   if (shift.employeeId !== employeeId) {
-    throw new AppError(
+    return Promise.reject(new AppError(
       customErrorMessage || STRATEGY_ERRORS.SHIFT_NOT_OWNED,
       HttpStatusCode.FORBIDDEN,
       ErrorLayer.SERVICE,
       "SHIFT_NOT_OWNED",
-    )
+    ))
   }
 }
 
@@ -231,20 +234,20 @@ async function validateEmployeeExists(employeeId: string): Promise<void> {
     select: { id: true, status: true, deletedAt: true },
   })
   if (!employee || employee.deletedAt) {
-    throw new AppError(
+    return Promise.reject(new AppError(
       STRATEGY_ERRORS.EMPLOYEE_NOT_FOUND(employeeId),
       HttpStatusCode.NOT_FOUND,
       ErrorLayer.SERVICE,
       "EMPLOYEE_NOT_FOUND",
-    )
+    ))
   }
   if (employee.status !== EMPLOYEE_STATUS.ACTIVE) {
-    throw new AppError(
+    return Promise.reject(new AppError(
       STRATEGY_ERRORS.EMPLOYEE_INACTIVE(employeeId),
       HttpStatusCode.BAD_REQUEST,
       ErrorLayer.SERVICE,
       "EMPLOYEE_INACTIVE",
-    )
+    ))
   }
 }
 
@@ -266,19 +269,19 @@ async function validateOvertimeDates(
   const shiftDateOnly = toDateOnly(shiftDate)
 
   if (toDateOnly(startDate).getTime() !== shiftDateOnly.getTime()) {
-    throw new AppError(
+    return Promise.reject(new AppError(
       STRATEGY_ERRORS.OVERTIME_START_MISMATCH(startDate.toISOString().slice(0, 10), shiftDate.toISOString().slice(0, 10)),
       HttpStatusCode.BAD_REQUEST,
       ErrorLayer.SERVICE,
       "OVERTIME_DATE_MISMATCH",
-    )
+    ))
   }
   if (toDateOnly(endDate).getTime() !== shiftDateOnly.getTime()) {
-    throw new AppError(
+    return Promise.reject(new AppError(
       STRATEGY_ERRORS.OVERTIME_END_MISMATCH(endDate.toISOString().slice(0, 10), shiftDate.toISOString().slice(0, 10)),
       HttpStatusCode.BAD_REQUEST,
       ErrorLayer.SERVICE,
       "OVERTIME_DATE_MISMATCH",
-    )
+    ))
   }
 }

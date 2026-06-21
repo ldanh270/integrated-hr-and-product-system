@@ -7,7 +7,7 @@ import {
   ISubmitApplicationDTO,
 } from "@/types/attendance.types.ts"
 
-import { ApplicationStatus, ApplicationType, AttendanceStatus, PrismaClient, Prisma } from "@prisma/client"
+import { ApplicationStatus, ApplicationType, AttendanceStatus, PrismaClient, Prisma, EmployeeShift, PartnerApprovalStatus, ApplicationShiftSwapDetail } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
@@ -482,7 +482,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    */
   private async _upsertAttendanceRecord(
     tx: Prisma.TransactionClient,
-    shift: any,
+    shift: EmployeeShift,
     status: AttendanceStatus,
     note?: string,
     overtimeMinutes?: number
@@ -505,7 +505,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     })
   }
 
-  async updateShiftSwapPartnerApproval(applicationId: string, status: any): Promise<any> {
+  async updateShiftSwapPartnerApproval(applicationId: string, status: PartnerApprovalStatus): Promise<ApplicationShiftSwapDetail> {
     return this.prisma.applicationShiftSwapDetail.update({
       where: { applicationId },
       data: { partnerApprovalStatus: status }

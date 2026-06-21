@@ -17,6 +17,7 @@ import {
   ISubmitApplicationDTO,
 } from "@/types/attendance.types.ts"
 import { AppError } from "@/utils/error.util.ts"
+import { Application } from "@prisma/client"
 
 import { NotificationService } from "@/services/notification.service.ts"
 import {
@@ -368,7 +369,7 @@ export class ApplicationService implements IApplicationService {
   /**
    * Approves or rejects a shift swap application as a partner.
    */
-  async partnerApproveSwap(id: string, partnerId: string, isApproved: boolean): Promise<any> {
+  async partnerApproveSwap(id: string, partnerId: string, isApproved: boolean): Promise<Application> {
     const app = await this.applicationRepo.findById(id)
 
     if (!app || app.type !== APPLICATION_TYPES.SHIFT_SWAP.LABEL || !app.shiftSwapDetail) {

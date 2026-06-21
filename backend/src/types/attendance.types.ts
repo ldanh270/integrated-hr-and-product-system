@@ -7,7 +7,7 @@ import {
   IRegimeType,
 } from "@/configs/entities/attendance.config.ts"
 
-import type { HolidayCalendar } from "@prisma/client"
+import { AttendanceStatus, HolidayCalendar, ApplicationShiftSwapDetail, PartnerApprovalStatus, Application } from "@prisma/client"
 
 // Re-export for consumers that import from this module
 export type {
@@ -265,7 +265,7 @@ export interface IApplicationRepository {
   ): Promise<boolean>
   getUsedLeaveDays(employeeId: string, leaveType: ILeaveType, year: number): Promise<number>
   /** Updates partner approval status for shift swap applications. */
-  updateShiftSwapPartnerApproval(applicationId: string, status: any): Promise<any>
+  updateShiftSwapPartnerApproval(applicationId: string, status: PartnerApprovalStatus): Promise<ApplicationShiftSwapDetail>
 }
 
 /**
@@ -337,7 +337,7 @@ export interface IApplicationService {
   ): Promise<any | null>
   
   /** Approves/rejects a shift swap as a partner */
-  partnerApproveSwap(id: string, partnerId: string, isApproved: boolean): Promise<any>
+  partnerApproveSwap(id: string, partnerId: string, isApproved: boolean): Promise<Application>
 }
 
 /**

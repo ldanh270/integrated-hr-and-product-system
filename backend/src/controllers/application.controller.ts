@@ -14,6 +14,7 @@ import { AppError } from "@/utils/error.util.ts"
 
 import { Request, Response } from "express"
 import { z } from "zod"
+import { Application } from "@prisma/client"
 
 export class ApplicationController {
   constructor(private service: IApplicationService) {}
@@ -275,7 +276,7 @@ export class ApplicationController {
   /**
    * Partner approves or rejects a shift swap application.
    */
-  partnerApprove = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  partnerApprove = async (req: AuthRequest, res: Response<ApiResponse<Application>>) => {
     try {
       const partnerId = req.user?.empId
       if (!partnerId) throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)

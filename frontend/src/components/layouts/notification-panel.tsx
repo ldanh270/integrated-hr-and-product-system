@@ -122,7 +122,7 @@ export default function NotificationPanel() {
           <h4 className="font-semibold text-foreground">Thông báo</h4>
           {unreadCount > 0 && (
             <button
-              onClick={() => markAllAsReadMutation.mutate()}
+              onClick={() => { markAllAsReadMutation.mutate() }}
               className="text-xs font-medium text-primary hover:underline"
               disabled={markAllAsReadMutation.isPending}
             >

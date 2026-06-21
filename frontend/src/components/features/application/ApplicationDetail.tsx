@@ -33,11 +33,12 @@ export function ApplicationDetail({
     },
     onSuccess: () => {
       toast.success("Đã phản hồi yêu cầu đổi ca")
-      queryClient.invalidateQueries({ queryKey: ["applications"] })
+      void queryClient.invalidateQueries({ queryKey: ["applications"] })
       onBack()
     },
-    onError: (err: any) => {
-      toast.error(err.response?.data?.error?.message || "Lỗi khi xử lý")
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { error?: { message?: string } } } }
+      toast.error(error.response?.data?.error?.message || "Lỗi khi xử lý")
     }
   })
   if (isLoading || !application) {
@@ -112,7 +113,7 @@ export function ApplicationDetail({
         )
       }
       case "shift_swap": {
-        const swapDetail = application.detail as any
+        const swapDetail = application.detail as Record<string, string | null | undefined>
         let partnerStatusLabel = "-"
         let partnerStatusColor = "text-slate-600"
         if (swapDetail?.partnerApprovalStatus === "pending") {
@@ -193,11 +194,11 @@ export function ApplicationDetail({
 
           {/* Actions for Partner (Shift Swap) */}
           {application.type === "shift_swap" && 
-           (application.detail as any)?.swapWithEmployeeId === user?.personalEmployeeId && 
-           (application.detail as any)?.partnerApprovalStatus === "pending" && (
+          (application.detail as Record<string, string | null | undefined>)?.swapWithEmployeeId === user?.personalEmployeeId && 
+           (application.detail as Record<string, string | null | undefined>)?.partnerApprovalStatus === "pending" && (
             <div className="flex items-center gap-3 ml-4 border-l border-border pl-4">
               <button
-                onClick={() => partnerApproveMutation.mutate({ id: application.id, isApproved: true })}
+                onClick={() => { partnerApproveMutation.mutate({ id: application.id, isApproved: true }) }}
                 disabled={partnerApproveMutation.isPending}
                 className="flex items-center gap-2 text-sm font-semibold text-emerald-600 hover:bg-emerald-50 px-3 py-1.5 rounded-full border border-transparent hover:border-emerald-200 transition-all disabled:opacity-50"
               >
@@ -207,7 +208,7 @@ export function ApplicationDetail({
                 Đồng ý đổi ca
               </button>
               <button
-                onClick={() => partnerApproveMutation.mutate({ id: application.id, isApproved: false })}
+                onClick={() => { partnerApproveMutation.mutate({ id: application.id, isApproved: false }) }}
                 disabled={partnerApproveMutation.isPending}
                 className="flex items-center gap-2 text-sm font-semibold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-full border border-transparent hover:border-red-200 transition-all disabled:opacity-50"
               >
