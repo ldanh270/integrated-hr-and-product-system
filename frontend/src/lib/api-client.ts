@@ -1,4 +1,3 @@
-import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useAuthStore } from "@/store/auth-store"
 
 import axios from "axios"
@@ -17,7 +16,8 @@ const apiClient = axios.create({
 })
 
 let isRefreshing = false
-let failedQueue: Array<{ resolve: (value?: unknown) => void; reject: (reason?: unknown) => void }> = []
+let failedQueue: Array<{ resolve: (value?: unknown) => void; reject: (reason?: unknown) => void }> =
+  []
 
 const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue.forEach((prom) => {
@@ -72,10 +72,10 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest)
       } catch (refreshError) {
         processQueue(refreshError, null)
-        
+
         // Only treat as session expiration if the user was actually logged in
         const isAuthenticated = useAuthStore.getState().isAuthenticated
-        
+
         if (isAuthenticated) {
           useAuthStore.getState().clearAuth()
           toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.")
