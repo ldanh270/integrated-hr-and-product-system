@@ -15,7 +15,18 @@ export const registerAuthTools = () => {
 		async () => {
 			try {
 				const loginId = loginStore.create();
-				const loginUrl = `http://localhost:${process.env.PORT || 3001}/auth/login?id=${loginId}`;
+				// Build the URL the user must open in their browser.
+				// PUBLIC_BASE_URL is REQUIRED (must include scheme, e.g. https://...).
+				// No localhost fallback — this ensures the link works whether MCP runs
+				// locally, behind nginx, on a cloud VM, or via ngrok.
+				const publicBase = process.env.PUBLIC_BASE_URL?.trim().replace(/\/+$/, "");
+				if (!publicBase) {
+					return buildError(
+						"PUBLIC_BASE_URL is not configured",
+						"Set PUBLIC_BASE_URL in .env (must include scheme, e.g. https://your-domain or http://localhost:3001 for dev).",
+					);
+				}
+				const loginUrl = `${publicBase}/auth/login?id=${loginId}`;
 
 				return buildSuccess({
 					message: "Login process started. Please ask the user to open the following URL in their browser to log in. Do NOT ask for their password.",

@@ -16,9 +16,9 @@ const __dirname = path.dirname(__filename);
 // Register all tools before starting the server
 registerTools();
 
-const mountAuthRoutes = (app: express.Express) => {
+const mountAuthRoutes = (app: any) => {
 	// 1. Serve the login page
-	app.get("/auth/login", (req, res) => {
+	app.get("/auth/login", (req: express.Request, res: express.Response) => {
 		const loginId = req.query.id as string;
 		if (!loginId || !loginStore.get(loginId)) {
 			res.status(400).send("Invalid or expired login ID. Please try again from the AI assistant.");
@@ -28,7 +28,7 @@ const mountAuthRoutes = (app: express.Express) => {
 	});
 
 	// 2. Handle form submission
-	app.post("/auth/submit", express.json(), async (req, res) => {
+	app.post("/auth/submit", express.json(), async (req: express.Request, res: express.Response) => {
 		const { loginId, username, password } = req.body;
 
 		if (!loginId || !username || !password) {
@@ -79,9 +79,19 @@ const startSSEServer = () => {
 	const app = express();
 	const PORT = process.env.PORT || 3001;
 
+	// Build a sub-router that exposes all HTTP routes under the /mcp prefix.
+	// This is required for deployments behind reverse proxies / ngrok where
+	// PUBLIC_BASE_URL includes a path prefix (e.g. https://x.ngrok-free.dev/mcp).
+	// Endpoints exposed:
+	//   GET  /mcp/sse
+	//   POST /mcp/message
+	//   GET  /mcp/auth/login
+	//   POST /mcp/auth/submit
+	const apiRouter = express.Router();
+
 	let transport: SSEServerTransport | null = null;
 
-	app.get("/sse", async (req, res) => {
+	apiRouter.get("/sse", async (req, res) => {
 		const clientIp = req.headers["x-forwarded-for"] ?? req.socket.remoteAddress ?? "unknown";
 		logger.info(`SSE connection request from ${clientIp}`);
 
@@ -89,13 +99,16 @@ const startSSEServer = () => {
 		// The MCP Server is a singleton and does not allow re-connecting without
 		// closing first.
 		if (transport) {
-			logger.warn("Previous SSE transport still active — closing before reconnecting");
-			await transport.close();
+			logger.warn("Previous SSE transport still active - closing before reconnecting");
+			const oldTransport = transport;
 			transport = null;
+			await oldTransport.close();
 		}
 
 		try {
-			transport = new SSEServerTransport("/message", res);
+			// SSEServerTransport uses the second arg as the path clients POST messages to.
+			// Pass the absolute path so it works correctly when mounted under a sub-path.
+			transport = new SSEServerTransport("/mcp/message", res);
 			await mcpServer.server.connect(transport);
 			logger.success("SSE transport connected successfully");
 		} catch (err) {
@@ -103,15 +116,19 @@ const startSSEServer = () => {
 			return;
 		}
 
-		// Clean up when client disconnects
-		req.on("close", async () => {
-			logger.info("SSE client disconnected — cleaning up transport");
-			await transport?.close();
-			transport = null;
+		// Clean up when client disconnects. Guard against clobbering a newer
+		// transport that already replaced this one.
+		const myTransport = transport!;
+		req.on("close", () => {
+			if (transport === myTransport) {
+				logger.info("SSE client disconnected - cleaning up transport");
+				transport = null;
+				void myTransport.close();
+			}
 		});
 	});
 
-	app.post("/message", async (req, res) => {
+	apiRouter.post("/message", async (req, res) => {
 		if (!transport) {
 			logger.warn("POST /message received but no active SSE transport");
 			res.status(400).json({ error: "SSE connection not established" });
@@ -121,12 +138,14 @@ const startSSEServer = () => {
 		await transport.handlePostMessage(req, res);
 	});
 
-	mountAuthRoutes(app);
+	mountAuthRoutes(apiRouter);
+
+	app.use("/mcp", apiRouter);
 
 	app.listen(PORT, () => {
 		logger.info(`HRP MCP Server running on port ${PORT}`);
-		logger.info(`SSE endpoint : http://localhost:${PORT}/sse`);
-		logger.info(`Message endpoint: http://localhost:${PORT}/message`);
+		logger.info(`SSE endpoint : http://localhost:${PORT}/mcp/sse`);
+		logger.info(`Message endpoint: http://localhost:${PORT}/mcp/message`);
 		logger.info(`STDIO mode   : pass --stdio flag`);
 		logger.info(`Verbose debug: set DEBUG=true in .env`);
 	});
@@ -136,10 +155,13 @@ const startStdioServer = async () => {
 	const app = express();
 	const PORT = process.env.PORT || 3001;
 
-	mountAuthRoutes(app);
+	const apiRouter = express.Router();
+	mountAuthRoutes(apiRouter);
+	app.use("/mcp", apiRouter);
 
 	app.listen(PORT, () => {
 		logger.info(`Browser Auth routes running on port ${PORT} (STDIO Mode)`);
+		logger.info(`Auth endpoints: http://localhost:${PORT}/mcp/auth/login`);
 	});
 
 	const transport = new StdioServerTransport();

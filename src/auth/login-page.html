@@ -200,7 +200,11 @@
         submitBtn.textContent = 'Signing in...';
 
         try {
-            const response = await fetch('/auth/submit', {
+            // Derive the submit URL from the current page URL so it works whether
+            // the server is mounted at root (e.g. /auth/login) or under a sub-path
+            // (e.g. /mcp/auth/login when behind ngrok/nginx with a path prefix).
+            const submitUrl = window.location.pathname.replace(/\/auth\/login.*$/, '/auth/submit');
+            const response = await fetch(submitUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
