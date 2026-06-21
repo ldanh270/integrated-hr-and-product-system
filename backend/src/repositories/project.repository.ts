@@ -5,6 +5,7 @@ import {
   IProjectRepository,
   PaginatedProjectsDto,
   UpdateProjectDto,
+  GanttDataDto,
 } from "@/types"
 
 import { Prisma, PrismaClient, Project as PrismaProject, Employee as PrismaEmployee } from "@prisma/client"
@@ -311,5 +312,74 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
       removedAt: m.removedAt,
       employee: m.employee,
     }))
+  }
+
+  /**
+   * Retrieves tasks, members, and approved leave days for Gantt Chart visualization
+   */
+  async getGanttData(projectId: string): Promise<GanttDataDto> {
+    const tasks = await this.prisma.task.findMany({
+      where: { projectId },
+      include: {
+        assignee: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            position: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    })
+
+    const members = await this.prisma.projectMember.findMany({
+      where: { projectId, removedAt: null },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            position: true,
+          },
+        },
+      },
+    })
+
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { teamLeaderId: true },
+    })
+
+    // Collect all employee IDs of project members + team leader
+    const employeeIds = members.map((m) => m.employeeId)
+    if (project?.teamLeaderId && !employeeIds.includes(project.teamLeaderId)) {
+      employeeIds.push(project.teamLeaderId)
+    }
+
+    // Get all approved leave applications for these employees
+    const leaveDays = await this.prisma.application.findMany({
+      where: {
+        employeeId: { in: employeeIds },
+        status: "approved",
+        type: "leave",
+      },
+      select: {
+        id: true,
+        employeeId: true,
+        startDate: true,
+        endDate: true,
+        reason: true,
+      },
+    })
+
+    return {
+      tasks,
+      members: members.map((m) => m.employee),
+      leaveDays,
+    }
   }
 }

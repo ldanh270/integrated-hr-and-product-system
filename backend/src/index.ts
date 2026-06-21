@@ -1,5 +1,5 @@
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
-import { PORT } from "@/configs/system/server.config.ts"
+import { PORT, ENV_ENVIRONMENT, ENVIRONMENT, RATE_LIMIT } from "@/configs/system/server.config.ts"
 import { connectDB } from "@/libs/database.ts"
 import { initCronJobs } from "@/libs/payroll-cron.ts"
 import { initWeeklyScheduleCron } from "@/libs/weekly-schedule-cron.ts"
@@ -23,6 +23,7 @@ import securityRoutes from "@/routes/security.route.ts"
 import shiftChangeRequestRoutes from "@/routes/shift-change-request.route.ts"
 import shiftRoutes from "@/routes/shift.route.ts"
 import taskRoutes from "@/routes/task.route.ts"
+import customQueryRoutes from "@/routes/custom-query.route.ts"
 import weeklyScheduleTemplateRoutes from "@/routes/weekly-schedule-template.route.ts"
 
 import cookieParser from "cookie-parser"
@@ -53,10 +54,10 @@ app.use(cookieParser())
 app.use(cors)
 app.use(express.json())
 
-// Set up rate limiter: maximum of 100 requests per 15 minutes
+// Set up rate limiter: maximum of 100 requests per 15 minutes (relaxed in development)
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // max 1000 requests per windowMs
+  windowMs: RATE_LIMIT.WINDOW_MS,
+  max: ENV_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT ? RATE_LIMIT.MAX_LIMIT_DEV : RATE_LIMIT.MAX_LIMIT_PROD,
   message: {
     status: "error",
     message: "Too many requests, please try again later.",
@@ -100,6 +101,8 @@ app.use("/api/payrolls", payrollRoutes)
 // Private routes
 app.use("/api/projects", projectRoutes)
 app.use("/api/tasks", taskRoutes)
+app.use("/api/custom-queries", customQueryRoutes)
+
 // 404 handler
 app.use((req, res) => {
   res.status(HttpStatusCode.NOT_FOUND).json({

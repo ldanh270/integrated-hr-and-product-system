@@ -23,4 +23,7 @@ projectRoutes.get("/:id/members", controller.getMembers)
 projectRoutes.post("/:id/members", controller.addMember)
 projectRoutes.delete("/:id/members/:employeeId", controller.removeMember)
 
+// Gantt Chart Data
+projectRoutes.get("/:id/gantt", controller.getGanttData)
+
 export default projectRoutes

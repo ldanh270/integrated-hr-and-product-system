@@ -19,6 +19,11 @@ export interface Task {
   completedAt: string | null
   estimatedTime: number | null
   progress: number
+  resultUrl?: string | null
+  resultNotes?: string | null
+  rejectionReason?: string | null
+  parentTaskId?: string | null
+  spentTimes?: TaskSpentTime[]
   createdAt: string
   updatedAt: string
   project?: {
@@ -51,6 +56,7 @@ export interface CreateTaskDto {
   dueDate?: string | null
   estimatedTime?: number | null
   progress?: number
+  parentTaskId?: string | null
 }
 
 export interface UpdateTaskDto {
@@ -65,6 +71,10 @@ export interface UpdateTaskDto {
   completedAt?: string | null
   estimatedTime?: number | null
   progress?: number
+  resultUrl?: string | null
+  resultNotes?: string | null
+  rejectionReason?: string | null
+  parentTaskId?: string | null
 }
 
 export interface TaskListQuery {
@@ -89,4 +99,12 @@ export interface PaginatedTasksDto {
     limit: number
     totalPages: number
   }
+}
+export interface TaskSpentTime {
+  id: string
+  employeeId: string
+  hours: number
+  comment: string | null
+  activity: string
+  date: string
 }
