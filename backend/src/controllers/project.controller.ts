@@ -7,7 +7,7 @@ import {
   listProjectsQuerySchema,
   updateProjectSchema,
 } from "@/schemas/project.schema.ts"
-import { ApiResponse, IProjectService, PaginatedProjectsDto, Project } from "@/types"
+import { ApiResponse, IProjectService, PaginatedProjectsDto, Project, GanttDataDto } from "@/types"
 
 import { Response } from "express"
 import { z } from "zod"
@@ -235,5 +235,25 @@ export class ProjectController {
       req.user.role,
     )
     res.status(HttpStatusCode.OK).json({ data: members, error: null })
+  }
+
+  /**
+   * Retrieves Gantt chart data for a project (tasks, members, leave records)
+   * User must have access to the project to view Gantt data
+   */
+  getGanttData = async (req: AuthRequest, res: Response<ApiResponse<GanttDataDto>>) => {
+    if (!req.user) {
+      return res.status(HttpStatusCode.UNAUTHORIZED).json({
+        data: null,
+        error: { message: "Unauthorized", code: ErrorCode.UNAUTHORIZED },
+      })
+    }
+
+    const ganttData = await this.service.getGanttData(
+      String(req.params.id),
+      req.user.empId,
+      req.user.role,
+    )
+    res.status(HttpStatusCode.OK).json({ data: ganttData, error: null })
   }
 }

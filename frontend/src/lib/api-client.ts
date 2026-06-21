@@ -1,4 +1,3 @@
-import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useAuthStore } from "@/store/auth-store"
 
 import axios from "axios"
@@ -17,7 +16,8 @@ const apiClient = axios.create({
 })
 
 let isRefreshing = false
-let failedQueue: Array<{ resolve: (value?: unknown) => void; reject: (reason?: unknown) => void }> = []
+let failedQueue: Array<{ resolve: (value?: unknown) => void; reject: (reason?: unknown) => void }> =
+  []
 
 const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue.forEach((prom) => {
@@ -28,6 +28,23 @@ const processQueue = (error: unknown, token: string | null = null) => {
     }
   })
   failedQueue = []
+}
+
+/**
+ * Public auth endpoints that must propagate their own 401 to the caller.
+ * Auto-refresh on these would swallow the real error (e.g. "Invalid username or password").
+ */
+const PUBLIC_AUTH_PATHS = [
+  "/auth/refresh",
+  "/auth/login",
+  "/auth/forgot-password",
+  "/auth/validate-reset-token",
+  "/auth/reset-password",
+]
+
+const isPublicAuthPath = (url?: string): boolean => {
+  if (!url) return false
+  return PUBLIC_AUTH_PATHS.some((path) => url === path || url.startsWith(`${path}?`))
 }
 
 /**
@@ -50,7 +67,7 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
-    if (error.response?.status === 401 && originalRequest?.url !== "/auth/refresh") {
+    if (error.response?.status === 401 && !isPublicAuthPath(originalRequest?.url)) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
@@ -72,16 +89,17 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest)
       } catch (refreshError) {
         processQueue(refreshError, null)
-        const token = localStorage.getItem(SYSTEM_CONFIG.STORAGE_KEYS.AUTH_TOKEN)
-        
-        // Only treat as session expiration if the user was actually logged in (had a token)
-        if (token) {
+
+        // Only treat as session expiration if the user was actually logged in
+        const isAuthenticated = useAuthStore.getState().isAuthenticated
+
+        if (isAuthenticated) {
           useAuthStore.getState().clearAuth()
           toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.")
           localStorage.removeItem("auth-storage")
           window.location.href = "/login"
         }
-        return Promise.reject(refreshError)
+        return Promise.reject(error)
       } finally {
         isRefreshing = false
       }

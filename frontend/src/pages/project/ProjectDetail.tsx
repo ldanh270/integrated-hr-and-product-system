@@ -24,6 +24,7 @@ import { EditProjectModal } from "./components/edit-project-modal"
 import { ProjectOverviewTab } from "./components/project-overview-tab"
 import { ProjectIssuesTab } from "./components/project-issues-tab"
 import { ProjectActivityTab } from "./components/project-activity-tab"
+import { ProjectGanttTab } from "./components/project-gantt-tab"
 
 interface ActivityItem {
   id: string
@@ -244,6 +245,12 @@ export default function ProjectDetail() {
           >
             Hoạt động (Activity)
           </TabsTrigger>
+          <TabsTrigger
+            value="gantt"
+            className="rounded-full px-5 py-2 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+          >
+            Biểu đồ Gantt
+          </TabsTrigger>
         </TabsList>
 
         {/* OVERVIEW TAB */}
@@ -279,6 +286,14 @@ export default function ProjectDetail() {
           <ProjectActivityTab
             activitiesList={activitiesList}
             isLoading={isLoadingSpent}
+          />
+        </TabsContent>
+
+        {/* GANTT TAB */}
+        <TabsContent value="gantt">
+          <ProjectGanttTab
+            projectId={projectId}
+            project={project}
           />
         </TabsContent>
       </Tabs>
