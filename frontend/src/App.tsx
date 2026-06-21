@@ -3,12 +3,12 @@ import { API_ENDPOINTS } from "@/config/api.config"
 import { ROUTES } from "@/config/routes.config"
 import { SUBSYSTEMS } from "@/config/subsystem.config"
 import apiClient from "@/lib/api-client"
-import { privateRoutes, publicRoutes } from "@/routes"
+import { type RouteConfig, privateRoutes, publicRoutes } from "@/routes"
 import { useAuthStore } from "@/store/auth-store.ts"
 
-import { Fragment, Suspense, lazy, useEffect, useState } from "react"
+import { Fragment, type ReactNode, Suspense, lazy, useEffect, useState } from "react"
 
-import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom"
+import { Navigate, Outlet, Route, BrowserRouter as Router, Routes } from "react-router-dom"
 import { Toaster } from "sonner"
 
 const NotFound = lazy(() => import("@/pages/NotFound.tsx"))
@@ -34,9 +34,13 @@ const ProtectedRoute = ({
     if (!isAuthenticated) {
       apiClient
         .get(API_ENDPOINTS.AUTH.ME)
-        .then((res) => { setAuth(res.data.data) })
+        .then((res) => {
+          setAuth(res.data.data)
+        })
         .catch(() => {})
-        .finally(() => { setIsChecking(false) })
+        .finally(() => {
+          setIsChecking(false)
+        })
     }
   }, [isAuthenticated, setAuth])
 
@@ -75,6 +79,46 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 const RootRedirect = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   return <Navigate to={isAuthenticated ? "/hrm/dashboard" : "/login"} replace />
+}
+
+const renderPrivateRoute = (route: RouteConfig, index: number, keyPrefix: string): ReactNode => {
+  const Layout = route.layout || Fragment
+
+  if (route.children?.length) {
+    // Parent route: layout wraps Outlet; children render without their own layout
+    return (
+      <Route
+        key={`${keyPrefix}-${index}`}
+        path={route.path}
+        element={
+          <ProtectedRoute requiredRoles={route.roles}>
+            <Layout>
+              <Outlet />
+            </Layout>
+          </ProtectedRoute>
+        }
+      >
+        {route.children.map((child, ci) => renderPrivateRoute(child, ci, `${keyPrefix}-${index}`))}
+      </Route>
+    )
+  }
+
+  // Leaf route
+  if (!route.component) return null
+  const Page = route.component
+  return (
+    <Route
+      key={`${keyPrefix}-${index}`}
+      path={route.path}
+      element={
+        <ProtectedRoute requiredRoles={route.roles}>
+          <Layout>
+            <Page />
+          </Layout>
+        </ProtectedRoute>
+      }
+    />
+  )
 }
 
 const App = () => {
@@ -144,25 +188,42 @@ const App = () => {
               )
             })}
 
-            {/* Private Routes */}
-            {privateRoutes.map((route, index) => {
-              const Page = route.component
-              const Layout = route.layout || Fragment
+            {/* Private Routes (supports nested children) */}
+            {privateRoutes.map((route, index) => renderPrivateRoute(route, index, "private"))}
 
-              return (
-                <Route
-                  key={`private-${index}`}
-                  path={route.path}
-                  element={
-                    <ProtectedRoute requiredRoles={route.roles}>
-                      <Layout>
-                        <Page />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-              )
-            })}
+            {/* Legacy redirects — keep old URLs working */}
+            <Route
+              path={ROUTES.ATTENDANCE.MY_SCHEDULE}
+              element={
+                <ProtectedRoute>
+                  <Navigate to={ROUTES.PERSONAL.SCHEDULE} replace />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={ROUTES.PAYROLL.MY_PAYSLIPS}
+              element={
+                <ProtectedRoute>
+                  <Navigate to={ROUTES.PERSONAL.PAYSLIPS} replace />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={ROUTES.PROJECT.DASHBOARD}
+              element={
+                <ProtectedRoute>
+                  <Navigate to={ROUTES.PERSONAL.PROJECTS} replace />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={ROUTES.PERSONAL.BASE}
+              element={
+                <ProtectedRoute>
+                  <Navigate to={ROUTES.PERSONAL.SCHEDULE} replace />
+                </ProtectedRoute>
+              }
+            />
 
             <Route path="/" element={<RootRedirect />} />
             <Route path="*" element={<NotFound />} />

@@ -1,5 +1,7 @@
 import { ROLE } from "@/config/entities/employee.config.ts"
-import { lazy, type ComponentType } from "react"
+import { ROUTES } from "@/config/routes.config.ts"
+
+import { type ComponentType, lazy } from "react"
 
 const MainLayout = lazy(() => import("@/layouts/MainLayout.tsx"))
 
@@ -15,9 +17,10 @@ const publicRoutes = [
 
 export interface RouteConfig {
   path: string
-  component: ComponentType
+  component?: ComponentType
   layout?: ComponentType | null
   roles?: string[]
+  children?: RouteConfig[]
 }
 
 // Private routes
@@ -47,11 +50,6 @@ const privateRoutes: RouteConfig[] = [
   {
     path: "/attendance/summary",
     component: lazy(() => import("@/pages/attendance/AttendanceSummary.tsx")),
-    layout: MainLayout,
-  },
-  {
-    path: "/attendance/my-schedule",
-    component: lazy(() => import("@/pages/attendance/MySchedule.tsx")),
     layout: MainLayout,
   },
   {
@@ -138,11 +136,6 @@ const privateRoutes: RouteConfig[] = [
     roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
   },
   {
-    path: "/payroll/my-payslips",
-    component: lazy(() => import("@/pages/payroll/MyPayslips.tsx")),
-    layout: MainLayout,
-  },
-  {
     path: "/asset/dashboard",
     component: lazy(() => import("@/pages/asset/AssetDashboard.tsx")),
     layout: MainLayout,
@@ -192,9 +185,18 @@ const privateRoutes: RouteConfig[] = [
     component: lazy(() => import("@/pages/settings/SettingsDashboard.tsx")),
     layout: MainLayout,
   },
-  // Project & Task Management Module
   {
-    path: "/project/dashboard",
+    path: ROUTES.PERSONAL.SCHEDULE,
+    component: lazy(() => import("@/pages/attendance/MySchedule.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: ROUTES.PERSONAL.PAYSLIPS,
+    component: lazy(() => import("@/pages/payroll/MyPayslips.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: ROUTES.PERSONAL.PROJECTS,
     component: lazy(() => import("@/pages/project/ProjectDashboard.tsx")),
     layout: MainLayout,
   },
