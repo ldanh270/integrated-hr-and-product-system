@@ -116,21 +116,21 @@ export function ApplicationDetail({
         const swapDetail = application.detail as Record<string, string | null | undefined>
         let partnerStatusLabel = "-"
         let partnerStatusColor = "text-slate-600"
-        if (swapDetail?.partnerApprovalStatus === "pending") {
+        if (swapDetail.partnerApprovalStatus === "pending") {
           partnerStatusLabel = "Đang chờ"
           partnerStatusColor = "text-amber-600 font-medium"
-        } else if (swapDetail?.partnerApprovalStatus === "approved") {
+        } else if (swapDetail.partnerApprovalStatus === "approved") {
           partnerStatusLabel = "Đã đồng ý"
           partnerStatusColor = "text-emerald-600 font-medium"
-        } else if (swapDetail?.partnerApprovalStatus === "rejected") {
+        } else if (swapDetail.partnerApprovalStatus === "rejected") {
           partnerStatusLabel = "Đã từ chối"
           partnerStatusColor = "text-red-600 font-medium"
         }
         return (
           <>
             <td className="px-4 py-4 text-foreground">{new Date(application.startDate).toLocaleDateString("vi-VN")}</td>
-            <td className="px-4 py-4 text-foreground">{swapDetail?.employeeShiftId || "-"}</td>
-            <td className="px-4 py-4 text-foreground">{swapDetail?.swapWithEmployeeId ? `NV: ${swapDetail.swapWithEmployeeId}` : `Ca: ${swapDetail?.swapWithShiftId || "-"}`}</td>
+            <td className="px-4 py-4 text-foreground">{swapDetail.employeeShiftId || "-"}</td>
+            <td className="px-4 py-4 text-foreground">{swapDetail.swapWithEmployeeId ? `NV: ${swapDetail.swapWithEmployeeId}` : `Ca: ${swapDetail.swapWithShiftId || "-"}`}</td>
             <td className={`px-4 py-4 ${partnerStatusColor}`}>{partnerStatusLabel}</td>
           </>
         )
@@ -194,8 +194,8 @@ export function ApplicationDetail({
 
           {/* Actions for Partner (Shift Swap) */}
           {application.type === "shift_swap" && 
-          (application.detail as Record<string, string | null | undefined>)?.swapWithEmployeeId === user?.personalEmployeeId && 
-           (application.detail as Record<string, string | null | undefined>)?.partnerApprovalStatus === "pending" && (
+          (application.detail as Record<string, string | null | undefined>).swapWithEmployeeId === user?.personalEmployeeId && 
+           (application.detail as Record<string, string | null | undefined>).partnerApprovalStatus === "pending" && (
             <div className="flex items-center gap-3 ml-4 border-l border-border pl-4">
               <button
                 onClick={() => { partnerApproveMutation.mutate({ id: application.id, isApproved: true }) }}

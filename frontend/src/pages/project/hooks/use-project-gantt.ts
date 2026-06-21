@@ -251,7 +251,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     let currentLabel = format(timelineDays[0], "yyyy-M")
     let currentCount = 0
     
-    timelineDays.forEach((day) => {
+    timelineDays.forEach((day: Date) => {
       const label = format(day, "yyyy-M")
       if (label === currentLabel) {
         currentCount++

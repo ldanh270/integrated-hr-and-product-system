@@ -891,7 +891,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                     className="h-10 grid"
                     style={{ gridTemplateColumns: `repeat(${timelineDays.length}, ${dayWidth}px)` }}
                   >
-                    {timelineDays.map((day, idx) => {
+                    {timelineDays.map((day: Date, idx: number) => {
                       const dayName = format(day, "EEEEE", { locale: vi })
                       const dayNum = format(day, "d")
                       const isWeekend = ["T7", "CN", "S", "Su"].includes(dayName) || day.getDay() === 0 || day.getDay() === 6
@@ -981,7 +981,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                         {(() => {
                           const assigneeId = task.assigneeId
                           if (!showLeaves || !assigneeId) return null
-                          return timelineDays.map((day, idx) => {
+                          return timelineDays.map((day: Date, idx: number) => {
                             const onLeave = isEmployeeOnLeaveOnDay(assigneeId, day)
                             if (onLeave) {
                               return (
