@@ -16,7 +16,8 @@ const repository = new PrismaProjectRepository(prisma)
 const taskRepository = new PrismaTaskRepository(prisma)
 const statusRepository = new ProjectTaskStatusRepository(prisma)
 const statusService = new ProjectTaskStatusService(statusRepository, repository, taskRepository)
-const service = new ProjectService(repository, employeeRepository, statusService)
+const service = new ProjectService(repository, employeeRepository, prisma, statusService)
+
 const controller = new ProjectController(service)
 const statusController = new ProjectTaskStatusController(statusService)
 

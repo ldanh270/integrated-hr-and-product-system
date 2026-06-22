@@ -123,7 +123,6 @@ export class ProjectService implements IProjectService {
           createdById: userId,
           startDate: data.startDate ? new Date(data.startDate) : null,
           expectedEndDate: data.expectedEndDate ? new Date(data.expectedEndDate) : null,
-          actualEndDate: data.actualEndDate ? new Date(data.actualEndDate) : null,
           taskCreationPolicy: data.taskCreationPolicy || TASK_CREATION_POLICY.LEADER_ONLY,
         }
       })
