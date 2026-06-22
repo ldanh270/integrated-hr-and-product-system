@@ -12,6 +12,7 @@ export interface Task {
   tracker: TaskTracker
   priority: TaskPriority
   status: TaskStatus
+  statusId: string | null
   assigneeId: string | null
   createdById: string
   startDate: string | null
@@ -51,6 +52,7 @@ export interface CreateTaskDto {
   tracker?: TaskTracker
   priority?: TaskPriority
   status?: TaskStatus
+  statusId?: string | null
   assigneeId?: string | null
   startDate?: string | null
   dueDate?: string | null
@@ -65,6 +67,7 @@ export interface UpdateTaskDto {
   tracker?: TaskTracker
   priority?: TaskPriority
   status?: TaskStatus
+  statusId?: string | null
   assigneeId?: string | null
   startDate?: string | null
   dueDate?: string | null
@@ -84,6 +87,7 @@ export interface TaskListQuery {
   search?: string
   tracker?: TaskTracker
   status?: TaskStatus
+  statusId?: string
   priority?: TaskPriority
   assigneeId?: string
   createdById?: string
