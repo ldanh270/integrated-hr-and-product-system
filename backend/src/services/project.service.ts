@@ -142,7 +142,7 @@ export class ProjectService implements IProjectService {
         }
       }
 
-      return project as any
+      return project as unknown as Project
     })
   }
 

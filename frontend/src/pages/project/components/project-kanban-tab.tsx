@@ -89,7 +89,7 @@ export function ProjectKanbanTab({
   const createStatusMutation = useMutation({
     mutationFn: (data: CreateProjectTaskStatusDto) => projectTaskStatusApi.create(projectId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projectStatuses", projectId] })
+      void queryClient.invalidateQueries({ queryKey: ["projectStatuses", projectId] })
       toast.success("Đã tạo cột trạng thái mới")
       setIsAddColumnOpen(false)
       resetForm()
@@ -104,9 +104,9 @@ export function ProjectKanbanTab({
     mutationFn: ({ id, data }: { id: string; data: UpdateProjectTaskStatusDto }) => 
       projectTaskStatusApi.update(projectId, id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projectStatuses", projectId] })
-      queryClient.invalidateQueries({ queryKey: ["tasks"] })
-      queryClient.invalidateQueries({ queryKey: ["project-tasks", projectId] })
+      void queryClient.invalidateQueries({ queryKey: ["projectStatuses", projectId] })
+      void queryClient.invalidateQueries({ queryKey: ["tasks"] })
+      void queryClient.invalidateQueries({ queryKey: ["project-tasks", projectId] })
       toast.success("Đã cập nhật trạng thái")
       setIsEditColumnOpen(false)
       resetForm()
@@ -121,9 +121,9 @@ export function ProjectKanbanTab({
     mutationFn: ({ id, fallbackId }: { id: string; fallbackId?: string }) => 
       projectTaskStatusApi.delete(projectId, id, fallbackId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projectStatuses", projectId] })
-      queryClient.invalidateQueries({ queryKey: ["tasks"] })
-      queryClient.invalidateQueries({ queryKey: ["project-tasks", projectId] })
+      void queryClient.invalidateQueries({ queryKey: ["projectStatuses", projectId] })
+      void queryClient.invalidateQueries({ queryKey: ["tasks"] })
+      void queryClient.invalidateQueries({ queryKey: ["project-tasks", projectId] })
       toast.success("Đã xóa cột trạng thái")
       setIsDeleteConfirmOpen(false)
       resetForm()
@@ -139,8 +139,8 @@ export function ProjectKanbanTab({
       return taskApi.update(taskId, { statusId })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] })
-      queryClient.invalidateQueries({ queryKey: ["project-tasks", projectId] })
+      void queryClient.invalidateQueries({ queryKey: ["tasks"] })
+      void queryClient.invalidateQueries({ queryKey: ["project-tasks", projectId] })
       toast.success("Đã di chuyển công việc")
     },
     onError: (err: unknown) => {
@@ -281,7 +281,7 @@ export function ProjectKanbanTab({
       <div className="flex items-start gap-5 overflow-x-auto pb-6 select-none min-h-[500px]">
         {statuses.map((status) => {
           // tasksByStatus is pre-initialized for every status so fallback is not needed
-          const colTasks = tasksByStatus[status.id] ?? []
+          const colTasks = tasksByStatus[status.id] || []
           
           return (
             <div 
@@ -533,7 +533,7 @@ export function ProjectKanbanTab({
               <Input 
                 id="edit-name"
                 value={columnName}
-                onChange={(e) => setColumnName(e.target.value)}
+                onChange={(e) => { setColumnName(e.target.value) }}
                 placeholder="Ví dụ: Đang đợi, QC, Hoàn tất..."
                 required
                 className="h-9 text-xs border-border rounded-lg"
@@ -547,7 +547,7 @@ export function ProjectKanbanTab({
                   <button
                     key={hex}
                     type="button"
-                    onClick={() => setColumnColor(hex)}
+                    onClick={() => { setColumnColor(hex) }}
                     className={`size-6 rounded-full border transition-all relative shrink-0 cursor-pointer ${
                       columnColor === hex ? "scale-110 ring-2 ring-primary/45 border-transparent" : "border-border hover:scale-105"
                     }`}
@@ -564,7 +564,7 @@ export function ProjectKanbanTab({
                 <input 
                   type="checkbox" 
                   checked={columnIsCompleted}
-                  onChange={(e) => setColumnIsCompleted(e.target.checked)}
+                  onChange={(e) => { setColumnIsCompleted(e.target.checked) }}
                   className="size-4 text-primary border-border rounded"
                 />
                 Đánh dấu là cột hoàn thành (isCompleted)
@@ -574,7 +574,7 @@ export function ProjectKanbanTab({
                 <input 
                   type="checkbox" 
                   checked={columnIsDefault}
-                  onChange={(e) => setColumnIsDefault(e.target.checked)}
+                  onChange={(e) => { setColumnIsDefault(e.target.checked) }}
                   disabled={selectedColumn?.isDefault} // Cannot unset default unless setting another status
                   className="size-4 text-primary border-border rounded disabled:opacity-40"
                 />
