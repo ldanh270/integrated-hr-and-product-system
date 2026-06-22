@@ -280,8 +280,8 @@ export function ProjectKanbanTab({
       {/* Kanban columns list */}
       <div className="flex items-start gap-5 overflow-x-auto pb-6 select-none min-h-[500px]">
         {statuses.map((status) => {
-          // tasksByStatus is pre-initialized for every status so fallback is not needed
-          const colTasks = tasksByStatus[status.id] || []
+          const colTasks = tasksByStatus[status.id]
+
           
           return (
             <div 
