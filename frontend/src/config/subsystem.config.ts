@@ -1,6 +1,7 @@
-import { ROLE } from "@/config/entities/employee.config"
-import { ROUTES } from "@/config/routes.config"
 import { APPLICATION_TYPES } from "@/config/entities/attendance.config"
+import { ROLE } from "@/config/entities/employee.config"
+import { PERSONAL_TAB_LABELS } from "@/config/entities/personal.config"
+import { ROUTES } from "@/config/routes.config"
 
 import {
   BookOpen,
@@ -9,21 +10,22 @@ import {
   CalendarDays,
   ChartNoAxesColumn,
   CircleDollarSign,
+  FilePlus2,
   FileText,
   Package,
   Settings,
   Settings2,
   ShieldCheck,
-  Users,
-  UserCheck,
-  FilePlus2,
   User,
+  UserCheck,
+  Users,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
 /** Navigation metadata for HR subsystems (routes, icons, role access). */
 export type SubsystemId =
   | "hrm"
+  | "personal"
   | "application"
   | "attendance"
   | "payroll"
@@ -65,6 +67,22 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     ],
   },
   {
+    id: "personal",
+    name: "Cá nhân",
+    description: "Các màn hình cá nhân dành cho nhân viên",
+    icon: User,
+    routePrefix: "/personal",
+    sidebarItems: [
+      { name: PERSONAL_TAB_LABELS.schedule, path: ROUTES.PERSONAL.SCHEDULE, icon: CalendarClock },
+      {
+        name: PERSONAL_TAB_LABELS.payslips,
+        path: ROUTES.PERSONAL.PAYSLIPS,
+        icon: CircleDollarSign,
+      },
+      { name: PERSONAL_TAB_LABELS.projects, path: ROUTES.PERSONAL.PROJECTS, icon: Briefcase },
+    ],
+  },
+  {
     id: "application",
     name: "Đơn thư",
     description: "Tạo đơn từ và duyệt đơn trực tuyến",
@@ -72,14 +90,14 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     routePrefix: "/application",
     sidebarItems: [
       { name: "Bạn duyệt", path: ROUTES.APPLICATION.DASHBOARD + "?tab=manage", icon: UserCheck },
-      { 
-        name: "Đơn thư", 
-        path: ROUTES.APPLICATION.DASHBOARD, 
+      {
+        name: "Đơn thư",
+        path: ROUTES.APPLICATION.DASHBOARD,
         icon: FilePlus2,
-        subItems: Object.values(APPLICATION_TYPES).map(t => ({
+        subItems: Object.values(APPLICATION_TYPES).map((t) => ({
           name: t.DESCRIPTION,
-          path: `${ROUTES.APPLICATION.DASHBOARD}?type=${t.LABEL}`
-        }))
+          path: `${ROUTES.APPLICATION.DASHBOARD}?type=${t.LABEL}`,
+        })),
       },
       { name: "Của bạn", path: ROUTES.APPLICATION.DASHBOARD + "?tab=mine", icon: User },
     ],
@@ -91,7 +109,6 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     icon: CalendarClock,
     routePrefix: "/attendance",
     sidebarItems: [
-      { name: "Lịch của tôi", path: ROUTES.ATTENDANCE.MY_SCHEDULE, icon: CalendarClock },
       {
         name: "Tổng quan",
         path: ROUTES.ATTENDANCE.DASHBOARD,
@@ -99,8 +116,12 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
       },
 
-          { name: "Tổng hợp", path: ROUTES.ATTENDANCE.SUMMARY, icon: ChartNoAxesColumn, roles: [ROLE.EMPLOYEE, ROLE.TEAM_LEADER] },
-      { name: "Lịch của tôi", path: ROUTES.ATTENDANCE.MY_SCHEDULE, icon: CalendarClock },
+      {
+        name: "Tổng hợp",
+        path: ROUTES.ATTENDANCE.SUMMARY,
+        icon: ChartNoAxesColumn,
+        roles: [ROLE.EMPLOYEE, ROLE.TEAM_LEADER],
+      },
       {
         name: "Lịch làm việc",
         path: ROUTES.ATTENDANCE.WORK_SCHEDULES,
@@ -173,7 +194,6 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         icon: Users,
         roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
       },
-      { name: "Lương của tôi", path: ROUTES.PAYROLL.MY_PAYSLIPS, icon: CircleDollarSign },
     ],
   },
   {
@@ -255,7 +275,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     icon: Briefcase,
     routePrefix: "/project",
     sidebarItems: [
-      { name: "Tổng quan", path: ROUTES.PROJECT.DASHBOARD, icon: FileText },
+      { name: "Tổng quan", path: ROUTES.PERSONAL.PROJECTS, icon: FileText },
       { name: "Danh sách dự án", path: ROUTES.PROJECT.LIST, icon: Briefcase },
     ],
   },
