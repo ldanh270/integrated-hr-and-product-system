@@ -1,5 +1,6 @@
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { ROLE } from "@/configs/entities/employee.config.ts"
+import { DEFAULT_PROJECT_TASK_STATUSES } from "@/configs/entities/project.config.ts"
 import {
   ProjectTaskStatus,
   CreateProjectTaskStatusDto,
@@ -111,7 +112,7 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
 
     if (updated && (data.name !== undefined || data.isCompleted !== undefined)) {
       const legacyEnumStatus = mapStatusNameToEnum(updated.name, updated.isCompleted)
-      await this.taskRepository.syncLegacyStatus(updated.id, legacyEnumStatus as any)
+      await this.taskRepository.syncLegacyStatus(updated.id, legacyEnumStatus)
     }
 
     return updated
@@ -143,7 +144,7 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
       }
       await this.taskRepository.updateTasksStatusId(status.projectId, id, fallbackStatusId)
       const legacyEnum = mapStatusNameToEnum(fallback.name, fallback.isCompleted)
-      await this.taskRepository.syncLegacyStatus(fallbackStatusId, legacyEnum as any)
+      await this.taskRepository.syncLegacyStatus(fallbackStatusId, legacyEnum as ReturnType<typeof mapStatusNameToEnum>)
     } else {
       await this.taskRepository.updateTasksStatusId(status.projectId, id, null)
     }
@@ -152,20 +153,15 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
   }
 
   async createDefaultStatuses(projectId: string): Promise<ProjectTaskStatus[]> {
-    const defaults = [
-      { name: "To Do", color: "#6366F1", order: 0, isDefault: true, isCompleted: false },
-      { name: "In Progress", color: "#3B82F6", order: 1, isDefault: false, isCompleted: false },
-      { name: "In Review", color: "#F59E0B", order: 2, isDefault: false, isCompleted: false },
-      { name: "Done", color: "#10B981", order: 3, isDefault: false, isCompleted: true },
-      { name: "Cancelled", color: "#EF4444", order: 4, isDefault: false, isCompleted: true },
-      { name: "Reopened", color: "#8B5CF6", order: 5, isDefault: false, isCompleted: false },
-    ]
-
     const created: ProjectTaskStatus[] = []
-    for (const item of defaults) {
+    for (const item of DEFAULT_PROJECT_TASK_STATUSES) {
       const status = await this.repository.create({
         projectId,
-        ...item,
+        name: item.name,
+        color: item.color,
+        order: item.order,
+        isDefault: item.isDefault,
+        isCompleted: item.isCompleted,
       })
       created.push(status)
     }

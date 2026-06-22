@@ -23,9 +23,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Link } from "react-router-dom"
+import { ROLE } from "@/config/entities/employee.config"
+
 import type { Task } from "@/types/task.types"
 import type { ProjectMember } from "@/types/project.types"
-import type { ProjectTaskStatus } from "@/types/project-task-status.types"
+import type { ProjectTaskStatus, CreateProjectTaskStatusDto, UpdateProjectTaskStatusDto } from "@/types/project-task-status.types"
 
 interface ProjectKanbanTabProps {
   projectId: string
@@ -49,7 +51,7 @@ export function ProjectKanbanTab({
 }: ProjectKanbanTabProps) {
   const queryClient = useQueryClient()
   const isLeader = teamLeader?.id === user?.id
-  const isAdminOrGM = user?.role === "admin" || user?.role === "general_manager"
+  const isAdminOrGM = user?.role === ROLE.ADMIN || user?.role === ROLE.GENERAL_MANAGER
   const canManageStatuses = isAdminOrGM || isLeader
 
   // Modal States
@@ -85,31 +87,31 @@ export function ProjectKanbanTab({
 
   // Create Status Mutation
   const createStatusMutation = useMutation({
-    mutationFn: (data: any) => projectTaskStatusApi.create(projectId, data),
+    mutationFn: (data: CreateProjectTaskStatusDto) => projectTaskStatusApi.create(projectId, data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["projectStatuses", projectId] })
+      queryClient.invalidateQueries({ queryKey: ["projectStatuses", projectId] })
       toast.success("Đã tạo cột trạng thái mới")
       setIsAddColumnOpen(false)
       resetForm()
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       toast.error(extractErrorMessage(err))
     },
   })
 
   // Update Status Mutation
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => 
+    mutationFn: ({ id, data }: { id: string; data: UpdateProjectTaskStatusDto }) => 
       projectTaskStatusApi.update(projectId, id, data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["projectStatuses", projectId] })
-      void queryClient.invalidateQueries({ queryKey: ["tasks"] })
-      void queryClient.invalidateQueries({ queryKey: ["project-tasks", projectId] })
+      queryClient.invalidateQueries({ queryKey: ["projectStatuses", projectId] })
+      queryClient.invalidateQueries({ queryKey: ["tasks"] })
+      queryClient.invalidateQueries({ queryKey: ["project-tasks", projectId] })
       toast.success("Đã cập nhật trạng thái")
       setIsEditColumnOpen(false)
       resetForm()
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       toast.error(extractErrorMessage(err))
     },
   })
@@ -119,14 +121,14 @@ export function ProjectKanbanTab({
     mutationFn: ({ id, fallbackId }: { id: string; fallbackId?: string }) => 
       projectTaskStatusApi.delete(projectId, id, fallbackId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["projectStatuses", projectId] })
-      void queryClient.invalidateQueries({ queryKey: ["tasks"] })
-      void queryClient.invalidateQueries({ queryKey: ["project-tasks", projectId] })
+      queryClient.invalidateQueries({ queryKey: ["projectStatuses", projectId] })
+      queryClient.invalidateQueries({ queryKey: ["tasks"] })
+      queryClient.invalidateQueries({ queryKey: ["project-tasks", projectId] })
       toast.success("Đã xóa cột trạng thái")
       setIsDeleteConfirmOpen(false)
       resetForm()
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       toast.error(extractErrorMessage(err))
     },
   })
@@ -137,11 +139,11 @@ export function ProjectKanbanTab({
       return taskApi.update(taskId, { statusId })
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["tasks"] })
-      void queryClient.invalidateQueries({ queryKey: ["project-tasks", projectId] })
+      queryClient.invalidateQueries({ queryKey: ["tasks"] })
+      queryClient.invalidateQueries({ queryKey: ["project-tasks", projectId] })
       toast.success("Đã di chuyển công việc")
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       toast.error(extractErrorMessage(err))
     },
   })
@@ -229,15 +231,16 @@ export function ProjectKanbanTab({
   const defaultStatus = statuses.find((s) => s.isDefault) || statuses[0]
 
   tasks.forEach((task) => {
-    if (task.statusId && tasksByStatus[task.statusId]) {
+    // When task has a statusId that maps to a known column, use it directly
+    if (task.statusId && task.statusId in tasksByStatus) {
       tasksByStatus[task.statusId].push(task)
     } else {
-      // Compatibility fallback: try to map task.status (enum) to a matching status column name
+      // Compatibility fallback: map task.status (legacy enum) to a column by name
       let mapped = false
       const normEnum = task.status.toLowerCase().replace(/[\s_-]/g, "")
       for (const s of statuses) {
         const normName = s.name.toLowerCase().replace(/[\s_-]/g, "")
-        if (normName === normEnum || (normEnum === "todo" && normName === "todo")) {
+        if (normName === normEnum) {
           tasksByStatus[s.id].push(task)
           mapped = true
           break
@@ -277,13 +280,14 @@ export function ProjectKanbanTab({
       {/* Kanban columns list */}
       <div className="flex items-start gap-5 overflow-x-auto pb-6 select-none min-h-[500px]">
         {statuses.map((status) => {
-          const colTasks = tasksByStatus[status.id] || []
+          // tasksByStatus is pre-initialized for every status so fallback is not needed
+          const colTasks = tasksByStatus[status.id] ?? []
           
           return (
             <div 
               key={status.id}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => handleDrop(e, status.id)}
+              onDragOver={(e) => { e.preventDefault() }}
+              onDrop={(e) => { handleDrop(e, status.id) }}
               className="flex flex-col w-[290px] shrink-0 bg-secondary/30 border border-border/60 rounded-xl max-h-[700px] hover:bg-secondary/40 transition-colors"
             >
               {/* Column Header */}
@@ -360,7 +364,7 @@ export function ProjectKanbanTab({
                       <div
                         key={task.id}
                         draggable="true"
-                        onDragStart={(e) => handleDragStart(e, task)}
+                        onDragStart={(e) => { handleDragStart(e, task) }}
                         className="bg-card border border-border/80 rounded-xl p-3.5 space-y-3 shadow-sm hover:shadow-md hover:border-primary/40 transition-all cursor-grab active:cursor-grabbing group/card"
                       >
                         <div className="flex items-center justify-between gap-2">
@@ -445,7 +449,7 @@ export function ProjectKanbanTab({
               <Input 
                 id="name"
                 value={columnName}
-                onChange={(e) => setColumnName(e.target.value)}
+                onChange={(e) => { setColumnName(e.target.value) }}
                 placeholder="Ví dụ: Đang đợi, QC, Hoàn tất..."
                 required
                 className="h-9 text-xs border-border rounded-lg"
@@ -459,7 +463,7 @@ export function ProjectKanbanTab({
                   <button
                     key={hex}
                     type="button"
-                    onClick={() => setColumnColor(hex)}
+                    onClick={() => { setColumnColor(hex) }}
                     className={`size-6 rounded-full border transition-all relative shrink-0 cursor-pointer ${
                       columnColor === hex ? "scale-110 ring-2 ring-primary/45 border-transparent" : "border-border hover:scale-105"
                     }`}
@@ -476,7 +480,7 @@ export function ProjectKanbanTab({
                 <input 
                   type="checkbox" 
                   checked={columnIsCompleted}
-                  onChange={(e) => setColumnIsCompleted(e.target.checked)}
+                  onChange={(e) => { setColumnIsCompleted(e.target.checked) }}
                   className="size-4 text-primary border-border rounded"
                 />
                 Đánh dấu là cột hoàn thành (isCompleted)
@@ -486,7 +490,7 @@ export function ProjectKanbanTab({
                 <input 
                   type="checkbox" 
                   checked={columnIsDefault}
-                  onChange={(e) => setColumnIsDefault(e.target.checked)}
+                  onChange={(e) => { setColumnIsDefault(e.target.checked) }}
                   className="size-4 text-primary border-border rounded"
                 />
                 Trạng thái mặc định khi tạo issue (isDefault)
@@ -497,7 +501,7 @@ export function ProjectKanbanTab({
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => setIsAddColumnOpen(false)}
+                onClick={() => { setIsAddColumnOpen(false) }}
                 className="h-9 text-xs rounded-full"
               >
                 Hủy
@@ -582,7 +586,7 @@ export function ProjectKanbanTab({
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => setIsEditColumnOpen(false)}
+                onClick={() => { setIsEditColumnOpen(false) }}
                 className="h-9 text-xs rounded-full"
               >
                 Hủy
@@ -644,7 +648,7 @@ export function ProjectKanbanTab({
             <Button 
               type="button" 
               variant="outline" 
-              onClick={() => setIsDeleteConfirmOpen(false)}
+              onClick={() => { setIsDeleteConfirmOpen(false) }}
               className="h-9 text-xs rounded-full"
             >
               Hủy

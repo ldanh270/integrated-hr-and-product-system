@@ -1,4 +1,5 @@
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { PrismaClient } from "@prisma/client"
 import {
   CreateProjectDto,
   Project,
@@ -13,11 +14,14 @@ import {
 } from "@/types"
 import { AppError } from "@/utils/error.util.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
+import { ROLE } from "@/configs/entities/employee.config.ts"
+import { DEFAULT_PROJECT_TASK_STATUSES, PROJECT_STATUS, TASK_CREATION_POLICY } from "@/configs/entities/project.config.ts"
 
 export class ProjectService implements IProjectService {
   constructor(
     private repository: IProjectRepository,
     private employeeRepository: IEmployeeRepository,
+    private prisma: PrismaClient,
     private statusService?: IProjectTaskStatusService
   ) {}
 
@@ -25,7 +29,7 @@ export class ProjectService implements IProjectService {
    * Checks if user has Admin or General Manager role
    */
   private isAuthorizedAdminOrGM(userRole: string): boolean {
-    return userRole === "admin" || userRole === "general_manager"
+    return userRole === ROLE.ADMIN || userRole === ROLE.GENERAL_MANAGER
   }
 
   /**
@@ -108,16 +112,39 @@ export class ProjectService implements IProjectService {
       }
     }
 
-    const project = await this.repository.createProject({
-      ...data,
-      createdById: userId,
+    return this.prisma.$transaction(async (tx) => {
+      const project = await tx.project.create({
+        data: {
+          name: data.name,
+          description: data.description || null,
+          techStack: data.techStack || [],
+          status: data.status || PROJECT_STATUS.PLANNING,
+          teamLeaderId: data.teamLeaderId || null,
+          createdById: userId,
+          startDate: data.startDate ? new Date(data.startDate) : null,
+          expectedEndDate: data.expectedEndDate ? new Date(data.expectedEndDate) : null,
+          actualEndDate: data.actualEndDate ? new Date(data.actualEndDate) : null,
+          taskCreationPolicy: data.taskCreationPolicy || TASK_CREATION_POLICY.LEADER_ONLY,
+        }
+      })
+
+      if (this.statusService) {
+        for (const item of DEFAULT_PROJECT_TASK_STATUSES) {
+          await tx.projectTaskStatus.create({
+            data: {
+              projectId: project.id,
+              name: item.name,
+              color: item.color,
+              order: item.order,
+              isDefault: item.isDefault,
+              isCompleted: item.isCompleted,
+            }
+          })
+        }
+      }
+
+      return project as any
     })
-
-    if (this.statusService) {
-      await this.statusService.createDefaultStatuses(project.id)
-    }
-
-    return project
   }
 
   /**

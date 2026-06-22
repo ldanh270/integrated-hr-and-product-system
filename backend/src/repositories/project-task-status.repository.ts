@@ -50,7 +50,8 @@ export class ProjectTaskStatusRepository extends BaseRepository implements IProj
       where: { projectId },
       orderBy: { order: "asc" },
     })
-    return list.map(this.mapToDomain)
+    return list.map((status) => this.mapToDomain(status))
+
   }
 
   async create(data: CreateProjectTaskStatusDto): Promise<ProjectTaskStatus> {

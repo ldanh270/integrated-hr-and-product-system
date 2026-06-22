@@ -1,5 +1,5 @@
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
-import { TASK_STATUS } from "@/configs/entities/project.config.ts"
+import { TASK_STATUS, TASK_CREATION_POLICY } from "@/configs/entities/project.config.ts"
 import {
   CreateTaskDto,
   Task,
@@ -120,7 +120,7 @@ export class TaskService implements ITaskService {
       }
 
       // Check policy
-      if (project.taskCreationPolicy === "leader_only") {
+      if (project.taskCreationPolicy === TASK_CREATION_POLICY.LEADER_ONLY) {
         throw new AppError(
           "Only Team Leaders or Managers can create tasks in this project",
           HttpStatusCode.FORBIDDEN,
@@ -164,12 +164,12 @@ export class TaskService implements ITaskService {
         if (!customStatus || customStatus.projectId !== data.projectId) {
           throw new AppError("Invalid task status for this project", HttpStatusCode.BAD_REQUEST, LAYER_NAME)
         }
-        statusEnum = mapStatusNameToEnum(customStatus.name, customStatus.isCompleted) as any
+        statusEnum = mapStatusNameToEnum(customStatus.name, customStatus.isCompleted)
       } else {
         const defaultStatus = await this.statusRepository.findDefaultStatus(data.projectId)
         if (defaultStatus) {
           statusId = defaultStatus.id
-          statusEnum = mapStatusNameToEnum(defaultStatus.name, defaultStatus.isCompleted) as any
+          statusEnum = mapStatusNameToEnum(defaultStatus.name, defaultStatus.isCompleted)
         }
       }
     }
@@ -218,6 +218,9 @@ export class TaskService implements ITaskService {
       )
     }
 
+    const employee = await this.employeeRepository.findById(userId)
+    const isTester = employee?.position?.toLowerCase() === "tester"
+
     // Check if the new Assignee is part of the project.
     if (data.assigneeId) {
       const assignee = await this.employeeRepository.findById(data.assigneeId)
@@ -258,10 +261,7 @@ export class TaskService implements ITaskService {
         if (!customStatus || customStatus.projectId !== task.projectId) {
           throw new AppError("Invalid task status for this project", HttpStatusCode.BAD_REQUEST, LAYER_NAME)
         }
-        statusEnum = mapStatusNameToEnum(customStatus.name, customStatus.isCompleted) as any
-
-        const employee = await this.employeeRepository.findById(userId)
-        const isTester = employee?.position?.toLowerCase() === "tester"
+        statusEnum = mapStatusNameToEnum(customStatus.name, customStatus.isCompleted)
 
         let currentIsCompleted = false
         if (task.statusId) {
@@ -290,11 +290,9 @@ export class TaskService implements ITaskService {
     if (statusEnum && statusEnum !== task.status) {
       // 1. Enforce that only Team Leader or GM/Admin can approve task completion (status = done)
       if (statusEnum === TASK_STATUS.DONE) {
-        const employee = await this.employeeRepository.findById(userId)
-        const isTester = employee?.position?.toLowerCase() === "tester"
         if (!isGM && !isTL && !isTester) {
           throw new AppError(
-            "Chỉ Team Leader hoặc Manager mới có quyền phê duyệt hoàn thành công việc",
+            "Chỉ Team Leader, Manager hoặc Tester mới có quyền phê duyệt hoàn thành công việc",
             HttpStatusCode.FORBIDDEN,
             LAYER_NAME
           )
