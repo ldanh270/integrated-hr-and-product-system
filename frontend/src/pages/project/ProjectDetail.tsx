@@ -23,6 +23,7 @@ import { AddMemberModal } from "./components/add-member-modal"
 import { EditProjectModal } from "./components/edit-project-modal"
 import { ProjectOverviewTab } from "./components/project-overview-tab"
 import { ProjectIssuesTab } from "./components/project-issues-tab"
+import { ProjectKanbanTab } from "./components/project-kanban-tab"
 import { ProjectActivityTab } from "./components/project-activity-tab"
 import { ProjectGanttTab } from "./components/project-gantt-tab"
 
@@ -240,6 +241,12 @@ export default function ProjectDetail() {
             Công việc (Issues)
           </TabsTrigger>
           <TabsTrigger
+            value="kanban"
+            className="rounded-full px-5 py-2 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+          >
+            Bảng Kanban
+          </TabsTrigger>
+          <TabsTrigger
             value="activity"
             className="rounded-full px-5 py-2 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
           >
@@ -274,6 +281,16 @@ export default function ProjectDetail() {
         {/* ISSUES TAB */}
         <TabsContent value="issues">
           <ProjectIssuesTab
+            projectId={projectId}
+            members={projectMembers}
+            teamLeader={project.teamLeader}
+            user={user}
+          />
+        </TabsContent>
+
+        {/* KANBAN TAB */}
+        <TabsContent value="kanban">
+          <ProjectKanbanTab
             projectId={projectId}
             members={projectMembers}
             teamLeader={project.teamLeader}

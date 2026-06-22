@@ -12,10 +12,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 // Import entity configurations for task tracker, status, and priorities
-import { TASK_PRIORITIES, TASK_STATUSES, TASK_TRACKERS } from "@/config/entities/project.config"
+import { TASK_PRIORITIES, TASK_TRACKERS } from "@/config/entities/project.config"
 // Import API utilities for projects, tasks, and task categories
 import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
+import { projectTaskStatusApi } from "@/lib/api/project-task-status.api"
 // Import React Query hooks for fetching and caching server state
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 // Import Lucide icons for visual decorators
@@ -25,7 +26,7 @@ import {
   ArrowLeft,
 } from "lucide-react"
 // Import standard React hooks for component state and refs
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 // Import Rich Text Editor wrapper component for the task description
 import { RichTextEditor } from "@/components/ui/rich-text-editor"
 // Import routing hooks to handle URL parameters, search params, and navigation
@@ -33,7 +34,8 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 // Import Toast notifications helper
 import { toast } from "sonner"
 // Import type definitions for task tracker, priority, and status
-import type { TaskTracker, TaskPriority, TaskStatus } from "@/types/task.types"
+import type { TaskTracker, TaskPriority } from "@/types/task.types"
+import type { ProjectTaskStatus } from "@/types/project-task-status.types"
 
 // Main component to render the "New Task" form
 export default function NewTask() {
@@ -53,7 +55,7 @@ export default function NewTask() {
   const [taskTitle, setTaskTitle] = useState("") // Title of the task
   const [taskDesc, setTaskDesc] = useState("") // Description details
   const [taskTracker, setTaskTracker] = useState<TaskTracker>("feature") // Defaults to feature
-  const [taskStatus, setTaskStatus] = useState<TaskStatus>("todo") // Defaults to todo (open)
+  const [taskStatusId, setTaskStatusId] = useState<string>("") // Dynamic status ID
   const [taskPriority, setTaskPriority] = useState<TaskPriority>("medium") // Defaults to normal/medium
   const [taskAssignee, setTaskAssignee] = useState("none") // Assigned member ID
   const [taskStart, setTaskStart] = useState("") // Start date
@@ -150,6 +152,22 @@ export default function NewTask() {
   })
   const projectTasks = projectTasksData?.data || []
 
+  // Query to fetch project custom statuses
+  const { data: statusesData } = useQuery({
+    queryKey: ["project-statuses", pId],
+    queryFn: () => projectTaskStatusApi.list(pId),
+    enabled: !!pId,
+  })
+  const statuses = statusesData || []
+
+  // Initialize taskStatusId to the default status of the project
+  useEffect(() => {
+    if (statuses.length > 0 && !taskStatusId) {
+      const defaultStatus = statuses.find((s: ProjectTaskStatus) => s.isDefault) || statuses[0]
+      setTaskStatusId(defaultStatus.id)
+    }
+  }, [statuses, taskStatusId])
+
   // Mutation to handle task creation API request
   const createTaskMutation = useMutation({
     mutationFn: async (payload: { title: string; andAnother: boolean }) => {
@@ -165,7 +183,7 @@ export default function NewTask() {
         description: taskDesc.trim() || null,
         tracker: taskTracker,
         priority: taskPriority,
-        status: taskStatus,
+        statusId: taskStatusId || null,
         assigneeId: taskAssignee === "none" ? null : taskAssignee,
         startDate: taskStart || null,
         dueDate: taskDue || null,
@@ -234,16 +252,6 @@ export default function NewTask() {
     return tracker.charAt(0).toUpperCase() + tracker.slice(1)
   }
 
-  // Translation helper for status format mapping
-  const formatStatus = (status: string) => {
-    if (status === "todo") return "Đang mở"
-    if (status === "in_progress") return "Đang thực hiện"
-    if (status === "in_review") return "Đang xem xét"
-    if (status === "done") return "Hoàn thành"
-    if (status === "cancelled") return "Đã hủy"
-    if (status === "reopened") return "Mở lại"
-    return status.charAt(0).toUpperCase() + status.slice(1)
-  }
 
   // Translation helper for priorities format mapping
   const formatPriority = (priority: string) => {
@@ -356,14 +364,17 @@ export default function NewTask() {
               <Label htmlFor="status" className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
                 TRẠNG THÁI
               </Label>
-              <Select value={taskStatus} onValueChange={(val) => { setTaskStatus(val as TaskStatus) }}>
+              <Select value={taskStatusId} onValueChange={(val) => { setTaskStatusId(val) }}>
                 <SelectTrigger id="status" className="w-full h-10 border-border rounded-full px-4 bg-background">
-                  <SelectValue />
+                  <SelectValue placeholder="Chọn trạng thái..." />
                 </SelectTrigger>
                 <SelectContent position="popper" className="rounded-xl border-border bg-popover text-popover-foreground">
-                  {TASK_STATUSES.map((st) => (
-                    <SelectItem key={st} value={st} className="rounded-lg">
-                      {formatStatus(st)}
+                  {statuses.map((st: ProjectTaskStatus) => (
+                    <SelectItem key={st.id} value={st.id} className="rounded-lg">
+                      <span className="flex items-center gap-2">
+                        <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: st.color }} />
+                        {st.name} {st.isDefault && " (Mặc định)"}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -33,13 +33,13 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 import { taskApi } from "@/lib/api/task.api"
+import { projectTaskStatusApi } from "@/lib/api/project-task-status.api"
 import { extractErrorMessage } from "@/utils/error-helper"
 import {
   TASK_TRACKERS,
-  TASK_STATUSES,
   TASK_PRIORITIES,
 } from "@/config/entities/project.config"
-import type { TaskTracker, TaskPriority, TaskStatus } from "@/types/task.types"
+import type { TaskTracker, TaskPriority } from "@/types/task.types"
 import type { ProjectMember } from "@/types/project.types"
 
 interface ProjectIssuesTabProps {
@@ -67,6 +67,12 @@ export function ProjectIssuesTab({
 }: ProjectIssuesTabProps) {
   const queryClient = useQueryClient()
 
+  // Fetch project statuses
+  const { data: statuses = [] } = useQuery({
+    queryKey: ["projectStatuses", projectId],
+    queryFn: () => projectTaskStatusApi.list(projectId),
+    enabled: !!projectId,
+  })
 
   // Filter & Pagination States
   const [issueSearch, setIssueSearch] = useState("")
@@ -116,7 +122,7 @@ export function ProjectIssuesTab({
         limit: pageSize,
         search: issueSearch || undefined,
         tracker: trackerFilter === ALL_FILTER_VALUE ? undefined : (trackerFilter as TaskTracker),
-        status: statusFilter === ALL_FILTER_VALUE ? undefined : (statusFilter as TaskStatus),
+        statusId: statusFilter === ALL_FILTER_VALUE ? undefined : statusFilter,
         priority: priorityFilter === ALL_FILTER_VALUE ? undefined : (priorityFilter as TaskPriority),
         assigneeId: assigneeFilter === ALL_FILTER_VALUE ? undefined : assigneeFilter,
         createdById: createdByIdFilter === ALL_FILTER_VALUE ? undefined : createdByIdFilter,
@@ -128,8 +134,8 @@ export function ProjectIssuesTab({
 
   // Quick Status update mutation
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ taskId, status }: { taskId: string; status: string }) => {
-      return taskApi.update(taskId, { status: status as TaskStatus })
+    mutationFn: async ({ taskId, statusId }: { taskId: string; statusId: string }) => {
+      return taskApi.update(taskId, { statusId })
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["tasks", "project", projectId] })
@@ -182,22 +188,7 @@ export function ProjectIssuesTab({
     }
   }
 
-  const getStatusVariant = (status: string) => {
-    switch (status) {
-      case "done":
-        return "success"
-      case "in_progress":
-        return "warning"
-      case "in_review":
-        return "info"
-      case "cancelled":
-        return "danger"
-      case "reopened":
-        return "info"
-      default:
-        return "neutral"
-    }
-  }
+
 
   return (
     <div className="grid grid-cols-12 gap-6">
@@ -245,8 +236,8 @@ export function ProjectIssuesTab({
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
                   <SelectItem value={ALL_FILTER_VALUE}>Tất cả</SelectItem>
-                  {TASK_STATUSES.map((st) => (
-                    <SelectItem key={st} value={st}>{formatStatus(st)}</SelectItem>
+                  {statuses.map((st) => (
+                    <SelectItem key={st.id} value={st.id}>{st.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -384,10 +375,18 @@ export function ProjectIssuesTab({
                             )}
                           </TableCell>
                           <TableCell>
-                            <StatusPill
-                              label={formatStatus(task.status)}
-                              variant={getStatusVariant(task.status)}
-                            />
+                            {(() => {
+                              const customStatus = statuses.find((s) => s.id === task.statusId)
+                              const label = customStatus ? customStatus.name : formatStatus(task.status)
+                              const isCompleted = customStatus ? customStatus.isCompleted : (task.status === "done" || task.status === "cancelled")
+                              const variant = isCompleted ? "success" : (customStatus?.name.toLowerCase().includes("progress") ? "warning" : "info")
+                              return (
+                                <StatusPill
+                                  label={label}
+                                  variant={variant}
+                                />
+                              )
+                            })()}
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className={`rounded-full text-[9px] ${priorityColor}`}>
@@ -411,15 +410,15 @@ export function ProjectIssuesTab({
                                 >
                                   <Link to={`/project/tasks/${task.id}`}>Xem chi tiết</Link>
                                 </DropdownMenuItem>
-                                {TASK_STATUSES.map((st) => (
+                                {statuses.map((st) => (
                                   <DropdownMenuItem
-                                    key={st}
+                                    key={st.id}
                                     className="rounded-lg text-xs font-medium cursor-pointer"
                                     onClick={() => {
-                                      updateStatusMutation.mutate({ taskId: task.id, status: st })
+                                      updateStatusMutation.mutate({ taskId: task.id, statusId: st.id })
                                     }}
                                   >
-                                    Đổi thành: {formatStatus(st)}
+                                    Đổi thành: {st.name}
                                   </DropdownMenuItem>
                                 ))}
                               </DropdownMenuContent>

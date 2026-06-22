@@ -27,16 +27,18 @@ import { Textarea } from "@/components/ui/textarea"
 // Import employee role specifications
 import { ROLE } from "@/config/entities/employee.config"
 // Import task property categories lists
-import { TASK_PRIORITIES, TASK_STATUSES, TASK_TRACKERS } from "@/config/entities/project.config"
+import { TASK_PRIORITIES, TASK_TRACKERS } from "@/config/entities/project.config"
 // Import API endpoint wrapper clients
 import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
+import { projectTaskStatusApi } from "@/lib/api/project-task-status.api"
 // Import authorization store
 import { useAuthStore } from "@/store/auth-store"
 // Import Spent Time log type structure
 import type { SpentTime } from "@/types/spent-time.types"
 // Import task types
-import type { TaskTracker, TaskPriority, TaskStatus } from "@/types/task.types"
+import type { TaskTracker, TaskPriority } from "@/types/task.types"
+import type { ProjectTaskStatus } from "@/types/project-task-status.types"
 // Import React Query hooks for fetching and mutations
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 // Import toast notification client
@@ -79,7 +81,7 @@ export default function TaskDetail() {
   const [taskDesc, setTaskDesc] = useState("") // Description text
   const [taskTracker, setTaskTracker] = useState("") // Tracker choice
   const [taskPriority, setTaskPriority] = useState("") // Priority choice
-  const [taskStatus, setTaskStatus] = useState("") // Status choice
+  const [taskStatusId, setTaskStatusId] = useState("") // Status choice ID
   const [taskAssignee, setTaskAssignee] = useState("") // Assignee member ID
   const [taskStart, setTaskStart] = useState("") // Start date
   const [taskDue, setTaskDue] = useState("") // Due date
@@ -126,6 +128,14 @@ export default function TaskDetail() {
   })
 
 
+  // Query hook to fetch project custom statuses
+  const { data: statusesData } = useQuery({
+    queryKey: ["project-statuses", projectId],
+    queryFn: () => projectTaskStatusApi.list(projectId),
+    enabled: !!projectId,
+  })
+  const statuses = statusesData || []
+
   const totalSpentHours = spentTimes?.reduce((sum, st) => sum + st.hours, 0) || 0
 
   // Check roles/permissions
@@ -144,7 +154,7 @@ export default function TaskDetail() {
     setTaskDesc(task.description || "")
     setTaskTracker(task.tracker)
     setTaskPriority(task.priority)
-    setTaskStatus(task.status)
+    setTaskStatusId(task.statusId || "")
     setTaskAssignee(task.assigneeId || "none")
     setTaskStart(task.startDate ? new Date(task.startDate).toISOString().split("T")[0] : "")
     setTaskDue(task.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : "")
@@ -161,7 +171,7 @@ export default function TaskDetail() {
         description: taskDesc.trim() || null,
         tracker: taskTracker as TaskTracker,
         priority: taskPriority as TaskPriority,
-        status: taskStatus as TaskStatus,
+        statusId: taskStatusId || null,
         assigneeId: taskAssignee === "none" ? null : taskAssignee,
         startDate: taskStart || null,
         dueDate: taskDue || null,
@@ -254,14 +264,7 @@ export default function TaskDetail() {
     return status
   }
 
-  const getStatusVariant = (status: string) => {
-    if (status === "done") return "success"
-    if (status === "in_progress") return "warning"
-    if (status === "in_review") return "info"
-    if (status === "cancelled") return "danger"
-    if (status === "reopened") return "info"
-    return "neutral"
-  }
+
 
   const formatPriority = (priority: string) => {
     if (priority === "low") return "Thấp"
@@ -387,7 +390,13 @@ export default function TaskDetail() {
             <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
               <div className="flex justify-between border-b border-border/40 pb-2">
                 <span className="font-medium text-muted-foreground">Trạng thái:</span>
-                <StatusPill label={formatStatus(task.status)} variant={getStatusVariant(task.status)} />
+                {(() => {
+                  const customStatus = statuses.find((s: ProjectTaskStatus) => s.id === task.statusId)
+                  const label = customStatus ? customStatus.name : formatStatus(task.status)
+                  const isCompleted = customStatus ? customStatus.isCompleted : (task.status === "done" || task.status === "cancelled")
+                  const variant = isCompleted ? "success" : (customStatus?.name.toLowerCase().includes("progress") ? "warning" : "info")
+                  return <StatusPill label={label} variant={variant} />
+                })()}
               </div>
 
               <div className="flex justify-between border-b border-border/40 pb-2">
@@ -676,14 +685,17 @@ export default function TaskDetail() {
                 <Label htmlFor="editStatus" className="text-xs font-semibold text-muted-foreground">
                   Trạng thái
                 </Label>
-                <Select value={taskStatus} onValueChange={setTaskStatus}>
+                <Select value={taskStatusId} onValueChange={setTaskStatusId}>
                   <SelectTrigger id="editStatus" className="w-full h-10 border-border rounded-full px-4 bg-background">
-                    <SelectValue />
+                    <SelectValue placeholder="Chọn trạng thái..." />
                   </SelectTrigger>
                   <SelectContent position="popper" className="rounded-xl border-border bg-popover">
-                    {TASK_STATUSES.map((st) => (
-                      <SelectItem key={st} value={st} className="rounded-lg">
-                        {formatStatus(st)}
+                    {statuses.map((st: ProjectTaskStatus) => (
+                      <SelectItem key={st.id} value={st.id} className="rounded-lg">
+                        <span className="flex items-center gap-2">
+                          <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: st.color }} />
+                          {st.name} {st.isDefault && " (Mặc định)"}
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
