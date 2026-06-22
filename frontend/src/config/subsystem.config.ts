@@ -56,17 +56,6 @@ export interface SubsystemConfig {
 
 export const SUBSYSTEMS: SubsystemConfig[] = [
   {
-    id: "hrm",
-    name: "Nhân sự",
-    description: "Quản lý hồ sơ, hợp đồng, bảo hiểm, công việc...",
-    icon: Users,
-    routePrefix: "/hrm",
-    sidebarItems: [
-      { name: "Tổng quan", path: ROUTES.HRM.DASHBOARD, icon: Users },
-      { name: "Hồ sơ", path: ROUTES.HRM.EMPLOYEES, icon: Users },
-    ],
-  },
-  {
     id: "personal",
     name: "Cá nhân",
     description: "Các màn hình cá nhân dành cho nhân viên",
@@ -80,6 +69,17 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         icon: CircleDollarSign,
       },
       { name: PERSONAL_TAB_LABELS.projects, path: ROUTES.PERSONAL.PROJECTS, icon: Briefcase },
+    ],
+  },
+  {
+    id: "hrm",
+    name: "Nhân sự",
+    description: "Quản lý hồ sơ, hợp đồng, bảo hiểm, công việc...",
+    icon: Users,
+    routePrefix: "/hrm",
+    sidebarItems: [
+      { name: "Tổng quan", path: ROUTES.HRM.DASHBOARD, icon: Users },
+      { name: "Hồ sơ", path: ROUTES.HRM.EMPLOYEES, icon: Users },
     ],
   },
   {
