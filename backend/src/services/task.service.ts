@@ -1,4 +1,5 @@
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { TASK_STATUS } from "@/configs/entities/project.config.ts"
 import {
   CreateTaskDto,
   Task,
@@ -9,15 +10,20 @@ import {
   ITaskService,
   PaginatedTasksDto,
   UpdateTaskDto,
+  IProjectTaskStatusRepository,
 } from "@/types"
 import { AppError } from "@/utils/error.util.ts"
 import { ROLE } from "@/configs/entities/employee.config.ts"
+import { mapStatusNameToEnum } from "@/utils/status-mapping.util.ts"
+
 const LAYER_NAME = "TaskService"
+
 export class TaskService implements ITaskService {
   constructor(
     private repository: ITaskRepository,
     private projectRepository: IProjectRepository,
-    private employeeRepository: IEmployeeRepository
+    private employeeRepository: IEmployeeRepository,
+    private statusRepository?: IProjectTaskStatusRepository
   ) {}
 
   /**
@@ -148,8 +154,30 @@ export class TaskService implements ITaskService {
       }
     }
 
+    // Resolve dynamic status
+    let statusId = data.statusId
+    let statusEnum = data.status
+
+    if (this.statusRepository) {
+      if (statusId) {
+        const customStatus = await this.statusRepository.findById(statusId)
+        if (!customStatus || customStatus.projectId !== data.projectId) {
+          throw new AppError("Invalid task status for this project", HttpStatusCode.BAD_REQUEST, LAYER_NAME)
+        }
+        statusEnum = mapStatusNameToEnum(customStatus.name, customStatus.isCompleted) as any
+      } else {
+        const defaultStatus = await this.statusRepository.findDefaultStatus(data.projectId)
+        if (defaultStatus) {
+          statusId = defaultStatus.id
+          statusEnum = mapStatusNameToEnum(defaultStatus.name, defaultStatus.isCompleted) as any
+        }
+      }
+    }
+
     return this.repository.createTask({
       ...data,
+      status: statusEnum,
+      statusId,
       createdById: userId,
     })
   }
@@ -218,11 +246,53 @@ export class TaskService implements ITaskService {
       }
     }
 
+    // Resolve dynamic status updates and permissions
+    let statusId = data.statusId
+    let statusEnum = data.status
+
+    if (this.statusRepository && statusId !== undefined && statusId !== task.statusId) {
+      if (statusId === null) {
+        // Keep statusEnum as undefined or legacy status unchanged
+      } else {
+        const customStatus = await this.statusRepository.findById(statusId)
+        if (!customStatus || customStatus.projectId !== task.projectId) {
+          throw new AppError("Invalid task status for this project", HttpStatusCode.BAD_REQUEST, LAYER_NAME)
+        }
+        statusEnum = mapStatusNameToEnum(customStatus.name, customStatus.isCompleted) as any
+
+        const employee = await this.employeeRepository.findById(userId)
+        const isTester = employee?.position?.toLowerCase() === "tester"
+
+        let currentIsCompleted = false
+        if (task.statusId) {
+          const currentStatus = await this.statusRepository.findById(task.statusId)
+          if (currentStatus) {
+            currentIsCompleted = currentStatus.isCompleted
+          }
+        } else {
+          currentIsCompleted = task.status === TASK_STATUS.DONE || task.status === TASK_STATUS.CANCELLED
+        }
+
+        if (customStatus.isCompleted !== currentIsCompleted) {
+          if (!isGM && !isTL && !isTester) {
+            const actionText = customStatus.isCompleted ? "hoàn thành" : "mở lại/di chuyển"
+            throw new AppError(
+              `Chỉ Team Leader, Manager hoặc Tester mới có quyền ${actionText} công việc này.`,
+              HttpStatusCode.FORBIDDEN,
+              LAYER_NAME
+            )
+          }
+        }
+      }
+    }
+
     // Validate status transitions and deliverables
-    if (data.status && data.status !== task.status) {
+    if (statusEnum && statusEnum !== task.status) {
       // 1. Enforce that only Team Leader or GM/Admin can approve task completion (status = done)
-      if (data.status === "done") {
-        if (!isGM && !isTL) {
+      if (statusEnum === TASK_STATUS.DONE) {
+        const employee = await this.employeeRepository.findById(userId)
+        const isTester = employee?.position?.toLowerCase() === "tester"
+        if (!isGM && !isTL && !isTester) {
           throw new AppError(
             "Chỉ Team Leader hoặc Manager mới có quyền phê duyệt hoàn thành công việc",
             HttpStatusCode.FORBIDDEN,
@@ -232,7 +302,7 @@ export class TaskService implements ITaskService {
       }
 
       // 2. Enforce deliverables when transitioning to in_review (waiting for review)
-      if (data.status === "in_review") {
+      if (statusEnum === TASK_STATUS.IN_REVIEW) {
         const hasResultUrl = data.resultUrl !== undefined ? !!data.resultUrl : !!task.resultUrl
         const hasResultNotes = data.resultNotes !== undefined ? !!data.resultNotes : !!task.resultNotes
         
@@ -246,7 +316,11 @@ export class TaskService implements ITaskService {
       }
     }
 
-    return this.repository.updateTask(id, data)
+    return this.repository.updateTask(id, {
+      ...data,
+      status: statusEnum,
+      statusId,
+    })
   }
 
   /**

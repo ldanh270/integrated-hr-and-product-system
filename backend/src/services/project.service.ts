@@ -9,6 +9,7 @@ import {
   PaginatedProjectsDto,
   UpdateProjectDto,
   GanttDataDto,
+  IProjectTaskStatusService,
 } from "@/types"
 import { AppError } from "@/utils/error.util.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
@@ -16,7 +17,8 @@ import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 export class ProjectService implements IProjectService {
   constructor(
     private repository: IProjectRepository,
-    private employeeRepository: IEmployeeRepository
+    private employeeRepository: IEmployeeRepository,
+    private statusService?: IProjectTaskStatusService
   ) {}
 
   /**
@@ -106,10 +108,16 @@ export class ProjectService implements IProjectService {
       }
     }
 
-    return this.repository.createProject({
+    const project = await this.repository.createProject({
       ...data,
       createdById: userId,
     })
+
+    if (this.statusService) {
+      await this.statusService.createDefaultStatuses(project.id)
+    }
+
+    return project
   }
 
   /**
