@@ -37,6 +37,19 @@ export class TasksSeeder implements ISeeder {
 
       const projStart = project?.startDate ? new Date(project.startDate) : new Date()
 
+      // Get custom statuses for this project to map statusId
+      const statuses = await prisma.projectTaskStatus.findMany({
+        where: { projectId },
+      })
+      const statusMap = new Map<string, string>()
+      for (const s of statuses) {
+        statusMap.set(s.name.toLowerCase().replace(/[\s_-]/g, ""), s.id)
+      }
+      const getStatusId = (enumStatus: string): string | null => {
+        const key = enumStatus.toLowerCase().replace(/[\s_-]/g, "")
+        return statusMap.get(key) || statusMap.get("todo") || null
+      }
+
       // Define structured parent features to demonstrate the subtask tree
       const parentFeatures = [
         { title: "Feature: [201001] Admin - Danh sách doanh nghiệp", tracker: TASK_TRACKER.FEATURE },
@@ -54,6 +67,7 @@ export class TasksSeeder implements ISeeder {
             description: `Tính năng cha quản lý cấu trúc nghiệp vụ của phân hệ doanh nghiệp.`,
             priority: TASK_PRIORITY.HIGH,
             status: TASK_STATUS.IN_PROGRESS,
+            statusId: getStatusId(TASK_STATUS.IN_PROGRESS),
             assigneeId: members[0].employeeId,
             createdById: adminId,
             startDate: projStart,
@@ -73,6 +87,7 @@ export class TasksSeeder implements ISeeder {
             description: "Thiết kế và code UI React cho danh sách.",
             priority: TASK_PRIORITY.MEDIUM,
             status: TASK_STATUS.DONE,
+            statusId: getStatusId(TASK_STATUS.DONE),
             assigneeId: members[0].employeeId,
             createdById: adminId,
             startDate: projStart,
@@ -103,6 +118,7 @@ export class TasksSeeder implements ISeeder {
             description: "Viết Integration test Playwright cho UI.",
             priority: TASK_PRIORITY.MEDIUM,
             status: TASK_STATUS.IN_REVIEW,
+            statusId: getStatusId(TASK_STATUS.IN_REVIEW),
             assigneeId: members.length > 1 ? members[1].employeeId : members[0].employeeId,
             createdById: adminId,
             startDate: new Date(projStart.getTime() + 4 * 24 * 60 * 60 * 1000),
@@ -127,6 +143,7 @@ export class TasksSeeder implements ISeeder {
             description: "Xây dựng các repository và controllers cho API.",
             priority: TASK_PRIORITY.URGENT,
             status: TASK_STATUS.IN_PROGRESS,
+            statusId: getStatusId(TASK_STATUS.IN_PROGRESS),
             assigneeId: members.length > 2 ? members[2].employeeId : members[0].employeeId,
             createdById: adminId,
             startDate: pastStart,
@@ -166,6 +183,7 @@ export class TasksSeeder implements ISeeder {
             description: "Deploy sản phẩm lên môi trường Staging.",
             priority: TASK_PRIORITY.LOW,
             status: TASK_STATUS.TODO,
+            statusId: getStatusId(TASK_STATUS.TODO),
             assigneeId: assigneeIdForConflict,
             createdById: adminId,
             startDate: conflictStart,
