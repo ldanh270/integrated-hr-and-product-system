@@ -155,9 +155,8 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     }
   }
 
-  // Handle saving new custom query
-  const handleSaveQuery = () => {
-    const name = prompt("Nhập tên truy vấn riêng cần lưu:")
+  // Handle saving new custom query — name is provided by the UI layer (no browser prompt)
+  const handleSaveQuery = (name: string) => {
     if (!name || !name.trim()) return
 
     const queryDataObj = {

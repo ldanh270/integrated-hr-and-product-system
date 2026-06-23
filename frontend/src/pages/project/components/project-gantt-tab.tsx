@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { 
   AlertTriangle, 
   Clock, 
@@ -21,6 +22,9 @@ import { vi } from "date-fns/locale"
 
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { CustomQuery } from "@/lib/api/custom-query.api"
 import { TaskReviewModal } from "./task-review-modal"
@@ -77,6 +81,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
     dayWidth,
     isLoading,
     savedQueries,
+    saveQueryMutation,
     deleteQueryMutation,
     applySavedQuery,
     handleSaveQuery,
@@ -102,6 +107,23 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
     handleClearFilters,
     handleQuickQuery,
   } = useProjectGantt({ projectId, project })
+
+  // Save query dialog state
+  const [isSaveQueryOpen, setIsSaveQueryOpen] = useState(false)
+  const [queryNameInput, setQueryNameInput] = useState("")
+
+  const handleOpenSaveDialog = () => {
+    setQueryNameInput("")
+    setIsSaveQueryOpen(true)
+  }
+
+  const handleSubmitSaveQuery = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!queryNameInput.trim()) return
+    handleSaveQuery(queryNameInput.trim())
+    setIsSaveQueryOpen(false)
+    setQueryNameInput("")
+  }
 
   if (isLoading) {
     return (
@@ -688,7 +710,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
               </Button>
               <Button 
                 variant="ghost" 
-                onClick={handleSaveQuery} 
+                onClick={handleOpenSaveDialog} 
                 className="h-8 px-3 rounded-full text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 border border-dashed border-border/40"
               >
                 <Save className="size-3.5" />
@@ -1244,6 +1266,53 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
           isAdminOrGM={isAdminOrGM}
         />
       )}
+
+      {/* Save Custom Query Dialog */}
+      <Dialog open={isSaveQueryOpen} onOpenChange={setIsSaveQueryOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold flex items-center gap-2">
+              <Save className="size-4 text-primary" />
+              Lưu truy vấn riêng
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmitSaveQuery} className="space-y-4 pt-1">
+            <div className="space-y-1.5">
+              <Label htmlFor="query-name" className="text-xs font-semibold text-foreground">
+                Tên truy vấn
+              </Label>
+              <Input
+                id="query-name"
+                value={queryNameInput}
+                onChange={(e) => { setQueryNameInput(e.target.value) }}
+                placeholder="Ví dụ: Công việc đang chờ của tôi..."
+                className="h-9 text-sm rounded-lg border-border"
+                autoFocus
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Bộ lọc hiện tại sẽ được lưu lại để tái sử dụng.
+              </p>
+            </div>
+            <DialogFooter className="gap-2 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => { setIsSaveQueryOpen(false) }}
+                className="h-9 text-xs rounded-full"
+              >
+                Hủy
+              </Button>
+              <Button
+                type="submit"
+                disabled={!queryNameInput.trim() || saveQueryMutation.isPending}
+                className="h-9 text-xs rounded-full"
+              >
+                {saveQueryMutation.isPending ? "Đang lưu..." : "Lưu truy vấn"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
