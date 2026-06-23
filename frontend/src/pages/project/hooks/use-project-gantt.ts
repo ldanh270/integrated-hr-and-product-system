@@ -495,22 +495,22 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     })
   }
 
-  // Helper to render task bar position and duration
+  // Helper to render task bar position and duration (based on startDate to updatedAt)
   const getTaskGridStyle = (task: Task) => {
-    if (!task.startDate || !task.dueDate) return null
+    if (!task.startDate) return null
 
     const taskStart = new Date(task.startDate)
-    const taskDue = new Date(task.dueDate)
+    const taskEnd = task.updatedAt ? new Date(task.updatedAt) : new Date()
 
     // Check if task falls completely out of timeline view
     const timelineEnd = addDays(timelineStart, 29)
-    if (taskDue < timelineStart || taskStart > timelineEnd) {
+    if (taskEnd < timelineStart || taskStart > timelineEnd) {
       return null
     }
 
     // Calculate grid positions (1-indexed columns, 1 column per day)
     let startCol = differenceInDays(taskStart, timelineStart) + 1
-    let span = differenceInDays(taskDue, taskStart) + 1
+    let span = differenceInDays(taskEnd, taskStart) + 1
 
     // Crop to timeline bounds
     if (startCol < 1) {

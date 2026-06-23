@@ -108,6 +108,17 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
     handleQuickQuery,
   } = useProjectGantt({ projectId, project })
 
+  const getDueDateCol = (dueDateStr: string | null | undefined) => {
+    if (!dueDateStr) return null
+    const dueDate = new Date(dueDateStr)
+    const idx = timelineDays.findIndex((day) => 
+      day.getDate() === dueDate.getDate() &&
+      day.getMonth() === dueDate.getMonth() &&
+      day.getFullYear() === dueDate.getFullYear()
+    )
+    return idx !== -1 ? idx + 1 : null
+  }
+
   // Save query dialog state
   const [isSaveQueryOpen, setIsSaveQueryOpen] = useState(false)
   const [queryNameInput, setQueryNameInput] = useState("")
@@ -998,6 +1009,20 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                         className="h-16 relative grid items-center border-b border-border/40 hover:bg-muted/5 transition-colors"
                         style={{ gridTemplateColumns: `repeat(${timelineDays.length}, ${dayWidth}px)` }}
                       >
+                        {/* Due Date vertical indicator line */}
+                        {(() => {
+                          const dueDateCol = getDueDateCol(task.dueDate)
+                          if (!dueDateCol) return null
+                          return (
+                            <div 
+                              style={{ left: `${(dueDateCol - 1) * dayWidth + dayWidth / 2}px` }}
+                              className="absolute top-0 h-full w-0.5 border-l border-dashed border-rose-500/80 z-20 pointer-events-none"
+                              title={`Hạn hoàn thành: ${format(new Date(task.dueDate!), "dd/MM/yyyy")}`}
+                            >
+                              <div className="absolute top-0 -left-1 w-2 h-2 bg-rose-500 rounded-full shadow-sm" />
+                            </div>
+                          )
+                        })()}
                         
                         {/* Vùng mờ nghỉ phép (Leave shadow zones) for this employee under the timeline */}
                         {(() => {
