@@ -27,7 +27,7 @@ import { Textarea } from "@/components/ui/textarea"
 // Import employee role specifications
 import { ROLE } from "@/config/entities/employee.config"
 // Import task property categories lists
-import { TASK_PRIORITIES, TASK_TRACKERS } from "@/config/entities/project.config"
+import { TASK_PRIORITIES, TASK_STATUS, TASK_TRACKERS } from "@/config/entities/project.config"
 // Import API endpoint wrapper clients
 import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
@@ -261,12 +261,12 @@ export default function TaskDetail() {
 
   // Formatting helpers
   const formatStatus = (status: string) => {
-    if (status === "todo") return "Đang mở"
-    if (status === "in_progress") return "Đang làm"
-    if (status === "in_review") return "Đánh giá"
-    if (status === "done") return "Hoàn thành"
-    if (status === "cancelled") return "Đã hủy"
-    if (status === "reopened") return "Mở lại"
+    if (status === TASK_STATUS.TODO) return "Đang mở"
+    if (status === TASK_STATUS.IN_PROGRESS) return "Đang làm"
+    if (status === TASK_STATUS.IN_REVIEW) return "Đánh giá"
+    if (status === TASK_STATUS.DONE) return "Hoàn thành"
+    if (status === TASK_STATUS.CANCELLED) return "Đã hủy"
+    if (status === TASK_STATUS.REOPENED) return "Mở lại"
     return status
   }
 
@@ -399,7 +399,7 @@ export default function TaskDetail() {
                 {(() => {
                   const customStatus = statuses.find((s: ProjectTaskStatus) => s.id === task.statusId)
                   const label = customStatus ? customStatus.name : formatStatus(task.status)
-                  const isCompleted = customStatus ? customStatus.isCompleted : (task.status === "done" || task.status === "cancelled")
+                  const isCompleted = customStatus ? customStatus.isCompleted : (task.status === TASK_STATUS.DONE || task.status === TASK_STATUS.CANCELLED)
                   const variant = isCompleted ? "success" : (customStatus?.name.toLowerCase().includes("progress") ? "warning" : "info")
                   return <StatusPill label={label} variant={variant} />
                 })()}

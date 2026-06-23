@@ -37,6 +37,14 @@ interface ActivityItem {
   hours?: number
 }
 
+const PROJECT_TABS = {
+  OVERVIEW: "overview",
+  ISSUES: "issues",
+  KANBAN: "kanban",
+  ACTIVITY: "activity",
+  GANTT: "gantt",
+} as const
+
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>()
   const projectId = id || ""
@@ -48,7 +56,7 @@ export default function ProjectDetail() {
   const { user } = useAuthStore()
 
   // Tab and Modal visibility states
-  const [activeTab, setActiveTab] = useState("overview")
+  const [activeTab, setActiveTab] = useState<string>(PROJECT_TABS.OVERVIEW)
   const [isOpenMemberModal, setIsOpenMemberModal] = useState(false)
   const [isOpenEditProjectModal, setIsOpenEditProjectModal] = useState(false)
 
@@ -229,31 +237,31 @@ export default function ProjectDetail() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="bg-secondary rounded-full p-1 border border-border/40 inline-flex">
           <TabsTrigger
-            value="overview"
+            value={PROJECT_TABS.OVERVIEW}
             className="rounded-full px-5 py-2 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
           >
             Tổng quan (Overview)
           </TabsTrigger>
           <TabsTrigger
-            value="issues"
+            value={PROJECT_TABS.ISSUES}
             className="rounded-full px-5 py-2 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
           >
             Công việc (Issues)
           </TabsTrigger>
           <TabsTrigger
-            value="kanban"
+            value={PROJECT_TABS.KANBAN}
             className="rounded-full px-5 py-2 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
           >
             Bảng Kanban
           </TabsTrigger>
           <TabsTrigger
-            value="activity"
+            value={PROJECT_TABS.ACTIVITY}
             className="rounded-full px-5 py-2 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
           >
             Hoạt động (Activity)
           </TabsTrigger>
           <TabsTrigger
-            value="gantt"
+            value={PROJECT_TABS.GANTT}
             className="rounded-full px-5 py-2 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
           >
             Biểu đồ Gantt
@@ -261,7 +269,7 @@ export default function ProjectDetail() {
         </TabsList>
 
         {/* OVERVIEW TAB */}
-        <TabsContent value="overview">
+        <TabsContent value={PROJECT_TABS.OVERVIEW}>
           <ProjectOverviewTab
             project={project}
             totalTasksCount={totalTasksCount}
@@ -279,7 +287,7 @@ export default function ProjectDetail() {
         </TabsContent>
 
         {/* ISSUES TAB */}
-        <TabsContent value="issues">
+        <TabsContent value={PROJECT_TABS.ISSUES}>
           <ProjectIssuesTab
             projectId={projectId}
             members={projectMembers}
@@ -289,7 +297,7 @@ export default function ProjectDetail() {
         </TabsContent>
 
         {/* KANBAN TAB */}
-        <TabsContent value="kanban">
+        <TabsContent value={PROJECT_TABS.KANBAN}>
           <ProjectKanbanTab
             projectId={projectId}
             members={projectMembers}
@@ -299,7 +307,7 @@ export default function ProjectDetail() {
         </TabsContent>
 
         {/* ACTIVITY TAB */}
-        <TabsContent value="activity">
+        <TabsContent value={PROJECT_TABS.ACTIVITY}>
           <ProjectActivityTab
             activitiesList={activitiesList}
             isLoading={isLoadingSpent}
@@ -307,7 +315,7 @@ export default function ProjectDetail() {
         </TabsContent>
 
         {/* GANTT TAB */}
-        <TabsContent value="gantt">
+        <TabsContent value={PROJECT_TABS.GANTT}>
           <ProjectGanttTab
             projectId={projectId}
             project={project}
