@@ -133,20 +133,55 @@ export function ProjectKanbanTab({
     },
   })
 
-  // Move Task Mutation (Drag and Drop)
+  // Move Task Mutation — Optimistic Update
+  // Card moves instantly on drop; rolls back automatically if API fails
+  const KANBAN_QUERY_KEY = ["tasks", "kanban", projectId] as const
+
   const moveTaskMutation = useMutation({
-    mutationFn: async ({ taskId, statusId }: { taskId: string; statusId: string }) => {
-      return taskApi.update(taskId, { statusId })
+    mutationFn: ({ taskId, statusId }: { taskId: string; statusId: string }) =>
+      taskApi.update(taskId, { statusId }),
+
+    // 1. Immediately update the cache before the API call
+    onMutate: async ({ taskId, statusId }) => {
+      // Cancel any outgoing refetches so they don't overwrite optimistic update
+      await queryClient.cancelQueries({ queryKey: KANBAN_QUERY_KEY })
+
+      // Snapshot the previous value for rollback
+      const previousData = queryClient.getQueryData<{ data: Task[] }>(KANBAN_QUERY_KEY)
+
+      // Optimistically update the cache — move task to new statusId instantly
+      queryClient.setQueryData<{ data: Task[] }>(KANBAN_QUERY_KEY, (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          data: old.data.map((t) =>
+            t.id === taskId ? { ...t, statusId } : t
+          ),
+        }
+      })
+
+      // Return snapshot so onError can rollback
+      return { previousData }
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["tasks"] })
-      void queryClient.invalidateQueries({ queryKey: ["project-tasks", projectId] })
-      toast.success("Đã di chuyển công việc")
-    },
-    onError: (err: unknown) => {
+
+    // 2. On API error: rollback to snapshot, show error
+    onError: (err: unknown, _vars, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(KANBAN_QUERY_KEY, context.previousData)
+      }
       toast.error(extractErrorMessage(err))
     },
+
+    // 3. On settle (success or error): sync with server truth
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: KANBAN_QUERY_KEY })
+    },
+
+    onSuccess: () => {
+      toast.success("Đã di chuyển công việc")
+    },
   })
+
 
   const resetForm = () => {
     setColumnName("")
