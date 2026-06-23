@@ -225,15 +225,55 @@ export function ProjectKanbanTab({
     })
   }
 
+  // Drag state: track which card is being hovered and position (above/below)
+  const [dragOverInfo, setDragOverInfo] = useState<{ taskId: string; position: "top" | "bottom" } | null>(null)
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null)
+
   // Native Drag and Drop events
   const handleDragStart = (e: React.DragEvent, task: Task) => {
     e.dataTransfer.setData("text/plain", task.id)
     e.dataTransfer.effectAllowed = "move"
+    setDraggingTaskId(task.id)
   }
 
+  const handleDragEnd = () => {
+    setDragOverInfo(null)
+    setDraggingTaskId(null)
+  }
+
+  // Called when dragging over a specific card — determines top/bottom half
+  const handleCardDragOver = (e: React.DragEvent, taskId: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const midY = rect.top + rect.height / 2
+    const position: "top" | "bottom" = e.clientY < midY ? "top" : "bottom"
+    setDragOverInfo({ taskId, position })
+  }
+
+  // Drop on a specific card (moves to that card's column, inserts near it)
+  const handleCardDrop = (e: React.DragEvent, targetTask: Task) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const taskId = e.dataTransfer.getData("text/plain")
+    setDragOverInfo(null)
+    setDraggingTaskId(null)
+    if (taskId && taskId !== targetTask.id) {
+      const sourceTask = tasks.find((t) => t.id === taskId)
+      if (sourceTask && sourceTask.statusId !== targetTask.statusId) {
+        // Cross-column move: move to target card's column
+        moveTaskMutation.mutate({ taskId, statusId: targetTask.statusId })
+      }
+      // Same-column reorder: currently no order field in API, no-op for now
+    }
+  }
+
+  // Drop on the column container (empty area or below all cards)
   const handleDrop = (e: React.DragEvent, targetStatusId: string) => {
     e.preventDefault()
     const taskId = e.dataTransfer.getData("text/plain")
+    setDragOverInfo(null)
+    setDraggingTaskId(null)
     if (taskId) {
       const task = tasks.find((t) => t.id === taskId)
       if (task && task.statusId !== targetStatusId) {
@@ -323,6 +363,7 @@ export function ProjectKanbanTab({
               key={status.id}
               onDragOver={(e) => { e.preventDefault() }}
               onDrop={(e) => { handleDrop(e, status.id) }}
+              onDragLeave={() => { setDragOverInfo(null) }}
               className="flex flex-col w-[290px] shrink-0 bg-secondary/30 border border-border/60 rounded-xl max-h-[700px] hover:bg-secondary/40 transition-colors"
             >
               {/* Column Header */}
@@ -396,12 +437,22 @@ export function ProjectKanbanTab({
                     else if (task.tracker === "support") trackerColor = "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300"
 
                     return (
-                      <div
-                        key={task.id}
-                        draggable="true"
-                        onDragStart={(e) => { handleDragStart(e, task) }}
-                        className="bg-card border border-border/80 rounded-xl p-3.5 space-y-3 shadow-sm hover:shadow-md hover:border-primary/40 transition-all cursor-grab active:cursor-grabbing group/card"
-                      >
+                      <div key={task.id} className="relative">
+                        {/* Drop indicator ABOVE this card */}
+                        {dragOverInfo?.taskId === task.id && dragOverInfo.position === "top" && (
+                          <div className="h-0.5 bg-primary rounded-full mx-1 mb-1 shadow-[0_0_6px_2px_hsl(var(--primary)/0.4)]" />
+                        )}
+                        <div
+                          draggable="true"
+                          onDragStart={(e) => { handleDragStart(e, task) }}
+                          onDragEnd={handleDragEnd}
+                          onDragOver={(e) => { handleCardDragOver(e, task.id) }}
+                          onDragLeave={() => { setDragOverInfo(null) }}
+                          onDrop={(e) => { handleCardDrop(e, task) }}
+                          className={`bg-card border border-border/80 rounded-xl p-3.5 space-y-3 shadow-sm hover:shadow-md hover:border-primary/40 transition-all cursor-grab active:cursor-grabbing group/card ${
+                            draggingTaskId === task.id ? "opacity-40 scale-[0.98]" : ""
+                          }`}
+                        >
                         <div className="flex items-center justify-between gap-2">
                           <Badge variant="outline" className={`rounded-full text-[9px] px-1.5 py-0 font-bold uppercase ${trackerColor}`}>
                             {task.tracker}
@@ -448,6 +499,11 @@ export function ProjectKanbanTab({
                             />
                           </div>
                         </div>
+                        </div>
+                        {/* Drop indicator BELOW this card */}
+                        {dragOverInfo?.taskId === task.id && dragOverInfo.position === "bottom" && (
+                          <div className="h-0.5 bg-primary rounded-full mx-1 mt-1 shadow-[0_0_6px_2px_hsl(var(--primary)/0.4)]" />
+                        )}
                       </div>
                     )
                   })
