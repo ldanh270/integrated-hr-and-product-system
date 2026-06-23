@@ -244,7 +244,7 @@ export function ProjectKanbanTab({
   // Called when dragging over a specific card — determines top/bottom half
   const handleCardDragOver = (e: React.DragEvent, taskId: string) => {
     e.preventDefault()
-    e.stopPropagation()
+    // NOTE: no stopPropagation — allow bubble so column body always handles drops
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     const midY = rect.top + rect.height / 2
     const position: "top" | "bottom" = e.clientY < midY ? "top" : "bottom"
@@ -417,8 +417,13 @@ export function ProjectKanbanTab({
                 )}
               </div>
 
-              {/* Column body - List of task cards */}
-              <div className="flex-1 overflow-y-auto p-2.5 space-y-3 min-h-[150px] scrollbar-thin">
+              {/* Column body - List of task cards — explicit onDragOver+onDrop so
+                  empty space below cards is always a valid drop target */}
+              <div
+                className="flex-1 overflow-y-auto p-2.5 space-y-3 min-h-[150px] scrollbar-thin"
+                onDragOver={(e) => { e.preventDefault() }}
+                onDrop={(e) => { handleDrop(e, status.id) }}
+              >
                 {colTasks.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-10 text-center border-2 border-dashed border-border/40 rounded-lg">
                     <Sparkles className="size-5 text-muted-foreground/30 mb-1" />
