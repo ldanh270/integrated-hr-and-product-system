@@ -24,6 +24,7 @@ import securityRoutes from "@/routes/security.route.ts"
 import shiftChangeRequestRoutes from "@/routes/shift-change-request.route.ts"
 import shiftRoutes from "@/routes/shift.route.ts"
 import taskRoutes from "@/routes/task.route.ts"
+import spentTimeRoutes from "@/routes/spent-time.route.ts"
 import weeklyScheduleTemplateRoutes from "@/routes/weekly-schedule-template.route.ts"
 
 import cookieParser from "cookie-parser"
@@ -104,6 +105,7 @@ app.use("/api/payrolls", payrollRoutes)
 // Private routes
 app.use("/api/projects", projectRoutes)
 app.use("/api/tasks", taskRoutes)
+app.use("/api/spent-times", spentTimeRoutes)
 app.use("/api/custom-queries", customQueryRoutes)
 
 // 404 handler
