@@ -10,9 +10,17 @@ import { ApiResponse, IProjectTaskStatusService, ProjectTaskStatus } from "@/typ
 import { Response } from "express"
 import { z } from "zod"
 
+/**
+ * Controller handling HTTP requests for project task custom statuses.
+ * Coordinates between routing layer, DTO validation schemas, and service layer.
+ */
 export class ProjectTaskStatusController {
   constructor(private service: IProjectTaskStatusService) {}
 
+  /**
+   * Lists all custom statuses defined for a specific project.
+   * Only accessible to project members, project leader, or managers.
+   */
   list = async (req: AuthRequest, res: Response<ApiResponse<ProjectTaskStatus[]>>) => {
     try {
       if (!req.user) {
@@ -40,6 +48,10 @@ export class ProjectTaskStatusController {
     }
   }
 
+  /**
+   * Retrieves detail of a single custom status by its unique ID.
+   * Performs membership and role permission validation.
+   */
   getOne = async (req: AuthRequest, res: Response<ApiResponse<ProjectTaskStatus>>) => {
     try {
       if (!req.user) {
@@ -63,6 +75,10 @@ export class ProjectTaskStatusController {
     }
   }
 
+  /**
+   * Creates a new custom task status column for a project.
+   * Validates duplicate status names, sets default sorting order, and updates database.
+   */
   create = async (req: AuthRequest, res: Response<ApiResponse<ProjectTaskStatus>>) => {
     try {
       if (!req.user) {
@@ -95,6 +111,10 @@ export class ProjectTaskStatusController {
     }
   }
 
+  /**
+   * Updates properties (name, color, order, default status) of a custom project task status.
+   * If status names or completed flags change, corresponding task records are updated.
+   */
   update = async (req: AuthRequest, res: Response<ApiResponse<ProjectTaskStatus>>) => {
     try {
       if (!req.user) {
@@ -124,6 +144,10 @@ export class ProjectTaskStatusController {
     }
   }
 
+  /**
+   * Deletes a custom task status column from a project.
+   * Requires transferring remaining tasks in this column to a fallback status column.
+   */
   delete = async (req: AuthRequest, res: Response<ApiResponse<{ success: boolean }>>) => {
     try {
       if (!req.user) {

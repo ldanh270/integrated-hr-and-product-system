@@ -313,6 +313,10 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     return true
   }
 
+  /**
+   * Reassigns all tasks under a project from one custom status ID to another (or null).
+   * Typically used as a fallback mapping when deleting a status column.
+   */
   async updateTasksStatusId(projectId: string, fromStatusId: string, toStatusId: string | null): Promise<void> {
     await this.prisma.task.updateMany({
       where: { projectId, statusId: fromStatusId },
@@ -320,6 +324,10 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     })
   }
 
+  /**
+   * Synchronizes the legacy string status enum of all tasks mapped to a custom status ID.
+   * Ensures compatibility between old enum-based filters and new status columns.
+   */
   async syncLegacyStatus(statusId: string, legacyStatus: PrismaTaskStatus): Promise<void> {
     await this.prisma.task.updateMany({
       where: { statusId },

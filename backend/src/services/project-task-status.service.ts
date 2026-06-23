@@ -15,6 +15,10 @@ import { mapStatusNameToEnum } from "@/utils/status-mapping.util.ts"
 
 const LAYER_NAME = "ProjectTaskStatusService"
 
+/**
+ * Service layer implementing business logic for managing project task custom statuses.
+ * Handles access control checks, validations, and legacy enum synchronization.
+ */
 export class ProjectTaskStatusService implements IProjectTaskStatusService {
   constructor(
     private repository: IProjectTaskStatusRepository,
@@ -22,10 +26,17 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
     private taskRepository: ITaskRepository
   ) {}
 
+  /**
+   * Helper checking if the user role corresponds to an Admin or General Manager.
+   */
   private isAuthorizedAdminOrGM(userRole: string): boolean {
     return userRole === ROLE.ADMIN || userRole === ROLE.GENERAL_MANAGER
   }
 
+  /**
+   * Validates if a user has access to view or modify project status columns.
+   * Admins/GMs bypass all checks. Team leaders can write/modify. Members can only read.
+   */
   private async checkProjectAccess(projectId: string, userId: string, userRole: string, writeAccess = false): Promise<void> {
     if (this.isAuthorizedAdminOrGM(userRole)) {
       return
@@ -49,6 +60,9 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
     }
   }
 
+  /**
+   * Retrieves detail of a single custom status by ID after verifying user access.
+   */
   async getStatus(id: string, userId: string, userRole: string): Promise<ProjectTaskStatus | null> {
     const status = await this.repository.findById(id)
     if (!status) {
@@ -58,11 +72,18 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
     return status
   }
 
+  /**
+   * Lists all custom statuses for a project after verifying user membership/access.
+   */
   async listStatuses(projectId: string, userId: string, userRole: string): Promise<ProjectTaskStatus[]> {
     await this.checkProjectAccess(projectId, userId, userRole)
     return this.repository.listByProjectId(projectId)
   }
 
+  /**
+   * Creates a new custom status column in a project.
+   * Prevents duplicate status names, assigns incremental ordering, and updates default columns.
+   */
   async createStatus(data: CreateProjectTaskStatusDto, userId: string, userRole: string): Promise<ProjectTaskStatus> {
     await this.checkProjectAccess(data.projectId, userId, userRole, true)
 
@@ -88,6 +109,11 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
     return this.repository.create(data)
   }
 
+  /**
+   * Updates property attributes of a custom status.
+   * Automatically clears default status of other columns if current status becomes default.
+   * Re-syncs the legacy status enum of associated tasks if the status name or isCompleted flag changes.
+   */
   async updateStatus(id: string, data: UpdateProjectTaskStatusDto, userId: string, userRole: string): Promise<ProjectTaskStatus | null> {
     const status = await this.repository.findById(id)
     if (!status) {
@@ -118,6 +144,11 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
     return updated
   }
 
+  /**
+   * Deletes a custom status column from a project.
+   * Safeguards default status column, and prevents deleting the last remaining status.
+   * Reassigns all tasks under this status to a fallback status column (or null if none specified).
+   */
   async deleteStatus(id: string, fallbackStatusId: string | undefined, userId: string, userRole: string): Promise<boolean> {
     const status = await this.repository.findById(id)
     if (!status) {
@@ -152,6 +183,9 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
     return this.repository.delete(id)
   }
 
+  /**
+   * Utility to auto-generate default status columns (To Do, In Progress, etc.) when a new project is created.
+   */
   async createDefaultStatuses(projectId: string): Promise<ProjectTaskStatus[]> {
     const created: ProjectTaskStatus[] = []
     for (const item of DEFAULT_PROJECT_TASK_STATUSES) {
