@@ -286,6 +286,16 @@ export class TaskService implements ITaskService {
       }
     }
 
+    if (this.statusRepository && statusId === undefined && statusEnum && statusEnum !== task.status) {
+      const projectStatuses = await this.statusRepository.listByProjectId(task.projectId)
+      const matchingStatus = projectStatuses.find(
+        (ps) => mapStatusNameToEnum(ps.name, ps.isCompleted) === statusEnum
+      )
+      if (matchingStatus) {
+        statusId = matchingStatus.id
+      }
+    }
+
     // Validate status transitions and deliverables
     if (statusEnum && statusEnum !== task.status) {
       // 1. Enforce that only Team Leader or GM/Admin can approve task completion (status = done)
