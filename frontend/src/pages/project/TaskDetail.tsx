@@ -490,7 +490,7 @@ export default function TaskDetail() {
           {(task.resultUrl || task.resultNotes) && (
             <PageCard className="p-6">
               <h3 className="font-bold text-base text-foreground mb-3 border-b border-border pb-2 flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                <span className="h-2 w-2 rounded-full bg-success" />
                 Kết quả công việc
               </h3>
               <div className="space-y-4">
