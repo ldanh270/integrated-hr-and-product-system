@@ -138,7 +138,7 @@ export function ProjectKanbanTab({
   const KANBAN_QUERY_KEY = ["tasks", "kanban", projectId] as const
 
   const moveTaskMutation = useMutation({
-    mutationFn: ({ taskId, statusId }: { taskId: string; statusId: string }) =>
+    mutationFn: ({ taskId, statusId }: { taskId: string; statusId: string | null }) =>
       taskApi.update(taskId, { statusId }),
 
     // 1. Immediately update the cache before the API call

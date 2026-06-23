@@ -87,6 +87,8 @@ export default function TaskDetail() {
   const [taskDue, setTaskDue] = useState("") // Due date
   const [taskEstimate, setTaskEstimate] = useState("") // Estimated hours
   const [taskProgress, setTaskProgress] = useState(0) // Percent progress value
+  const [resultUrl, setResultUrl] = useState("") // Product URL link
+  const [resultNotes, setResultNotes] = useState("") // Product result notes
   const [editError, setEditError] = useState<string | null>(null) // Errors during form submission
 
   // 1. Query hook to fetch detailed data for the targeted task
@@ -160,6 +162,8 @@ export default function TaskDetail() {
     setTaskDue(task.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : "")
     setTaskEstimate(task.estimatedTime ? String(task.estimatedTime) : "")
     setTaskProgress(task.progress)
+    setResultUrl(task.resultUrl || "")
+    setResultNotes(task.resultNotes || "")
     setIsOpenEditModal(true)
   }
 
@@ -177,6 +181,8 @@ export default function TaskDetail() {
         dueDate: taskDue || null,
         estimatedTime: taskEstimate ? parseFloat(taskEstimate) : null,
         progress: Number(taskProgress),
+        resultUrl: resultUrl.trim() || null,
+        resultNotes: resultNotes.trim() || null,
       })
     },
     onSuccess: () => {
@@ -479,6 +485,41 @@ export default function TaskDetail() {
               <p className="text-xs text-muted-foreground italic">Không có mô tả chi tiết cho công việc này.</p>
             )}
           </PageCard>
+
+          {/* Task results */}
+          {(task.resultUrl || task.resultNotes) && (
+            <PageCard className="p-6">
+              <h3 className="font-bold text-base text-foreground mb-3 border-b border-border pb-2 flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                Kết quả công việc
+              </h3>
+              <div className="space-y-4">
+                {task.resultUrl && (
+                  <div className="space-y-1">
+                    <span className="text-xs font-semibold text-muted-foreground">Link sản phẩm:</span>
+                    <div className="text-sm">
+                      <a
+                        href={task.resultUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline font-medium inline-flex items-center gap-1 break-all"
+                      >
+                        {task.resultUrl}
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {task.resultNotes && (
+                  <div className="space-y-1">
+                    <span className="text-xs font-semibold text-muted-foreground">Ghi chú kết quả:</span>
+                    <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap bg-muted/30 p-3 rounded-lg border border-border/40">
+                      {task.resultNotes}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </PageCard>
+          )}
         </div>
 
         {/* Right Side: Spent Time logs list */}
@@ -781,6 +822,40 @@ export default function TaskDetail() {
                   onChange={(e) => { setTaskEstimate(e.target.value); }}
                   className="h-10 text-sm border-border rounded-full px-4"
                 />
+              </div>
+            </div>
+
+            <div className="border-t border-border/60 pt-3 space-y-3">
+              <div className="text-xs font-bold text-foreground">Kết quả công việc</div>
+              <div className="grid grid-cols-1 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="editResultUrl" className="text-xs font-semibold text-muted-foreground">
+                    Link sản phẩm (resultUrl)
+                  </Label>
+                  <Input
+                    id="editResultUrl"
+                    type="url"
+                    placeholder="https://..."
+                    value={resultUrl}
+                    onChange={(e) => { setResultUrl(e.target.value); }}
+                    className="h-10 text-sm border-border rounded-full px-4"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="editResultNotes" className="text-xs font-semibold text-muted-foreground">
+                    Ghi chú kết quả (resultNotes)
+                  </Label>
+                  <Textarea
+                    id="editResultNotes"
+                    placeholder="Mô tả kết quả công việc, tính năng đã hoàn thiện hoặc hướng dẫn test..."
+                    value={resultNotes}
+                    onChange={(e) => { setResultNotes(e.target.value); }}
+                    className="min-h-[80px] rounded-xl border-border p-3 text-sm focus-visible:ring-1 focus-visible:ring-ring"
+                  />
+                </div>
+              </div>
+              <div className="text-[10px] text-muted-foreground italic">
+                * Lưu ý: Bắt buộc đính kèm link sản phẩm hoặc ghi chú kết quả khi gửi yêu cầu đánh giá công việc (in_review).
               </div>
             </div>
 
