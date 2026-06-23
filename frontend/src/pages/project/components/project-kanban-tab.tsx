@@ -229,7 +229,11 @@ export function ProjectKanbanTab({
   const [dragOverInfo, setDragOverInfo] = useState<{ taskId: string; position: "top" | "bottom" } | null>(null)
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null)
 
-  // Native Drag and Drop events
+  // Column drag and drop states
+  const [draggingColumnId, setDraggingColumnId] = useState<string | null>(null)
+  const [dragOverColumnId, setDragOverColumnId] = useState<string | null>(null)
+
+  // Native Drag and Drop events for cards
   const handleDragStart = (e: React.DragEvent, task: Task) => {
     e.dataTransfer.setData("text/plain", task.id)
     e.dataTransfer.effectAllowed = "move"
@@ -243,6 +247,7 @@ export function ProjectKanbanTab({
 
   // Called when dragging over a specific card — determines top/bottom half
   const handleCardDragOver = (e: React.DragEvent, taskId: string) => {
+    if (draggingColumnId) return
     e.preventDefault()
     // NOTE: no stopPropagation — allow bubble so column body always handles drops
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
@@ -253,6 +258,7 @@ export function ProjectKanbanTab({
 
   // Drop on a specific card (moves to that card's column, inserts near it)
   const handleCardDrop = (e: React.DragEvent, targetTask: Task) => {
+    if (draggingColumnId) return
     e.preventDefault()
     e.stopPropagation()
     const taskId = e.dataTransfer.getData("text/plain")
@@ -279,6 +285,92 @@ export function ProjectKanbanTab({
       if (task && task.statusId !== targetStatusId) {
         moveTaskMutation.mutate({ taskId, statusId: targetStatusId })
       }
+    }
+  }
+
+  // Column drag and drop event handlers
+  const handleColumnDragStart = (e: React.DragEvent, statusId: string) => {
+    if (!canManageStatuses) {
+      e.preventDefault()
+      return
+    }
+    e.dataTransfer.setData("columnId", statusId)
+    e.dataTransfer.effectAllowed = "move"
+    setDraggingColumnId(statusId)
+  }
+
+  const handleColumnDragEnd = () => {
+    setDraggingColumnId(null)
+    setDragOverColumnId(null)
+  }
+
+  const handleColumnDragOver = (e: React.DragEvent, statusId: string) => {
+    if (!draggingColumnId || draggingColumnId === statusId) return
+    e.preventDefault()
+    setDragOverColumnId(statusId)
+  }
+
+  const handleColumnDrop = (e: React.DragEvent, targetStatusId: string) => {
+    e.preventDefault()
+    const sourceStatusId = e.dataTransfer.getData("columnId") || draggingColumnId
+    setDragOverColumnId(null)
+    setDraggingColumnId(null)
+    if (sourceStatusId && sourceStatusId !== targetStatusId) {
+      void handleReorderColumns(sourceStatusId, targetStatusId)
+    }
+  }
+
+  // Persist column order changes on dragging column drop
+  const handleReorderColumns = async (sourceId: string, targetId: string) => {
+    const sourceIndex = statuses.findIndex((s) => s.id === sourceId)
+    const targetIndex = statuses.findIndex((s) => s.id === targetId)
+    if (sourceIndex === -1 || targetIndex === -1) return
+
+    // Reorder helper function
+    const reorder = <T,>(list: T[], startIndex: number, endIndex: number): T[] => {
+      const result = Array.from(list)
+      const [removed] = result.splice(startIndex, 1)
+      result.splice(endIndex, 0, removed)
+      return result
+    }
+
+    const reorderedStatuses = reorder(statuses, sourceIndex, targetIndex)
+    const updatedStatuses = reorderedStatuses.map((status, index) => ({
+      ...status,
+      order: index,
+    }))
+
+    const STATUSES_QUERY_KEY = ["projectStatuses", projectId] as const
+
+    // Cancel outgoing refetches
+    await queryClient.cancelQueries({ queryKey: STATUSES_QUERY_KEY })
+
+    // Snapshot the current list
+    const previousStatuses = queryClient.getQueryData<ProjectTaskStatus[]>(STATUSES_QUERY_KEY)
+
+    // Optimistic update
+    queryClient.setQueryData<ProjectTaskStatus[]>(STATUSES_QUERY_KEY, updatedStatuses)
+
+    // API updates (parallel requests only for columns whose order changed)
+    const promises = updatedStatuses
+      .filter((status) => {
+        const original = statuses.find((s) => s.id === status.id)
+        return !original || original.order !== status.order
+      })
+      .map((status) =>
+        projectTaskStatusApi.update(projectId, status.id, { order: status.order })
+      )
+
+    try {
+      await Promise.all(promises)
+      toast.success("Đã cập nhật thứ tự các cột")
+    } catch (error) {
+      if (previousStatuses) {
+        queryClient.setQueryData(STATUSES_QUERY_KEY, previousStatuses)
+      }
+      toast.error(extractErrorMessage(error))
+    } finally {
+      void queryClient.invalidateQueries({ queryKey: STATUSES_QUERY_KEY })
     }
   }
 
@@ -361,13 +453,42 @@ export function ProjectKanbanTab({
           return (
             <div 
               key={status.id}
-              onDragOver={(e) => { e.preventDefault() }}
-              onDrop={(e) => { handleDrop(e, status.id) }}
-              onDragLeave={() => { setDragOverInfo(null) }}
-              className="flex flex-col w-[290px] shrink-0 bg-secondary/30 border border-border/60 rounded-xl max-h-[700px] hover:bg-secondary/40 transition-colors"
+              onDragOver={(e) => {
+                if (draggingColumnId) {
+                  handleColumnDragOver(e, status.id)
+                } else {
+                  e.preventDefault()
+                }
+              }}
+              onDragLeave={() => {
+                if (draggingColumnId) {
+                  setDragOverColumnId(null)
+                } else {
+                  setDragOverInfo(null)
+                }
+              }}
+              onDrop={(e) => {
+                if (draggingColumnId) {
+                  handleColumnDrop(e, status.id)
+                } else {
+                  handleDrop(e, status.id)
+                }
+              }}
+              className={`flex flex-col w-[290px] shrink-0 bg-secondary/30 border border-border/60 rounded-xl max-h-[700px] hover:bg-secondary/40 transition-all duration-200 ${
+                draggingColumnId === status.id ? "opacity-45 scale-[0.98] border-dashed border-muted-foreground/50" : ""
+              } ${
+                dragOverColumnId === status.id ? "border-primary ring-2 ring-primary/20 bg-primary/5" : ""
+              }`}
             >
               {/* Column Header */}
-              <div className="flex items-center justify-between p-3.5 border-b border-border/50">
+              <div 
+                draggable={canManageStatuses}
+                onDragStart={(e) => handleColumnDragStart(e, status.id)}
+                onDragEnd={handleColumnDragEnd}
+                className={`flex items-center justify-between p-3.5 border-b border-border/50 ${
+                  canManageStatuses ? "cursor-grab active:cursor-grabbing hover:bg-secondary/20 transition-colors rounded-t-xl" : ""
+                }`}
+              >
                 <div className="flex items-center gap-2 max-w-[200px]">
                   <span 
                     className="size-3 rounded-full shrink-0 shadow-sm" 
@@ -421,8 +542,14 @@ export function ProjectKanbanTab({
                   empty space below cards is always a valid drop target */}
               <div
                 className="flex-1 overflow-y-auto p-2.5 space-y-3 min-h-[150px] scrollbar-thin"
-                onDragOver={(e) => { e.preventDefault() }}
-                onDrop={(e) => { handleDrop(e, status.id) }}
+                onDragOver={(e) => {
+                  if (draggingColumnId) return
+                  e.preventDefault()
+                }}
+                onDrop={(e) => {
+                  if (draggingColumnId) return
+                  handleDrop(e, status.id)
+                }}
               >
                 {colTasks.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-10 text-center border-2 border-dashed border-border/40 rounded-lg">

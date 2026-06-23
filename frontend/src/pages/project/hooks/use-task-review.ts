@@ -17,7 +17,6 @@ export function useTaskReview({ task, projectId, onOpenChange }: UseTaskReviewPr
   const queryClient = useQueryClient()
 
   // Form states for employee submitting work
-  const [resultUrl, setResultUrl] = useState(task.resultUrl || "")
   const [resultNotes, setResultNotes] = useState(task.resultNotes || "")
   
   // Rejection states for leader reviewing work
@@ -47,14 +46,17 @@ export function useTaskReview({ task, projectId, onOpenChange }: UseTaskReviewPr
     e.preventDefault()
     setFormError(null)
 
-    if (!resultUrl.trim() && !resultNotes.trim()) {
-      setFormError("Vui lòng điền link kết quả hoặc mô tả kết quả công việc")
+    const cleanNotes = resultNotes ? resultNotes.replace(/<[^>]*>/g, "").trim() : ""
+    const isNotesEmpty = cleanNotes.length === 0
+
+    if (isNotesEmpty) {
+      setFormError("Vui lòng điền mô tả kết quả công việc")
       return
     }
 
     submitReviewMutation.mutate({
       status: TASK_STATUS.IN_REVIEW,
-      resultUrl: resultUrl.trim(),
+      resultUrl: null, // Clear resultUrl as it is removed from UI
       resultNotes: resultNotes.trim(),
       progress: 95, // Automatically sets progress to 95% when awaiting review
     })
@@ -88,8 +90,6 @@ export function useTaskReview({ task, projectId, onOpenChange }: UseTaskReviewPr
   }
 
   return {
-    resultUrl,
-    setResultUrl,
     resultNotes,
     setResultNotes,
     isRejecting,

@@ -1,11 +1,9 @@
 import { 
   FileText, 
-  Link2, 
   CheckCircle2, 
   XCircle, 
   CornerDownRight, 
   AlertTriangle,
-  ExternalLink,
   Clock
 } from "lucide-react"
 
@@ -18,11 +16,11 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import type { Task } from "@/types/task.types"
 import { useTaskReview } from "../hooks/use-task-review"
+import { RichTextEditor } from "@/components/ui/rich-text-editor"
 
 interface TaskReviewModalProps {
   isOpen: boolean
@@ -42,8 +40,6 @@ export function TaskReviewModal({
   isAdminOrGM,
 }: TaskReviewModalProps) {
   const {
-    resultUrl,
-    setResultUrl,
     resultNotes,
     setResultNotes,
     isRejecting,
@@ -109,18 +105,13 @@ export function TaskReviewModal({
                 <CheckCircle2 className="size-4" />
                 <span>Công việc đã hoàn thành & phê duyệt!</span>
               </div>
-              {task.resultUrl && (
-                <div className="flex items-center gap-1.5 text-xs pl-5 font-semibold text-primary hover:underline">
-                  <Link2 className="size-3.5" />
-                  <a href={task.resultUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1">
-                    Xem sản phẩm hoàn thành <ExternalLink className="size-3" />
-                  </a>
-                </div>
-              )}
               {task.resultNotes && (
-                <div className="text-xs text-muted-foreground pl-5">
+                <div className="text-xs text-muted-foreground pl-5 space-y-1">
                   <span className="font-bold">Ghi chú kết quả: </span>
-                  {task.resultNotes}
+                  <div 
+                    className="prose prose-sm dark:prose-invert max-w-none text-xs text-foreground mt-1"
+                    dangerouslySetInnerHTML={{ __html: task.resultNotes }}
+                  />
                 </div>
               )}
             </div>
@@ -132,30 +123,14 @@ export function TaskReviewModal({
           {task.status !== "done" && task.status !== "in_review" && !canApprove && (
             <form onSubmit={handleSubmitWork} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="resultUrl" className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
-                  <Link2 className="size-3.5 text-muted-foreground" />
-                  Đường dẫn sản phẩm (GitHub/Figma/Drive...)
-                </Label>
-                <Input
-                  id="resultUrl"
-                  placeholder="https://..."
-                  value={resultUrl}
-                  onChange={(e) => { setResultUrl(e.target.value); }}
-                  className="rounded-full text-xs"
-                />
-              </div>
-
-              <div className="space-y-1.5">
                 <Label htmlFor="resultNotes" className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
                   <CornerDownRight className="size-3.5 text-muted-foreground" />
                   Mô tả / Ghi chú kết quả
                 </Label>
-                <Textarea
-                  id="resultNotes"
-                  placeholder="Ghi chú ngắn về kết quả công việc của bạn..."
+                <RichTextEditor
                   value={resultNotes}
-                  onChange={(e) => { setResultNotes(e.target.value); }}
-                  className="rounded-xl text-xs resize-none h-20"
+                  onChange={setResultNotes}
+                  placeholder="Ghi chú ngắn về kết quả công việc của bạn, đính kèm link, ảnh chụp..."
                 />
               </div>
 
@@ -177,18 +152,13 @@ export function TaskReviewModal({
                 <span>Đang chờ Team Leader đánh giá và phê duyệt</span>
               </div>
               <div className="space-y-2 text-xs pt-1 border-t border-border/40">
-                {task.resultUrl && (
-                  <div className="flex items-center gap-1.5 font-semibold text-primary hover:underline">
-                    <Link2 className="size-3.5" />
-                    <a href={task.resultUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1">
-                      Link sản phẩm đã gửi <ExternalLink className="size-3" />
-                    </a>
-                  </div>
-                )}
                 {task.resultNotes && (
-                  <div>
+                  <div className="space-y-1">
                     <span className="font-bold text-muted-foreground">Mô tả đã gửi: </span>
-                    <span className="text-foreground">{task.resultNotes}</span>
+                    <div 
+                      className="prose prose-sm dark:prose-invert max-w-none text-xs text-foreground bg-muted/20 p-2.5 rounded-lg border border-border/40 mt-1"
+                      dangerouslySetInnerHTML={{ __html: task.resultNotes }}
+                    />
                   </div>
                 )}
               </div>
@@ -202,18 +172,13 @@ export function TaskReviewModal({
                 <span className="font-bold text-muted-foreground uppercase text-[10px] tracking-wider block">
                   Kết quả do nhân viên gửi:
                 </span>
-                {task.resultUrl && (
-                  <div className="flex items-center gap-1.5 font-semibold text-primary hover:underline">
-                    <Link2 className="size-3.5" />
-                    <a href={task.resultUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1">
-                      Link sản phẩm bàn giao <ExternalLink className="size-3" />
-                    </a>
-                  </div>
-                )}
                 {task.resultNotes && (
-                  <div className="bg-muted/10 p-2.5 rounded-lg border border-border/40">
-                    <span className="font-bold">Mô tả: </span>
-                    <span className="text-foreground italic">"{task.resultNotes}"</span>
+                  <div className="bg-muted/10 p-2.5 rounded-lg border border-border/40 space-y-1">
+                    <span className="font-bold text-[10px] uppercase text-muted-foreground">Mô tả: </span>
+                    <div 
+                      className="prose prose-sm dark:prose-invert max-w-none text-xs text-foreground"
+                      dangerouslySetInnerHTML={{ __html: task.resultNotes }}
+                    />
                   </div>
                 )}
               </div>
