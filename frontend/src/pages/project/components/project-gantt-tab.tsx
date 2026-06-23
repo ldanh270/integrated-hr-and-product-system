@@ -1,6 +1,5 @@
 import { useState } from "react"
 import { 
-  AlertTriangle, 
   Clock, 
   User, 
   ChevronLeft, 
@@ -60,10 +59,6 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
     setShowAssignee,
     showProgress,
     setShowProgress,
-    showLeaves,
-    setShowLeaves,
-    showConflicts,
-    setShowConflicts,
     monthsInput,
     setMonthsInput,
     monthInput,
@@ -95,8 +90,6 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
     resetTimelineToProjectStart,
     isLeader,
     isAdminOrGM,
-    getLeaveConflict,
-    isEmployeeOnLeaveOnDay,
     getTaskGridStyle,
     shiftTaskDates,
     shiftTimelineByMonth,
@@ -616,32 +609,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                 </div>
               </div>
 
-              {/* HR Leave Relations */}
-              <div className="space-y-2">
-                <h5 className="font-bold text-muted-foreground border-b border-border/20 pb-1">
-                  Liên quan
-                </h5>
-                <div className="space-y-2 pt-1">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input 
-                      type="checkbox" 
-                      checked={showLeaves} 
-                      onChange={(e) => { setShowLeaves(e.target.checked); }} 
-                      className="rounded border-border/40 size-3.5 text-primary focus:ring-0 focus:ring-offset-0"
-                    />
-                    <span>Hiển thị ngày nghỉ phép nhân sự (HR)</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input 
-                      type="checkbox" 
-                      checked={showConflicts} 
-                      onChange={(e) => { setShowConflicts(e.target.checked); }} 
-                      className="rounded border-border/40 size-3.5 text-primary focus:ring-0 focus:ring-offset-0"
-                    />
-                    <span>Cảnh báo xung đột trùng lịch nghỉ phép ⚠️</span>
-                  </label>
-                </div>
-              </div>
+              {/* HR Leave Relations removed */}
 
               {/* Progress Settings */}
               <div className="space-y-2">
@@ -794,18 +762,6 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
             <div className="size-3 rounded bg-rose-600 animate-pulse" />
             <span>Trễ hạn (Overdue)</span>
           </div>
-          {showLeaves && (
-            <div className="flex items-center gap-2">
-              <div className="size-3 rounded bg-[repeating-linear-gradient(45deg,rgba(239,68,68,0.1)_0px,rgba(239,68,68,0.1)_2px,transparent_2px,transparent_8px)] border border-rose-500/20" />
-              <span>Ngày nghỉ phép (HR)</span>
-            </div>
-          )}
-          {showConflicts && (
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="size-4 text-amber-500" />
-              <span>Xung đột nghỉ phép</span>
-            </div>
-          )}
         </div>
 
         {/* Main Gantt Grid Container */}
@@ -903,15 +859,19 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                 <div className="flex flex-col border-b border-border/40 bg-muted/20">
                   {/* Month/Year Span Header Row */}
                   <div 
-                    className="h-6 border-b border-border/20 grid divide-x divide-border/20 text-[9px] font-bold text-muted-foreground uppercase tracking-wider select-none"
+                    className="h-6 border-b border-border/20 grid text-[9px] font-bold text-muted-foreground uppercase tracking-wider select-none"
                     style={{ 
-                      gridTemplateColumns: monthSpans.map(s => `${s.colSpan * dayWidth}px`).join(' ') 
+                      gridTemplateColumns: `repeat(${timelineDays.length}, ${dayWidth}px)`
                     }}
                   >
                     {monthSpans.map((span, idx) => (
                       <div 
                         key={idx} 
-                        className="flex items-center justify-center h-full truncate px-1 text-center bg-muted/10"
+                        style={{ 
+                          gridColumnStart: span.startCol, 
+                          gridColumnEnd: span.endCol 
+                        }}
+                        className="flex items-center justify-center h-full truncate px-1 text-center bg-muted/10 border-r border-border/20"
                         title={span.label}
                       >
                         {span.label}
@@ -934,7 +894,6 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                           className={`flex flex-col items-center justify-center border-r border-border/20 text-[10px] font-semibold py-0.5 h-full ${
                             isWeekend ? "bg-muted/30 text-rose-500/80" : "text-muted-foreground"
                           }`}
-                          style={{ width: `${dayWidth}px` }}
                         >
                           {dayWidth >= 20 && <span>{dayName}</span>}
                           <span className={`${dayWidth < 20 ? "text-[9px]" : "text-[11px]"} font-bold`}>{dayNum}</span>
@@ -948,7 +907,6 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                 <div className="divide-y divide-border/40 relative">
                   {treeTasks.map((task: Task) => {
                     const gridStyle = getTaskGridStyle(task)
-                    const conflict = getLeaveConflict(task)
                     const isOverdue = task.status !== "done" && task.dueDate && new Date(task.dueDate) < new Date()
                     
                     // Check if it was completed early
@@ -1009,13 +967,37 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                         className="h-16 relative grid items-center border-b border-border/40 hover:bg-muted/5 transition-colors"
                         style={{ gridTemplateColumns: `repeat(${timelineDays.length}, ${dayWidth}px)` }}
                       >
+                        {/* Background Day Columns (for vertical grid lines and weekend colors) */}
+                        {timelineDays.map((day, idx) => {
+                          const dayName = format(day, "EEEEE", { locale: vi })
+                          const isWeekend = ["T7", "CN", "S", "Su"].includes(dayName) || day.getDay() === 0 || day.getDay() === 6
+                          return (
+                            <div 
+                              key={idx}
+                              style={{ 
+                                gridColumnStart: idx + 1, 
+                                gridColumnEnd: idx + 2,
+                                gridRowStart: 1,
+                                gridRowEnd: 2
+                              }}
+                              className={`h-full border-r border-border/10 pointer-events-none ${
+                                isWeekend ? "bg-muted/10" : ""
+                              }`}
+                            />
+                          )
+                        })}
+
                         {/* Due Date vertical indicator line */}
                         {(() => {
                           const dueDateCol = getDueDateCol(task.dueDate)
                           if (!dueDateCol) return null
                           return (
                             <div 
-                              style={{ left: `${(dueDateCol - 1) * dayWidth + dayWidth / 2}px` }}
+                              style={{ 
+                                left: `${(dueDateCol - 1) * dayWidth + dayWidth / 2}px`,
+                                gridRowStart: 1,
+                                gridRowEnd: 2
+                              }}
                               className="absolute top-0 h-full w-0.5 border-l border-dashed border-rose-500/80 z-20 pointer-events-none"
                               title={`Hạn hoàn thành: ${format(new Date(task.dueDate!), "dd/MM/yyyy")}`}
                             >
@@ -1023,31 +1005,15 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                             </div>
                           )
                         })()}
-                        
-                        {/* Vùng mờ nghỉ phép (Leave shadow zones) for this employee under the timeline */}
-                        {(() => {
-                          const assigneeId = task.assigneeId
-                          if (!showLeaves || !assigneeId) return null
-                          return timelineDays.map((day, idx) => {
-                            const onLeave = isEmployeeOnLeaveOnDay(assigneeId, day)
-                            if (onLeave) {
-                              return (
-                                <div 
-                                  key={idx} 
-                                  style={{ gridColumnStart: idx + 1, gridColumnEnd: idx + 2 }}
-                                  className="h-full bg-[repeating-linear-gradient(45deg,rgba(239,68,68,0.1)_0px,rgba(239,68,68,0.1)_2px,transparent_2px,transparent_8px)] border-r border-border/10 pointer-events-none"
-                                  title={`${task.assignee?.fullName || "Nhân viên"} nghỉ phép`}
-                                />
-                              )
-                            }
-                            return null
-                          })
-                        })()}
 
                         {/* Task Bar */}
                         {gridStyle ? (
                           <div 
-                            style={gridStyle} 
+                            style={{
+                              ...gridStyle,
+                              gridRowStart: 1,
+                              gridRowEnd: 2
+                            }} 
                             className="px-1 z-10 h-full flex items-center overflow-visible relative"
                           >
                             <div className="relative w-full flex items-center overflow-visible">
@@ -1068,11 +1034,8 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
 
                                       <span className="truncate pr-1 z-10 text-[10px] font-semibold">{task.title}</span>
 
-                                      {/* Right tools (Conflict badge, shift buttons) */}
+                                      {/* Right tools (shift buttons) */}
                                       <div className="flex items-center gap-1 shrink-0 z-10">
-                                        {conflict && showConflicts && (
-                                          <AlertTriangle className="size-3 text-amber-300 animate-bounce" />
-                                        )}
                                         {task.status === "in_review" && (
                                           <FileText className="size-3 text-white/90" />
                                         )}
@@ -1126,12 +1089,6 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                                     )}
                                     {isOverdue && (
                                       <p className="text-rose-500 font-bold text-[10px]">Cảnh báo: Đã quá hạn hoàn thành!</p>
-                                    )}
-                                    {conflict && (
-                                      <div className="flex items-start gap-1 text-amber-500 font-semibold text-[10px] mt-1 pt-1 border-t border-border/40">
-                                        <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
-                                        <span>Trùng lịch nghỉ của {task.assignee?.fullName}: {conflict}</span>
-                                      </div>
                                     )}
                                   </TooltipContent>
                                 </Tooltip>

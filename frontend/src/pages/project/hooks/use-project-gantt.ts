@@ -10,7 +10,7 @@ import { ROLE } from "@/config/entities/employee.config"
 import { TASK_STATUS, TASK_PRIORITY, TASK_TRACKER, CUSTOM_QUERY_TYPE } from "@/config/entities/project.config"
 import { useAuthStore } from "@/store/auth-store"
 import { extractErrorMessage } from "@/utils/error-helper"
-import type { Project, GanttLeaveDay } from "@/types/project.types"
+import type { Project } from "@/types/project.types"
 import type { Task, UpdateTaskDto } from "@/types/task.types"
 import {
   FILTER_DEFINITIONS,
@@ -49,8 +49,6 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   const [showEstTime, setShowEstTime] = useState(true)
   const [showAssignee, setShowAssignee] = useState(true)
   const [showProgress, setShowProgress] = useState(true)
-  const [showLeaves, setShowLeaves] = useState(true)
-  const [showConflicts, setShowConflicts] = useState(true)
 
   // Filter form states
   const [monthsInput, setMonthsInput] = useState(DEFAULT_MONTHS_RANGE_STRING) // default 6 months from project start
@@ -171,7 +169,6 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   }
 
   const tasks = ganttData?.tasks || []
-  const leaveDays = ganttData?.leaveDays || []
 
   // Find all unique assignees (team leader + project members)
   const assignees = useMemo(() => {
@@ -245,24 +242,36 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   // Month spans grouping for timeline header
   const monthSpans = useMemo(() => {
     if (timelineDays.length === 0) return []
-    const spans: { label: string; colSpan: number }[] = []
+    const spans: { label: string; colSpan: number; startCol: number; endCol: number }[] = []
     
     let currentLabel = format(timelineDays[0], "yyyy-M")
     let currentCount = 0
+    let startIndex = 1
     
-    timelineDays.forEach((day) => {
+    timelineDays.forEach((day, index) => {
       const label = format(day, "yyyy-M")
       if (label === currentLabel) {
         currentCount++
       } else {
-        spans.push({ label: currentLabel, colSpan: currentCount })
+        spans.push({ 
+          label: currentLabel, 
+          colSpan: currentCount, 
+          startCol: startIndex, 
+          endCol: startIndex + currentCount 
+        })
         currentLabel = label
+        startIndex = index + 1
         currentCount = 1
       }
     })
     
     if (currentCount > 0) {
-      spans.push({ label: currentLabel, colSpan: currentCount })
+      spans.push({ 
+        label: currentLabel, 
+        colSpan: currentCount, 
+        startCol: startIndex, 
+        endCol: startIndex + currentCount 
+      })
     }
     
     return spans
@@ -454,46 +463,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   const isLeader = project.teamLeaderId === user?.id
   const isAdminOrGM = user?.role === ROLE.ADMIN || user?.role === ROLE.GENERAL_MANAGER
 
-  // Find overlap leave days for a task and its assignee
-  const getLeaveConflict = (task: Task) => {
-    if (!task.assigneeId || !task.startDate || !task.dueDate) return null
-
-    const taskStart = new Date(task.startDate)
-    const taskDue = new Date(task.dueDate)
-
-    // Filter approved leaves for this assignee
-    const assigneeLeaves = leaveDays.filter((l: GanttLeaveDay) => l.employeeId === task.assigneeId)
-
-    const conflictingLeaves = assigneeLeaves.filter((leave: GanttLeaveDay) => {
-      const leaveStart = new Date(leave.startDate)
-      const leaveEnd = new Date(leave.endDate)
-
-      // Check interval overlap
-      return (
-        taskStart <= leaveEnd && taskDue >= leaveStart
-      )
-    })
-
-    if (conflictingLeaves.length === 0) return null
-
-    // Format leave dates for tooltips
-    return conflictingLeaves.map((l: GanttLeaveDay) => {
-      const startStr = format(new Date(l.startDate), "dd/MM")
-      const endStr = format(new Date(l.endDate), "dd/MM")
-      return `${startStr} - ${endStr}${l.reason ? ` (${l.reason})` : ""}`
-    }).join(", ")
-  }
-
-  // Helper to check if a member is on leave on a specific day
-  const isEmployeeOnLeaveOnDay = (employeeId: string, day: Date) => {
-    const employeeLeaves = leaveDays.filter((l: GanttLeaveDay) => l.employeeId === employeeId)
-    return employeeLeaves.some((leave: GanttLeaveDay) => {
-      const start = new Date(leave.startDate)
-      const end = new Date(leave.endDate)
-      // Check if day is within [start, end]
-      return day >= start && day <= end
-    })
-  }
+  // Overlap leave days check removed per user request
 
   // Helper to render task bar position and duration (based on startDate to updatedAt)
   const getTaskGridStyle = (task: Task) => {
@@ -692,10 +662,6 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     setShowAssignee,
     showProgress,
     setShowProgress,
-    showLeaves,
-    setShowLeaves,
-    showConflicts,
-    setShowConflicts,
     monthsInput,
     setMonthsInput,
     monthInput,
@@ -732,8 +698,6 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     resetTimelineToProjectStart,
     isLeader,
     isAdminOrGM,
-    getLeaveConflict,
-    isEmployeeOnLeaveOnDay,
     getTaskGridStyle,
     shiftTaskDates,
     shiftTimelineByMonth,
