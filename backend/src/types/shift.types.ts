@@ -210,4 +210,6 @@ export interface IScheduleService {
   previewGeneratedShifts(data: IGenerateShiftsDTO): Promise<IGeneratedShiftPreview[]>
   /** Materializes planned shifts into EmployeeShift records. */
   generateShifts(data: IGenerateShiftsDTO): Promise<IGenerateShiftsResult>
+  /** Gets the materialized EmployeeShift (with nested shift) for an employee on a specific date. */
+  getEmployeeShiftForDate(employeeId: string, date: string | Date): Promise<IEmployeeShiftWithShift | null>
 }

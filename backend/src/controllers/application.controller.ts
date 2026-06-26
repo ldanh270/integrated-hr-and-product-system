@@ -69,10 +69,10 @@ export class ApplicationController {
    * @param res - The response object containing the paginated API response.
    * @returns A promise that resolves to the response with the list of applications.
    */
-  listAll = async (req: Request, res: Response<ApiResponse<any>>) => {
+  listAll = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
       const query = listApplicationsQuerySchema.parse(req.query)
-      const result = await this.service.listApplications(query)
+      const result = await this.service.listApplications(query, req.user)
       res.status(HttpStatusCode.OK).json({
         data: result.data,
         error: null,

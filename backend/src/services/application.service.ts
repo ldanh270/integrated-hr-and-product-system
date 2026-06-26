@@ -178,8 +178,9 @@ export class ApplicationService implements IApplicationService {
    */
   async listApplications(
     query: IListApplicationsQueryDTO,
+    user?: { empId: string; role: string }
   ): Promise<{ data: any[]; total: number }> {
-    return this.applicationRepo.findAll(query)
+    return this.applicationRepo.findAll(query, user)
   }
 
   /**

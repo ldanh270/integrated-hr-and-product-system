@@ -217,58 +217,82 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
                   </td>
                 </tr>
               ) : (
-                applications.map((app) => (
-                  <tr
-                    key={app.id}
-                    onClick={() => { onRowClick(app); }}
-                    className="hover:bg-muted/50 transition-colors cursor-pointer group"
-                  >
-                    <td className="px-4 py-4 text-foreground font-medium">
-                      {app.id.substring(0, 8).toUpperCase()}
-                    </td>
-                    {mode === "manage" && (
-                      <td className="px-4 py-4 font-medium text-foreground whitespace-nowrap">
-                        {app.employee?.fullName || "N/A"}
+                applications.map((batch: any) => {
+                  const apps = batch.applications || []
+                  let computedStatus: string = APPLICATION_STATUS.PENDING
+                  if (apps.length > 0) {
+                    if (apps.some((a: any) => a.status === APPLICATION_STATUS.PENDING)) {
+                      computedStatus = APPLICATION_STATUS.PENDING
+                    } else if (apps.every((a: any) => a.status === APPLICATION_STATUS.CANCELLED)) {
+                      computedStatus = APPLICATION_STATUS.CANCELLED
+                    } else if (apps.every((a: any) => a.status === APPLICATION_STATUS.APPROVED)) {
+                      computedStatus = APPLICATION_STATUS.APPROVED
+                    } else if (apps.every((a: any) => a.status === APPLICATION_STATUS.REJECTED)) {
+                      computedStatus = APPLICATION_STATUS.REJECTED
+                    } else {
+                      // Mixed final statuses
+                      computedStatus = APPLICATION_STATUS.APPROVED // Default to approved style for mixed
+                    }
+                  }
+                  
+                  return (
+                    <tr
+                      key={batch.id}
+                      onClick={() => { onRowClick(batch); }}
+                      className="hover:bg-muted/50 transition-colors cursor-pointer group"
+                    >
+                      <td className="px-4 py-4 text-foreground font-medium">
+                        <div className="flex flex-col">
+                          <span>{batch.id.substring(0, 8).toUpperCase()}</span>
+                          {apps.length > 1 && (
+                            <span className="text-[10px] text-muted-foreground mt-0.5 font-semibold bg-primary/10 text-primary w-fit px-1.5 py-0.5 rounded-sm">{apps.length} đơn</span>
+                          )}
+                        </div>
                       </td>
-                    )}
-                    {mode === "manage" && (
-                      <td className="px-4 py-4 text-primary font-medium group-hover:underline">
-                        {app.employeeId.substring(0, 10)}
+                      {mode === "manage" && (
+                        <td className="px-4 py-4 font-medium text-foreground whitespace-nowrap">
+                          {batch.employee?.fullName || "N/A"}
+                        </td>
+                      )}
+                      {mode === "manage" && (
+                        <td className="px-4 py-4 text-primary font-medium group-hover:underline">
+                          {batch.employeeId.substring(0, 10)}
+                        </td>
+                      )}
+                      <td className="px-4 py-4 text-foreground font-medium">
+                        {APPLICATION_TYPE_LABELS[batch.type] || batch.type}
                       </td>
-                    )}
-                    <td className="px-4 py-4 text-foreground font-medium">
-                      {APPLICATION_TYPE_LABELS[app.type] || app.type}
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      <div className="flex justify-center">
-                        <span
-                          className={`inline-flex items-center justify-center px-4 py-1.5 text-[11px] font-bold border rounded-full bg-transparent whitespace-nowrap ${
-                            STATUS_LABELS[app.status]?.colorClass ||
-                            "text-muted-foreground border-border"
-                          }`}
-                        >
-                          {STATUS_LABELS[app.status]?.label || app.status}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 text-muted-foreground">
-                      {new Date(app.createdAt).toLocaleDateString("vi-VN")}
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      <div className="flex flex-col items-center justify-center">
-                        <span className="text-primary font-medium">
-                          {app.employeeId.substring(0, 10)}
-                        </span>
-                        <span className="text-muted-foreground text-[11px] mt-0.5">
-                          {app.employee?.fullName || "N/A"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 text-center text-muted-foreground">
-                      {app.processor ? app.processor.fullName : "-"}
-                    </td>
-                  </tr>
-                ))
+                      <td className="px-4 py-4 text-center">
+                        <div className="flex justify-center">
+                          <span
+                            className={`inline-flex items-center justify-center px-4 py-1.5 text-[11px] font-bold border rounded-full bg-transparent whitespace-nowrap ${
+                              STATUS_LABELS[computedStatus]?.colorClass ||
+                              "text-muted-foreground border-border"
+                            }`}
+                          >
+                            {STATUS_LABELS[computedStatus]?.label || computedStatus}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-muted-foreground">
+                        {new Date(batch.createdAt).toLocaleDateString("vi-VN")}
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <div className="flex flex-col items-center justify-center">
+                          <span className="text-primary font-medium">
+                            {batch.employeeId.substring(0, 10)}
+                          </span>
+                          <span className="text-muted-foreground text-[11px] mt-0.5">
+                            {batch.employee?.fullName || "N/A"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-center text-muted-foreground">
+                        {batch.assignedTo ? batch.assignedTo.fullName : "-"}
+                      </td>
+                    </tr>
+                  )
+                })
               )}
             </tbody>
           </table>

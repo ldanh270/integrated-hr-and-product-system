@@ -41,12 +41,8 @@ applicationRoutes.patch("/:id/partner-approve", controller.partnerApprove)
 
 // ─── Manager endpoints ────────────────────────────────────────
 
-// List all applications across all employees (HR / GM / admin / TL)
-applicationRoutes.get(
-  "/",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER, ROLE.TEAM_LEADER),
-  controller.listAll,
-)
+// List all applications (managers & partners)
+applicationRoutes.get("/", controller.listAll)
 
 // List applications for a specific employee (HR / GM / admin)
 applicationRoutes.get(

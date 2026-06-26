@@ -8,6 +8,7 @@ import type {
   IAttendanceRecord,
   ICheckInOutRequest,
   ICreateShiftPayload,
+  IEmployeeShiftAssignment,
   IHoliday,
   IHolidayPayload,
   IHolidayQuery,
@@ -80,6 +81,27 @@ export const schedulesApi = {
     const res = await apiClient.get<ApiResponse<ISchedule | null>>(API_ENDPOINTS.SCHEDULES.MY, {
       params: date ? { [ATTENDANCE_QUERY_PARAMS.DATE]: date } : undefined,
     })
+    return res.data.data
+  },
+
+  /** Fetches the materialized EmployeeShift record (with nested shift) for the current user on a given date. */
+  getMyShift: async (date: string): Promise<IEmployeeShiftAssignment | null> => {
+    const res = await apiClient.get<ApiResponse<IEmployeeShiftAssignment | null>>(
+      API_ENDPOINTS.SCHEDULES.MY_SHIFT,
+      { params: { [ATTENDANCE_QUERY_PARAMS.DATE]: date } },
+    )
+    return res.data.data
+  },
+
+  /** Fetches the materialized EmployeeShift record for a specific employee on a given date (manager view). */
+  getEmployeeShiftByDate: async (
+    employeeId: string,
+    date: string,
+  ): Promise<IEmployeeShiftAssignment | null> => {
+    const res = await apiClient.get<ApiResponse<IEmployeeShiftAssignment | null>>(
+      API_ENDPOINTS.SCHEDULES.EMPLOYEE_SHIFT(employeeId),
+      { params: { [ATTENDANCE_QUERY_PARAMS.DATE]: date } },
+    )
     return res.data.data
   },
 

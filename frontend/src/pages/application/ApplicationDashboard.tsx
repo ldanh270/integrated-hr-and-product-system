@@ -1,11 +1,12 @@
 "use client"
 
-import { ApplicationDetail } from "@/components/features/application/ApplicationDetail"
+import { BatchApplicationDetail } from "@/components/features/application/BatchApplicationDetail"
 import { ApplicationList } from "@/components/features/application/ApplicationList"
 import { APPLICATION_TYPES } from "@/config/entities/attendance.config"
 import { useManageApplications } from "@/hooks/application/useManageApplications"
 import { useMyApplications } from "@/hooks/application/useMyApplications"
 import type { IApplication } from "@/lib/api/application.api"
+import type { IApplicationBatch } from "@/lib/api/application-batch.api"
 
 import { useEffect, useState } from "react"
 
@@ -21,7 +22,7 @@ import { SubmitApplicationModal } from "./components/SubmitApplicationModal"
 export default function ApplicationDashboard() {
   // View State: "list" | "detail"
   const [view, setView] = useState<"list" | "detail">("list")
-  const [selectedApp, setSelectedApp] = useState<IApplication | null>(null)
+  const [selectedBatch, setSelectedBatch] = useState<IApplicationBatch | null>(null)
 
   const [searchParams] = useSearchParams()
   const activeTab = (searchParams.get("tab") || "manage") as "mine" | "manage"
@@ -32,13 +33,12 @@ export default function ApplicationDashboard() {
 
   useEffect(() => {
     setView("list")
-    setSelectedApp(null)
+    setSelectedBatch(null)
     myApps.setTypeFilter(activeType)
     manageApps.setTypeFilter(activeType)
   }, [activeTab, activeType, myApps.setTypeFilter, manageApps.setTypeFilter])
 
   const [showSubmitModal, setShowSubmitModal] = useState(false)
-  const [showCreateMenu, setShowCreateMenu] = useState(false)
   const [createType, setCreateType] = useState<string | undefined>(undefined)
   const [cancelTarget, setCancelTarget] = useState<IApplication | null>(null)
   const [rejectTarget, setRejectTarget] = useState<IApplication | null>(null)
@@ -47,39 +47,36 @@ export default function ApplicationDashboard() {
     if (!cancelTarget) return
     await myApps.handleCancel(cancelTarget.id)
     setCancelTarget(null)
-    if (view === "detail" && selectedApp?.id === cancelTarget.id) setView("list")
+    // If we want to support cancelling single apps from dashboard, we can here, but BatchApplicationDetail handles its own batch cancellation.
   }
 
   const handleRejectConfirm = async (reason: string) => {
     if (!rejectTarget) return
     await manageApps.handleReject(rejectTarget.id, reason)
     setRejectTarget(null)
-    if (view === "detail" && selectedApp?.id === rejectTarget.id) {
-      setView("list")
-    }
+    // Remain in detail view so manager can process other items
   }
 
   const handleApproveFromDetail = async (app: IApplication) => {
     await manageApps.handleApprove(app.id)
-    setView("list")
   }
 
-  const handleRowClick = (app: IApplication) => {
-    setSelectedApp(app)
+  const handleRowClick = (batch: any) => {
+    setSelectedBatch(batch)
     setView("detail")
   }
 
   if (view === "detail") {
     return (
-      <ApplicationDetail
-        application={selectedApp}
+      <BatchApplicationDetail
+        batch={selectedBatch}
         isLoading={activeTab === "mine" ? myApps.isLoading : manageApps.isLoading}
         mode={activeTab}
         onBack={() => {
           setView("list")
         }}
-        onApprove={handleApproveFromDetail}
-        onReject={setRejectTarget}
+        onApproveSingle={handleApproveFromDetail}
+        onRejectSingle={setRejectTarget}
       />
     )
   }
@@ -95,26 +92,12 @@ export default function ApplicationDashboard() {
             <button
               className="flex h-8 w-8 items-center justify-center rounded-full border border-primary text-primary hover:bg-primary/10 transition-colors"
               onClick={() => {
-                setShowCreateMenu(!showCreateMenu)
+                setCreateType(undefined)
+                setShowSubmitModal(true)
               }}
             >
               <Plus size={18} strokeWidth={2.5} />
             </button>
-
-            {showCreateMenu && (
-              <div className="absolute top-full left-0 mt-2 w-48 bg-background rounded-xl shadow-lg border border-border py-2 z-50 animate-in fade-in slide-in-from-top-2">
-                <button
-                  onClick={() => {
-                    setCreateType(undefined)
-                    setShowSubmitModal(true)
-                    setShowCreateMenu(false)
-                  }}
-                  className="w-full text-left px-4 py-2.5 text-[14px] text-foreground hover:bg-muted hover:text-primary transition-colors"
-                >
-                  Tạo mới đơn từ
-                </button>
-              </div>
-            )}
           </div>
 
           <div className="flex items-center text-[15px]">

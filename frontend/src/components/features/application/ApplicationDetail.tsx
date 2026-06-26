@@ -53,6 +53,11 @@ export function ApplicationDetail({
   const isPending = application.status === APPLICATION_STATUS.PENDING
   const typeLabel = APPLICATION_TYPE_LABELS[application.type] || application.type
 
+  const isShiftSwap = application.type === "shift_swap"
+  const swapDetail = isShiftSwap ? ((application.shiftSwapDetail || application.detail) as Record<string, string | null | undefined>) : null
+  const isPartner = isShiftSwap && (swapDetail?.swapWithEmployeeId === user?.personalEmployeeId || swapDetail?.swapWithEmployeeId === user?.id)
+  const isPartnerPending = isPartner && swapDetail?.partnerApprovalStatus === "pending"
+
   // Render detail fields dynamically based on application type
   const renderDetailTable = () => {
     switch (application.type) {
@@ -113,24 +118,24 @@ export function ApplicationDetail({
         )
       }
       case "shift_swap": {
-        const swapDetail = application.detail as Record<string, string | null | undefined>
+        const rowSwapDetail = (application.shiftSwapDetail || application.detail) as Record<string, string | null | undefined>
         let partnerStatusLabel = "-"
         let partnerStatusColor = "text-slate-600"
-        if (swapDetail.partnerApprovalStatus === "pending") {
+        if (rowSwapDetail.partnerApprovalStatus === "pending") {
           partnerStatusLabel = "Đang chờ"
           partnerStatusColor = "text-amber-600 font-medium"
-        } else if (swapDetail.partnerApprovalStatus === "approved") {
+        } else if (rowSwapDetail.partnerApprovalStatus === "approved") {
           partnerStatusLabel = "Đã đồng ý"
           partnerStatusColor = "text-emerald-600 font-medium"
-        } else if (swapDetail.partnerApprovalStatus === "rejected") {
+        } else if (rowSwapDetail.partnerApprovalStatus === "rejected") {
           partnerStatusLabel = "Đã từ chối"
           partnerStatusColor = "text-red-600 font-medium"
         }
         return (
           <>
             <td className="px-4 py-4 text-foreground">{new Date(application.startDate).toLocaleDateString("vi-VN")}</td>
-            <td className="px-4 py-4 text-foreground">{swapDetail.employeeShiftId || "-"}</td>
-            <td className="px-4 py-4 text-foreground">{swapDetail.swapWithEmployeeId ? `NV: ${swapDetail.swapWithEmployeeId}` : `Ca: ${swapDetail.swapWithShiftId || "-"}`}</td>
+            <td className="px-4 py-4 text-foreground">{rowSwapDetail.employeeShiftId || "-"}</td>
+            <td className="px-4 py-4 text-foreground">{rowSwapDetail.swapWithEmployeeId ? `NV: ${rowSwapDetail.swapWithEmployeeId}` : `Ca: ${rowSwapDetail.swapWithShiftId || "-"}`}</td>
             <td className={`px-4 py-4 ${partnerStatusColor}`}>{partnerStatusLabel}</td>
           </>
         )
@@ -169,7 +174,7 @@ export function ApplicationDetail({
             <Home size={18} />
           </button>
           {/* Actions for Manager */}
-          {mode === "manage" && isPending && (
+          {mode === "manage" && isPending && !isPartner && (
             <div className="flex items-center gap-3 ml-4 border-l border-border pl-4">
               <button
                 onClick={() => onApprove?.(application)}
@@ -193,9 +198,7 @@ export function ApplicationDetail({
           )}
 
           {/* Actions for Partner (Shift Swap) */}
-          {application.type === "shift_swap" && 
-          (application.detail as Record<string, string | null | undefined>).swapWithEmployeeId === user?.personalEmployeeId && 
-           (application.detail as Record<string, string | null | undefined>).partnerApprovalStatus === "pending" && (
+          {isPartnerPending && (
             <div className="flex items-center gap-3 ml-4 border-l border-border pl-4">
               <button
                 onClick={() => { partnerApproveMutation.mutate({ id: application.id, isApproved: true }) }}
@@ -249,7 +252,7 @@ export function ApplicationDetail({
             <div className="flex flex-col gap-1.5">
               <span className="text-xs text-muted-foreground font-medium">Người duyệt</span>
               <span className="text-sm font-semibold text-primary">
-                {application.processor ? application.processor.fullName : "Chưa phân công"}
+                {application.approvedBy ? application.approvedBy.fullName : (application.assignedTo ? application.assignedTo.fullName : "Chưa phân công")}
               </span>
             </div>
             <div className="flex flex-col gap-1.5">

@@ -1,9 +1,10 @@
 import { APPLICATION_STATUS } from "@/config/entities/attendance.config"
 import {
-  type IApplication,
-  type IListApplicationsQuery,
-  applicationApi,
-} from "@/lib/api/application.api"
+  type IApplicationBatch,
+  type IListBatchesQuery,
+  applicationBatchApi,
+} from "@/lib/api/application-batch.api"
+import { applicationApi, type IListApplicationsQuery } from "@/lib/api/application.api"
 
 import { useCallback, useEffect, useRef, useState } from "react"
 
@@ -12,7 +13,7 @@ import { toast } from "sonner"
 export type StatusFilter = "all" | "pending" | "approved" | "rejected" | "cancelled"
 
 interface UseManageApplicationsReturn {
-  applications: IApplication[]
+  applications: IApplicationBatch[]
   isLoading: boolean
   isRefreshing: boolean
   statusFilter: StatusFilter
@@ -39,7 +40,7 @@ interface UseManageApplicationsReturn {
 }
 
 export function useManageApplications(): UseManageApplicationsReturn {
-  const [applications, setApplications] = useState<IApplication[]>([])
+  const [applications, setApplications] = useState<IApplicationBatch[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending") // Default to pending for managers
@@ -65,7 +66,8 @@ export function useManageApplications(): UseManageApplicationsReturn {
       }
 
       try {
-        const query: IListApplicationsQuery = {
+        // Backend query schema uses "pageSize" (not "limit") with .strict()
+        const query: IListBatchesQuery = {
           page,
           pageSize: 10,
         }
@@ -74,7 +76,7 @@ export function useManageApplications(): UseManageApplicationsReturn {
         if (typeFilter !== "all") query.type = typeFilter
         if (keyword.trim() !== "") query.keyword = keyword.trim()
 
-        const { data, meta } = await applicationApi.listAll(query)
+        const { data, meta } = await applicationBatchApi.listAll(query)
 
         if (!activeRef.current) return
 
@@ -124,7 +126,7 @@ export function useManageApplications(): UseManageApplicationsReturn {
         approved: counts[1],
         rejected: counts[2],
         cancelled: counts[3],
-        total: counts.reduce((a, b) => a + b, 0),
+        total: counts.reduce((a: number, b: number) => a + b, 0),
       })
     } catch (error) {
       console.error("Failed to fetch application stats", error)

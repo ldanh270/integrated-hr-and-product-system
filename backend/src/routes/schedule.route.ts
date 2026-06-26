@@ -28,6 +28,8 @@ scheduleRoutes.use(authenticate)
 
 scheduleRoutes.get("/my", controller.getEmployeeSchedule)
 scheduleRoutes.get("/my/all", controller.listEmployeeSchedules)
+// Returns the materialized EmployeeShift record for the current user on a given date (?date=YYYY-MM-DD)
+scheduleRoutes.get("/my/shift", controller.getMyShift)
 
 scheduleRoutes.get(
   "/employee/:employeeId",
@@ -38,6 +40,12 @@ scheduleRoutes.get(
   "/employee/:employeeId/all",
   authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
   controller.listEmployeeSchedulesById,
+)
+// Returns the materialized EmployeeShift record for a specific employee on a given date (?date=YYYY-MM-DD)
+scheduleRoutes.get(
+  "/employee/:employeeId/shift",
+  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  controller.getEmployeeShiftByDate,
 )
 
 scheduleRoutes.post(

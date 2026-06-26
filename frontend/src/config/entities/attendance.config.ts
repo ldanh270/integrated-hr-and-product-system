@@ -15,7 +15,7 @@ export type IAttendanceStatus = (typeof ATTENDANCE_STATUSES)[number]
 export const APPLICATION_TYPES = {
   LEAVE: { LABEL: "leave", DESCRIPTION: "Xin nghỉ phép" },
   OVERTIME: { LABEL: "overtime", DESCRIPTION: "Tăng ca (OT)" },
-  WORK_FROM_HOME: { LABEL: "work_from_home", DESCRIPTION: "Làm việc từ xa (WFH)" },
+  WORK_FROM_HOME: { LABEL: "work_from_home", DESCRIPTION: "Làm việc từ xa" },
   SHIFT_SWAP: { LABEL: "shift_swap", DESCRIPTION: "Đổi ca làm việc" },
   LATE_EARLY: { LABEL: "late_early", DESCRIPTION: "Đi muộn/về sớm" },
   RESIGNATION: { LABEL: "resignation", DESCRIPTION: "Thôi việc" },
@@ -30,6 +30,16 @@ export const APPLICATION_TYPE_VALUES = [
   APPLICATION_TYPES.LATE_EARLY.LABEL,
   APPLICATION_TYPES.RESIGNATION.LABEL,
 ] as const
+
+// Types that support batch (multi-item) submission — excludes resignation
+export const BATCHABLE_APPLICATION_TYPES = [
+  APPLICATION_TYPES.LEAVE.LABEL,
+  APPLICATION_TYPES.OVERTIME.LABEL,
+  APPLICATION_TYPES.WORK_FROM_HOME.LABEL,
+  APPLICATION_TYPES.SHIFT_SWAP.LABEL,
+  APPLICATION_TYPES.LATE_EARLY.LABEL,
+] as const
+export type IBatchableApplicationType = (typeof BATCHABLE_APPLICATION_TYPES)[number]
 
 export const APPLICATION_STATUS = {
   PENDING: "pending",

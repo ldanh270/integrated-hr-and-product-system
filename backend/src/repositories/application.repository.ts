@@ -1,5 +1,5 @@
-import { APPLICATION_TYPES, PAID_LEAVE_TYPES, EMPLOYEE_SHIFT_STATUS } from "@/configs/entities/attendance.config.ts"
-import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
+import { APPLICATION_TYPES, PAID_LEAVE_TYPES, EMPLOYEE_SHIFT_STATUS, PARTNER_APPROVAL_STATUS } from "@/configs/entities/attendance.config.ts"
+import { EMPLOYEE_STATUS, ROLE } from "@/configs/entities/employee.config.ts"
 import {
   IApplicationRepository,
   ILeaveType,
@@ -17,6 +17,7 @@ const APPLICATION_INCLUDE = {
     select: { id: true, fullName: true, email: true, position: true, avatarUrl: true },
   },
   approvedBy: { select: { id: true, fullName: true } },
+  assignedTo: { select: { id: true, fullName: true } },
   leaveDetail: true,
   overtimeDetail: { include: { employeeShift: { include: { shift: true } } } },
   workFromHomeDetail: true,
@@ -97,8 +98,11 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    * @param query - The pagination and filter parameters.
    * @returns A promise that resolves to the matching applications and total count.
    */
-  async findAll(query: IListApplicationsQueryDTO): Promise<{ data: any[]; total: number }> {
-    const where = this._buildWhere(query)
+  async findAll(
+    query: IListApplicationsQueryDTO,
+    managedBy?: { empId: string; role: string }
+  ): Promise<{ data: any[]; total: number }> {
+    const where = this._buildWhere(query, managedBy)
     return this._paginate(where, query)
   }
 
@@ -423,8 +427,11 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    * @param query - The filter parameters.
    * @returns The Prisma filter object.
    */
-  private _buildWhere(query: IListApplicationsQueryDTO & { employeeId?: string; keyword?: string }) {
-    const where: Record<string, any> = {}
+  private _buildWhere(
+    query: IListApplicationsQueryDTO & { employeeId?: string; keyword?: string },
+    managedBy?: { empId: string; role: string }
+  ) {
+    let where: Record<string, any> = {}
 
     if (query.employeeId) where.employeeId = query.employeeId
     if (query.type) where.type = query.type
@@ -443,6 +450,66 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
         { employee: { id: { contains: kw, mode: "insensitive" } } },
         { approvedBy: { fullName: { contains: kw, mode: "insensitive" } } }
       ]
+    }
+
+    if (managedBy) {
+      const role = managedBy.role
+      const empId = managedBy.empId
+      if (role === ROLE.EMPLOYEE) {
+        where = {
+          AND: [
+            where,
+            {
+              OR: [
+                { assignedToId: empId },
+                {
+                  type: APPLICATION_TYPES.SHIFT_SWAP.LABEL,
+                  shiftSwapDetail: {
+                    swapWithEmployeeId: empId
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      } else {
+        // Manager roles: exclude shift swaps that are pending partner approval, UNLESS the manager is the partner
+        // Also exclude applications created by the manager themselves, unless they assigned it to themselves
+        where = {
+          AND: [
+            where,
+            {
+              OR: [
+                { employeeId: { not: empId } },
+                { assignedToId: empId },
+                {
+                  type: APPLICATION_TYPES.SHIFT_SWAP.LABEL,
+                  shiftSwapDetail: {
+                    swapWithEmployeeId: empId
+                  }
+                }
+              ]
+            },
+            {
+              OR: [
+                { type: { not: APPLICATION_TYPES.SHIFT_SWAP.LABEL } },
+                {
+                  type: APPLICATION_TYPES.SHIFT_SWAP.LABEL,
+                  shiftSwapDetail: {
+                    partnerApprovalStatus: { not: PARTNER_APPROVAL_STATUS.PENDING }
+                  }
+                },
+                {
+                  type: APPLICATION_TYPES.SHIFT_SWAP.LABEL,
+                  shiftSwapDetail: {
+                    swapWithEmployeeId: empId
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
     }
 
     return where

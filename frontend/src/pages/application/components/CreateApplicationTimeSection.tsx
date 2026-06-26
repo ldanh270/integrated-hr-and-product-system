@@ -2,9 +2,10 @@
 
 import { LEAVE_TYPE_OPTIONS, REGIME_TYPE_OPTIONS } from "@/components/attendance/attendance-ui.meta"
 import { APPLICATION_TYPES } from "@/config/entities/attendance.config"
-import type { IWorkingShift } from "@/types/attendance.types"
+import type { IEmployeeShiftAssignment } from "@/types/attendance.types"
 import type { Employee } from "@/types/employee.types"
 import type { ApplicationFormState } from "../hooks/useCreateApplicationForm"
+import { useShifts } from "@/hooks/attendance/use-shifts"
 
 import { Plus } from "lucide-react"
 
@@ -12,16 +13,24 @@ interface Props {
   type: string
   form: ApplicationFormState
   set: <K extends keyof ApplicationFormState>(k: K, v: ApplicationFormState[K]) => void
-  shifts: IWorkingShift[]
+  myEmployeeShift: IEmployeeShiftAssignment | null
+  partnerEmployeeShift: IEmployeeShiftAssignment | null
   employees: Employee[]
 }
 
-export function CreateApplicationTimeSection({ type, form, set, shifts, employees }: Props) {
+export function CreateApplicationTimeSection({ type, form, set, myEmployeeShift, partnerEmployeeShift, employees }: Props) {
+  const { data: shifts = [] } = useShifts()
+
+  const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split("T")[0]
+
   const formatTime = (minutes: number) => {
     const h = Math.floor(minutes / 60)
     const m = minutes % 60
     return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`
   }
+
+  const formatShiftLabel = (shift: IEmployeeShiftAssignment["shift"] | undefined) =>
+    shift ? `${shift.name} (${formatTime(shift.startTime)} - ${formatTime(shift.endTime)})` : null
 
   return (
     <div className="bg-background rounded-lg border border-border shadow-sm overflow-hidden">
@@ -68,6 +77,7 @@ export function CreateApplicationTimeSection({ type, form, set, shifts, employee
                     <td className="px-4 py-3 flex gap-2 items-center">
                       <input
                         type="date"
+                        min={todayStr}
                         value={form.startDate}
                         onChange={(e) => { set("startDate", e.target.value); }}
                         className="w-36 h-8 px-2 text-sm border border-input bg-transparent rounded focus:outline-none focus:ring-1 focus:ring-primary"
@@ -75,6 +85,7 @@ export function CreateApplicationTimeSection({ type, form, set, shifts, employee
                       <span className="text-muted-foreground/70">-</span>
                       <input
                         type="date"
+                        min={todayStr}
                         value={form.endDate}
                         onChange={(e) => { set("endDate", e.target.value); }}
                         className="w-36 h-8 px-2 text-sm border border-input bg-transparent rounded focus:outline-none focus:ring-1 focus:ring-primary"
@@ -127,6 +138,7 @@ export function CreateApplicationTimeSection({ type, form, set, shifts, employee
               </label>
               <input
                 type="date"
+                min={todayStr}
                 value={form.startDate}
                 onChange={(e) => { set("startDate", e.target.value); }}
                 className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
@@ -144,6 +156,7 @@ export function CreateApplicationTimeSection({ type, form, set, shifts, employee
                 <label className="text-xs font-medium text-foreground">Ngày kết thúc</label>
                 <input
                   type="date"
+                  min={todayStr}
                   value={form.endDate}
                   onChange={(e) => { set("endDate", e.target.value); }}
                   className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
@@ -165,16 +178,23 @@ export function CreateApplicationTimeSection({ type, form, set, shifts, employee
                   <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={form.employeeShiftId}
+                  value={form.employeeShiftId || ""}
                   onChange={(e) => { set("employeeShiftId", e.target.value); }}
-                  className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground"
+                  disabled={!myEmployeeShift}
                 >
-                  <option value="">-- Chọn ca làm việc --</option>
-                  {shifts.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({formatTime(s.startTime)} - {formatTime(s.endTime)})
+                  {!myEmployeeShift ? (
+                    <option value="">
+                      {form.startDate ? "Không có ca nào được xếp cho ngày này" : "Chọn ngày để xem ca"}
                     </option>
-                  ))}
+                  ) : (
+                    <option value="">Chọn ca làm việc</option>
+                  )}
+                  {myEmployeeShift && (
+                    <option value={myEmployeeShift.id}>
+                      {formatShiftLabel(myEmployeeShift.shift)}
+                    </option>
+                  )}
                 </select>
               </div>
             )}
@@ -230,18 +250,19 @@ export function CreateApplicationTimeSection({ type, form, set, shifts, employee
             {type === APPLICATION_TYPES.WORK_FROM_HOME.LABEL && (
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-foreground">
-                  Kiểu làm việc <span className="text-red-500">*</span>
+                  Ca làm việc <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={form.location}
                   onChange={(e) => { set("location", e.target.value); }}
                   className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 >
-                  <option value="">Chọn</option>
-                  <option value="Làm 1 ngày">Làm 1 ngày</option>
-                  <option value="Làm buổi sáng">Làm buổi sáng</option>
-                  <option value="Làm buổi chiều">Làm buổi chiều</option>
-                  <option value="Làm nhiều ngày">Làm nhiều ngày</option>
+                  <option value="">Chọn ca làm việc</option>
+                  {shifts.map((shift) => (
+                    <option key={shift.id} value={shift.name}>
+                      {shift.name} ({formatTime(shift.startTime)} - {formatTime(shift.endTime)})
+                    </option>
+                  ))}
                 </select>
               </div>
             )}
@@ -254,6 +275,7 @@ export function CreateApplicationTimeSection({ type, form, set, shifts, employee
                   </label>
                   <input
                     type="date"
+                    min={todayStr}
                     value={form.swapWithDate}
                     onChange={(e) => { set("swapWithDate", e.target.value); }}
                     className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
@@ -263,18 +285,17 @@ export function CreateApplicationTimeSection({ type, form, set, shifts, employee
                   <label className="text-xs font-medium text-foreground">
                     Ca của đồng nghiệp
                   </label>
-                  <select
-                    value={form.swapWithShiftId}
-                    onChange={(e) => { set("swapWithShiftId", e.target.value); }}
-                    className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="">-- Chọn ca làm việc --</option>
-                    {shifts.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({formatTime(s.startTime)} - {formatTime(s.endTime)})
-                      </option>
-                    ))}
-                  </select>
+                  {partnerEmployeeShift ? (
+                    <div className="w-full h-9 px-3 text-sm border border-input rounded-md bg-muted text-foreground flex items-center">
+                      {formatShiftLabel(partnerEmployeeShift.shift)}
+                    </div>
+                  ) : (
+                    <div className="w-full h-9 px-3 text-sm border border-input rounded-md bg-muted text-muted-foreground flex items-center italic">
+                      {form.swapWithEmployeeId && form.swapWithDate
+                        ? "Không có ca nào được xếp cho ngày này"
+                        : "Chọn nhân sự và ngày để xem ca"}
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-foreground">

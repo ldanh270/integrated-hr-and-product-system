@@ -51,6 +51,13 @@ export class ScheduleService implements IScheduleService {
     return this.employeeShiftRepo.overrideShift(data)
   }
 
+  async getEmployeeShiftForDate(
+    employeeId: string,
+    date: string | Date,
+  ): Promise<IEmployeeShiftWithShift | null> {
+    return this.employeeShiftRepo.getShiftForEmployeeDate(employeeId, date)
+  }
+
   async previewGeneratedShifts(data: IGenerateShiftsDTO): Promise<IGeneratedShiftPreview[]> {
     const { start, end } = this.parseDateRange(data.startDate, data.endDate)
     const existingShifts = await this.employeeShiftRepo.listByEmployeesAndDateRange(

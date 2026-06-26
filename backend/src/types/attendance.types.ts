@@ -121,6 +121,24 @@ export interface IListApplicationsQueryDTO {
   employeeId?: string
   startDate?: string
   endDate?: string
+  keyword?: string
+}
+
+// ─── BATCH APPLICATION DTOs ───────────────────────────────────
+
+export interface IBatchItemDTO {
+  startDate: string | Date
+  endDate?: string | Date
+  reason?: string
+  note?: string
+  detail: Record<string, unknown>
+}
+
+export interface ISubmitBatchApplicationDTO {
+  employeeId: string
+  type: string
+  assignedToId?: string
+  items: IBatchItemDTO[]
 }
 
 export interface IListHolidaysQueryDTO {
@@ -251,7 +269,10 @@ export interface IApplicationRepository {
     employeeId: string,
     query: IListApplicationsQueryDTO,
   ): Promise<{ data: any[]; total: number }>
-  findAll(query: IListApplicationsQueryDTO): Promise<{ data: any[]; total: number }>
+  findAll(
+    query: IListApplicationsQueryDTO,
+    managedBy?: { empId: string; role: string }
+  ): Promise<{ data: any[]; total: number }>
   cancel(id: string, employeeId: string): Promise<any | null>
   /** Approves an application (sets status=approved). */
   approve(id: string, approvedBy: string): Promise<any | null>
@@ -319,7 +340,10 @@ export interface IApplicationService {
   submitApplication(data: ISubmitApplicationDTO): Promise<any>
   cancelApplication(id: string, requesterId: string): Promise<any>
   getApplicationById(id: string): Promise<any>
-  listApplications(query: IListApplicationsQueryDTO): Promise<{ data: any[]; total: number }>
+  listApplications(
+    query: IListApplicationsQueryDTO,
+    user?: { empId: string; role: string }
+  ): Promise<{ data: any[]; total: number }>
   getEmployeeApplications(
     employeeId: string,
     query: IListApplicationsQueryDTO,
@@ -359,4 +383,36 @@ export interface IHolidayService {
   deleteHoliday(id: string): Promise<void>
   /** Checks if a date is a holiday. */
   isHoliday(date: string | Date): Promise<boolean>
+}
+
+/**
+ * Repository for managing application batches.
+ */
+export interface IApplicationBatchRepository {
+  /** Creates a batch with all sub-applications in a single transaction. */
+  createBatch(data: ISubmitBatchApplicationDTO): Promise<any>
+  /** Finds a batch by ID, including all sub-applications with their details. */
+  findById(id: string): Promise<any | null>
+  /** Lists batches submitted by a specific employee. */
+  findByEmployee(employeeId: string, query: IListApplicationsQueryDTO): Promise<{ data: any[]; total: number }>
+  /** Lists all batches visible to a manager. */
+  findAll(query: IListApplicationsQueryDTO, managedBy?: { empId: string; role: string }): Promise<{ data: any[]; total: number }>
+  /** Cancels all pending sub-applications within a batch. */
+  cancelBatch(id: string, employeeId: string): Promise<any | null>
+}
+
+/**
+ * Service for application batch operations.
+ */
+export interface IApplicationBatchService {
+  /** Submits a batch of applications. */
+  submitBatch(data: ISubmitBatchApplicationDTO): Promise<any>
+  /** Gets a batch by ID. */
+  getBatchById(id: string): Promise<any>
+  /** Lists the authenticated employee's batches. */
+  listMyBatches(employeeId: string, query: IListApplicationsQueryDTO): Promise<{ data: any[]; total: number }>
+  /** Lists all batches (manager view). */
+  listAllBatches(query: IListApplicationsQueryDTO, user?: { empId: string; role: string }): Promise<{ data: any[]; total: number }>
+  /** Cancels a batch (only owner, only pending items). */
+  cancelBatch(id: string, requesterId: string): Promise<any>
 }

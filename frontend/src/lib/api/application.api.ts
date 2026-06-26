@@ -35,6 +35,7 @@ export interface IShiftSwapDetail {
   employeeShiftId: string
   swapWithEmployeeId?: string
   swapWithShiftId?: string
+  partnerApprovalStatus?: "pending" | "approved" | "rejected"
 }
 
 export interface IWfhDetail {
@@ -70,7 +71,8 @@ export interface IApplication {
   reason?: string
   note?: string
   rejectReason?: string
-  detail: IApplicationDetail & Record<string, unknown>
+  detail?: IApplicationDetail & Record<string, unknown>
+  shiftSwapDetail?: IShiftSwapDetail & Record<string, unknown>
   createdAt: string
   updatedAt: string
   employee?: {
@@ -79,7 +81,11 @@ export interface IApplication {
     email: string
     department?: string
   }
-  processor?: {
+  assignedTo?: {
+    id: string
+    fullName: string
+  }
+  approvedBy?: {
     id: string
     fullName: string
   }
@@ -139,6 +145,15 @@ export const applicationApi = {
   cancel: async (id: string): Promise<IApplication> => {
     const response = await apiClient.patch<ApiResponse<IApplication>>(
       `/applications/${id}/cancel`,
+    )
+    return response.data.data
+  },
+
+  /** Partner approves/rejects a shift swap */
+  partnerApprove: async (id: string, isApproved: boolean): Promise<IApplication> => {
+    const response = await apiClient.patch<ApiResponse<IApplication>>(
+      `/applications/${id}/partner-approve`,
+      { isApproved },
     )
     return response.data.data
   },

@@ -6,6 +6,7 @@ import { initWeeklyScheduleCron } from "@/libs/weekly-schedule-cron.ts"
 import { cors } from "@/middlewares/cors.middleware.ts"
 import { globalErrorHandler } from "@/middlewares/error.middleware.ts"
 import applicationRoutes from "@/routes/application.route.ts"
+import applicationBatchRoutes from "@/routes/application-batch.route.ts"
 import approvalRoutes from "@/routes/approval.route.ts"
 import attendanceRoutes from "@/routes/attendance.route.ts"
 import authRoutes from "@/routes/auth.route.ts"
@@ -90,6 +91,7 @@ app.use("/api/shifts", shiftRoutes)
 app.use("/api/schedules", scheduleRoutes)
 app.use("/api/attendance", attendanceRoutes)
 app.use("/api/applications", applicationRoutes)
+app.use("/api/application-batches", applicationBatchRoutes)
 app.use("/api/shift-change-requests", shiftChangeRequestRoutes)
 app.use("/api/holidays", holidayRoutes)
 app.use("/api/weekly-schedule-templates", weeklyScheduleTemplateRoutes)

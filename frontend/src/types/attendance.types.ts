@@ -41,6 +41,20 @@ export interface IWorkingShift {
   updatedAt: string
 }
 
+/**
+ * A materialized daily shift assignment for a specific employee.
+ * `id` is the EmployeeShift.id expected by the backend for shift-swap/overtime/late-early applications.
+ */
+export interface IEmployeeShiftAssignment {
+  id: string
+  employeeId: string
+  shiftId: string
+  assignedDate: string
+  isOverride: boolean
+  shift: Pick<IWorkingShift, "id" | "name" | "startTime" | "endTime">
+}
+
+
 export interface ICreateShiftPayload {
   name: string
   /** HH:MM format */

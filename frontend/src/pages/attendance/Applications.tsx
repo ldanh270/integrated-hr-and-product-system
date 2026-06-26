@@ -64,7 +64,7 @@ const APP_TYPE_META: Record<
     hint: "Đăng ký tăng ca ngoài ca",
   },
   work_from_home: {
-    label: "WFH",
+    label: "Làm việc từ xa",
     icon: Laptop,
     color: "text-sky-600",
     bg: "bg-sky-50",
@@ -768,10 +768,10 @@ function ApplicationCard({
                 <span className="text-red-700">{app.rejectReason}</span>
               </div>
             )}
-            {app.processor && (
+            {(app.approvedBy || app.assignedTo) && (
               <div className="flex flex-col gap-0.5">
                 <span className="text-slate-400 font-medium">Người duyệt</span>
-                <span className="text-slate-700">{app.processor.fullName}</span>
+                <span className="text-slate-700">{(app.approvedBy || app.assignedTo)!.fullName}</span>
               </div>
             )}
           </div>
@@ -1145,7 +1145,7 @@ export default function Applications() {
             <p className="text-xs text-muted-foreground">
               Hiển thị {applications.length} / {total} đơn
             </p>
-            {applications.map((app) => (
+            {applications.flatMap(b => b.applications).map((app) => (
               <ApplicationCard
                 key={app.id}
                 app={app}

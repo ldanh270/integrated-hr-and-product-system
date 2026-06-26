@@ -212,6 +212,8 @@ model Employee {
   applications                   Application[]                @relation("ApplicationEmployee")
   applicationsApproved           Application[]                @relation("ApplicationApprover")
   applicationsAssigned           Application[]                @relation("ApplicationAssignedTo")
+  applicationBatches             ApplicationBatch[]           @relation("ApplicationBatchEmployee")
+  applicationBatchesAssigned     ApplicationBatch[]           @relation("ApplicationBatchAssignedTo")
   swapApplicationsAsPartner      ApplicationShiftSwapDetail[] @relation("ApplicationSwapWith")
   shiftSchedules                 ShiftSchedule[]              @relation("ShiftScheduleEmployee")
   shiftSchedulesCreated          ShiftSchedule[]              @relation("ShiftScheduleCreator")
@@ -439,6 +441,23 @@ model RealShift {
   @@index([isMatched, date(sort: Desc)])
 }
 
+model ApplicationBatch {
+  id           String          @id @default(cuid())
+  employeeId   String
+  employee     Employee        @relation("ApplicationBatchEmployee", fields: [employeeId], references: [id], onDelete: Restrict)
+  type         ApplicationType
+  assignedToId String?
+  assignedTo   Employee?       @relation("ApplicationBatchAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  applications Application[]
+
+  @@index([employeeId])
+  @@index([assignedToId])
+  @@index([type])
+}
+
 model Application {
   id         String            @id @default(cuid())
   employeeId String
@@ -458,6 +477,9 @@ model Application {
   assignedToId String?
   assignedTo   Employee? @relation("ApplicationAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
 
+  batchId String?
+  batch   ApplicationBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -474,6 +496,7 @@ model Application {
   @@index([status, type])
   @@index([approvedById])
   @@index([assignedToId])
+  @@index([batchId])
 }
 
 model ApplicationLeaveDetail {

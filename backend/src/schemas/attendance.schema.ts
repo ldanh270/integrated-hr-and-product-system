@@ -5,6 +5,7 @@ import {
   HOLIDAY_TYPES,
   LEAVE_TYPE_VALUES,
   REGIME_TYPES,
+  BATCHABLE_APPLICATION_TYPES,
 } from "@/configs/entities/attendance.config.ts"
 import { ATTENDANCE_ERROR_MESSAGES } from "@/constants/attendance.constants.ts"
 
@@ -154,6 +155,31 @@ export const submitApplicationSchema = z.discriminatedUnion("type", [
 ])
 
 export type SubmitApplicationSchemaType = z.infer<typeof submitApplicationSchema>
+
+// ─── BATCH SUBMIT ─────────────────────────────────────────────
+
+/**
+ * Batch submit: array of same-type applications.
+ * Each item reuses the individual type schema's detail shape.
+ * Resignation is excluded (not batchable).
+ */
+const batchItemSchema = z.object({
+  startDate: dateString,
+  endDate: dateString.optional(),
+  reason: z.string().min(5).max(500).optional(),
+  note: z.string().max(1000).optional(),
+  detail: z.record(z.string(), z.unknown()).default({}),
+})
+
+export const submitBatchApplicationSchema = z
+  .object({
+    type: z.enum(BATCHABLE_APPLICATION_TYPES),
+    assignedToId: z.string().cuid("Invalid assignedTo employee ID").optional(),
+    items: z.array(batchItemSchema).min(1, "At least one item is required").max(30, "Maximum 30 items per batch"),
+  })
+  .strict()
+
+export type SubmitBatchApplicationSchemaType = z.infer<typeof submitBatchApplicationSchema>
 
 // ─── APPROVE ─────────────────────────────────────────────────
 
