@@ -142,7 +142,7 @@ export class ApplicationBatchService implements IApplicationBatchService {
     const batch = (await this.batchRepo.createBatch(data)) as IBatchResult
 
     // Post-submit: send notifications for shift_swap items with partners
-    if (type === APPLICATION_TYPES.SHIFT_SWAP.LABEL && batch?.applications) {
+    if (type === APPLICATION_TYPES.SHIFT_SWAP.LABEL && batch.applications) {
       for (const app of batch.applications) {
         const swapDetail = app.shiftSwapDetail
         if (swapDetail?.swapWithEmployeeId) {
@@ -212,7 +212,7 @@ export class ApplicationBatchService implements IApplicationBatchService {
    * @param requesterId - The ID of the requester.
    */
   async cancelBatch(id: string, requesterId: string): Promise<unknown> {
-    const batch = (await this.batchRepo.findById(id)) as IBatchResult
+    const batch = (await this.batchRepo.findById(id)) as IBatchResult | null
 
     if (!batch) {
       throw new AppError(

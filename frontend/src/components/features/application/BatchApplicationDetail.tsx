@@ -168,7 +168,7 @@ function SubApplicationRow({
 
           {/* Partner approve actions */}
           {isPartnerPending && (
-            <div className="flex items-center gap-2 mr-2" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 mr-2" onClick={(e) => { e.stopPropagation() }}>
               <button
                 disabled={partnerApproveMutation.isPending}
                 onClick={() => { partnerApproveMutation.mutate({ id: app.id, isApproved: true }) }}
@@ -210,15 +210,15 @@ function SubApplicationRow({
 function DetailFields({ app }: { app: IApplication }) {
   const swapDetail = (app.shiftSwapDetail || app.detail) as {
     employeeShiftId?: string
-    employeeShift?: { shift?: any }
+    employeeShift?: { shift?: { name?: string; startTime?: number; endTime?: number } }
     swapWithEmployeeId?: string
     swapWithEmployee?: { fullName?: string }
     swapWithShiftId?: string
-    swapWithShift?: { shift?: any }
+    swapWithShift?: { shift?: { name?: string; startTime?: number; endTime?: number } }
     partnerApprovalStatus?: string
   } | undefined
   const detail = app.detail as {
-    employeeShift?: { shift?: any }
+    employeeShift?: { shift?: { name?: string; startTime?: number; endTime?: number } }
     isLate?: boolean
     durationMinutes?: number
     location?: string
@@ -252,7 +252,7 @@ function DetailFields({ app }: { app: IApplication }) {
             <Field label="Đổi với" value={swapDetail.swapWithEmployee.fullName ?? "—"} />
           )}
           {swapDetail?.swapWithShift && (
-            <Field label="Ca đổi" value={getShiftLabel(swapDetail.swapWithShift?.shift) ?? "—"} />
+            <Field label="Ca đổi" value={getShiftLabel(swapDetail.swapWithShift.shift) ?? "—"} />
           )}
           <Field
             label="Phản hồi đối tác"

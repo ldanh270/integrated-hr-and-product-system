@@ -113,7 +113,6 @@ export function useCreateApplicationForm(type: string) {
           setItems((prev) => prev.map((pItem, i) => i === idx ? { ...pItem, _myEmployeeShift: null, employeeShiftId: "" } : pItem))
         })
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.map((i) => i.startDate).join(","), type])
 
   // Auto-fetch PARTNER EmployeeShift for shift_swap items
@@ -139,7 +138,6 @@ export function useCreateApplicationForm(type: string) {
           setItems((prev) => prev.map((pItem, i) => i === idx ? { ...pItem, _partnerEmployeeShift: null, swapWithShiftId: "" } : pItem))
         })
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.map((i) => `${i.swapWithEmployeeId}|${i.swapWithDate}`).join(","), type])
 
   // ─── Item mutation helpers ───────────────────────────────────
