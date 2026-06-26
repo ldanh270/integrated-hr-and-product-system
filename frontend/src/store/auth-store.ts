@@ -5,7 +5,9 @@ export interface User {
   id: string
   email: string
   fullName: string
-  role: string
+  role?: string
+  roles: string[]
+  permissions: string[]
   personalEmployeeId?: string | null
   personalEmployee?: {
     id: string
@@ -17,7 +19,7 @@ export interface User {
 interface AuthState {
   user: User | null
   isAuthenticated: boolean
-  setAuth: (user: User) => void
+  setAuth: (user: Partial<User> & { id: string; email: string; fullName: string }) => void
   clearAuth: () => void
 }
 
@@ -31,7 +33,16 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       setAuth: (user) => {
-        set({ user, isAuthenticated: true })
+        const roles = user.roles || (user.role ? [user.role] : [])
+        const permissions = user.permissions || []
+        set({
+          user: {
+            ...user,
+            roles,
+            permissions,
+          } as User,
+          isAuthenticated: true,
+        })
       },
       clearAuth: () => {
         set({ user: null, isAuthenticated: false })

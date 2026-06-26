@@ -20,10 +20,10 @@ const NotFound = lazy(() => import("@/pages/NotFound.tsx"))
  */
 const ProtectedRoute = ({
   children,
-  requiredRoles,
+  requiredPermissions,
 }: {
   children: React.ReactNode
-  requiredRoles?: string[]
+  requiredPermissions?: string[]
 }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const user = useAuthStore((state) => state.user)
@@ -34,7 +34,7 @@ const ProtectedRoute = ({
     if (!isAuthenticated) {
       apiClient
         .get(API_ENDPOINTS.AUTH.ME)
-        .then((res) => { setAuth(res.data.data) })
+        .then((res) => { setAuth(res.data.data.employee) })
         .catch(() => {})
         .finally(() => { setIsChecking(false) })
     }
@@ -52,8 +52,11 @@ const ProtectedRoute = ({
     return <Navigate to={ROUTES.AUTH.LOGIN} replace />
   }
 
-  if (requiredRoles && user && !requiredRoles.includes(user.role)) {
-    return <Navigate to={ROUTES.HRM.DASHBOARD} replace />
+  if (requiredPermissions && user) {
+    const hasPermission = requiredPermissions.every((p) => user.permissions.includes(p))
+    if (!hasPermission) {
+      return <Navigate to={ROUTES.HRM.DASHBOARD} replace />
+    }
   }
 
   return <>{children}</>
@@ -154,7 +157,7 @@ const App = () => {
                   key={`private-${index}`}
                   path={route.path}
                   element={
-                    <ProtectedRoute requiredRoles={route.roles}>
+                    <ProtectedRoute requiredPermissions={route.permissions}>
                       <Layout>
                         <Page />
                       </Layout>
