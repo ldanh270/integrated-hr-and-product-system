@@ -33,6 +33,8 @@ interface LogTimeModalProps {
   taskId: string
   taskTitle: string
   spentTime?: SpentTime
+  estimatedTime?: number | null
+  loggedHours?: number
   onSuccess?: () => void
 }
 
@@ -42,6 +44,8 @@ export default function LogTimeModal({
   taskId,
   taskTitle,
   spentTime,
+  estimatedTime,
+  loggedHours = 0,
   onSuccess,
 }: LogTimeModalProps) {
   const queryClient = useQueryClient()
@@ -143,6 +147,12 @@ export default function LogTimeModal({
     return val
   }
 
+  const parsedHours = parseFloat(hours)
+  const remainingEstimate =
+    estimatedTime != null && !Number.isNaN(parsedHours)
+      ? estimatedTime - loggedHours + (spentTime?.hours ?? 0) - parsedHours
+      : null
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] rounded-xl bg-background border-border p-6 shadow-lg">
@@ -162,6 +172,12 @@ export default function LogTimeModal({
           {error && (
             <div className="rounded-full bg-destructive/10 px-4 py-2 text-xs text-destructive font-medium border border-destructive/20">
               {error}
+            </div>
+          )}
+
+          {remainingEstimate != null && remainingEstimate < 0 && (
+            <div className="rounded-xl bg-amber-500/10 px-4 py-2 text-xs text-amber-700 dark:text-amber-400 font-medium border border-amber-500/20">
+              Cảnh báo: vượt ước tính {Math.abs(remainingEstimate).toFixed(1)} giờ (ước tính: {estimatedTime}h)
             </div>
           )}
 

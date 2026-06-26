@@ -61,4 +61,16 @@ export const taskApi = {
   deleteSpentTime: async (id: string): Promise<void> => {
     await apiClient.delete<ApiResponse<null>>(`/spent-times/${id}`)
   },
+
+  approveSpentTime: async (id: string): Promise<SpentTime> => {
+    const response = await apiClient.post<ApiResponse<SpentTime>>(`/spent-times/${id}/approve`)
+    return response.data.data
+  },
+
+  rejectSpentTime: async (id: string, reason: string): Promise<SpentTime> => {
+    const response = await apiClient.post<ApiResponse<SpentTime>>(`/spent-times/${id}/reject`, {
+      reason,
+    })
+    return response.data.data
+  },
 }

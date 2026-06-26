@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { ROLE } from "@/config/entities/employee.config"
-import { TASK_TRACKERS } from "@/config/entities/project.config"
+import { TASK_TRACKERS, SPENT_TIME_STATUS } from "@/config/entities/project.config"
 import { projectApi } from "@/lib/api/project.api"
 import { employeeApi } from "@/lib/api/employee.api"
 import { taskApi } from "@/lib/api/task.api"
@@ -20,11 +20,14 @@ import { extractErrorMessage } from "@/utils/error-helper"
 // Sub-components imports
 import { ProjectHeader } from "./components/project-header"
 import { AddMemberModal } from "./components/add-member-modal"
+import { EditMemberModal } from "./components/edit-member-modal"
 import { EditProjectModal } from "./components/edit-project-modal"
 import { ProjectOverviewTab } from "./components/project-overview-tab"
 import { ProjectIssuesTab } from "./components/project-issues-tab"
 import { ProjectActivityTab } from "./components/project-activity-tab"
 import { ProjectGanttTab } from "./components/project-gantt-tab"
+import { ProjectSpentTimeTab } from "./components/project-spent-time-tab"
+import type { ProjectMember } from "@/types/project.types"
 
 interface ActivityItem {
   id: string
@@ -50,6 +53,7 @@ export default function ProjectDetail() {
   const [activeTab, setActiveTab] = useState("overview")
   const [isOpenMemberModal, setIsOpenMemberModal] = useState(false)
   const [isOpenEditProjectModal, setIsOpenEditProjectModal] = useState(false)
+  const [editingMember, setEditingMember] = useState<ProjectMember | null>(null)
 
   // Fetch active project metadata
   const { data: project, isLoading: isLoadingProject } = useQuery({
@@ -133,7 +137,11 @@ export default function ProjectDetail() {
 
   // Compute total estimated time and actual spent time hours for the project
   const totalEstimatedHours = overviewTasks.reduce((sum, t) => sum + (t.estimatedTime || 0), 0)
-  const totalSpentHours = spentTimes?.reduce((sum, st) => sum + st.hours, 0) || 0
+  // Exclude rejected logs from overview spent total — only approved/pending count toward progress.
+  const totalSpentHours =
+    spentTimes
+      ?.filter((st) => st.status !== SPENT_TIME_STATUS.REJECTED)
+      .reduce((sum, st) => sum + st.hours, 0) || 0
 
   // Delete project member relationship from team membership list mutation
   const removeMemberMutation = useMutation({
@@ -246,6 +254,12 @@ export default function ProjectDetail() {
             Hoạt động (Activity)
           </TabsTrigger>
           <TabsTrigger
+            value="spent-time"
+            className="rounded-full px-5 py-2 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+          >
+            Giờ làm việc (Spent Time)
+          </TabsTrigger>
+          <TabsTrigger
             value="gantt"
             className="rounded-full px-5 py-2 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
           >
@@ -268,6 +282,20 @@ export default function ProjectDetail() {
             onRemoveMember={(employeeId) => {
               removeMemberMutation.mutate(employeeId)
             }}
+            onEditMember={(member) => {
+              setEditingMember(member)
+            }}
+          />
+        </TabsContent>
+
+        {/* SPENT TIME TAB */}
+        <TabsContent value="spent-time">
+          <ProjectSpentTimeTab
+            projectId={projectId}
+            spentTimes={spentTimes}
+            isLoading={isLoadingSpent}
+            userRole={user?.role}
+            isLeader={isLeader}
           />
         </TabsContent>
 
@@ -306,6 +334,16 @@ export default function ProjectDetail() {
         members={projectMembers}
         allEmployees={allEmployees}
         teamLeaderId={project.teamLeaderId}
+      />
+
+      <EditMemberModal
+        isOpen={!!editingMember}
+        onOpenChange={(open) => {
+          if (!open) setEditingMember(null)
+        }}
+        projectId={projectId}
+        member={editingMember}
+        allEmployees={allEmployees}
       />
 
       {/* EDIT PROJECT DIALOG: Dialog overlay to update project config properties */}

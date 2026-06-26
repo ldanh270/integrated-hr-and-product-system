@@ -27,7 +27,7 @@ import { Textarea } from "@/components/ui/textarea"
 // Import employee role specifications
 import { ROLE } from "@/config/entities/employee.config"
 // Import task property categories lists
-import { TASK_PRIORITIES, TASK_STATUSES, TASK_TRACKERS } from "@/config/entities/project.config"
+import { TASK_PRIORITIES, TASK_STATUSES, TASK_TRACKERS, SPENT_TIME_STATUS, SPENT_TIME_STATUS_LABELS } from "@/config/entities/project.config"
 // Import API endpoint wrapper clients
 import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
@@ -41,6 +41,7 @@ import type { TaskTracker, TaskPriority, TaskStatus } from "@/types/task.types"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 // Import toast notification client
 import { toast } from "sonner"
+import { extractErrorMessage } from "@/utils/error-helper"
 // Import Lucide icons
 import {
   AlertCircle,
@@ -52,6 +53,8 @@ import {
   Plus,
   Trash2,
   User,
+  Check,
+  X,
 } from "lucide-react"
 // Import standard React hooks
 import { useState } from "react"
@@ -126,7 +129,8 @@ export default function TaskDetail() {
   })
 
 
-  const totalSpentHours = spentTimes?.reduce((sum, st) => sum + st.hours, 0) || 0
+  const totalSpentHours =
+    spentTimes?.filter((st) => st.status !== SPENT_TIME_STATUS.REJECTED).reduce((sum, st) => sum + st.hours, 0) || 0
 
   // Check roles/permissions
   const isCreator = task?.createdById === user?.id
@@ -187,6 +191,28 @@ export default function TaskDetail() {
       }
       setEditError(errorMessage)
     },
+  })
+
+  const canApproveSpentTime = isAdminOrGM || isLeader
+
+  // Approve / reject spent time mutations
+  const approveSpentTimeMutation = useMutation({
+    mutationFn: (logId: string) => taskApi.approveSpentTime(logId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["spentTimes", id] })
+      toast.success("Đã duyệt Spent Time")
+    },
+    onError: (err: unknown) => toast.error(extractErrorMessage(err)),
+  })
+
+  const rejectSpentTimeMutation = useMutation({
+    mutationFn: ({ logId, reason }: { logId: string; reason: string }) =>
+      taskApi.rejectSpentTime(logId, reason),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["spentTimes", id] })
+      toast.success("Đã từ chối Spent Time")
+    },
+    onError: (err: unknown) => toast.error(extractErrorMessage(err)),
   })
 
   // Delete Spent Time log mutation
@@ -498,7 +524,16 @@ export default function TaskDetail() {
               <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
                 {spentTimes.map((st) => {
                   const isLogOwner = st.employeeId === user?.id
-                  const canDeleteLog = isAdminOrGM || isLogOwner
+                  const isPending = st.status === SPENT_TIME_STATUS.PENDING
+                  const canDeleteLog = (isAdminOrGM || isLogOwner) && isPending
+                  const canEditLog = canDeleteLog
+
+                  const statusVariant =
+                    st.status === SPENT_TIME_STATUS.APPROVED
+                      ? "success"
+                      : st.status === SPENT_TIME_STATUS.REJECTED
+                        ? "danger"
+                        : "warning"
 
                   return (
                     <div
@@ -516,36 +551,69 @@ export default function TaskDetail() {
                         </div>
 
                         <div className="flex items-center gap-2">
+                          <StatusPill
+                            variant={statusVariant}
+                            className="text-[9px] px-2 py-0"
+                            label={SPENT_TIME_STATUS_LABELS[st.status]}
+                          />
                           <Badge variant="outline" className="rounded-full text-[9px] bg-primary/5 text-primary border-primary/10 font-black">
                             {st.hours} h
                           </Badge>
 
-                          {canDeleteLog && (
+                          {canApproveSpentTime && isPending && (
                             <>
                               <Button
                                 variant="ghost"
                                 size="icon-xs"
                                 className="text-primary hover:bg-primary/10 rounded-full cursor-pointer size-6 p-0"
-                                onClick={() => {
-                                  setEditingSpentTime(st)
-                                  setIsOpenLogTimeModal(true)
-                                }}
+                                title="Duyệt"
+                                onClick={() => approveSpentTimeMutation.mutate(st.id)}
                               >
-                                <Edit className="size-3" />
+                                <Check className="size-3" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="icon-xs"
                                 className="text-destructive hover:bg-destructive/10 rounded-full cursor-pointer size-6 p-0"
+                                title="Từ chối"
                                 onClick={() => {
-                                  if (window.confirm("Bạn có chắc chắn muốn xóa nhật ký này?")) {
-                                    deleteSpentTimeMutation.mutate(st.id)
+                                  const reason = window.prompt("Lý do từ chối:")
+                                  if (reason?.trim()) {
+                                    rejectSpentTimeMutation.mutate({ logId: st.id, reason: reason.trim() })
                                   }
                                 }}
                               >
-                                <Trash2 className="size-3" />
+                                <X className="size-3" />
                               </Button>
                             </>
+                          )}
+
+                          {canEditLog && (
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              className="text-primary hover:bg-primary/10 rounded-full cursor-pointer size-6 p-0"
+                              onClick={() => {
+                                setEditingSpentTime(st)
+                                setIsOpenLogTimeModal(true)
+                              }}
+                            >
+                              <Edit className="size-3" />
+                            </Button>
+                          )}
+                          {canDeleteLog && (
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              className="text-destructive hover:bg-destructive/10 rounded-full cursor-pointer size-6 p-0"
+                              onClick={() => {
+                                if (window.confirm("Bạn có chắc chắn muốn xóa nhật ký này?")) {
+                                  deleteSpentTimeMutation.mutate(st.id)
+                                }
+                              }}
+                            >
+                              <Trash2 className="size-3" />
+                            </Button>
                           )}
                         </div>
                       </div>
@@ -553,7 +621,14 @@ export default function TaskDetail() {
                       <div className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1">
                         <History className="size-3 text-muted-foreground" />
                         {formatActivity(st.activity)}
+                        {st.workTimeType === "overtime" ? " · OT" : ""}
                       </div>
+
+                      {st.rejectionReason && (
+                        <div className="text-[10px] text-destructive italic">
+                          Lý do từ chối: {st.rejectionReason}
+                        </div>
+                      )}
 
                       {st.comment && (
                         <div className="text-xs text-muted-foreground italic bg-background/50 border border-border/40 p-2 rounded-lg mt-1">
@@ -576,6 +651,8 @@ export default function TaskDetail() {
         taskId={task.id}
         taskTitle={task.title}
         spentTime={editingSpentTime}
+        estimatedTime={task.estimatedTime}
+        loggedHours={totalSpentHours}
       />
 
       {/* EDIT TASK DIALOG */}

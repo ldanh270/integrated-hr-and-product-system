@@ -47,8 +47,20 @@ export const projectApi = {
     return response.data.data
   },
 
-  addMember: async (projectId: string, employeeId: string): Promise<void> => {
-    await apiClient.post<ApiResponse<null>>(`/projects/${projectId}/members`, { employeeId })
+  addMember: async (
+    projectId: string,
+    data: { employeeId: string; hourlyRate?: number | null; workMode?: string },
+  ): Promise<void> => {
+    await apiClient.post<ApiResponse<null>>(`/projects/${projectId}/members`, data)
+  },
+
+  updateMember: async (
+    projectId: string,
+    employeeId: string,
+    data: { hourlyRate?: number | null; workMode?: string },
+  ): Promise<void> => {
+    // hourlyRate + workMode drive PT payroll and attendance rules per project.
+    await apiClient.patch<ApiResponse<null>>(`/projects/${projectId}/members/${employeeId}`, data)
   },
 
   removeMember: async (projectId: string, employeeId: string): Promise<void> => {

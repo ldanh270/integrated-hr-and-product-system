@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { TASK_TRACKERS } from "@/config/entities/project.config"
+import { TASK_TRACKERS, PROJECT_MEMBER_WORK_MODE_LABELS } from "@/config/entities/project.config"
 import type { Project, ProjectMember } from "@/types/project.types"
 
 interface ProjectOverviewTabProps {
@@ -23,6 +23,7 @@ interface ProjectOverviewTabProps {
   members: ProjectMember[]
   canManageMembers: boolean
   onRemoveMember: (employeeId: string) => void
+  onEditMember?: (member: ProjectMember) => void
 }
 
 export function ProjectOverviewTab({
@@ -36,6 +37,7 @@ export function ProjectOverviewTab({
   members,
   canManageMembers,
   onRemoveMember,
+  onEditMember,
 }: ProjectOverviewTabProps) {
   return (
     <div className="grid grid-cols-12 gap-6 outline-none">
@@ -182,20 +184,43 @@ export function ProjectOverviewTab({
                         <div className="text-[10px] text-muted-foreground mt-0.5">
                           {member.employee?.email || ""}
                         </div>
+                        {(member.hourlyRate != null || member.workMode) && (
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                            {member.hourlyRate != null
+                              ? `${member.hourlyRate.toLocaleString("vi-VN")} đ/giờ`
+                              : null}
+                            {member.hourlyRate != null && member.workMode ? " · " : null}
+                            {member.workMode
+                              ? PROJECT_MEMBER_WORK_MODE_LABELS[member.workMode] ?? member.workMode
+                              : null}
+                          </div>
+                        )}
                       </div>
 
-                      {/* Render delete button to remove user from project team if authorized */}
+                      {/* Edit / remove actions for project team managers */}
                       {canManageMembers && (
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          className="text-destructive hover:bg-destructive/10 rounded-full cursor-pointer text-xs h-7 px-3"
-                          onClick={() => {
-                            onRemoveMember(member.employeeId)
-                          }}
-                        >
-                          Xóa
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          {onEditMember && (
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              className="text-primary hover:bg-primary/10 rounded-full cursor-pointer text-xs h-7 px-3"
+                              onClick={() => onEditMember(member)}
+                            >
+                              Sửa
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            className="text-destructive hover:bg-destructive/10 rounded-full cursor-pointer text-xs h-7 px-3"
+                            onClick={() => {
+                              onRemoveMember(member.employeeId)
+                            }}
+                          >
+                            Xóa
+                          </Button>
+                        </div>
                       )}
                     </div>
                   ))
