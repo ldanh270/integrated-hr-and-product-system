@@ -1,6 +1,6 @@
 /* eslint-disable security/detect-object-injection */
 // Import common layout containers
-import { PageCard, StatusPill } from "@/components/common"
+import { PageCard, StatusPill, SafeHtml } from "@/components/common"
 // Import spent time modal component
 import LogTimeModal from "@/components/features/project/LogTimeModal"
 // Import custom UI elements
@@ -40,7 +40,6 @@ import type { SpentTime } from "@/types/spent-time.types"
 // Import task types
 import type { TaskTracker, TaskPriority } from "@/types/task.types"
 import type { ProjectTaskStatus } from "@/types/project-task-status.types"
-import DOMPurify from "dompurify"
 // Import React Query hooks for fetching and mutations
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 // Import toast notification client
@@ -134,8 +133,6 @@ export default function TaskDetail() {
     enabled: !!id,
   })
 
-  const sanitizedDescription = task?.description ? DOMPurify.sanitize(task.description) : "" // NOSONAR
-  const sanitizedResultNotes = task?.resultNotes ? DOMPurify.sanitize(task.resultNotes) : "" // NOSONAR
 
   // Capture project ID associated with this task
   const projectId = task?.projectId || ""
@@ -533,12 +530,9 @@ export default function TaskDetail() {
               Mô tả chi tiết
             </h3>
             {task.description ? (
-              /* nosemgrep */
-              <div 
+              <SafeHtml 
+                html={task.description}
                 className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground leading-relaxed"
-                dangerouslySetInnerHTML={{
-                  __html: sanitizedDescription // NOSONAR
-                }}
               />
             ) : (
               <p className="text-xs text-muted-foreground italic">Không có mô tả chi tiết cho công việc này.</p>
@@ -555,12 +549,9 @@ export default function TaskDetail() {
               <div className="space-y-4">
                 <div className="space-y-1">
                   <span className="text-xs font-semibold text-muted-foreground">Ghi chú kết quả:</span>
-                  {/* nosemgrep */}
-                  <div 
+                  <SafeHtml 
+                    html={task.resultNotes}
                     className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground leading-relaxed bg-muted/30 p-3 rounded-lg border border-border/40"
-                    dangerouslySetInnerHTML={{
-                      __html: sanitizedResultNotes // NOSONAR
-                    }}
                   />
                 </div>
               </div>

@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge"
 import type { Task } from "@/types/task.types"
 import { useTaskReview } from "../hooks/use-task-review"
 import { RichTextEditor } from "@/components/ui/rich-text-editor"
-import DOMPurify from "dompurify"
+import { SafeHtml } from "@/components/common"
 
 interface TaskReviewModalProps {
   isOpen: boolean
@@ -57,7 +57,6 @@ export function TaskReviewModal({
 
   const canApprove = isLeader || isAdminOrGM
 
-  const sanitizedResultNotes = task?.resultNotes ? DOMPurify.sanitize(task.resultNotes) : "" // NOSONAR
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -112,12 +111,9 @@ export function TaskReviewModal({
               {task.resultNotes && (
                 <div className="text-xs text-muted-foreground pl-5 space-y-1">
                   <span className="font-bold">Ghi chú kết quả: </span>
-                  {/* nosemgrep */}
-                  <div 
+                  <SafeHtml 
+                    html={task.resultNotes}
                     className="prose prose-sm dark:prose-invert max-w-none text-xs text-foreground mt-1"
-                    dangerouslySetInnerHTML={{
-                      __html: sanitizedResultNotes // NOSONAR
-                    }}
                   />
                 </div>
               )}
@@ -162,12 +158,9 @@ export function TaskReviewModal({
                 {task.resultNotes && (
                   <div className="space-y-1">
                     <span className="font-bold text-muted-foreground">Mô tả đã gửi: </span>
-                    {/* nosemgrep */}
-                    <div 
+                    <SafeHtml 
+                      html={task.resultNotes}
                       className="prose prose-sm dark:prose-invert max-w-none text-xs text-foreground bg-muted/20 p-2.5 rounded-lg border border-border/40 mt-1"
-                      dangerouslySetInnerHTML={{
-                        __html: sanitizedResultNotes // NOSONAR
-                      }}
                     />
                   </div>
                 )}
@@ -185,12 +178,9 @@ export function TaskReviewModal({
                 {task.resultNotes && (
                   <div className="bg-muted/10 p-2.5 rounded-lg border border-border/40 space-y-1">
                     <span className="font-bold text-[10px] uppercase text-muted-foreground">Mô tả: </span>
-                    {/* nosemgrep */}
-                    <div 
+                    <SafeHtml 
+                      html={task.resultNotes}
                       className="prose prose-sm dark:prose-invert max-w-none text-xs text-foreground"
-                      dangerouslySetInnerHTML={{
-                        __html: sanitizedResultNotes // NOSONAR
-                      }}
                     />
                   </div>
                 )}
