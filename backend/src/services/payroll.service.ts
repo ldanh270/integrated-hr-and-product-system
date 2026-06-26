@@ -1,10 +1,12 @@
 import { ATTENDANCE_STATUS, EMPLOYEE_SHIFT_STATUS, PAID_LEAVE_TYPES } from "@/configs/entities/attendance.config.ts"
-import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
+import { EMPLOYEE_STATUS, EMPLOYEE_TYPE } from "@/configs/entities/employee.config.ts"
+import { SPENT_TIME_WORK_TIME_TYPE } from "@/configs/entities/project.config.ts"
 import {
   PAYROLL_STATUS,
   SALARY_COMPONENT_TYPES,
   generateDefaultPayrollName,
 } from "@/configs/entities/payroll.config.ts"
+import { SPENT_TIME_OT_MULTIPLIERS } from "@/configs/rules/project.config.ts"
 import { PAYROLL_MESSAGES } from "@/configs/messages/payroll.message"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
@@ -18,9 +20,10 @@ import {
   IPayslipRepository,
   PayslipWithDetails,
 } from "@/types/payroll.types.ts"
+import { ISpentTimeRepository } from "@/types/spent-time.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 
-import { Application, ApplicationType, Payroll, PayrollStatus, Prisma, PrismaClient } from "@prisma/client"
+import { Application, ApplicationType, ComponentType, Payroll, PayrollStatus, Prisma, PrismaClient } from "@prisma/client"
 import * as math from "mathjs"
 
 // Need an interface for SettingsRepository
@@ -35,6 +38,7 @@ export class PayrollService implements IPayrollService {
     private salaryConfigRepo: IEmployeeSalaryConfigRepository,
     private attendanceRepo: IAttendanceRepository,
     private employeeRepo: IEmployeeRepository,
+    private spentTimeRepo: ISpentTimeRepository,
     private settingsRepo: IPayrollSettingsRepository,
     private prisma: PrismaClient,
   ) {}
@@ -112,6 +116,21 @@ export class PayrollService implements IPayrollService {
       const config = await this.salaryConfigRepo.findActiveByEmployee(employee.id, periodStart)
       if (!config) {
         console.warn(`[PayrollService] No active config for employee ${employee.id}`)
+        continue
+      }
+
+      // PT payroll path: approved project hours × member hourlyRate (not attendance workingDays).
+      if (employee.employeeType === EMPLOYEE_TYPE.PART_TIME) {
+        const ptResult = await this.buildPartTimePayslip(
+          payroll.id,
+          employee.id,
+          config.id,
+          periodStart,
+          periodEnd,
+        )
+        if (ptResult) {
+          totalAmount = totalAmount.add(ptResult.netSalary)
+        }
         continue
       }
 
@@ -248,6 +267,62 @@ export class PayrollService implements IPayrollService {
 
     await this.payrollRepo.updateTotalAmount(payroll.id, totalAmount)
     return { ...payroll, totalAmount }
+  }
+
+  /** Builds payslip from approved SpentTime rows; skips employees with no approved hours in period. */
+  private async buildPartTimePayslip(
+    payrollId: string,
+    employeeId: string,
+    salaryConfigId: string,
+    periodStart: Date,
+    periodEnd: Date,
+  ): Promise<{ netSalary: Prisma.Decimal } | null> {
+    const rows = await this.spentTimeRepo.listApprovedForPayroll(employeeId, periodStart, periodEnd)
+    if (rows.length === 0) {
+      console.warn(`[PayrollService] No approved spent time for PT employee ${employeeId}`)
+      return null
+    }
+
+    let totalHours = 0
+    let grossPay = 0
+    const details: { componentId: string; name: string; type: ComponentType; value: number }[] = []
+
+    for (const row of rows) {
+      const multiplier =
+        SPENT_TIME_OT_MULTIPLIERS[row.workTimeType] ??
+        SPENT_TIME_OT_MULTIPLIERS[SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY]
+      // gross = hours × project member rate × OT factor (see SPENT_TIME_RULES).
+      const linePay = row.hours * row.hourlyRate * multiplier
+      totalHours += row.hours
+      grossPay += linePay
+      details.push({
+        componentId: row.id,
+        name: `Dự án ${row.projectId}`,
+        type: SALARY_COMPONENT_TYPES[0] as ComponentType,
+        value: Number(linePay.toFixed(2)),
+      })
+    }
+
+    const netSalary = new Prisma.Decimal(Number(grossPay.toFixed(2)))
+
+    await this.payslipRepo.createWithDetails({
+      payrollId,
+      employeeId,
+      salaryConfigId,
+      totalAdditions: Number(grossPay.toFixed(2)),
+      totalDeductions: 0,
+      netSalary: Number(grossPay.toFixed(2)),
+      workingDays: 0,
+      absentDays: 0,
+      overtimeMinutes: Math.round(
+        rows
+          .filter((r) => r.workTimeType === SPENT_TIME_WORK_TIME_TYPE.OVERTIME)
+          .reduce((sum, r) => sum + r.hours * 60, 0),
+      ),
+      details,
+    })
+
+    return { netSalary }
   }
 
   /**
