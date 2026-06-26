@@ -1,8 +1,9 @@
 
 import { prisma } from "../libs/database.ts"
+import { getSeedPassword } from "./seeders/seed-password.util.ts"
 import { HashUtil } from "../utils/hash.util.ts"
 
-const PASSWORD = "Admin123@"
+const PASSWORD = getSeedPassword("SEED_CORE_ACCOUNTS_PASSWORD")
 
 async function seedAdminAccounts() {
   console.log("Seeding admin and role accounts...")

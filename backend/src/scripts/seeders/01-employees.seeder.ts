@@ -1,6 +1,7 @@
 import { EMPLOYEE_TYPES } from "@/configs/entities/employee.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
+import { getSeedPassword } from "@/scripts/seeders/seed-password.util.ts"
 import { ISeeder } from "@/scripts/seeders/seeder.interface.ts"
 import { registry } from "@/scripts/seeders/seeder.registry.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
@@ -23,7 +24,7 @@ export class EmployeesSeeder implements ISeeder {
       "employee",
     ]
     let adminId = ""
-    const passwordHashCore = await HashUtil.hash("Admin123@")
+    const passwordHashCore = await HashUtil.hash(getSeedPassword("SEED_CORE_ACCOUNTS_PASSWORD"))
 
     for (const role of rolesToSeed) {
       const username = role === "admin" ? "admin" : role
@@ -63,7 +64,7 @@ export class EmployeesSeeder implements ISeeder {
     }
 
     // Seed 15 random employees
-    const passwordHash = await HashUtil.hash("Employee123@")
+    const passwordHash = await HashUtil.hash(getSeedPassword("SEED_EMPLOYEE_PASSWORD"))
     const numEmployeesToCreate = 15
     const employeesData = Array.from({ length: numEmployeesToCreate }).map((_, index) => {
       const firstName = faker.person.firstName()
