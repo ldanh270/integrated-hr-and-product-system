@@ -244,7 +244,7 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
                   return (
                     <tr
                       key={batch.id}
-                      onClick={() => { onRowClick(batch as any); }}
+                      onClick={() => { onRowClick(batch as unknown as IApplication); }}
                       className="hover:bg-muted/50 transition-colors cursor-pointer group"
                     >
                       <td className="px-4 py-4 text-foreground font-medium">

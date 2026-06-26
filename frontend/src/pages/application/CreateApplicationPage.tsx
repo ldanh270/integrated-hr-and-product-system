@@ -48,13 +48,13 @@ export default function CreateApplicationPage() {
   const sharedForm = {
     ...items[0],
     assignedToId,
-  } as any
+  }
 
-  const sharedSet = <K extends string>(k: K, v: any) => {
+  const sharedSet = <K extends string>(k: K, v: unknown) => {
     if (k === "assignedToId") {
       setAssignedToId(v as string)
     } else {
-      setItemField(0, k as any, v)
+      setItemField(0, k as keyof typeof items[0], v as never)
     }
   }
 
@@ -107,7 +107,7 @@ export default function CreateApplicationPage() {
                     </div>
                     {items.length > 1 && (
                       <button
-                        onClick={() => removeItem(idx)}
+                        onClick={() => { removeItem(idx) }}
                         className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded-md transition-colors"
                         title="Xóa đơn này"
                       >
@@ -123,7 +123,7 @@ export default function CreateApplicationPage() {
                   <CreateApplicationTimeSection
                     type={type}
                     form={item}
-                    set={(k, v) => setItemField(idx, k, v)}
+                    set={(k, v) => { setItemField(idx, k, v as never) }}
                     myEmployeeShift={item._myEmployeeShift}
                     partnerEmployeeShift={item._partnerEmployeeShift}
                     employees={employees}

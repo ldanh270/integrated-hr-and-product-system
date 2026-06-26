@@ -96,33 +96,21 @@ export function useCreateApplicationForm(type: string) {
 
     items.forEach((item, idx) => {
       if (!item.startDate) {
-        setItems((prev) => {
-          const next = [...prev]
-          next[idx] = { ...next[idx], _myEmployeeShift: null, employeeShiftId: "" }
-          return next
-        })
+        setItems((prev) => prev.map((pItem, i) => i === idx ? { ...pItem, _myEmployeeShift: null, employeeShiftId: "" } : pItem))
         return
       }
 
       schedulesApi
         .getMyShift(item.startDate)
         .then((shift) => {
-          setItems((prev) => {
-            const next = [...prev]
-            next[idx] = {
-              ...next[idx],
-              _myEmployeeShift: shift,
-              employeeShiftId: shift?.id ?? "",
-            }
-            return next
-          })
+          setItems((prev) => prev.map((pItem, i) => i === idx ? {
+            ...pItem,
+            _myEmployeeShift: shift,
+            employeeShiftId: shift?.id ?? "",
+          } : pItem))
         })
         .catch(() => {
-          setItems((prev) => {
-            const next = [...prev]
-            next[idx] = { ...next[idx], _myEmployeeShift: null, employeeShiftId: "" }
-            return next
-          })
+          setItems((prev) => prev.map((pItem, i) => i === idx ? { ...pItem, _myEmployeeShift: null, employeeShiftId: "" } : pItem))
         })
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -134,33 +122,21 @@ export function useCreateApplicationForm(type: string) {
 
     items.forEach((item, idx) => {
       if (!item.swapWithEmployeeId || !item.swapWithDate) {
-        setItems((prev) => {
-          const next = [...prev]
-          next[idx] = { ...next[idx], _partnerEmployeeShift: null, swapWithShiftId: "" }
-          return next
-        })
+        setItems((prev) => prev.map((pItem, i) => i === idx ? { ...pItem, _partnerEmployeeShift: null, swapWithShiftId: "" } : pItem))
         return
       }
 
       schedulesApi
         .getEmployeeShiftByDate(item.swapWithEmployeeId, item.swapWithDate)
         .then((shift) => {
-          setItems((prev) => {
-            const next = [...prev]
-            next[idx] = {
-              ...next[idx],
-              _partnerEmployeeShift: shift,
-              swapWithShiftId: shift?.id ?? "",
-            }
-            return next
-          })
+          setItems((prev) => prev.map((pItem, i) => i === idx ? {
+            ...pItem,
+            _partnerEmployeeShift: shift,
+            swapWithShiftId: shift?.id ?? "",
+          } : pItem))
         })
         .catch(() => {
-          setItems((prev) => {
-            const next = [...prev]
-            next[idx] = { ...next[idx], _partnerEmployeeShift: null, swapWithShiftId: "" }
-            return next
-          })
+          setItems((prev) => prev.map((pItem, i) => i === idx ? { ...pItem, _partnerEmployeeShift: null, swapWithShiftId: "" } : pItem))
         })
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -171,11 +147,7 @@ export function useCreateApplicationForm(type: string) {
   /** Update a single field in a specific item */
   const setItemField = useCallback(
     <K extends keyof ApplicationFormItemState>(idx: number, key: K, value: ApplicationFormItemState[K]) => {
-      setItems((prev) => {
-        const next = [...prev]
-        next[idx] = { ...next[idx], [key]: value }
-        return next
-      })
+      setItems((prev) => prev.map((item, i) => i === idx ? { ...item, [key]: value } : item))
     },
     [],
   )

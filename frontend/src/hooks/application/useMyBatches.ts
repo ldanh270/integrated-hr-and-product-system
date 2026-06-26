@@ -30,7 +30,7 @@ export function useMyBatches(query?: IListBatchesQuery) {
     meta: batchesQuery.data?.meta,
     isLoading: batchesQuery.isLoading,
     refetch: batchesQuery.refetch,
-    handleCancel: (id: string) => cancelMutation.mutate(id),
+    handleCancel: (id: string) => { cancelMutation.mutate(id) },
     cancellingId: cancelMutation.isPending ? (cancelMutation.variables as string) : null,
   }
 }

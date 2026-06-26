@@ -23,6 +23,12 @@ import {
   IStrategyDeps,
 } from "@/services/application-type.strategy.ts"
 
+interface IBatchResult {
+  applications?: Array<{ shiftSwapDetail?: { swapWithEmployeeId?: string } }>
+  employeeId?: string
+  [key: string]: unknown
+}
+
 const BATCH_SERVICE_ERRORS = {
   NOT_BATCHABLE: (type: string) => `Application type '${type}' does not support batch submission`,
   MIN_ITEMS: "Batch must contain at least one item",
@@ -133,7 +139,7 @@ export class ApplicationBatchService implements IApplicationBatchService {
     const requesterName = requesterEmployee?.fullName ?? "Nhân viên"
 
     // Create the batch atomically
-    const batch = (await this.batchRepo.createBatch(data)) as any
+    const batch = (await this.batchRepo.createBatch(data)) as IBatchResult
 
     // Post-submit: send notifications for shift_swap items with partners
     if (type === APPLICATION_TYPES.SHIFT_SWAP.LABEL && batch?.applications) {
@@ -206,7 +212,7 @@ export class ApplicationBatchService implements IApplicationBatchService {
    * @param requesterId - The ID of the requester.
    */
   async cancelBatch(id: string, requesterId: string): Promise<unknown> {
-    const batch = (await this.batchRepo.findById(id)) as any
+    const batch = (await this.batchRepo.findById(id)) as IBatchResult
 
     if (!batch) {
       throw new AppError(

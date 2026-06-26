@@ -93,7 +93,7 @@ function SubApplicationRow({
     swapDetail?.swapWithEmployeeId &&
     swapDetail.swapWithEmployeeId === currentUserId
 
-  const isPartnerPending = Boolean(isPartner && swapDetail && swapDetail.partnerApprovalStatus === "pending")
+  const isPartnerPending = Boolean(isPartner && swapDetail.partnerApprovalStatus === "pending")
   const isPending = app.status === APPLICATION_STATUS.PENDING
 
   const partnerApproveMutation = useMutation({
@@ -111,7 +111,7 @@ function SubApplicationRow({
     },
   })
 
-  const statusBadge = STATUS_BADGE[app.status as keyof typeof STATUS_BADGE] || { label: app.status, cls: "border-slate-300 text-slate-500" }
+  const statusBadge = STATUS_BADGE[app.status as keyof typeof STATUS_BADGE]
   const partnerStatus = swapDetail?.partnerApprovalStatus
   const partnerBadge = partnerStatus && typeof partnerStatus === "string" && partnerStatus in PARTNER_STATUS_BADGE ? PARTNER_STATUS_BADGE[partnerStatus as keyof typeof PARTNER_STATUS_BADGE] : null
 
@@ -150,14 +150,14 @@ function SubApplicationRow({
           {mode === "manage" && isPending && !isPartner && (
             <div className="flex items-center gap-2 mr-2" onClick={(e) => { e.stopPropagation() }}>
               <button
-                onClick={() => onApprove(app)}
+                onClick={() => { onApprove(app) }}
                 className="flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 px-2.5 py-1 rounded-full border border-transparent hover:border-emerald-200 transition-all"
               >
                 <Check size={11} strokeWidth={3} />
                 Duyệt
               </button>
               <button
-                onClick={() => onReject(app)}
+                onClick={() => { onReject(app) }}
                 className="flex items-center gap-1 text-xs font-semibold text-red-600 hover:bg-red-50 px-2.5 py-1 rounded-full border border-transparent hover:border-red-200 transition-all"
               >
                 <X size={11} strokeWidth={3} />
@@ -171,7 +171,7 @@ function SubApplicationRow({
             <div className="flex items-center gap-2 mr-2" onClick={(e) => e.stopPropagation()}>
               <button
                 disabled={partnerApproveMutation.isPending}
-                onClick={() => partnerApproveMutation.mutate({ id: app.id, isApproved: true })}
+                onClick={() => { partnerApproveMutation.mutate({ id: app.id, isApproved: true }) }}
                 className="flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 px-2.5 py-1 rounded-full border border-transparent hover:border-emerald-200 transition-all disabled:opacity-50"
               >
                 <Check size={11} strokeWidth={3} />
@@ -179,7 +179,7 @@ function SubApplicationRow({
               </button>
               <button
                 disabled={partnerApproveMutation.isPending}
-                onClick={() => partnerApproveMutation.mutate({ id: app.id, isApproved: false })}
+                onClick={() => { partnerApproveMutation.mutate({ id: app.id, isApproved: false }) }}
                 className="flex items-center gap-1 text-xs font-semibold text-red-600 hover:bg-red-50 px-2.5 py-1 rounded-full border border-transparent hover:border-red-200 transition-all disabled:opacity-50"
               >
                 <X size={11} strokeWidth={3} />
@@ -208,17 +208,32 @@ function SubApplicationRow({
 // ─── Detail fields per type ───────────────────────────────────
 
 function DetailFields({ app }: { app: IApplication }) {
-  const swapDetail = (app.shiftSwapDetail || app.detail) as Record<string, any> | undefined
-  const leaveDetail = app.detail as Record<string, unknown> | undefined
+  const swapDetail = (app.shiftSwapDetail || app.detail) as {
+    employeeShiftId?: string
+    employeeShift?: { shift?: any }
+    swapWithEmployeeId?: string
+    swapWithEmployee?: { fullName?: string }
+    swapWithShiftId?: string
+    swapWithShift?: { shift?: any }
+    partnerApprovalStatus?: string
+  } | undefined
+  const detail = app.detail as {
+    employeeShift?: { shift?: any }
+    isLate?: boolean
+    durationMinutes?: number
+    location?: string
+    leaveType?: string
+    regimeType?: string
+  } | undefined
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
       {app.type === "leave" && (
         <>
-          <Field label="Kiểu nghỉ" value={String(leaveDetail?.leaveType ?? "—")} />
+          <Field label="Kiểu nghỉ" value={String(detail?.leaveType ?? "—")} />
           <Field
             label="Chế độ"
-            value={leaveDetail?.regimeType === REGIME_TYPE.PAID ? "Có lương" : "Không lương"}
+            value={detail?.regimeType === REGIME_TYPE.PAID ? "Có lương" : "Không lương"}
           />
           <Field label="Từ ngày" value={formatDate(app.startDate)} />
           <Field label="Đến ngày" value={formatDate(app.endDate)} />
@@ -234,7 +249,7 @@ function DetailFields({ app }: { app: IApplication }) {
             value={getShiftLabel(swapDetail?.employeeShift?.shift) ?? swapDetail?.employeeShiftId ?? "—"}
           />
           {swapDetail?.swapWithEmployee && (
-            <Field label="Đổi với" value={swapDetail.swapWithEmployee.fullName} />
+            <Field label="Đổi với" value={swapDetail.swapWithEmployee.fullName ?? "—"} />
           )}
           {swapDetail?.swapWithShift && (
             <Field label="Ca đổi" value={getShiftLabel(swapDetail.swapWithShift?.shift) ?? "—"} />
@@ -257,11 +272,7 @@ function DetailFields({ app }: { app: IApplication }) {
           <Field label="Ngày tăng ca" value={formatDate(app.startDate)} />
           <Field
             label="Ca làm việc"
-            value={
-              getShiftLabel(
-                (app.detail as Record<string, any>)?.employeeShift?.shift,
-              ) ?? "—"
-            }
+            value={getShiftLabel(detail?.employeeShift?.shift) ?? "—"}
           />
           {app.reason && <Field label="Lý do" value={app.reason} span />}
         </>
@@ -272,11 +283,11 @@ function DetailFields({ app }: { app: IApplication }) {
           <Field label="Ngày làm việc" value={formatDate(app.startDate)} />
           <Field
             label="Loại"
-            value={(app.detail as Record<string, any>)?.isLate ? "Đi muộn" : "Về sớm"}
+            value={detail?.isLate ? "Đi muộn" : "Về sớm"}
           />
           <Field
             label="Số phút"
-            value={`${(app.detail as Record<string, any>)?.durationMinutes ?? "—"} phút`}
+            value={`${detail?.durationMinutes ?? "—"} phút`}
           />
         </>
       )}
@@ -285,8 +296,8 @@ function DetailFields({ app }: { app: IApplication }) {
         <>
           <Field label="Từ ngày" value={formatDate(app.startDate)} />
           <Field label="Đến ngày" value={formatDate(app.endDate)} />
-          {(app.detail as Record<string, any>)?.location && (
-            <Field label="Hình thức" value={(app.detail as Record<string, any>).location} />
+          {detail?.location && (
+            <Field label="Hình thức" value={detail.location} />
           )}
         </>
       )}
@@ -305,7 +316,7 @@ function Field({
   className,
 }: {
   label: string
-  value: string
+  value: string | number | null | undefined
   span?: boolean
   className?: string
 }) {
@@ -387,7 +398,7 @@ export function BatchApplicationDetail({
           {/* Cancel batch (owner only, only if any pending) */}
           {mode === "mine" && allPending && (
             <button
-              onClick={() => cancelMutation.mutate(batch.id)}
+              onClick={() => { cancelMutation.mutate(batch.id) }}
               disabled={cancelMutation.isPending}
               className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200 transition-all disabled:opacity-50 ml-4"
             >

@@ -61,8 +61,8 @@ export default function ApplicationDashboard() {
     await manageApps.handleApprove(app.id)
   }
 
-  const handleRowClick = (batch: any) => {
-    setSelectedBatch(batch)
+  const handleRowClick = (batch: unknown) => {
+    setSelectedBatch(batch as IApplicationBatch)
     setView("detail")
   }
 

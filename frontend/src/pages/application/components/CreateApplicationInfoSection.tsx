@@ -8,7 +8,7 @@ import type { User } from "@/store/auth-store"
 interface Props {
   type: string
   form: ApplicationFormState & { assignedToId?: string }
-  set: (k: any, v: any) => void
+  set: (k: string, v: unknown) => void
   user: User | null
   approvers: IApprover[]
 }
