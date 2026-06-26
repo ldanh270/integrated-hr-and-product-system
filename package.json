@@ -18,7 +18,9 @@
     "db:seed": "cd backend && nr seed",
     "db:seed:admin": "cd backend && nr seed:admin",
     "db:clear": "cd backend && nr clear",
-    "hash-password": "cd backend && bun src/scripts/hash-password.ts"
+    "hash-password": "cd backend && bun src/scripts/hash-password.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
