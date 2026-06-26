@@ -16,16 +16,18 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ROLE } from "@/config/entities/employee.config"
+import { SPENT_TIME_STATUS, getSpentTimeStatusLabel } from "@/config/entities/project.config"
 import {
-  SPENT_TIME_STATUS,
-  SPENT_TIME_STATUSES,
-  getSpentTimeStatusLabel,
-} from "@/config/entities/project.config"
+  SPENT_TIME_FILTER,
+  SPENT_TIME_UI,
+  buildSpentTimeFilterOptions,
+  formatBulkApproveLabel,
+  getSpentTimeStatusPillVariant,
+  type SpentTimeFilterValue,
+} from "@/config/rules/spent-time.config"
 import { taskApi } from "@/lib/api/task.api"
 import { extractErrorMessage } from "@/utils/error-helper"
-import type { SpentTime, SpentTimeStatus } from "@/types/spent-time.types"
-
-type StatusFilter = SpentTimeStatus | "all"
+import type { SpentTime } from "@/types/spent-time.types"
 
 interface ProjectSpentTimeTabProps {
   projectId: string
@@ -37,7 +39,7 @@ interface ProjectSpentTimeTabProps {
 
 /**
  * Project-level Spent Time queue for leads — approve/reject without opening each task.
- * Complements per-task approval in TaskDetail.
+ * PT payroll only includes approved logs; this tab is the lead's gate before payroll run.
  */
 export function ProjectSpentTimeTab({
   projectId,
@@ -47,21 +49,26 @@ export function ProjectSpentTimeTab({
   isLeader,
 }: ProjectSpentTimeTabProps) {
   const queryClient = useQueryClient()
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
+  const [statusFilter, setStatusFilter] = useState<SpentTimeFilterValue>(SPENT_TIME_FILTER.ALL)
 
   const canApprove =
     isLeader || userRole === ROLE.ADMIN || userRole === ROLE.GENERAL_MANAGER
 
   const filteredLogs = useMemo(() => {
     const list = spentTimes ?? []
-    if (statusFilter === "all") return list
+    if (statusFilter === SPENT_TIME_FILTER.ALL) return list
     return list.filter((st) => st.status === statusFilter)
   }, [spentTimes, statusFilter])
 
   const pendingIds = useMemo(
-    () => (spentTimes ?? []).filter((st) => st.status === SPENT_TIME_STATUS.PENDING).map((st) => st.id),
+    () =>
+      (spentTimes ?? [])
+        .filter((st) => st.status === SPENT_TIME_STATUS.PENDING)
+        .map((st) => st.id),
     [spentTimes],
   )
+
+  const filterOptions = useMemo(() => buildSpentTimeFilterOptions(), [])
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ["spentTimes", "project", projectId] })
@@ -71,7 +78,7 @@ export function ProjectSpentTimeTab({
     mutationFn: (id: string) => taskApi.approveSpentTime(id),
     onSuccess: () => {
       invalidate()
-      toast.success("Đã duyệt giờ làm việc")
+      toast.success(SPENT_TIME_UI.TOAST_APPROVED)
     },
     onError: (err: unknown) => toast.error(extractErrorMessage(err)),
   })
@@ -81,7 +88,7 @@ export function ProjectSpentTimeTab({
       taskApi.rejectSpentTime(id, reason),
     onSuccess: () => {
       invalidate()
-      toast.success("Đã từ chối giờ làm việc")
+      toast.success(SPENT_TIME_UI.TOAST_REJECTED)
     },
     onError: (err: unknown) => toast.error(extractErrorMessage(err)),
   })
@@ -92,31 +99,17 @@ export function ProjectSpentTimeTab({
     },
     onSuccess: () => {
       invalidate()
-      toast.success("Đã duyệt tất cả giờ chờ duyệt")
+      toast.success(SPENT_TIME_UI.TOAST_BULK_APPROVED)
     },
     onError: (err: unknown) => toast.error(extractErrorMessage(err)),
   })
-
-  const statusVariant = (status: SpentTimeStatus) => {
-    if (status === SPENT_TIME_STATUS.APPROVED) return "success"
-    if (status === SPENT_TIME_STATUS.REJECTED) return "danger"
-    return "warning"
-  }
-
-  const filterOptions: { value: StatusFilter; label: string }[] = [
-    { value: "all", label: "Tất cả" },
-    ...SPENT_TIME_STATUSES.map((s) => ({
-      value: s,
-      label: getSpentTimeStatusLabel(s),
-    })),
-  ]
 
   return (
     <PageCard className="p-6 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border pb-4">
         <h3 className="font-bold text-base text-foreground flex items-center gap-1.5">
           <Clock className="size-4 text-muted-foreground" />
-          Duyệt giờ làm việc (Spent Time)
+          {SPENT_TIME_UI.TAB_TITLE}
         </h3>
 
         {canApprove && pendingIds.length > 0 && (
@@ -128,7 +121,7 @@ export function ProjectSpentTimeTab({
               bulkApproveMutation.mutate(pendingIds)
             }}
           >
-            Duyệt tất cả ({pendingIds.length})
+            {formatBulkApproveLabel(pendingIds.length)}
           </Button>
         )}
       </div>
@@ -157,20 +150,20 @@ export function ProjectSpentTimeTab({
         </div>
       ) : filteredLogs.length === 0 ? (
         <p className="text-sm text-muted-foreground italic py-8 text-center">
-          Không có bản ghi giờ làm việc nào.
+          {SPENT_TIME_UI.EMPTY_PROJECT_LIST}
         </p>
       ) : (
         <div className="relative overflow-x-auto rounded-lg border border-border">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent h-10">
-                <TableHead className="font-semibold text-xs">Nhân viên</TableHead>
-                <TableHead className="font-semibold text-xs">Công việc</TableHead>
-                <TableHead className="font-semibold text-xs">Ngày</TableHead>
-                <TableHead className="font-semibold text-xs text-center">Giờ</TableHead>
-                <TableHead className="font-semibold text-xs">Trạng thái</TableHead>
+                <TableHead className="font-semibold text-xs">{SPENT_TIME_UI.TABLE_EMPLOYEE}</TableHead>
+                <TableHead className="font-semibold text-xs">{SPENT_TIME_UI.TABLE_TASK}</TableHead>
+                <TableHead className="font-semibold text-xs">{SPENT_TIME_UI.TABLE_DATE}</TableHead>
+                <TableHead className="font-semibold text-xs text-center">{SPENT_TIME_UI.TABLE_HOURS}</TableHead>
+                <TableHead className="font-semibold text-xs">{SPENT_TIME_UI.TABLE_STATUS}</TableHead>
                 {canApprove && (
-                  <TableHead className="font-semibold text-xs text-right">Thao tác</TableHead>
+                  <TableHead className="font-semibold text-xs text-right">{SPENT_TIME_UI.TABLE_ACTIONS}</TableHead>
                 )}
               </TableRow>
             </TableHeader>
@@ -180,7 +173,7 @@ export function ProjectSpentTimeTab({
                 return (
                   <TableRow key={st.id} className="h-12 hover:bg-muted/30">
                     <TableCell className="text-xs font-semibold">
-                      {st.employee?.fullName ?? "—"}
+                      {st.employee?.fullName ?? SPENT_TIME_UI.EMPTY_CELL}
                     </TableCell>
                     <TableCell className="text-xs max-w-[200px] truncate">
                       <Link
@@ -197,7 +190,7 @@ export function ProjectSpentTimeTab({
                     <TableCell className="text-xs text-center font-bold">{st.hours}</TableCell>
                     <TableCell>
                       <StatusPill
-                        variant={statusVariant(st.status)}
+                        variant={getSpentTimeStatusPillVariant(st.status)}
                         label={getSpentTimeStatusLabel(st.status)}
                         className="text-[9px] px-2 py-0"
                       />
@@ -210,7 +203,7 @@ export function ProjectSpentTimeTab({
                               variant="ghost"
                               size="icon-xs"
                               className="text-primary hover:bg-primary/10 rounded-full size-7"
-                              title="Duyệt"
+                              title={SPENT_TIME_UI.APPROVE_ACTION_TITLE}
                               disabled={approveMutation.isPending}
                               onClick={() => {
                                 approveMutation.mutate(st.id)
@@ -222,10 +215,10 @@ export function ProjectSpentTimeTab({
                               variant="ghost"
                               size="icon-xs"
                               className="text-destructive hover:bg-destructive/10 rounded-full size-7"
-                              title="Từ chối"
+                              title={SPENT_TIME_UI.REJECT_ACTION_TITLE}
                               disabled={rejectMutation.isPending}
                               onClick={() => {
-                                const reason = window.prompt("Lý do từ chối:")
+                                const reason = window.prompt(SPENT_TIME_UI.REJECT_REASON_PROMPT)
                                 if (reason?.trim()) {
                                   rejectMutation.mutate({ id: st.id, reason: reason.trim() })
                                 }
@@ -235,7 +228,7 @@ export function ProjectSpentTimeTab({
                             </Button>
                           </div>
                         ) : (
-                          <span className="text-[10px] text-muted-foreground">—</span>
+                          <span className="text-[10px] text-muted-foreground">{SPENT_TIME_UI.EMPTY_CELL}</span>
                         )}
                       </TableCell>
                     )}
