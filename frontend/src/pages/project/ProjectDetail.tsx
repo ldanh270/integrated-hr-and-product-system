@@ -45,6 +45,8 @@ const PROJECT_TABS = {
   GANTT: "gantt",
 } as const
 
+type ProjectTab = typeof PROJECT_TABS[keyof typeof PROJECT_TABS]
+
 export default function ProjectDetail() {
   const { tab } = useParams<{ tab?: string }>()
   const queryClient = useQueryClient()
@@ -55,11 +57,11 @@ export default function ProjectDetail() {
 
   // Route format: /project/:tab  (e.g., /project/overview)
   // Project ID is always stored in sessionStorage (set when clicking a project from the list)
-  const isTabValid = tab ? Object.values(PROJECT_TABS).includes(tab as any) : false
+  const isTabValid = tab ? (Object.values(PROJECT_TABS) as readonly string[]).includes(tab) : false
 
   const projectId = sessionStorage.getItem("activeProjectId") || ""
-  const activeTab: typeof PROJECT_TABS[keyof typeof PROJECT_TABS] =
-    isTabValid ? (tab as any) : PROJECT_TABS.OVERVIEW
+  const activeTab: ProjectTab =
+    isTabValid ? (tab as ProjectTab) : PROJECT_TABS.OVERVIEW
 
   const [isOpenMemberModal, setIsOpenMemberModal] = useState(false)
   const [isOpenEditProjectModal, setIsOpenEditProjectModal] = useState(false)
@@ -252,7 +254,7 @@ export default function ProjectDetail() {
       />
 
       {/* Tabs navigation panel: switches between Overview, Issues, and Activity views */}
-      <Tabs value={activeTab} onValueChange={(newTab) => navigate(`/project/${newTab}`)} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={(newTab) => { navigate(`/project/${newTab}`); }} className="space-y-6">
         <TabsList className="bg-secondary rounded-full p-1 border border-border/40 inline-flex">
           <TabsTrigger
             value={PROJECT_TABS.OVERVIEW}

@@ -46,8 +46,21 @@ export function useTaskReview({ task, projectId, onOpenChange }: UseTaskReviewPr
     e.preventDefault()
     setFormError(null)
 
-    const cleanNotes = resultNotes ? resultNotes.replace(/<[^>]*>/g, "").trim() : ""
-    const isNotesEmpty = cleanNotes.length === 0
+    const isNotesEmpty = !resultNotes || (() => {
+      let insideTag = false
+      let textLength = 0
+      for (let i = 0; i < resultNotes.length; i++) {
+        const char = resultNotes[i]
+        if (char === "<") {
+          insideTag = true
+        } else if (char === ">") {
+          insideTag = false
+        } else if (!insideTag && /\S/.test(char)) {
+          textLength++
+        }
+      }
+      return textLength === 0
+    })()
 
     if (isNotesEmpty) {
       setFormError("Vui lòng điền mô tả kết quả công việc")

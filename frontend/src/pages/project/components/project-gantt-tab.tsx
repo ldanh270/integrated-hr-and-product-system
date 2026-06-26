@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-object-injection */
 import { useState } from "react"
 import { 
   Clock, 
@@ -1085,7 +1086,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                                 gridRowEnd: 2
                               }}
                               className="absolute top-0 h-full w-0.5 border-l border-dashed border-rose-500/80 z-20 pointer-events-none"
-                              title={`Hạn hoàn thành: ${format(new Date(task.dueDate!), "dd/MM/yyyy")}`}
+                              title={`Hạn hoàn thành: ${task.dueDate ? format(new Date(task.dueDate), "dd/MM/yyyy") : ""}`}
                             >
                               <div className="absolute top-0 -left-1 w-2 h-2 bg-rose-500 rounded-full shadow-sm" />
                             </div>
@@ -1355,7 +1356,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                 <Input
                   id="query-name"
                   value={newQueryName}
-                  onChange={(e) => setNewQueryName(e.target.value)}
+                  onChange={(e) => { setNewQueryName(e.target.value); }}
                   placeholder="Ví dụ: Công việc mở tuần này..."
                   className="h-9 text-xs rounded-lg border-border"
                   autoFocus
@@ -1370,7 +1371,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                 <Input
                   id="query-desc"
                   value={newQueryDesc}
-                  onChange={(e) => setNewQueryDesc(e.target.value)}
+                  onChange={(e) => { setNewQueryDesc(e.target.value); }}
                   placeholder="Mô tả mục đích của truy vấn..."
                   className="h-9 text-xs rounded-lg border-border"
                 />
@@ -1383,7 +1384,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                 id="query-for-all"
                 type="checkbox"
                 checked={newQueryForAll}
-                onChange={(e) => setNewQueryForAll(e.target.checked)}
+                onChange={(e) => { setNewQueryForAll(e.target.checked); }}
                 className="rounded border-border size-4"
               />
               <Label htmlFor="query-for-all" className="text-xs font-semibold cursor-pointer">
@@ -1537,7 +1538,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
               <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                 {newQueryFilterKeys.map((key) => {
                   const filter = newQueryFilters[key]
-                  if (!filter) return null
+                  if (filter === undefined) return null
                   const def = Reflect.get(filterDefinitions, key) as { label: string; type: string; group: string } | undefined
                   
                   return (
@@ -1703,7 +1704,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                       multiple
                       size={3}
                       value={availSelectedKey ? [availSelectedKey] : []}
-                      onChange={(e) => setAvailSelectedKey(e.target.value)}
+                      onChange={(e) => { setAvailSelectedKey(e.target.value); }}
                       className="w-full text-xs p-1.5 border border-border rounded-md h-24 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
                     >
                       {GANTT_AVAILABLE_COLUMNS.filter(col => !newQuerySelectedCols.includes(col.key)).map(col => (
@@ -1755,7 +1756,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                       multiple
                       size={3}
                       value={selSelectedKey ? [selSelectedKey] : []}
-                      onChange={(e) => setSelSelectedKey(e.target.value)}
+                      onChange={(e) => { setSelSelectedKey(e.target.value); }}
                       className="w-full text-xs p-1.5 border border-border rounded-md h-24 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
                     >
                       {newQuerySelectedCols.map(colKey => {

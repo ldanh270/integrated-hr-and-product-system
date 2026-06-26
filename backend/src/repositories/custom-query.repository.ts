@@ -1,5 +1,5 @@
 import { ICustomQueryRepository, CustomQuery, CreateCustomQueryDto } from "@/types/custom-query.types.ts"
-import { PrismaClient } from "@prisma/client"
+import { Prisma, PrismaClient } from "@prisma/client"
 import { BaseRepository } from "./base.repository.ts"
 import { CUSTOM_QUERY_TYPE } from "@/configs/entities/project.config.ts"
 import { SORT_ORDER } from "@/configs/system/db.config.ts"
@@ -10,7 +10,7 @@ export class PrismaCustomQueryRepository extends BaseRepository implements ICust
   }
 
   async findByEmployee(employeeId: string, projectId?: string | null, type?: string): Promise<CustomQuery[]> {
-    const whereClause: any = {
+    const whereClause: Prisma.CustomQueryWhereInput = {
       employeeId,
       type: type === undefined ? undefined : type,
     }

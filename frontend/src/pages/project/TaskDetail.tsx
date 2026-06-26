@@ -39,6 +39,7 @@ import type { SpentTime } from "@/types/spent-time.types"
 // Import task types
 import type { TaskTracker, TaskPriority } from "@/types/task.types"
 import type { ProjectTaskStatus } from "@/types/project-task-status.types"
+import DOMPurify from "dompurify"
 // Import React Query hooks for fetching and mutations
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 // Import toast notification client
@@ -62,8 +63,19 @@ import { Link, useNavigate, useParams } from "react-router-dom"
 
 const cleanHtml = (html: string) => {
   if (!html) return null
-  const stripped = html.replace(/<[^>]*>/g, "").trim()
-  return stripped.length === 0 ? null : html.trim()
+  let insideTag = false
+  let textLength = 0
+  for (let i = 0; i < html.length; i++) {
+    const char = html[i]
+    if (char === "<") {
+      insideTag = true
+    } else if (char === ">") {
+      insideTag = false
+    } else if (!insideTag && /\S/.test(char)) {
+      textLength++
+    }
+  }
+  return textLength === 0 ? null : html.trim()
 }
 
 // Main component to render task detailed specifications
@@ -349,7 +361,12 @@ export default function TaskDetail() {
                 <Button
                   variant="ghost"
                   disabled={!prevTaskId}
-                  onClick={() => { sessionStorage.setItem("activeTaskId", prevTaskId!); navigate(`/project/task/${prevTaskId}`); }}
+                  onClick={() => {
+                    if (prevTaskId) {
+                      sessionStorage.setItem("activeTaskId", prevTaskId)
+                      navigate(`/project/task/${prevTaskId}`)
+                    }
+                  }}
                   className="rounded-full h-5 px-1.5 text-[9px] font-bold disabled:opacity-40 hover:bg-background cursor-pointer"
                 >
                   « Trước
@@ -360,7 +377,12 @@ export default function TaskDetail() {
                 <Button
                   variant="ghost"
                   disabled={!nextTaskId}
-                  onClick={() => { sessionStorage.setItem("activeTaskId", nextTaskId!); navigate(`/project/task/${nextTaskId}`); }}
+                  onClick={() => {
+                    if (nextTaskId) {
+                      sessionStorage.setItem("activeTaskId", nextTaskId)
+                      navigate(`/project/task/${nextTaskId}`)
+                    }
+                  }}
                   className="rounded-full h-5 px-1.5 text-[9px] font-bold disabled:opacity-40 hover:bg-background cursor-pointer"
                 >
                   Sau »
@@ -509,7 +531,7 @@ export default function TaskDetail() {
             {task.description ? (
               <div 
                 className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: task.description }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(task.description) }}
               />
             ) : (
               <p className="text-xs text-muted-foreground italic">Không có mô tả chi tiết cho công việc này.</p>
@@ -528,7 +550,7 @@ export default function TaskDetail() {
                   <span className="text-xs font-semibold text-muted-foreground">Ghi chú kết quả:</span>
                   <div 
                     className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground leading-relaxed bg-muted/30 p-3 rounded-lg border border-border/40"
-                    dangerouslySetInnerHTML={{ __html: task.resultNotes }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(task.resultNotes) }}
                   />
                 </div>
               </div>

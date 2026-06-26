@@ -55,7 +55,7 @@ import {
   TASK_TRACKERS,
   TASK_PRIORITIES,
 } from "@/config/entities/project.config"
-import type { TaskTracker, TaskPriority } from "@/types/task.types"
+import type { Task, TaskTracker, TaskPriority } from "@/types/task.types"
 import type { ProjectMember } from "@/types/project.types"
 
 interface ProjectIssuesTabProps {
@@ -113,7 +113,7 @@ const COLUMN_METADATA = {
   id: {
     label: "ID",
     className: "w-16 font-semibold text-xs",
-    render: (task: any) => (
+    render: (task: Task) => (
       <TableCell className="font-mono text-[10px] font-semibold text-muted-foreground">
         #{task.id.substring(0, 5)}
       </TableCell>
@@ -122,7 +122,7 @@ const COLUMN_METADATA = {
   tracker: {
     label: "Kiểu công việc",
     className: "w-24 font-semibold text-xs",
-    render: (task: any) => {
+    render: (task: Task) => {
       let trackerColor = "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
       if (task.tracker === "bug") {
         trackerColor = "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"
@@ -146,7 +146,7 @@ const COLUMN_METADATA = {
   title: {
     label: "Chủ đề",
     className: "font-semibold text-xs min-w-[200px]",
-    render: (task: any) => (
+    render: (task: Task) => (
       <TableCell className="max-w-[250px] truncate font-medium">
         <Link
           to={`/project/task/${task.id}`}
@@ -160,7 +160,7 @@ const COLUMN_METADATA = {
   assignee: {
     label: "Người thực hiện",
     className: "w-28 font-semibold text-xs",
-    render: (task: any) => (
+    render: (task: Task) => (
       <TableCell className="text-xs">
         {task.assignee ? (
           <span className="font-semibold text-foreground">
@@ -175,7 +175,7 @@ const COLUMN_METADATA = {
   status: {
     label: "Trạng thái",
     className: "w-28 font-semibold text-xs",
-    render: (task: any, statuses: any[]) => {
+    render: (task: Task, statuses: { id: string; name: string; isCompleted: boolean }[]) => {
       const customStatus = statuses.find((s) => s.id === task.statusId)
       const label = customStatus ? customStatus.name : formatStatus(task.status)
       const isCompleted = customStatus ? customStatus.isCompleted : (task.status === "done" || task.status === "cancelled")
@@ -193,7 +193,7 @@ const COLUMN_METADATA = {
   priority: {
     label: "Mức ưu tiên",
     className: "w-24 font-semibold text-xs",
-    render: (task: any) => {
+    render: (task: Task) => {
       let priorityColor = "bg-secondary text-secondary-foreground"
       if (task.priority === "urgent") {
         priorityColor = "bg-destructive/10 text-destructive border-destructive/20"
@@ -216,7 +216,7 @@ const COLUMN_METADATA = {
   progress: {
     label: "Tiến độ",
     className: "w-16 text-right font-semibold text-xs",
-    render: (task: any) => (
+    render: (task: Task) => (
       <TableCell className="text-right font-bold text-xs">
         {task.progress}%
       </TableCell>
@@ -225,7 +225,7 @@ const COLUMN_METADATA = {
   author: {
     label: "Tác giả",
     className: "w-28 font-semibold text-xs",
-    render: (task: any) => (
+    render: (task: Task) => (
       <TableCell className="text-xs text-foreground font-semibold">
         {task.createdBy ? task.createdBy.fullName : "Chưa rõ"}
       </TableCell>
@@ -234,7 +234,7 @@ const COLUMN_METADATA = {
   startDate: {
     label: "Bắt đầu",
     className: "w-24 font-semibold text-xs",
-    render: (task: any) => (
+    render: (task: Task) => (
       <TableCell className="text-xs text-muted-foreground font-mono">
         {task.startDate ? new Date(task.startDate).toLocaleDateString("vi-VN") : "-"}
       </TableCell>
@@ -243,7 +243,7 @@ const COLUMN_METADATA = {
   dueDate: {
     label: "Hết hạn",
     className: "w-24 font-semibold text-xs",
-    render: (task: any) => (
+    render: (task: Task) => (
       <TableCell className="text-xs text-muted-foreground font-mono">
         {task.dueDate ? new Date(task.dueDate).toLocaleDateString("vi-VN") : "-"}
       </TableCell>
@@ -252,7 +252,7 @@ const COLUMN_METADATA = {
   estimatedTime: {
     label: "Thời gian ước lượng",
     className: "w-24 font-semibold text-xs text-right",
-    render: (task: any) => (
+    render: (task: Task) => (
       <TableCell className="text-xs text-right font-mono font-semibold">
         {task.estimatedTime ? `${task.estimatedTime}h` : "-"}
       </TableCell>
@@ -261,7 +261,7 @@ const COLUMN_METADATA = {
   updatedAt: {
     label: "Cập nhật",
     className: "w-28 font-semibold text-xs",
-    render: (task: any) => (
+    render: (task: Task) => (
       <TableCell className="text-xs text-muted-foreground font-mono">
         {task.updatedAt ? new Date(task.updatedAt).toLocaleDateString("vi-VN") : "-"}
       </TableCell>
