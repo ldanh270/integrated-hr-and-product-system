@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { format, differenceInDays, addDays, eachDayOfInterval } from "date-fns"
@@ -40,6 +40,15 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     }
     return new Date()
   })
+
+  // Timeline view range configuration (timeline end date)
+  const [timelineEnd, setTimelineEnd] = useState<Date>(() => {
+    const start = project.startDate ? new Date(project.startDate) : new Date()
+    return addDays(start, DEFAULT_MONTHS_RANGE * 30 - 1)
+  })
+
+  // Track if we have initialized the timeline dynamically from tasks
+  const [hasInitializedTimeline, setHasInitializedTimeline] = useState(false)
 
   // Selected task state for completion / review modal
   const [selectedTaskForReview, setSelectedTaskForReview] = useState<Task | null>(null)
@@ -104,11 +113,11 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
 
   // Mutation to save custom query
   const saveQueryMutation = useMutation({
-    mutationFn: async (data: { name: string; queryData: string }) => {
+    mutationFn: async (data: { name: string; projectId?: string | null; queryData: string }) => {
       return customQueryApi.create({
         name: data.name,
         type: CUSTOM_QUERY_TYPE.GANTT,
-        projectId,
+        projectId: data.projectId !== undefined ? data.projectId : projectId,
         queryData: data.queryData,
       })
     },
@@ -144,6 +153,14 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
         setFilterStates(data.filterStates)
         setAppliedFilterKeys(data.activeFilterKeys)
         setAppliedFilterStates(data.filterStates)
+
+        // Also apply view options if saved
+        if (data.options) {
+          if (data.options.showEstTime !== undefined) setShowEstTime(data.options.showEstTime)
+          if (data.options.showAssignee !== undefined) setShowAssignee(data.options.showAssignee)
+          if (data.options.showProgress !== undefined) setShowProgress(data.options.showProgress)
+        }
+
         toast.success(`Đã áp dụng truy vấn: ${savedQuery.name}`)
       } else {
         toast.error("Dữ liệu truy vấn không hợp lệ")
@@ -153,19 +170,9 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     }
   }
 
-  // Handle saving new custom query — name is provided by the UI layer (no browser prompt)
-  const handleSaveQuery = (name: string) => {
-    if (!name || !name.trim()) return
-
-    const queryDataObj = {
-      activeFilterKeys,
-      filterStates,
-    }
-
-    saveQueryMutation.mutate({
-      name: name.trim(),
-      queryData: JSON.stringify(queryDataObj),
-    })
+  // Handle saving new custom query
+  const handleSaveQuery = (data: { name: string; projectId?: string | null; queryData: string }) => {
+    saveQueryMutation.mutate(data)
   }
 
   const tasks = ganttData?.tasks || []
@@ -191,6 +198,48 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     
     return list
   }, [project, ganttData])
+
+  // Sync timeline range dynamically with loaded tasks once
+  useEffect(() => {
+    if (tasks && tasks.length > 0 && !hasInitializedTimeline) {
+      let minStart: Date | null = null
+      let maxEnd: Date | null = null
+
+      for (const t of tasks) {
+        if (t.startDate) {
+          const d = new Date(t.startDate)
+          if (!minStart || d.getTime() < minStart.getTime()) minStart = d
+        }
+        
+        const dates: Date[] = []
+        if (t.updatedAt) dates.push(new Date(t.updatedAt))
+        if (t.completedAt) dates.push(new Date(t.completedAt))
+        if (t.dueDate) dates.push(new Date(t.dueDate))
+        
+        for (const d of dates) {
+          if (!maxEnd || d.getTime() > maxEnd.getTime()) maxEnd = d
+        }
+      }
+
+      if (minStart) {
+        setTimelineStart(minStart)
+        setMonthInput(minStart.getMonth())
+        setYearInput(minStart.getFullYear())
+      }
+      
+      if (minStart && maxEnd) {
+        // Add 2 days buffer at the end for clean design
+        const bufferedEnd = addDays(maxEnd, 2)
+        setTimelineEnd(bufferedEnd)
+        
+        const days = differenceInDays(bufferedEnd, minStart) + 1
+        const months = Math.max(1, Math.ceil(days / 30))
+        setMonthsInput(months.toString())
+        setMonthsRange(months)
+      }
+      setHasInitializedTimeline(true)
+    }
+  }, [tasks, hasInitializedTimeline])
 
   const getDefaultOperator = (key: string) => {
     const def = Reflect.get(FILTER_DEFINITIONS, key) as { label: string; type: string; group: string } | undefined
@@ -232,12 +281,14 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     },
   })
 
-  // Timeline days calculation (monthsRange months starting from timelineStart)
+  // Timeline days calculation dynamically based on start and end dates
   const timelineDays = useMemo(() => {
-    const end = addDays(addDays(timelineStart, monthsRange * 30), -1)
-    const daysInterval = eachDayOfInterval({ start: timelineStart, end })
+    if (!timelineStart || !timelineEnd) return []
+    const start = timelineStart
+    const end = timelineEnd < timelineStart ? timelineStart : timelineEnd
+    const daysInterval = eachDayOfInterval({ start, end })
     return daysInterval.slice(0, 180) // Cap at 180 days max
-  }, [timelineStart, monthsRange])
+  }, [timelineStart, timelineEnd])
 
   // Month spans grouping for timeline header
   const monthSpans = useMemo(() => {
@@ -448,15 +499,15 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   // Navigate timeline view
   const shiftTimeline = (days: number) => {
     setTimelineStart((prev) => addDays(prev, days))
+    setTimelineEnd((prev) => addDays(prev, days))
   }
 
   // Reset timeline to project start
   const resetTimelineToProjectStart = () => {
-    if (project.startDate) {
-      setTimelineStart(new Date(project.startDate))
-    } else {
-      setTimelineStart(new Date())
-    }
+    const start = project.startDate ? new Date(project.startDate) : new Date()
+    const duration = differenceInDays(timelineEnd, timelineStart)
+    setTimelineStart(start)
+    setTimelineEnd(addDays(start, duration))
   }
 
   // Check roles/permissions
@@ -473,7 +524,6 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     const taskEnd = task.updatedAt ? new Date(task.updatedAt) : new Date()
 
     // Check if task falls completely out of timeline view
-    const timelineEnd = addDays(timelineStart, 29)
     if (taskEnd < timelineStart || taskStart > timelineEnd) {
       return null
     }
@@ -487,8 +537,9 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
       span += startCol - 1
       startCol = 1
     }
-    if (startCol + span > 30) {
-      span = 31 - startCol
+    const maxCols = timelineDays.length
+    if (startCol + span > maxCols + 1) {
+      span = maxCols + 1 - startCol
     }
 
     if (span <= 0) return null
@@ -520,6 +571,8 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
       const newDate = new Date(prev.getFullYear(), prev.getMonth() + months, 1)
       setMonthInput(newDate.getMonth())
       setYearInput(newDate.getFullYear())
+      const duration = differenceInDays(timelineEnd, prev)
+      setTimelineEnd(addDays(newDate, duration))
       return newDate
     })
   }
@@ -548,6 +601,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     setMonthsRange(range)
     const newStart = new Date(yearInput, monthInput, 1)
     setTimelineStart(newStart)
+    setTimelineEnd(addDays(newStart, range * 30 - 1))
     
     // Apply filters
     setAppliedFilterKeys([...activeFilterKeys])
@@ -558,18 +612,53 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
 
   // Clear/Reset filters
   const handleClearFilters = () => {
-    setMonthsInput("6")
-    setMonthsRange(6)
-    if (project.startDate) {
-      const pStart = new Date(project.startDate)
-      setTimelineStart(pStart)
-      setMonthInput(pStart.getMonth())
-      setYearInput(pStart.getFullYear())
+    if (tasks && tasks.length > 0) {
+      let minStart: Date | null = null
+      let maxEnd: Date | null = null
+
+      for (const t of tasks) {
+        if (t.startDate) {
+          const d = new Date(t.startDate)
+          if (!minStart || d.getTime() < minStart.getTime()) minStart = d
+        }
+        const dates: Date[] = []
+        if (t.updatedAt) dates.push(new Date(t.updatedAt))
+        if (t.completedAt) dates.push(new Date(t.completedAt))
+        if (t.dueDate) dates.push(new Date(t.dueDate))
+        for (const d of dates) {
+          if (!maxEnd || d.getTime() > maxEnd.getTime()) maxEnd = d
+        }
+      }
+
+      if (minStart) {
+        setTimelineStart(minStart)
+        setMonthInput(minStart.getMonth())
+        setYearInput(minStart.getFullYear())
+      }
+      if (minStart && maxEnd) {
+        const bufferedEnd = addDays(maxEnd, 2)
+        setTimelineEnd(bufferedEnd)
+        const days = differenceInDays(bufferedEnd, minStart) + 1
+        const months = Math.max(1, Math.ceil(days / 30))
+        setMonthsInput(months.toString())
+        setMonthsRange(months)
+      }
     } else {
-      const today = new Date()
-      setTimelineStart(today)
-      setMonthInput(today.getMonth())
-      setYearInput(today.getFullYear())
+      setMonthsInput("6")
+      setMonthsRange(6)
+      if (project.startDate) {
+        const pStart = new Date(project.startDate)
+        setTimelineStart(pStart)
+        setTimelineEnd(addDays(pStart, 6 * 30 - 1))
+        setMonthInput(pStart.getMonth())
+        setYearInput(pStart.getFullYear())
+      } else {
+        const today = new Date()
+        setTimelineStart(today)
+        setTimelineEnd(addDays(today, 6 * 30 - 1))
+        setMonthInput(today.getMonth())
+        setYearInput(today.getFullYear())
+      }
     }
 
     // Reset filters

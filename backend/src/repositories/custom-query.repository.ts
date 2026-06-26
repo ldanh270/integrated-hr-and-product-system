@@ -10,12 +10,24 @@ export class PrismaCustomQueryRepository extends BaseRepository implements ICust
   }
 
   async findByEmployee(employeeId: string, projectId?: string | null, type?: string): Promise<CustomQuery[]> {
+    const whereClause: any = {
+      employeeId,
+      type: type === undefined ? undefined : type,
+    }
+
+    if (projectId !== undefined) {
+      if (projectId === null) {
+        whereClause.projectId = null
+      } else {
+        whereClause.OR = [
+          { projectId: projectId },
+          { projectId: null },
+        ]
+      }
+    }
+
     return this.prisma.customQuery.findMany({
-      where: {
-        employeeId,
-        projectId: projectId === undefined ? undefined : projectId,
-        type: type === undefined ? undefined : type,
-      },
+      where: whereClause,
       orderBy: {
         createdAt: SORT_ORDER.DESC,
       },
