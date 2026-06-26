@@ -50,7 +50,7 @@ export function useTaskReview({ task, projectId, onOpenChange }: UseTaskReviewPr
       let insideTag = false
       let textLength = 0
       for (let i = 0; i < resultNotes.length; i++) {
-        const char = resultNotes[i]
+        const char = resultNotes.charAt(i)
         if (char === "<") {
           insideTag = true
         } else if (char === ">") {

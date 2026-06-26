@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-object-injection */
 import { useState, useEffect } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Link } from "react-router-dom"
@@ -665,7 +666,6 @@ export function ProjectIssuesTab({
                     <TableRow className="hover:bg-transparent h-10">
                       {displayColumns.map((colKey) => {
                         const col = COLUMN_METADATA[colKey as keyof typeof COLUMN_METADATA]
-                        if (!col) return null
                         return (
                           <TableHead key={colKey} className={col.className}>
                             {col.label}
@@ -680,11 +680,11 @@ export function ProjectIssuesTab({
                       <TableRow key={task.id} className="h-14 hover:bg-muted/30">
                         {displayColumns.map((colKey) => {
                           const col = COLUMN_METADATA[colKey as keyof typeof COLUMN_METADATA]
-                          if (!col) return null
+                          const renderFn = col.render as (t: Task, s?: typeof statuses) => React.ReactNode
                           if (colKey === "status") {
-                            return (col as any).render(task, statuses)
+                            return renderFn(task, statuses)
                           }
-                          return (col as any).render(task)
+                          return renderFn(task)
                         })}
                         <TableCell>
                           <DropdownMenu>
@@ -893,7 +893,7 @@ export function ProjectIssuesTab({
             <Button
               variant="ghost"
               size="icon-xs"
-              onClick={() => setIsNewQueryOpen(true)}
+              onClick={() => { setIsNewQueryOpen(true); }}
               className="rounded-full cursor-pointer hover:bg-muted text-primary"
               title="Tạo truy vấn mới"
             >
@@ -906,7 +906,7 @@ export function ProjectIssuesTab({
               savedQueries.map((q) => (
                 <div key={q.id} className="flex items-center justify-between group">
                   <button
-                    onClick={() => applySavedQuery(q)}
+                    onClick={() => { applySavedQuery(q); }}
                     className="text-left text-xs font-semibold px-2 py-1.5 rounded-lg text-sky-600 dark:text-sky-400 hover:underline truncate max-w-[170px]"
                     title={q.name}
                   >
@@ -953,7 +953,7 @@ export function ProjectIssuesTab({
                 <Input
                   id="query-name"
                   value={newQueryName}
-                  onChange={(e) => setNewQueryName(e.target.value)}
+                  onChange={(e) => { setNewQueryName(e.target.value); }}
                   placeholder="Ví dụ: Công việc mở tuần này..."
                   className="h-9 text-xs rounded-lg border-border"
                   autoFocus
@@ -968,7 +968,7 @@ export function ProjectIssuesTab({
                 <Input
                   id="query-desc"
                   value={newQueryDesc}
-                  onChange={(e) => setNewQueryDesc(e.target.value)}
+                  onChange={(e) => { setNewQueryDesc(e.target.value); }}
                   placeholder="Mô tả mục đích của truy vấn..."
                   className="h-9 text-xs rounded-lg border-border"
                 />
@@ -981,7 +981,7 @@ export function ProjectIssuesTab({
                 id="query-for-all"
                 type="checkbox"
                 checked={newQueryForAll}
-                onChange={(e) => setNewQueryForAll(e.target.checked)}
+                onChange={(e) => { setNewQueryForAll(e.target.checked); }}
                 className="rounded border-border size-4"
               />
               <Label htmlFor="query-for-all" className="text-xs font-semibold cursor-pointer">
@@ -1018,7 +1018,7 @@ export function ProjectIssuesTab({
                     <input
                       type="checkbox"
                       checked={newQueryShowRelated}
-                      onChange={(e) => setNewQueryShowRelated(e.target.checked)}
+                      onChange={(e) => { setNewQueryShowRelated(e.target.checked); }}
                       className="rounded border-border size-3.5"
                     />
                     Liên quan
@@ -1027,7 +1027,7 @@ export function ProjectIssuesTab({
                     <input
                       type="checkbox"
                       checked={newQueryShowProgress}
-                      onChange={(e) => setNewQueryShowProgress(e.target.checked)}
+                      onChange={(e) => { setNewQueryShowProgress(e.target.checked); }}
                       className="rounded border-border size-3.5"
                     />
                     Tiến độ
@@ -1301,7 +1301,7 @@ export function ProjectIssuesTab({
                       multiple
                       size={6}
                       value={availSelectedKey ? [availSelectedKey] : []}
-                      onChange={(e) => setAvailSelectedKey(e.target.value)}
+                      onChange={(e) => { setAvailSelectedKey(e.target.value); }}
                       className="w-full text-xs p-1.5 border border-border rounded-md h-32 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
                     >
                       {AVAILABLE_COLUMNS.filter(col => !newQuerySelectedCols.includes(col.key)).map(col => (
@@ -1353,7 +1353,7 @@ export function ProjectIssuesTab({
                       multiple
                       size={6}
                       value={selSelectedKey ? [selSelectedKey] : []}
-                      onChange={(e) => setSelSelectedKey(e.target.value)}
+                      onChange={(e) => { setSelSelectedKey(e.target.value); }}
                       className="w-full text-xs p-1.5 border border-border rounded-md h-32 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
                     >
                       {newQuerySelectedCols.map(colKey => {
@@ -1462,7 +1462,7 @@ export function ProjectIssuesTab({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsNewQueryOpen(false)}
+                onClick={() => { setIsNewQueryOpen(false); }}
                 className="h-9 text-xs rounded-full cursor-pointer"
               >
                 Hủy

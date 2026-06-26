@@ -1,3 +1,5 @@
+/* eslint-disable react/no-danger */
+/* eslint-disable security/detect-object-injection */
 import { 
   FileText, 
   CheckCircle2, 

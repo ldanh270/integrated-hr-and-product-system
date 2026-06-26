@@ -483,7 +483,7 @@ export function ProjectKanbanTab({
               {/* Column Header */}
               <div 
                 draggable={canManageStatuses}
-                onDragStart={(e) => handleColumnDragStart(e, status.id)}
+                onDragStart={(e) => { handleColumnDragStart(e, status.id); }}
                 onDragEnd={handleColumnDragEnd}
                 className={`flex items-center justify-between p-3.5 border-b border-border/50 ${
                   canManageStatuses ? "cursor-grab active:cursor-grabbing hover:bg-secondary/20 transition-colors rounded-t-xl" : ""

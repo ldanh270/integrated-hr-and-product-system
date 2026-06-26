@@ -185,7 +185,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
 
     newQueryFilterKeys.forEach(k => {
       const filter = newQueryFilters[k]
-      if (filter && filter.enabled) {
+      if (filter.enabled) {
         finalKeys.push(k)
         finalFilters[k] = {
           enabled: true,
@@ -1537,7 +1537,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
 
               <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                 {newQueryFilterKeys.map((key) => {
-                  const filter = newQueryFilters[key]
+                  const filter = newQueryFilters[key] as { enabled: boolean; operator: string; value: string } | undefined
                   if (filter === undefined) return null
                   const def = Reflect.get(filterDefinitions, key) as { label: string; type: string; group: string } | undefined
                   

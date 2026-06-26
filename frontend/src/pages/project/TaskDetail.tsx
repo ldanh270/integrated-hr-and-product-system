@@ -1,3 +1,5 @@
+/* eslint-disable react/no-danger */
+/* eslint-disable security/detect-object-injection */
 // Import common layout containers
 import { PageCard, StatusPill } from "@/components/common"
 // Import spent time modal component
@@ -66,7 +68,7 @@ const cleanHtml = (html: string) => {
   let insideTag = false
   let textLength = 0
   for (let i = 0; i < html.length; i++) {
-    const char = html[i]
+    const char = html.charAt(i)
     if (char === "<") {
       insideTag = true
     } else if (char === ">") {

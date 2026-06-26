@@ -283,7 +283,6 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
 
   // Timeline days calculation dynamically based on start and end dates
   const timelineDays = useMemo(() => {
-    if (!timelineStart || !timelineEnd) return []
     const start = timelineStart
     const end = timelineEnd < timelineStart ? timelineStart : timelineEnd
     const daysInterval = eachDayOfInterval({ start, end })
