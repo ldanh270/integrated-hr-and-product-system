@@ -52,7 +52,7 @@ registry.register(new ProjectMembersSeeder())
 
 if (import.meta.main) {
   const seeder = new ProjectMembersSeeder()
-  const emps = await prisma.employee.findMany({ select: { id: true, role: true, username: true } })
+  const emps = await prisma.employee.findMany({ select: { id: true, position: true, username: true } })
   const projects = await prisma.project.findMany()
 
   const ctx = createEmptyContext()

@@ -1,4 +1,4 @@
-import { EMPLOYEE_TYPES, ROLE } from "@/configs/entities/employee.config.ts"
+import { EMPLOYEE_TYPES } from "@/configs/entities/employee.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
 import { ISeeder } from "@/scripts/seeders/seeder.interface.ts"
@@ -16,17 +16,17 @@ export class EmployeesSeeder implements ISeeder {
 
     // Ensure all 5 core role accounts exist (especially since seed-all clears the DB)
     const rolesToSeed = [
-      ROLE.ADMIN,
-      ROLE.HR_MANAGER,
-      ROLE.GENERAL_MANAGER,
-      ROLE.TEAM_LEADER,
-      ROLE.EMPLOYEE,
+      "admin",
+      "hr_manager",
+      "general_manager",
+      "team_leader",
+      "employee",
     ]
     let adminId = ""
     const passwordHashCore = await HashUtil.hash("Admin123@")
 
     for (const role of rolesToSeed) {
-      const username = role === ROLE.ADMIN ? "admin" : role
+      const username = role === "admin" ? "admin" : role
       const fullName = role
         .split("_")
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -36,17 +36,17 @@ export class EmployeesSeeder implements ISeeder {
 
       if (!existing) {
         let phoneSuffix = "0"
-        if (role === ROLE.ADMIN) phoneSuffix = "1"
-        else if (role === ROLE.HR_MANAGER) phoneSuffix = "2"
-        else if (role === ROLE.GENERAL_MANAGER) phoneSuffix = "3"
-        else if (role === ROLE.TEAM_LEADER) phoneSuffix = "4"
-        else if (role === ROLE.EMPLOYEE) phoneSuffix = "5"
+        if (role === "admin") phoneSuffix = "1"
+        else if (role === "hr_manager") phoneSuffix = "2"
+        else if (role === "general_manager") phoneSuffix = "3"
+        else if (role === "team_leader") phoneSuffix = "4"
+        else if (role === "employee") phoneSuffix = "5"
 
         existing = await prisma.employee.create({
           data: {
             username,
             passwordHash: passwordHashCore,
-            role: role as any,
+
             fullName: `${fullName} User`,
             email: `${username}@example.com`,
             phone: `012345678${phoneSuffix}`,
@@ -57,7 +57,7 @@ export class EmployeesSeeder implements ISeeder {
         console.log(`  [!] Core account missing, created default account: ${username}`)
       }
 
-      if (role === ROLE.ADMIN) {
+      if (role === "admin") {
         adminId = existing.id
       }
     }
@@ -76,7 +76,6 @@ export class EmployeesSeeder implements ISeeder {
 
       // Determine role (mostly employees, some team leaders)
       const isTeamLeader = index % 5 === 0
-      const role = isTeamLeader ? ROLE.TEAM_LEADER : ROLE.EMPLOYEE
 
       const type = faker.helpers.arrayElement(EMPLOYEE_TYPES)
 
@@ -84,7 +83,7 @@ export class EmployeesSeeder implements ISeeder {
         fullName: `${firstName} ${lastName}`,
         username,
         passwordHash,
-        role: role as any,
+
         email: faker.internet.email({ firstName, lastName, provider: "example.com" }),
         phone: faker.phone.number({ style: "national" }),
         address: faker.location.streetAddress(),
@@ -98,14 +97,14 @@ export class EmployeesSeeder implements ISeeder {
 
     const createdEmployees = await prisma.$transaction(
       employeesData.map((data) => prisma.employee.create({ data })),
-      { timeout: 30000 },
+      { timeout: 120000 },
     )
 
     console.log(`  Seeded ${createdEmployees.length} random employees.`)
 
     // Prepare context updates
     const allEmployees = await prisma.employee.findMany({
-      select: { id: true, role: true, username: true },
+      select: { id: true, username: true, position: true },
     })
 
     return {
