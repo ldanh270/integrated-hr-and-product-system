@@ -54,7 +54,7 @@ function formatDate(dateStr: string) {
 }
 
 function formatShiftTime(minutes?: number) {
-  if (minutes === undefined || minutes === null) return "--:--"
+  if (minutes === undefined) return "--:--"
   const h = Math.floor(minutes / 60)
   const m = minutes % 60
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`
@@ -86,14 +86,14 @@ function SubApplicationRow({
   const [expanded, setExpanded] = useState(false)
   const queryClient = useQueryClient()
 
-  const swapDetail = (app.shiftSwapDetail || app.detail) as Record<string, any> | undefined
+  const swapDetail = (app.shiftSwapDetail || app.detail) as Record<string, unknown> | undefined
   const isShiftSwap = app.type === "shift_swap"
   const isPartner =
     isShiftSwap &&
     swapDetail?.swapWithEmployeeId &&
     swapDetail.swapWithEmployeeId === currentUserId
 
-  const isPartnerPending = isPartner && swapDetail?.partnerApprovalStatus === "pending"
+  const isPartnerPending = Boolean(isPartner && swapDetail && swapDetail.partnerApprovalStatus === "pending")
   const isPending = app.status === APPLICATION_STATUS.PENDING
 
   const partnerApproveMutation = useMutation({
@@ -111,9 +111,9 @@ function SubApplicationRow({
     },
   })
 
-  const statusBadge = STATUS_BADGE[app.status] ?? { label: app.status, cls: "border-slate-300 text-slate-500" }
+  const statusBadge = STATUS_BADGE[app.status as keyof typeof STATUS_BADGE] || { label: app.status, cls: "border-slate-300 text-slate-500" }
   const partnerStatus = swapDetail?.partnerApprovalStatus
-  const partnerBadge = partnerStatus ? PARTNER_STATUS_BADGE[partnerStatus] : null
+  const partnerBadge = partnerStatus && typeof partnerStatus === "string" && partnerStatus in PARTNER_STATUS_BADGE ? PARTNER_STATUS_BADGE[partnerStatus as keyof typeof PARTNER_STATUS_BADGE] : null
 
   return (
     <div className="border border-border rounded-xl overflow-hidden">
@@ -123,10 +123,10 @@ function SubApplicationRow({
           "flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors",
           expanded && "bg-muted/20",
         )}
-        onClick={() => setExpanded((v) => !v)}
+        onClick={() => { setExpanded((v) => !v) }}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => e.key === "Enter" && setExpanded((v) => !v)}
+        onKeyDown={(e) => { if (e.key === "Enter") setExpanded((v) => !v) }}
       >
         <div className="flex items-center gap-3">
           <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0">
@@ -148,7 +148,7 @@ function SubApplicationRow({
         <div className="flex items-center gap-2">
           {/* Action buttons (visible without expanding) */}
           {mode === "manage" && isPending && !isPartner && (
-            <div className="flex items-center gap-2 mr-2" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 mr-2" onClick={(e) => { e.stopPropagation() }}>
               <button
                 onClick={() => onApprove(app)}
                 className="flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 px-2.5 py-1 rounded-full border border-transparent hover:border-emerald-200 transition-all"

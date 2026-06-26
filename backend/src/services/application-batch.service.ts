@@ -12,6 +12,7 @@ import {
   IApplicationRepository,
   IListApplicationsQueryDTO,
   ISubmitBatchApplicationDTO,
+  ISubmitApplicationDTO,
 } from "@/types/attendance.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { prisma } from "@/libs/database.ts"
@@ -61,7 +62,7 @@ export class ApplicationBatchService implements IApplicationBatchService {
    * @param data - The batch submission DTO.
    * @returns The created batch with all sub-applications.
    */
-  async submitBatch(data: ISubmitBatchApplicationDTO): Promise<any> {
+  async submitBatch(data: ISubmitBatchApplicationDTO): Promise<unknown> {
     const { type, items, assignedToId, employeeId } = data
 
     // §V: type must be batchable
@@ -85,8 +86,7 @@ export class ApplicationBatchService implements IApplicationBatchService {
     }
 
     // §V: validate each item's date range
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i]
+    for (const [i, item] of items.entries()) {
       const startDate = new Date(item.startDate)
       const endDate = new Date(item.endDate ?? item.startDate)
       if (endDate < startDate) {
@@ -116,7 +116,7 @@ export class ApplicationBatchService implements IApplicationBatchService {
         note: item.note,
         assignedToId,
         detail: item.detail,
-      } as any
+      } as ISubmitApplicationDTO
       await strategy.validate(submitDto, strategyDeps)
     }
 
@@ -133,7 +133,7 @@ export class ApplicationBatchService implements IApplicationBatchService {
     const requesterName = requesterEmployee?.fullName ?? "Nhân viên"
 
     // Create the batch atomically
-    const batch = await this.batchRepo.createBatch(data)
+    const batch = (await this.batchRepo.createBatch(data)) as any
 
     // Post-submit: send notifications for shift_swap items with partners
     if (type === APPLICATION_TYPES.SHIFT_SWAP.LABEL && batch?.applications) {
@@ -159,7 +159,7 @@ export class ApplicationBatchService implements IApplicationBatchService {
    * @param id - The batch ID.
    * @returns The batch with sub-applications.
    */
-  async getBatchById(id: string): Promise<any> {
+  async getBatchById(id: string): Promise<unknown> {
     const batch = await this.batchRepo.findById(id)
     if (!batch) {
       throw new AppError(
@@ -181,7 +181,7 @@ export class ApplicationBatchService implements IApplicationBatchService {
   async listMyBatches(
     employeeId: string,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: any[]; total: number }> {
+  ): Promise<{ data: unknown[]; total: number }> {
     return this.batchRepo.findByEmployee(employeeId, query)
   }
 
@@ -194,7 +194,7 @@ export class ApplicationBatchService implements IApplicationBatchService {
   async listAllBatches(
     query: IListApplicationsQueryDTO,
     user?: { empId: string; role: string },
-  ): Promise<{ data: any[]; total: number }> {
+  ): Promise<{ data: unknown[]; total: number }> {
     return this.batchRepo.findAll(query, user)
   }
 
@@ -205,8 +205,8 @@ export class ApplicationBatchService implements IApplicationBatchService {
    * @param id - The batch ID.
    * @param requesterId - The ID of the requester.
    */
-  async cancelBatch(id: string, requesterId: string): Promise<any> {
-    const batch = await this.batchRepo.findById(id)
+  async cancelBatch(id: string, requesterId: string): Promise<unknown> {
+    const batch = (await this.batchRepo.findById(id)) as any
 
     if (!batch) {
       throw new AppError(

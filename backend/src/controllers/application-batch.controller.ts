@@ -21,7 +21,7 @@ export class ApplicationBatchController {
    * @param req - Authenticated request with batch payload.
    * @param res - Response with created batch.
    */
-  submitBatch = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  submitBatch = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
       const employeeId = req.user?.empId
       if (!employeeId) {
@@ -52,7 +52,7 @@ export class ApplicationBatchController {
    * @param req - Authenticated request with batch ID param.
    * @param res - Response with batch details.
    */
-  getById = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  getById = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     const batch = await this.service.getBatchById(String(req.params.id))
     res.status(HttpStatusCode.OK).json({ data: batch, error: null })
   }
@@ -63,7 +63,7 @@ export class ApplicationBatchController {
    * @param req - Authenticated request with query params.
    * @param res - Response with paginated batches.
    */
-  listMine = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  listMine = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
       const employeeId = req.user?.empId
       if (!employeeId) {
@@ -78,10 +78,10 @@ export class ApplicationBatchController {
         meta: {
           total: result.total,
           page: query.page,
-          pageSize: query.pageSize,
+          limit: query.pageSize ?? 20,
           totalPages: Math.ceil(result.total / (query.pageSize ?? 20)),
         },
-      } as any)
+      })
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
@@ -99,7 +99,7 @@ export class ApplicationBatchController {
    * @param req - Authenticated request with query params.
    * @param res - Response with paginated batches.
    */
-  listAll = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  listAll = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
       const query = listApplicationsQuerySchema.parse(req.query)
       const result = await this.service.listAllBatches(query, req.user)
@@ -109,10 +109,10 @@ export class ApplicationBatchController {
         meta: {
           total: result.total,
           page: query.page,
-          pageSize: query.pageSize,
+          limit: query.pageSize ?? 20,
           totalPages: Math.ceil(result.total / (query.pageSize ?? 20)),
         },
-      } as any)
+      })
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
@@ -131,7 +131,7 @@ export class ApplicationBatchController {
    * @param req - Authenticated request with batch ID param.
    * @param res - Response with updated batch.
    */
-  cancelBatch = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  cancelBatch = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
       const employeeId = req.user?.empId
       if (!employeeId) {

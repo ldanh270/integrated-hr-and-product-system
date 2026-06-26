@@ -11,23 +11,29 @@ import { useState } from "react"
 
 import { ChevronLeft, ChevronRight, FileText, Filter, RefreshCw } from "lucide-react"
 
-const STATUS_LABELS: Record<string, { label: string; colorClass: string } | undefined> = {
-  [APPLICATION_STATUS.PENDING]: {
-    label: "Chờ duyệt",
-    colorClass: "text-amber-600 border-amber-600 font-medium",
-  },
-  [APPLICATION_STATUS.APPROVED]: {
-    label: "Đã duyệt",
-    colorClass: "text-emerald-600 border-emerald-600 font-medium",
-  },
-  [APPLICATION_STATUS.REJECTED]: {
-    label: "Không duyệt",
-    colorClass: "text-red-600 border-red-600 font-medium",
-  },
-  [APPLICATION_STATUS.CANCELLED]: {
-    label: "Đã hủy",
-    colorClass: "text-slate-500 border-slate-500 font-medium",
-  },
+const getStatusLabel = (status: string) => {
+  switch (status) {
+    case APPLICATION_STATUS.PENDING:
+      return { label: "Chờ duyệt", colorClass: "text-amber-600 border-amber-600 font-medium" }
+    case APPLICATION_STATUS.APPROVED:
+      return { label: "Đã duyệt", colorClass: "text-emerald-600 border-emerald-600 font-medium" }
+    case APPLICATION_STATUS.REJECTED:
+      return { label: "Không duyệt", colorClass: "text-red-600 border-red-600 font-medium" }
+    case APPLICATION_STATUS.CANCELLED:
+      return { label: "Đã hủy", colorClass: "text-slate-500 border-slate-500 font-medium" }
+    default:
+      return undefined
+  }
+}
+
+type ApplicationBatchBase = {
+  id: string
+  applications?: Array<{ status: string }>
+  employee?: { fullName: string }
+  employeeId: string
+  type: string
+  createdAt: string | Date
+  assignedTo?: { fullName: string }
 }
 
 interface ApplicationListProps {
@@ -217,17 +223,17 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
                   </td>
                 </tr>
               ) : (
-                applications.map((batch: any) => {
+                applications.map((batch: ApplicationBatchBase) => {
                   const apps = batch.applications || []
                   let computedStatus: string = APPLICATION_STATUS.PENDING
                   if (apps.length > 0) {
-                    if (apps.some((a: any) => a.status === APPLICATION_STATUS.PENDING)) {
+                    if (apps.some((a) => a.status === APPLICATION_STATUS.PENDING)) {
                       computedStatus = APPLICATION_STATUS.PENDING
-                    } else if (apps.every((a: any) => a.status === APPLICATION_STATUS.CANCELLED)) {
+                    } else if (apps.every((a) => a.status === APPLICATION_STATUS.CANCELLED)) {
                       computedStatus = APPLICATION_STATUS.CANCELLED
-                    } else if (apps.every((a: any) => a.status === APPLICATION_STATUS.APPROVED)) {
+                    } else if (apps.every((a) => a.status === APPLICATION_STATUS.APPROVED)) {
                       computedStatus = APPLICATION_STATUS.APPROVED
-                    } else if (apps.every((a: any) => a.status === APPLICATION_STATUS.REJECTED)) {
+                    } else if (apps.every((a) => a.status === APPLICATION_STATUS.REJECTED)) {
                       computedStatus = APPLICATION_STATUS.REJECTED
                     } else {
                       // Mixed final statuses
@@ -238,7 +244,7 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
                   return (
                     <tr
                       key={batch.id}
-                      onClick={() => { onRowClick(batch); }}
+                      onClick={() => { onRowClick(batch as any); }}
                       className="hover:bg-muted/50 transition-colors cursor-pointer group"
                     >
                       <td className="px-4 py-4 text-foreground font-medium">
@@ -266,11 +272,11 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
                         <div className="flex justify-center">
                           <span
                             className={`inline-flex items-center justify-center px-4 py-1.5 text-[11px] font-bold border rounded-full bg-transparent whitespace-nowrap ${
-                              STATUS_LABELS[computedStatus]?.colorClass ||
+                              getStatusLabel(computedStatus)?.colorClass ||
                               "text-muted-foreground border-border"
                             }`}
                           >
-                            {STATUS_LABELS[computedStatus]?.label || computedStatus}
+                            {getStatusLabel(computedStatus)?.label || computedStatus}
                           </span>
                         </div>
                       </td>

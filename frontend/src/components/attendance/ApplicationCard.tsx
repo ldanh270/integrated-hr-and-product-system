@@ -96,7 +96,7 @@ export function ApplicationCard({
             {(app.approvedBy || app.assignedTo) && (
               <div className="flex flex-col gap-0.5">
                 <span className="text-slate-400 font-medium">Người duyệt</span>
-                <span className="text-slate-700">{(app.approvedBy || app.assignedTo)!.fullName}</span>
+                <span className="text-slate-700">{(app.approvedBy || app.assignedTo)?.fullName}</span>
               </div>
             )}
           </div>

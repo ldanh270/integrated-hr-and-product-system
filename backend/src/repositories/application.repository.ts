@@ -431,15 +431,16 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     query: IListApplicationsQueryDTO & { employeeId?: string; keyword?: string },
     managedBy?: { empId: string; role: string }
   ) {
-    let where: Record<string, any> = {}
+    let where: Record<string, unknown> = {}
 
     if (query.employeeId) where.employeeId = query.employeeId
     if (query.type) where.type = query.type
     if (query.status) where.status = query.status
     if (query.startDate || query.endDate) {
-      where.startDate = {}
-      if (query.startDate) where.startDate.gte = new Date(query.startDate)
-      if (query.endDate) where.startDate.lte = new Date(query.endDate)
+      const startDateFilter: Record<string, Date> = {}
+      if (query.startDate) startDateFilter.gte = new Date(query.startDate)
+      if (query.endDate) startDateFilter.lte = new Date(query.endDate)
+      where.startDate = startDateFilter
     }
 
     if (query.keyword) {

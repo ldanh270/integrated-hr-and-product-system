@@ -27,7 +27,7 @@ export class ApplicationController {
    * @param res - The response object containing the API response envelope.
    * @returns A promise that resolves to the response with the created application.
    */
-  submit = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  submit = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
       const employeeId = req.user?.empId // §SEC: always from JWT, never from body
       if (!employeeId) throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
@@ -56,7 +56,7 @@ export class ApplicationController {
    * @param res - The response object containing the API response envelope.
    * @returns A promise that resolves to the response with the application details.
    */
-  getById = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  getById = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     const app = await this.service.getApplicationById(String(req.params.id))
     res.status(HttpStatusCode.OK).json({ data: app, error: null })
   }
@@ -69,7 +69,7 @@ export class ApplicationController {
    * @param res - The response object containing the paginated API response.
    * @returns A promise that resolves to the response with the list of applications.
    */
-  listAll = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  listAll = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
       const query = listApplicationsQuerySchema.parse(req.query)
       const result = await this.service.listApplications(query, req.user)
@@ -79,10 +79,10 @@ export class ApplicationController {
         meta: {
           total: result.total,
           page: query.page,
-          pageSize: query.pageSize,
+          limit: query.pageSize ?? 20,
           totalPages: Math.ceil(result.total / (query.pageSize ?? 20)),
         },
-      } as any)
+      })
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
@@ -106,7 +106,7 @@ export class ApplicationController {
    * @param res - The response object containing the paginated API response.
    * @returns A promise that resolves to the response with the employee's own applications.
    */
-  listMine = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  listMine = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
       const employeeId = req.user?.empId
       if (!employeeId) throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
@@ -118,10 +118,10 @@ export class ApplicationController {
         meta: {
           total: result.total,
           page: query.page,
-          pageSize: query.pageSize,
+          limit: query.pageSize ?? 20,
           totalPages: Math.ceil(result.total / (query.pageSize ?? 20)),
         },
-      } as any)
+      })
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
@@ -145,7 +145,7 @@ export class ApplicationController {
    * @param res - The response object containing the paginated API response.
    * @returns A promise that resolves to the response with the employee's applications.
    */
-  listByEmployee = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  listByEmployee = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
       const employeeId = String(req.body?.employeeId ?? "")
       if (!employeeId) {
@@ -167,10 +167,10 @@ export class ApplicationController {
         meta: {
           total: result.total,
           page: query.page,
-          pageSize: query.pageSize,
+          limit: query.pageSize ?? 20,
           totalPages: Math.ceil(result.total / (query.pageSize ?? 20)),
         },
-      } as any)
+      })
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
@@ -193,7 +193,7 @@ export class ApplicationController {
    * @param res - The response object containing the API response envelope.
    * @returns A promise that resolves to the response with the updated application status.
    */
-  cancel = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  cancel = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
       const employeeId = req.user?.empId
       if (!employeeId) throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
@@ -223,7 +223,7 @@ export class ApplicationController {
    * @param res - The response object containing the API response envelope.
    * @returns A promise that resolves to the response with the approved application.
    */
-  approve = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  approve = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
       const processorId = req.user?.empId // §SEC: from JWT
       if (!processorId) throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
@@ -250,7 +250,7 @@ export class ApplicationController {
    * @param res - The response object containing the API response envelope.
    * @returns A promise that resolves to the response with the rejected application.
    */
-  reject = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  reject = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
       const processorId = req.user?.empId // §SEC: from JWT
       if (!processorId) throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)

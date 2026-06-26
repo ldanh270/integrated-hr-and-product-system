@@ -390,15 +390,15 @@ export interface IHolidayService {
  */
 export interface IApplicationBatchRepository {
   /** Creates a batch with all sub-applications in a single transaction. */
-  createBatch(data: ISubmitBatchApplicationDTO): Promise<any>
+  createBatch(data: ISubmitBatchApplicationDTO): Promise<unknown>
   /** Finds a batch by ID, including all sub-applications with their details. */
-  findById(id: string): Promise<any | null>
+  findById(id: string): Promise<unknown | null>
   /** Lists batches submitted by a specific employee. */
-  findByEmployee(employeeId: string, query: IListApplicationsQueryDTO): Promise<{ data: any[]; total: number }>
+  findByEmployee(employeeId: string, query: IListApplicationsQueryDTO): Promise<{ data: unknown[]; total: number }>
   /** Lists all batches visible to a manager. */
-  findAll(query: IListApplicationsQueryDTO, managedBy?: { empId: string; role: string }): Promise<{ data: any[]; total: number }>
+  findAll(query: IListApplicationsQueryDTO, managedBy?: { empId: string; role: string }): Promise<{ data: unknown[]; total: number }>
   /** Cancels all pending sub-applications within a batch. */
-  cancelBatch(id: string, employeeId: string): Promise<any | null>
+  cancelBatch(id: string, employeeId: string): Promise<unknown | null>
 }
 
 /**
@@ -406,13 +406,13 @@ export interface IApplicationBatchRepository {
  */
 export interface IApplicationBatchService {
   /** Submits a batch of applications. */
-  submitBatch(data: ISubmitBatchApplicationDTO): Promise<any>
+  submitBatch(data: ISubmitBatchApplicationDTO): Promise<unknown>
   /** Gets a batch by ID. */
-  getBatchById(id: string): Promise<any>
+  getBatchById(id: string): Promise<unknown>
   /** Lists the authenticated employee's batches. */
-  listMyBatches(employeeId: string, query: IListApplicationsQueryDTO): Promise<{ data: any[]; total: number }>
+  listMyBatches(employeeId: string, query: IListApplicationsQueryDTO): Promise<{ data: unknown[]; total: number }>
   /** Lists all batches (manager view). */
-  listAllBatches(query: IListApplicationsQueryDTO, user?: { empId: string; role: string }): Promise<{ data: any[]; total: number }>
+  listAllBatches(query: IListApplicationsQueryDTO, user?: { empId: string; role: string }): Promise<{ data: unknown[]; total: number }>
   /** Cancels a batch (only owner, only pending items). */
-  cancelBatch(id: string, requesterId: string): Promise<any>
+  cancelBatch(id: string, requesterId: string): Promise<unknown>
 }

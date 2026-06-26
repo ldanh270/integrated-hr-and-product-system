@@ -54,7 +54,7 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
    * @param data - The batch submission DTO.
    * @returns The created batch with all sub-applications included.
    */
-  async createBatch(data: ISubmitBatchApplicationDTO): Promise<any> {
+  async createBatch(data: ISubmitBatchApplicationDTO): Promise<unknown> {
     const { employeeId, type, assignedToId, items } = data
 
     return this.prisma.$transaction(async (tx) => {
@@ -101,7 +101,7 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
    * @param id - The batch ID.
    * @returns The batch with sub-applications, or null.
    */
-  async findById(id: string): Promise<any | null> {
+  async findById(id: string): Promise<unknown | null> {
     return this.prisma.applicationBatch.findUnique({
       where: { id },
       include: BATCH_INCLUDE,
@@ -117,7 +117,7 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
   async findByEmployee(
     employeeId: string,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: any[]; total: number }> {
+  ): Promise<{ data: unknown[]; total: number }> {
     const where = this._buildWhere({ ...query, employeeId })
     return this._paginate(where, query)
   }
@@ -131,7 +131,7 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
   async findAll(
     query: IListApplicationsQueryDTO,
     managedBy?: { empId: string; role: string },
-  ): Promise<{ data: any[]; total: number }> {
+  ): Promise<{ data: unknown[]; total: number }> {
     const where = this._buildWhere(query, managedBy)
     return this._paginate(where, query)
   }
@@ -144,7 +144,7 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
    * @param employeeId - The ID of the owner.
    * @returns The updated batch, or null if not found / unauthorized.
    */
-  async cancelBatch(id: string, employeeId: string): Promise<any | null> {
+  async cancelBatch(id: string, employeeId: string): Promise<unknown | null> {
     try {
       return await this.prisma.$transaction(async (tx) => {
         // Verify ownership
@@ -175,7 +175,7 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
   /**
    * Constructs the Prisma nested detail creation payload based on application type.
    */
-  private _buildDetailCreate(type: string, detail: Record<string, unknown>): Record<string, any> {
+  private _buildDetailCreate(type: string, detail: Record<string, unknown>): Record<string, unknown> {
     switch (type) {
       case APPLICATION_TYPES.LEAVE.LABEL:
         return {
@@ -206,9 +206,9 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
           shiftSwapDetail: {
             create: {
               employeeShiftId: detail.employeeShiftId,
-              workingShiftId: (detail.workingShiftId as string) ?? null,
-              swapWithEmployeeId: (detail.swapWithEmployeeId as string) ?? null,
-              swapWithShiftId: (detail.swapWithShiftId as string) ?? null,
+              workingShiftId: (detail.workingShiftId as string | undefined) ?? null,
+              swapWithEmployeeId: (detail.swapWithEmployeeId as string | undefined) ?? null,
+              swapWithShiftId: (detail.swapWithShiftId as string | undefined) ?? null,
             },
           },
         }
@@ -235,15 +235,16 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
   private _buildWhere(
     query: IListApplicationsQueryDTO & { employeeId?: string },
     managedBy?: { empId: string; role: string },
-  ): Record<string, any> {
-    const where: Record<string, any> = {}
+  ): Record<string, unknown> {
+    const where: Record<string, unknown> = {}
 
     if (query.employeeId) where.employeeId = query.employeeId
     if (query.type) where.type = query.type
     if (query.startDate || query.endDate) {
-      where.createdAt = {}
-      if (query.startDate) where.createdAt.gte = new Date(query.startDate)
-      if (query.endDate) where.createdAt.lte = new Date(query.endDate)
+      const createdAtFilter: Record<string, Date> = {}
+      if (query.startDate) createdAtFilter.gte = new Date(query.startDate)
+      if (query.endDate) createdAtFilter.lte = new Date(query.endDate)
+      where.createdAt = createdAtFilter
     }
 
     if (query.keyword) {
@@ -316,9 +317,9 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
    * Paginates ApplicationBatch records.
    */
   private async _paginate(
-    where: Record<string, any>,
+    where: Record<string, unknown>,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: any[]; total: number }> {
+  ): Promise<{ data: unknown[]; total: number }> {
     const page = query.page ?? 1
     const pageSize = query.pageSize ?? 20
     const skip = (page - 1) * pageSize
