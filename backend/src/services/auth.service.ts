@@ -35,18 +35,21 @@ import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
 import { JwtUtil } from "@/utils/jwt.util.ts"
 import { getPersonalEmployeeLink } from "@/utils/attendance/resolve-personal-employee-id.ts"
+import { authorizationService } from "./authorization.service.ts"
 
 import crypto from "crypto"
 
 async function toAuthEmployee(employee: AuthEmployeeDocument): Promise<AuthResponseDto["employee"]> {
   const link = await getPersonalEmployeeLink(employee.id)
+  const authContext = await authorizationService.getAuthorizationContext(employee.id, { skipCache: false })
 
   return {
     id: employee.id,
     username: employee.username,
     email: employee.email,
     fullName: employee.fullName,
-    role: employee.role,
+    roles: Array.from(authContext.roles),
+    permissions: Array.from(authContext.permissions),
     personalEmployeeId: link.personalEmployeeId,
     personalEmployee: link.personalEmployee,
   }
@@ -72,7 +75,7 @@ export class AuthService implements IAuthService {
     const payload = {
       empId: employee.id,
       username: employee.username,
-      role: employee.role,
+      version: 3,
     }
 
     const accessToken = JwtUtil.generateAccessToken(payload)
@@ -504,11 +507,17 @@ export class AuthService implements IAuthService {
     return { message: "Password changed successfully." }
   }
 
-  /**
-   * Gets activity logs with filtering and pagination
-   */
   async getActivityLogs(query: ActivityLogQuery): Promise<PaginatedActivityLogsDto> {
     return this.repo.listActivityLogs(query)
+  }
+
+  /**
+   * Gets activity logs for a specific user (Personal History)
+   * This implementation ensures IDOR protection by overriding employeeId from token
+   */
+  async getMyActivityLogs(empId: string, query: ActivityLogQuery): Promise<PaginatedActivityLogsDto> {
+    // IDOR Protection: Always use empId from token, ignoring anything in query
+    return this.repo.listActivityLogs({ ...query, employeeId: empId })
   }
 
   /**
@@ -516,6 +525,10 @@ export class AuthService implements IAuthService {
    */
   async getActivityLogDetail(id: string): Promise<ActivityLogItem | null> {
     return this.repo.getActivityLogById(id)
+  }
+
+  async getMyActivityLogDetail(empId: string, id: string): Promise<ActivityLogItem | null> {
+    return this.repo.getActivityLogByIdForEmployee(id, empId)
   }
 
   /**

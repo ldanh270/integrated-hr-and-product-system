@@ -44,7 +44,6 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       email: employee.email,
       fullName: employee.fullName,
       passwordHash: employee.passwordHash,
-      role: employee.role,
       status: employee.status,
       lockedUntil: employee.lockedUntil,
       failedLoginCount: employee.failedLoginCount,
@@ -73,7 +72,6 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       email: employee.email,
       fullName: employee.fullName,
       passwordHash: employee.passwordHash,
-      role: employee.role,
       status: employee.status,
       lockedUntil: employee.lockedUntil,
       failedLoginCount: employee.failedLoginCount,
@@ -98,7 +96,6 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       email: employee.email,
       fullName: employee.fullName,
       passwordHash: employee.passwordHash,
-      role: employee.role,
       status: employee.status,
       lockedUntil: employee.lockedUntil,
       failedLoginCount: employee.failedLoginCount,
@@ -348,6 +345,35 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
   async getActivityLogById(id: string): Promise<ActivityLogItem | null> {
     const log = await this.prisma.activityLog.findUnique({
       where: { id },
+      include: {
+        employee: {
+          select: {
+            fullName: true,
+          },
+        },
+      },
+    })
+
+    if (!log) return null
+
+    return {
+      id: log.id,
+      employeeId: log.employeeId,
+      employeeName: log.employee?.fullName,
+      category: log.category,
+      actionType: log.actionType,
+      ipAddress: log.ipAddress,
+      details: log.details,
+      createdAt: log.createdAt,
+    }
+  }
+
+  async getActivityLogByIdForEmployee(id: string, employeeId: string): Promise<ActivityLogItem | null> {
+    const log = await this.prisma.activityLog.findFirst({
+      where: {
+        id,
+        employeeId,
+      },
       include: {
         employee: {
           select: {
