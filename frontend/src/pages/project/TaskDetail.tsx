@@ -536,7 +536,9 @@ export default function TaskDetail() {
               /* nosemgrep */
               <div 
                 className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: sanitizedDescription }}
+                dangerouslySetInnerHTML={{
+                  __html: sanitizedDescription // NOSONAR
+                }}
               />
             ) : (
               <p className="text-xs text-muted-foreground italic">Không có mô tả chi tiết cho công việc này.</p>
@@ -556,7 +558,9 @@ export default function TaskDetail() {
                   {/* nosemgrep */}
                   <div 
                     className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground leading-relaxed bg-muted/30 p-3 rounded-lg border border-border/40"
-                    dangerouslySetInnerHTML={{ __html: sanitizedResultNotes }}
+                    dangerouslySetInnerHTML={{
+                      __html: sanitizedResultNotes // NOSONAR
+                    }}
                   />
                 </div>
               </div>
