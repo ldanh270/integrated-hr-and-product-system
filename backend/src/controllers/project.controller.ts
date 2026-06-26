@@ -5,6 +5,7 @@ import {
   addProjectMemberSchema,
   createProjectSchema,
   listProjectsQuerySchema,
+  updateProjectMemberSchema,
   updateProjectSchema,
 } from "@/schemas/project.schema.ts"
 import { ApiResponse, IProjectService, PaginatedProjectsDto, Project, GanttDataDto } from "@/types"
@@ -178,8 +179,14 @@ export class ProjectController {
         })
       }
 
-      const { employeeId } = addProjectMemberSchema.parse(req.body)
-      await this.service.addMember(String(req.params.id), employeeId, req.user.empId, req.user.role)
+      const { employeeId, hourlyRate, workMode } = addProjectMemberSchema.parse(req.body)
+      await this.service.addMember(
+        String(req.params.id),
+        employeeId,
+        req.user.empId,
+        req.user.role,
+        { hourlyRate, workMode },
+      )
       res.status(HttpStatusCode.OK).json({ data: null, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -215,6 +222,39 @@ export class ProjectController {
       req.user.role,
     )
     res.status(HttpStatusCode.OK).json({ data: null, error: null })
+  }
+
+  updateMember = async (req: AuthRequest, res: Response<ApiResponse<null>>) => {
+    try {
+      if (!req.user) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          data: null,
+          error: { message: "Unauthorized", code: ErrorCode.UNAUTHORIZED },
+        })
+      }
+
+      const body = updateProjectMemberSchema.parse(req.body)
+      await this.service.updateMember(
+        String(req.params.id),
+        String(req.params.employeeId),
+        req.user.empId,
+        req.user.role,
+        body,
+      )
+      res.status(HttpStatusCode.OK).json({ data: null, error: null })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: {
+            message: "Validation error",
+            code: ErrorCode.VALIDATION_ERROR,
+            meta: error.issues,
+          },
+        })
+      }
+      throw error
+    }
   }
 
   /**

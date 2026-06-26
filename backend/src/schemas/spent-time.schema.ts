@@ -1,4 +1,4 @@
-import { SPENT_TIME_ACTIVITIES, SPENT_TIME_WORK_TIME_TYPES } from "@/configs/entities/project.config.ts"
+import { SPENT_TIME_ACTIVITIES, SPENT_TIME_STATUSES, SPENT_TIME_WORK_TIME_TYPES } from "@/configs/entities/project.config.ts"
 import { z } from "zod"
 
 export const createSpentTimeSchema = z
@@ -46,6 +46,7 @@ export const spentTimeQuerySchema = z
     taskId: z.string().optional(),
     employeeId: z.string().optional(),
     projectId: z.string().optional(),
+    status: z.enum(SPENT_TIME_STATUSES).optional(),
     startDate: z
       .string()
       .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid startDate format" })
@@ -58,3 +59,11 @@ export const spentTimeQuerySchema = z
   .strict()
 
 export type SpentTimeQuerySchemaType = z.infer<typeof spentTimeQuerySchema>
+
+export const rejectSpentTimeSchema = z
+  .object({
+    reason: z.string().min(1, "Rejection reason is required").max(500).trim(),
+  })
+  .strict()
+
+export type RejectSpentTimeSchemaType = z.infer<typeof rejectSpentTimeSchema>

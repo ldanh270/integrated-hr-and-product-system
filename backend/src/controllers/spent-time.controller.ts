@@ -2,6 +2,7 @@ import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import {
   createSpentTimeSchema,
+  rejectSpentTimeSchema,
   spentTimeQuerySchema,
   updateSpentTimeSchema,
 } from "@/schemas/spent-time.schema.ts"
@@ -145,5 +146,49 @@ export class SpentTimeController {
 
     await this.service.deleteSpentTime(String(req.params.id), req.user.empId, req.user.role)
     res.status(HttpStatusCode.OK).json({ data: null, error: null })
+  }
+
+  approve = async (req: AuthRequest, res: Response<ApiResponse<SpentTime>>) => {
+    if (!req.user) {
+      return res.status(HttpStatusCode.UNAUTHORIZED).json({
+        data: null,
+        error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+      })
+    }
+
+    const spentTime = await this.service.approveSpentTime(
+      String(req.params.id),
+      req.user.empId,
+      req.user.role,
+    )
+    res.status(HttpStatusCode.OK).json({ data: spentTime, error: null })
+  }
+
+  reject = async (req: AuthRequest, res: Response<ApiResponse<SpentTime>>) => {
+    try {
+      if (!req.user) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          data: null,
+          error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+        })
+      }
+
+      const { reason } = rejectSpentTimeSchema.parse(req.body)
+      const spentTime = await this.service.rejectSpentTime(
+        String(req.params.id),
+        reason,
+        req.user.empId,
+        req.user.role,
+      )
+      res.status(HttpStatusCode.OK).json({ data: spentTime, error: null })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
+        })
+      }
+      throw error
+    }
   }
 }

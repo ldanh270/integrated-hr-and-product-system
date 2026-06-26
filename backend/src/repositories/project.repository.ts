@@ -9,6 +9,7 @@ import {
 } from "@/types"
 
 import { Prisma, PrismaClient, Project as PrismaProject, Employee as PrismaEmployee } from "@prisma/client"
+import { PROJECT_MEMBER_WORK_MODE } from "@/configs/entities/project.config.ts"
 
 import { BaseRepository } from "./base.repository.ts"
 
@@ -242,7 +243,11 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
    * Uses upsert to restore deleted members or create new ones
    * Returns true if successful
    */
-  async addMember(projectId: string, employeeId: string): Promise<boolean> {
+  async addMember(
+    projectId: string,
+    employeeId: string,
+    options?: { hourlyRate?: number | null; workMode?: string },
+  ): Promise<boolean> {
     await this.prisma.projectMember.upsert({
       where: {
         projectId_employeeId: { projectId, employeeId },
@@ -250,9 +255,13 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
       create: {
         projectId,
         employeeId,
+        hourlyRate: options?.hourlyRate ?? null,
+        workMode: (options?.workMode as any) ?? undefined,
       },
       update: {
         removedAt: null,
+        ...(options?.hourlyRate !== undefined ? { hourlyRate: options.hourlyRate } : {}),
+        ...(options?.workMode ? { workMode: options.workMode as any } : {}),
       },
     })
     return true
@@ -285,6 +294,22 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
     return member !== null && member.removedAt === null
   }
 
+  async getMember(
+    projectId: string,
+    employeeId: string,
+  ): Promise<{ hourlyRate: number | null; workMode: string } | null> {
+    const member = await this.prisma.projectMember.findUnique({
+      where: {
+        projectId_employeeId: { projectId, employeeId },
+      },
+    })
+    if (!member || member.removedAt !== null) return null
+    return {
+      hourlyRate: member.hourlyRate ? Number(member.hourlyRate) : null,
+      workMode: member.workMode,
+    }
+  }
+
   /**
    * Retrieves all active members of a project with their details
    * Only includes members with removedAt = null
@@ -308,10 +333,45 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
       id: `${m.projectId}_${m.employeeId}`,
       projectId: m.projectId,
       employeeId: m.employeeId,
+      hourlyRate: m.hourlyRate ? Number(m.hourlyRate) : null,
+      workMode: m.workMode,
       joinedAt: m.joinedAt,
       removedAt: m.removedAt,
       employee: m.employee,
     }))
+  }
+
+  /**
+   * True when employee is an active onsite member of at least one project.
+   * Used by attendance fallback to allow a single daily GPS check-in for onsite PT.
+   */
+  async hasActiveOnsiteMembership(employeeId: string): Promise<boolean> {
+    const count = await this.prisma.projectMember.count({
+      where: {
+        employeeId,
+        removedAt: null,
+        workMode: PROJECT_MEMBER_WORK_MODE.ONSITE,
+      },
+    })
+    return count > 0
+  }
+
+  async updateMember(
+    projectId: string,
+    employeeId: string,
+    data: { hourlyRate?: number | null; workMode?: string },
+  ): Promise<boolean> {
+    // Partial update — only fields sent by PATCH are changed.
+    await this.prisma.projectMember.update({
+      where: {
+        projectId_employeeId: { projectId, employeeId },
+      },
+      data: {
+        ...(data.hourlyRate !== undefined ? { hourlyRate: data.hourlyRate } : {}),
+        ...(data.workMode ? { workMode: data.workMode as Prisma.ProjectMemberUpdateInput["workMode"] } : {}),
+      },
+    })
+    return true
   }
 
   /**
