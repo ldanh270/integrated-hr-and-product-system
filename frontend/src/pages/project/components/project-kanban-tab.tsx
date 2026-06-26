@@ -595,7 +595,7 @@ export function ProjectKanbanTab({
                         </div>
 
                         <Link 
-                          to={`/project/tasks/${task.id}`}
+                          to={`/project/task/${task.id}`}
                           className="block text-xs font-bold text-foreground group-hover/card:text-primary transition-colors line-clamp-2 hover:underline"
                         >
                           {task.title}

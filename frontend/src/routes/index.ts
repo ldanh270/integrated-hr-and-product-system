@@ -206,17 +206,27 @@ const privateRoutes: RouteConfig[] = [
     layout: MainLayout,
   },
   {
-    path: "/project/:id",
+    path: "/project/:tab",
     component: lazy(() => import("@/pages/project/ProjectDetail.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/project/:id/tasks/new",
+    path: "/project/:id/task/new",
     component: lazy(() => import("@/pages/project/NewTask.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/project/tasks/:id",
+    path: "/project/task/new",
+    component: lazy(() => import("@/pages/project/NewTask.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/project/task",
+    component: lazy(() => import("@/pages/project/TaskDetail.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/project/task/:id",
     component: lazy(() => import("@/pages/project/TaskDetail.tsx")),
     layout: MainLayout,
   },

@@ -56,7 +56,7 @@ import {
   User,
 } from "lucide-react"
 // Import standard React hooks
-import { useState } from "react"
+import { useState, useEffect } from "react"
 // Import routing navigation
 import { Link, useNavigate, useParams } from "react-router-dom"
 
@@ -68,14 +68,32 @@ const cleanHtml = (html: string) => {
 
 // Main component to render task detailed specifications
 export default function TaskDetail() {
-  // Extract task ID from URL parameters
-  const { id: taskId } = useParams<{ id: string }>()
-  const id = taskId || ""
-  
   // Initialize query client, route navigation, and auth store
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { user } = useAuthStore()
+
+  // Extract task ID from URL parameters
+  const { id: taskId } = useParams<{ id: string }>()
+
+  // Resolve active task ID: prefer URL param, then sessionStorage
+  const activeTaskId = taskId || sessionStorage.getItem("activeTaskId") || ""
+
+  // Redirect to task-specific URL if accessing /project/task without an ID
+  useEffect(() => {
+    if (!taskId) {
+      if (activeTaskId) {
+        navigate(`/project/task/${activeTaskId}`, { replace: true })
+      } else {
+        toast.error("Vui lòng chọn một công việc để xem chi tiết")
+        navigate("/project/list", { replace: true })
+      }
+    } else {
+      sessionStorage.setItem("activeTaskId", taskId)
+    }
+  }, [taskId, activeTaskId, navigate])
+
+  const id = taskId || activeTaskId
 
   // State hooks to control dialog modal views
   const [isOpenLogTimeModal, setIsOpenLogTimeModal] = useState(false) // Visibility of log time modal
@@ -105,6 +123,13 @@ export default function TaskDetail() {
 
   // Capture project ID associated with this task
   const projectId = task?.projectId || ""
+
+  // Synchronize active project ID with sessionStorage
+  useEffect(() => {
+    if (task?.projectId) {
+      sessionStorage.setItem("activeProjectId", task.projectId)
+    }
+  }, [task?.projectId])
 
   // 2. Query hook to fetch spent time records log belonging to this task
   const { data: spentTimes, isLoading: isLoadingSpent } = useQuery({
@@ -227,7 +252,7 @@ export default function TaskDetail() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["tasks", "project", projectId] })
-      navigate(`/project/${projectId}`)
+      navigate("/project/overview")
     },
   })
 
@@ -312,7 +337,7 @@ export default function TaskDetail() {
                 Dự án
               </Link>
               <span>/</span>
-              <Link to={`/project/${task.projectId}`} className="hover:text-primary transition-colors font-semibold">
+              <Link to="/project/overview" className="hover:text-primary transition-colors font-semibold">
                 {task.project?.name || "Chi tiết dự án"}
               </Link>
               <span>/</span>
@@ -324,7 +349,7 @@ export default function TaskDetail() {
                 <Button
                   variant="ghost"
                   disabled={!prevTaskId}
-                  onClick={() => { navigate(`/project/tasks/${prevTaskId}`); }}
+                  onClick={() => { sessionStorage.setItem("activeTaskId", prevTaskId!); navigate(`/project/task/${prevTaskId}`); }}
                   className="rounded-full h-5 px-1.5 text-[9px] font-bold disabled:opacity-40 hover:bg-background cursor-pointer"
                 >
                   « Trước
@@ -335,7 +360,7 @@ export default function TaskDetail() {
                 <Button
                   variant="ghost"
                   disabled={!nextTaskId}
-                  onClick={() => { navigate(`/project/tasks/${nextTaskId}`); }}
+                  onClick={() => { sessionStorage.setItem("activeTaskId", nextTaskId!); navigate(`/project/task/${nextTaskId}`); }}
                   className="rounded-full h-5 px-1.5 text-[9px] font-bold disabled:opacity-40 hover:bg-background cursor-pointer"
                 >
                   Sau »

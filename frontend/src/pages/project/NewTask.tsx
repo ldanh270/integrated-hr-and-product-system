@@ -39,9 +39,9 @@ import type { ProjectTaskStatus } from "@/types/project-task-status.types"
 
 // Main component to render the "New Task" form
 export default function NewTask() {
-  // Extract project ID from the URL path parameters
+  // Extract project ID from the URL path parameters or fallback to sessionStorage
   const { id: projectId } = useParams<{ id: string }>()
-  const pId = projectId || ""
+  const pId = projectId || sessionStorage.getItem("activeProjectId") || ""
   
   // Initialize navigation, query invalidation client, and search parameter parser
   const queryClient = useQueryClient()
@@ -204,7 +204,7 @@ export default function NewTask() {
         setSelectedFiles([])
       } else {
         // Otherwise, navigate back to project detail page
-        navigate(`/project/${pId}`)
+        navigate("/project/issues")
       }
     },
     // Display error details if task creation fails
@@ -308,7 +308,7 @@ export default function NewTask() {
             Dự án
           </Link>
           <span>&gt;</span>
-          <Link to={`/project/${pId}`} className="hover:text-primary transition-colors font-medium">
+          <Link to="/project/overview" className="hover:text-primary transition-colors font-medium">
             {project?.name || "Outfiz Redmine"}
           </Link>
           <span>&gt;</span>

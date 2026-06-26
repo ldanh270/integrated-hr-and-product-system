@@ -46,19 +46,38 @@ const PROJECT_TABS = {
 } as const
 
 export default function ProjectDetail() {
-  const { id } = useParams<{ id: string }>()
-  const projectId = id || ""
-
+  const { tab } = useParams<{ tab?: string }>()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const openCreateParam = searchParams.get("createTask") === "true"
   const { user } = useAuthStore()
 
-  // Tab and Modal visibility states
-  const [activeTab, setActiveTab] = useState<string>(PROJECT_TABS.OVERVIEW)
+  // Route format: /project/:tab  (e.g., /project/overview)
+  // Project ID is always stored in sessionStorage (set when clicking a project from the list)
+  const isTabValid = tab ? Object.values(PROJECT_TABS).includes(tab as any) : false
+
+  const projectId = sessionStorage.getItem("activeProjectId") || ""
+  const activeTab: typeof PROJECT_TABS[keyof typeof PROJECT_TABS] =
+    isTabValid ? (tab as any) : PROJECT_TABS.OVERVIEW
+
   const [isOpenMemberModal, setIsOpenMemberModal] = useState(false)
   const [isOpenEditProjectModal, setIsOpenEditProjectModal] = useState(false)
+
+  // Redirect to canonical /project/:tab — fix invalid tab or missing project
+  useEffect(() => {
+    const searchStr = window.location.search
+    if (!projectId) {
+      toast.error("Vui lòng chọn một dự án để xem chi tiết")
+      navigate("/project/list", { replace: true })
+      return
+    }
+    const correctPath = `/project/${activeTab}`
+    const currentPath = window.location.pathname
+    if (currentPath !== correctPath) {
+      navigate(`${correctPath}${searchStr}`, { replace: true })
+    }
+  }, [tab, projectId, activeTab, navigate])
 
   // Fetch active project metadata
   const { data: project, isLoading: isLoadingProject } = useQuery({
@@ -113,9 +132,9 @@ export default function ProjectDetail() {
   // Auto-redirect to task creation screen if search parameter 'createTask' is present and user has permission
   useEffect(() => {
     if (openCreateParam && canCreateTask) {
-      navigate(`/project/${projectId}/tasks/new`, { replace: true })
+      navigate("/project/task/new", { replace: true })
     }
-  }, [openCreateParam, canCreateTask, projectId, navigate])
+  }, [openCreateParam, canCreateTask, navigate])
 
   // Determine if the current user is allowed to manage project members
   const canManageMembers = isAdminOrGM || isLeader
@@ -224,7 +243,6 @@ export default function ProjectDetail() {
         description={project.description}
         canCreateTask={canCreateTask}
         canManageMembers={canManageMembers}
-        projectId={projectId}
         onOpenEditProject={() => {
           setIsOpenEditProjectModal(true)
         }}
@@ -234,7 +252,7 @@ export default function ProjectDetail() {
       />
 
       {/* Tabs navigation panel: switches between Overview, Issues, and Activity views */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={(newTab) => navigate(`/project/${newTab}`)} className="space-y-6">
         <TabsList className="bg-secondary rounded-full p-1 border border-border/40 inline-flex">
           <TabsTrigger
             value={PROJECT_TABS.OVERVIEW}

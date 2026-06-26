@@ -7,7 +7,6 @@ interface ProjectHeaderProps {
   description?: string | null
   canCreateTask: boolean
   canManageMembers: boolean
-  projectId: string
   onOpenEditProject: () => void
   onOpenAddMember: () => void
 }
@@ -17,7 +16,6 @@ export function ProjectHeader({
   description,
   canCreateTask,
   canManageMembers,
-  projectId,
   onOpenEditProject,
   onOpenAddMember,
 }: ProjectHeaderProps) {
@@ -39,7 +37,7 @@ export function ProjectHeader({
         {canCreateTask && (
           <Button
             onClick={() => {
-              navigate(`/project/${projectId}/tasks/new`)
+              navigate("/project/task/new")
             }}
             className="rounded-full bg-primary text-primary-foreground hover:bg-primary/95 flex items-center gap-1.5 h-10 text-xs px-4"
           >
