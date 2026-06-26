@@ -1,9 +1,12 @@
-import { EMPLOYEE_STATUS, ROLE } from "@/configs/entities/employee.config.ts"
+import { EMPLOYEE_STATUS, SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
 import { ACTIVITY_ACTION, ACTIVITY_CATEGORY } from "@/configs/auth/auth.config.ts"
+import { APPROVAL_CONFIG } from "@/configs/rules/approval.config.ts"
 import { DB_ERROR_CODES } from "@/configs/system/db.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { prisma } from "@/libs/database.ts"
-import { Role } from "@prisma/client"
+import { authorizationService } from "./authorization.service.ts"
+import { auditService } from "./audit.service.ts"
+
 import {
   CreateEmployeeDto,
   Employee,
@@ -13,6 +16,7 @@ import {
   IEmployeeService,
   PaginatedEmployeesDto,
   UpdateEmployeeDto,
+  AppRole,
 } from "@/types"
 import { IAuthRepository } from "@/types/auth.types.ts"
 import { AppError } from "@/utils/error.util.ts"
@@ -71,14 +75,24 @@ export class EmployeeService implements IEmployeeService {
     }
 
     const passwordHash = await HashUtil.hash(data.password)
+    const initialRoleName = data.role?.trim().toLowerCase() || SYSTEM_ROLE.EMPLOYEE
+    const initialRole = await prisma.appRole.findFirst({
+      where: { name: initialRoleName, deletedAt: null, isActive: true },
+      select: { id: true },
+    })
+
+    if (!initialRole) {
+      throw new AppError("Role not found or inactive", HttpStatusCode.NOT_FOUND, "EmployeeService")
+    }
 
     // Remove password from data before passing to repo
-    const { password, ...repoData } = data
+    const { password, role, ...repoData } = data
 
     try {
       return await this.repository.createEmployee({
         ...repoData,
         passwordHash,
+        roleId: initialRole.id,
       })
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'code' in error && (DB_ERROR_CODES.UNIQUE_CONSTRAINT as readonly string[]).includes((error as { code: string }).code)) {
@@ -123,23 +137,8 @@ export class EmployeeService implements IEmployeeService {
       passwordHash,
     })
 
-    // Audit Role Change
-    if (updated && this.authRepository && data.role && data.role !== currentEmployee.role) {
-      const isRevoked = this.isRoleDowngrade(currentEmployee.role, data.role)
-
-      await this.authRepository.logActivity({
-        empId: id,
-        category: ACTIVITY_CATEGORY.ROLE,
-        actionType: isRevoked ? ACTIVITY_ACTION.ROLE_REVOKED : ACTIVITY_ACTION.ROLE_ASSIGNED,
-        ipAddress,
-        timestamp: new Date(),
-        details: JSON.stringify({
-          actorId,
-          oldRole: currentEmployee.role,
-          newRole: data.role,
-          message: isRevoked ? "Role downgraded/changed" : "Role upgraded/assigned",
-        }),
-      })
+    if (updated) {
+      await authorizationService.invalidateUserCache(id)
     }
 
     return updated
@@ -159,11 +158,46 @@ export class EmployeeService implements IEmployeeService {
     actorId?: string,
     ipAddress?: string,
   ): Promise<Employee | null> {
-    // Check if exists
-    await this.getEmployee(id)
+    const currentEmployee = await this.getEmployee(id)
+    if (!currentEmployee) return null
 
-    const updated = await this.repository.updateStatus(id, status)
-    return updated
+    const result = await prisma.$transaction(async (tx) => {
+      // Acquire lock
+      await tx.$executeRaw`
+        INSERT INTO admin_state_lock (id) VALUES (1) ON CONFLICT (id) DO NOTHING
+      `
+      await tx.$executeRaw`
+        SELECT id FROM admin_state_lock WHERE id = 1 FOR UPDATE
+      `
+
+      // Update status
+      const updated = await tx.employee.update({
+        where: { id },
+        data: { status },
+      })
+
+      // Check active admins remaining
+      const adminCount = await this.repository.countActiveAdmins(tx)
+      if (adminCount === 0) {
+        throw new AppError("CANNOT_REMOVE_LAST_ADMIN", HttpStatusCode.CONFLICT, "EmployeeService")
+      }
+
+      return updated
+    })
+
+    if (result) {
+      await authorizationService.invalidateUserCache(id)
+      if (status === "inactive" && currentEmployee.status !== "inactive") {
+        await auditService.log({
+          actorId,
+          targetEmployeeId: id,
+          action: "EMPLOYEE_DEACTIVATED",
+          oldValue: { status: currentEmployee.status },
+          newValue: { status },
+        })
+      }
+    }
+    return this.repository.findById(id)
   }
 
   /**
@@ -171,11 +205,180 @@ export class EmployeeService implements IEmployeeService {
    * @param id - The employee ID.
    * @returns True if deletion was successful.
    */
-  async deleteEmployee(id: string): Promise<boolean> {
+  async deleteEmployee(id: string, actorId?: string): Promise<boolean> {
     // Check if exists
-    await this.getEmployee(id)
+    const record = await this.getEmployee(id)
+    if (!record) return false
 
-    return this.repository.deleteEmployee(id)
+    const success = await prisma.$transaction(async (tx) => {
+      // Acquire lock
+      await tx.$executeRaw`
+        INSERT INTO admin_state_lock (id) VALUES (1) ON CONFLICT (id) DO NOTHING
+      `
+      await tx.$executeRaw`
+        SELECT id FROM admin_state_lock WHERE id = 1 FOR UPDATE
+      `
+
+      const record = await tx.employee.findFirst({
+        where: { id, deletedAt: null },
+      })
+      if (!record) return false
+
+      const timestamp = new Date().getTime()
+      await tx.employee.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+          status: "terminated",
+          email: `deleted_${timestamp}_${record.email}`,
+          username: `deleted_${timestamp}_${record.username}`,
+          phone: record.phone ? `deleted_${timestamp}_${record.phone}` : null,
+          nationalId: record.nationalId ? `deleted_${timestamp}_${record.nationalId}` : null,
+        },
+      })
+
+      // Check active admins remaining
+      const adminCount = await this.repository.countActiveAdmins(tx)
+      if (adminCount === 0) {
+        throw new AppError("CANNOT_REMOVE_LAST_ADMIN", HttpStatusCode.CONFLICT, "EmployeeService")
+      }
+
+      return true
+    })
+
+    if (success) {
+      await authorizationService.invalidateUserCache(id)
+      await auditService.log({
+        actorId,
+        targetEmployeeId: id,
+        action: "EMPLOYEE_DELETED",
+      })
+    }
+    return success
+  }
+
+  async getEmployeeRoles(employeeId: string): Promise<AppRole[]> {
+    const emp = await this.repository.findById(employeeId)
+    if (!emp) {
+      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "EmployeeService")
+    }
+    return this.repository.findRolesByEmployeeId(employeeId)
+  }
+
+  async assignRole(
+    employeeId: string,
+    roleId: string,
+    actorId?: string,
+  ): Promise<{ success: boolean; created: boolean }> {
+    const emp = await this.repository.findById(employeeId)
+    if (!emp) {
+      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "EmployeeService")
+    }
+    const role = await prisma.appRole.findFirst({
+      where: { id: roleId, deletedAt: null, isActive: true },
+    })
+    if (!role) {
+      throw new AppError("Role not found or inactive", HttpStatusCode.NOT_FOUND, "EmployeeService")
+    }
+
+    const res = await this.repository.assignRole(employeeId, roleId, actorId)
+    if (res.success) {
+      await authorizationService.invalidateUserCache(employeeId)
+      await auditService.log({
+        actorId,
+        targetEmployeeId: employeeId,
+        targetRoleId: roleId,
+        action: "ROLE_ASSIGNED",
+        newValue: { roleId },
+      })
+    }
+    return res
+  }
+
+  async revokeRole(employeeId: string, roleId: string, actorId?: string): Promise<boolean> {
+    return prisma.$transaction(async (tx) => {
+      // Acquire lock
+      await tx.$executeRaw`
+        INSERT INTO admin_state_lock (id) VALUES (1) ON CONFLICT (id) DO NOTHING
+      `
+      await tx.$executeRaw`
+        SELECT id FROM admin_state_lock WHERE id = 1 FOR UPDATE
+      `
+
+      // Check if the role is currently assigned
+      const employeeRoles = await tx.employeeRole.findMany({
+        where: { employeeId },
+      })
+      const hasRole = employeeRoles.some((er) => er.roleId === roleId)
+      if (!hasRole) {
+        return false
+      }
+
+      // Delete the mapping
+      await tx.employeeRole.delete({
+        where: {
+          employeeId_roleId: {
+            employeeId,
+            roleId,
+          },
+        },
+      })
+
+      // Check active admins remaining
+      const adminCount = await this.repository.countActiveAdmins(tx)
+      if (adminCount === 0) {
+        throw new AppError("CANNOT_REMOVE_LAST_ADMIN", HttpStatusCode.CONFLICT, "EmployeeService")
+      }
+
+      await authorizationService.invalidateUserCache(employeeId)
+      await auditService.log({
+        actorId,
+        targetEmployeeId: employeeId,
+        targetRoleId: roleId,
+        action: "ROLE_REVOKED",
+        oldValue: { roleId },
+      })
+      return true
+    })
+  }
+
+  async updateRoles(
+    employeeId: string,
+    roleIds: string[],
+    version: number,
+    actorId?: string,
+  ): Promise<void> {
+    const emp = await this.repository.findById(employeeId)
+    if (!emp) {
+      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "EmployeeService")
+    }
+
+    if (roleIds.length > 0) {
+      const roles = await prisma.appRole.findMany({
+        where: {
+          id: { in: roleIds },
+          deletedAt: null,
+          isActive: true,
+        },
+      })
+      if (roles.length !== roleIds.length) {
+        throw new AppError("One or more roles not found or inactive", HttpStatusCode.NOT_FOUND, "EmployeeService")
+      }
+    }
+
+    const oldRoles = await this.repository.findRolesByEmployeeId(employeeId)
+    const oldRoleIds = oldRoles.map((r) => r.id)
+
+    await this.repository.updateRoles(employeeId, roleIds, version, actorId)
+    await authorizationService.invalidateUserCache(employeeId)
+
+    await auditService.log({
+      actorId,
+      targetEmployeeId: employeeId,
+      action: "ROLE_REPLACED",
+      oldValue: { roleIds: oldRoleIds },
+      newValue: { roleIds },
+    })
   }
 
   /**
@@ -183,31 +386,61 @@ export class EmployeeService implements IEmployeeService {
    * Used to populate the "Người duyệt đơn" dropdown in the application form.
    * @returns List of approver employees with minimal fields.
    */
-  async listApprovers(): Promise<{ id: string; fullName: string; role: string; position: string | null }[]> {
-    const APPROVER_ROLES = [ROLE.ADMIN, ROLE.GENERAL_MANAGER, ROLE.HR_MANAGER, ROLE.TEAM_LEADER] as Role[]
-    return prisma.employee.findMany({
+  async listApprovers(): Promise<{ id: string; fullName: string; position: string | null; role: string }[]> {
+    const approvalRoles = [...APPROVAL_CONFIG.application.roles]
+    const approvers = await prisma.employee.findMany({
       where: {
-        role: { in: APPROVER_ROLES },
         status: EMPLOYEE_STATUS.ACTIVE,
         deletedAt: null,
+        employeeRoles: {
+          some: {
+            role: {
+              name: { in: approvalRoles },
+              isActive: true,
+              deletedAt: null,
+            },
+          },
+        },
       },
-      select: { id: true, fullName: true, role: true, position: true },
-      orderBy: [{ role: "asc" }, { fullName: "asc" }],
+      select: {
+        id: true,
+        fullName: true,
+        position: true,
+        employeeRoles: {
+          where: {
+            role: {
+              name: { in: approvalRoles },
+              isActive: true,
+              deletedAt: null,
+            },
+          },
+          select: {
+            role: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: [{ fullName: "asc" }],
+    })
+
+    return approvers.flatMap((approver) => {
+      const roleNames = approver.employeeRoles.map((employeeRole) => employeeRole.role.name)
+      const primaryRole = approvalRoles.find((roleName) => roleNames.includes(roleName)) ?? roleNames[0]
+
+      if (!primaryRole) {
+        return []
+      }
+
+      return [{
+        id: approver.id,
+        fullName: approver.fullName,
+        position: approver.position,
+        role: primaryRole,
+      }]
     })
   }
 
-  /**
-   * Helper to handle and format database unique constraint errors.
-   */
-  private isRoleDowngrade(oldRole: string, newRole: string): boolean {
-    const roleHierarchy: Record<string, number> = {
-      admin: 100,
-      general_manager: 80,
-      hr_manager: 60,
-      team_leader: 40,
-      employee: 20,
-    }
-
-    return (roleHierarchy[newRole] || 0) < (roleHierarchy[oldRole] || 0)
-  }
 }
