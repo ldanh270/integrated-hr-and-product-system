@@ -1,4 +1,3 @@
-import { ROLE } from "@/config/entities/employee.config"
 import { ROUTES } from "@/config/routes.config"
 import { APPLICATION_TYPES } from "@/config/entities/attendance.config"
 
@@ -38,7 +37,7 @@ export interface NavItem {
   name: string
   path: string
   icon: LucideIcon
-  roles?: string[]
+  permissions?: string[]
   subItems?: { name: string; path: string; icon?: LucideIcon }[]
 }
 
@@ -49,7 +48,7 @@ export interface SubsystemConfig {
   icon: LucideIcon
   routePrefix: string
   sidebarItems: NavItem[]
-  roles?: string[]
+  permissions?: string[]
 }
 
 export const SUBSYSTEMS: SubsystemConfig[] = [
@@ -62,6 +61,9 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     sidebarItems: [
       { name: "Tổng quan", path: ROUTES.HRM.DASHBOARD, icon: Users },
       { name: "Hồ sơ", path: ROUTES.HRM.EMPLOYEES, icon: Users },
+      { name: "Người dùng", path: ROUTES.SECURITY.USERS, icon: Users, permissions: ["security.read"] },
+      { name: "Nhật ký", path: ROUTES.SECURITY.ACTIVITY_LOGS, icon: FileText, permissions: ["audit.read"] },
+      { name: "Tổng quan bảo mật", path: ROUTES.SECURITY.DASHBOARD, icon: ShieldCheck, permissions: ["security.read"] },
     ],
   },
   {
@@ -96,35 +98,35 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         name: "Tổng quan",
         path: ROUTES.ATTENDANCE.DASHBOARD,
         icon: CalendarClock,
-        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
+        permissions: ["attendance.read"],
       },
 
-          { name: "Tổng hợp", path: ROUTES.ATTENDANCE.SUMMARY, icon: ChartNoAxesColumn, roles: [ROLE.EMPLOYEE, ROLE.TEAM_LEADER] },
+      { name: "Tổng hợp", path: ROUTES.ATTENDANCE.SUMMARY, icon: ChartNoAxesColumn, permissions: ["attendance.read"] },
       { name: "Lịch của tôi", path: ROUTES.ATTENDANCE.MY_SCHEDULE, icon: CalendarClock },
       {
         name: "Lịch làm việc",
         path: ROUTES.ATTENDANCE.WORK_SCHEDULES,
         icon: CalendarDays,
-        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
+        permissions: ["attendance.update"],
       },
       { name: "Đơn từ", path: ROUTES.ATTENDANCE.APPLICATIONS, icon: FileText },
       {
         name: "Lịch hàng tuần",
         path: ROUTES.ATTENDANCE.WEEKLY_SCHEDULES,
         icon: CalendarClock,
-        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
+        permissions: ["attendance.update"],
       },
       {
         name: "Cấu hình lịch tuần",
         path: ROUTES.ATTENDANCE.WEEKLY_SCHEDULE_CONFIG,
         icon: Settings2,
-        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
+        permissions: ["attendance.update"],
       },
       {
         name: "Ca làm việc",
         path: ROUTES.ATTENDANCE.SHIFTS,
         icon: CalendarClock,
-        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
+        permissions: ["attendance.update"],
       },
 
       { name: "Ngày lễ", path: ROUTES.ATTENDANCE.HOLIDAYS, icon: CalendarClock },
@@ -141,37 +143,37 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         name: "Kỳ lương",
         path: ROUTES.PAYROLL.LIST,
         icon: FileText,
-        roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
+        permissions: ["payroll.read"],
       },
       {
         name: "Thành phần lương",
         path: ROUTES.PAYROLL.SALARY_COMPONENTS,
         icon: Settings,
-        roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
+        permissions: ["payroll.read"],
       },
       {
         name: "Biến hệ thống",
         path: ROUTES.PAYROLL.SALARY_VARIABLES,
         icon: Settings,
-        roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
+        permissions: ["payroll.read"],
       },
       {
         name: "Mẫu bảng lương",
         path: ROUTES.PAYROLL.PAYSLIP_TEMPLATES,
         icon: FileText,
-        roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
+        permissions: ["payroll.read"],
       },
       {
         name: "Chu kỳ lương",
         path: ROUTES.PAYROLL.CYCLE,
         icon: CalendarClock,
-        roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
+        permissions: ["payroll.read"],
       },
       {
         name: "Lương nhân sự",
         path: ROUTES.PAYROLL.EMPLOYEE_SALARY,
         icon: Users,
-        roles: [ROLE.ADMIN, ROLE.HR_MANAGER],
+        permissions: ["payroll.read"],
       },
       { name: "Lương của tôi", path: ROUTES.PAYROLL.MY_PAYSLIPS, icon: CircleDollarSign },
     ],
@@ -201,52 +203,17 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     sidebarItems: [{ name: "Tổng quan", path: ROUTES.TRAINING.DASHBOARD, icon: BookOpen }],
   },
   {
-    id: "security",
-    name: "Phân quyền",
-    description: "Phân quyền nhân sự trong hệ thống",
-    icon: ShieldCheck,
-    routePrefix: "/security",
-    roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
-    sidebarItems: [
-      {
-        name: "Tổng quan",
-        path: ROUTES.SECURITY.DASHBOARD,
-        icon: ShieldCheck,
-        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
-      },
-      {
-        name: "Vai trò",
-        path: ROUTES.SECURITY.ROLES,
-        icon: ShieldCheck,
-        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
-      },
-      {
-        name: "Người dùng",
-        path: ROUTES.SECURITY.USERS,
-        icon: Users,
-        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
-      },
-      {
-        name: "Nhật ký",
-        path: ROUTES.SECURITY.ACTIVITY_LOGS,
-        icon: FileText,
-        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
-      },
-      {
-        name: "Quản lý quyền",
-        path: ROUTES.SECURITY.PERMISSION_MATRIX,
-        icon: ShieldCheck,
-        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
-      },
-    ],
-  },
-  {
     id: "settings",
     name: "Cài đặt",
     description: "Cài đặt hệ thống",
     icon: Settings,
     routePrefix: "/settings",
-    sidebarItems: [{ name: "Tổng quan", path: ROUTES.SETTINGS.DASHBOARD, icon: Settings }],
+    sidebarItems: [
+      { name: "Tổng quan", path: ROUTES.SETTINGS.DASHBOARD, icon: Settings },
+      { name: "Vai trò", path: ROUTES.SETTINGS.ROLES, icon: ShieldCheck, permissions: ["role.read"] },
+      { name: "Cấu hình quyền", path: ROUTES.SETTINGS.ROLE_PERMISSIONS, icon: ShieldCheck, permissions: ["role.read"] },
+      { name: "Phân quyền", path: ROUTES.SETTINGS.PERMISSIONS, icon: ShieldCheck, permissions: ["role.read"] },
+    ],
   },
   {
     id: "project",
