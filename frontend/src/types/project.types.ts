@@ -75,7 +75,6 @@ export interface ProjectMember {
   id: string
   projectId: string
   employeeId: string
-  role: string | null
   createdAt: string
   employee: {
     id: string

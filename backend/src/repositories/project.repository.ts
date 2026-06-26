@@ -97,7 +97,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
   async listProjects(
     query: ProjectListQuery,
     userId: string,
-    userRole: string
+    isAdminOrGM: boolean
   ): Promise<PaginatedProjectsDto> {
     const {
       page = 1,
@@ -112,7 +112,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
     const where: Prisma.ProjectWhereInput = {}
 
     // Project list visibility authorization
-    if (userRole !== "admin" && userRole !== "general_manager") {
+    if (!isAdminOrGM) {
       where.OR = [
         { teamLeaderId: userId },
         {
@@ -297,7 +297,6 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
             id: true,
             fullName: true,
             email: true,
-            role: true,
             position: true,
           },
         },
