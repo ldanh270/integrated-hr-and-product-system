@@ -134,6 +134,9 @@ export default function TaskDetail() {
     enabled: !!id,
   })
 
+  const sanitizedDescription = task?.description ? DOMPurify.sanitize(task.description) : "" // NOSONAR
+  const sanitizedResultNotes = task?.resultNotes ? DOMPurify.sanitize(task.resultNotes) : "" // NOSONAR
+
   // Capture project ID associated with this task
   const projectId = task?.projectId || ""
 
@@ -533,9 +536,7 @@ export default function TaskDetail() {
               /* nosemgrep */
               <div 
                 className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground leading-relaxed"
-                dangerouslySetInnerHTML={{
-                  __html: DOMPurify.sanitize(task.description) // NOSONAR
-                }}
+                dangerouslySetInnerHTML={{ __html: sanitizedDescription }}
               />
             ) : (
               <p className="text-xs text-muted-foreground italic">Không có mô tả chi tiết cho công việc này.</p>
@@ -555,9 +556,7 @@ export default function TaskDetail() {
                   {/* nosemgrep */}
                   <div 
                     className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground leading-relaxed bg-muted/30 p-3 rounded-lg border border-border/40"
-                    dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(task.resultNotes) // NOSONAR
-                    }}
+                    dangerouslySetInnerHTML={{ __html: sanitizedResultNotes }}
                   />
                 </div>
               </div>

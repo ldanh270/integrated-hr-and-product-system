@@ -57,6 +57,8 @@ export function TaskReviewModal({
 
   const canApprove = isLeader || isAdminOrGM
 
+  const sanitizedResultNotes = task?.resultNotes ? DOMPurify.sanitize(task.resultNotes) : "" // NOSONAR
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] rounded-xl bg-background border-border p-6 shadow-lg">
@@ -113,9 +115,7 @@ export function TaskReviewModal({
                   {/* nosemgrep */}
                   <div 
                     className="prose prose-sm dark:prose-invert max-w-none text-xs text-foreground mt-1"
-                    dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(task.resultNotes) // NOSONAR
-                    }}
+                    dangerouslySetInnerHTML={{ __html: sanitizedResultNotes }}
                   />
                 </div>
               )}
@@ -163,9 +163,7 @@ export function TaskReviewModal({
                     {/* nosemgrep */}
                     <div 
                       className="prose prose-sm dark:prose-invert max-w-none text-xs text-foreground bg-muted/20 p-2.5 rounded-lg border border-border/40 mt-1"
-                      dangerouslySetInnerHTML={{
-                        __html: DOMPurify.sanitize(task.resultNotes) // NOSONAR
-                      }}
+                      dangerouslySetInnerHTML={{ __html: sanitizedResultNotes }}
                     />
                   </div>
                 )}
@@ -186,9 +184,7 @@ export function TaskReviewModal({
                     {/* nosemgrep */}
                     <div 
                       className="prose prose-sm dark:prose-invert max-w-none text-xs text-foreground"
-                      dangerouslySetInnerHTML={{
-                        __html: DOMPurify.sanitize(task.resultNotes) // NOSONAR
-                      }}
+                      dangerouslySetInnerHTML={{ __html: sanitizedResultNotes }}
                     />
                   </div>
                 )}
