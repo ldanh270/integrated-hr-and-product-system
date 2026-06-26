@@ -4,7 +4,8 @@ import {
   LEAVE_BALANCE_DEFAULTS,
   PAID_LEAVE_TYPES,
 } from "@/configs/entities/attendance.config.ts"
-import { EMPLOYEE_STATUS, ROLE } from "@/configs/entities/employee.config.ts"
+import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
 import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
@@ -187,7 +188,7 @@ export class ApplicationService implements IApplicationService {
   async getEmployeeApplications(
     employeeId: string,
     query: IListApplicationsQueryDTO,
-    requester?: { empId: string; role: string },
+    requester?: { empId: string },
   ): Promise<{ data: any[]; total: number }> {
     // Verify target employee exists and is not soft-deleted
     const employeeExists = await prisma.employee.findFirst({
@@ -204,28 +205,34 @@ export class ApplicationService implements IApplicationService {
       )
     }
 
-    // If requester is team_leader, enforce access rules
-    if (requester && requester.role === ROLE.TEAM_LEADER && employeeId !== requester.empId) {
-      const activeProject = await prisma.project.findFirst({
-        where: {
-          teamLeaderId: requester.empId,
-          status: PROJECT_STATUS.ACTIVE,
-          members: {
-            some: {
-              employeeId: employeeId,
-              removedAt: null,
+    // If requester is team_leader (and not a global approver), enforce access rules
+    if (requester && employeeId !== requester.empId) {
+      const authContext = await authorizationService.getAuthorizationContext(requester.empId)
+      const roles = authContext.roles
+      const isGlobalApprover = authContext.isDynamicAdmin || roles.has("admin") || roles.has("general_manager") || roles.has("hr_manager")
+      
+      if (!isGlobalApprover && roles.has("team_leader")) {
+        const activeProject = await prisma.project.findFirst({
+          where: {
+            teamLeaderId: requester.empId,
+            status: PROJECT_STATUS.ACTIVE,
+            members: {
+              some: {
+                employeeId: employeeId,
+                removedAt: null,
+              },
             },
           },
-        },
-      })
+        })
 
-      if (!activeProject) {
-        throw new AppError(
-          "Forbidden: You can only view applications of employees in your projects",
-          HttpStatusCode.FORBIDDEN,
-          ErrorLayer.SERVICE,
-          "FORBIDDEN",
-        )
+        if (!activeProject) {
+          throw new AppError(
+            "Forbidden: You can only view applications of employees in your projects",
+            HttpStatusCode.FORBIDDEN,
+            ErrorLayer.SERVICE,
+            "FORBIDDEN",
+          )
+        }
       }
     }
 
@@ -527,16 +534,9 @@ export class ApplicationService implements IApplicationService {
    * @throws {AppError} If not found or role is not approver-eligible.
    */
   private async _validateApproverRole(employeeId: string): Promise<void> {
-    const APPROVER_ROLES = [
-      ROLE.ADMIN,
-      ROLE.GENERAL_MANAGER,
-      ROLE.HR_MANAGER,
-      ROLE.TEAM_LEADER,
-    ] as string[]
-
     const employee = await prisma.employee.findUnique({
       where: { id: employeeId },
-      select: { id: true, role: true, status: true },
+      select: { id: true, status: true },
     })
 
     if (!employee) {
@@ -548,7 +548,11 @@ export class ApplicationService implements IApplicationService {
       )
     }
 
-    if (!APPROVER_ROLES.includes(employee.role)) {
+    const authContext = await authorizationService.getAuthorizationContext(employeeId)
+    const roles = authContext.roles
+    const isApprover = authContext.isDynamicAdmin || ["admin", "general_manager", "hr_manager", "team_leader"].some((r) => roles.has(r))
+
+    if (!isApprover) {
       throw new AppError(
         "The selected assignee does not have permission to approve applications",
         HttpStatusCode.BAD_REQUEST,

@@ -141,14 +141,13 @@ export interface ITaskRepository {
  * Service interface implementing Task management business logic
  */
 export interface ITaskService {
-  getTask(id: string, userId: string, userRole: string): Promise<Task | null>
-  listTasks(query: TaskListQuery, userId: string, userRole: string): Promise<PaginatedTasksDto>
-  createTask(data: CreateTaskDto, userId: string, userRole: string): Promise<Task>
+  getTask(id: string, userId: string): Promise<Task | null>
+  listTasks(query: TaskListQuery, userId: string): Promise<PaginatedTasksDto>
+  createTask(data: CreateTaskDto, userId: string): Promise<Task>
   updateTask(
     id: string,
     data: UpdateTaskDto,
     userId: string,
-    userRole: string,
   ): Promise<Task | null>
-  deleteTask(id: string, userId: string, userRole: string): Promise<boolean>
+  deleteTask(id: string, userId: string): Promise<boolean>
 }

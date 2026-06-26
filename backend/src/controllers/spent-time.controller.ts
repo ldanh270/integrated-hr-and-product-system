@@ -30,7 +30,7 @@ export class SpentTimeController {
       }
 
       const query = spentTimeQuerySchema.parse(queryParams)
-      const result = await this.service.listSpentTimes(query, req.user.empId, req.user.role)
+      const result = await this.service.listSpentTimes(query, req.user.empId)
       res.status(HttpStatusCode.OK).json({ data: result, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -54,7 +54,7 @@ export class SpentTimeController {
       })
     }
 
-    const spentTime = await this.service.getSpentTime(String(req.params.id), req.user.empId, req.user.role)
+    const spentTime = await this.service.getSpentTime(String(req.params.id), req.user.empId)
     if (!spentTime) {
       return res.status(HttpStatusCode.NOT_FOUND).json({
         data: null,
@@ -82,7 +82,7 @@ export class SpentTimeController {
       }
 
       const data = createSpentTimeSchema.parse(body)
-      const spentTime = await this.service.createSpentTime(data, req.user.empId, req.user.role)
+      const spentTime = await this.service.createSpentTime(data, req.user.empId)
       res.status(HttpStatusCode.CREATED).json({ data: spentTime, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -112,7 +112,6 @@ export class SpentTimeController {
         String(req.params.id),
         data,
         req.user.empId,
-        req.user.role,
       )
       if (!spentTime) {
         return res.status(HttpStatusCode.NOT_FOUND).json({
@@ -143,7 +142,7 @@ export class SpentTimeController {
       })
     }
 
-    await this.service.deleteSpentTime(String(req.params.id), req.user.empId, req.user.role)
+    await this.service.deleteSpentTime(String(req.params.id), req.user.empId)
     res.status(HttpStatusCode.OK).json({ data: null, error: null })
   }
 }

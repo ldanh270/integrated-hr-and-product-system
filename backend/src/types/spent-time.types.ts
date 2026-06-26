@@ -90,14 +90,13 @@ export interface ISpentTimeRepository {
  * Service interface implementing SpentTime business logic and access checks
  */
 export interface ISpentTimeService {
-  getSpentTime(id: string, userId: string, userRole: string): Promise<SpentTime | null>
-  listSpentTimes(query: SpentTimeQuery, userId: string, userRole: string): Promise<SpentTime[]>
-  createSpentTime(data: CreateSpentTimeDto, userId: string, userRole: string): Promise<SpentTime>
+  getSpentTime(id: string, userId: string): Promise<SpentTime | null>
+  listSpentTimes(query: SpentTimeQuery, userId: string): Promise<SpentTime[]>
+  createSpentTime(data: CreateSpentTimeDto, userId: string): Promise<SpentTime>
   updateSpentTime(
     id: string,
     data: UpdateSpentTimeDto,
     userId: string,
-    userRole: string,
   ): Promise<SpentTime | null>
-  deleteSpentTime(id: string, userId: string, userRole: string): Promise<boolean>
+  deleteSpentTime(id: string, userId: string): Promise<boolean>
 }

@@ -10,6 +10,7 @@ import {
   UpdateProjectDto,
 } from "@/types"
 import { AppError } from "@/utils/error.util.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
 
 export class ProjectService implements IProjectService {
   constructor(
@@ -18,10 +19,12 @@ export class ProjectService implements IProjectService {
   ) {}
 
   /**
-   * Checks if user has Admin or General Manager role
+   * Checks if user is an Admin or General Manager dynamically
    */
-  private isAuthorizedAdminOrGM(userRole: string): boolean {
-    return userRole === "admin" || userRole === "general_manager"
+  private async checkIsAdminOrGM(userId: string): Promise<boolean> {
+    const authContext = await authorizationService.getAuthorizationContext(userId)
+    const roles = authContext.roles
+    return authContext.isDynamicAdmin || roles.has("admin") || roles.has("general_manager")
   }
 
   /**
@@ -30,14 +33,15 @@ export class ProjectService implements IProjectService {
    * Others can only view if they are the team leader or a member
    * Throws forbidden error if user lacks access
    */
-  async getProject(id: string, userId: string, userRole: string): Promise<Project | null> {
+  async getProject(id: string, userId: string): Promise<Project | null> {
     const project = await this.repository.findById(id)
     if (!project) {
       throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "ProjectService")
     }
 
     // Authorization: GM/Admin can view all. TL or Employee can only view if they are the leader or a member of the project
-    if (!this.isAuthorizedAdminOrGM(userRole)) {
+    const isAdminOrGM = await this.checkIsAdminOrGM(userId)
+    if (!isAdminOrGM) {
       const isTL = project.teamLeaderId === userId
       const isMember = await this.repository.isMember(id, userId)
       if (!isTL && !isMember) {
@@ -54,10 +58,10 @@ export class ProjectService implements IProjectService {
    */
   async listProjects(
     query: ProjectListQuery,
-    userId: string,
-    userRole: string
+    userId: string
   ): Promise<PaginatedProjectsDto> {
-    return this.repository.listProjects(query, userId, userRole)
+    const isAdminOrGM = await this.checkIsAdminOrGM(userId)
+    return this.repository.listProjects(query, userId, isAdminOrGM)
   }
 
   /**
@@ -67,9 +71,10 @@ export class ProjectService implements IProjectService {
    * Prevents duplicate project names
    * Throws error if user lacks permission or data is invalid
    */
-  async createProject(data: CreateProjectDto, userId: string, userRole: string): Promise<Project> {
+  async createProject(data: CreateProjectDto, userId: string): Promise<Project> {
     // Only GM and Admin are allowed to create projects
-    if (!this.isAuthorizedAdminOrGM(userRole)) {
+    const isAdminOrGM = await this.checkIsAdminOrGM(userId)
+    if (!isAdminOrGM) {
       throw new AppError(
         "Only General Managers or Admins can create projects",
         HttpStatusCode.FORBIDDEN,
@@ -120,8 +125,7 @@ export class ProjectService implements IProjectService {
   async updateProject(
     id: string,
     data: UpdateProjectDto,
-    userId: string,
-    userRole: string
+    userId: string
   ): Promise<Project | null> {
     const project = await this.repository.findById(id)
     if (!project) {
@@ -130,7 +134,8 @@ export class ProjectService implements IProjectService {
 
     // Only GM/Admin or the Team Leader of the project can update it
     const isTL = project.teamLeaderId === userId
-    if (!this.isAuthorizedAdminOrGM(userRole) && !isTL) {
+    const isAdminOrGM = await this.checkIsAdminOrGM(userId)
+    if (!isAdminOrGM && !isTL) {
       throw new AppError(
         "Only Admins, GMs, or the Project's Team Leader can update this project",
         HttpStatusCode.FORBIDDEN,
@@ -183,9 +188,10 @@ export class ProjectService implements IProjectService {
    * Only Admins and General Managers can delete projects
    * Throws error if user lacks permission or project not found
    */
-  async deleteProject(id: string, userId: string, userRole: string): Promise<boolean> {
+  async deleteProject(id: string, userId: string): Promise<boolean> {
     // Only GM/Admin can delete projects
-    if (!this.isAuthorizedAdminOrGM(userRole)) {
+    const isAdminOrGM = await this.checkIsAdminOrGM(userId)
+    if (!isAdminOrGM) {
       throw new AppError(
         "Only General Managers or Admins can delete projects",
         HttpStatusCode.FORBIDDEN,
@@ -210,8 +216,7 @@ export class ProjectService implements IProjectService {
   async addMember(
     projectId: string,
     employeeId: string,
-    userId: string,
-    userRole: string
+    userId: string
   ): Promise<boolean> {
     const project = await this.repository.findById(projectId)
     if (!project) {
@@ -220,7 +225,8 @@ export class ProjectService implements IProjectService {
 
     // Only GM/Admin or the project's Team Leader can manage members
     const isTL = project.teamLeaderId === userId
-    if (!this.isAuthorizedAdminOrGM(userRole) && !isTL) {
+    const isAdminOrGM = await this.checkIsAdminOrGM(userId)
+    if (!isAdminOrGM && !isTL) {
       throw new AppError(
         "Only Admins, GMs, or the Project's Team Leader can manage members",
         HttpStatusCode.FORBIDDEN,
@@ -252,8 +258,7 @@ export class ProjectService implements IProjectService {
   async removeMember(
     projectId: string,
     employeeId: string,
-    userId: string,
-    userRole: string
+    userId: string
   ): Promise<boolean> {
     const project = await this.repository.findById(projectId)
     if (!project) {
@@ -262,7 +267,8 @@ export class ProjectService implements IProjectService {
 
     // Only GM/Admin or the project's Team Leader can manage members
     const isTL = project.teamLeaderId === userId
-    if (!this.isAuthorizedAdminOrGM(userRole) && !isTL) {
+    const isAdminOrGM = await this.checkIsAdminOrGM(userId)
+    if (!isAdminOrGM && !isTL) {
       throw new AppError(
         "Only Admins, GMs, or the Project's Team Leader can manage members",
         HttpStatusCode.FORBIDDEN,
@@ -284,9 +290,9 @@ export class ProjectService implements IProjectService {
    * User must have access to the project to view its members
    * Validates project exists and user has permission
    */
-  async getMembers(projectId: string, userId: string, userRole: string): Promise<any[]> {
+  async getMembers(projectId: string, userId: string): Promise<any[]> {
     // Check project existence and access permissions
-    const project = await this.getProject(projectId, userId, userRole)
+    const project = await this.getProject(projectId, userId)
     if (!project) {
       throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "ProjectService")
     }

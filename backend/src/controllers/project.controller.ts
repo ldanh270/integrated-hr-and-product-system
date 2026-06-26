@@ -30,7 +30,7 @@ export class ProjectController {
       }
 
       const query = listProjectsQuerySchema.parse(req.query)
-      const result = await this.service.listProjects(query, req.user.empId, req.user.role)
+      const result = await this.service.listProjects(query, req.user.empId)
       res.status(HttpStatusCode.OK).json({ data: result, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -62,7 +62,6 @@ export class ProjectController {
     const project = await this.service.getProject(
       String(req.params.id),
       req.user.empId,
-      req.user.role,
     )
     if (!project) {
       return res.status(HttpStatusCode.NOT_FOUND).json({
@@ -88,7 +87,7 @@ export class ProjectController {
       }
 
       const data = createProjectSchema.parse(req.body)
-      const project = await this.service.createProject(data, req.user.empId, req.user.role)
+      const project = await this.service.createProject(data, req.user.empId)
       res.status(HttpStatusCode.CREATED).json({ data: project, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -124,7 +123,6 @@ export class ProjectController {
         String(req.params.id),
         data,
         req.user.empId,
-        req.user.role,
       )
       if (!project) {
         return res.status(HttpStatusCode.NOT_FOUND).json({
@@ -160,7 +158,7 @@ export class ProjectController {
       })
     }
 
-    await this.service.deleteProject(String(req.params.id), req.user.empId, req.user.role)
+    await this.service.deleteProject(String(req.params.id), req.user.empId)
     res.status(HttpStatusCode.OK).json({ data: null, error: null })
   }
 
@@ -179,7 +177,7 @@ export class ProjectController {
       }
 
       const { employeeId } = addProjectMemberSchema.parse(req.body)
-      await this.service.addMember(String(req.params.id), employeeId, req.user.empId, req.user.role)
+      await this.service.addMember(String(req.params.id), employeeId, req.user.empId)
       res.status(HttpStatusCode.OK).json({ data: null, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -212,7 +210,6 @@ export class ProjectController {
       String(req.params.id),
       String(req.params.employeeId),
       req.user.empId,
-      req.user.role,
     )
     res.status(HttpStatusCode.OK).json({ data: null, error: null })
   }
@@ -232,7 +229,6 @@ export class ProjectController {
     const members = await this.service.getMembers(
       String(req.params.id),
       req.user.empId,
-      req.user.role,
     )
     res.status(HttpStatusCode.OK).json({ data: members, error: null })
   }

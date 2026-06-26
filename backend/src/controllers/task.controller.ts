@@ -26,7 +26,7 @@ export class TaskController {
       }
 
       const query = listTasksQuerySchema.parse(req.query)
-      const result = await this.service.listTasks(query, req.user.empId, req.user.role)
+      const result = await this.service.listTasks(query, req.user.empId)
       res.status(HttpStatusCode.OK).json({ data: result, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -54,7 +54,7 @@ export class TaskController {
       })
     }
 
-    const task = await this.service.getTask(String(req.params.id), req.user.empId, req.user.role)
+    const task = await this.service.getTask(String(req.params.id), req.user.empId)
     if (!task) {
       return res.status(HttpStatusCode.NOT_FOUND).json({
         data: null,
@@ -79,7 +79,7 @@ export class TaskController {
       }
 
       const data = createTaskSchema.parse(req.body)
-      const task = await this.service.createTask(data, req.user.empId, req.user.role)
+      const task = await this.service.createTask(data, req.user.empId)
       res.status(HttpStatusCode.CREATED).json({ data: task, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -114,7 +114,6 @@ export class TaskController {
         String(req.params.id),
         data,
         req.user.empId,
-        req.user.role,
       )
       if (!task) {
         return res.status(HttpStatusCode.NOT_FOUND).json({
@@ -149,7 +148,7 @@ export class TaskController {
       })
     }
 
-    await this.service.deleteTask(String(req.params.id), req.user.empId, req.user.role)
+    await this.service.deleteTask(String(req.params.id), req.user.empId)
     res.status(HttpStatusCode.OK).json({ data: null, error: null })
   }
 }

@@ -11,7 +11,7 @@ import {
   UpdateTaskDto,
 } from "@/types"
 import { AppError } from "@/utils/error.util.ts"
-import { ROLE } from "@/configs/entities/employee.config.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
 const LAYER_NAME = "TaskService"
 export class TaskService implements ITaskService {
   constructor(
@@ -20,11 +20,11 @@ export class TaskService implements ITaskService {
     private employeeRepository: IEmployeeRepository
   ) {}
 
-  /**
-   * Checks if user has Admin or General Manager role
-   */
-  private isAuthorizedAdminOrGM(userRole: string): boolean {
-    return userRole === ROLE.ADMIN || userRole === ROLE.GENERAL_MANAGER
+  private async isAuthorizedAdminOrGM(userId: string): Promise<boolean> {
+    const authContext = await authorizationService.getAuthorizationContext(userId)
+    if (authContext.isDynamicAdmin) return true
+    const roles = authContext.roles
+    return roles.has("admin") || roles.has("general_manager")
   }
 
   /**
@@ -33,14 +33,15 @@ export class TaskService implements ITaskService {
    * Others can only view if they are in the project (leader or member)
    * Throws error if task not found or user lacks access
    */
-  async getTask(id: string, userId: string, userRole: string): Promise<Task | null> {
+  async getTask(id: string, userId: string): Promise<Task | null> {
     const task = await this.repository.findById(id)
     if (!task) {
       throw new AppError("Task not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
     // Check access permission to the project containing the task
-    if (!this.isAuthorizedAdminOrGM(userRole)) {
+    const isGlobalApprover = await this.isAuthorizedAdminOrGM(userId)
+    if (!isGlobalApprover) {
       const project = await this.projectRepository.findById(task.projectId)
       if (!project) {
         throw new AppError("Associated project not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
@@ -63,9 +64,10 @@ export class TaskService implements ITaskService {
    * Admins can list tasks across all projects
    * Throws error if user lacks access to specified project
    */
-  async listTasks(query: TaskListQuery, userId: string, userRole: string): Promise<PaginatedTasksDto> {
+  async listTasks(query: TaskListQuery, userId: string): Promise<PaginatedTasksDto> {
     // If not GM/Admin, projectId is required and the user must belong to that project to view tasks
-    if (!this.isAuthorizedAdminOrGM(userRole)) {
+    const isGlobalApprover = await this.isAuthorizedAdminOrGM(userId)
+    if (!isGlobalApprover) {
       if (!query.projectId) {
         throw new AppError(
           "Project ID is required to view tasks",
@@ -97,13 +99,13 @@ export class TaskService implements ITaskService {
    * Only Admins, GMs, project leaders, or members (if policy allows) can create
    * Throws error if user lacks permission or data is invalid
    */
-  async createTask(data: CreateTaskDto, userId: string, userRole: string): Promise<Task> {
+  async createTask(data: CreateTaskDto, userId: string): Promise<Task> {
     const project = await this.projectRepository.findById(data.projectId)
     if (!project) {
       throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
-    const isGM = this.isAuthorizedAdminOrGM(userRole)
+    const isGM = await this.isAuthorizedAdminOrGM(userId)
     const isTL = project.teamLeaderId === userId
 
     // Apply the project's task creation policy
@@ -156,8 +158,8 @@ export class TaskService implements ITaskService {
   async updateTask(
     id: string,
     data: UpdateTaskDto,
-    userId: string,
-    userRole: string
+    userId: string
+
   ): Promise<Task | null> {
     const task = await this.repository.findById(id)
     if (!task) {
@@ -169,7 +171,7 @@ export class TaskService implements ITaskService {
       throw new AppError("Associated project not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
-    const isGM = this.isAuthorizedAdminOrGM(userRole)
+    const isGM = await this.isAuthorizedAdminOrGM(userId)
     const isTL = project.teamLeaderId === userId
     const isCreator = task.createdById === userId
     const isAssignee = task.assigneeId === userId
@@ -209,7 +211,7 @@ export class TaskService implements ITaskService {
    * Only Admins, GMs, project team leader, or task creator can delete
    * Throws error if user lacks permission or task not found
    */
-  async deleteTask(id: string, userId: string, userRole: string): Promise<boolean> {
+  async deleteTask(id: string, userId: string): Promise<boolean> {
     const task = await this.repository.findById(id)
     if (!task) {
       throw new AppError("Task not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
@@ -220,7 +222,7 @@ export class TaskService implements ITaskService {
       throw new AppError("Associated project not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
-    const isGM = this.isAuthorizedAdminOrGM(userRole)
+    const isGM = await this.isAuthorizedAdminOrGM(userId)
     const isTL = project.teamLeaderId === userId
     const isCreator = task.createdById === userId
 

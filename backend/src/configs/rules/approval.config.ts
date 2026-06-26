@@ -1,17 +1,15 @@
-import { ROLE } from "@/configs/entities/employee.config.ts"
-
 export const APPROVAL_CONFIG = {
   // Application includes Leave, OT, Shift Swap, WFH, etc.
   application: {
-    roles: [ROLE.ADMIN, ROLE.GENERAL_MANAGER, ROLE.HR_MANAGER, ROLE.TEAM_LEADER],
+    roles: ["admin", "general_manager", "hr_manager", "team_leader"],
   },
   // Password reset request
   password_reset: {
-    roles: [ROLE.ADMIN, ROLE.GENERAL_MANAGER],
+    roles: ["admin", "general_manager"],
   },
   // Recruitment Proposal (Job posting request)
   recruitment_proposal: {
-    roles: [ROLE.ADMIN, ROLE.GENERAL_MANAGER, ROLE.HR_MANAGER],
+    roles: ["admin", "general_manager", "hr_manager"],
   },
 } as const
 

@@ -1,5 +1,5 @@
-import { ROLE } from "@/configs/entities/employee.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
 import {
   CreateSpentTimeDto,
   IProjectRepository,
@@ -21,23 +21,24 @@ export class SpentTimeService implements ISpentTimeService {
     private projectRepository: IProjectRepository,
   ) {}
 
-  /**
-   * Checks if user has Admin or General Manager role
-   */
-  private isAuthorizedAdminOrGM(userRole: string): boolean {
-    return userRole === ROLE.ADMIN || userRole === ROLE.GENERAL_MANAGER
+  private async isAuthorizedAdminOrGM(userId: string): Promise<boolean> {
+    const authContext = await authorizationService.getAuthorizationContext(userId)
+    if (authContext.isDynamicAdmin) return true
+    const roles = authContext.roles
+    return roles.has("admin") || roles.has("general_manager")
   }
 
   /**
    * Retrieves a single spent time log with access control
    */
-  async getSpentTime(id: string, userId: string, userRole: string): Promise<SpentTime | null> {
+  async getSpentTime(id: string, userId: string): Promise<SpentTime | null> {
     const record = await this.repository.findById(id)
     if (!record) {
       throw new AppError("Spent time record not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
-    if (!this.isAuthorizedAdminOrGM(userRole) && record.employeeId !== userId) {
+    const isGlobalApprover = await this.isAuthorizedAdminOrGM(userId)
+    if (!isGlobalApprover && record.employeeId !== userId) {
       // Check if user is Team Leader of the task's project
       const task = await this.taskRepository.findById(record.taskId)
       if (task) {
@@ -55,8 +56,9 @@ export class SpentTimeService implements ISpentTimeService {
   /**
    * Lists spent time logs based on query with project-based access control
    */
-  async listSpentTimes(query: SpentTimeQuery, userId: string, userRole: string): Promise<SpentTime[]> {
-    if (!this.isAuthorizedAdminOrGM(userRole)) {
+  async listSpentTimes(query: SpentTimeQuery, userId: string): Promise<SpentTime[]> {
+    const isGlobalApprover = await this.isAuthorizedAdminOrGM(userId)
+    if (!isGlobalApprover) {
       if (query.projectId) {
         const project = await this.projectRepository.findById(query.projectId)
         if (!project) {
@@ -93,14 +95,15 @@ export class SpentTimeService implements ISpentTimeService {
   /**
    * Logs a new spent time entry
    */
-  async createSpentTime(data: CreateSpentTimeDto, userId: string, userRole: string): Promise<SpentTime> {
+  async createSpentTime(data: CreateSpentTimeDto, userId: string): Promise<SpentTime> {
     const task = await this.taskRepository.findById(data.taskId)
     if (!task) {
       throw new AppError("Task not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
+    const isGlobalApprover = await this.isAuthorizedAdminOrGM(userId)
     // Standardize assignee/employee ID
-    if (!this.isAuthorizedAdminOrGM(userRole)) {
+    if (!isGlobalApprover) {
       data.employeeId = userId
 
       // Check if user is member of the task's project
@@ -127,14 +130,14 @@ export class SpentTimeService implements ISpentTimeService {
     id: string,
     data: UpdateSpentTimeDto,
     userId: string,
-    userRole: string,
   ): Promise<SpentTime | null> {
     const record = await this.repository.findById(id)
     if (!record) {
       throw new AppError("Spent time record not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
-    if (!this.isAuthorizedAdminOrGM(userRole) && record.employeeId !== userId) {
+    const isGlobalApprover = await this.isAuthorizedAdminOrGM(userId)
+    if (!isGlobalApprover && record.employeeId !== userId) {
       throw new AppError("Access denied to update this log", HttpStatusCode.FORBIDDEN, LAYER_NAME)
     }
 
@@ -144,13 +147,14 @@ export class SpentTimeService implements ISpentTimeService {
   /**
    * Deletes a spent time entry
    */
-  async deleteSpentTime(id: string, userId: string, userRole: string): Promise<boolean> {
+  async deleteSpentTime(id: string, userId: string): Promise<boolean> {
     const record = await this.repository.findById(id)
     if (!record) {
       throw new AppError("Spent time record not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
-    if (!this.isAuthorizedAdminOrGM(userRole) && record.employeeId !== userId) {
+    const isGlobalApprover = await this.isAuthorizedAdminOrGM(userId)
+    if (!isGlobalApprover && record.employeeId !== userId) {
       throw new AppError("Access denied to delete this log", HttpStatusCode.FORBIDDEN, LAYER_NAME)
     }
 
