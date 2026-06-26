@@ -18,8 +18,8 @@ import {
 import { ROLE } from "@/config/entities/employee.config"
 import {
   SPENT_TIME_STATUS,
-  SPENT_TIME_STATUS_LABELS,
   SPENT_TIME_STATUSES,
+  getSpentTimeStatusLabel,
 } from "@/config/entities/project.config"
 import { taskApi } from "@/lib/api/task.api"
 import { extractErrorMessage } from "@/utils/error-helper"
@@ -107,7 +107,7 @@ export function ProjectSpentTimeTab({
     { value: "all", label: "Tất cả" },
     ...SPENT_TIME_STATUSES.map((s) => ({
       value: s,
-      label: SPENT_TIME_STATUS_LABELS[s],
+      label: getSpentTimeStatusLabel(s),
     })),
   ]
 
@@ -124,7 +124,9 @@ export function ProjectSpentTimeTab({
             size="sm"
             className="rounded-full h-9"
             disabled={bulkApproveMutation.isPending}
-            onClick={() => bulkApproveMutation.mutate(pendingIds)}
+            onClick={() => {
+              bulkApproveMutation.mutate(pendingIds)
+            }}
           >
             Duyệt tất cả ({pendingIds.length})
           </Button>
@@ -139,7 +141,9 @@ export function ProjectSpentTimeTab({
             size="sm"
             variant={statusFilter === opt.value ? "default" : "outline"}
             className="rounded-full h-8 text-xs"
-            onClick={() => setStatusFilter(opt.value)}
+            onClick={() => {
+              setStatusFilter(opt.value)
+            }}
           >
             {opt.label}
           </Button>
@@ -194,7 +198,7 @@ export function ProjectSpentTimeTab({
                     <TableCell>
                       <StatusPill
                         variant={statusVariant(st.status)}
-                        label={SPENT_TIME_STATUS_LABELS[st.status]}
+                        label={getSpentTimeStatusLabel(st.status)}
                         className="text-[9px] px-2 py-0"
                       />
                     </TableCell>
@@ -208,7 +212,9 @@ export function ProjectSpentTimeTab({
                               className="text-primary hover:bg-primary/10 rounded-full size-7"
                               title="Duyệt"
                               disabled={approveMutation.isPending}
-                              onClick={() => approveMutation.mutate(st.id)}
+                              onClick={() => {
+                                approveMutation.mutate(st.id)
+                              }}
                             >
                               <Check className="size-3.5" />
                             </Button>

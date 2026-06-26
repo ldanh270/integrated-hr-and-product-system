@@ -163,7 +163,7 @@ export class SpentTimeService implements ISpentTimeService {
       data.employeeId = userId
     }
 
-    const employeeId = data.employeeId!
+    const employeeId = data.employeeId ?? userId
     await this.validateBusinessRules(data.taskId, employeeId, data.hours, data.date)
 
     return this.repository.create(data)

@@ -21,7 +21,7 @@ import {
 import {
   PROJECT_MEMBER_WORK_MODE,
   PROJECT_MEMBER_WORK_MODES,
-  PROJECT_MEMBER_WORK_MODE_LABELS,
+  getProjectMemberWorkModeLabel,
 } from "@/config/entities/project.config"
 import { EMPLOYEE_TYPE } from "@/config/entities/employee.config"
 import { projectApi } from "@/lib/api/project.api"
@@ -153,7 +153,9 @@ export function AddMemberModal({
               min="0"
               step="1000"
               value={hourlyRate}
-              onChange={(e) => setHourlyRate(e.target.value)}
+              onChange={(e) => {
+                setHourlyRate(e.target.value)
+              }}
               placeholder="VD: 50000"
               className="h-10 rounded-full"
             />
@@ -170,7 +172,7 @@ export function AddMemberModal({
               <SelectContent className="rounded-xl border-border bg-popover">
                 {PROJECT_MEMBER_WORK_MODES.map((mode) => (
                   <SelectItem key={mode} value={mode} className="rounded-lg">
-                    {PROJECT_MEMBER_WORK_MODE_LABELS[mode]}
+                    {getProjectMemberWorkModeLabel(mode)}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -152,7 +152,7 @@ export const SPENT_TIME_STATUSES = [
   SPENT_TIME_STATUS.REJECTED,
 ] as const
 
-export const SPENT_TIME_STATUS_LABELS: Record<string, string> = {
+export const SPENT_TIME_STATUS_LABELS: Record<(typeof SPENT_TIME_STATUSES)[number], string> = {
   [SPENT_TIME_STATUS.PENDING]: "Chờ duyệt",
   [SPENT_TIME_STATUS.APPROVED]: "Đã duyệt",
   [SPENT_TIME_STATUS.REJECTED]: "Từ chối",
@@ -169,7 +169,26 @@ export const PROJECT_MEMBER_WORK_MODES = [
   PROJECT_MEMBER_WORK_MODE.ONSITE,
 ] as const
 
-export const PROJECT_MEMBER_WORK_MODE_LABELS: Record<string, string> = {
+export const PROJECT_MEMBER_WORK_MODE_LABELS: Record<(typeof PROJECT_MEMBER_WORK_MODES)[number], string> = {
   [PROJECT_MEMBER_WORK_MODE.REMOTE]: "Remote",
   [PROJECT_MEMBER_WORK_MODE.ONSITE]: "Onsite",
+}
+
+export type SpentTimeStatusValue = (typeof SPENT_TIME_STATUSES)[number]
+export type ProjectMemberWorkModeValue = (typeof PROJECT_MEMBER_WORK_MODES)[number]
+
+function isSpentTimeStatus(value: string): value is SpentTimeStatusValue {
+  return (SPENT_TIME_STATUSES as readonly string[]).includes(value)
+}
+
+function isProjectMemberWorkMode(value: string): value is ProjectMemberWorkModeValue {
+  return (PROJECT_MEMBER_WORK_MODES as readonly string[]).includes(value)
+}
+
+export function getSpentTimeStatusLabel(status: string): string {
+  return isSpentTimeStatus(status) ? SPENT_TIME_STATUS_LABELS[status] : status
+}
+
+export function getProjectMemberWorkModeLabel(mode: string): string {
+  return isProjectMemberWorkMode(mode) ? PROJECT_MEMBER_WORK_MODE_LABELS[mode] : mode
 }

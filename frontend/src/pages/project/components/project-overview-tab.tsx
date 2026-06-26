@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { TASK_TRACKERS, PROJECT_MEMBER_WORK_MODE_LABELS } from "@/config/entities/project.config"
+import { TASK_TRACKERS, getProjectMemberWorkModeLabel } from "@/config/entities/project.config"
 import type { Project, ProjectMember } from "@/types/project.types"
 
 interface ProjectOverviewTabProps {
@@ -190,9 +190,7 @@ export function ProjectOverviewTab({
                               ? `${member.hourlyRate.toLocaleString("vi-VN")} đ/giờ`
                               : null}
                             {member.hourlyRate != null && member.workMode ? " · " : null}
-                            {member.workMode
-                              ? PROJECT_MEMBER_WORK_MODE_LABELS[member.workMode] ?? member.workMode
-                              : null}
+                            {member.workMode ? getProjectMemberWorkModeLabel(member.workMode) : null}
                           </div>
                         )}
                       </div>
@@ -205,7 +203,9 @@ export function ProjectOverviewTab({
                               variant="ghost"
                               size="icon-xs"
                               className="text-primary hover:bg-primary/10 rounded-full cursor-pointer text-xs h-7 px-3"
-                              onClick={() => onEditMember(member)}
+                              onClick={() => {
+                                onEditMember(member)
+                              }}
                             >
                               Sửa
                             </Button>

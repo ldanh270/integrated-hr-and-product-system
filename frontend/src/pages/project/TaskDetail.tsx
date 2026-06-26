@@ -567,7 +567,9 @@ export default function TaskDetail() {
                                 size="icon-xs"
                                 className="text-primary hover:bg-primary/10 rounded-full cursor-pointer size-6 p-0"
                                 title="Duyệt"
-                                onClick={() => approveSpentTimeMutation.mutate(st.id)}
+                                onClick={() => {
+                                  approveSpentTimeMutation.mutate(st.id)
+                                }}
                               >
                                 <Check className="size-3" />
                               </Button>

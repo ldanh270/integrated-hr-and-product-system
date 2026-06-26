@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test"
 
+process.env.E2E_TEST_PASSWORD ??= "Admin123@"
+
 /**
  * Playwright configuration for E2E testing
  */

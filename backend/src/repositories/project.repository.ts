@@ -256,12 +256,14 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
         projectId,
         employeeId,
         hourlyRate: options?.hourlyRate ?? null,
-        workMode: (options?.workMode as any) ?? undefined,
+        workMode: (options?.workMode as Prisma.ProjectMemberCreateInput["workMode"]) ?? undefined,
       },
       update: {
         removedAt: null,
         ...(options?.hourlyRate !== undefined ? { hourlyRate: options.hourlyRate } : {}),
-        ...(options?.workMode ? { workMode: options.workMode as any } : {}),
+        ...(options?.workMode
+          ? { workMode: options.workMode as Prisma.ProjectMemberUpdateInput["workMode"] }
+          : {}),
       },
     })
     return true

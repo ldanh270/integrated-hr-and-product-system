@@ -1,3 +1,5 @@
+import { EmployeeType, Role } from "@prisma/client"
+
 import { EMPLOYEE_TYPES, EMPLOYEE_TYPE, ROLE } from "@/configs/entities/employee.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
@@ -70,8 +72,8 @@ export class EmployeesSeeder implements ISeeder {
         data: {
           username: partTimeUsername,
           passwordHash: passwordHashCore,
-          role: ROLE.EMPLOYEE as any,
-          employeeType: EMPLOYEE_TYPE.PART_TIME as any,
+          role: ROLE.EMPLOYEE as Role,
+          employeeType: EMPLOYEE_TYPE.PART_TIME as EmployeeType,
           fullName: "Part Time User",
           email: "part_time@example.com",
           phone: "0123456786",

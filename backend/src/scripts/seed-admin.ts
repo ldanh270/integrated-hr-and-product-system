@@ -1,3 +1,5 @@
+import { EmployeeType, Role } from "@prisma/client"
+
 import { EMPLOYEE_TYPE, ROLE } from "../configs/entities/employee.config.ts"
 import { prisma } from "../libs/database.ts"
 import { HashUtil } from "../utils/hash.util.ts"
@@ -67,8 +69,8 @@ async function seedAdminAccounts() {
     const partTimeData = {
       username: partTimeUsername,
       passwordHash,
-      role: ROLE.EMPLOYEE as any,
-      employeeType: EMPLOYEE_TYPE.PART_TIME as any,
+      role: ROLE.EMPLOYEE as Role,
+      employeeType: EMPLOYEE_TYPE.PART_TIME as EmployeeType,
       fullName: "Part Time User",
       email: "part_time@example.com",
       phone: "0123456786",
