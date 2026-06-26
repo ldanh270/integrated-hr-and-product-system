@@ -24,10 +24,6 @@ import { useTaskReview } from "../hooks/use-task-review"
 import { RichTextEditor } from "@/components/ui/rich-text-editor"
 import DOMPurify from "dompurify"
 
-const createSanitizedMarkup = (html?: string | null) => {
-  return { __html: DOMPurify.sanitize(html || "") }
-}
-
 interface TaskReviewModalProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
@@ -114,9 +110,10 @@ export function TaskReviewModal({
               {task.resultNotes && (
                 <div className="text-xs text-muted-foreground pl-5 space-y-1">
                   <span className="font-bold">Ghi chú kết quả: </span>
+                  {/* nosemgrep */}
                   <div 
                     className="prose prose-sm dark:prose-invert max-w-none text-xs text-foreground mt-1"
-                    dangerouslySetInnerHTML={createSanitizedMarkup(task.resultNotes)}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(task.resultNotes) }}
                   />
                 </div>
               )}
@@ -161,9 +158,10 @@ export function TaskReviewModal({
                 {task.resultNotes && (
                   <div className="space-y-1">
                     <span className="font-bold text-muted-foreground">Mô tả đã gửi: </span>
+                    {/* nosemgrep */}
                     <div 
                       className="prose prose-sm dark:prose-invert max-w-none text-xs text-foreground bg-muted/20 p-2.5 rounded-lg border border-border/40 mt-1"
-                      dangerouslySetInnerHTML={createSanitizedMarkup(task.resultNotes)}
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(task.resultNotes) }}
                     />
                   </div>
                 )}
@@ -181,9 +179,10 @@ export function TaskReviewModal({
                 {task.resultNotes && (
                   <div className="bg-muted/10 p-2.5 rounded-lg border border-border/40 space-y-1">
                     <span className="font-bold text-[10px] uppercase text-muted-foreground">Mô tả: </span>
+                    {/* nosemgrep */}
                     <div 
                       className="prose prose-sm dark:prose-invert max-w-none text-xs text-foreground"
-                      dangerouslySetInnerHTML={createSanitizedMarkup(task.resultNotes)}
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(task.resultNotes) }}
                     />
                   </div>
                 )}
