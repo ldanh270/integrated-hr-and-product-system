@@ -18,7 +18,7 @@ export interface ICreateWorkingShiftDTO {
   startTime: string // "HH:mm"
   endTime: string // "HH:mm"
   gracePeriodMinutes?: number
-  gps?: IGpsLocationDTO
+  gps?: IGpsLocationDTO | null
   isActive?: boolean
   createdById: string
 }

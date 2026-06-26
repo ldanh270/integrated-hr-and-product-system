@@ -1,5 +1,7 @@
+import { EMPLOYEE_TYPE } from "@/configs/entities/employee.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { IEmployeeShiftRepository, IShiftScheduleRepository } from "@/types/shift.types.ts"
+import { IEmployeeRepository } from "@/types/employee.types.ts"
 import {
   IApplyWeeklyScheduleTemplateDTO,
   ICreateWeeklyScheduleTemplateDTO,
@@ -19,6 +21,7 @@ export class WeeklyScheduleTemplateService implements IWeeklyScheduleTemplateSer
     private templateRepo: IWeeklyScheduleTemplateRepository,
     private scheduleRepo: IShiftScheduleRepository,
     private employeeShiftRepo: IEmployeeShiftRepository,
+    private employeeRepo: IEmployeeRepository,
   ) {}
 
   createTemplate(data: ICreateWeeklyScheduleTemplateDTO): Promise<IWeeklyScheduleTemplateWithWeeks> {
@@ -79,6 +82,18 @@ export class WeeklyScheduleTemplateService implements IWeeklyScheduleTemplateSer
 
     if (scheduleDays.length === 0) {
       throw new AppError("Template không có ca làm việc nào để áp dụng", HttpStatusCode.BAD_REQUEST, "service")
+    }
+
+    for (const employeeId of data.employeeIds) {
+      const employee = await this.employeeRepo.findById(employeeId)
+      // PT follows per-project Spent Time, not weekly shift templates.
+      if (employee?.employeeType === EMPLOYEE_TYPE.PART_TIME) {
+        throw new AppError(
+          "Nhân viên part-time theo dự án, không áp dụng lịch tuần",
+          HttpStatusCode.UNPROCESSABLE_ENTITY,
+          "service",
+        )
+      }
     }
 
     const results = await Promise.all(

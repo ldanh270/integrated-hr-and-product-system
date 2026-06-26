@@ -2,3 +2,7 @@ export const ATTENDANCE_TIME_RULES = {
   DEFAULT_WINDOW_MINUTES: 15,
   MINUTES_PER_DAY: 1440,
 } as const
+
+export const ATTENDANCE_GPS_RULES = {
+  MIN_GEOFENCE_RADIUS_METERS: 10,
+} as const

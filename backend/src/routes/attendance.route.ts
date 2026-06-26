@@ -6,6 +6,8 @@ import { authorizeRoles } from "@/middlewares/role.middleware.ts"
 import { PrismaAttendanceRepository } from "@/repositories/attendance.repository.ts"
 import { PrismaEmployeeShiftRepository } from "@/repositories/employee-shift.repository.ts"
 import { PrismaHolidayRepository } from "@/repositories/holiday.repository.ts"
+import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
+import { PrismaProjectRepository } from "@/repositories/project.repository.ts"
 import { PrismaShiftScheduleRepository } from "@/repositories/schedule.repository.ts"
 import { PrismaWorkingShiftRepository } from "@/repositories/shift.repository.ts"
 import { AttendanceService } from "@/services/attendance.service.ts"
@@ -19,6 +21,8 @@ const employeeShiftRepo = new PrismaEmployeeShiftRepository(prisma)
 const scheduleRepo = new PrismaShiftScheduleRepository(prisma)
 const holidayRepo = new PrismaHolidayRepository(prisma)
 const workingShiftRepo = new PrismaWorkingShiftRepository(prisma)
+const employeeRepo = new PrismaEmployeeRepository(prisma)
+const projectRepo = new PrismaProjectRepository(prisma)
 
 const service = new AttendanceService(
   attendanceRepo,
@@ -26,6 +30,8 @@ const service = new AttendanceService(
   scheduleRepo,
   holidayRepo,
   workingShiftRepo,
+  employeeRepo,
+  projectRepo,
 )
 const controller = new AttendanceController(service)
 

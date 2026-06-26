@@ -3,6 +3,7 @@ import { WeeklyScheduleTemplateController } from "@/controllers/weekly-schedule-
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
 import { authorizeRoles } from "@/middlewares/role.middleware.ts"
+import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
 import { PrismaEmployeeShiftRepository } from "@/repositories/employee-shift.repository.ts"
 import { PrismaShiftScheduleRepository } from "@/repositories/schedule.repository.ts"
 import { PrismaWeeklyScheduleTemplateRepository } from "@/repositories/weekly-schedule-template.repository.ts"
@@ -15,7 +16,13 @@ const weeklyScheduleTemplateRoutes = express.Router()
 const templateRepo = new PrismaWeeklyScheduleTemplateRepository(prisma)
 const scheduleRepo = new PrismaShiftScheduleRepository(prisma)
 const employeeShiftRepo = new PrismaEmployeeShiftRepository(prisma)
-const service = new WeeklyScheduleTemplateService(templateRepo, scheduleRepo, employeeShiftRepo)
+const employeeRepo = new PrismaEmployeeRepository(prisma)
+const service = new WeeklyScheduleTemplateService(
+  templateRepo,
+  scheduleRepo,
+  employeeShiftRepo,
+  employeeRepo,
+)
 const controller = new WeeklyScheduleTemplateController(service)
 
 const adminRoles = [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER]

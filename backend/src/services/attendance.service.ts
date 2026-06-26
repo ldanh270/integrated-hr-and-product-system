@@ -1,4 +1,5 @@
 import { ATTENDANCE_STATUS } from "@/configs/entities/attendance.config.ts"
+import { EMPLOYEE_TYPE } from "@/configs/entities/employee.config.ts"
 import {
   ATTENDANCE_GPS_RULES,
   ATTENDANCE_TIME_RULES,
@@ -23,6 +24,8 @@ import {
   IShiftScheduleRepository,
   IWorkingShiftRepository,
 } from "@/types/shift.types.ts"
+import { IEmployeeRepository } from "@/types/employee.types.ts"
+import { IProjectRepository } from "@/types/project.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { resolveShiftFromSchedule } from "@/utils/schedule.util.ts"
 
@@ -44,6 +47,8 @@ export class AttendanceService implements IAttendanceService {
     private scheduleRepo: IShiftScheduleRepository,
     private holidayRepo: IHolidayRepository,
     private workingShiftRepo: IWorkingShiftRepository,
+    private employeeRepo: IEmployeeRepository,
+    private projectRepo: IProjectRepository,
   ) {}
 
   /**
@@ -424,14 +429,40 @@ export class AttendanceService implements IAttendanceService {
 
     let employeeShift = await this.employeeShiftRepo.getShiftForEmployeeDate(employeeId, today)
     let shiftId = employeeShift?.shiftId
+    let schedule = null as Awaited<
+      ReturnType<IShiftScheduleRepository["getScheduleByEmployee"]>
+    > | null
 
     if (!shiftId) {
-      const schedule = await this.scheduleRepo.getScheduleByEmployee(employeeId, today)
+      schedule = await this.scheduleRepo.getScheduleByEmployee(employeeId, today)
       shiftId = this.resolveShiftIdFromSchedule(schedule, today)
     }
 
-    if (!shiftId) {
+    // Unscheduled employees may use time-based fallback (e.g. onboarding).
+    // PT remote: hours via Spent Time only — block GPS fallback.
+    // PT onsite: allow fallback check-in when assigned to an onsite project.
+    if (!shiftId && !schedule) {
+      const employee = await this.employeeRepo.findById(employeeId)
+      if (employee?.employeeType === EMPLOYEE_TYPE.PART_TIME) {
+        const isOnsite = await this.projectRepo.hasActiveOnsiteMembership(employeeId)
+        if (!isOnsite) {
+          // Remote PT never uses attendance records for payroll.
+          throw new AppError(
+            ATTENDANCE_ERROR_MESSAGES.PT_REMOTE_NO_GPS_CHECKIN,
+            HttpStatusCode.UNPROCESSABLE_ENTITY,
+            ATTENDANCE_LAYERS.SERVICE,
+          )
+        }
+      }
       shiftId = await this.resolveFallbackShiftId(now)
+    }
+
+    if (!shiftId && schedule) {
+      throw new AppError(
+        ATTENDANCE_ERROR_MESSAGES.NO_SCHEDULE_TODAY,
+        HttpStatusCode.BAD_REQUEST,
+        ATTENDANCE_LAYERS.SERVICE,
+      )
     }
 
     const shift = shiftId ? await this.workingShiftRepo.findById(shiftId) : null

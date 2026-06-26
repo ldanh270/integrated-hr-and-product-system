@@ -48,7 +48,7 @@ export interface ICreateShiftPayload {
   /** HH:MM format */
   endTime: string
   gracePeriodMinutes?: number
-  gps?: IGpsConfig
+  gps?: IGpsConfig | null
   isActive?: boolean
 }
 

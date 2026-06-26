@@ -62,18 +62,29 @@ export class PrismaWorkingShiftRepository
    * @returns The updated working shift or null if not found.
    */
   async update(id: string, data: IUpdateWorkingShiftDTO): Promise<any | null> {
+    const updateData: Record<string, unknown> = {}
+
+    if (data.name !== undefined) updateData.name = data.name
+    if (data.startTime !== undefined) updateData.startTime = this.parseTime(data.startTime)
+    if (data.endTime !== undefined) updateData.endTime = this.parseTime(data.endTime)
+    if (data.gracePeriodMinutes !== undefined) {
+      updateData.gracePeriodMinutes = data.gracePeriodMinutes
+    }
+    if (data.isActive !== undefined) updateData.isActive = data.isActive
+
+    if (data.gps === null) {
+      updateData.gpsLat = null
+      updateData.gpsLng = null
+      updateData.gpsRadiusMeters = null
+    } else if (data.gps) {
+      updateData.gpsLat = data.gps.lat
+      updateData.gpsLng = data.gps.lng
+      updateData.gpsRadiusMeters = data.gps.radiusMeters
+    }
+
     return this.prisma.workingShift.update({
       where: { id },
-      data: {
-        name: data.name,
-        startTime: this.parseTime(data.startTime),
-        endTime: this.parseTime(data.endTime),
-        gracePeriodMinutes: data.gracePeriodMinutes,
-        gpsLat: data.gps?.lat,
-        gpsLng: data.gps?.lng,
-        gpsRadiusMeters: data.gps?.radiusMeters,
-        isActive: data.isActive,
-      },
+      data: updateData,
     })
   }
 

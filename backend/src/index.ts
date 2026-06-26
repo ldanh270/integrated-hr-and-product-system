@@ -67,8 +67,8 @@ const limiter = rateLimit({
   },
 })
 
-// Apply rate limiter to all API requests
-app.use("/api/", limiter)
+// // Apply rate limiter to all API requests
+// app.use("/api/", limiter)
 
 /**
  * Main routers

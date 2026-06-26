@@ -18,18 +18,22 @@ import {
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
+import { ATTENDANCE_GPS_RULES } from "@/config/rules/attendance.config"
 import { useCreateShift, useUpdateShift } from "@/hooks/attendance/use-shifts"
-import { minutesToTime, timeToMinutes } from "@/lib/utils"
-import type { IWorkingShift } from "@/types/attendance.types"
+import { minutesToTime } from "@/lib/utils"
+import type { IGpsConfig, IWorkingShift } from "@/types/attendance.types"
 
 import { useCallback, useEffect } from "react"
 
 import { zodResolver } from "@hookform/resolvers/zod"
+import { isAxiosError } from "axios"
 import { Clock, Info, MapPin } from "lucide-react"
 import { useForm, useWatch } from "react-hook-form"
+import { toast } from "sonner"
 import { z } from "zod"
 
 const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/
+const { MIN_GEOFENCE_RADIUS_METERS } = ATTENDANCE_GPS_RULES
 
 const formSchema = z.object({
   name: z.string().min(2, "Shift name must be at least 2 characters"),
@@ -40,12 +44,29 @@ const formSchema = z.object({
   gpsLng: z.number({ message: "Longitude must be a number" }).optional(),
   gpsRadiusMeters: z
     .number({ message: "Radius must be a number" })
-    .min(1, "Minimum radius is 1m")
+    .min(MIN_GEOFENCE_RADIUS_METERS, `Minimum radius is ${MIN_GEOFENCE_RADIUS_METERS}m`)
     .optional(),
   isActive: z.boolean(),
 })
 
 type FormValues = z.infer<typeof formSchema>
+
+function getShiftMutationError(error: unknown, fallback: string): string {
+  if (!isAxiosError(error)) return fallback
+  return error.response?.data?.error?.message ?? error.response?.data?.message ?? fallback
+}
+
+function buildGpsPayload(
+  values: FormValues,
+  options: { isUpdate: boolean; hadGps: boolean },
+): IGpsConfig | null | undefined {
+  const { gpsLat, gpsLng, gpsRadiusMeters } = values
+  if (gpsLat != null && gpsLng != null && gpsRadiusMeters != null) {
+    return { lat: gpsLat, lng: gpsLng, radiusMeters: gpsRadiusMeters }
+  }
+  if (options.isUpdate && options.hadGps) return null
+  return undefined
+}
 
 interface Props {
   open: boolean
@@ -115,23 +136,8 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
   }, [open, initialData, form])
 
   const onSubmit = (values: FormValues) => {
-    if (
-      values.startTime &&
-      values.endTime &&
-      timeToMinutes(values.endTime) <= timeToMinutes(values.startTime)
-    ) {
-      form.setError("endTime", { message: "End time must be after start time" })
-      return
-    }
-
-    const gps =
-      values.gpsLat != null && values.gpsLng != null && values.gpsRadiusMeters != null
-        ? {
-            lat: values.gpsLat,
-            lng: values.gpsLng,
-            radiusMeters: values.gpsRadiusMeters,
-          }
-        : undefined
+    const hadGps = initialData?.gpsLat != null && initialData?.gpsLng != null
+    const gps = buildGpsPayload(values, { isUpdate: Boolean(initialData), hadGps })
 
     const payload = {
       name: values.name,
@@ -139,16 +145,28 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
       endTime: values.endTime,
       gracePeriodMinutes: parseInt(values.gracePeriodMinutes, 10) || 0,
       isActive: values.isActive,
-      gps,
+      ...(gps !== undefined ? { gps } : {}),
+    }
+
+    const mutationOptions = {
+      onSuccess: () => {
+        toast.success(initialData ? "Đã cập nhật ca làm việc" : "Đã tạo ca làm việc")
+        onOpenChange(false)
+      },
+      onError: (error: unknown) => {
+        toast.error(
+          getShiftMutationError(
+            error,
+            initialData ? "Không thể cập nhật ca làm việc" : "Không thể tạo ca làm việc",
+          ),
+        )
+      },
     }
 
     if (initialData) {
-      updateMutation.mutate(
-        { id: initialData.id, ...payload },
-        { onSuccess: () => { onOpenChange(false); } },
-      )
+      updateMutation.mutate({ id: initialData.id, ...payload }, mutationOptions)
     } else {
-      createMutation.mutate(payload, { onSuccess: () => { onOpenChange(false); } })
+      createMutation.mutate(payload, mutationOptions)
     }
   }
 
@@ -330,6 +348,7 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
                     <FormControl>
                       <Input
                         type="number"
+                        min={MIN_GEOFENCE_RADIUS_METERS}
                         placeholder="e.g., 100, 200..."
                         className="h-11"
                         {...field}

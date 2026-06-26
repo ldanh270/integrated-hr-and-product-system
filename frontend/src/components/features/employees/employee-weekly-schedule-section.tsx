@@ -16,9 +16,12 @@ type WeeklyScheduleSectionState = ReturnType<typeof useEmployeeWeeklyScheduleSec
 
 interface EmployeeWeeklyScheduleSectionProps {
   section: WeeklyScheduleSectionState
+  hidden?: boolean
 }
 
-export function EmployeeWeeklyScheduleSection({ section }: EmployeeWeeklyScheduleSectionProps) {
+export function EmployeeWeeklyScheduleSection({ section, hidden }: EmployeeWeeklyScheduleSectionProps) {
+  if (hidden) return null
+
   const {
     form,
     activeTemplates,
