@@ -111,9 +111,11 @@ export function TaskReviewModal({
                 <div className="text-xs text-muted-foreground pl-5 space-y-1">
                   <span className="font-bold">Ghi chú kết quả: </span>
                   {/* nosemgrep */}
-                  <div /* NOSONAR */
+                  <div 
                     className="prose prose-sm dark:prose-invert max-w-none text-xs text-foreground mt-1"
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(task.resultNotes) /* NOSONAR */ }}
+                    dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(task.resultNotes) // NOSONAR
+                    }}
                   />
                 </div>
               )}
@@ -159,9 +161,11 @@ export function TaskReviewModal({
                   <div className="space-y-1">
                     <span className="font-bold text-muted-foreground">Mô tả đã gửi: </span>
                     {/* nosemgrep */}
-                    <div /* NOSONAR */
+                    <div 
                       className="prose prose-sm dark:prose-invert max-w-none text-xs text-foreground bg-muted/20 p-2.5 rounded-lg border border-border/40 mt-1"
-                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(task.resultNotes) /* NOSONAR */ }}
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(task.resultNotes) // NOSONAR
+                      }}
                     />
                   </div>
                 )}
@@ -180,9 +184,11 @@ export function TaskReviewModal({
                   <div className="bg-muted/10 p-2.5 rounded-lg border border-border/40 space-y-1">
                     <span className="font-bold text-[10px] uppercase text-muted-foreground">Mô tả: </span>
                     {/* nosemgrep */}
-                    <div /* NOSONAR */
+                    <div 
                       className="prose prose-sm dark:prose-invert max-w-none text-xs text-foreground"
-                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(task.resultNotes) /* NOSONAR */ }}
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(task.resultNotes) // NOSONAR
+                      }}
                     />
                   </div>
                 )}
