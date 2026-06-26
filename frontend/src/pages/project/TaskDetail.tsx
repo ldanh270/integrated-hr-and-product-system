@@ -26,6 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 // Import employee role specifications
 import { ROLE } from "@/config/entities/employee.config"
+import { usePermission } from "@/hooks/use-permission"
 // Import task property categories lists
 import { TASK_PRIORITIES, TASK_STATUSES, TASK_TRACKERS } from "@/config/entities/project.config"
 // Import API endpoint wrapper clients
@@ -68,6 +69,7 @@ export default function TaskDetail() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { user } = useAuthStore()
+  const { roles } = usePermission()
 
   // State hooks to control dialog modal views
   const [isOpenLogTimeModal, setIsOpenLogTimeModal] = useState(false) // Visibility of log time modal
@@ -132,7 +134,8 @@ export default function TaskDetail() {
   const isCreator = task?.createdById === user?.id
   const isAssignee = task?.assigneeId === user?.id
   const isLeader = project?.teamLeaderId === user?.id
-  const isAdminOrGM = user?.role === ROLE.ADMIN || user?.role === ROLE.GENERAL_MANAGER
+  const isAdminOrGM =
+    !!user && [ROLE.ADMIN, ROLE.GENERAL_MANAGER].some((role) => roles.includes(role))
 
   // Who can edit this task: Admin/GM, TL, Creator, Assignee
   const canEditTask = isAdminOrGM || isLeader || isCreator || isAssignee
@@ -530,6 +533,7 @@ export default function TaskDetail() {
                                   setEditingSpentTime(st)
                                   setIsOpenLogTimeModal(true)
                                 }}
+                                aria-label="Chỉnh sửa nhật ký thời gian"
                               >
                                 <Edit className="size-3" />
                               </Button>
@@ -537,6 +541,7 @@ export default function TaskDetail() {
                                 variant="ghost"
                                 size="icon-xs"
                                 className="text-destructive hover:bg-destructive/10 rounded-full cursor-pointer size-6 p-0"
+                                aria-label="Xóa nhật ký thời gian"
                                 onClick={() => {
                                   if (window.confirm("Bạn có chắc chắn muốn xóa nhật ký này?")) {
                                     deleteSpentTimeMutation.mutate(st.id)

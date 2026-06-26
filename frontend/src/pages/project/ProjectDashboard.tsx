@@ -29,6 +29,7 @@ import { useState, useEffect } from "react"
 import { toast } from "sonner"
 // Import Spent Time log modal feature component
 import LogTimeModal from "@/components/features/project/LogTimeModal"
+import { usePermission } from "@/hooks/use-permission"
 // Import Task data type structure
 import type { Task } from "@/types/task.types"
 
@@ -36,6 +37,7 @@ import type { Task } from "@/types/task.types"
 export default function ProjectDashboard() {
   // Retrieve current user session information
   const { user } = useAuthStore()
+  const { roles } = usePermission()
   // Initialize navigation
   const navigate = useNavigate()
   // Initialize react-query client to manage caching
@@ -470,7 +472,7 @@ export default function ProjectDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {projects.map((proj) => {
               const isLeader = proj.teamLeaderId === user?.id
-              const isAdminOrGM = user?.role === "admin" || user?.role === "general_manager"
+              const isAdminOrGM = ["admin", "general_manager"].some((role) => roles.includes(role))
               const canCreateInProj = isAdminOrGM || isLeader || proj.taskCreationPolicy === "all_members"
 
               // Map member role to badges

@@ -4,6 +4,7 @@ import { APPLICATION_STATUS, APPLICATION_TYPES } from "@/config/entities/attenda
 import { useManageApplications } from "@/hooks/application/useManageApplications"
 import { useMyApplications } from "@/hooks/application/useMyApplications"
 import { useSubmitApplication } from "@/hooks/application/useSubmitApplication"
+import { usePermission } from "@/hooks/use-permission"
 import type { IApplication } from "@/lib/api/application.api"
 import { useAuthStore } from "@/store/auth-store"
 
@@ -924,8 +925,10 @@ const STATUS_TABS = [
 
 export default function Applications() {
   const { user } = useAuthStore()
+  const { roles } = usePermission()
   const isManager =
-    user && ["admin", "hr_manager", "general_manager", "team_leader"].includes(user.role)
+    !!user &&
+    ["admin", "hr_manager", "general_manager", "team_leader"].some((role) => roles.includes(role))
   const [activeTab, setActiveTab] = useState<"mine" | "manage">("mine")
 
   const myApps = useMyApplications()
