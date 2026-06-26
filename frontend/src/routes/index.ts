@@ -1,8 +1,9 @@
+import { ROUTES } from "@/config/routes.config.ts"
+
 import { lazy, type ComponentType } from "react"
 
 const MainLayout = lazy(() => import("@/layouts/MainLayout.tsx"))
 
-// Public routes
 const publicRoutes = [
   { path: "/login", component: lazy(() => import("@/pages/auth/Login.tsx")), layout: null },
   {
@@ -14,12 +15,12 @@ const publicRoutes = [
 
 export interface RouteConfig {
   path: string
-  component: ComponentType
+  component?: ComponentType
   layout?: ComponentType | null
   permissions?: string[]
+  children?: RouteConfig[]
 }
 
-// Private routes
 const privateRoutes: RouteConfig[] = [
   {
     path: "/hrm/dashboard",
@@ -31,7 +32,6 @@ const privateRoutes: RouteConfig[] = [
     component: lazy(() => import("@/pages/EmployeeList.tsx")),
     layout: MainLayout,
   },
-
   {
     path: "/hrm/profile",
     component: lazy(() => import("@/pages/Profile.tsx")),
@@ -42,7 +42,6 @@ const privateRoutes: RouteConfig[] = [
     component: lazy(() => import("@/pages/security/LoginHistory.tsx")),
     layout: MainLayout,
   },
-  // Attendance Module
   {
     path: "/attendance",
     component: lazy(() => import("@/pages/attendance/AttendanceDashboard.tsx")),
@@ -51,11 +50,6 @@ const privateRoutes: RouteConfig[] = [
   {
     path: "/attendance/summary",
     component: lazy(() => import("@/pages/attendance/AttendanceSummary.tsx")),
-    layout: MainLayout,
-  },
-  {
-    path: "/attendance/my-schedule",
-    component: lazy(() => import("@/pages/attendance/MySchedule.tsx")),
     layout: MainLayout,
   },
   {
@@ -127,24 +121,17 @@ const privateRoutes: RouteConfig[] = [
     layout: MainLayout,
     permissions: ["payroll.read"],
   },
-
   {
     path: "/payroll/list",
     component: lazy(() => import("@/pages/payroll/PayrollManagement.tsx")),
     layout: MainLayout,
     permissions: ["payroll.read"],
   },
-
   {
     path: "/payroll/payslip-templates",
     component: lazy(() => import("@/pages/payroll/PayslipTemplates.tsx")),
     layout: MainLayout,
     permissions: ["payroll.read"],
-  },
-  {
-    path: "/payroll/my-payslips",
-    component: lazy(() => import("@/pages/payroll/MyPayslips.tsx")),
-    layout: MainLayout,
   },
   {
     path: "/asset/dashboard",
@@ -202,9 +189,18 @@ const privateRoutes: RouteConfig[] = [
     component: lazy(() => import("@/pages/settings/SettingsDashboard.tsx")),
     layout: MainLayout,
   },
-  // Project & Task Management Module
   {
-    path: "/project/dashboard",
+    path: ROUTES.PERSONAL.SCHEDULE,
+    component: lazy(() => import("@/pages/attendance/MySchedule.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: ROUTES.PERSONAL.PAYSLIPS,
+    component: lazy(() => import("@/pages/payroll/MyPayslips.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: ROUTES.PERSONAL.PROJECTS,
     component: lazy(() => import("@/pages/project/ProjectDashboard.tsx")),
     layout: MainLayout,
   },

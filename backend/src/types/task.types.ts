@@ -33,6 +33,10 @@ export interface Task {
   completedAt: Date | null
   estimatedTime: number | null
   progress: number
+  resultUrl: string | null
+  resultNotes: string | null
+  rejectionReason: string | null
+  parentTaskId: string | null
   createdAt: Date
   updatedAt: Date
   /**
@@ -77,6 +81,7 @@ export interface CreateTaskDto {
   dueDate?: Date | string | null
   estimatedTime?: number | null
   progress?: number
+  parentTaskId?: string | null
 }
 
 /**
@@ -94,6 +99,10 @@ export interface UpdateTaskDto {
   completedAt?: Date | string | null
   estimatedTime?: number | null
   progress?: number
+  resultUrl?: string | null
+  resultNotes?: string | null
+  rejectionReason?: string | null
+  parentTaskId?: string | null
 }
 
 /**

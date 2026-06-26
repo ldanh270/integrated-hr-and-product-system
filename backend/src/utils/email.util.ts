@@ -86,7 +86,7 @@ export class EmailUtil {
     },
   ): Promise<any> {
     const apiKey = process.env.RESEND_API_KEY
-    const from = process.env.EMAIL_FROM || "onboarding@resend.dev"
+    const from = process.env.EMAIL_FROM || "noreply@smartpcstore.id.vn"
 
     const lockTimeStr = data.lockedUntil.toLocaleTimeString()
     const lockExpiryStr = data.lockedUntil.toLocaleString()

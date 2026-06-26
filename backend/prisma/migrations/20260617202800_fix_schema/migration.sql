@@ -2,7 +2,7 @@
 ALTER TYPE "ApplicationType" ADD VALUE 'resignation';
 
 -- DropIndex
-DROP INDEX "Employee_personalEmployeeId_idx";
+DROP INDEX IF EXISTS "Employee_personalEmployeeId_idx";
 
 -- AlterTable
 ALTER TABLE "Application" ADD COLUMN     "assignedToId" TEXT;

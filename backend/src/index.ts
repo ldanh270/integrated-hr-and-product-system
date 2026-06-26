@@ -1,6 +1,6 @@
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
-import { PORT } from "@/configs/system/server.config.ts"
-import { connectDB, prisma } from "@/libs/database.ts"
+import { ENVIRONMENT, ENV_ENVIRONMENT, PORT, RATE_LIMIT } from "@/configs/system/server.config.ts"
+import { connectDB } from "@/libs/database.ts"
 import { initCronJobs } from "@/libs/payroll-cron.ts"
 import { initWeeklyScheduleCron } from "@/libs/weekly-schedule-cron.ts"
 import { cors } from "@/middlewares/cors.middleware.ts"
@@ -9,6 +9,7 @@ import applicationRoutes from "@/routes/application.route.ts"
 import approvalRoutes from "@/routes/approval.route.ts"
 import attendanceRoutes from "@/routes/attendance.route.ts"
 import authRoutes from "@/routes/auth.route.ts"
+import customQueryRoutes from "@/routes/custom-query.route.ts"
 import employeeSalaryConfigRoutes from "@/routes/employee-salary-config.route.ts"
 import employeeRoutes from "@/routes/employee.route.ts"
 import holidayRoutes from "@/routes/holiday.route.ts"
@@ -57,10 +58,13 @@ app.use(cookieParser())
 app.use(cors)
 app.use(express.json())
 
-// Set up rate limiter: maximum of 100 requests per 15 minutes
+// Set up rate limiter: maximum of 100 requests per 15 minutes (relaxed in development)
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // max 1000 requests per windowMs
+  windowMs: RATE_LIMIT.WINDOW_MS,
+  max:
+    ENV_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT
+      ? RATE_LIMIT.MAX_LIMIT_DEV
+      : RATE_LIMIT.MAX_LIMIT_PROD,
   message: {
     status: "error",
     message: "Too many requests, please try again later.",
@@ -107,6 +111,7 @@ app.use("/api/tasks", taskRoutes)
 app.use("/api/permissions", permissionRoutes)
 app.use("/api/roles", roleRoutes)
 app.use("/api", auditRoutes)
+app.use("/api/custom-queries", customQueryRoutes)
 
 // 404 handler
 app.use((req, res) => {

@@ -58,4 +58,10 @@ export const ROUTES = {
     DASHBOARD: "/project/dashboard",
     LIST: "/project/list",
   },
+  PERSONAL: {
+    BASE: "/personal",
+    SCHEDULE: "/personal/schedule",
+    PAYSLIPS: "/personal/payslips",
+    PROJECTS: "/personal/projects",
+  },
 } as const

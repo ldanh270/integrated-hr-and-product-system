@@ -1,5 +1,6 @@
-import { ROUTES } from "@/config/routes.config"
 import { APPLICATION_TYPES } from "@/config/entities/attendance.config"
+import { PERSONAL_TAB_LABELS } from "@/config/entities/personal.config"
+import { ROUTES } from "@/config/routes.config"
 
 import {
   BookOpen,
@@ -8,21 +9,21 @@ import {
   CalendarDays,
   ChartNoAxesColumn,
   CircleDollarSign,
+  FilePlus2,
   FileText,
   Package,
   Settings,
   Settings2,
   ShieldCheck,
-  Users,
-  UserCheck,
-  FilePlus2,
   User,
+  UserCheck,
+  Users,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
-/** Navigation metadata for HR subsystems (routes, icons, role access). */
 export type SubsystemId =
   | "hrm"
+  | "personal"
   | "application"
   | "attendance"
   | "payroll"
@@ -53,177 +54,189 @@ export interface SubsystemConfig {
 
 export const SUBSYSTEMS: SubsystemConfig[] = [
   {
+    id: "personal",
+    name: "CĂ¡ nhĂ¢n",
+    description: "CĂ¡c mĂ n hĂ¬nh cĂ¡ nhĂ¢n dĂ nh cho nhĂ¢n viĂªn",
+    icon: User,
+    routePrefix: "/personal",
+    sidebarItems: [
+      { name: PERSONAL_TAB_LABELS.schedule, path: ROUTES.PERSONAL.SCHEDULE, icon: CalendarClock },
+      {
+        name: PERSONAL_TAB_LABELS.payslips,
+        path: ROUTES.PERSONAL.PAYSLIPS,
+        icon: CircleDollarSign,
+      },
+      { name: PERSONAL_TAB_LABELS.projects, path: ROUTES.PERSONAL.PROJECTS, icon: Briefcase },
+    ],
+  },
+  {
     id: "hrm",
-    name: "Nhân sự",
-    description: "Quản lý hồ sơ, hợp đồng, bảo hiểm, công việc...",
+    name: "NhĂ¢n sá»±",
+    description: "Quáº£n lĂ½ há»“ sÆ¡, há»£p Ä‘á»“ng, báº£o hiá»ƒm, cĂ´ng viá»‡c...",
     icon: Users,
     routePrefix: "/hrm",
     sidebarItems: [
-      { name: "Tổng quan", path: ROUTES.HRM.DASHBOARD, icon: Users },
-      { name: "Hồ sơ", path: ROUTES.HRM.EMPLOYEES, icon: Users },
-      { name: "Người dùng", path: ROUTES.SECURITY.USERS, icon: Users, permissions: ["security.read"] },
-      { name: "Nhật ký", path: ROUTES.SECURITY.ACTIVITY_LOGS, icon: FileText, permissions: ["audit.read"] },
-      { name: "Tổng quan bảo mật", path: ROUTES.SECURITY.DASHBOARD, icon: ShieldCheck, permissions: ["security.read"] },
+      { name: "Tá»•ng quan", path: ROUTES.HRM.DASHBOARD, icon: Users },
+      { name: "Há»“ sÆ¡", path: ROUTES.HRM.EMPLOYEES, icon: Users },
+      { name: "NgÆ°á»i dĂ¹ng", path: ROUTES.SECURITY.USERS, icon: Users, permissions: ["security.read"] },
+      { name: "Nháº­t kĂ½", path: ROUTES.SECURITY.ACTIVITY_LOGS, icon: FileText, permissions: ["audit.read"] },
+      { name: "Tá»•ng quan báº£o máº­t", path: ROUTES.SECURITY.DASHBOARD, icon: ShieldCheck, permissions: ["security.read"] },
     ],
   },
   {
     id: "application",
-    name: "Đơn thư",
-    description: "Tạo đơn từ và duyệt đơn trực tuyến",
+    name: "ÄÆ¡n thÆ°",
+    description: "Táº¡o Ä‘Æ¡n tá»« vĂ  duyá»‡t Ä‘Æ¡n trá»±c tuyáº¿n",
     icon: FileText,
     routePrefix: "/application",
     sidebarItems: [
-      { name: "Bạn duyệt", path: ROUTES.APPLICATION.DASHBOARD + "?tab=manage", icon: UserCheck },
-      { 
-        name: "Đơn thư", 
-        path: ROUTES.APPLICATION.DASHBOARD, 
+      { name: "Báº¡n duyá»‡t", path: ROUTES.APPLICATION.DASHBOARD + "?tab=manage", icon: UserCheck },
+      {
+        name: "ÄÆ¡n thÆ°",
+        path: ROUTES.APPLICATION.DASHBOARD,
         icon: FilePlus2,
-        subItems: Object.values(APPLICATION_TYPES).map(t => ({
+        subItems: Object.values(APPLICATION_TYPES).map((t) => ({
           name: t.DESCRIPTION,
-          path: `${ROUTES.APPLICATION.DASHBOARD}?type=${t.LABEL}`
-        }))
+          path: `${ROUTES.APPLICATION.DASHBOARD}?type=${t.LABEL}`,
+        })),
       },
-      { name: "Của bạn", path: ROUTES.APPLICATION.DASHBOARD + "?tab=mine", icon: User },
+      { name: "Cá»§a báº¡n", path: ROUTES.APPLICATION.DASHBOARD + "?tab=mine", icon: User },
     ],
   },
   {
     id: "attendance",
-    name: "Chấm công",
-    description: "Quản lý phân ca, chấm công và nghỉ phép",
+    name: "Cháº¥m cĂ´ng",
+    description: "Quáº£n lĂ½ phĂ¢n ca, cháº¥m cĂ´ng vĂ  nghá»‰ phĂ©p",
     icon: CalendarClock,
     routePrefix: "/attendance",
     sidebarItems: [
-      { name: "Lịch của tôi", path: ROUTES.ATTENDANCE.MY_SCHEDULE, icon: CalendarClock },
       {
-        name: "Tổng quan",
+        name: "Tá»•ng quan",
         path: ROUTES.ATTENDANCE.DASHBOARD,
         icon: CalendarClock,
         permissions: ["attendance.read"],
       },
-
-      { name: "Tổng hợp", path: ROUTES.ATTENDANCE.SUMMARY, icon: ChartNoAxesColumn, permissions: ["attendance.read"] },
-      { name: "Lịch của tôi", path: ROUTES.ATTENDANCE.MY_SCHEDULE, icon: CalendarClock },
+      { name: "Tá»•ng há»£p", path: ROUTES.ATTENDANCE.SUMMARY, icon: ChartNoAxesColumn, permissions: ["attendance.read"] },
+      { name: "Lá»‹ch cá»§a tĂ´i", path: ROUTES.ATTENDANCE.MY_SCHEDULE, icon: CalendarClock },
       {
-        name: "Lịch làm việc",
+        name: "Lá»‹ch lĂ m viá»‡c",
         path: ROUTES.ATTENDANCE.WORK_SCHEDULES,
         icon: CalendarDays,
         permissions: ["attendance.update"],
       },
-      { name: "Đơn từ", path: ROUTES.ATTENDANCE.APPLICATIONS, icon: FileText },
+      { name: "ÄÆ¡n tá»«", path: ROUTES.ATTENDANCE.APPLICATIONS, icon: FileText },
       {
-        name: "Lịch hàng tuần",
+        name: "Lá»‹ch hĂ ng tuáº§n",
         path: ROUTES.ATTENDANCE.WEEKLY_SCHEDULES,
         icon: CalendarClock,
         permissions: ["attendance.update"],
       },
       {
-        name: "Cấu hình lịch tuần",
+        name: "Cáº¥u hĂ¬nh lá»‹ch tuáº§n",
         path: ROUTES.ATTENDANCE.WEEKLY_SCHEDULE_CONFIG,
         icon: Settings2,
         permissions: ["attendance.update"],
       },
       {
-        name: "Ca làm việc",
+        name: "Ca lĂ m viá»‡c",
         path: ROUTES.ATTENDANCE.SHIFTS,
         icon: CalendarClock,
         permissions: ["attendance.update"],
       },
-
-      { name: "Ngày lễ", path: ROUTES.ATTENDANCE.HOLIDAYS, icon: CalendarClock },
+      { name: "NgĂ y lá»…", path: ROUTES.ATTENDANCE.HOLIDAYS, icon: CalendarClock },
     ],
   },
   {
     id: "payroll",
-    name: "Bảng lương",
-    description: "Tự động việc tính và chi trả bảng lương",
+    name: "Báº£ng lÆ°Æ¡ng",
+    description: "Tá»± Ä‘á»™ng viá»‡c tĂ­nh vĂ  chi tráº£ báº£ng lÆ°Æ¡ng",
     icon: CircleDollarSign,
     routePrefix: "/payroll",
     sidebarItems: [
       {
-        name: "Kỳ lương",
+        name: "Ká»³ lÆ°Æ¡ng",
         path: ROUTES.PAYROLL.LIST,
         icon: FileText,
         permissions: ["payroll.read"],
       },
       {
-        name: "Thành phần lương",
+        name: "ThĂ nh pháº§n lÆ°Æ¡ng",
         path: ROUTES.PAYROLL.SALARY_COMPONENTS,
         icon: Settings,
         permissions: ["payroll.read"],
       },
       {
-        name: "Biến hệ thống",
+        name: "Biáº¿n há»‡ thá»‘ng",
         path: ROUTES.PAYROLL.SALARY_VARIABLES,
         icon: Settings,
         permissions: ["payroll.read"],
       },
       {
-        name: "Mẫu bảng lương",
+        name: "Máº«u báº£ng lÆ°Æ¡ng",
         path: ROUTES.PAYROLL.PAYSLIP_TEMPLATES,
         icon: FileText,
         permissions: ["payroll.read"],
       },
       {
-        name: "Chu kỳ lương",
+        name: "Chu ká»³ lÆ°Æ¡ng",
         path: ROUTES.PAYROLL.CYCLE,
         icon: CalendarClock,
         permissions: ["payroll.read"],
       },
       {
-        name: "Lương nhân sự",
+        name: "LÆ°Æ¡ng nhĂ¢n sá»±",
         path: ROUTES.PAYROLL.EMPLOYEE_SALARY,
         icon: Users,
         permissions: ["payroll.read"],
       },
-      { name: "Lương của tôi", path: ROUTES.PAYROLL.MY_PAYSLIPS, icon: CircleDollarSign },
     ],
   },
   {
     id: "asset",
-    name: "Tài sản",
-    description: "Quản lý tài sản và thông tin bàn giao",
+    name: "TĂ i sáº£n",
+    description: "Quáº£n lĂ½ tĂ i sáº£n vĂ  thĂ´ng tin bĂ n giao",
     icon: Package,
     routePrefix: "/asset",
-    sidebarItems: [{ name: "Tổng quan", path: ROUTES.ASSET.DASHBOARD, icon: Package }],
+    sidebarItems: [{ name: "Tá»•ng quan", path: ROUTES.ASSET.DASHBOARD, icon: Package }],
   },
   {
     id: "recruitment",
-    name: "Tuyển dụng",
-    description: "Quản lý hồ sơ ứng viên và lịch phỏng vấn",
+    name: "Tuyá»ƒn dá»¥ng",
+    description: "Quáº£n lĂ½ há»“ sÆ¡ á»©ng viĂªn vĂ  lá»‹ch phá»ng váº¥n",
     icon: Briefcase,
     routePrefix: "/recruitment",
-    sidebarItems: [{ name: "Tổng quan", path: ROUTES.RECRUITMENT.DASHBOARD, icon: Briefcase }],
+    sidebarItems: [{ name: "Tá»•ng quan", path: ROUTES.RECRUITMENT.DASHBOARD, icon: Briefcase }],
   },
   {
     id: "training",
-    name: "Đào tạo",
-    description: "Quản lý các khóa đào tạo nội bộ",
+    name: "ÄĂ o táº¡o",
+    description: "Quáº£n lĂ½ cĂ¡c khĂ³a Ä‘Ă o táº¡o ná»™i bá»™",
     icon: BookOpen,
     routePrefix: "/training",
-    sidebarItems: [{ name: "Tổng quan", path: ROUTES.TRAINING.DASHBOARD, icon: BookOpen }],
+    sidebarItems: [{ name: "Tá»•ng quan", path: ROUTES.TRAINING.DASHBOARD, icon: BookOpen }],
   },
   {
     id: "settings",
-    name: "Cài đặt",
-    description: "Cài đặt hệ thống",
+    name: "CĂ i Ä‘áº·t",
+    description: "CĂ i Ä‘áº·t há»‡ thá»‘ng",
     icon: Settings,
     routePrefix: "/settings",
     sidebarItems: [
-      { name: "Tổng quan", path: ROUTES.SETTINGS.DASHBOARD, icon: Settings },
-      { name: "Vai trò", path: ROUTES.SETTINGS.ROLES, icon: ShieldCheck, permissions: ["role.read"] },
-      { name: "Cấu hình quyền", path: ROUTES.SETTINGS.ROLE_PERMISSIONS, icon: ShieldCheck, permissions: ["role.read"] },
-      { name: "Phân quyền", path: ROUTES.SETTINGS.PERMISSIONS, icon: ShieldCheck, permissions: ["role.read"] },
+      { name: "Tá»•ng quan", path: ROUTES.SETTINGS.DASHBOARD, icon: Settings },
+      { name: "Vai trĂ²", path: ROUTES.SETTINGS.ROLES, icon: ShieldCheck, permissions: ["role.read"] },
+      { name: "Cáº¥u hĂ¬nh quyá»n", path: ROUTES.SETTINGS.ROLE_PERMISSIONS, icon: ShieldCheck, permissions: ["role.read"] },
+      { name: "PhĂ¢n quyá»n", path: ROUTES.SETTINGS.PERMISSIONS, icon: ShieldCheck, permissions: ["role.read"] },
     ],
   },
   {
     id: "project",
-    name: "Dự án",
-    description: "Quản lý dự án, tiến độ công việc và báo cáo",
+    name: "Dá»± Ă¡n",
+    description: "Quáº£n lĂ½ dá»± Ă¡n, tiáº¿n Ä‘á»™ cĂ´ng viá»‡c vĂ  bĂ¡o cĂ¡o",
     icon: Briefcase,
     routePrefix: "/project",
     sidebarItems: [
-      { name: "Tổng quan", path: ROUTES.PROJECT.DASHBOARD, icon: FileText },
-      { name: "Danh sách dự án", path: ROUTES.PROJECT.LIST, icon: Briefcase },
+      { name: "Tá»•ng quan", path: ROUTES.PERSONAL.PROJECTS, icon: FileText },
+      { name: "Danh sĂ¡ch dá»± Ă¡n", path: ROUTES.PROJECT.LIST, icon: Briefcase },
     ],
   },
 ]

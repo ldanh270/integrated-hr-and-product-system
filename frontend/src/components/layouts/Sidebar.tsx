@@ -38,6 +38,7 @@ export default function Sidebar({ className, isMobile, onNavClick }: SidebarProp
 
   // Mobile mode effectively ignores 'isCollapsed' for layout purposes since it's a drawer
   const effectiveCollapsed = !isMobile && isCollapsed
+  const dashboardPath = activeSubsystemConfig?.sidebarItems[0]?.path?.split("?")[0]
 
   return (
     <aside
@@ -53,17 +54,15 @@ export default function Sidebar({ className, isMobile, onNavClick }: SidebarProp
       {/* Sidebar Content (Navigation) */}
       <nav className="flex-1 space-y-1 px-3 py-6 overflow-y-auto">
         {navItems.map((item) => {
-          const dashboardPath = activeSubsystemConfig?.sidebarItems[0]?.path?.split("?")[0]
-          
           let isActive = false
           const [itemPathname, itemQuery] = item.path.split("?")
-          
-          const isPathMatch = 
+
+          const isPathMatch =
             location.pathname === itemPathname ||
             (itemPathname !== dashboardPath &&
               location.pathname.startsWith(itemPathname) &&
               itemPathname !== activeSubsystemConfig?.routePrefix)
-              
+
           if (isPathMatch) {
             if (itemQuery) {
               const itemParams = new URLSearchParams(itemQuery)
@@ -79,7 +78,7 @@ export default function Sidebar({ className, isMobile, onNavClick }: SidebarProp
               isActive = true
               const currentParams = new URLSearchParams(location.search)
               if (currentParams.toString() !== "") {
-                const betterMatchExists = navItems.some(otherItem => {
+                const betterMatchExists = navItems.some((otherItem) => {
                   if (otherItem === item) return false
                   const [otherPathname, otherQuery] = otherItem.path.split("?")
                   if (otherPathname !== itemPathname || !otherQuery) return false

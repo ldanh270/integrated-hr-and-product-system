@@ -228,6 +228,7 @@ model Employee {
   refreshTokens              RefreshToken[]
   spentTimes                 SpentTime[]                  @relation("EmployeeSpentTimes")
   employeeRoles              EmployeeRole[]
+  customQueries              CustomQuery[]
 
   @@index([status, employeeType])
   @@index([deletedAt])
@@ -772,6 +773,7 @@ model Project {
 
   members    ProjectMember[]
   tasks      Task[]
+  customQueries CustomQuery[]
 
   @@index([status])
   @@index([teamLeaderId, status])
@@ -806,8 +808,14 @@ model Task {
   startDate     DateTime?     @db.Date
   dueDate       DateTime?
   completedAt   DateTime?
-  estimatedTime Float?
-  progress      Int           @default(0)
+  estimatedTime   Float?
+  progress        Int           @default(0)
+  resultUrl       String?
+  resultNotes     String?
+  rejectionReason String?
+  parentTaskId    String?
+  parentTask      Task?         @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: Cascade)
+  subtasks        Task[]        @relation("TaskSubtasks")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -818,6 +826,7 @@ model Task {
   @@index([assigneeId, status])
   @@index([dueDate, status])
   @@index([createdById])
+  @@index([parentTaskId])
 }
 
 // ── Auth ──
@@ -995,3 +1004,19 @@ model AuthorizationAuditLog {
   @@index([action])
   @@map("authorization_audit_logs")
 }
+// ── CustomQuery ──
+model CustomQuery {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   @default("gantt")
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  queryData   String   // JSON string storing filters
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([employeeId, type])
+}
+
