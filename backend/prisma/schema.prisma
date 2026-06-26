@@ -30,6 +30,17 @@ enum EmployeeType {
   intern
 }
 
+enum SpentTimeStatus {
+  pending
+  approved
+  rejected
+}
+
+enum ProjectMemberWorkMode {
+  remote
+  onsite
+}
+
 enum AttendanceStatus {
   on_time
   late
@@ -231,6 +242,7 @@ model Employee {
   passwordResetRequestsApprd PasswordResetRequest[]       @relation("PasswordResetRequestApprover")
   refreshTokens              RefreshToken[]
   spentTimes                 SpentTime[]                  @relation("EmployeeSpentTimes")
+  spentTimesApproved         SpentTime[]                  @relation("SpentTimeApprover")
   customQueries              CustomQuery[]
 
   @@index([status, employeeType])
@@ -785,10 +797,12 @@ model Project {
 
 model ProjectMember {
   projectId  String
-  project    Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project    Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
   employeeId String
-  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  joinedAt   DateTime  @default(now())
+  employee   Employee              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  hourlyRate Decimal?              @db.Decimal(12, 2)
+  workMode   ProjectMemberWorkMode @default(remote)
+  joinedAt   DateTime              @default(now())
   removedAt  DateTime?
 
   @@id([projectId, employeeId])
@@ -884,21 +898,27 @@ model RefreshToken {
 }
 
 model SpentTime {
-  id           String   @id @default(cuid())
-  taskId       String
-  task         Task     @relation("TaskSpentTimes", fields: [taskId], references: [id], onDelete: Cascade)
-  employeeId   String
-  employee     Employee @relation("EmployeeSpentTimes", fields: [employeeId], references: [id], onDelete: Restrict)
-  date         DateTime @db.Date
-  hours        Float
-  comment      String?
-  activity     String
-  workTimeType String   @default("working_day")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String          @id @default(cuid())
+  taskId          String
+  task            Task            @relation("TaskSpentTimes", fields: [taskId], references: [id], onDelete: Cascade)
+  employeeId      String
+  employee        Employee        @relation("EmployeeSpentTimes", fields: [employeeId], references: [id], onDelete: Restrict)
+  date            DateTime        @db.Date
+  hours           Float
+  comment         String?
+  activity        String
+  workTimeType    String          @default("working_day")
+  status          SpentTimeStatus @default(pending)
+  approvedById    String?
+  approvedBy      Employee?       @relation("SpentTimeApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   @@index([taskId])
   @@index([employeeId])
+  @@index([status, date])
 }
 
 // ── CustomQuery ──

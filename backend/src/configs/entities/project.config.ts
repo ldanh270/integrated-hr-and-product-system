@@ -113,6 +113,36 @@ export const SPENT_TIME_WORK_TIME_TYPES = [
 ] as const
 
 /**
+ * Spent time approval status
+ * pending → lead review; approved → payroll-eligible; rejected → excluded from totals
+ */
+export const SPENT_TIME_STATUS = {
+  PENDING: "pending",
+  APPROVED: "approved",
+  REJECTED: "rejected",
+} as const
+
+export const SPENT_TIME_STATUSES = [
+  SPENT_TIME_STATUS.PENDING,
+  SPENT_TIME_STATUS.APPROVED,
+  SPENT_TIME_STATUS.REJECTED,
+] as const
+
+/**
+ * Project member work mode (remote vs onsite GPS check-in)
+ * remote: Spent Time only | onsite: one GPS check-in per day, then Spent Time
+ */
+export const PROJECT_MEMBER_WORK_MODE = {
+  REMOTE: "remote",
+  ONSITE: "onsite",
+} as const
+
+export const PROJECT_MEMBER_WORK_MODES = [
+  PROJECT_MEMBER_WORK_MODE.REMOTE,
+  PROJECT_MEMBER_WORK_MODE.ONSITE,
+] as const
+
+/**
  * Task tracker enumeration
  */
 export const TASK_TRACKER = {

@@ -138,3 +138,38 @@ export const SPENT_TIME_WORK_TIME_TYPES = [
   SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY,
   SPENT_TIME_WORK_TIME_TYPE.OVERTIME,
 ] as const
+
+export const SPENT_TIME_STATUS = {
+  PENDING: "pending",
+  APPROVED: "approved",
+  REJECTED: "rejected",
+} as const
+// pending → lead review | approved → payroll | rejected → excluded from totals
+
+export const SPENT_TIME_STATUSES = [
+  SPENT_TIME_STATUS.PENDING,
+  SPENT_TIME_STATUS.APPROVED,
+  SPENT_TIME_STATUS.REJECTED,
+] as const
+
+export const SPENT_TIME_STATUS_LABELS: Record<string, string> = {
+  [SPENT_TIME_STATUS.PENDING]: "Chờ duyệt",
+  [SPENT_TIME_STATUS.APPROVED]: "Đã duyệt",
+  [SPENT_TIME_STATUS.REJECTED]: "Từ chối",
+}
+
+export const PROJECT_MEMBER_WORK_MODE = {
+  REMOTE: "remote",
+  ONSITE: "onsite",
+} as const
+// remote: Spent Time only | onsite: GPS check-in once per day, then Spent Time
+
+export const PROJECT_MEMBER_WORK_MODES = [
+  PROJECT_MEMBER_WORK_MODE.REMOTE,
+  PROJECT_MEMBER_WORK_MODE.ONSITE,
+] as const
+
+export const PROJECT_MEMBER_WORK_MODE_LABELS: Record<string, string> = {
+  [PROJECT_MEMBER_WORK_MODE.REMOTE]: "Remote",
+  [PROJECT_MEMBER_WORK_MODE.ONSITE]: "Onsite",
+}

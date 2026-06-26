@@ -75,6 +75,8 @@ export interface ProjectMember {
   id: string
   projectId: string
   employeeId: string
+  hourlyRate: number | null
+  workMode: string
   role: string | null
   createdAt: string
   employee: {
