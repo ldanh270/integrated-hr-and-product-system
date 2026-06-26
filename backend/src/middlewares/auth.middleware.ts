@@ -15,14 +15,13 @@ import { NextFunction, Request, Response } from "express"
 const employeeRepository = new PrismaEmployeeRepository(prisma)
 
 /**
- * Interface extending the Express Request to include the authenticated user's information
- * This allows subsequent handlers to access the user context
+ * Interface extending the Express Request to include the authenticated user's information.
+ * role is intentionally absent — all authorization decisions go through dynamic RBAC.
  */
 export interface AuthRequest extends Request {
   user?: {
     empId: string
     username: string
-    role: string
   }
 }
 
@@ -47,6 +46,16 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     res.status(HttpStatusCode.UNAUTHORIZED).json({
       data: null,
       error: AUTH_ERRORS.TOKEN_EXPIRED,
+    })
+    return
+  }
+
+  // Token version verification — D2.6 requires version 3+ (hard cutover)
+  if (!decoded.version || decoded.version < 3) {
+    console.error("Auth Middleware: Token version outdated — D2.6 requires v3+")
+    res.status(HttpStatusCode.UNAUTHORIZED).json({
+      data: null,
+      error: { message: "Session expired. Please login again.", code: "TOKEN_OUTDATED" },
     })
     return
   }
@@ -78,7 +87,6 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   req.user = {
     empId: decoded.empId,
     username: decoded.username,
-    role: decoded.role,
   }
 
   next()

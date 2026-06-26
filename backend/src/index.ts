@@ -1,6 +1,6 @@
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { PORT } from "@/configs/system/server.config.ts"
-import { connectDB } from "@/libs/database.ts"
+import { connectDB, prisma } from "@/libs/database.ts"
 import { initCronJobs } from "@/libs/payroll-cron.ts"
 import { initWeeklyScheduleCron } from "@/libs/weekly-schedule-cron.ts"
 import { cors } from "@/middlewares/cors.middleware.ts"
@@ -14,6 +14,8 @@ import employeeRoutes from "@/routes/employee.route.ts"
 import holidayRoutes from "@/routes/holiday.route.ts"
 import payrollRoutes from "@/routes/payroll.route.ts"
 import payslipTemplateRoutes from "@/routes/payslip-template.route.ts"
+import permissionRoutes from "@/routes/permission.route.ts"
+import roleRoutes from "@/routes/role.route.ts"
 import profileRoutes from "@/routes/profile.route.ts"
 import projectRoutes from "@/routes/project.route.ts"
 import salaryComponentRoutes from "@/routes/salary-component.route.ts"
@@ -24,6 +26,8 @@ import shiftChangeRequestRoutes from "@/routes/shift-change-request.route.ts"
 import shiftRoutes from "@/routes/shift.route.ts"
 import taskRoutes from "@/routes/task.route.ts"
 import weeklyScheduleTemplateRoutes from "@/routes/weekly-schedule-template.route.ts"
+import auditRoutes from "@/routes/audit.route.ts"
+import { countStaticRoleReferences, bootstrapAdmin } from "@/utils/startup-assertion.util.ts"
 
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
@@ -100,6 +104,10 @@ app.use("/api/payrolls", payrollRoutes)
 // Private routes
 app.use("/api/projects", projectRoutes)
 app.use("/api/tasks", taskRoutes)
+app.use("/api/permissions", permissionRoutes)
+app.use("/api/roles", roleRoutes)
+app.use("/api", auditRoutes)
+
 // 404 handler
 app.use((req, res) => {
   res.status(HttpStatusCode.NOT_FOUND).json({
@@ -114,10 +122,26 @@ app.use(globalErrorHandler)
 /**
  * Must connect to database successfully before start server
  */
-connectDB().then(() => {
+connectDB().then(async () => {
+  // Check static role references
+  const skipAssert = process.env.SKIP_ADMIN_ASSERT === "true" || process.env.NODE_ENV === "test"
+  if (!skipAssert) {
+    const staticRefs = countStaticRoleReferences()
+    if (staticRefs.total > 0) {
+      console.error("FATAL ERROR: SYSTEM_INVARIANT_BROKEN: Legacy static role references found:")
+      staticRefs.details.forEach((d) => console.error(`  - ${d}`))
+      console.error("All Legacy ROLE references must be purged under Sprint D2.6.")
+      process.exit(1)
+    }
+  }
+
+  // Ensure fail-safe administrator exists
+  await bootstrapAdmin()
+
   app.listen(PORT, () => {
     console.log("Server start on port " + PORT)
     initCronJobs()
     initWeeklyScheduleCron()
   })
 })
+
