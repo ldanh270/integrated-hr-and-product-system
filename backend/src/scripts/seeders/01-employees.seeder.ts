@@ -1,4 +1,4 @@
-import { EMPLOYEE_TYPES, ROLE } from "@/configs/entities/employee.config.ts"
+import { EMPLOYEE_TYPES, EMPLOYEE_TYPE, ROLE } from "@/configs/entities/employee.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
 import { ISeeder } from "@/scripts/seeders/seeder.interface.ts"
@@ -60,6 +60,26 @@ export class EmployeesSeeder implements ISeeder {
       if (role === ROLE.ADMIN) {
         adminId = existing.id
       }
+    }
+
+    // Fixed part-time account for PT-by-project flows and E2E tests.
+    const partTimeUsername = "part_time"
+    let partTimeAccount = await prisma.employee.findFirst({ where: { username: partTimeUsername } })
+    if (!partTimeAccount) {
+      partTimeAccount = await prisma.employee.create({
+        data: {
+          username: partTimeUsername,
+          passwordHash: passwordHashCore,
+          role: ROLE.EMPLOYEE as any,
+          employeeType: EMPLOYEE_TYPE.PART_TIME as any,
+          fullName: "Part Time User",
+          email: "part_time@example.com",
+          phone: "0123456786",
+          address: "System Generated",
+          position: "Part-time Developer",
+        },
+      })
+      console.log(`  [!] Created part-time account: ${partTimeUsername}`)
     }
 
     // Seed 15 random employees
