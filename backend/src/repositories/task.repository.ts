@@ -21,6 +21,7 @@ import {
 } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
+import { TASK_STATUS } from "@/configs/entities/project.config.ts"
 
 type PrismaTaskWithRelations = PrismaTask & {
   project?: {
@@ -149,7 +150,23 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
       where.status = status as PrismaTaskStatus
     }
     if (statusId) {
-      where.statusId = statusId
+      if (statusId === "open") {
+        where.OR = [
+          {
+            customStatus: {
+              isCompleted: false,
+            },
+          },
+          {
+            statusId: null,
+            status: {
+              in: [TASK_STATUS.TODO, TASK_STATUS.IN_PROGRESS, TASK_STATUS.IN_REVIEW, TASK_STATUS.REOPENED],
+            },
+          },
+        ]
+      } else {
+        where.statusId = statusId
+      }
     }
     if (priority) {
       where.priority = priority as PrismaTaskPriority
@@ -277,9 +294,9 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     if (data.parentTaskId === null) updateData.parentTaskId = null
 
     // Automatically set completedAt when switching status to Done, or clear it when moving away from Done
-    if (data.status === "done" && !data.completedAt) {
+    if (data.status === TASK_STATUS.DONE && !data.completedAt) {
       updateData.completedAt = new Date()
-    } else if (data.status && data.status !== "done") {
+    } else if (data.status && data.status !== TASK_STATUS.DONE) {
       updateData.completedAt = null
     }
 
