@@ -1,4 +1,3 @@
-/* eslint-disable react/no-danger */
 /* eslint-disable security/detect-object-injection */
 // Import common layout containers
 import { PageCard, StatusPill } from "@/components/common"
@@ -42,6 +41,10 @@ import type { SpentTime } from "@/types/spent-time.types"
 import type { TaskTracker, TaskPriority } from "@/types/task.types"
 import type { ProjectTaskStatus } from "@/types/project-task-status.types"
 import DOMPurify from "dompurify"
+
+const createSanitizedMarkup = (html?: string | null) => {
+  return { __html: DOMPurify.sanitize(html || "") }
+}
 // Import React Query hooks for fetching and mutations
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 // Import toast notification client
@@ -533,7 +536,7 @@ export default function TaskDetail() {
             {task.description ? (
               <div 
                 className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(task.description) }}
+                dangerouslySetInnerHTML={createSanitizedMarkup(task.description)}
               />
             ) : (
               <p className="text-xs text-muted-foreground italic">Không có mô tả chi tiết cho công việc này.</p>
@@ -552,7 +555,7 @@ export default function TaskDetail() {
                   <span className="text-xs font-semibold text-muted-foreground">Ghi chú kết quả:</span>
                   <div 
                     className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground leading-relaxed bg-muted/30 p-3 rounded-lg border border-border/40"
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(task.resultNotes) }}
+                    dangerouslySetInnerHTML={createSanitizedMarkup(task.resultNotes)}
                   />
                 </div>
               </div>

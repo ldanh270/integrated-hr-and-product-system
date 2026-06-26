@@ -1,4 +1,3 @@
-/* eslint-disable react/no-danger */
 /* eslint-disable security/detect-object-injection */
 import { 
   FileText, 
@@ -24,6 +23,10 @@ import type { Task } from "@/types/task.types"
 import { useTaskReview } from "../hooks/use-task-review"
 import { RichTextEditor } from "@/components/ui/rich-text-editor"
 import DOMPurify from "dompurify"
+
+const createSanitizedMarkup = (html?: string | null) => {
+  return { __html: DOMPurify.sanitize(html || "") }
+}
 
 interface TaskReviewModalProps {
   isOpen: boolean
@@ -113,7 +116,7 @@ export function TaskReviewModal({
                   <span className="font-bold">Ghi chú kết quả: </span>
                   <div 
                     className="prose prose-sm dark:prose-invert max-w-none text-xs text-foreground mt-1"
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(task.resultNotes) }}
+                    dangerouslySetInnerHTML={createSanitizedMarkup(task.resultNotes)}
                   />
                 </div>
               )}
@@ -160,7 +163,7 @@ export function TaskReviewModal({
                     <span className="font-bold text-muted-foreground">Mô tả đã gửi: </span>
                     <div 
                       className="prose prose-sm dark:prose-invert max-w-none text-xs text-foreground bg-muted/20 p-2.5 rounded-lg border border-border/40 mt-1"
-                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(task.resultNotes) }}
+                      dangerouslySetInnerHTML={createSanitizedMarkup(task.resultNotes)}
                     />
                   </div>
                 )}
@@ -180,7 +183,7 @@ export function TaskReviewModal({
                     <span className="font-bold text-[10px] uppercase text-muted-foreground">Mô tả: </span>
                     <div 
                       className="prose prose-sm dark:prose-invert max-w-none text-xs text-foreground"
-                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(task.resultNotes) }}
+                      dangerouslySetInnerHTML={createSanitizedMarkup(task.resultNotes)}
                     />
                   </div>
                 )}
