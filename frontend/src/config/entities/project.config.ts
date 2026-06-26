@@ -177,18 +177,26 @@ export const PROJECT_MEMBER_WORK_MODE_LABELS: Record<(typeof PROJECT_MEMBER_WORK
 export type SpentTimeStatusValue = (typeof SPENT_TIME_STATUSES)[number]
 export type ProjectMemberWorkModeValue = (typeof PROJECT_MEMBER_WORK_MODES)[number]
 
-function isSpentTimeStatus(value: string): value is SpentTimeStatusValue {
-  return (SPENT_TIME_STATUSES as readonly string[]).includes(value)
-}
-
-function isProjectMemberWorkMode(value: string): value is ProjectMemberWorkModeValue {
-  return (PROJECT_MEMBER_WORK_MODES as readonly string[]).includes(value)
-}
-
 export function getSpentTimeStatusLabel(status: string): string {
-  return isSpentTimeStatus(status) ? SPENT_TIME_STATUS_LABELS[status] : status
+  switch (status) {
+    case SPENT_TIME_STATUS.PENDING:
+      return SPENT_TIME_STATUS_LABELS[SPENT_TIME_STATUS.PENDING]
+    case SPENT_TIME_STATUS.APPROVED:
+      return SPENT_TIME_STATUS_LABELS[SPENT_TIME_STATUS.APPROVED]
+    case SPENT_TIME_STATUS.REJECTED:
+      return SPENT_TIME_STATUS_LABELS[SPENT_TIME_STATUS.REJECTED]
+    default:
+      return status
+  }
 }
 
 export function getProjectMemberWorkModeLabel(mode: string): string {
-  return isProjectMemberWorkMode(mode) ? PROJECT_MEMBER_WORK_MODE_LABELS[mode] : mode
+  switch (mode) {
+    case PROJECT_MEMBER_WORK_MODE.REMOTE:
+      return PROJECT_MEMBER_WORK_MODE_LABELS[PROJECT_MEMBER_WORK_MODE.REMOTE]
+    case PROJECT_MEMBER_WORK_MODE.ONSITE:
+      return PROJECT_MEMBER_WORK_MODE_LABELS[PROJECT_MEMBER_WORK_MODE.ONSITE]
+    default:
+      return mode
+  }
 }
