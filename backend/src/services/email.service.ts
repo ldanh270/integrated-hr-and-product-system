@@ -1,15 +1,17 @@
 import { Resend } from "resend";
 import { ENVIRONMENT } from "../configs/system/server.config";
 
+
+
 export class EmailService {
   private resend: Resend;
   private fromEmail = "no-reply@hrp.domain.com"; // Configure this to an actual verified domain
 
   constructor() {
-    this.resend = new Resend(process.env.RESEND_API_KEY || "re_dummy_key");
+    this.resend = new Resend(process.env.RESEND_API_KEY);
   }
 
-  async sendEmail(to: string, subject: string, htmlContent: string): Promise<boolean> {
+  async sendEmail(to: string, subject: string, content: string): Promise<boolean> {
     if (process.env.NODE_ENV === "test" || !process.env.RESEND_API_KEY) {
       console.log(`[Email Mock] To: ${to} | Subject: ${subject}`);
       return true;
@@ -20,7 +22,7 @@ export class EmailService {
         from: this.fromEmail,
         to,
         subject,
-        html: htmlContent,
+        text: content,
       });
 
       if (error) {
@@ -36,24 +38,13 @@ export class EmailService {
   }
 
   async sendOfferEmail(candidateEmail: string, candidateName: string, offerLink: string) {
-    const html = `
-      <h2>Hello ${candidateName},</h2>
-      <p>We are excited to offer you a position at our company.</p>
-      <p>Please review your offer details by clicking the link below:</p>
-      <a href="${offerLink}">View Offer</a>
-      <p>Best regards,<br/>HR Team</p>
-    `;
-    return this.sendEmail(candidateEmail, "Job Offer", html);
+    const text = `Hello ${candidateName},\n\nWe are excited to offer you a position at our company.\n\nPlease review your offer details by opening the link below:\n${offerLink}\n\nBest regards,\nHR Team`;
+    return this.sendEmail(candidateEmail, "Job Offer", text);
   }
 
   async sendInterviewInvitation(candidateEmail: string, candidateName: string, interviewDetails: string) {
-    const html = `
-      <h2>Hello ${candidateName},</h2>
-      <p>We would like to invite you to an interview.</p>
-      <p>Details: ${interviewDetails}</p>
-      <p>Best regards,<br/>HR Team</p>
-    `;
-    return this.sendEmail(candidateEmail, "Interview Invitation", html);
+    const text = `Hello ${candidateName},\n\nWe would like to invite you to an interview.\n\nDetails: ${interviewDetails}\n\nBest regards,\nHR Team`;
+    return this.sendEmail(candidateEmail, "Interview Invitation", text);
   }
 }
 

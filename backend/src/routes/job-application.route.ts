@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 import { Router } from "express";
 import { authenticate } from "../middlewares/auth.middleware";
 import { validate } from "../middlewares/validate.middleware";
@@ -7,6 +8,8 @@ import { JobRequisitionRepository } from "../repositories/job-requisition.reposi
 import { JobApplicationService } from "../services/job-application.service";
 import { JobApplicationController } from "../controllers/job-application.controller";
 import { ApplyJobSchema, UpdateApplicationStatusSchema, RejectApplicationSchema, UpdateKanbanOrderSchema } from "../schemas/recruitment/job-application.schema";
+
+import { apiLimiter } from "../middlewares/rate-limit.middleware";
 
 const router = Router();
 
@@ -21,6 +24,7 @@ const controller = new JobApplicationController(service);
 router.post("/apply", validate(ApplyJobSchema), controller.apply);
 
 // Private routes for HR/HM
+router.use(apiLimiter);
 router.use(authenticate);
 
 router.get("/", controller.getAll);

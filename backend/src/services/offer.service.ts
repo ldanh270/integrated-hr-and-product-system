@@ -86,7 +86,7 @@ export class OfferService implements IOfferService {
       throw new AppError("Can only respond to sent offers", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
     }
 
-    if (new Date() > offer.responseDeadline!) {
+    if (offer.responseDeadline && new Date() > offer.responseDeadline) {
       await this.offerRepository.updateStatus(id, OfferStatus.declined);
       throw new AppError("This offer has expired", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
     }

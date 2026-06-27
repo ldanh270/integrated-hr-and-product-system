@@ -225,24 +225,6 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
             const noteText = `Được duyệt ${detail.isLate ? "đi muộn" : "về sớm"}: ${detail.durationMinutes} phút`
             await this._upsertAttendanceRecord(tx, shift, AttendanceStatus.on_time, noteText)
           }
-        } else if (app.type === ApplicationType.resignation) {
-          await tx.employee.update({
-            where: { id: app.employeeId },
-            data: {
-              status: EMPLOYEE_STATUS.INACTIVE,
-              endDate: app.endDate,
-            }
-          })
-          
-          await tx.projectMember.updateMany({
-            where: { employeeId: app.employeeId, removedAt: null },
-            data: { removedAt: app.endDate }
-          })
-          
-          await tx.employeeShift.updateMany({
-            where: { employeeId: app.employeeId, assignedDate: { gt: app.endDate } },
-            data: { status: EMPLOYEE_SHIFT_STATUS.CANCELLED }
-          })
         }
 
           // 3. Update application status

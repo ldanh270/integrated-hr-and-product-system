@@ -7,7 +7,7 @@ export class OfferController {
   constructor(private readonly offerService: IOfferService) {}
 
   public create = async (req: AuthRequest, res: Response) => {
-    const hmId = req.user!.empId;
+    const hmId = req.user?.empId as string;
     const data = req.body;
     
     const result = await this.offerService.createOffer(hmId, data);
