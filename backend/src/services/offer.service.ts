@@ -13,19 +13,13 @@ import { JOB_APPLICATION_STATUS, OFFER_STATUS } from "@/configs/entities/recruit
  * Service class for handling Offer business logic.
  */
 export class OfferService implements IOfferService {
-  /**
-   * Executes the constructor operation.
-   * Generated JSDoc documentation.
-   */
+
   constructor(
     private readonly offerRepository: IOfferRepository,
     private readonly applicationRepository: IJobApplicationRepository
   ) {}
 
-  /**
-   * Executes the createOffer operation.
-   * Generated JSDoc documentation.
-   */
+
   async createOffer(employeeId: string, data: CreateOfferDTO): Promise<Offer> {
     const app = await this.applicationRepository.findById(data.applicationId);
     if (!app) {
@@ -73,10 +67,7 @@ export class OfferService implements IOfferService {
     return offer;
   }
 
-  /**
-   * Executes the sendOffer operation.
-   * Generated JSDoc documentation.
-   */
+
   async sendOffer(id: string): Promise<Offer> {
     const offer = await this.offerRepository.findById(id);
     if (!offer) {
@@ -93,10 +84,7 @@ export class OfferService implements IOfferService {
     return this.offerRepository.updateStatus(id, OFFER_STATUS.SENT);
   }
 
-  /**
-   * Executes the respondToOffer operation.
-   * Generated JSDoc documentation.
-   */
+
   async respondToOffer(id: string, accept: boolean, note?: string): Promise<Offer> {
     const offer = await this.offerRepository.findById(id);
     if (!offer) {
@@ -126,10 +114,7 @@ export class OfferService implements IOfferService {
     return updatedOffer;
   }
 
-  /**
-   * Executes the getOfferById operation.
-   * Generated JSDoc documentation.
-   */
+
   async getOfferById(id: string): Promise<Offer | null> {
     return this.offerRepository.findById(id);
   }

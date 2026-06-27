@@ -7,10 +7,7 @@ import { IJobRequisitionService } from "../types/recruitment/job-requisition.typ
  * Controller class for handling JobRequisition HTTP requests.
  */
 export class JobRequisitionController {
-  /**
-   * Executes the constructor operation.
-   * Generated JSDoc documentation.
-   */
+
   constructor(private readonly jobRequisitionService: IJobRequisitionService) {}
 
   public create = async (req: AuthRequest, res: Response) => {

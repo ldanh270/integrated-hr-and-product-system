@@ -19,19 +19,21 @@ import { REQUISITION_STATUS, JOB_APPLICATION_STATUS } from "@/configs/entities/r
  * Service class for handling JobApplication business logic.
  */
 export class JobApplicationService implements IJobApplicationService {
-  /**
-   * Executes the constructor operation.
-   * Generated JSDoc documentation.
-   */
+
   constructor(
     private readonly applicationRepository: IJobApplicationRepository,
     private readonly candidateRepository: ICandidateRepository,
     private readonly requisitionRepository: IJobRequisitionRepository
   ) {}
 
+
   /**
-   * Executes the applyForJob operation.
-   * Generated JSDoc documentation.
+   * Processes a new job application from a candidate.
+   * Handles candidate profile upsertion and enforces the 6-month cooldown policy.
+   *
+   * @param data - The job application details (candidate info and job details)
+   * @returns Returns the newly created job application
+   * @throws AppError if requisition is closed, candidate is in cooldown, or already applied
    */
   async applyForJob(data: ApplyJobDTO): Promise<JobApplication> {
     const requisition = await this.requisitionRepository.findById(data.requisitionId);
@@ -74,25 +76,24 @@ export class JobApplicationService implements IJobApplicationService {
     });
   }
 
-  /**
-   * Executes the getApplicationById operation.
-   * Generated JSDoc documentation.
-   */
+
   async getApplicationById(id: string): Promise<JobApplicationWithRelations | null> {
     return this.applicationRepository.findById(id);
   }
 
-  /**
-   * Executes the getApplications operation.
-   * Generated JSDoc documentation.
-   */
+
   async getApplications(filters?: JobApplicationFilters): Promise<JobApplicationWithRelations[]> {
     return this.applicationRepository.findAll(filters);
   }
 
+
   /**
-   * Executes the updateApplicationStatus operation.
-   * Generated JSDoc documentation.
+   * Updates the overall status of a job application.
+   *
+   * @param id - ID of the job application
+   * @param status - The new application status to be applied
+   * @returns Returns the updated job application
+   * @throws AppError if the application is not found
    */
   async updateApplicationStatus(id: string, status: JobApplicationStatus): Promise<JobApplication> {
     const app = await this.applicationRepository.findById(id);
@@ -106,10 +107,7 @@ export class JobApplicationService implements IJobApplicationService {
     return this.applicationRepository.updateStatus(id, status);
   }
 
-  /**
-   * Executes the updateKanbanOrder operation.
-   * Generated JSDoc documentation.
-   */
+
   async updateKanbanOrder(id: string, newOrder: number): Promise<JobApplication> {
     const app = await this.applicationRepository.findById(id);
     if (!app) {
@@ -119,9 +117,14 @@ export class JobApplicationService implements IJobApplicationService {
     return this.applicationRepository.updateKanbanOrder(id, newOrder);
   }
 
+
   /**
-   * Executes the rejectApplication operation.
-   * Generated JSDoc documentation.
+   * Rejects a job application, triggering the cooldown period for the candidate.
+   *
+   * @param id - ID of the application to reject
+   * @param reason - The reason for rejection
+   * @returns Returns the updated job application reflecting the rejection
+   * @throws AppError if the application is not found or already resolved
    */
   async rejectApplication(id: string, reason: string): Promise<JobApplication> {
     const app = await this.applicationRepository.findById(id);

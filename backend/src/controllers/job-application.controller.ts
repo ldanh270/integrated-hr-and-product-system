@@ -8,10 +8,7 @@ import { JobApplicationStatus } from "@prisma/client";
  * Controller class for handling JobApplication HTTP requests.
  */
 export class JobApplicationController {
-  /**
-   * Executes the constructor operation.
-   * Generated JSDoc documentation.
-   */
+
   constructor(private readonly applicationService: IJobApplicationService) {}
 
   // This might be a public endpoint or called by HR on behalf of candidate

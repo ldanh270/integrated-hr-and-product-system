@@ -7,10 +7,7 @@ import { IOfferService } from "../types/recruitment/offer.types";
  * Controller class for handling Offer HTTP requests.
  */
 export class OfferController {
-  /**
-   * Executes the constructor operation.
-   * Generated JSDoc documentation.
-   */
+
   constructor(private readonly offerService: IOfferService) {}
 
   public create = async (req: AuthRequest, res: Response) => {

@@ -7,10 +7,7 @@ import { IBackgroundCheckService } from "../types/recruitment/background-check.t
  * Controller class for handling BackgroundCheck HTTP requests.
  */
 export class BackgroundCheckController {
-  /**
-   * Executes the constructor operation.
-   * Generated JSDoc documentation.
-   */
+
   constructor(private readonly backgroundCheckService: IBackgroundCheckService) {}
 
   public initiate = async (req: AuthRequest, res: Response) => {

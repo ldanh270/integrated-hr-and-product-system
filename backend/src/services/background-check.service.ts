@@ -11,19 +11,13 @@ import { JOB_APPLICATION_STATUS, BGC_OVERALL_STATUS } from "@/configs/entities/r
  * Service class for handling BackgroundCheck business logic.
  */
 export class BackgroundCheckService implements IBackgroundCheckService {
-  /**
-   * Executes the constructor operation.
-   * Generated JSDoc documentation.
-   */
+
   constructor(
     private readonly backgroundCheckRepository: IBackgroundCheckRepository,
     private readonly applicationRepository: IJobApplicationRepository
   ) {}
 
-  /**
-   * Executes the initiateCheck operation.
-   * Generated JSDoc documentation.
-   */
+
   async initiateCheck(applicationId: string): Promise<BackgroundCheck> {
     const app = await this.applicationRepository.findById(applicationId);
     if (!app) {
@@ -46,10 +40,7 @@ export class BackgroundCheckService implements IBackgroundCheckService {
     return check;
   }
 
-  /**
-   * Executes the updateCheck operation.
-   * Generated JSDoc documentation.
-   */
+
   async updateCheck(id: string, data: UpdateBackgroundCheckDTO): Promise<BackgroundCheck> {
     const check = await this.backgroundCheckRepository.findById(id);
     if (!check) {
@@ -76,10 +67,7 @@ export class BackgroundCheckService implements IBackgroundCheckService {
     return updated;
   }
 
-  /**
-   * Executes the getCheckById operation.
-   * Generated JSDoc documentation.
-   */
+
   async getCheckById(id: string): Promise<BackgroundCheck | null> {
     return this.backgroundCheckRepository.findById(id);
   }

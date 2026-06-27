@@ -13,10 +13,7 @@ import { REQUISITION_STATUS } from "@/configs/entities/recruitment.config";
  * This service implements the IJobRequisitionService interface.
  */
 export class JobRequisitionService implements IJobRequisitionService {
-  /**
-   * Executes the constructor operation.
-   * Generated JSDoc documentation.
-   */
+
   constructor(private readonly jobRequisitionRepository: IJobRequisitionRepository) {}
 
   /**
@@ -89,10 +86,7 @@ export class JobRequisitionService implements IJobRequisitionService {
     return this.jobRequisitionRepository.updateStatus(id, REQUISITION_STATUS.OPEN, { approvedById: gmId });
   }
 
-  /**
-   * Executes the rejectRequisition operation.
-   * Generated JSDoc documentation.
-   */
+
   async rejectRequisition(gmId: string, id: string, reason: string): Promise<JobRequisition> {
     await this.verifyGeneralManager(gmId);
 
@@ -111,10 +105,7 @@ export class JobRequisitionService implements IJobRequisitionService {
     });
   }
 
-  /**
-   * Executes the closeRequisition operation.
-   * Generated JSDoc documentation.
-   */
+
   async closeRequisition(employeeId: string, id: string): Promise<JobRequisition> {
     const req = await this.jobRequisitionRepository.findById(id);
     if (!req) {

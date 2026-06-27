@@ -19,19 +19,23 @@ import { INTERVIEW_STATUS, INTERVIEW_RESULT } from "@/configs/entities/recruitme
  * Service class for handling Interview business logic.
  */
 export class InterviewService implements IInterviewService {
-  /**
-   * Executes the constructor operation.
-   * Generated JSDoc documentation.
-   */
+
   constructor(
     private readonly roundRepository: IInterviewRoundRepository,
     private readonly scorecardRepository: IInterviewScorecardRepository,
     private readonly applicationRepository: IJobApplicationRepository
   ) {}
 
+
   /**
-   * Executes the scheduleRound operation.
-   * Generated JSDoc documentation.
+   * Schedules a new interview round and assigns interviewers.
+   * Sends an email invitation to the candidate.
+   *
+   * @param leadInterviewerId - ID of the employee leading this round
+   * @param data - Details of the interview round including candidate and schedule
+   * @param interviewerIds - List of employee IDs assigned as interviewers
+   * @returns Returns the scheduled interview round
+   * @throws AppError if the application is not found
    */
   async scheduleRound(leadInterviewerId: string, data: CreateInterviewRoundDTO, interviewerIds: string[]): Promise<InterviewRound> {
     const app = await this.applicationRepository.findById(data.applicationId);
@@ -72,17 +76,26 @@ export class InterviewService implements IInterviewService {
     return this.roundRepository.findById(round.id) as Promise<InterviewRound>;
   }
 
+
   /**
-   * Executes the getRoundById operation.
-   * Generated JSDoc documentation.
+   * Retrieves an interview round by its ID.
+   *
+   * @param id - The unique identifier of the interview round
+   * @returns Returns the interview round if found, otherwise null
    */
   async getRoundById(id: string): Promise<InterviewRound | null> {
     return this.roundRepository.findById(id);
   }
 
+
   /**
-   * Executes the submitScorecard operation.
-   * Generated JSDoc documentation.
+   * Submits a scorecard for an interview round by an assigned interviewer.
+   * Automatically triggers a round evaluation after submission.
+   *
+   * @param interviewerId - ID of the interviewer submitting the scorecard
+   * @param data - The scorecard evaluation data including score and verdict
+   * @returns Returns the newly submitted scorecard
+   * @throws AppError if the interview round is not found or the interviewer is not assigned to the round
    */
   async submitScorecard(interviewerId: string, data: SubmitScorecardDTO): Promise<InterviewScorecard> {
     const round = await this.roundRepository.findById(data.roundId);
@@ -111,9 +124,14 @@ export class InterviewService implements IInterviewService {
     return scorecard;
   }
 
+
   /**
-   * Executes the evaluateRoundResult operation.
-   * Generated JSDoc documentation.
+   * Evaluates the overall result of an interview round based on all submitted scorecards.
+   * Resolves the final result using VETO, CONSENSUS, and MIXED logic.
+   *
+   * @param roundId - ID of the interview round to evaluate
+   * @returns Returns the updated interview round with the final result
+   * @throws AppError if the interview round is not found
    */
   async evaluateRoundResult(roundId: string): Promise<InterviewRound> {
     const round = await this.roundRepository.findById(roundId);
