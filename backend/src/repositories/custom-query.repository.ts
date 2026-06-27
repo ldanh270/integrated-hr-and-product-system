@@ -1,5 +1,5 @@
-import { ICustomQueryRepository, CustomQuery, CreateCustomQueryDto } from "@/types/custom-query.types.ts"
-import { PrismaClient } from "@prisma/client"
+import { ICustomQueryRepository, CustomQuery, CreateCustomQueryDto, CustomQueryType } from "@/types/custom-query.types.ts"
+import { Prisma, PrismaClient } from "@prisma/client"
 import { BaseRepository } from "./base.repository.ts"
 import { CUSTOM_QUERY_TYPE } from "@/configs/entities/project.config.ts"
 import { SORT_ORDER } from "@/configs/system/db.config.ts"
@@ -9,13 +9,25 @@ export class PrismaCustomQueryRepository extends BaseRepository implements ICust
     super(prisma)
   }
 
-  async findByEmployee(employeeId: string, projectId?: string | null, type?: string): Promise<CustomQuery[]> {
+  async findByEmployee(employeeId: string, projectId?: string | null, type?: CustomQueryType): Promise<CustomQuery[]> {
+    const whereClause: Prisma.CustomQueryWhereInput = {
+      employeeId,
+      type: type === undefined ? undefined : type,
+    }
+
+    if (projectId !== undefined) {
+      if (projectId === null) {
+        whereClause.projectId = null
+      } else {
+        whereClause.OR = [
+          { projectId: projectId },
+          { projectId: null },
+        ]
+      }
+    }
+
     return this.prisma.customQuery.findMany({
-      where: {
-        employeeId,
-        projectId: projectId === undefined ? undefined : projectId,
-        type: type === undefined ? undefined : type,
-      },
+      where: whereClause,
       orderBy: {
         createdAt: SORT_ORDER.DESC,
       },

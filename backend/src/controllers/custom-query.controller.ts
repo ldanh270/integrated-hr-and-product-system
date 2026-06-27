@@ -2,9 +2,8 @@ import { Request, Response } from "express"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
-import { ICustomQueryService } from "@/types/custom-query.types.ts"
+import { ICustomQueryService, CustomQuery, CustomQueryType } from "@/types/custom-query.types.ts"
 import { ApiResponse } from "@/types"
-import { CustomQuery } from "@/types/custom-query.types.ts"
 
 import { CUSTOM_QUERY_TYPE } from "@/configs/entities/project.config.ts"
 
@@ -22,7 +21,7 @@ export class CustomQueryController {
       }
 
       const projectId = (req.query.projectId as string) || null
-      const type = (req.query.type as string) || CUSTOM_QUERY_TYPE.GANTT
+      const type = (req.query.type as CustomQueryType) || CUSTOM_QUERY_TYPE.GANTT
 
       const queries = await this.service.getQueries(employeeId, projectId, type)
       res.status(HttpStatusCode.OK).json({ data: queries, error: null })
