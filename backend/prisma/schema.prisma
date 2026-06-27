@@ -166,6 +166,112 @@ enum ActivityAction {
   account_unlocked
 }
 
+// ── Recruitment Enums ──
+enum RequisitionStatus {
+  open
+  closed
+  rejected
+}
+
+enum PostingStatus {
+  draft
+  open
+  paused
+  closed
+}
+
+enum JobApplicationStatus {
+  new
+  reviewing
+  shortlisted
+  interviewing
+  final_review
+  offer_sent
+  offer_accepted
+  background_check
+  pending_onboarding
+  hired
+  rejected
+  offer_declined
+  offer_rescinded
+  candidate_withdrew
+}
+
+enum CandidateSource {
+  website
+  linkedin
+  referral
+  facebook
+  recruitment_agency
+  other
+}
+
+enum InterviewFormat {
+  in_person
+  video_call
+  phone
+}
+
+enum InterviewStatus {
+  scheduled
+  completed
+  cancelled
+  no_show
+}
+
+enum InterviewResult {
+  pass
+  fail
+  borderline
+  pending
+}
+
+enum OfferStatus {
+  draft
+  pending_approval
+  sent
+  accepted
+  declined
+  rescinded
+}
+
+enum BgcItemStatus {
+  pending
+  passed
+  needs_clarification
+  failed
+}
+
+enum BgcOverallStatus {
+  in_progress
+  passed
+  conditional
+  rescinded
+}
+
+enum JobFamily {
+  engineering
+  product
+  design
+  marketing
+  sales
+  hr
+  finance
+  operations
+  other
+}
+
+enum JobLevel {
+  intern
+  fresher
+  junior
+  mid
+  senior
+  lead
+  manager
+  director
+}
+
 // ─── Models ──────────────────────────────────────────────────────────────────
 
 // ── Employee ──
@@ -232,6 +338,20 @@ model Employee {
   refreshTokens              RefreshToken[]
   spentTimes                 SpentTime[]                  @relation("EmployeeSpentTimes")
   customQueries              CustomQuery[]
+
+  candidateId String?    @unique
+  candidate   Candidate? @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+
+  jobRequisitionsRequested JobRequisition[]       @relation("JobRequisitionRequester")
+  jobRequisitionsApproved  JobRequisition[]       @relation("JobRequisitionApprover")
+  jobPostingsCreated       JobPosting[]           @relation("JobPostingCreator")
+  interviewRoundsLead      InterviewRound[]       @relation("InterviewRoundLead")
+  interviewRounds          InterviewRoundMember[]
+  interviewScorecards      InterviewScorecard[]
+  offersCreated            Offer[]                @relation("OfferCreator")
+  offersApproved           Offer[]                @relation("OfferApprover")
+  bgcItemsChecked          BackgroundCheckItem[]  @relation("BgcItemChecker")
+  jobApplicationsRescinded JobApplication[]       @relation("ApplicationRescinder")
 
   @@index([status, employeeType])
   @@index([role])
@@ -922,6 +1042,7 @@ model CustomQuery {
   @@index([employeeId, type])
 }
 
+
 model ProjectTaskStatus {
   id          String   @id @default(cuid())
   projectId   String
@@ -937,5 +1058,246 @@ model ProjectTaskStatus {
 
   @@unique([projectId, name])
   @@index([projectId])
+}
+
+
+// ── Recruitment Models ──
+
+model JobRequisition {
+  id              String            @id @default(cuid())
+  title           String
+  departmentName  String
+  headcountNeeded Int
+  budgetMin       Decimal?          @db.Decimal(15, 2)
+  budgetMax       Decimal?          @db.Decimal(15, 2)
+  status          RequisitionStatus @default(open)
+  jobFamily       JobFamily         @default(other)
+  level           JobLevel          @default(junior)
+  targetStartDate DateTime?         @db.Date
+  rejectReason    String?
+
+  requestedById String
+  requestedBy   Employee  @relation("JobRequisitionRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  approvedById  String?
+  approvedBy    Employee? @relation("JobRequisitionApprover", fields: [approvedById], references: [id], onDelete: Restrict)
+  approvedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  jobPostings     JobPosting[]
+  jobApplications JobApplication[]
+
+  @@index([status])
+  @@index([requestedById])
+  @@index([approvedById])
+}
+
+model JobPosting {
+  id            String         @id @default(cuid())
+  requisitionId String
+  requisition   JobRequisition @relation(fields: [requisitionId], references: [id], onDelete: Restrict)
+  title         String
+  description   String
+  requirements  String
+  benefits      String?
+  salaryMin     Decimal?       @db.Decimal(15, 2)
+  salaryMax     Decimal?       @db.Decimal(15, 2)
+  status        PostingStatus  @default(draft)
+
+  createdById String
+  createdBy   Employee  @relation("JobPostingCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  closedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  channels        JobPostingChannel[]
+  jobApplications JobApplication[]
+
+  @@index([status])
+  @@index([requisitionId])
+  @@index([createdById])
+}
+
+model JobPostingChannel {
+  id        String          @id @default(cuid())
+  postingId String
+  posting   JobPosting      @relation(fields: [postingId], references: [id], onDelete: Cascade)
+  source    CandidateSource
+  url       String?
+  isActive  Boolean         @default(true)
+
+  @@index([postingId])
+}
+
+model Candidate {
+  id          String  @id @default(cuid())
+  fullName    String
+  email       String  @unique
+  phone       String? @unique
+  resumeUrl   String?
+  linkedinUrl String?
+  notes       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  jobApplications JobApplication[]
+  employee        Employee?
+}
+
+model JobApplication {
+  id            String               @id @default(cuid())
+  candidateId   String
+  candidate     Candidate            @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+  postingId     String?
+  posting       JobPosting?          @relation(fields: [postingId], references: [id], onDelete: Restrict)
+  requisitionId String
+  requisition   JobRequisition       @relation(fields: [requisitionId], references: [id], onDelete: Restrict)
+  source        CandidateSource      @default(other)
+  status        JobApplicationStatus @default(new)
+  kanbanOrder   Int                  @default(0)
+
+  rejectedAt      DateTime?
+  rejectedReason  String?
+  withdrawnAt     DateTime?
+  rescindedAt     DateTime?
+  rescindedReason String?
+  rescindedById   String?
+  rescindedBy     Employee? @relation("ApplicationRescinder", fields: [rescindedById], references: [id], onDelete: SetNull)
+  hiredAt         DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  interviewRounds InterviewRound[]
+  offers          Offer[]
+  backgroundCheck BackgroundCheck?
+
+  @@index([status, kanbanOrder])
+  @@index([candidateId])
+  @@index([requisitionId])
+  @@index([postingId])
+}
+
+model InterviewRound {
+  id            String          @id @default(cuid())
+  applicationId String
+  application   JobApplication  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  roundNumber   Int
+  title         String
+  format        InterviewFormat @default(in_person)
+  status        InterviewStatus @default(scheduled)
+  result        InterviewResult @default(pending)
+  overallNote   String?
+
+  scheduledAt DateTime?
+  completedAt DateTime?
+
+  leadInterviewerId String
+  leadInterviewer   Employee @relation("InterviewRoundLead", fields: [leadInterviewerId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  interviewers InterviewRoundMember[]
+  scorecards   InterviewScorecard[]
+
+  @@unique([applicationId, roundNumber])
+  @@index([applicationId, status])
+}
+
+model InterviewRoundMember {
+  roundId    String
+  round      InterviewRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@id([roundId, employeeId])
+  @@index([employeeId])
+}
+
+model InterviewScorecard {
+  id            String         @id @default(cuid())
+  roundId       String
+  round         InterviewRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  interviewerId String
+  interviewer   Employee       @relation(fields: [interviewerId], references: [id], onDelete: Restrict)
+
+  scores  Json            @db.JsonB
+  verdict InterviewResult @default(pending)
+  note    String?
+
+  submittedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([roundId, interviewerId])
+  @@index([roundId])
+}
+
+model Offer {
+  id            String         @id @default(cuid())
+  applicationId String
+  application   JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  version       Int            @default(1)
+  position      String
+  salary        Decimal        @db.Decimal(15, 2)
+  startDate     DateTime       @db.Date
+  benefits      String?
+  status        OfferStatus    @default(draft)
+
+  sentAt           DateTime?
+  respondedAt      DateTime?
+  responseDeadline DateTime?
+  declineReason    String?
+
+  createdById  String
+  createdBy    Employee  @relation("OfferCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  approvedById String?
+  approvedBy   Employee? @relation("OfferApprover", fields: [approvedById], references: [id], onDelete: Restrict)
+  approvedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([applicationId, version])
+  @@index([applicationId, status])
+}
+
+model BackgroundCheck {
+  id                String           @id @default(cuid())
+  applicationId     String           @unique
+  application       JobApplication   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  overallStatus     BgcOverallStatus @default(in_progress)
+  isConditionalHire Boolean          @default(false)
+  completedAt       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items BackgroundCheckItem[]
+
+  @@index([overallStatus])
+}
+
+model BackgroundCheckItem {
+  id                String          @id @default(cuid())
+  bgcId             String
+  bgc               BackgroundCheck @relation(fields: [bgcId], references: [id], onDelete: Cascade)
+  category          String // e.g., 'basic', 'legal', 'professional'
+  label             String
+  description       String?
+  status            BgcItemStatus   @default(pending)
+  clarificationNote String?
+
+  checkedById String?
+  checkedBy   Employee? @relation("BgcItemChecker", fields: [checkedById], references: [id], onDelete: SetNull)
+  checkedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bgcId, status])
 }
 

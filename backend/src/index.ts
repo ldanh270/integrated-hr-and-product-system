@@ -26,7 +26,13 @@ import shiftRoutes from "@/routes/shift.route.ts"
 import taskRoutes from "@/routes/task.route.ts"
 import spentTimeRoutes from "@/routes/spent-time.route.ts"
 import weeklyScheduleTemplateRoutes from "@/routes/weekly-schedule-template.route.ts"
-
+import jobRequisitionRoutes from "@/routes/job-requisition.route.ts"
+import jobPostingRoutes from "@/routes/job-posting.route.ts"
+import jobApplicationRoutes from "@/routes/job-application.route.ts"
+import interviewRoutes from "@/routes/interview.route.ts"
+import offerRoutes from "@/routes/offer.route.ts"
+import backgroundCheckRoutes from "@/routes/background-check.route.ts"
+import onboardingRoutes from "@/routes/onboarding.route.ts"
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
 import express, { NextFunction, Request, Response } from "express"
@@ -34,6 +40,7 @@ import rateLimit from "express-rate-limit"
 import path from "path"
 import swaggerUi from "swagger-ui-express"
 import YAML from "yamljs"
+import { SchedulerService } from "@/services/scheduler.service"
 
 /**
  * Server configurations
@@ -108,6 +115,14 @@ app.use("/api/tasks", taskRoutes)
 app.use("/api/spent-times", spentTimeRoutes)
 app.use("/api/custom-queries", customQueryRoutes)
 
+// Recruitment routes
+app.use("/api/job-requisitions", jobRequisitionRoutes)
+app.use("/api/job-postings", jobPostingRoutes)
+app.use("/api/job-applications", jobApplicationRoutes)
+app.use("/api/interviews", interviewRoutes)
+app.use("/api/offers", offerRoutes)
+app.use("/api/background-checks", backgroundCheckRoutes)
+app.use("/api/onboarding", onboardingRoutes)
 // 404 handler
 app.use((req, res) => {
   res.status(HttpStatusCode.NOT_FOUND).json({
@@ -123,8 +138,12 @@ app.use(globalErrorHandler)
  * Must connect to database successfully before start server
  */
 connectDB().then(() => {
+  // Initialize cron scheduler
+  const scheduler = new SchedulerService()
+  scheduler.init()
+
   app.listen(PORT, () => {
-    console.log("Server start on port " + PORT)
+    console.log(`[server]: Server is running at http://localhost:${PORT}`)
     initCronJobs()
     initWeeklyScheduleCron()
   })
