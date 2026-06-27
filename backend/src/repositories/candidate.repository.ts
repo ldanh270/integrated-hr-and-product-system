@@ -5,26 +5,17 @@ import { CreateCandidateDTO, ICandidateRepository } from "../types/recruitment/j
 export class CandidateRepository implements ICandidateRepository {
   async upsert(data: CreateCandidateDTO): Promise<Candidate> {
     const { email, ...rest } = data;
-    
-    // Find if exists
-    let candidate = await this.findByEmailOrPhone(email, data.phone);
 
-    if (candidate) {
-      // Update with new data if provided
-      return prisma.candidate.update({
-        where: { id: candidate.id },
-        data: {
-          fullName: data.fullName,
-          phone: data.phone || candidate.phone,
-          resumeUrl: data.resumeUrl || candidate.resumeUrl,
-          linkedinUrl: data.linkedinUrl || candidate.linkedinUrl,
-        }
-      });
-    }
-
-    // Create new
-    return prisma.candidate.create({
-      data: {
+    // Use Prisma's atomic upsert to avoid unique constraint violations
+    return prisma.candidate.upsert({
+      where: { email },
+      update: {
+        fullName: data.fullName,
+        ...(data.phone !== undefined && { phone: data.phone }),
+        ...(data.resumeUrl !== undefined && { resumeUrl: data.resumeUrl }),
+        ...(data.linkedinUrl !== undefined && { linkedinUrl: data.linkedinUrl }),
+      },
+      create: {
         email,
         fullName: data.fullName,
         phone: data.phone,

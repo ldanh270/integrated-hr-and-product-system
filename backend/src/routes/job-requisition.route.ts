@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 import { Router } from "express";
 import { authenticate } from "../middlewares/auth.middleware";
 import { validate } from "../middlewares/validate.middleware";
@@ -5,6 +6,8 @@ import { JobRequisitionRepository } from "../repositories/job-requisition.reposi
 import { JobRequisitionService } from "../services/job-requisition.service";
 import { JobRequisitionController } from "../controllers/job-requisition.controller";
 import { CreateJobRequisitionSchema, RejectJobRequisitionSchema } from "../schemas/recruitment/job-requisition.schema";
+
+import { apiLimiter } from "../middlewares/rate-limit.middleware";
 
 const router = Router();
 
@@ -14,6 +17,7 @@ const service = new JobRequisitionService(repository);
 const controller = new JobRequisitionController(service);
 
 // Routes
+router.use(apiLimiter);
 router.use(authenticate);
 
 // List and create

@@ -7,7 +7,7 @@ export class InterviewController {
   constructor(private readonly interviewService: IInterviewService) {}
 
   public schedule = async (req: AuthRequest, res: Response) => {
-    const leadInterviewerId = req.user!.empId;
+    const leadInterviewerId = req.user?.empId as string;
     const { interviewerIds, ...data } = req.body;
     
     const result = await this.interviewService.scheduleRound(leadInterviewerId, data, interviewerIds);
@@ -27,7 +27,7 @@ export class InterviewController {
   };
 
   public submitScorecard = async (req: AuthRequest, res: Response) => {
-    const interviewerId = req.user!.empId;
+    const interviewerId = req.user?.empId as string;
     const data = req.body;
     
     const result = await this.interviewService.submitScorecard(interviewerId, data);

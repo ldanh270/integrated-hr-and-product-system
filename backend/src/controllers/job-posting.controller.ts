@@ -8,7 +8,7 @@ export class JobPostingController {
   constructor(private readonly jobPostingService: IJobPostingService) {}
 
   public create = async (req: AuthRequest, res: Response) => {
-    const hmId = req.user!.empId;
+    const hmId = req.user?.empId as string;
     const { requisitionId, ...data } = req.body;
     
     const result = await this.jobPostingService.createPosting(hmId, requisitionId, data);

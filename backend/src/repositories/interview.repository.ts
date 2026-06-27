@@ -76,7 +76,7 @@ export class InterviewScorecardRepository implements IInterviewScorecardReposito
       return prisma.interviewScorecard.update({
         where: { id: existing.id },
         data: {
-          scores: data.scores ?? Prisma.JsonNull,
+          scores: data.scores,
           verdict: data.verdict,
           note: data.note,
           submittedAt: new Date()

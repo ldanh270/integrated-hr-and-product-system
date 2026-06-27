@@ -1,9 +1,11 @@
 import { HttpStatusCode } from "@/configs/system/http.config";
 import { ErrorLayer } from "@/configs/system/error-code.config";
 import { Employee, JobApplicationStatus, Role } from "@prisma/client";
+import { randomInt, randomBytes } from "crypto";
 import { AppError } from "../utils/error.util";
 import { prisma } from "../libs/database";
 import { HashUtil } from "../utils/hash.util";
+import { emailService } from "./email.service";
 import { ConvertToEmployeeDTO, IOnboardingService } from "../types/recruitment/onboarding.types";
 import { IJobApplicationRepository } from "../types/recruitment/job-application.types";
 import { IOfferRepository } from "../types/recruitment/offer.types";
@@ -42,26 +44,39 @@ export class OnboardingService implements IOnboardingService {
 
     // Generate basic employee info
     // Simple username generation: lowercase, remove accents, replace spaces with dot
-    let username = app.candidate.fullName
+    let usernameBase = app.candidate.fullName
       .toLowerCase()
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/\s+/g, ".")
       .replace(/[^a-z0-9.]/g, "");
     
-    // Add a random suffix to avoid collision
-    username = `${username}.${Math.floor(Math.random() * 10000)}`;
+    let username = usernameBase;
+    let isUnique = false;
+    let attempts = 0;
+    while (!isUnique && attempts < 5) {
+      username = `${usernameBase}.${randomInt(1000, 10000)}`;
+      const existing = await prisma.employee.findFirst({ where: { username } });
+      if (!existing) {
+        isUnique = true;
+      }
+      attempts++;
+    }
 
-    const defaultPassword = "Password@123";
+    if (!isUnique) {
+      throw new AppError("Could not generate a unique username", HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorLayer.SERVICE);
+    }
+
+    const defaultPassword = randomBytes(8).toString("hex");
     const passwordHash = await HashUtil.hash(defaultPassword);
 
     // Create employee inside a transaction
     const result = await prisma.$transaction(async (tx) => {
       const employee = await tx.employee.create({
         data: {
-          fullName: app.candidate!.fullName,
-          email: app.candidate!.email,
-          phone: app.candidate!.phone,
+          fullName: app.candidate?.fullName || "Unknown",
+          email: app.candidate?.email || "",
+          phone: app.candidate?.phone || "",
           username,
           passwordHash,
           role: Role.employee,
@@ -80,6 +95,13 @@ export class OnboardingService implements IOnboardingService {
 
       return employee;
     });
+
+    // Send the password to the candidate via email
+    await emailService.sendEmail(
+      app.candidate.email,
+      "Welcome to the team - Your Account Details",
+      `<h2>Hello ${app.candidate.fullName},</h2><p>Your account has been created.</p><p>Username: ${result.username}</p><p>Temporary Password: ${defaultPassword}</p>`
+    );
 
     return result;
   }

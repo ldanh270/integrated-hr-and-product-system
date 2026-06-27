@@ -54,7 +54,7 @@ export class JobRequisitionRepository implements IJobRequisitionRepository {
     
     if (meta?.rejectReason && status === REQUISITION_STATUS.REJECTED) {
       updateData.rejectReason = meta.rejectReason;
-      if (meta?.approvedById) {
+      if (meta.approvedById) {
          updateData.approvedBy = { connect: { id: meta.approvedById } };
          updateData.approvedAt = new Date();
       }

@@ -26,16 +26,26 @@ export class InterviewService implements IInterviewService {
       throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE);
     }
 
-    // Create the round
-    const round = await this.roundRepository.create({
-      ...data,
-      leadInterviewerId
-    });
+    // Create the round and assign interviewers in a transaction
+    const round = await prisma.$transaction(async (tx) => {
+      const createdRound = await tx.interviewRound.create({
+        data: {
+          ...data,
+          leadInterviewerId
+        }
+      });
 
-    // Assign interviewers
-    for (const interviewerId of interviewerIds) {
-      await this.roundRepository.addInterviewer(round.id, interviewerId);
-    }
+      for (const interviewerId of interviewerIds) {
+        await tx.interviewRoundMember.create({
+          data: {
+            roundId: createdRound.id,
+            employeeId: interviewerId
+          }
+        });
+      }
+
+      return createdRound;
+    });
 
     // Send email to candidate
     if (app.candidate) {

@@ -11,6 +11,7 @@ export const CreateInterviewRoundSchema = z.object({
 });
 
 export const SubmitScorecardSchema = z.object({
+  roundId: z.string().cuid("Invalid round ID"),
   scores: z.record(z.string(), z.any()),
   verdict: z.enum(INTERVIEW_RESULT_VALUES),
   note: z.string().optional(),

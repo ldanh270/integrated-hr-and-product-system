@@ -7,7 +7,7 @@ export class JobRequisitionController {
   constructor(private readonly jobRequisitionService: IJobRequisitionService) {}
 
   public create = async (req: AuthRequest, res: Response) => {
-    const hmId = req.user!.empId;
+    const hmId = req.user?.empId as string;
     // Data is validated by Zod middleware
     const data = req.body;
     
@@ -35,7 +35,7 @@ export class JobRequisitionController {
   };
 
   public approve = async (req: AuthRequest, res: Response) => {
-    const gmId = req.user!.empId;
+    const gmId = req.user?.empId as string;
     const id = req.params.id as string;
     
     const result = await this.jobRequisitionService.approveRequisition(gmId, id);
@@ -43,7 +43,7 @@ export class JobRequisitionController {
   };
 
   public reject = async (req: AuthRequest, res: Response) => {
-    const gmId = req.user!.empId;
+    const gmId = req.user?.empId as string;
     const id = req.params.id as string;
     const { reason } = req.body;
     
@@ -52,7 +52,7 @@ export class JobRequisitionController {
   };
 
   public close = async (req: AuthRequest, res: Response) => {
-    const empId = req.user!.empId;
+    const empId = req.user?.empId as string;
     const id = req.params.id as string;
     
     const result = await this.jobRequisitionService.closeRequisition(empId, id);

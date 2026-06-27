@@ -25,7 +25,7 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Cookie", "value": "access_token={{token}}" }
+              
             ],
             "url": { "raw": "{{baseUrl}}/job-requisitions", "host": ["{{baseUrl}}"], "path": ["job-requisitions"] },
             "body": {
@@ -38,14 +38,14 @@
         {
           "name": "Approve Requisition (GM only)",
           "request": {
-            "method": "PATCH",
+            "method": "POST",
             "header": [
-              { "key": "Cookie", "value": "access_token={{token}}" }
+              
             ],
-            "url": { "raw": "{{baseUrl}}/job-requisitions/REPLACE_REQ_ID/status", "host": ["{{baseUrl}}"], "path": ["job-requisitions", "REPLACE_REQ_ID", "status"] },
+            "url": { "raw": "{{baseUrl}}/job-requisitions/{{replaceReqId}}/approve", "host": ["{{baseUrl}}"], "path": ["job-requisitions", "{{replaceReqId}}", "approve"] },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"open\"\n}",
+              "raw": "{}",
               "options": { "raw": { "language": "json" } }
             }
           }
@@ -60,12 +60,12 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Cookie", "value": "access_token={{token}}" }
+              
             ],
             "url": { "raw": "{{baseUrl}}/job-postings", "host": ["{{baseUrl}}"], "path": ["job-postings"] },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"requisitionId\": \"REPLACE_REQ_ID\",\n  \"platform\": \"linkedin\",\n  \"externalUrl\": \"https://linkedin.com/jobs/123\",\n  \"closingDate\": \"2027-12-31T00:00:00Z\"\n}",
+              "raw": "{\n  \"requisitionId\": \"{{replaceReqId}}\",\n  \"title\": \"Senior Frontend Engineer\",\n  \"description\": \"We need a React expert\",\n  \"requirements\": \"5+ years React\",\n  \"benefits\": \"Health insurance\",\n  \"salaryMin\": 2000,\n  \"salaryMax\": 4000\n}",
               "options": { "raw": { "language": "json" } }
             }
           }
@@ -83,7 +83,7 @@
             "url": { "raw": "{{baseUrl}}/job-applications/apply", "host": ["{{baseUrl}}"], "path": ["job-applications", "apply"] },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"requisitionId\": \"REPLACE_REQ_ID\",\n  \"postingId\": \"REPLACE_POSTING_ID\",\n  \"fullName\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"phone\": \"0987654321\",\n  \"resumeUrl\": \"https://example.com/cv.pdf\",\n  \"source\": \"linkedin\"\n}",
+              "raw": "{\n  \"requisitionId\": \"replaceReqId\",\n  \"postingId\": \"replacePostingId\",\n  \"fullName\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"phone\": \"0987654321\",\n  \"resumeUrl\": \"https://example.com/cv.pdf\",\n  \"source\": \"linkedin\"\n}",
               "options": { "raw": { "language": "json" } }
             }
           }
@@ -98,12 +98,12 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Cookie", "value": "access_token={{token}}" }
+              
             ],
-            "url": { "raw": "{{baseUrl}}/interviews/round", "host": ["{{baseUrl}}"], "path": ["interviews", "round"] },
+            "url": { "raw": "{{baseUrl}}/interviews/schedule", "host": ["{{baseUrl}}"], "path": ["interviews", "schedule"] },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"applicationId\": \"REPLACE_APP_ID\",\n  \"type\": \"technical\",\n  \"roundName\": \"Technical React Interview\",\n  \"startTime\": \"2026-07-01T10:00:00Z\",\n  \"endTime\": \"2026-07-01T11:00:00Z\",\n  \"location\": \"Google Meet\",\n  \"interviewerIds\": [\"REPLACE_EMPLOYEE_ID_1\", \"REPLACE_EMPLOYEE_ID_2\"]\n}",
+              "raw": "{\n  \"applicationId\": \"{{replaceAppId}}\",\n  \"roundNumber\": 1,\n  \"title\": \"Technical React Interview\",\n  \"format\": \"online\",\n  \"scheduledAt\": \"2026-07-01T10:00:00Z\",\n  \"interviewerIds\": [\"replaceEmployeeId1\"]\n}",
               "options": { "raw": { "language": "json" } }
             }
           }
@@ -113,12 +113,12 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Cookie", "value": "access_token={{token}}" }
+              
             ],
             "url": { "raw": "{{baseUrl}}/interviews/scorecard", "host": ["{{baseUrl}}"], "path": ["interviews", "scorecard"] },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roundId\": \"REPLACE_ROUND_ID\",\n  \"verdict\": \"pass\",\n  \"technicalScore\": 4,\n  \"cultureScore\": 5,\n  \"comments\": \"Very good candidate\"\n}",
+              "raw": "{\n  \"roundId\": \"{{replaceRoundId}}\",\n  \"scores\": {\n    \"technical\": 4,\n    \"culture\": 5\n  },\n  \"verdict\": \"pass\",\n  \"note\": \"Very good candidate\"\n}",
               "options": { "raw": { "language": "json" } }
             }
           }
@@ -133,12 +133,12 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Cookie", "value": "access_token={{token}}" }
+              
             ],
             "url": { "raw": "{{baseUrl}}/offers", "host": ["{{baseUrl}}"], "path": ["offers"] },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"applicationId\": \"REPLACE_APP_ID\",\n  \"position\": \"Senior Frontend Engineer\",\n  \"department\": \"Engineering\",\n  \"baseSalary\": 3000,\n  \"currency\": \"USD\",\n  \"startDate\": \"2026-08-01T00:00:00Z\",\n  \"probationMonths\": 2,\n  \"benefits\": \"Health insurance, Gym\",\n  \"deadline\": \"2026-07-10T00:00:00Z\"\n}",
+              "raw": "{\n  \"applicationId\": \"replaceAppId\",\n  \"position\": \"Senior Frontend Engineer\",\n  \"department\": \"Engineering\",\n  \"baseSalary\": 3000,\n  \"currency\": \"USD\",\n  \"startDate\": \"2026-08-01T00:00:00Z\",\n  \"probationMonths\": 2,\n  \"benefits\": \"Health insurance, Gym\",\n  \"deadline\": \"2026-07-10T00:00:00Z\"\n}",
               "options": { "raw": { "language": "json" } }
             }
           }
@@ -148,7 +148,7 @@
           "request": {
             "method": "POST",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/offers/REPLACE_OFFER_ID/respond", "host": ["{{baseUrl}}"], "path": ["offers", "REPLACE_OFFER_ID", "respond"] },
+            "url": { "raw": "{{baseUrl}}/offers/replaceOfferId/respond", "host": ["{{baseUrl}}"], "path": ["offers", "replaceOfferId", "respond"] },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"action\": \"accepted\"\n}",
@@ -166,12 +166,12 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Cookie", "value": "access_token={{token}}" }
+              
             ],
             "url": { "raw": "{{baseUrl}}/background-checks", "host": ["{{baseUrl}}"], "path": ["background-checks"] },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"applicationId\": \"REPLACE_APP_ID\",\n  \"provider\": \"Checkr\",\n  \"notes\": \"Standard criminal + education check\"\n}",
+              "raw": "{\n  \"applicationId\": \"replaceAppId\",\n  \"provider\": \"Checkr\",\n  \"notes\": \"Standard criminal + education check\"\n}",
               "options": { "raw": { "language": "json" } }
             }
           }
@@ -181,9 +181,9 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Cookie", "value": "access_token={{token}}" }
+              
             ],
-            "url": { "raw": "{{baseUrl}}/background-checks/REPLACE_BGC_ID/status", "host": ["{{baseUrl}}"], "path": ["background-checks", "REPLACE_BGC_ID", "status"] },
+            "url": { "raw": "{{baseUrl}}/background-checks/replaceBgcId/status", "host": ["{{baseUrl}}"], "path": ["background-checks", "replaceBgcId", "status"] },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"passed\",\n  \"notes\": \"All clear\"\n}",
@@ -201,9 +201,9 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Cookie", "value": "access_token={{token}}" }
+              
             ],
-            "url": { "raw": "{{baseUrl}}/onboarding/REPLACE_APP_ID/convert", "host": ["{{baseUrl}}"], "path": ["onboarding", "REPLACE_APP_ID", "convert"] },
+            "url": { "raw": "{{baseUrl}}/onboarding/replaceAppId/convert", "host": ["{{baseUrl}}"], "path": ["onboarding", "replaceAppId", "convert"] },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"startDate\": \"2026-08-01T00:00:00Z\",\n  \"position\": \"Senior Frontend Engineer\"\n}",

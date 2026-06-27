@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 import { Router } from "express";
 import { authenticate } from "../middlewares/auth.middleware";
 import { validate } from "../middlewares/validate.middleware";
@@ -6,6 +7,8 @@ import { JobApplicationRepository } from "../repositories/job-application.reposi
 import { OfferService } from "../services/offer.service";
 import { OfferController } from "../controllers/offer.controller";
 import { CreateOfferSchema, RespondOfferSchema } from "../schemas/recruitment/offer.schema";
+
+import { apiLimiter } from "../middlewares/rate-limit.middleware";
 
 const router = Router();
 
@@ -16,6 +19,7 @@ const service = new OfferService(offerRepository, applicationRepository);
 const controller = new OfferController(service);
 
 // Routes
+router.use(apiLimiter);
 router.use(authenticate);
 
 router.post("/", validate(CreateOfferSchema), controller.create);
