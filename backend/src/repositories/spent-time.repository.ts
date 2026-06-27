@@ -40,6 +40,7 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
     super(prisma)
   }
 
+  /** Maps Prisma row + relations to domain — includes task/project for approval UI and estimate cap. */
   protected mapToDomain(spentTime: PrismaSpentTimeWithRelations): SpentTime {
     return {
       id: spentTime.id,
@@ -86,6 +87,7 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
     }
   }
 
+  /** Prisma include graph for list/detail — task, employee, approver for PT approval screens. */
   private spentTimeInclude = {
     task: {
       include: {
@@ -106,6 +108,7 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
     },
   } as const
 
+  /** Loads one Spent Time log by id with task/employee/approver relations. */
   async findById(id: string): Promise<SpentTime | null> {
     const record = await this.prisma.spentTime.findUnique({
       where: { id },
@@ -114,7 +117,7 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
     return record ? this.mapToDomain(record) : null
   }
 
-  /** Filters by projectId/status — project leads use this for the approval queue UI. */
+  /** Lists Spent Time logs by filters — projectId/status power the lead approval queue. */
   async list(query: SpentTimeQuery): Promise<SpentTime[]> {
     const where: Prisma.SpentTimeWhereInput = {}
 
@@ -141,6 +144,7 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
     return records.map((record) => this.mapToDomain(record))
   }
 
+  /** Creates a PT spent time log — always persisted as pending until lead approves for payroll. */
   async create(data: CreateSpentTimeDto): Promise<SpentTime> {
     if (!data.employeeId) {
       throw new Error("Employee ID is required to create a spent time log")
@@ -163,7 +167,7 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
     return this.mapToDomain(record)
   }
 
-  /** Edits log content only — status transitions use approve/reject (service enforces pending-only). */
+  /** Updates log fields only — status changes go through approve/reject methods. */
   async update(id: string, data: UpdateSpentTimeDto): Promise<SpentTime | null> {
     const updateData: Prisma.SpentTimeUpdateInput = {}
     if (data.date) updateData.date = typeof data.date === "string" ? new Date(data.date) : data.date
@@ -180,11 +184,13 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
     return this.mapToDomain(record)
   }
 
+  /** Hard-deletes a row — service restricts delete to pending logs only. */
   async delete(id: string): Promise<boolean> {
     await this.prisma.spentTime.delete({ where: { id } })
     return true
   }
 
+  /** Sums task hours for estimate cap — rejected logs are excluded from the total. */
   async sumTaskHours(taskId: string, excludeId?: string): Promise<number> {
     const result = await this.prisma.spentTime.aggregate({
       where: {

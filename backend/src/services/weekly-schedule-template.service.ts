@@ -21,9 +21,11 @@ export class WeeklyScheduleTemplateService implements IWeeklyScheduleTemplateSer
     private templateRepo: IWeeklyScheduleTemplateRepository,
     private scheduleRepo: IShiftScheduleRepository,
     private employeeShiftRepo: IEmployeeShiftRepository,
+    /** Used in applyTemplate to block PART_TIME employees (project Spent Time model). */
     private employeeRepo: IEmployeeRepository,
   ) {}
 
+  /** Creates a reusable weekly shift template (full-time employees only at apply time). */
   createTemplate(data: ICreateWeeklyScheduleTemplateDTO): Promise<IWeeklyScheduleTemplateWithWeeks> {
     return this.templateRepo.create(data)
   }

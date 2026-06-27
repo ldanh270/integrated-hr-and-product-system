@@ -295,6 +295,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
     return member !== null && member.removedAt === null
   }
 
+  /** Reads PT member contract fields — hourlyRate for payroll, workMode for GPS rules. */
   async getMember(
     projectId: string,
     employeeId: string,
@@ -361,6 +362,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
     return count > 0
   }
 
+  /** PATCH PT member hourlyRate/workMode — rate drives payroll; workMode toggles onsite GPS. */
   async updateMember(
     projectId: string,
     employeeId: string,

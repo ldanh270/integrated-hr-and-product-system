@@ -39,6 +39,7 @@ export class SpentTimeService implements ISpentTimeService {
     return userRole === ROLE.ADMIN || userRole === ROLE.GENERAL_MANAGER
   }
 
+  /** Ensures only project TL (or Admin/GM) can approve/reject Spent Time for that project. */
   private async assertProjectLeadAccess(
     projectId: string,
     userId: string,
@@ -55,6 +56,7 @@ export class SpentTimeService implements ISpentTimeService {
     }
   }
 
+  /** Validates estimate cap and onsite PT daily GPS check-in before create/update. */
   private async validateBusinessRules(
     taskId: string,
     employeeId: string,
@@ -93,6 +95,7 @@ export class SpentTimeService implements ISpentTimeService {
     }
   }
 
+  /** Returns one log — employee sees own rows; project TL/Admin/GM see project queue entries. */
   async getSpentTime(id: string, userId: string, userRole: string): Promise<SpentTime | null> {
     const record = await this.repository.findById(id)
     if (!record) {
@@ -113,6 +116,7 @@ export class SpentTimeService implements ISpentTimeService {
     return record
   }
 
+  /** Lists logs with project-based access control — non-admins scoped to member/TL projects. */
   async listSpentTimes(query: SpentTimeQuery, userId: string, userRole: string): Promise<SpentTime[]> {
     if (!this.isAuthorizedAdminOrGM(userRole)) {
       if (query.projectId) {
@@ -147,6 +151,7 @@ export class SpentTimeService implements ISpentTimeService {
     return this.repository.list(query)
   }
 
+  /** Logs PT hours on a task — row starts pending; payroll picks up only after lead approval. */
   async createSpentTime(data: CreateSpentTimeDto, userId: string, userRole: string): Promise<SpentTime> {
     const task = await this.taskRepository.findById(data.taskId)
     if (!task) {
@@ -176,6 +181,7 @@ export class SpentTimeService implements ISpentTimeService {
     return this.repository.create(data)
   }
 
+  /** Updates a pending log — approved/rejected rows are locked (payroll audit trail). */
   async updateSpentTime(
     id: string,
     data: UpdateSpentTimeDto,
@@ -203,6 +209,7 @@ export class SpentTimeService implements ISpentTimeService {
     return this.repository.update(id, data)
   }
 
+  /** Deletes a pending log only — approved/rejected rows cannot be removed. */
   async deleteSpentTime(id: string, userId: string, userRole: string): Promise<boolean> {
     const record = await this.repository.findById(id)
     if (!record) {
@@ -221,6 +228,7 @@ export class SpentTimeService implements ISpentTimeService {
     return this.repository.delete(id)
   }
 
+  /** Lead approves hours — row becomes eligible for PT payroll in the next run. */
   async approveSpentTime(id: string, userId: string, userRole: string): Promise<SpentTime> {
     // Only project TL / Admin / GM may approve — gates payroll-eligible hours.
     const record = await this.repository.findById(id)
@@ -246,13 +254,13 @@ export class SpentTimeService implements ISpentTimeService {
     return updated
   }
 
+  /** Lead rejects with reason — hours excluded from payroll and task spent totals. */
   async rejectSpentTime(
     id: string,
     reason: string,
     userId: string,
     userRole: string,
   ): Promise<SpentTime> {
-    // Rejected logs are excluded from task totals and never reach payroll.
     const record = await this.repository.findById(id)
     if (!record) {
       throw new AppError("Spent time record not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)

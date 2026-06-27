@@ -52,11 +52,13 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>
 
+/** Extracts API error message for shift create/update toasts. */
 function getShiftMutationError(error: unknown, fallback: string): string {
   if (!isAxiosError(error)) return fallback
   return error.response?.data?.error?.message ?? error.response?.data?.message ?? fallback
 }
 
+/** Builds GPS payload — null clears geofence on update; undefined leaves it unchanged. */
 function buildGpsPayload(
   values: FormValues,
   options: { isUpdate: boolean; hadGps: boolean },

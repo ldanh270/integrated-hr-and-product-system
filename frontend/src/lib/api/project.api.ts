@@ -55,6 +55,7 @@ export const projectApi = {
     await apiClient.post<ApiResponse<null>>(`/projects/${projectId}/members`, data)
   },
 
+  /** PATCH member hourlyRate/workMode — drives PT payroll rate and onsite vs remote attendance. */
   updateMember: async (
     projectId: string,
     employeeId: string,
