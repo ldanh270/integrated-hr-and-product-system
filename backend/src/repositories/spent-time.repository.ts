@@ -34,6 +34,7 @@ type PrismaSpentTimeWithRelations = PrismaSpentTime & {
   approvedBy?: Pick<PrismaEmployee, "id" | "fullName"> | null
 }
 
+/** Persists PT Spent Time rows — create starts pending; approve/reject feed payroll queries. */
 export class PrismaSpentTimeRepository extends BaseRepository implements ISpentTimeRepository {
   constructor(prisma: PrismaClient) {
     super(prisma)
@@ -113,6 +114,7 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
     return record ? this.mapToDomain(record) : null
   }
 
+  /** Filters by projectId/status — project leads use this for the approval queue UI. */
   async list(query: SpentTimeQuery): Promise<SpentTime[]> {
     const where: Prisma.SpentTimeWhereInput = {}
 
@@ -161,6 +163,7 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
     return this.mapToDomain(record)
   }
 
+  /** Edits log content only — status transitions use approve/reject (service enforces pending-only). */
   async update(id: string, data: UpdateSpentTimeDto): Promise<SpentTime | null> {
     const updateData: Prisma.SpentTimeUpdateInput = {}
     if (data.date) updateData.date = typeof data.date === "string" ? new Date(data.date) : data.date
@@ -257,6 +260,7 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
 
     return records.flatMap((record) => {
       const member = record.task.project.members[0]
+      // No hourlyRate on membership → skip line; PayrollService cannot compute PT pay.
       if (!member?.hourlyRate) return []
 
       return [
