@@ -32,7 +32,7 @@ export type CreateInterviewRoundDTO = {
 
 export type SubmitScorecardDTO = {
   roundId: string;
-  scores: Record<string, any>; // JSON structure based on role
+  scores?: Record<string, unknown>; // JSON structure based on role
   verdict: InterviewResult;
   note?: string;
 };
