@@ -1,3 +1,4 @@
+import { JOB_APPLICATION_STATUS } from "@/configs/entities/recruitment.config";
 import { JobApplication, JobApplicationStatus, Prisma } from "@prisma/client";
 import { prisma } from "../libs/database";
 import {
@@ -74,7 +75,7 @@ export class JobApplicationRepository implements IJobApplicationRepository {
     return prisma.jobApplication.update({
       where: { id },
       data: { 
-        status: JobApplicationStatus.rejected,
+        status: JOB_APPLICATION_STATUS.REJECTED,
         rejectedAt: new Date(),
         rejectedReason: reason
       },

@@ -12,6 +12,8 @@ import {
 } from "../types/recruitment/job-application.types";
 import { IJobRequisitionRepository } from "../types/recruitment/job-requisition.types";
 import { CANDIDATE_COOLDOWN_MONTHS } from "../configs/entities/recruitment.config";
+import { REQUISITION_STATUS, JOB_APPLICATION_STATUS } from "@/configs/entities/recruitment.config";
+
 
 export class JobApplicationService implements IJobApplicationService {
   constructor(
@@ -22,7 +24,7 @@ export class JobApplicationService implements IJobApplicationService {
 
   async applyForJob(data: ApplyJobDTO): Promise<JobApplication> {
     const requisition = await this.requisitionRepository.findById(data.requisitionId);
-    if (!requisition || requisition.status !== RequisitionStatus.open) {
+    if (!requisition || requisition.status !== REQUISITION_STATUS.OPEN) {
       throw new AppError("Job requisition is not active or does not exist", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
     }
 
@@ -41,14 +43,14 @@ export class JobApplicationService implements IJobApplicationService {
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - CANDIDATE_COOLDOWN_MONTHS);
 
     for (const app of pastApps) {
-      if (app.status === JobApplicationStatus.rejected && app.rejectedAt) {
+      if (app.status === JOB_APPLICATION_STATUS.REJECTED && app.rejectedAt) {
         if (app.rejectedAt > sixMonthsAgo) {
           throw new AppError(`Candidate is under a ${CANDIDATE_COOLDOWN_MONTHS}-month cooldown period from a previous rejection`, HttpStatusCode.FORBIDDEN, ErrorLayer.SERVICE);
         }
       }
       
       // Also prevent double applying to the same requisition
-      if (app.requisitionId === data.requisitionId && app.status !== JobApplicationStatus.candidate_withdrew) {
+      if (app.requisitionId === data.requisitionId && app.status !== JOB_APPLICATION_STATUS.CANDIDATE_WITHDREW) {
         throw new AppError("Candidate has already applied to this requisition", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
       }
     }
@@ -96,7 +98,7 @@ export class JobApplicationService implements IJobApplicationService {
       throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE);
     }
 
-    if (app.status === JobApplicationStatus.rejected || app.status === JobApplicationStatus.hired) {
+    if (app.status === JOB_APPLICATION_STATUS.REJECTED || app.status === JOB_APPLICATION_STATUS.HIRED) {
       throw new AppError("Cannot reject an application that is already resolved", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
     }
 

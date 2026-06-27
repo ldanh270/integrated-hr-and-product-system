@@ -1,6 +1,8 @@
 import { JobPosting, PostingStatus, JobPostingChannel, CandidateSource, Prisma } from "@prisma/client";
 import { prisma } from "../libs/database";
 import { CreateJobPostingDTO, IJobPostingRepository, JobPostingFilters } from "../types/recruitment/job-posting.types";
+import { POSTING_STATUS } from "@/configs/entities/recruitment.config";
+
 
 export class JobPostingRepository implements IJobPostingRepository {
   async create(data: CreateJobPostingDTO & { createdById: string; requisitionId: string }): Promise<JobPosting> {
@@ -39,7 +41,7 @@ export class JobPostingRepository implements IJobPostingRepository {
 
   async updateStatus(id: string, status: PostingStatus): Promise<JobPosting> {
     const updateData: Prisma.JobPostingUpdateInput = { status };
-    if (status === PostingStatus.closed) {
+    if (status === POSTING_STATUS.CLOSED) {
       updateData.closedAt = new Date();
     }
     return prisma.jobPosting.update({

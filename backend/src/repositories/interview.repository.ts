@@ -1,6 +1,8 @@
 import { InterviewRound, InterviewScorecard, InterviewStatus, InterviewResult, InterviewRoundMember, Prisma } from "@prisma/client";
 import { prisma } from "../libs/database";
 import { CreateInterviewRoundDTO, IInterviewRoundRepository, IInterviewScorecardRepository, SubmitScorecardDTO } from "../types/recruitment/interview.types";
+import { INTERVIEW_STATUS } from "@/configs/entities/recruitment.config";
+
 
 export class InterviewRoundRepository implements IInterviewRoundRepository {
   async create(data: CreateInterviewRoundDTO & { leadInterviewerId: string }): Promise<InterviewRound> {
@@ -43,7 +45,7 @@ export class InterviewRoundRepository implements IInterviewRoundRepository {
     const updateData: Prisma.InterviewRoundUpdateInput = { status };
     if (result) updateData.result = result;
     if (overallNote) updateData.overallNote = overallNote;
-    if (status === InterviewStatus.completed) updateData.completedAt = new Date();
+    if (status === INTERVIEW_STATUS.COMPLETED) updateData.completedAt = new Date();
 
     return prisma.interviewRound.update({
       where: { id },

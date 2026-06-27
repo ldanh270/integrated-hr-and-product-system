@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { CANDIDATE_SOURCE_VALUES, JOB_APPLICATION_STATUS_VALUES } from "../../configs/entities/recruitment.config";
+import { JOB_APPLICATION_STATUS } from "@/configs/entities/recruitment.config";
+
 
 export const ApplyJobSchema = z.object({
   fullName: z.string().min(1, "Full name is required"),

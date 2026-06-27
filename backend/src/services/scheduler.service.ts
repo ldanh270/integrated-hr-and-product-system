@@ -6,6 +6,8 @@ import { OnboardingService } from "./onboarding.service";
 import { JobApplicationRepository } from "../repositories/job-application.repository";
 import { OfferRepository } from "../repositories/offer.repository";
 import { BgcOverallStatus } from "@prisma/client";
+import { JOB_APPLICATION_STATUS } from "@/configs/entities/recruitment.config";
+
 
 export class SchedulerService {
   private onboardingService: OnboardingService;
@@ -36,7 +38,7 @@ export class SchedulerService {
 
       const applications = await prisma.jobApplication.findMany({
         where: {
-          status: JobApplicationStatus.pending_onboarding,
+          status: JOB_APPLICATION_STATUS.PENDING_ONBOARDING,
         },
         include: {
           offers: {

@@ -12,6 +12,8 @@ import {
 import { IJobApplicationRepository } from "../types/recruitment/job-application.types";
 import { prisma } from "../libs/database";
 import { emailService } from "./email.service";
+import { INTERVIEW_STATUS, INTERVIEW_RESULT } from "@/configs/entities/recruitment.config";
+
 
 export class InterviewService implements IInterviewService {
   constructor(
@@ -106,25 +108,25 @@ export class InterviewService implements IInterviewService {
     }
 
     const allVerdicts = scorecards.map(s => s.verdict);
-    let finalResult: InterviewResult = InterviewResult.pending;
+    let finalResult: InterviewResult = INTERVIEW_RESULT.PENDING;
 
     // VETO logic: If any interviewer fails the candidate, the whole round is a fail
-    if (allVerdicts.includes(InterviewResult.fail)) {
-      finalResult = InterviewResult.fail;
+    if (allVerdicts.includes(INTERVIEW_RESULT.FAIL)) {
+      finalResult = INTERVIEW_RESULT.FAIL;
     } 
     // CONSENSUS logic: If everyone passes, it's a pass
-    else if (allVerdicts.every(v => v === InterviewResult.pass)) {
-      finalResult = InterviewResult.pass;
+    else if (allVerdicts.every(v => v === INTERVIEW_RESULT.PASS)) {
+      finalResult = INTERVIEW_RESULT.PASS;
     } 
     // MIXED logic: Pass + Borderline means it needs Lead or GM decision (stays borderline overall)
-    else if (allVerdicts.includes(InterviewResult.borderline)) {
-      finalResult = InterviewResult.borderline;
+    else if (allVerdicts.includes(INTERVIEW_RESULT.BORDERLINE)) {
+      finalResult = INTERVIEW_RESULT.BORDERLINE;
     }
 
     // Update round status
     return this.roundRepository.updateStatus(
       roundId,
-      InterviewStatus.completed,
+      INTERVIEW_STATUS.COMPLETED,
       finalResult
     );
   }

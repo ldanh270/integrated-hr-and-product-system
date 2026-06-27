@@ -6,6 +6,8 @@ import { CreateOfferDTO, IOfferRepository, IOfferService } from "../types/recrui
 import { IJobApplicationRepository } from "../types/recruitment/job-application.types";
 import { OFFER_RESPONSE_DAYS, OFFER_MAX_VERSIONS } from "../configs/entities/recruitment.config";
 import { emailService } from "./email.service";
+import { JOB_APPLICATION_STATUS, OFFER_STATUS } from "@/configs/entities/recruitment.config";
+
 
 export class OfferService implements IOfferService {
   constructor(
@@ -24,7 +26,7 @@ export class OfferService implements IOfferService {
     
     let nextVersion = 1;
     if (latestOffer) {
-      if (latestOffer.status !== OfferStatus.declined) {
+      if (latestOffer.status !== OFFER_STATUS.DECLINED) {
         throw new AppError("Cannot create a new offer unless the previous one was declined or expired", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
       }
       nextVersion = latestOffer.version + 1;
@@ -46,7 +48,7 @@ export class OfferService implements IOfferService {
     });
 
     // Update application status to offer_sent
-    await this.applicationRepository.updateStatus(data.applicationId, JobApplicationStatus.offer_sent);
+    await this.applicationRepository.updateStatus(data.applicationId, JOB_APPLICATION_STATUS.OFFER_SENT);
 
     // Send email to candidate
     if (app && app.candidate) {
@@ -66,14 +68,14 @@ export class OfferService implements IOfferService {
       throw new AppError("Offer not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE);
     }
 
-    if (offer.status !== OfferStatus.draft) {
+    if (offer.status !== OFFER_STATUS.DRAFT) {
       throw new AppError("Only draft offers can be sent", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
     }
 
     // Here we would integrate with Resend to send the actual email
     // await emailService.sendOfferEmail(...)
 
-    return this.offerRepository.updateStatus(id, OfferStatus.sent);
+    return this.offerRepository.updateStatus(id, OFFER_STATUS.SENT);
   }
 
   async respondToOffer(id: string, accept: boolean, note?: string): Promise<Offer> {
@@ -82,21 +84,21 @@ export class OfferService implements IOfferService {
       throw new AppError("Offer not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE);
     }
 
-    if (offer.status !== OfferStatus.sent) {
+    if (offer.status !== OFFER_STATUS.SENT) {
       throw new AppError("Can only respond to sent offers", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
     }
 
     if (offer.responseDeadline && new Date() > offer.responseDeadline) {
-      await this.offerRepository.updateStatus(id, OfferStatus.declined);
+      await this.offerRepository.updateStatus(id, OFFER_STATUS.DECLINED);
       throw new AppError("This offer has expired", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
     }
 
-    const newStatus = accept ? OfferStatus.accepted : OfferStatus.declined;
+    const newStatus = accept ? OFFER_STATUS.ACCEPTED : OFFER_STATUS.DECLINED;
     const updatedOffer = await this.offerRepository.updateStatus(id, newStatus, note);
 
     // Update application status
     if (accept) {
-      await this.applicationRepository.updateStatus(offer.applicationId, JobApplicationStatus.offer_accepted);
+      await this.applicationRepository.updateStatus(offer.applicationId, JOB_APPLICATION_STATUS.OFFER_ACCEPTED);
     } else {
       // Revert to interview_passed or leave as offering so HR can decide next step
       // Wait, if they reject, we can leave it as offering so HR can issue another version

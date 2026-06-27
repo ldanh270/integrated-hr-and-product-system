@@ -4,6 +4,8 @@ import { JobPosting, PostingStatus, JobPostingChannel, CandidateSource, Requisit
 import { AppError } from "../utils/error.util";
 import { CreateJobPostingDTO, IJobPostingRepository, IJobPostingService, JobPostingFilters } from "../types/recruitment/job-posting.types";
 import { IJobRequisitionRepository } from "../types/recruitment/job-requisition.types";
+import { REQUISITION_STATUS, POSTING_STATUS } from "@/configs/entities/recruitment.config";
+
 
 export class JobPostingService implements IJobPostingService {
   constructor(
@@ -18,7 +20,7 @@ export class JobPostingService implements IJobPostingService {
       throw new AppError("Job Requisition not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE);
     }
 
-    if (requisition.status !== RequisitionStatus.open) {
+    if (requisition.status !== REQUISITION_STATUS.OPEN) {
       throw new AppError("Cannot create a posting for a requisition that is not open", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
     }
 
@@ -52,10 +54,10 @@ export class JobPostingService implements IJobPostingService {
       throw new AppError("Job Posting not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE);
     }
 
-    if (posting.status !== PostingStatus.open) {
+    if (posting.status !== POSTING_STATUS.OPEN) {
       // Typically we only publish active postings, but it could be published while draft to test?
       // Let's restrict it to open or paused, maybe not closed.
-      if (posting.status === PostingStatus.closed) {
+      if (posting.status === POSTING_STATUS.CLOSED) {
          throw new AppError("Cannot publish a closed job posting", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
       }
     }

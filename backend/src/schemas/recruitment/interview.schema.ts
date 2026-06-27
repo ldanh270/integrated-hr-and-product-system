@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { INTERVIEW_FORMAT_VALUES, INTERVIEW_RESULT_VALUES } from "../../configs/entities/recruitment.config";
+import { INTERVIEW_RESULT } from "@/configs/entities/recruitment.config";
+
 
 export const CreateInterviewRoundSchema = z.object({
   applicationId: z.string().cuid("Invalid application ID"),

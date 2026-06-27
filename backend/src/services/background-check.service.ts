@@ -4,6 +4,8 @@ import { BackgroundCheck, BgcOverallStatus, JobApplicationStatus } from "@prisma
 import { AppError } from "../utils/error.util";
 import { IBackgroundCheckRepository, IBackgroundCheckService, UpdateBackgroundCheckDTO } from "../types/recruitment/background-check.types";
 import { IJobApplicationRepository } from "../types/recruitment/job-application.types";
+import { JOB_APPLICATION_STATUS, BGC_OVERALL_STATUS } from "@/configs/entities/recruitment.config";
+
 
 export class BackgroundCheckService implements IBackgroundCheckService {
   constructor(
@@ -19,7 +21,7 @@ export class BackgroundCheckService implements IBackgroundCheckService {
 
     // Usually initiated after offer is accepted, or at least before onboarding
     const checks = await this.backgroundCheckRepository.findByApplicationId(applicationId);
-    const hasPending = checks.some(c => c.overallStatus === BgcOverallStatus.in_progress);
+    const hasPending = checks.some(c => c.overallStatus === BGC_OVERALL_STATUS.IN_PROGRESS);
     
     if (hasPending) {
       throw new AppError("A background check is already in progress for this application", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
@@ -28,7 +30,7 @@ export class BackgroundCheckService implements IBackgroundCheckService {
     const check = await this.backgroundCheckRepository.create({ applicationId });
 
     // Update application status
-    await this.applicationRepository.updateStatus(applicationId, JobApplicationStatus.background_check);
+    await this.applicationRepository.updateStatus(applicationId, JOB_APPLICATION_STATUS.BACKGROUND_CHECK);
 
     return check;
   }
@@ -39,18 +41,18 @@ export class BackgroundCheckService implements IBackgroundCheckService {
       throw new AppError("Background Check not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE);
     }
 
-    if (check.overallStatus === BgcOverallStatus.passed || check.overallStatus === BgcOverallStatus.rescinded) {
+    if (check.overallStatus === BGC_OVERALL_STATUS.PASSED || check.overallStatus === BGC_OVERALL_STATUS.RESCINDED) {
       throw new AppError("Cannot update a completed background check", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
     }
 
     const updated = await this.backgroundCheckRepository.updateStatus(id, data.overallStatus);
 
     // If passed or failed, update application status accordingly
-    if (data.overallStatus === BgcOverallStatus.passed) {
-      await this.applicationRepository.updateStatus(check.applicationId, JobApplicationStatus.pending_onboarding);
-    } else if (data.overallStatus === BgcOverallStatus.rescinded) {
+    if (data.overallStatus === BGC_OVERALL_STATUS.PASSED) {
+      await this.applicationRepository.updateStatus(check.applicationId, JOB_APPLICATION_STATUS.PENDING_ONBOARDING);
+    } else if (data.overallStatus === BGC_OVERALL_STATUS.RESCINDED) {
       // Typically if background check fails, offer is rescinded
-      await this.applicationRepository.updateStatus(check.applicationId, JobApplicationStatus.offer_rescinded);
+      await this.applicationRepository.updateStatus(check.applicationId, JOB_APPLICATION_STATUS.OFFER_RESCINDED);
       
       // We could also record the reason for rejection to enforce the 6-month cooldown
       // e.g., await this.applicationRepository.reject(check.applicationId, data.note || "Background check failed");

@@ -9,6 +9,8 @@ import { emailService } from "./email.service";
 import { ConvertToEmployeeDTO, IOnboardingService } from "../types/recruitment/onboarding.types";
 import { IJobApplicationRepository } from "../types/recruitment/job-application.types";
 import { IOfferRepository } from "../types/recruitment/offer.types";
+import { JOB_APPLICATION_STATUS } from "@/configs/entities/recruitment.config";
+
 
 export class OnboardingService implements IOnboardingService {
   constructor(
@@ -26,15 +28,15 @@ export class OnboardingService implements IOnboardingService {
       throw new AppError("Candidate information is missing", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
     }
 
-    if (app.status === JobApplicationStatus.hired) {
+    if (app.status === JOB_APPLICATION_STATUS.HIRED) {
       throw new AppError("Candidate has already been converted to an employee", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
     }
 
     // Usually they should be in pending_onboarding stage
-    if (app.status !== JobApplicationStatus.pending_onboarding) {
+    if (app.status !== JOB_APPLICATION_STATUS.PENDING_ONBOARDING) {
       // Allow overriding if needed, but strict check is better
       // For now, let's just make sure they aren't rejected or closed
-      if (app.status === JobApplicationStatus.rejected || app.status === JobApplicationStatus.offer_rescinded || app.status === JobApplicationStatus.candidate_withdrew) {
+      if (app.status === JOB_APPLICATION_STATUS.REJECTED || app.status === JOB_APPLICATION_STATUS.OFFER_RESCINDED || app.status === JOB_APPLICATION_STATUS.CANDIDATE_WITHDREW) {
         throw new AppError("Cannot convert a rejected or withdrawn candidate", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
       }
     }
@@ -88,7 +90,7 @@ export class OnboardingService implements IOnboardingService {
       // Update application status
       await tx.jobApplication.update({
         where: { id: applicationId },
-        data: { status: JobApplicationStatus.hired }
+        data: { status: JOB_APPLICATION_STATUS.HIRED }
       });
 
       // You could also create EmployeeSalaryConfig here if needed, using latestOffer.baseSalary

@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { JOB_FAMILY_VALUES, JOB_LEVEL_VALUES } from "../../configs/entities/recruitment.config";
+import { JOB_LEVEL } from "@/configs/entities/recruitment.config";
+
 
 export const CreateJobRequisitionSchema = z.object({
   title: z.string().min(1, "Title is required"),

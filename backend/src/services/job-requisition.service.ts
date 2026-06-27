@@ -5,6 +5,8 @@ import { ROLE } from "@/configs/entities/employee.config";
 import { AppError } from "../utils/error.util";
 import { CreateJobRequisitionDTO, IJobRequisitionRepository, IJobRequisitionService, JobRequisitionFilters } from "../types/recruitment/job-requisition.types";
 import { prisma } from "../libs/database";
+import { REQUISITION_STATUS } from "@/configs/entities/recruitment.config";
+
 
 export class JobRequisitionService implements IJobRequisitionService {
   constructor(private readonly jobRequisitionRepository: IJobRequisitionRepository) {}
@@ -43,11 +45,11 @@ export class JobRequisitionService implements IJobRequisitionService {
       throw new AppError("Job Requisition not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE);
     }
 
-    if (req.status !== RequisitionStatus.open) {
+    if (req.status !== REQUISITION_STATUS.OPEN) {
       throw new AppError("Cannot approve a closed or rejected requisition", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
     }
 
-    return this.jobRequisitionRepository.updateStatus(id, RequisitionStatus.open, { approvedById: gmId });
+    return this.jobRequisitionRepository.updateStatus(id, REQUISITION_STATUS.OPEN, { approvedById: gmId });
   }
 
   async rejectRequisition(gmId: string, id: string, reason: string): Promise<JobRequisition> {
@@ -58,11 +60,11 @@ export class JobRequisitionService implements IJobRequisitionService {
       throw new AppError("Job Requisition not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE);
     }
 
-    if (req.status !== RequisitionStatus.open) {
+    if (req.status !== REQUISITION_STATUS.OPEN) {
       throw new AppError("Cannot reject a closed or already rejected requisition", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
     }
 
-    return this.jobRequisitionRepository.updateStatus(id, RequisitionStatus.rejected, { 
+    return this.jobRequisitionRepository.updateStatus(id, REQUISITION_STATUS.REJECTED, { 
       approvedById: gmId, 
       rejectReason: reason 
     });
@@ -77,10 +79,10 @@ export class JobRequisitionService implements IJobRequisitionService {
     // Checking if authorized (could be HM or GM or HR)
     // For now we allow closure, but we could restrict it.
     
-    if (req.status === RequisitionStatus.closed) {
+    if (req.status === REQUISITION_STATUS.CLOSED) {
       throw new AppError("Requisition is already closed", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
     }
 
-    return this.jobRequisitionRepository.updateStatus(id, RequisitionStatus.closed);
+    return this.jobRequisitionRepository.updateStatus(id, REQUISITION_STATUS.CLOSED);
   }
 }
