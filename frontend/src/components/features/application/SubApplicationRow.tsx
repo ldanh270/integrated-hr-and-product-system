@@ -6,8 +6,10 @@ import apiClient from "@/lib/api-client"
 import { toast } from "sonner"
 import { Check, ChevronDown, ChevronRight, X } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { APPLICATION_STATUS, REGIME_TYPE, APPLICATION_TYPES } from "@/config/entities/attendance.config"
+import { APPLICATION_STATUS, APPLICATION_TYPES } from "@/config/entities/attendance.config"
 import type { IApplication } from "@/lib/api/application.api"
+import { formatDate } from "@/lib/utils"
+import { SubApplicationDetailFields } from "./SubApplicationDetailFields"
 
 // ─── Status badge config ──────────────────────────────────────
 
@@ -26,143 +28,7 @@ const PARTNER_STATUS_BADGE: Record<string, { label: string; cls: string }> = {
 
 // ─── Helpers ─────────────────────────────────────────────────
 
-export function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("vi-VN")
-}
 
-function formatShiftTime(minutes?: number) {
-  if (minutes === undefined) return "--:--"
-  const h = Math.floor(minutes / 60)
-  const m = minutes % 60
-  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`
-}
-
-function getShiftLabel(shift?: { name?: string; startTime?: number; endTime?: number } | null) {
-  if (!shift) return null
-  const time = `${formatShiftTime(shift.startTime)} - ${formatShiftTime(shift.endTime)}`
-  return shift.name ? `${shift.name} (${time})` : time
-}
-
-function Field({
-  label,
-  value,
-  span,
-  className,
-}: {
-  label: string
-  value: string | number | null | undefined
-  span?: boolean
-  className?: string
-}) {
-  return (
-    <div className={cn("flex flex-col gap-0.5", span && "col-span-full")}>
-      <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">{label}</span>
-      <span className={cn("text-sm font-medium text-foreground", className)}>{value}</span>
-    </div>
-  )
-}
-
-function DetailFields({ app }: { app: IApplication }) {
-  const swapDetail = (app.shiftSwapDetail || app.detail) as {
-    employeeShiftId?: string
-    employeeShift?: { shift?: { name?: string; startTime?: number; endTime?: number } }
-    swapWithEmployeeId?: string
-    swapWithEmployee?: { fullName?: string }
-    swapWithShiftId?: string
-    swapWithShift?: { shift?: { name?: string; startTime?: number; endTime?: number } }
-    partnerApprovalStatus?: string
-  } | undefined
-  const detail = app.detail as {
-    employeeShift?: { shift?: { name?: string; startTime?: number; endTime?: number } }
-    isLate?: boolean
-    durationMinutes?: number
-    location?: string
-    leaveType?: string
-    regimeType?: string
-  } | undefined
-
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-      {app.type === APPLICATION_TYPES.LEAVE.LABEL && (
-        <>
-          <Field label="Kiểu nghỉ" value={String(detail?.leaveType ?? "—")} />
-          <Field
-            label="Chế độ"
-            value={detail?.regimeType === REGIME_TYPE.PAID ? "Có lương" : "Không lương"}
-          />
-          <Field label="Từ ngày" value={formatDate(app.startDate)} />
-          <Field label="Đến ngày" value={formatDate(app.endDate)} />
-          {app.reason && <Field label="Lý do" value={app.reason} span />}
-        </>
-      )}
-
-      {app.type === APPLICATION_TYPES.SHIFT_SWAP.LABEL && (
-        <>
-          <Field label="Ngày" value={formatDate(app.startDate)} />
-          <Field
-            label="Ca của bạn"
-            value={getShiftLabel(swapDetail?.employeeShift?.shift) ?? swapDetail?.employeeShiftId ?? "—"}
-          />
-          {swapDetail?.swapWithEmployee && (
-            <Field label="Đổi với" value={swapDetail.swapWithEmployee.fullName ?? "—"} />
-          )}
-          {swapDetail?.swapWithShift && (
-            <Field label="Ca đổi" value={getShiftLabel(swapDetail.swapWithShift.shift) ?? "—"} />
-          )}
-          <Field
-            label="Phản hồi đối tác"
-            value={
-              swapDetail?.partnerApprovalStatus === "approved"
-                ? "Đã đồng ý"
-                : swapDetail?.partnerApprovalStatus === "rejected"
-                  ? "Đã từ chối"
-                  : "Đang chờ"
-            }
-          />
-        </>
-      )}
-
-      {app.type === APPLICATION_TYPES.OVERTIME.LABEL && (
-        <>
-          <Field label="Ngày tăng ca" value={formatDate(app.startDate)} />
-          <Field
-            label="Ca làm việc"
-            value={getShiftLabel(detail?.employeeShift?.shift) ?? "—"}
-          />
-          {app.reason && <Field label="Lý do" value={app.reason} span />}
-        </>
-      )}
-
-      {app.type === APPLICATION_TYPES.LATE_EARLY.LABEL && (
-        <>
-          <Field label="Ngày làm việc" value={formatDate(app.startDate)} />
-          <Field
-            label="Loại"
-            value={detail?.isLate ? "Đi muộn" : "Về sớm"}
-          />
-          <Field
-            label="Số phút"
-            value={`${detail?.durationMinutes ?? "—"} phút`}
-          />
-        </>
-      )}
-
-      {app.type === APPLICATION_TYPES.WORK_FROM_HOME.LABEL && (
-        <>
-          <Field label="Từ ngày" value={formatDate(app.startDate)} />
-          <Field label="Đến ngày" value={formatDate(app.endDate)} />
-          {detail?.location && (
-            <Field label="Hình thức" value={detail.location} />
-          )}
-        </>
-      )}
-
-      {app.rejectReason && (
-        <Field label="Lý do từ chối" value={app.rejectReason} span className="text-red-600" />
-      )}
-    </div>
-  )
-}
 
 export function SubApplicationRow({
   app,
@@ -294,7 +160,7 @@ export function SubApplicationRow({
       {/* Expanded detail */}
       {expanded && (
         <div className="px-4 pb-4 pt-2 border-t border-border bg-muted/5">
-          <DetailFields app={app} />
+          <SubApplicationDetailFields app={app} />
         </div>
       )}
     </div>
