@@ -3,10 +3,11 @@ import { SeedContext } from "@/scripts/seeders/seed-context.ts"
 import { ISeeder } from "@/scripts/seeders/seeder.interface.ts"
 import { registry } from "@/scripts/seeders/seeder.registry.ts"
 import { DEFAULT_PROJECT_TASK_STATUSES } from "@/configs/entities/project.config.ts"
+import { SEEDER_CONFIGS } from "@/configs/system/seeder.config.ts"
 
 export class ProjectTaskStatusesSeeder implements ISeeder {
-  readonly name = "ProjectTaskStatuses"
-  readonly order = 8.5
+  readonly name = SEEDER_CONFIGS.PROJECT_TASK_STATUSES.NAME
+  readonly order = SEEDER_CONFIGS.PROJECT_TASK_STATUSES.ORDER
 
   async run(context: SeedContext): Promise<Partial<SeedContext>> {
     console.log("  Seeding project task statuses...")
