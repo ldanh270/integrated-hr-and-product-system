@@ -1,0 +1,179 @@
+{
+  "info": {
+    "name": "PT Spent Time — API Test",
+    "description": "Part-time by-project workflow for PR Postman screenshots.\n\nSetup:\n1. Start backend (`bun run dev` in backend/) + seed data\n2. Set `baseUrl` = http://localhost:5000/api\n3. Run **Login PT** first (Postman stores `access_token` cookie automatically)\n4. Run **List Tasks** → copy a `taskId` into collection variable\n5. For approve/reject: run **Login Team Leader** then approval requests\n\nAccounts: part_time / team_leader — password Admin123@",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api" },
+    { "key": "taskId", "value": "" },
+    { "key": "projectId", "value": "" },
+    { "key": "spentTimeId", "value": "" },
+    { "key": "employeeId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "1. Login PT (part_time)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"part_time\",\n  \"password\": \"Admin123@\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "2. Login Team Leader",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"team_leader\",\n  \"password\": \"Admin123@\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tasks (get taskId)",
+      "item": [
+        {
+          "name": "3. List Tasks",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const task = body?.data?.items?.[0] || body?.data?.[0];",
+                  "if (task?.id) {",
+                  "  pm.collectionVariables.set('taskId', task.id);",
+                  "  if (task.projectId) pm.collectionVariables.set('projectId', task.projectId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/tasks?limit=5"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Spent Time — PT workflow",
+      "item": [
+        {
+          "name": "4. POST Log Spent Time (pending)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body?.data?.id) pm.collectionVariables.set('spentTimeId', body.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"taskId\": \"{{taskId}}\",\n  \"date\": \"2026-06-19\",\n  \"hours\": 2,\n  \"activity\": \"develop\",\n  \"workTimeType\": \"working_day\",\n  \"comment\": \"Postman test — PT log\"\n}"
+            },
+            "url": "{{baseUrl}}/spent-times"
+          }
+        },
+        {
+          "name": "5. GET List Spent Times (by project)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/spent-times?projectId={{projectId}}&status=pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["spent-times"],
+              "query": [
+                { "key": "projectId", "value": "{{projectId}}" },
+                { "key": "status", "value": "pending" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6. GET Spent Time by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/spent-times/{{spentTimeId}}"
+          }
+        },
+        {
+          "name": "7. PATCH Update Spent Time (pending only)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hours\": 2.5,\n  \"comment\": \"Updated via Postman\"\n}"
+            },
+            "url": "{{baseUrl}}/spent-times/{{spentTimeId}}"
+          }
+        },
+        {
+          "name": "8. POST Approve (login team_leader first)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/spent-times/{{spentTimeId}}/approve"
+          }
+        },
+        {
+          "name": "9. POST Reject (optional — new pending log)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Postman reject test\"\n}"
+            },
+            "url": "{{baseUrl}}/spent-times/{{spentTimeId}}/reject"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Project Member — PT rate/mode",
+      "item": [
+        {
+          "name": "10. GET Project Members",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/projects/{{projectId}}/members"
+          }
+        },
+        {
+          "name": "11. PATCH Update Member (hourlyRate + workMode)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hourlyRate\": 50000,\n  \"workMode\": \"remote\"\n}"
+            },
+            "url": "{{baseUrl}}/projects/{{projectId}}/members/{{employeeId}}"
+          }
+        }
+      ]
+    }
+  ]
+}
