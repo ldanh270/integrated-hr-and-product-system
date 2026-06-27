@@ -78,8 +78,8 @@ export class ApplicationBatchController {
         meta: {
           total: result.total,
           page: query.page,
-          limit: query.pageSize ?? 20,
-          totalPages: Math.ceil(result.total / (query.pageSize ?? 20)),
+          limit: query.pageSize,
+          totalPages: Math.ceil(result.total / query.pageSize),
         },
       })
     } catch (error) {
@@ -109,8 +109,8 @@ export class ApplicationBatchController {
         meta: {
           total: result.total,
           page: query.page,
-          limit: query.pageSize ?? 20,
-          totalPages: Math.ceil(result.total / (query.pageSize ?? 20)),
+          limit: query.pageSize,
+          totalPages: Math.ceil(result.total / query.pageSize),
         },
       })
     } catch (error) {

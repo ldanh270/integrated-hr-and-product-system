@@ -6,7 +6,7 @@ import apiClient from "@/lib/api-client"
 import { toast } from "sonner"
 import { Check, ChevronDown, ChevronRight, X } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { APPLICATION_STATUS, REGIME_TYPE } from "@/config/entities/attendance.config"
+import { APPLICATION_STATUS, REGIME_TYPE, APPLICATION_TYPES } from "@/config/entities/attendance.config"
 import type { IApplication } from "@/lib/api/application.api"
 
 // ─── Status badge config ──────────────────────────────────────
@@ -83,7 +83,7 @@ function DetailFields({ app }: { app: IApplication }) {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-      {app.type === "leave" && (
+      {app.type === APPLICATION_TYPES.LEAVE.LABEL && (
         <>
           <Field label="Kiểu nghỉ" value={String(detail?.leaveType ?? "—")} />
           <Field
@@ -96,7 +96,7 @@ function DetailFields({ app }: { app: IApplication }) {
         </>
       )}
 
-      {app.type === "shift_swap" && (
+      {app.type === APPLICATION_TYPES.SHIFT_SWAP.LABEL && (
         <>
           <Field label="Ngày" value={formatDate(app.startDate)} />
           <Field
@@ -122,7 +122,7 @@ function DetailFields({ app }: { app: IApplication }) {
         </>
       )}
 
-      {app.type === "overtime" && (
+      {app.type === APPLICATION_TYPES.OVERTIME.LABEL && (
         <>
           <Field label="Ngày tăng ca" value={formatDate(app.startDate)} />
           <Field
@@ -133,7 +133,7 @@ function DetailFields({ app }: { app: IApplication }) {
         </>
       )}
 
-      {app.type === "late_early" && (
+      {app.type === APPLICATION_TYPES.LATE_EARLY.LABEL && (
         <>
           <Field label="Ngày làm việc" value={formatDate(app.startDate)} />
           <Field
@@ -147,7 +147,7 @@ function DetailFields({ app }: { app: IApplication }) {
         </>
       )}
 
-      {app.type === "work_from_home" && (
+      {app.type === APPLICATION_TYPES.WORK_FROM_HOME.LABEL && (
         <>
           <Field label="Từ ngày" value={formatDate(app.startDate)} />
           <Field label="Đến ngày" value={formatDate(app.endDate)} />
@@ -183,7 +183,7 @@ export function SubApplicationRow({
   const queryClient = useQueryClient()
 
   const swapDetail = (app.shiftSwapDetail || app.detail) as Record<string, unknown> | undefined
-  const isShiftSwap = app.type === "shift_swap"
+  const isShiftSwap = app.type === APPLICATION_TYPES.SHIFT_SWAP.LABEL
   const isPartner =
     isShiftSwap &&
     swapDetail?.swapWithEmployeeId &&

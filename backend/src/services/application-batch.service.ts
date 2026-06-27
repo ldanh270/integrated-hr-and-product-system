@@ -30,14 +30,14 @@ interface IBatchResult {
 }
 
 const BATCH_SERVICE_ERRORS = {
-  NOT_BATCHABLE: (type: string) => `Application type '${type}' does not support batch submission`,
-  MIN_ITEMS: "Batch must contain at least one item",
-  NOT_FOUND: "Application batch not found",
-  CANCEL_FORBIDDEN: "Forbidden: You can only cancel your own batches",
+  NOT_BATCHABLE: (type: string) => `Loại đơn '${type}' không hỗ trợ gửi hàng loạt`,
+  MIN_ITEMS: "Danh sách phải chứa ít nhất một mục",
+  NOT_FOUND: "Không tìm thấy danh sách đơn",
+  CANCEL_FORBIDDEN: "Từ chối quyền: Bạn chỉ có thể hủy danh sách đơn của chính mình",
   INVALID_DATE_RANGE: (idx: number) =>
-    `Item ${idx + 1}: endDate must be greater than or equal to startDate`,
-  APPROVER_NOT_FOUND: (id: string) => `Assigned approver '${id}' not found`,
-  INVALID_APPROVER_ROLE: "The selected assignee does not have permission to approve applications",
+    `Mục ${idx + 1}: endDate phải lớn hơn hoặc bằng startDate`,
+  APPROVER_NOT_FOUND: (id: string) => `Không tìm thấy người duyệt có ID '${id}'`,
+  INVALID_APPROVER_ROLE: "Người được chọn không có quyền duyệt đơn",
 } as const
 
 const BATCH_NOTIFICATIONS = {

@@ -1,4 +1,4 @@
-import { APPLICATION_STATUS } from "@/config/entities/attendance.config"
+import { APPLICATION_STATUS, type IApplicationFilterStatus } from "@/config/entities/attendance.config"
 import {
   type IApplicationBatch,
   type IListBatchesQuery,
@@ -10,14 +10,14 @@ import { useCallback, useEffect, useRef, useState } from "react"
 
 import { toast } from "sonner"
 
-export type StatusFilter = "all" | "pending" | "approved" | "rejected" | "cancelled"
+
 
 interface UseManageApplicationsReturn {
   applications: IApplicationBatch[]
   isLoading: boolean
   isRefreshing: boolean
-  statusFilter: StatusFilter
-  setStatusFilter: (v: StatusFilter) => void
+  statusFilter: IApplicationFilterStatus
+  setStatusFilter: (v: IApplicationFilterStatus) => void
   typeFilter: string
   setTypeFilter: (v: string) => void
   keyword: string
@@ -43,7 +43,7 @@ export function useManageApplications(): UseManageApplicationsReturn {
   const [applications, setApplications] = useState<IApplicationBatch[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending") // Default to pending for managers
+  const [statusFilter, setStatusFilter] = useState<IApplicationFilterStatus>("pending") // Default to pending for managers
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [keyword, setKeyword] = useState<string>("")
   const [page, setPage] = useState(1)

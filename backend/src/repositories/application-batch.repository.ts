@@ -58,7 +58,6 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
     const { employeeId, type, assignedToId, items } = data
 
     return this.prisma.$transaction(async (tx) => {
-      // 1. Create the parent batch
       const batch = await tx.applicationBatch.create({
         data: {
           employeeId,
@@ -67,7 +66,6 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
         },
       })
 
-      // 2. Create each sub-application linked to the batch
       await Promise.all(
         items.map((item) =>
           tx.application.create({
@@ -87,7 +85,6 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
         ),
       )
 
-      // 3. Return the batch with all sub-applications
       return tx.applicationBatch.findUnique({
         where: { id: batch.id },
         include: BATCH_INCLUDE,
@@ -248,10 +245,10 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
     }
 
     if (query.keyword) {
-      const kw = query.keyword
+      const keyword = query.keyword
       where.OR = [
-        { id: { contains: kw, mode: "insensitive" } },
-        { employee: { fullName: { contains: kw, mode: "insensitive" } } },
+        { id: { contains: keyword, mode: "insensitive" } },
+        { employee: { fullName: { contains: keyword, mode: "insensitive" } } },
       ]
     }
 
