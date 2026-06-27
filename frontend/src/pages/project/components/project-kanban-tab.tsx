@@ -1,9 +1,4 @@
-import { useState } from "react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { projectTaskStatusApi } from "@/lib/api/project-task-status.api"
-import { taskApi } from "@/lib/api/task.api"
-import { extractErrorMessage } from "@/utils/error-helper"
-import { toast } from "sonner"
+import { useProjectKanban } from "../hooks/use-project-kanban"
 import { 
   Plus, 
   Settings, 
@@ -23,11 +18,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Link } from "react-router-dom"
-import { ROLE } from "@/config/entities/employee.config"
 
 import type { Task } from "@/types/task.types"
 import type { ProjectMember } from "@/types/project.types"
-import type { ProjectTaskStatus, CreateProjectTaskStatusDto, UpdateProjectTaskStatusDto } from "@/types/project-task-status.types"
 
 interface ProjectKanbanTabProps {
   projectId: string
@@ -49,330 +42,67 @@ export function ProjectKanbanTab({
   teamLeader,
   user,
 }: ProjectKanbanTabProps) {
-  const queryClient = useQueryClient()
-  const isLeader = teamLeader?.id === user?.id
-  const isAdminOrGM = user?.role === ROLE.ADMIN || user?.role === ROLE.GENERAL_MANAGER
-  const canManageStatuses = isAdminOrGM || isLeader
+  const {
+    canManageStatuses,
 
-  // Modal States
-  const [isAddColumnOpen, setIsAddColumnOpen] = useState(false)
-  const [isEditColumnOpen, setIsEditColumnOpen] = useState(false)
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
+    // Modal States
+    isAddColumnOpen,
+    setIsAddColumnOpen,
+    isEditColumnOpen,
+    setIsEditColumnOpen,
+    isDeleteConfirmOpen,
+    setIsDeleteConfirmOpen,
 
-  // Form States
-  const [columnName, setColumnName] = useState("")
-  const [columnColor, setColumnColor] = useState("#6366F1")
-  const [columnIsCompleted, setColumnIsCompleted] = useState(false)
-  const [columnIsDefault, setColumnIsDefault] = useState(false)
+    // Form States
+    columnName,
+    setColumnName,
+    columnColor,
+    setColumnColor,
+    columnIsCompleted,
+    setColumnIsCompleted,
+    columnIsDefault,
+    setColumnIsDefault,
 
-  // Selected Target States
-  const [selectedColumn, setSelectedColumn] = useState<ProjectTaskStatus | null>(null)
-  const [fallbackColumnId, setFallbackColumnId] = useState<string>("")
+    // Selected Target States
+    selectedColumn,
+    setSelectedColumn,
+    fallbackColumnId,
+    setFallbackColumnId,
 
-  // Fetch dynamic project statuses
-  const { data: statuses = [], isLoading: isLoadingStatuses } = useQuery({
-    queryKey: ["projectStatuses", projectId],
-    queryFn: () => projectTaskStatusApi.list(projectId),
-    enabled: !!projectId,
-  })
+    // Queries
+    statuses,
+    isLoadingStatuses,
+    isLoadingTasks,
+    tasks,
 
-  // Fetch tasks of this project
-  const { data: tasksData, isLoading: isLoadingTasks } = useQuery({
-    queryKey: ["tasks", "kanban", projectId],
-    queryFn: () => taskApi.list({ projectId, limit: 1000 }),
-    enabled: !!projectId,
-  })
+    // Mutations & Actions
+    createStatusMutation,
+    updateStatusMutation,
+    deleteStatusMutation,
+    resetForm,
+    handleCreateColumn,
+    handleUpdateColumn,
+    handleDeleteColumn,
 
-  const tasks = tasksData?.data || []
+    // Drag & Drop States
+    dragOverInfo,
+    setDragOverInfo,
+    draggingTaskId,
+    draggingColumnId,
+    dragOverColumnId,
+    setDragOverColumnId,
 
-  // Create Status Mutation
-  const createStatusMutation = useMutation({
-    mutationFn: (data: CreateProjectTaskStatusDto) => projectTaskStatusApi.create(projectId, data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["projectStatuses", projectId] })
-      toast.success("Đã tạo cột trạng thái mới")
-      setIsAddColumnOpen(false)
-      resetForm()
-    },
-    onError: (err: unknown) => {
-      toast.error(extractErrorMessage(err))
-    },
-  })
-
-  // Update Status Mutation
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateProjectTaskStatusDto }) => 
-      projectTaskStatusApi.update(projectId, id, data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["projectStatuses", projectId] })
-      void queryClient.invalidateQueries({ queryKey: ["tasks"] })
-      void queryClient.invalidateQueries({ queryKey: ["project-tasks", projectId] })
-      toast.success("Đã cập nhật trạng thái")
-      setIsEditColumnOpen(false)
-      resetForm()
-    },
-    onError: (err: unknown) => {
-      toast.error(extractErrorMessage(err))
-    },
-  })
-
-  // Delete Status Mutation
-  const deleteStatusMutation = useMutation({
-    mutationFn: ({ id, fallbackId }: { id: string; fallbackId?: string }) => 
-      projectTaskStatusApi.delete(projectId, id, fallbackId),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["projectStatuses", projectId] })
-      void queryClient.invalidateQueries({ queryKey: ["tasks"] })
-      void queryClient.invalidateQueries({ queryKey: ["project-tasks", projectId] })
-      toast.success("Đã xóa cột trạng thái")
-      setIsDeleteConfirmOpen(false)
-      resetForm()
-    },
-    onError: (err: unknown) => {
-      toast.error(extractErrorMessage(err))
-    },
-  })
-
-  // Move Task Mutation — Optimistic Update
-  // Card moves instantly on drop; rolls back automatically if API fails
-  const KANBAN_QUERY_KEY = ["tasks", "kanban", projectId] as const
-
-  const moveTaskMutation = useMutation({
-    mutationFn: ({ taskId, statusId }: { taskId: string; statusId: string | null }) =>
-      taskApi.update(taskId, { statusId }),
-
-    // 1. Immediately update the cache before the API call
-    onMutate: async ({ taskId, statusId }) => {
-      // Cancel any outgoing refetches so they don't overwrite optimistic update
-      await queryClient.cancelQueries({ queryKey: KANBAN_QUERY_KEY })
-
-      // Snapshot the previous value for rollback
-      const previousData = queryClient.getQueryData<{ data: Task[] }>(KANBAN_QUERY_KEY)
-
-      // Optimistically update the cache — move task to new statusId instantly
-      queryClient.setQueryData<{ data: Task[] }>(KANBAN_QUERY_KEY, (old) => {
-        if (!old) return old
-        return {
-          ...old,
-          data: old.data.map((t) =>
-            t.id === taskId ? { ...t, statusId } : t
-          ),
-        }
-      })
-
-      // Return snapshot so onError can rollback
-      return { previousData }
-    },
-
-    // 2. On API error: rollback to snapshot, show error
-    onError: (err: unknown, _vars, context) => {
-      if (context?.previousData) {
-        queryClient.setQueryData(KANBAN_QUERY_KEY, context.previousData)
-      }
-      toast.error(extractErrorMessage(err))
-    },
-
-    // 3. On settle (success or error): sync with server truth
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: KANBAN_QUERY_KEY })
-    },
-
-    onSuccess: () => {
-      toast.success("Đã di chuyển công việc")
-    },
-  })
-
-
-  const resetForm = () => {
-    setColumnName("")
-    setColumnColor("#6366F1")
-    setColumnIsCompleted(false)
-    setColumnIsDefault(false)
-    setSelectedColumn(null)
-    setFallbackColumnId("")
-  }
-
-  const handleCreateColumn = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!columnName.trim()) return
-    createStatusMutation.mutate({
-      name: columnName,
-      color: columnColor,
-      isCompleted: columnIsCompleted,
-      isDefault: columnIsDefault,
-    })
-  }
-
-  const handleUpdateColumn = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedColumn || !columnName.trim()) return
-    updateStatusMutation.mutate({
-      id: selectedColumn.id,
-      data: {
-        name: columnName,
-        color: columnColor,
-        isCompleted: columnIsCompleted,
-        isDefault: columnIsDefault,
-      },
-    })
-  }
-
-  const handleDeleteColumn = () => {
-    if (!selectedColumn) return
-    deleteStatusMutation.mutate({
-      id: selectedColumn.id,
-      fallbackId: fallbackColumnId || undefined,
-    })
-  }
-
-  // Drag state: track which card is being hovered and position (above/below)
-  const [dragOverInfo, setDragOverInfo] = useState<{ taskId: string; position: "top" | "bottom" } | null>(null)
-  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null)
-
-  // Column drag and drop states
-  const [draggingColumnId, setDraggingColumnId] = useState<string | null>(null)
-  const [dragOverColumnId, setDragOverColumnId] = useState<string | null>(null)
-
-  // Native Drag and Drop events for cards
-  const handleDragStart = (e: React.DragEvent, task: Task) => {
-    e.dataTransfer.setData("text/plain", task.id)
-    e.dataTransfer.effectAllowed = "move"
-    setDraggingTaskId(task.id)
-  }
-
-  const handleDragEnd = () => {
-    setDragOverInfo(null)
-    setDraggingTaskId(null)
-  }
-
-  // Called when dragging over a specific card — determines top/bottom half
-  const handleCardDragOver = (e: React.DragEvent, taskId: string) => {
-    if (draggingColumnId) return
-    e.preventDefault()
-    // NOTE: no stopPropagation — allow bubble so column body always handles drops
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-    const midY = rect.top + rect.height / 2
-    const position: "top" | "bottom" = e.clientY < midY ? "top" : "bottom"
-    setDragOverInfo({ taskId, position })
-  }
-
-  // Drop on a specific card (moves to that card's column, inserts near it)
-  const handleCardDrop = (e: React.DragEvent, targetTask: Task) => {
-    if (draggingColumnId) return
-    e.preventDefault()
-    e.stopPropagation()
-    const taskId = e.dataTransfer.getData("text/plain")
-    setDragOverInfo(null)
-    setDraggingTaskId(null)
-    if (taskId && taskId !== targetTask.id) {
-      const sourceTask = tasks.find((t) => t.id === taskId)
-      if (sourceTask && sourceTask.statusId !== targetTask.statusId) {
-        // Cross-column move: move to target card's column
-        moveTaskMutation.mutate({ taskId, statusId: targetTask.statusId })
-      }
-      // Same-column reorder: currently no order field in API, no-op for now
-    }
-  }
-
-  // Drop on the column container (empty area or below all cards)
-  const handleDrop = (e: React.DragEvent, targetStatusId: string) => {
-    e.preventDefault()
-    const taskId = e.dataTransfer.getData("text/plain")
-    setDragOverInfo(null)
-    setDraggingTaskId(null)
-    if (taskId) {
-      const task = tasks.find((t) => t.id === taskId)
-      if (task && task.statusId !== targetStatusId) {
-        moveTaskMutation.mutate({ taskId, statusId: targetStatusId })
-      }
-    }
-  }
-
-  // Column drag and drop event handlers
-  const handleColumnDragStart = (e: React.DragEvent, statusId: string) => {
-    if (!canManageStatuses) {
-      e.preventDefault()
-      return
-    }
-    e.dataTransfer.setData("columnId", statusId)
-    e.dataTransfer.effectAllowed = "move"
-    setDraggingColumnId(statusId)
-  }
-
-  const handleColumnDragEnd = () => {
-    setDraggingColumnId(null)
-    setDragOverColumnId(null)
-  }
-
-  const handleColumnDragOver = (e: React.DragEvent, statusId: string) => {
-    if (!draggingColumnId || draggingColumnId === statusId) return
-    e.preventDefault()
-    setDragOverColumnId(statusId)
-  }
-
-  const handleColumnDrop = (e: React.DragEvent, targetStatusId: string) => {
-    e.preventDefault()
-    const sourceStatusId = e.dataTransfer.getData("columnId") || draggingColumnId
-    setDragOverColumnId(null)
-    setDraggingColumnId(null)
-    if (sourceStatusId && sourceStatusId !== targetStatusId) {
-      void handleReorderColumns(sourceStatusId, targetStatusId)
-    }
-  }
-
-  // Persist column order changes on dragging column drop
-  const handleReorderColumns = async (sourceId: string, targetId: string) => {
-    const sourceIndex = statuses.findIndex((s) => s.id === sourceId)
-    const targetIndex = statuses.findIndex((s) => s.id === targetId)
-    if (sourceIndex === -1 || targetIndex === -1) return
-
-    // Reorder helper function
-    const reorder = <T,>(list: T[], startIndex: number, endIndex: number): T[] => {
-      const result = Array.from(list)
-      const [removed] = result.splice(startIndex, 1)
-      result.splice(endIndex, 0, removed)
-      return result
-    }
-
-    const reorderedStatuses = reorder(statuses, sourceIndex, targetIndex)
-    const updatedStatuses = reorderedStatuses.map((status, index) => ({
-      ...status,
-      order: index,
-    }))
-
-    const STATUSES_QUERY_KEY = ["projectStatuses", projectId] as const
-
-    // Cancel outgoing refetches
-    await queryClient.cancelQueries({ queryKey: STATUSES_QUERY_KEY })
-
-    // Snapshot the current list
-    const previousStatuses = queryClient.getQueryData<ProjectTaskStatus[]>(STATUSES_QUERY_KEY)
-
-    // Optimistic update
-    queryClient.setQueryData<ProjectTaskStatus[]>(STATUSES_QUERY_KEY, updatedStatuses)
-
-    // API updates (parallel requests only for columns whose order changed)
-    const promises = updatedStatuses
-      .filter((status) => {
-        const original = statuses.find((s) => s.id === status.id)
-        return !original || original.order !== status.order
-      })
-      .map((status) =>
-        projectTaskStatusApi.update(projectId, status.id, { order: status.order })
-      )
-
-    try {
-      await Promise.all(promises)
-      toast.success("Đã cập nhật thứ tự các cột")
-    } catch (error) {
-      if (previousStatuses) {
-        queryClient.setQueryData(STATUSES_QUERY_KEY, previousStatuses)
-      }
-      toast.error(extractErrorMessage(error))
-    } finally {
-      void queryClient.invalidateQueries({ queryKey: STATUSES_QUERY_KEY })
-    }
-  }
+    // Drag & Drop Handlers
+    handleDragStart,
+    handleDragEnd,
+    handleCardDragOver,
+    handleCardDrop,
+    handleDrop,
+    handleColumnDragStart,
+    handleColumnDragEnd,
+    handleColumnDragOver,
+    handleColumnDrop,
+  } = useProjectKanban({ projectId, teamLeader, user })
 
   if (isLoadingStatuses || isLoadingTasks) {
     return (
