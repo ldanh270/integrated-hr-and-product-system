@@ -3,6 +3,7 @@ import {
   LEAVE_BALANCE_DEFAULTS,
   PAID_LEAVE_TYPES,
   PARTNER_APPROVAL_STATUS,
+  EMPLOYEE_SHIFT_STATUS,
 } from "@/configs/entities/attendance.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { NOTIFICATION_TYPE } from "@/configs/entities/notification.config.ts"
@@ -179,6 +180,32 @@ class ShiftSwapStrategy extends BaseApplicationTypeStrategy {
   }
 }
 
+class ResignationStrategy extends BaseApplicationTypeStrategy {
+  async onApprove(app: AppWithDetails, deps: IStrategyDeps): Promise<void> {
+    if (!app.endDate) return
+
+    await prisma.$transaction(async (tx) => {
+      await tx.employee.update({
+        where: { id: app.employeeId },
+        data: {
+          status: EMPLOYEE_STATUS.INACTIVE,
+          endDate: app.endDate,
+        }
+      })
+      
+      await tx.projectMember.updateMany({
+        where: { employeeId: app.employeeId, removedAt: null },
+        data: { removedAt: app.endDate }
+      })
+      
+      await tx.employeeShift.updateMany({
+        where: { employeeId: app.employeeId, assignedDate: { gt: app.endDate } },
+        data: { status: EMPLOYEE_SHIFT_STATUS.CANCELLED }
+      })
+    })
+  }
+}
+
 class DefaultApplicationTypeStrategy extends BaseApplicationTypeStrategy {}
 
 // ─── Factory ──────────────────────────────────────────────────
@@ -193,6 +220,8 @@ export class ApplicationTypeStrategyFactory {
         return new LateEarlyStrategy()
       case APPLICATION_TYPES.SHIFT_SWAP.LABEL:
         return new ShiftSwapStrategy()
+      case APPLICATION_TYPES.RESIGNATION.LABEL:
+        return new ResignationStrategy()
       default:
         return new DefaultApplicationTypeStrategy()
     }
