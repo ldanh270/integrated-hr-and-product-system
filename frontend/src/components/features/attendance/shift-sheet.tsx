@@ -33,6 +33,7 @@ import { toast } from "sonner"
 import { z } from "zod"
 
 const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/
+// Min radius synced with backend ATTENDANCE_GPS_RULES — used by full-time + onsite PT geofence.
 const { MIN_GEOFENCE_RADIUS_METERS } = ATTENDANCE_GPS_RULES
 
 const formSchema = z.object({

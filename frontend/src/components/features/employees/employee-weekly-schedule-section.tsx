@@ -16,6 +16,7 @@ type WeeklyScheduleSectionState = ReturnType<typeof useEmployeeWeeklyScheduleSec
 
 interface EmployeeWeeklyScheduleSectionProps {
   section: WeeklyScheduleSectionState
+  /** Hidden for PART_TIME — they use project Spent Time, not company weekly templates. */
   hidden?: boolean
 }
 

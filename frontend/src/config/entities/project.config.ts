@@ -126,9 +126,7 @@ export const SPENT_TIME_ACTIVITIES = [
   SPENT_TIME_ACTIVITY.OTHER,
 ] as const
 
-/**
- * Spent time work time types
- */
+/** working_day = 1× rate; overtime = OT multiplier in PT payroll (see spent-time.config). */
 export const SPENT_TIME_WORK_TIME_TYPE = {
   WORKING_DAY: "working_day",
   OVERTIME: "overtime",
@@ -139,12 +137,12 @@ export const SPENT_TIME_WORK_TIME_TYPES = [
   SPENT_TIME_WORK_TIME_TYPE.OVERTIME,
 ] as const
 
+/** pending → lead review | approved → payroll | rejected → excluded from totals */
 export const SPENT_TIME_STATUS = {
   PENDING: "pending",
   APPROVED: "approved",
   REJECTED: "rejected",
 } as const
-// pending → lead review | approved → payroll | rejected → excluded from totals
 
 export const SPENT_TIME_STATUSES = [
   SPENT_TIME_STATUS.PENDING,
@@ -158,11 +156,11 @@ export const SPENT_TIME_STATUS_LABELS: Record<(typeof SPENT_TIME_STATUSES)[numbe
   [SPENT_TIME_STATUS.REJECTED]: "Từ chối",
 }
 
+/** remote: Spent Time only | onsite: one GPS check-in/day, then Spent Time */
 export const PROJECT_MEMBER_WORK_MODE = {
   REMOTE: "remote",
   ONSITE: "onsite",
 } as const
-// remote: log Spent Time only, no GPS | onsite: GPS check-in once/day, then Spent Time
 
 export const PROJECT_MEMBER_WORK_MODES = [
   PROJECT_MEMBER_WORK_MODE.REMOTE,

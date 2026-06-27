@@ -73,6 +73,7 @@ export class PrismaWorkingShiftRepository
     if (data.isActive !== undefined) updateData.isActive = data.isActive
 
     if (data.gps === null) {
+      // Explicit null clears geofence — used when HR removes GPS from a shift.
       updateData.gpsLat = null
       updateData.gpsLng = null
       updateData.gpsRadiusMeters = null

@@ -48,6 +48,7 @@ export interface ICreateShiftPayload {
   /** HH:MM format */
   endTime: string
   gracePeriodMinutes?: number
+  /** null clears GPS geofence when updating a working shift. */
   gps?: IGpsConfig | null
   isActive?: boolean
 }

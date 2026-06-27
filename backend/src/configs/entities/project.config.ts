@@ -100,7 +100,7 @@ export const SPENT_TIME_ACTIVITIES = [
 ] as const
 
 /**
- * Spent time work time types
+ * Spent time work time types — overtime uses SPENT_TIME_RULES.OVERTIME_MULTIPLIER in PT payroll.
  */
 export const SPENT_TIME_WORK_TIME_TYPE = {
   WORKING_DAY: "working_day",
@@ -112,10 +112,6 @@ export const SPENT_TIME_WORK_TIME_TYPES = [
   SPENT_TIME_WORK_TIME_TYPE.OVERTIME,
 ] as const
 
-/**
- * Spent time approval status
- * pending → lead review; approved → payroll-eligible; rejected → excluded from totals
- */
 /** pending → lead review | approved → payroll | rejected → excluded from totals */
 export const SPENT_TIME_STATUS = {
   PENDING: "pending",

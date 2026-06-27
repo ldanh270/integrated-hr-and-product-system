@@ -104,6 +104,7 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
 
       if (realShift.actualEndTime != null) {
         const checkInAt = record.checkInAt ?? checkOutAt
+        // Upsert: onsite PT may check out without a pre-created RealShift row from template shift.
         await tx.realShift.upsert({
           where: { attendanceRecordId: recordId },
           update: {

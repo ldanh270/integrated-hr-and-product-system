@@ -16,6 +16,7 @@ const weeklyScheduleTemplateRoutes = express.Router()
 const templateRepo = new PrismaWeeklyScheduleTemplateRepository(prisma)
 const scheduleRepo = new PrismaShiftScheduleRepository(prisma)
 const employeeShiftRepo = new PrismaEmployeeShiftRepository(prisma)
+// employeeRepo: WeeklyScheduleTemplateService blocks apply for PART_TIME (project Spent Time model).
 const employeeRepo = new PrismaEmployeeRepository(prisma)
 const service = new WeeklyScheduleTemplateService(
   templateRepo,

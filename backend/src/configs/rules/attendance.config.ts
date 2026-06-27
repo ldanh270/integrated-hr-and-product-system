@@ -9,5 +9,6 @@ export const ATTENDANCE_TIME_RULES = {
 export const ATTENDANCE_GPS_RULES = {
   EARTH_RADIUS_METERS: 6371000,
   DEGREES_TO_RADIANS_DIVISOR: 180,
+  /** Floor for shift geofence + onsite PT check-in — avoids GPS drift false negatives. */
   MIN_GEOFENCE_RADIUS_METERS: 10,
 } as const

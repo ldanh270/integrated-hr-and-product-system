@@ -5,9 +5,11 @@ import { z } from "zod"
 const gpsSchema = z.object({
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),
+  /** Same floor as shift UI — geofence for full-time shifts and onsite PT check-in. */
   radiusMeters: z.number().min(ATTENDANCE_GPS_RULES.MIN_GEOFENCE_RADIUS_METERS).optional(),
 })
 
+/** null clears GPS on PATCH; omitted leaves existing geofence unchanged. */
 const gpsFieldSchema = z.union([gpsSchema, z.null()]).optional()
 
 // ─── WORKING SHIFT ───────────────────────────────────────────
