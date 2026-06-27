@@ -119,7 +119,7 @@ export class PayrollService implements IPayrollService {
         continue
       }
 
-      // PT payroll path: approved project hours × member hourlyRate (not attendance workingDays).
+      // PT payroll branch: skip attendance workingDays — salary from approved SpentTime only.
       if (employee.employeeType === EMPLOYEE_TYPE.PART_TIME) {
         const ptResult = await this.buildPartTimePayslip(
           payroll.id,

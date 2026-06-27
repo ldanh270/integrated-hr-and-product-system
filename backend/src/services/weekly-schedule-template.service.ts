@@ -86,7 +86,7 @@ export class WeeklyScheduleTemplateService implements IWeeklyScheduleTemplateSer
 
     for (const employeeId of data.employeeIds) {
       const employee = await this.employeeRepo.findById(employeeId)
-      // PT follows per-project Spent Time, not weekly shift templates.
+      // PT uses per-project Spent Time, not company weekly shift templates.
       if (employee?.employeeType === EMPLOYEE_TYPE.PART_TIME) {
         throw new AppError(
           "Nhân viên part-time theo dự án, không áp dụng lịch tuần",

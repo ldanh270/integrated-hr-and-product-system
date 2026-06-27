@@ -153,6 +153,7 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
         comment: data.comment,
         activity: data.activity,
         workTimeType: data.workTimeType || SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY,
+        // Every new log awaits lead approval before it counts toward payroll.
         status: SPENT_TIME_STATUS.PENDING,
       },
       include: this.spentTimeInclude,

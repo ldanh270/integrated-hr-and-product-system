@@ -162,7 +162,7 @@ export const PROJECT_MEMBER_WORK_MODE = {
   REMOTE: "remote",
   ONSITE: "onsite",
 } as const
-// remote: Spent Time only | onsite: GPS check-in once per day, then Spent Time
+// remote: log Spent Time only, no GPS | onsite: GPS check-in once/day, then Spent Time
 
 export const PROJECT_MEMBER_WORK_MODES = [
   PROJECT_MEMBER_WORK_MODE.REMOTE,

@@ -40,6 +40,7 @@ interface AddMemberModalProps {
 
 const SELECT_NONE_VALUE = "none"
 
+/** Add employee to project with PT-specific hourlyRate and workMode (remote/onsite). */
 export function AddMemberModal({
   isOpen,
   onOpenChange,
@@ -51,6 +52,7 @@ export function AddMemberModal({
   const queryClient = useQueryClient()
   const [memberEmployeeId, setMemberEmployeeId] = useState(SELECT_NONE_VALUE)
   const [hourlyRate, setHourlyRate] = useState("")
+  // Default remote: PT logs Spent Time without GPS. TL can switch to onsite per project.
   const [workMode, setWorkMode] = useState<string>(PROJECT_MEMBER_WORK_MODE.REMOTE)
   const [memberError, setMemberError] = useState<string | null>(null)
 

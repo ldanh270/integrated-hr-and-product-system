@@ -29,7 +29,7 @@ import { extractErrorMessage } from "@/utils/error-helper"
 import type { Employee } from "@/types/employee.types"
 import type { ProjectMember } from "@/types/project.types"
 
-/** Edit hourlyRate / workMode after member is already on the project team. */
+/** Edit hourlyRate / workMode — workMode change toggles GPS requirement for onsite PT. */
 interface EditMemberModalProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void

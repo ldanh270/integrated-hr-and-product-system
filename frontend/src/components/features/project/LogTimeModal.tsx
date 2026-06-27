@@ -1,3 +1,8 @@
+/**
+ * Modal for PT (and project members) to log task hours.
+ * Creates pending SpentTime rows — lead must approve before payroll includes them.
+ * workTimeType=overtime applies OT multiplier; backend blocks edits after approval.
+ */
 import {
   SPENT_TIME_ACTIVITIES,
   SPENT_TIME_WORK_TIME_TYPES,
@@ -148,6 +153,7 @@ export default function LogTimeModal({
   }
 
   const parsedHours = parseFloat(hours)
+  // Client-side estimate warning; server enforces hard cap via SPENT_TIME_RULES.
   const remainingEstimate =
     estimatedTime != null && !Number.isNaN(parsedHours)
       ? estimatedTime - loggedHours + (spentTime?.hours ?? 0) - parsedHours

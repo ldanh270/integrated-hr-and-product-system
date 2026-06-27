@@ -69,7 +69,7 @@ export default function ProjectDetail() {
     enabled: !!projectId,
   })
 
-  // Fetch spent time records logs list
+  // All project Spent Time logs — used for overview totals and lead approval tab
   const { data: spentTimes, isLoading: isLoadingSpent } = useQuery({
     queryKey: ["spentTimes", "project", projectId],
     queryFn: () => taskApi.listSpentTimes({ projectId }),
@@ -290,6 +290,7 @@ export default function ProjectDetail() {
 
         {/* SPENT TIME TAB */}
         <TabsContent value="spent-time">
+          {/* Lead approval queue — only approved logs flow into PT payroll */}
           <ProjectSpentTimeTab
             projectId={projectId}
             spentTimes={spentTimes}

@@ -110,7 +110,7 @@ export default function TaskDetail() {
   // Capture project ID associated with this task
   const projectId = task?.projectId || ""
 
-  // 2. Query hook to fetch spent time records log belonging to this task
+  // 2. Query hook to fetch spent time records log belonging to this task (PT primary input)
   const { data: spentTimes, isLoading: isLoadingSpent } = useQuery({
     queryKey: ["spentTimes", id],
     queryFn: () => taskApi.listSpentTimes({ taskId: id }),
@@ -509,7 +509,7 @@ export default function TaskDetail() {
           </PageCard>
         </div>
 
-        {/* Right Side: Spent Time logs list */}
+        {/* Right Side: Spent Time logs — PT employees log here; lead approves before payroll */}
         <div className="col-span-12 lg:col-span-4 space-y-6">
           <PageCard className="p-6">
             <h3 className="font-bold text-base text-foreground mb-4 border-b border-border pb-2 flex items-center justify-between">

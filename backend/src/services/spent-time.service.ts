@@ -21,6 +21,12 @@ import { AppError } from "@/utils/error.util.ts"
 
 const LAYER_NAME = "SpentTimeService"
 
+/**
+ * Part-time project workflow (Spent Time):
+ * - PT logs hours on tasks → status pending → lead approves → payroll uses approved rows × hourlyRate.
+ * - Remote PT: no GPS; onsite PT: must check-in once per day before logging (see validateBusinessRules).
+ * - Full-time employees use weekly schedules + attendance; this service is the PT time source.
+ */
 export class SpentTimeService implements ISpentTimeService {
   constructor(
     private repository: ISpentTimeRepository,
@@ -166,6 +172,7 @@ export class SpentTimeService implements ISpentTimeService {
     const employeeId = data.employeeId ?? userId
     await this.validateBusinessRules(data.taskId, employeeId, data.hours, data.date)
 
+    // Repository persists status=pending; payroll only picks up after lead approval.
     return this.repository.create(data)
   }
 
@@ -245,6 +252,7 @@ export class SpentTimeService implements ISpentTimeService {
     userId: string,
     userRole: string,
   ): Promise<SpentTime> {
+    // Rejected logs are excluded from task totals and never reach payroll.
     const record = await this.repository.findById(id)
     if (!record) {
       throw new AppError("Spent time record not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)

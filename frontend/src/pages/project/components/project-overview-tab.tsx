@@ -186,6 +186,7 @@ export function ProjectOverviewTab({
                         </div>
                         {(member.hourlyRate != null || member.workMode) && (
                           <div className="text-[10px] text-muted-foreground mt-0.5">
+                            {/* PT: rate × approved hours = payroll; workMode drives GPS rules */}
                             {member.hourlyRate != null
                               ? `${member.hourlyRate.toLocaleString("vi-VN")} đ/giờ`
                               : null}

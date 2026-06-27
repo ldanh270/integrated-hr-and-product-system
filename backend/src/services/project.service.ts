@@ -253,6 +253,7 @@ export class ProjectService implements IProjectService {
       throw new AppError("Employee is already a member of this project", HttpStatusCode.CONFLICT, "ProjectService")
     }
 
+    // workMode: remote → Spent Time only | onsite → one GPS check-in/day then Spent Time.
     return this.repository.addMember(projectId, employeeId, options)
   }
 

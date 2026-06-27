@@ -347,6 +347,10 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
    * True when employee is an active onsite member of at least one project.
    * Used by attendance fallback to allow a single daily GPS check-in for onsite PT.
    */
+  /**
+   * True when PT employee belongs to at least one active onsite project.
+   * Used by AttendanceService to allow GPS fallback check-in (remote PT is blocked).
+   */
   async hasActiveOnsiteMembership(employeeId: string): Promise<boolean> {
     const count = await this.prisma.projectMember.count({
       where: {

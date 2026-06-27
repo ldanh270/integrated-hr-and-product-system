@@ -1,3 +1,7 @@
+/**
+ * UI constants for PT Spent Time screens (labels, toasts, filters).
+ * Business rules live in backend configs/rules/project.config.ts.
+ */
 import {
   SPENT_TIME_STATUS,
   SPENT_TIME_STATUSES,

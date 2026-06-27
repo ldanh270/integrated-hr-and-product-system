@@ -40,7 +40,7 @@ export const taskApi = {
     await apiClient.delete<ApiResponse<null>>(`/tasks/${id}`)
   },
 
-  // Spent Time APIs
+  // Spent Time APIs — PT workflow: log → pending → lead approve/reject → payroll
   listSpentTimes: async (query?: SpentTimeQuery): Promise<SpentTime[]> => {
     const response = await apiClient.get<ApiResponse<SpentTime[]>>("/spent-times", {
       params: query,
