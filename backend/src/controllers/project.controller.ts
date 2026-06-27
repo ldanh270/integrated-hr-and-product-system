@@ -166,9 +166,9 @@ export class ProjectController {
   }
 
   /**
-   * Adds a member to a project
-   * Only Admins, GMs, and the project's Team Leader can add members
-   * Validates that the employee exists and is not already a member
+   * Adds a member to a project.
+   * PT-specific: hourlyRate (payroll input) and workMode (remote = Spent Time only,
+   * onsite = GPS check-in once/day then Spent Time). Service enforces rate for PT.
    */
   addMember = async (req: AuthRequest, res: Response<ApiResponse<null>>) => {
     try {
@@ -224,6 +224,10 @@ export class ProjectController {
     res.status(HttpStatusCode.OK).json({ data: null, error: null })
   }
 
+  /**
+   * Updates PT member settings on a project (hourlyRate, workMode).
+   * workMode change toggles attendance rules without re-adding the member.
+   */
   updateMember = async (req: AuthRequest, res: Response<ApiResponse<null>>) => {
     try {
       if (!req.user) {
@@ -258,8 +262,7 @@ export class ProjectController {
   }
 
   /**
-   * Retrieves all members of a project
-   * User must have access to the project to view its members
+   * Retrieves all members of a project (includes hourlyRate/workMode for PT payroll setup).
    */
   getMembers = async (req: AuthRequest, res: Response<ApiResponse<any[]>>) => {
     if (!req.user) {
