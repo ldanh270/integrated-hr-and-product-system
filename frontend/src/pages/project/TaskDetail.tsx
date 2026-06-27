@@ -531,7 +531,7 @@ export default function TaskDetail() {
             </h3>
             {task.description ? (
               <SafeHtml 
-                html={task.description}
+                content={task.description}
                 className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground leading-relaxed"
               />
             ) : (
@@ -550,7 +550,7 @@ export default function TaskDetail() {
                 <div className="space-y-1">
                   <span className="text-xs font-semibold text-muted-foreground">Ghi chú kết quả:</span>
                   <SafeHtml 
-                    html={task.resultNotes}
+                    content={task.resultNotes}
                     className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground leading-relaxed bg-muted/30 p-3 rounded-lg border border-border/40"
                   />
                 </div>

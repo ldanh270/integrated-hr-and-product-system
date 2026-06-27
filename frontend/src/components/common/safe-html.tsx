@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react"
 import DOMPurify from "dompurify"
 
 interface SafeHtmlProps {
-  html: string
+  content: string
   className?: string
 }
 
@@ -68,17 +68,17 @@ const domToReact = (node: Node, keyIndex: number): React.ReactNode => {
   return null
 }
 
-export const SafeHtml: React.FC<SafeHtmlProps> = ({ html, className }) => {
+export const SafeHtml: React.FC<SafeHtmlProps> = ({ content, className }) => {
   const [reactNodes, setReactNodes] = useState<React.ReactNode[]>([])
 
   useEffect(() => { // lgtm[js/xss] // NOSONAR
-    if (!html) {
+    if (!content) {
       setReactNodes([])
       return
     }
 
     // 1. Sanitize raw HTML using DOMPurify
-    const sanitized = DOMPurify.sanitize(html) // lgtm[js/xss] // NOSONAR
+    const sanitized = DOMPurify.sanitize(content) // lgtm[js/xss] // NOSONAR
 
     // 2. Parse sanitized HTML string to a DOM document
     const parser = new DOMParser()
@@ -94,7 +94,7 @@ export const SafeHtml: React.FC<SafeHtmlProps> = ({ html, className }) => {
     })
 
     setReactNodes(nodes)
-  }, [html])
+  }, [content])
 
   return <div className={className}>{reactNodes}</div>
 }
