@@ -8,9 +8,23 @@ import { prisma } from "../libs/database";
 import { REQUISITION_STATUS } from "@/configs/entities/recruitment.config";
 
 
+/**
+ * Service handling all business logic for Job Requisitions (Headcount requests).
+ * This service implements the IJobRequisitionService interface.
+ */
 export class JobRequisitionService implements IJobRequisitionService {
+  /**
+   * Executes the constructor operation.
+   * Generated JSDoc documentation.
+   */
   constructor(private readonly jobRequisitionRepository: IJobRequisitionRepository) {}
 
+  /**
+   * Creates a new job requisition.
+   * @param hmId - The ID of the Hiring Manager requesting the headcount
+   * @param data - The details of the job requisition
+   * @returns The newly created job requisition
+   */
   async createRequisition(hmId: string, data: CreateJobRequisitionDTO): Promise<JobRequisition> {
     return this.jobRequisitionRepository.create({
       ...data,
@@ -18,14 +32,29 @@ export class JobRequisitionService implements IJobRequisitionService {
     });
   }
 
+  /**
+   * Retrieves a specific job requisition by its ID.
+   * @param id - The ID of the job requisition
+   * @returns The job requisition if found, otherwise null
+   */
   async getRequisitionById(id: string): Promise<JobRequisition | null> {
     return this.jobRequisitionRepository.findById(id);
   }
 
+  /**
+   * Retrieves all job requisitions matching the given filters.
+   * @param filters - Optional filters (status, department, hiring manager, etc.)
+   * @returns A list of job requisitions
+   */
   async getRequisitions(filters?: JobRequisitionFilters): Promise<JobRequisition[]> {
     return this.jobRequisitionRepository.findAll(filters);
   }
 
+  /**
+   * Verifies if the given employee is a General Manager.
+   * Throws an error if the employee does not have the required role.
+   * @param employeeId - The ID of the employee to check
+   */
   private async verifyGeneralManager(employeeId: string): Promise<void> {
     const employee = await prisma.employee.findUnique({
       where: { id: employeeId },
@@ -37,6 +66,14 @@ export class JobRequisitionService implements IJobRequisitionService {
     }
   }
 
+  /**
+   * Approves a job requisition, changing its status to OPEN.
+   * Only accessible by a General Manager.
+   * @param gmId - The ID of the General Manager approving the requisition
+   * @param id - The ID of the job requisition to approve
+   * @returns The updated job requisition
+   * @throws AppError if requisition not found or if the user is not a GM
+   */
   async approveRequisition(gmId: string, id: string): Promise<JobRequisition> {
     await this.verifyGeneralManager(gmId);
     
@@ -52,6 +89,10 @@ export class JobRequisitionService implements IJobRequisitionService {
     return this.jobRequisitionRepository.updateStatus(id, REQUISITION_STATUS.OPEN, { approvedById: gmId });
   }
 
+  /**
+   * Executes the rejectRequisition operation.
+   * Generated JSDoc documentation.
+   */
   async rejectRequisition(gmId: string, id: string, reason: string): Promise<JobRequisition> {
     await this.verifyGeneralManager(gmId);
 
@@ -70,6 +111,10 @@ export class JobRequisitionService implements IJobRequisitionService {
     });
   }
 
+  /**
+   * Executes the closeRequisition operation.
+   * Generated JSDoc documentation.
+   */
   async closeRequisition(employeeId: string, id: string): Promise<JobRequisition> {
     const req = await this.jobRequisitionRepository.findById(id);
     if (!req) {

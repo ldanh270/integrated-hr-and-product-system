@@ -9,9 +9,16 @@ import { BgcOverallStatus } from "@prisma/client";
 import { JOB_APPLICATION_STATUS } from "@/configs/entities/recruitment.config";
 
 
+/**
+ * Service class for handling Scheduler business logic.
+ */
 export class SchedulerService {
   private onboardingService: OnboardingService;
 
+  /**
+   * Executes the constructor operation.
+   * Generated JSDoc documentation.
+   */
   constructor() {
     this.onboardingService = new OnboardingService(
       new JobApplicationRepository(),

@@ -3,7 +3,14 @@ import { HttpStatusCode } from "../configs/system/http.config";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { IInterviewService } from "../types/recruitment/interview.types";
 
+/**
+ * Controller class for handling Interview HTTP requests.
+ */
 export class InterviewController {
+  /**
+   * Executes the constructor operation.
+   * Generated JSDoc documentation.
+   */
   constructor(private readonly interviewService: IInterviewService) {}
 
   public schedule = async (req: AuthRequest, res: Response) => {

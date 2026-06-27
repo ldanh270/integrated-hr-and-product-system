@@ -3,7 +3,14 @@ import { HttpStatusCode } from "../configs/system/http.config";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { IJobRequisitionService } from "../types/recruitment/job-requisition.types";
 
+/**
+ * Controller class for handling JobRequisition HTTP requests.
+ */
 export class JobRequisitionController {
+  /**
+   * Executes the constructor operation.
+   * Generated JSDoc documentation.
+   */
   constructor(private readonly jobRequisitionService: IJobRequisitionService) {}
 
   public create = async (req: AuthRequest, res: Response) => {

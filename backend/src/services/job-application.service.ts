@@ -15,13 +15,24 @@ import { CANDIDATE_COOLDOWN_MONTHS } from "../configs/entities/recruitment.confi
 import { REQUISITION_STATUS, JOB_APPLICATION_STATUS } from "@/configs/entities/recruitment.config";
 
 
+/**
+ * Service class for handling JobApplication business logic.
+ */
 export class JobApplicationService implements IJobApplicationService {
+  /**
+   * Executes the constructor operation.
+   * Generated JSDoc documentation.
+   */
   constructor(
     private readonly applicationRepository: IJobApplicationRepository,
     private readonly candidateRepository: ICandidateRepository,
     private readonly requisitionRepository: IJobRequisitionRepository
   ) {}
 
+  /**
+   * Executes the applyForJob operation.
+   * Generated JSDoc documentation.
+   */
   async applyForJob(data: ApplyJobDTO): Promise<JobApplication> {
     const requisition = await this.requisitionRepository.findById(data.requisitionId);
     if (!requisition || requisition.status !== REQUISITION_STATUS.OPEN) {
@@ -63,14 +74,26 @@ export class JobApplicationService implements IJobApplicationService {
     });
   }
 
+  /**
+   * Executes the getApplicationById operation.
+   * Generated JSDoc documentation.
+   */
   async getApplicationById(id: string): Promise<JobApplicationWithRelations | null> {
     return this.applicationRepository.findById(id);
   }
 
+  /**
+   * Executes the getApplications operation.
+   * Generated JSDoc documentation.
+   */
   async getApplications(filters?: JobApplicationFilters): Promise<JobApplicationWithRelations[]> {
     return this.applicationRepository.findAll(filters);
   }
 
+  /**
+   * Executes the updateApplicationStatus operation.
+   * Generated JSDoc documentation.
+   */
   async updateApplicationStatus(id: string, status: JobApplicationStatus): Promise<JobApplication> {
     const app = await this.applicationRepository.findById(id);
     if (!app) {
@@ -83,6 +106,10 @@ export class JobApplicationService implements IJobApplicationService {
     return this.applicationRepository.updateStatus(id, status);
   }
 
+  /**
+   * Executes the updateKanbanOrder operation.
+   * Generated JSDoc documentation.
+   */
   async updateKanbanOrder(id: string, newOrder: number): Promise<JobApplication> {
     const app = await this.applicationRepository.findById(id);
     if (!app) {
@@ -92,6 +119,10 @@ export class JobApplicationService implements IJobApplicationService {
     return this.applicationRepository.updateKanbanOrder(id, newOrder);
   }
 
+  /**
+   * Executes the rejectApplication operation.
+   * Generated JSDoc documentation.
+   */
   async rejectApplication(id: string, reason: string): Promise<JobApplication> {
     const app = await this.applicationRepository.findById(id);
     if (!app) {

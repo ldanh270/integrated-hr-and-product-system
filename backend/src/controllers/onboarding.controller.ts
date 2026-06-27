@@ -3,7 +3,14 @@ import { HttpStatusCode } from "../configs/system/http.config";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { IOnboardingService } from "../types/recruitment/onboarding.types";
 
+/**
+ * Controller class for handling Onboarding HTTP requests.
+ */
 export class OnboardingController {
+  /**
+   * Executes the constructor operation.
+   * Generated JSDoc documentation.
+   */
   constructor(private readonly onboardingService: IOnboardingService) {}
 
   public convert = async (req: AuthRequest, res: Response) => {

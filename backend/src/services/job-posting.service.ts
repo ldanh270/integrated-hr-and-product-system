@@ -7,12 +7,23 @@ import { IJobRequisitionRepository } from "../types/recruitment/job-requisition.
 import { REQUISITION_STATUS, POSTING_STATUS } from "@/configs/entities/recruitment.config";
 
 
+/**
+ * Service class for handling JobPosting business logic.
+ */
 export class JobPostingService implements IJobPostingService {
+  /**
+   * Executes the constructor operation.
+   * Generated JSDoc documentation.
+   */
   constructor(
     private readonly jobPostingRepository: IJobPostingRepository,
     private readonly jobRequisitionRepository: IJobRequisitionRepository
   ) {}
 
+  /**
+   * Executes the createPosting operation.
+   * Generated JSDoc documentation.
+   */
   async createPosting(employeeId: string, requisitionId: string, data: CreateJobPostingDTO): Promise<JobPosting> {
     const requisition = await this.jobRequisitionRepository.findById(requisitionId);
     
@@ -31,14 +42,26 @@ export class JobPostingService implements IJobPostingService {
     });
   }
 
+  /**
+   * Executes the getPostingById operation.
+   * Generated JSDoc documentation.
+   */
   async getPostingById(id: string): Promise<JobPosting | null> {
     return this.jobPostingRepository.findById(id);
   }
 
+  /**
+   * Executes the getPostings operation.
+   * Generated JSDoc documentation.
+   */
   async getPostings(filters?: JobPostingFilters): Promise<JobPosting[]> {
     return this.jobPostingRepository.findAll(filters);
   }
 
+  /**
+   * Executes the updatePostingStatus operation.
+   * Generated JSDoc documentation.
+   */
   async updatePostingStatus(id: string, status: PostingStatus): Promise<JobPosting> {
     const posting = await this.jobPostingRepository.findById(id);
     if (!posting) {
@@ -48,6 +71,10 @@ export class JobPostingService implements IJobPostingService {
     return this.jobPostingRepository.updateStatus(id, status);
   }
 
+  /**
+   * Executes the publishToChannel operation.
+   * Generated JSDoc documentation.
+   */
   async publishToChannel(id: string, source: CandidateSource, url?: string): Promise<JobPostingChannel> {
     const posting = await this.jobPostingRepository.findById(id);
     if (!posting) {

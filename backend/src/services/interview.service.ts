@@ -15,13 +15,24 @@ import { emailService } from "./email.service";
 import { INTERVIEW_STATUS, INTERVIEW_RESULT } from "@/configs/entities/recruitment.config";
 
 
+/**
+ * Service class for handling Interview business logic.
+ */
 export class InterviewService implements IInterviewService {
+  /**
+   * Executes the constructor operation.
+   * Generated JSDoc documentation.
+   */
   constructor(
     private readonly roundRepository: IInterviewRoundRepository,
     private readonly scorecardRepository: IInterviewScorecardRepository,
     private readonly applicationRepository: IJobApplicationRepository
   ) {}
 
+  /**
+   * Executes the scheduleRound operation.
+   * Generated JSDoc documentation.
+   */
   async scheduleRound(leadInterviewerId: string, data: CreateInterviewRoundDTO, interviewerIds: string[]): Promise<InterviewRound> {
     const app = await this.applicationRepository.findById(data.applicationId);
     if (!app) {
@@ -61,10 +72,18 @@ export class InterviewService implements IInterviewService {
     return this.roundRepository.findById(round.id) as Promise<InterviewRound>;
   }
 
+  /**
+   * Executes the getRoundById operation.
+   * Generated JSDoc documentation.
+   */
   async getRoundById(id: string): Promise<InterviewRound | null> {
     return this.roundRepository.findById(id);
   }
 
+  /**
+   * Executes the submitScorecard operation.
+   * Generated JSDoc documentation.
+   */
   async submitScorecard(interviewerId: string, data: SubmitScorecardDTO): Promise<InterviewScorecard> {
     const round = await this.roundRepository.findById(data.roundId);
     if (!round) {
@@ -92,6 +111,10 @@ export class InterviewService implements IInterviewService {
     return scorecard;
   }
 
+  /**
+   * Executes the evaluateRoundResult operation.
+   * Generated JSDoc documentation.
+   */
   async evaluateRoundResult(roundId: string): Promise<InterviewRound> {
     const round = await this.roundRepository.findById(roundId);
     if (!round) {

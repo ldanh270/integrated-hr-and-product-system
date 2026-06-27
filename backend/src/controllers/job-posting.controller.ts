@@ -4,7 +4,14 @@ import { AuthRequest } from "../middlewares/auth.middleware";
 import { IJobPostingService } from "../types/recruitment/job-posting.types";
 import { PostingStatus } from "@prisma/client";
 
+/**
+ * Controller class for handling JobPosting HTTP requests.
+ */
 export class JobPostingController {
+  /**
+   * Executes the constructor operation.
+   * Generated JSDoc documentation.
+   */
   constructor(private readonly jobPostingService: IJobPostingService) {}
 
   public create = async (req: AuthRequest, res: Response) => {

@@ -12,12 +12,23 @@ import { IOfferRepository } from "../types/recruitment/offer.types";
 import { JOB_APPLICATION_STATUS } from "@/configs/entities/recruitment.config";
 
 
+/**
+ * Service class for handling Onboarding business logic.
+ */
 export class OnboardingService implements IOnboardingService {
+  /**
+   * Executes the constructor operation.
+   * Generated JSDoc documentation.
+   */
   constructor(
     private readonly applicationRepository: IJobApplicationRepository,
     private readonly offerRepository: IOfferRepository
   ) {}
 
+  /**
+   * Executes the convertCandidateToEmployee operation.
+   * Generated JSDoc documentation.
+   */
   async convertCandidateToEmployee(applicationId: string, data: ConvertToEmployeeDTO): Promise<Employee> {
     const app = await this.applicationRepository.findById(applicationId);
     if (!app) {
