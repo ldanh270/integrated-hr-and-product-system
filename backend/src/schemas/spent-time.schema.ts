@@ -1,3 +1,4 @@
+/** Zod boundary for PT spent-time API — logs start pending; workTimeType affects OT payroll multiplier. */
 import { SPENT_TIME_ACTIVITIES, SPENT_TIME_STATUSES, SPENT_TIME_WORK_TIME_TYPES } from "@/configs/entities/project.config.ts"
 import { z } from "zod"
 
@@ -15,6 +16,7 @@ export const createSpentTimeSchema = z
       .max(24, "Hours cannot exceed 24 hours per day"),
     comment: z.string().max(255, "Comment too long").trim().optional().nullable(),
     activity: z.enum(SPENT_TIME_ACTIVITIES),
+    // working_day = 1× rate; overtime = SPENT_TIME_RULES.OVERTIME_MULTIPLIER in payroll.
     workTimeType: z.enum(SPENT_TIME_WORK_TIME_TYPES).optional().default("working_day"),
   })
   .strict()

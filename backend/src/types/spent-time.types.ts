@@ -14,9 +14,7 @@ export type SpentTimeActivity = (typeof SPENT_TIME_ACTIVITIES)[number]
  */
 export type SpentTimeWorkTimeType = (typeof SPENT_TIME_WORK_TIME_TYPES)[number]
 
-/**
- * Approval status for spent time logs
- */
+/** pending → lead review | approved → payroll | rejected → excluded from totals */
 export type SpentTimeStatus = (typeof SPENT_TIME_STATUSES)[number]
 
 /**
@@ -94,6 +92,7 @@ export interface SpentTimeQuery {
   endDate?: string
 }
 
+/** Flat row for PayrollService: approved hours × member hourlyRate × OT multiplier per project. */
 export interface ApprovedSpentTimePayrollRow {
   id: string
   employeeId: string

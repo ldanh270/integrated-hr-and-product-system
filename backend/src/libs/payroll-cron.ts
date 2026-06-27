@@ -13,6 +13,7 @@ const payrollRepo = new PrismaPayrollRepository(prisma)
 const payslipRepo = new PrismaPayslipRepository(prisma)
 const configRepo = new PrismaEmployeeSalaryConfigRepository(prisma)
 const attendanceRepo = new PrismaAttendanceRepository(prisma)
+// Monthly cron includes PT employees via approved spent-time rows (see PayrollService).
 const spentTimeRepo = new PrismaSpentTimeRepository(prisma)
 const employeeRepo = new PrismaEmployeeRepository(prisma)
 const settingsRepo = {

@@ -116,6 +116,7 @@ export const SPENT_TIME_WORK_TIME_TYPES = [
  * Spent time approval status
  * pending → lead review; approved → payroll-eligible; rejected → excluded from totals
  */
+/** pending → lead review | approved → payroll | rejected → excluded from totals */
 export const SPENT_TIME_STATUS = {
   PENDING: "pending",
   APPROVED: "approved",

@@ -61,6 +61,7 @@ export function EditMemberModal({
     }
   }, [member, isOpen])
 
+  // Rate/mode changes apply on next payroll run; workMode flips GPS requirement immediately.
   const updateMemberMutation = useMutation({
     mutationFn: async () => {
       if (!member) throw new Error("Không tìm thấy thành viên")

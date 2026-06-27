@@ -195,6 +195,7 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
     return result._sum.hours ?? 0
   }
 
+  /** Marks log approved — only approved rows are queried by listApprovedForPayroll. */
   async approve(id: string, approverId: string): Promise<SpentTime | null> {
     const record = await this.prisma.spentTime.update({
       where: { id },
@@ -209,6 +210,7 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
     return this.mapToDomain(record)
   }
 
+  /** Rejected logs stay visible for audit but are excluded from payroll and sumTaskHours. */
   async reject(id: string, approverId: string, reason: string): Promise<SpentTime | null> {
     const record = await this.prisma.spentTime.update({
       where: { id },
@@ -223,6 +225,7 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
     return this.mapToDomain(record)
   }
 
+  /** Approved PT hours in pay period — joined with project member hourlyRate. */
   async listApprovedForPayroll(
     employeeId: string,
     startDate: Date,

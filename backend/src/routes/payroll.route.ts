@@ -22,6 +22,7 @@ const payrollRepo = new PrismaPayrollRepository(prisma)
 const payslipRepo = new PrismaPayslipRepository(prisma)
 const configRepo = new PrismaEmployeeSalaryConfigRepository(prisma)
 const attendanceRepo = new PrismaAttendanceRepository(prisma)
+// PT payroll lines come from approved Spent Time × project member hourlyRate, not attendance.
 const spentTimeRepo = new PrismaSpentTimeRepository(prisma)
 const employeeRepo = new PrismaEmployeeRepository(prisma)
 const settingsRepo = {

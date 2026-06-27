@@ -6,6 +6,7 @@ import {
 
 export type SpentTimeActivity = (typeof SPENT_TIME_ACTIVITIES)[number]
 export type SpentTimeWorkTimeType = (typeof SPENT_TIME_WORK_TIME_TYPES)[number]
+/** pending → lead review | approved → payroll | rejected → excluded from totals */
 export type SpentTimeStatus = (typeof SPENT_TIME_STATUSES)[number]
 
 export interface SpentTime {

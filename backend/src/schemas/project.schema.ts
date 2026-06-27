@@ -88,6 +88,7 @@ export const listProjectsQuerySchema = z.object({
 
 export type ListProjectsQuerySchemaType = z.infer<typeof listProjectsQuerySchema>
 
+/** POST member — hourlyRate required for PT payroll; workMode toggles onsite GPS check-in. */
 export const addProjectMemberSchema = z
   .object({
     employeeId: z.string().min(1, "Employee ID is required"),

@@ -47,6 +47,7 @@ export const projectApi = {
     return response.data.data
   },
 
+  /** hourlyRate + workMode set PT payroll rate and onsite vs remote attendance rules. */
   addMember: async (
     projectId: string,
     data: { employeeId: string; hourlyRate?: number | null; workMode?: string },

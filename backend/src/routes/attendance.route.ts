@@ -22,6 +22,7 @@ const scheduleRepo = new PrismaShiftScheduleRepository(prisma)
 const holidayRepo = new PrismaHolidayRepository(prisma)
 const workingShiftRepo = new PrismaWorkingShiftRepository(prisma)
 const employeeRepo = new PrismaEmployeeRepository(prisma)
+// Onsite PT: AttendanceService checks active onsite project membership before GPS check-in.
 const projectRepo = new PrismaProjectRepository(prisma)
 
 const service = new AttendanceService(

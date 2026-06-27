@@ -239,9 +239,8 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
   }
 
   /**
-   * Adds an employee as a member to a project
-   * Uses upsert to restore deleted members or create new ones
-   * Returns true if successful
+   * Adds an employee as a project member (upsert restores soft-removed rows).
+   * hourlyRate + workMode apply to PT members: rate drives payroll, workMode drives GPS rules.
    */
   async addMember(
     projectId: string,

@@ -115,6 +115,7 @@ export interface IProjectRepository {
   createProject(data: CreateProjectDto & { createdById: string }): Promise<Project>
   updateProject(id: string, data: UpdateProjectDto): Promise<Project | null>
   deleteProject(id: string): Promise<boolean>
+  /** PT: hourlyRate + workMode stored per project membership (not on Employee). */
   addMember(
     projectId: string,
     employeeId: string,
@@ -128,6 +129,7 @@ export interface IProjectRepository {
   ): Promise<{ hourlyRate: number | null; workMode: string } | null>
   getMembers(projectId: string): Promise<any[]>
   getGanttData(projectId: string): Promise<GanttDataDto>
+  /** Onsite PT only — AttendanceService uses this to allow GPS check-in. */
   hasActiveOnsiteMembership(employeeId: string): Promise<boolean>
   updateMember(
     projectId: string,
