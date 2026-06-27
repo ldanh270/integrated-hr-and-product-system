@@ -40,6 +40,7 @@ import { employeeApi } from "@/lib/api/employee.api"
 import { projectApi } from "@/lib/api/project.api"
 // Import authentication global store
 import { useAuthStore } from "@/store/auth-store"
+import { ROUTES } from "@/config/routes.config"
 // Import React Query utilities for data handling and server mutations
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 // Import Lucide visual icons
@@ -277,7 +278,7 @@ export default function ProjectList() {
                       <button
                         onClick={() => {
                           sessionStorage.setItem("activeProjectId", proj.id)
-                          navigate("/project/overview")
+                          navigate(ROUTES.PROJECT.OVERVIEW)
                         }}
                         className="text-primary hover:underline font-bold text-sm text-left cursor-pointer"
                       >

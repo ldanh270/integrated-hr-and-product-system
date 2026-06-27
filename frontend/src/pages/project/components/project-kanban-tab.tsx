@@ -1,4 +1,5 @@
 import { useProjectKanban } from "../hooks/use-project-kanban"
+import { ROUTES } from "@/config/routes.config"
 import { 
   Plus, 
   Settings, 
@@ -325,7 +326,7 @@ export function ProjectKanbanTab({
                         </div>
 
                         <Link 
-                          to={`/project/task/${task.id}`}
+                          to={`${ROUTES.PROJECT.TASK_DETAIL}/${task.id}`}
                           className="block text-xs font-bold text-foreground group-hover/card:text-primary transition-colors line-clamp-2 hover:underline"
                         >
                           {task.title}
