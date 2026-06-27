@@ -1,4 +1,5 @@
 import { EMPLOYEE_TYPE } from "@/configs/entities/employee.config.ts"
+import { WEEKLY_SCHEDULE_MESSAGES } from "@/configs/messages/weekly-schedule.message.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { IEmployeeShiftRepository, IShiftScheduleRepository } from "@/types/shift.types.ts"
 import { IEmployeeRepository } from "@/types/employee.types.ts"
@@ -91,7 +92,7 @@ export class WeeklyScheduleTemplateService implements IWeeklyScheduleTemplateSer
       // PT uses per-project Spent Time, not company weekly shift templates.
       if (employee?.employeeType === EMPLOYEE_TYPE.PART_TIME) {
         throw new AppError(
-          "Nhân viên part-time theo dự án, không áp dụng lịch tuần",
+          WEEKLY_SCHEDULE_MESSAGES.PART_TIME_NOT_APPLICABLE,
           HttpStatusCode.UNPROCESSABLE_ENTITY,
           "service",
         )

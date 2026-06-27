@@ -20,6 +20,10 @@ interface EmployeeWeeklyScheduleSectionProps {
   hidden?: boolean
 }
 
+/**
+ * Weekly shift template picker in employee edit drawer.
+ * PART_TIME employees skip this block — hours are tracked via project Spent Time instead.
+ */
 export function EmployeeWeeklyScheduleSection({ section, hidden }: EmployeeWeeklyScheduleSectionProps) {
   if (hidden) return null
 
