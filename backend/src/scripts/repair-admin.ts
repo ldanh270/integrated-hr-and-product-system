@@ -1,5 +1,6 @@
 import { EMPLOYEE_STATUS } from "../configs/entities/employee.config.ts"
 import { prisma } from "../libs/database.ts"
+import { getSeedPassword } from "./seeders/seed-password.util.ts"
 import { HashUtil } from "../utils/hash.util.ts"
 
 async function runRepair() {
@@ -61,7 +62,7 @@ async function runRepair() {
       })
     } else {
       console.log("Creating new fallback admin employee...")
-      const passwordHash = await HashUtil.hash("AdminPassword123!")
+      const passwordHash = await HashUtil.hash(getSeedPassword("SEED_CORE_ACCOUNTS_PASSWORD"))
       adminEmployee = await prisma.employee.create({
         data: {
           fullName: "System Administrator",
@@ -71,7 +72,7 @@ async function runRepair() {
           status: EMPLOYEE_STATUS.ACTIVE,
         },
       })
-      console.log("Created fallback admin: username 'admin', password 'AdminPassword123!'")
+      console.log("Created fallback admin: username 'admin', password from SEED_CORE_ACCOUNTS_PASSWORD")
     }
 
     // Ensure EmployeeRole mapping exists

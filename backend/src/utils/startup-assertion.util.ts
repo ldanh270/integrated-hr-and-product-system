@@ -1,10 +1,26 @@
 import fs from "fs"
 import path from "path"
 import { prisma } from "@/libs/database.ts"
-import { HashUtil } from "@/utils/hash.util.ts"
 import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
+import { getSeedPassword } from "@/scripts/seeders/seed-password.util.ts"
+import { HashUtil } from "@/utils/hash.util.ts"
 
 const employeeRepository = new PrismaEmployeeRepository(prisma)
+
+/**
+ * Resolves a child entry and rejects paths that escape the current scan directory.
+ */
+function resolveChildPath(parentDir: string, childName: string): string | null {
+  const baseDir = path.resolve(parentDir)
+  const candidatePath = path.resolve(baseDir, childName)
+  const allowedPrefix = `${baseDir}${path.sep}`
+
+  if (candidatePath === baseDir || candidatePath.startsWith(allowedPrefix)) {
+    return candidatePath
+  }
+
+  return null
+}
 
 /**
  * Strips comments from a TypeScript source file content.
@@ -29,7 +45,11 @@ export function countStaticRoleReferences(): { total: number; details: string[] 
   function scan(dir: string) {
     const files = fs.readdirSync(dir, { withFileTypes: true })
     for (const file of files) {
-      const fullPath = path.join(dir, file.name)
+      const fullPath = resolveChildPath(dir, file.name)
+      if (!fullPath) {
+        continue
+      }
+
       if (file.isDirectory()) {
         // Skip scripts/seeders directory and tests
         if (file.name === "scripts" || file.name === "test" || file.name === "__tests__") {
@@ -54,12 +74,15 @@ export function countStaticRoleReferences(): { total: number; details: string[] 
         const legacyRoleMatches = cleanContent.match(/\bLegacyRole\b/g)
         const reqUserRoleMatches = cleanContent.match(/req\.user\.role\b/g)
 
-        const fileMatches = (roleMatches?.length || 0) + (legacyRoleMatches?.length || 0) + (reqUserRoleMatches?.length || 0)
+        const fileMatches =
+          (roleMatches?.length || 0) +
+          (legacyRoleMatches?.length || 0) +
+          (reqUserRoleMatches?.length || 0)
         if (fileMatches > 0) {
           total += fileMatches
           const relativePath = path.relative(srcDir, fullPath)
           details.push(
-            `File: ${relativePath} (${roleMatches?.length || 0} ROLE., ${legacyRoleMatches?.length || 0} LegacyRole, ${reqUserRoleMatches?.length || 0} req.user.role)`
+            `File: ${relativePath} (${roleMatches?.length || 0} ROLE., ${legacyRoleMatches?.length || 0} LegacyRole, ${reqUserRoleMatches?.length || 0} req.user.role)`,
           )
         }
       }
@@ -81,7 +104,7 @@ export async function bootstrapAdmin(): Promise<void> {
     return
   }
 
-  console.warn("⚠️ No active administrators found in the database. Bootstrapping fail-safe admin...")
+  console.warn("No active administrators found in the database. Bootstrapping fail-safe admin...")
 
   // Ensure administrative dynamic role 'admin' exists
   let adminRole = await prisma.appRole.findFirst({
@@ -98,13 +121,13 @@ export async function bootstrapAdmin(): Promise<void> {
         isActive: true,
       },
     })
-    console.log(`[✓] Created system role 'admin'.`)
+    console.log("[created] system role 'admin'.")
   } else if (!adminRole.isAdministrative) {
     await prisma.appRole.update({
       where: { id: adminRole.id },
       data: { isAdministrative: true },
     })
-    console.log(`[✓] Updated system role 'admin' to be administrative.`)
+    console.log("[updated] system role 'admin' to administrative.")
   }
 
   // Ensure active employee 'admin' exists
@@ -113,7 +136,8 @@ export async function bootstrapAdmin(): Promise<void> {
   })
 
   if (!adminEmployee) {
-    const defaultPasswordHash = await HashUtil.hash("Admin@123")
+    const defaultPassword = getSeedPassword("SEED_CORE_ACCOUNTS_PASSWORD")
+    const defaultPasswordHash = await HashUtil.hash(defaultPassword)
     adminEmployee = await prisma.employee.create({
       data: {
         fullName: "System Administrator",
@@ -124,13 +148,13 @@ export async function bootstrapAdmin(): Promise<void> {
         position: "Administrator",
       },
     })
-    console.log(`[✓] Created employee 'admin' (password: Admin@123).`)
+    console.log("[created] employee 'admin' with password from SEED_CORE_ACCOUNTS_PASSWORD.")
   } else if (adminEmployee.status !== "active") {
     adminEmployee = await prisma.employee.update({
       where: { id: adminEmployee.id },
       data: { status: "active" },
     })
-    console.log(`[✓] Reactivated employee 'admin'.`)
+    console.log("[updated] employee 'admin' reactivated.")
   }
 
   // Ensure employee-role mapping exists
@@ -150,8 +174,8 @@ export async function bootstrapAdmin(): Promise<void> {
         roleId: adminRole.id,
       },
     })
-    console.log(`[✓] Linked employee 'admin' to 'admin' role.`)
+    console.log("[created] employee-role mapping for admin.")
   }
 
-  console.log("[✓] Bootstrap admin mechanism completed successfully.")
+  console.log("[done] Bootstrap admin mechanism completed successfully.")
 }
