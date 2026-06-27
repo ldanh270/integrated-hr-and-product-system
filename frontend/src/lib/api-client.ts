@@ -1,3 +1,5 @@
+import { ROUTES } from "@/config/routes.config"
+import { routerNavigate } from "@/lib/router-navigator"
 import { useAuthStore } from "@/store/auth-store"
 
 import axios from "axios"
@@ -95,9 +97,9 @@ apiClient.interceptors.response.use(
 
         if (isAuthenticated) {
           useAuthStore.getState().clearAuth()
-          toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.")
           localStorage.removeItem("auth-storage")
-          window.location.href = "/login"
+          toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.")
+          routerNavigate(ROUTES.AUTH.LOGIN, { replace: true })
         }
         return Promise.reject(error)
       } finally {

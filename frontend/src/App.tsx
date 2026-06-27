@@ -3,20 +3,41 @@ import { API_ENDPOINTS } from "@/config/api.config"
 import { ROUTES } from "@/config/routes.config"
 import { SUBSYSTEMS } from "@/config/subsystem.config"
 import apiClient from "@/lib/api-client"
+import { setNavigate } from "@/lib/router-navigator"
 import { type RouteConfig, privateRoutes, publicRoutes } from "@/routes"
 import { useAuthStore } from "@/store/auth-store.ts"
 
 import { Fragment, type ReactNode, Suspense, lazy, useEffect, useState } from "react"
 
-import { Navigate, Outlet, Route, BrowserRouter as Router, Routes } from "react-router-dom"
+import {
+  Navigate,
+  Outlet,
+  Route,
+  BrowserRouter as Router,
+  Routes,
+  useNavigate,
+} from "react-router-dom"
 import { Toaster } from "sonner"
+
+/**
+ * Injects the React Router `navigate` function into the router-navigator singleton.
+ * Must be rendered inside <Router> so that `useNavigate` is available.
+ * Renders nothing — purely a side-effect component.
+ */
+const NavigatorInjector = () => {
+  const navigate = useNavigate()
+  useEffect(() => {
+    setNavigate(navigate)
+  }, [navigate])
+  return null
+}
 
 const NotFound = lazy(() => import("@/pages/NotFound.tsx"))
 
 /**
  * ProtectedRoute component
  * Redirects to /login if user is not authenticated
- * Redirects to /hrm/dashboard if user does not have required roles
+ * Redirects to /personal if user does not have required roles
  */
 const ProtectedRoute = ({
   children,
@@ -57,7 +78,7 @@ const ProtectedRoute = ({
   }
 
   if (requiredRoles && user && !requiredRoles.includes(user.role)) {
-    return <Navigate to={ROUTES.HRM.DASHBOARD} replace />
+    return <Navigate to={ROUTES.PERSONAL.BASE} replace />
   }
 
   return <>{children}</>
@@ -69,16 +90,16 @@ const ProtectedRoute = ({
  */
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  return isAuthenticated ? <Navigate to={ROUTES.HRM.DASHBOARD} replace /> : <>{children}</>
+  return isAuthenticated ? <Navigate to={ROUTES.PERSONAL.BASE} replace /> : <>{children}</>
 }
 
 /**
  * RootRedirect component
- * Redirects to /hrm/dashboard if authenticated, otherwise to /login
+ * Redirects to /personal if authenticated, otherwise to /login
  */
 const RootRedirect = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  return <Navigate to={isAuthenticated ? "/hrm/dashboard" : "/login"} replace />
+  return <Navigate to={isAuthenticated ? ROUTES.PERSONAL.BASE : ROUTES.AUTH.LOGIN} replace />
 }
 
 const renderPrivateRoute = (route: RouteConfig, index: number, keyPrefix: string): ReactNode => {
@@ -124,6 +145,7 @@ const renderPrivateRoute = (route: RouteConfig, index: number, keyPrefix: string
 const App = () => {
   return (
     <Router>
+      <NavigatorInjector />
       <Toaster position="top-right" richColors />
       <ConfirmProvider>
         <Suspense
