@@ -1,4 +1,6 @@
+import { EMPLOYEE_TYPE } from "@/configs/entities/employee.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { PrismaClient } from "@prisma/client"
 import {
   CreateProjectDto,
   Project,
@@ -9,21 +11,26 @@ import {
   PaginatedProjectsDto,
   UpdateProjectDto,
   GanttDataDto,
+  IProjectTaskStatusService,
 } from "@/types"
 import { AppError } from "@/utils/error.util.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
+import { ROLE } from "@/configs/entities/employee.config.ts"
+import { DEFAULT_PROJECT_TASK_STATUSES, PROJECT_STATUS, TASK_CREATION_POLICY } from "@/configs/entities/project.config.ts"
 
 export class ProjectService implements IProjectService {
   constructor(
     private repository: IProjectRepository,
-    private employeeRepository: IEmployeeRepository
+    private employeeRepository: IEmployeeRepository,
+    private prisma: PrismaClient,
+    private statusService?: IProjectTaskStatusService
   ) {}
 
   /**
    * Checks if user has Admin or General Manager role
    */
   private isAuthorizedAdminOrGM(userRole: string): boolean {
-    return userRole === "admin" || userRole === "general_manager"
+    return userRole === ROLE.ADMIN || userRole === ROLE.GENERAL_MANAGER
   }
 
   /**
@@ -106,9 +113,37 @@ export class ProjectService implements IProjectService {
       }
     }
 
-    return this.repository.createProject({
-      ...data,
-      createdById: userId,
+    return this.prisma.$transaction(async (tx) => {
+      const project = await tx.project.create({
+        data: {
+          name: data.name,
+          description: data.description || null,
+          techStack: data.techStack || [],
+          status: data.status || PROJECT_STATUS.PLANNING,
+          teamLeaderId: data.teamLeaderId || null,
+          createdById: userId,
+          startDate: data.startDate ? new Date(data.startDate) : null,
+          expectedEndDate: data.expectedEndDate ? new Date(data.expectedEndDate) : null,
+          taskCreationPolicy: data.taskCreationPolicy || TASK_CREATION_POLICY.LEADER_ONLY,
+        }
+      })
+
+      if (this.statusService) {
+        for (const item of DEFAULT_PROJECT_TASK_STATUSES) {
+          await tx.projectTaskStatus.create({
+            data: {
+              projectId: project.id,
+              name: item.name,
+              color: item.color,
+              order: item.order,
+              isDefault: item.isDefault,
+              isCompleted: item.isCompleted,
+            }
+          })
+        }
+      }
+
+      return project as unknown as Project
     })
   }
 
@@ -213,14 +248,14 @@ export class ProjectService implements IProjectService {
     projectId: string,
     employeeId: string,
     userId: string,
-    userRole: string
+    userRole: string,
+    options?: { hourlyRate?: number | null; workMode?: string },
   ): Promise<boolean> {
     const project = await this.repository.findById(projectId)
     if (!project) {
       throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "ProjectService")
     }
 
-    // Only GM/Admin or the project's Team Leader can manage members
     const isTL = project.teamLeaderId === userId
     if (!this.isAuthorizedAdminOrGM(userRole) && !isTL) {
       throw new AppError(
@@ -230,19 +265,30 @@ export class ProjectService implements IProjectService {
       )
     }
 
-    // Check if the employee to be added exists
     const employee = await this.employeeRepository.findById(employeeId)
     if (!employee) {
       throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "ProjectService")
     }
 
-    // Check if already a project member
+    if (
+      employee.employeeType === EMPLOYEE_TYPE.PART_TIME &&
+      (options?.hourlyRate == null || options.hourlyRate <= 0)
+    ) {
+      // Rate is required on ProjectMember — payroll reads it per project, not base salary alone.
+      throw new AppError(
+        "Part-time members require an hourly rate",
+        HttpStatusCode.UNPROCESSABLE_ENTITY,
+        "ProjectService"
+      )
+    }
+
     const alreadyMember = await this.repository.isMember(projectId, employeeId)
     if (alreadyMember) {
       throw new AppError("Employee is already a member of this project", HttpStatusCode.CONFLICT, "ProjectService")
     }
 
-    return this.repository.addMember(projectId, employeeId)
+    // workMode: remote → Spent Time only | onsite → one GPS check-in/day then Spent Time.
+    return this.repository.addMember(projectId, employeeId, options)
   }
 
   /**
@@ -279,6 +325,59 @@ export class ProjectService implements IProjectService {
     }
 
     return this.repository.removeMember(projectId, employeeId)
+  }
+
+  /**
+   * Updates hourly rate or work mode for an existing project member.
+   * workMode drives attendance rules: remote → Spent Time only; onsite → GPS check-in once.
+   */
+  async updateMember(
+    projectId: string,
+    employeeId: string,
+    userId: string,
+    userRole: string,
+    data: { hourlyRate?: number | null; workMode?: string },
+  ): Promise<boolean> {
+    const project = await this.repository.findById(projectId)
+    if (!project) {
+      throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "ProjectService")
+    }
+
+    const isTL = project.teamLeaderId === userId
+    if (!this.isAuthorizedAdminOrGM(userRole) && !isTL) {
+      throw new AppError(
+        "Only Admins, GMs, or the Project's Team Leader can manage members",
+        HttpStatusCode.FORBIDDEN,
+        "ProjectService",
+      )
+    }
+
+    const isMember = await this.repository.isMember(projectId, employeeId)
+    if (!isMember) {
+      throw new AppError("Employee is not a member of this project", HttpStatusCode.NOT_FOUND, "ProjectService")
+    }
+
+    const employee = await this.employeeRepository.findById(employeeId)
+    if (!employee) {
+      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "ProjectService")
+    }
+
+    const existingMember = await this.repository.getMember(projectId, employeeId)
+    const resolvedHourlyRate =
+      data.hourlyRate !== undefined ? data.hourlyRate : (existingMember?.hourlyRate ?? null)
+
+    if (
+      employee.employeeType === EMPLOYEE_TYPE.PART_TIME &&
+      (resolvedHourlyRate == null || resolvedHourlyRate <= 0)
+    ) {
+      throw new AppError(
+        "Part-time members require an hourly rate",
+        HttpStatusCode.UNPROCESSABLE_ENTITY,
+        "ProjectService",
+      )
+    }
+
+    return this.repository.updateMember(projectId, employeeId, data)
   }
 
   /**

@@ -4,4 +4,5 @@ export * from "./repository.interface.ts"
 export * from "./project.types.ts"
 export * from "./task.types.ts"
 export * from "./spent-time.types.ts"
+export * from "./project-task-status.types.ts"
 

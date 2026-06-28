@@ -2,6 +2,7 @@ import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import {
   createSpentTimeSchema,
+  rejectSpentTimeSchema,
   spentTimeQuerySchema,
   updateSpentTimeSchema,
 } from "@/schemas/spent-time.schema.ts"
@@ -12,9 +13,7 @@ import { z } from "zod"
 export class SpentTimeController {
   constructor(private service: ISpentTimeService) {}
 
-  /**
-   * List spent time logs (with optional filtering)
-   */
+  /** List PT spent-time logs; project leads filter by projectId for approval queue. */
   list = async (req: AuthRequest, res: Response<ApiResponse<SpentTime[]>>) => {
     try {
       if (!req.user) {
@@ -43,9 +42,7 @@ export class SpentTimeController {
     }
   }
 
-  /**
-   * Get a single spent time log by ID
-   */
+  /** Single log — PT employees see own rows; leads/admins see project queue entries. */
   getOne = async (req: AuthRequest, res: Response<ApiResponse<SpentTime>>) => {
     if (!req.user) {
       return res.status(HttpStatusCode.UNAUTHORIZED).json({
@@ -64,9 +61,7 @@ export class SpentTimeController {
     res.status(HttpStatusCode.OK).json({ data: spentTime, error: null })
   }
 
-  /**
-   * Create a spent time log
-   */
+  /** PT employees log hours on tasks; record starts pending until lead approves. */
   create = async (req: AuthRequest, res: Response<ApiResponse<SpentTime>>) => {
     try {
       if (!req.user) {
@@ -95,9 +90,7 @@ export class SpentTimeController {
     }
   }
 
-  /**
-   * Update a spent time log
-   */
+  /** Edit allowed only while pending — approved rows are payroll input and locked. */
   update = async (req: AuthRequest, res: Response<ApiResponse<SpentTime>>) => {
     try {
       if (!req.user) {
@@ -132,9 +125,7 @@ export class SpentTimeController {
     }
   }
 
-  /**
-   * Delete a spent time log
-   */
+  /** Remove pending/rejected logs; approved logs cannot be deleted (payroll audit trail). */
   delete = async (req: AuthRequest, res: Response<ApiResponse<null>>) => {
     if (!req.user) {
       return res.status(HttpStatusCode.UNAUTHORIZED).json({
@@ -145,5 +136,51 @@ export class SpentTimeController {
 
     await this.service.deleteSpentTime(String(req.params.id), req.user.empId, req.user.role)
     res.status(HttpStatusCode.OK).json({ data: null, error: null })
+  }
+
+  /** Lead approves hours → included in next PT payroll run (rate × hours × OT multiplier). */
+  approve = async (req: AuthRequest, res: Response<ApiResponse<SpentTime>>) => {
+    if (!req.user) {
+      return res.status(HttpStatusCode.UNAUTHORIZED).json({
+        data: null,
+        error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+      })
+    }
+
+    const spentTime = await this.service.approveSpentTime(
+      String(req.params.id),
+      req.user.empId,
+      req.user.role,
+    )
+    res.status(HttpStatusCode.OK).json({ data: spentTime, error: null })
+  }
+
+  /** Lead rejects with reason; hours excluded from payroll and task spent totals. */
+  reject = async (req: AuthRequest, res: Response<ApiResponse<SpentTime>>) => {
+    try {
+      if (!req.user) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          data: null,
+          error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+        })
+      }
+
+      const { reason } = rejectSpentTimeSchema.parse(req.body)
+      const spentTime = await this.service.rejectSpentTime(
+        String(req.params.id),
+        reason,
+        req.user.empId,
+        req.user.role,
+      )
+      res.status(HttpStatusCode.OK).json({ data: spentTime, error: null })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
+        })
+      }
+      throw error
+    }
   }
 }

@@ -47,8 +47,22 @@ export const projectApi = {
     return response.data.data
   },
 
-  addMember: async (projectId: string, employeeId: string): Promise<void> => {
-    await apiClient.post<ApiResponse<null>>(`/projects/${projectId}/members`, { employeeId })
+  /** hourlyRate + workMode set PT payroll rate and onsite vs remote attendance rules. */
+  addMember: async (
+    projectId: string,
+    data: { employeeId: string; hourlyRate?: number | null; workMode?: string },
+  ): Promise<void> => {
+    await apiClient.post<ApiResponse<null>>(`/projects/${projectId}/members`, data)
+  },
+
+  /** PATCH member hourlyRate/workMode — drives PT payroll rate and onsite vs remote attendance. */
+  updateMember: async (
+    projectId: string,
+    employeeId: string,
+    data: { hourlyRate?: number | null; workMode?: string },
+  ): Promise<void> => {
+    // hourlyRate + workMode drive PT payroll and attendance rules per project.
+    await apiClient.patch<ApiResponse<null>>(`/projects/${projectId}/members/${employeeId}`, data)
   },
 
   removeMember: async (projectId: string, employeeId: string): Promise<void> => {

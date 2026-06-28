@@ -53,8 +53,12 @@ export const ROUTES = {
     DASHBOARD: "/settings/dashboard",
   },
   PROJECT: {
-    DASHBOARD: "/project/dashboard",
     LIST: "/project/list",
+    DASHBOARD: "/project/dashboard",
+    OVERVIEW: "/project/overview",
+    ISSUES: "/project/issues",
+    TASK_NEW: "/project/task/new",
+    TASK_DETAIL: "/project/task",
   },
   PERSONAL: {
     BASE: "/personal",

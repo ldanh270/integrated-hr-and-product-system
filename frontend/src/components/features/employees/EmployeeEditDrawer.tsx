@@ -8,6 +8,7 @@ import {
   EMPLOYEE_STATUSES,
   EMPLOYEE_STATUS_LABELS,
   EMPLOYEE_TYPES,
+  EMPLOYEE_TYPE,
   EMPLOYEE_TYPE_LABELS,
   ROLE_LABELS,
 } from "@/config/entities/employee.config"
@@ -326,7 +327,11 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
               </div>
             </section>
 
-            <EmployeeWeeklyScheduleSection section={weeklySchedule} />
+            <EmployeeWeeklyScheduleSection
+              section={weeklySchedule}
+              // PT uses project Spent Time, not company weekly shift templates.
+              hidden={employee.employeeType === EMPLOYEE_TYPE.PART_TIME}
+            />
           </form>
         </div>
 

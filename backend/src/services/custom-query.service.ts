@@ -1,11 +1,11 @@
-import { ICustomQueryService, ICustomQueryRepository, CustomQuery, CreateCustomQueryDto } from "@/types/custom-query.types.ts"
+import { ICustomQueryService, ICustomQueryRepository, CustomQuery, CreateCustomQueryDto, CustomQueryType } from "@/types/custom-query.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 
 export class CustomQueryService implements ICustomQueryService {
   constructor(private customQueryRepo: ICustomQueryRepository) {}
 
-  async getQueries(employeeId: string, projectId?: string | null, type?: string): Promise<CustomQuery[]> {
+  async getQueries(employeeId: string, projectId?: string | null, type?: CustomQueryType): Promise<CustomQuery[]> {
     return this.customQueryRepo.findByEmployee(employeeId, projectId, type)
   }
 

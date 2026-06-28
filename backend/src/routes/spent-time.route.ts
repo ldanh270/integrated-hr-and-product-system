@@ -1,6 +1,7 @@
 import { SpentTimeController } from "@/controllers/spent-time.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
+import { PrismaAttendanceRepository } from "@/repositories/attendance.repository.ts"
 import { PrismaProjectRepository } from "@/repositories/project.repository.ts"
 import { PrismaSpentTimeRepository } from "@/repositories/spent-time.repository.ts"
 import { PrismaTaskRepository } from "@/repositories/task.repository.ts"
@@ -19,8 +20,10 @@ const spentTimeLimiter = rateLimit({
 
 const projectRepository = new PrismaProjectRepository(prisma)
 const taskRepository = new PrismaTaskRepository(prisma)
+const attendanceRepository = new PrismaAttendanceRepository(prisma)
 const repository = new PrismaSpentTimeRepository(prisma)
-const service = new SpentTimeService(repository, taskRepository, projectRepository)
+const service = new SpentTimeService(repository, taskRepository, projectRepository, attendanceRepository)
+// attendanceRepository: validates onsite PT checked in before Spent Time create.
 const controller = new SpentTimeController(service)
 
 // All spent time routes require rate limiting and authentication
@@ -30,6 +33,9 @@ spentTimeRoutes.use(authenticate)
 spentTimeRoutes.get("/", controller.list)
 spentTimeRoutes.get("/:id", controller.getOne)
 spentTimeRoutes.post("/", controller.create)
+// Lead-only gates: approved hours become payroll input for PT employees.
+spentTimeRoutes.post("/:id/approve", controller.approve)
+spentTimeRoutes.post("/:id/reject", controller.reject)
 spentTimeRoutes.patch("/:id", controller.update)
 spentTimeRoutes.delete("/:id", controller.delete)
 

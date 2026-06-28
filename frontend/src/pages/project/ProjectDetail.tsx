@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { ROLE } from "@/config/entities/employee.config"
-import { TASK_TRACKERS } from "@/config/entities/project.config"
+import { TASK_TRACKERS, SPENT_TIME_STATUS } from "@/config/entities/project.config"
 import { projectApi } from "@/lib/api/project.api"
 import { employeeApi } from "@/lib/api/employee.api"
 import { taskApi } from "@/lib/api/task.api"
@@ -20,11 +20,15 @@ import { extractErrorMessage } from "@/utils/error-helper"
 // Sub-components imports
 import { ProjectHeader } from "./components/project-header"
 import { AddMemberModal } from "./components/add-member-modal"
+import { EditMemberModal } from "./components/edit-member-modal"
 import { EditProjectModal } from "./components/edit-project-modal"
 import { ProjectOverviewTab } from "./components/project-overview-tab"
 import { ProjectIssuesTab } from "./components/project-issues-tab"
+import { ProjectKanbanTab } from "./components/project-kanban-tab"
 import { ProjectActivityTab } from "./components/project-activity-tab"
 import { ProjectGanttTab } from "./components/project-gantt-tab"
+import { ProjectSpentTimeTab } from "./components/project-spent-time-tab"
+import type { ProjectMember } from "@/types/project.types"
 
 interface ActivityItem {
   id: string
@@ -36,20 +40,51 @@ interface ActivityItem {
   hours?: number
 }
 
-export default function ProjectDetail() {
-  const { id } = useParams<{ id: string }>()
-  const projectId = id || ""
+const PROJECT_TABS = {
+  OVERVIEW: "overview",
+  ISSUES: "issues",
+  KANBAN: "kanban",
+  ACTIVITY: "activity",
+  SPENT_TIME: "spent-time",
+  GANTT: "gantt",
+} as const
 
+type ProjectTab = typeof PROJECT_TABS[keyof typeof PROJECT_TABS]
+
+export default function ProjectDetail() {
+  const { tab } = useParams<{ tab?: string }>()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const openCreateParam = searchParams.get("createTask") === "true"
   const { user } = useAuthStore()
 
-  // Tab and Modal visibility states
-  const [activeTab, setActiveTab] = useState("overview")
+  // Route format: /project/:tab  (e.g., /project/overview)
+  // Project ID is always stored in sessionStorage (set when clicking a project from the list)
+  const isTabValid = tab ? (Object.values(PROJECT_TABS) as readonly string[]).includes(tab) : false
+
+  const projectId = sessionStorage.getItem("activeProjectId") || ""
+  const activeTab: ProjectTab =
+    isTabValid ? (tab as ProjectTab) : PROJECT_TABS.OVERVIEW
+
   const [isOpenMemberModal, setIsOpenMemberModal] = useState(false)
   const [isOpenEditProjectModal, setIsOpenEditProjectModal] = useState(false)
+  const [editingMember, setEditingMember] = useState<ProjectMember | null>(null)
+
+  // Redirect to canonical /project/:tab — fix invalid tab or missing project
+  useEffect(() => {
+    const searchStr = window.location.search
+    if (!projectId) {
+      toast.error("Vui lòng chọn một dự án để xem chi tiết")
+      navigate("/project/list", { replace: true })
+      return
+    }
+    const correctPath = `/project/${activeTab}`
+    const currentPath = window.location.pathname
+    if (currentPath !== correctPath) {
+      navigate(`${correctPath}${searchStr}`, { replace: true })
+    }
+  }, [tab, projectId, activeTab, navigate])
 
   // Fetch active project metadata
   const { data: project, isLoading: isLoadingProject } = useQuery({
@@ -65,7 +100,7 @@ export default function ProjectDetail() {
     enabled: !!projectId,
   })
 
-  // Fetch spent time records logs list
+  // All project Spent Time logs — used for overview totals and lead approval tab
   const { data: spentTimes, isLoading: isLoadingSpent } = useQuery({
     queryKey: ["spentTimes", "project", projectId],
     queryFn: () => taskApi.listSpentTimes({ projectId }),
@@ -104,9 +139,9 @@ export default function ProjectDetail() {
   // Auto-redirect to task creation screen if search parameter 'createTask' is present and user has permission
   useEffect(() => {
     if (openCreateParam && canCreateTask) {
-      navigate(`/project/${projectId}/tasks/new`, { replace: true })
+      navigate("/project/task/new", { replace: true })
     }
-  }, [openCreateParam, canCreateTask, projectId, navigate])
+  }, [openCreateParam, canCreateTask, navigate])
 
   // Determine if the current user is allowed to manage project members
   const canManageMembers = isAdminOrGM || isLeader
@@ -133,7 +168,11 @@ export default function ProjectDetail() {
 
   // Compute total estimated time and actual spent time hours for the project
   const totalEstimatedHours = overviewTasks.reduce((sum, t) => sum + (t.estimatedTime || 0), 0)
-  const totalSpentHours = spentTimes?.reduce((sum, st) => sum + st.hours, 0) || 0
+  // Exclude rejected logs from overview spent total — only approved/pending count toward progress.
+  const totalSpentHours =
+    spentTimes
+      ?.filter((st) => st.status !== SPENT_TIME_STATUS.REJECTED)
+      .reduce((sum, st) => sum + st.hours, 0) || 0
 
   // Delete project member relationship from team membership list mutation
   const removeMemberMutation = useMutation({
@@ -215,7 +254,6 @@ export default function ProjectDetail() {
         description={project.description}
         canCreateTask={canCreateTask}
         canManageMembers={canManageMembers}
-        projectId={projectId}
         onOpenEditProject={() => {
           setIsOpenEditProjectModal(true)
         }}
@@ -225,28 +263,40 @@ export default function ProjectDetail() {
       />
 
       {/* Tabs navigation panel: switches between Overview, Issues, and Activity views */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={(newTab) => { navigate(`/project/${newTab}`); }} className="space-y-6">
         <TabsList className="bg-secondary rounded-full p-1 border border-border/40 inline-flex">
           <TabsTrigger
-            value="overview"
+            value={PROJECT_TABS.OVERVIEW}
             className="rounded-full px-5 py-2 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
           >
             Tổng quan (Overview)
           </TabsTrigger>
           <TabsTrigger
-            value="issues"
+            value={PROJECT_TABS.ISSUES}
             className="rounded-full px-5 py-2 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
           >
             Công việc (Issues)
           </TabsTrigger>
           <TabsTrigger
-            value="activity"
+            value={PROJECT_TABS.KANBAN}
+            className="rounded-full px-5 py-2 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+          >
+            Bảng Kanban
+          </TabsTrigger>
+          <TabsTrigger
+            value={PROJECT_TABS.ACTIVITY}
             className="rounded-full px-5 py-2 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
           >
             Hoạt động (Activity)
           </TabsTrigger>
           <TabsTrigger
-            value="gantt"
+            value={PROJECT_TABS.SPENT_TIME}
+            className="rounded-full px-5 py-2 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+          >
+            Giờ làm việc (Spent Time)
+          </TabsTrigger>
+          <TabsTrigger
+            value={PROJECT_TABS.GANTT}
             className="rounded-full px-5 py-2 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
           >
             Biểu đồ Gantt
@@ -254,7 +304,7 @@ export default function ProjectDetail() {
         </TabsList>
 
         {/* OVERVIEW TAB */}
-        <TabsContent value="overview">
+        <TabsContent value={PROJECT_TABS.OVERVIEW}>
           <ProjectOverviewTab
             project={project}
             totalTasksCount={totalTasksCount}
@@ -268,11 +318,26 @@ export default function ProjectDetail() {
             onRemoveMember={(employeeId) => {
               removeMemberMutation.mutate(employeeId)
             }}
+            onEditMember={(member) => {
+              setEditingMember(member)
+            }}
+          />
+        </TabsContent>
+
+        {/* SPENT TIME TAB */}
+        <TabsContent value={PROJECT_TABS.SPENT_TIME}>
+          {/* Lead approval queue — only approved logs flow into PT payroll */}
+          <ProjectSpentTimeTab
+            projectId={projectId}
+            spentTimes={spentTimes}
+            isLoading={isLoadingSpent}
+            userRole={user?.role}
+            isLeader={isLeader}
           />
         </TabsContent>
 
         {/* ISSUES TAB */}
-        <TabsContent value="issues">
+        <TabsContent value={PROJECT_TABS.ISSUES}>
           <ProjectIssuesTab
             projectId={projectId}
             members={projectMembers}
@@ -281,8 +346,18 @@ export default function ProjectDetail() {
           />
         </TabsContent>
 
+        {/* KANBAN TAB */}
+        <TabsContent value={PROJECT_TABS.KANBAN}>
+          <ProjectKanbanTab
+            projectId={projectId}
+            members={projectMembers}
+            teamLeader={project.teamLeader}
+            user={user}
+          />
+        </TabsContent>
+
         {/* ACTIVITY TAB */}
-        <TabsContent value="activity">
+        <TabsContent value={PROJECT_TABS.ACTIVITY}>
           <ProjectActivityTab
             activitiesList={activitiesList}
             isLoading={isLoadingSpent}
@@ -290,7 +365,7 @@ export default function ProjectDetail() {
         </TabsContent>
 
         {/* GANTT TAB */}
-        <TabsContent value="gantt">
+        <TabsContent value={PROJECT_TABS.GANTT}>
           <ProjectGanttTab
             projectId={projectId}
             project={project}
@@ -306,6 +381,16 @@ export default function ProjectDetail() {
         members={projectMembers}
         allEmployees={allEmployees}
         teamLeaderId={project.teamLeaderId}
+      />
+
+      <EditMemberModal
+        isOpen={!!editingMember}
+        onOpenChange={(open) => {
+          if (!open) setEditingMember(null)
+        }}
+        projectId={projectId}
+        member={editingMember}
+        allEmployees={allEmployees}
       />
 
       {/* EDIT PROJECT DIALOG: Dialog overlay to update project config properties */}

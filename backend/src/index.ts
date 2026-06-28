@@ -1,5 +1,5 @@
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
-import { ENVIRONMENT, ENV_ENVIRONMENT, PORT, RATE_LIMIT } from "@/configs/system/server.config.ts"
+import { PORT } from "@/configs/system/server.config.ts"
 import { connectDB } from "@/libs/database.ts"
 import { initCronJobs } from "@/libs/payroll-cron.ts"
 import { initWeeklyScheduleCron } from "@/libs/weekly-schedule-cron.ts"
@@ -23,13 +23,13 @@ import scheduleRoutes from "@/routes/schedule.route.ts"
 import securityRoutes from "@/routes/security.route.ts"
 import shiftChangeRequestRoutes from "@/routes/shift-change-request.route.ts"
 import shiftRoutes from "@/routes/shift.route.ts"
+import spentTimeRoutes from "@/routes/spent-time.route.ts"
 import taskRoutes from "@/routes/task.route.ts"
 import weeklyScheduleTemplateRoutes from "@/routes/weekly-schedule-template.route.ts"
 
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
-import express, { NextFunction, Request, Response } from "express"
-import rateLimit from "express-rate-limit"
+import express from "express"
 import path from "path"
 import swaggerUi from "swagger-ui-express"
 import YAML from "yamljs"
@@ -53,22 +53,6 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 app.use(cookieParser())
 app.use(cors)
 app.use(express.json())
-
-// Set up rate limiter: maximum of 100 requests per 15 minutes (relaxed in development)
-const limiter = rateLimit({
-  windowMs: RATE_LIMIT.WINDOW_MS,
-  max:
-    ENV_ENVIRONMENT === ENVIRONMENT.DEVELOPMENT
-      ? RATE_LIMIT.MAX_LIMIT_DEV
-      : RATE_LIMIT.MAX_LIMIT_PROD,
-  message: {
-    status: "error",
-    message: "Too many requests, please try again later.",
-  },
-})
-
-// Apply rate limiter to all API requests
-app.use("/api/", limiter)
 
 /**
  * Main routers
@@ -104,6 +88,7 @@ app.use("/api/payrolls", payrollRoutes)
 // Private routes
 app.use("/api/projects", projectRoutes)
 app.use("/api/tasks", taskRoutes)
+app.use("/api/spent-times", spentTimeRoutes)
 app.use("/api/custom-queries", customQueryRoutes)
 
 // 404 handler

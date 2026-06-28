@@ -75,6 +75,10 @@ export interface ProjectMember {
   id: string
   projectId: string
   employeeId: string
+  /** PT contract rate for this project — used when approved Spent Time hits payroll. */
+  hourlyRate: number | null
+  /** remote = log only | onsite = one GPS check-in/day before logging hours. */
+  workMode: string
   role: string | null
   createdAt: string
   employee: {
