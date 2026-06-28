@@ -18,6 +18,14 @@ export class JobPostingService implements IJobPostingService {
   ) {}
 
 
+  /**
+   * Creates a new job posting for an open requisition.
+   * @param employeeId - The ID of the employee creating the posting.
+   * @param requisitionId - The ID of the associated requisition.
+   * @param data - The details of the job posting.
+   * @returns The created job posting record.
+   * @throws AppError if the requisition is not found or not open.
+   */
   async createPosting(employeeId: string, requisitionId: string, data: CreateJobPostingDTO): Promise<JobPosting> {
     const requisition = await this.jobRequisitionRepository.findById(requisitionId);
     
@@ -37,16 +45,33 @@ export class JobPostingService implements IJobPostingService {
   }
 
 
+  /**
+   * Retrieves a job posting by its ID.
+   * @param id - The ID of the job posting.
+   * @returns The job posting record if found, null otherwise.
+   */
   async getPostingById(id: string): Promise<JobPosting | null> {
     return this.jobPostingRepository.findById(id);
   }
 
 
+  /**
+   * Retrieves all job postings, optionally filtered.
+   * @param filters - The filters to apply.
+   * @returns An array of job posting records.
+   */
   async getPostings(filters?: JobPostingFilters): Promise<JobPosting[]> {
     return this.jobPostingRepository.findAll(filters);
   }
 
 
+  /**
+   * Updates the status of a job posting.
+   * @param id - The ID of the job posting.
+   * @param status - The new posting status.
+   * @returns The updated job posting.
+   * @throws AppError if the job posting is not found.
+   */
   async updatePostingStatus(id: string, status: PostingStatus): Promise<JobPosting> {
     const posting = await this.jobPostingRepository.findById(id);
     if (!posting) {
@@ -57,6 +82,14 @@ export class JobPostingService implements IJobPostingService {
   }
 
 
+  /**
+   * Records a publication channel for a job posting.
+   * @param id - The ID of the job posting.
+   * @param source - The channel source (e.g., LinkedIn, Indeed).
+   * @param url - The optional URL of the published posting.
+   * @returns The newly created channel record.
+   * @throws AppError if the posting is not found or is closed.
+   */
   async publishToChannel(id: string, source: CandidateSource, url?: string): Promise<JobPostingChannel> {
     const posting = await this.jobPostingRepository.findById(id);
     if (!posting) {

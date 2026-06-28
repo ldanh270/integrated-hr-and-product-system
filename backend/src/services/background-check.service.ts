@@ -18,6 +18,12 @@ export class BackgroundCheckService implements IBackgroundCheckService {
   ) {}
 
 
+  /**
+   * Initiates a background check for a specific job application.
+   * @param applicationId - The ID of the job application.
+   * @returns The newly created background check record.
+   * @throws AppError if the application is not found or a check is already in progress.
+   */
   async initiateCheck(applicationId: string): Promise<BackgroundCheck> {
     const app = await this.applicationRepository.findById(applicationId);
     if (!app) {
@@ -41,6 +47,13 @@ export class BackgroundCheckService implements IBackgroundCheckService {
   }
 
 
+  /**
+   * Updates the status of an existing background check.
+   * @param id - The ID of the background check.
+   * @param data - The update data (overall status, etc.).
+   * @returns The updated background check record.
+   * @throws AppError if the check is not found or already completed.
+   */
   async updateCheck(id: string, data: UpdateBackgroundCheckDTO): Promise<BackgroundCheck> {
     const check = await this.backgroundCheckRepository.findById(id);
     if (!check) {
@@ -68,6 +81,11 @@ export class BackgroundCheckService implements IBackgroundCheckService {
   }
 
 
+  /**
+   * Retrieves a background check by its ID.
+   * @param id - The ID of the background check.
+   * @returns The background check record if found, null otherwise.
+   */
   async getCheckById(id: string): Promise<BackgroundCheck | null> {
     return this.backgroundCheckRepository.findById(id);
   }

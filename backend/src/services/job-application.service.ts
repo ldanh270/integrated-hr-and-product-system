@@ -77,11 +77,21 @@ export class JobApplicationService implements IJobApplicationService {
   }
 
 
+  /**
+   * Retrieves a job application by its ID along with its relations.
+   * @param id - The ID of the job application.
+   * @returns The job application with relations if found, null otherwise.
+   */
   async getApplicationById(id: string): Promise<JobApplicationWithRelations | null> {
     return this.applicationRepository.findById(id);
   }
 
 
+  /**
+   * Retrieves all job applications, optionally matching the given filters.
+   * @param filters - The filters to apply.
+   * @returns An array of job applications with relations.
+   */
   async getApplications(filters?: JobApplicationFilters): Promise<JobApplicationWithRelations[]> {
     return this.applicationRepository.findAll(filters);
   }
@@ -108,6 +118,13 @@ export class JobApplicationService implements IJobApplicationService {
   }
 
 
+  /**
+   * Updates the kanban order of a job application.
+   * @param id - The ID of the job application.
+   * @param newOrder - The new numeric order.
+   * @returns The updated job application.
+   * @throws AppError if the application is not found.
+   */
   async updateKanbanOrder(id: string, newOrder: number): Promise<JobApplication> {
     const app = await this.applicationRepository.findById(id);
     if (!app) {

@@ -23,6 +23,14 @@ export class OnboardingService implements IOnboardingService {
   ) {}
 
 
+  /**
+   * Converts a successful candidate into a full employee record.
+   * Validates application status and generates login credentials.
+   * @param applicationId - The ID of the hired job application.
+   * @param data - The details to map for the new employee (e.g. position).
+   * @returns The newly created employee record.
+   * @throws AppError if the candidate cannot be converted.
+   */
   async convertCandidateToEmployee(applicationId: string, data: ConvertToEmployeeDTO): Promise<Employee> {
     const app = await this.applicationRepository.findById(applicationId);
     if (!app) {

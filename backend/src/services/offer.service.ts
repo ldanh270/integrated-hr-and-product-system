@@ -20,6 +20,14 @@ export class OfferService implements IOfferService {
   ) {}
 
 
+  /**
+   * Creates a new job offer for a given application.
+   * Automatically versions offers if previous ones were declined.
+   * @param employeeId - The ID of the HR/HM creating the offer.
+   * @param data - The details of the offer to create.
+   * @returns The created offer record.
+   * @throws AppError if the application is not found, or if max offer revisions are reached.
+   */
   async createOffer(employeeId: string, data: CreateOfferDTO): Promise<Offer> {
     const app = await this.applicationRepository.findById(data.applicationId);
     if (!app) {
@@ -68,6 +76,12 @@ export class OfferService implements IOfferService {
   }
 
 
+  /**
+   * Transitions a draft offer to sent status (representing emailing the candidate).
+   * @param id - The ID of the offer to send.
+   * @returns The updated offer.
+   * @throws AppError if the offer is not found or not in draft status.
+   */
   async sendOffer(id: string): Promise<Offer> {
     const offer = await this.offerRepository.findById(id);
     if (!offer) {
@@ -85,6 +99,14 @@ export class OfferService implements IOfferService {
   }
 
 
+  /**
+   * Records a candidate's response to an offer.
+   * @param id - The ID of the offer.
+   * @param accept - Boolean indicating if the candidate accepted the offer.
+   * @param note - Optional note provided by the candidate.
+   * @returns The updated offer.
+   * @throws AppError if the offer is not found, not sent, or expired.
+   */
   async respondToOffer(id: string, accept: boolean, note?: string): Promise<Offer> {
     const offer = await this.offerRepository.findById(id);
     if (!offer) {
@@ -115,6 +137,11 @@ export class OfferService implements IOfferService {
   }
 
 
+  /**
+   * Retrieves an offer by its ID.
+   * @param id - The ID of the offer.
+   * @returns The offer record if found, null otherwise.
+   */
   async getOfferById(id: string): Promise<Offer | null> {
     return this.offerRepository.findById(id);
   }

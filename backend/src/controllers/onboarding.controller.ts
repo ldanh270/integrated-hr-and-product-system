@@ -10,6 +10,11 @@ export class OnboardingController {
 
   constructor(private readonly onboardingService: IOnboardingService) {}
 
+  /**
+   * Converts a candidate into an employee.
+   * @param req - The Express AuthRequest object, containing application ID and new employee details in the body.
+   * @param res - The Express Response object.
+   */
   public convert = async (req: AuthRequest, res: Response) => {
     const { applicationId, ...data } = req.body;
     

@@ -87,6 +87,15 @@ export class JobRequisitionService implements IJobRequisitionService {
   }
 
 
+  /**
+   * Rejects a job requisition, changing its status to REJECTED.
+   * Only accessible by a General Manager.
+   * @param gmId - The ID of the General Manager rejecting the requisition
+   * @param id - The ID of the job requisition to reject
+   * @param reason - The reason for rejecting the requisition
+   * @returns The updated job requisition
+   * @throws AppError if requisition not found, already closed, or if user is not a GM
+   */
   async rejectRequisition(gmId: string, id: string, reason: string): Promise<JobRequisition> {
     await this.verifyGeneralManager(gmId);
 
@@ -106,6 +115,13 @@ export class JobRequisitionService implements IJobRequisitionService {
   }
 
 
+  /**
+   * Closes a job requisition, marking it as CLOSED.
+   * @param employeeId - The ID of the employee requesting closure
+   * @param id - The ID of the job requisition
+   * @returns The updated job requisition
+   * @throws AppError if requisition not found or already closed
+   */
   async closeRequisition(employeeId: string, id: string): Promise<JobRequisition> {
     const req = await this.jobRequisitionRepository.findById(id);
     if (!req) {

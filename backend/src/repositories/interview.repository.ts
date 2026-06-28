@@ -5,6 +5,11 @@ import { INTERVIEW_STATUS } from "@/configs/entities/recruitment.config";
 
 
 export class InterviewRoundRepository implements IInterviewRoundRepository {
+  /**
+   * Creates a new interview round.
+   * @param data - The data to create the interview round.
+   * @returns The created interview round.
+   */
   async create(data: CreateInterviewRoundDTO & { leadInterviewerId: string }): Promise<InterviewRound> {
     return prisma.interviewRound.create({
       data: {
@@ -18,6 +23,11 @@ export class InterviewRoundRepository implements IInterviewRoundRepository {
     });
   }
 
+  /**
+   * Finds an interview round by its ID.
+   * @param id - The ID of the interview round.
+   * @returns The interview round with interviewers and scorecards, or null.
+   */
   async findById(id: string): Promise<InterviewRound | null> {
     return prisma.interviewRound.findUnique({
       where: { id },
@@ -30,6 +40,11 @@ export class InterviewRoundRepository implements IInterviewRoundRepository {
     });
   }
 
+  /**
+   * Finds all interview rounds for a specific job application.
+   * @param applicationId - The ID of the application.
+   * @returns An array of interview rounds.
+   */
   async findByApplicationId(applicationId: string): Promise<InterviewRound[]> {
     return prisma.interviewRound.findMany({
       where: { applicationId },
@@ -41,6 +56,14 @@ export class InterviewRoundRepository implements IInterviewRoundRepository {
     });
   }
 
+  /**
+   * Updates the status and optional result/note of an interview round.
+   * @param id - The ID of the interview round.
+   * @param status - The new status.
+   * @param result - The optional result (e.g., PASS, FAIL).
+   * @param overallNote - An optional overall note.
+   * @returns The updated interview round.
+   */
   async updateStatus(id: string, status: InterviewStatus, result?: InterviewResult, overallNote?: string): Promise<InterviewRound> {
     const updateData: Prisma.InterviewRoundUpdateInput = { status };
     if (result) updateData.result = result;
@@ -53,6 +76,12 @@ export class InterviewRoundRepository implements IInterviewRoundRepository {
     });
   }
 
+  /**
+   * Adds an interviewer to an interview round.
+   * @param roundId - The ID of the interview round.
+   * @param employeeId - The ID of the employee acting as an interviewer.
+   * @returns The created round member record.
+   */
   async addInterviewer(roundId: string, employeeId: string): Promise<InterviewRoundMember> {
     return prisma.interviewRoundMember.create({
       data: {
@@ -62,6 +91,11 @@ export class InterviewRoundRepository implements IInterviewRoundRepository {
     });
   }
 
+  /**
+   * Retrieves all interviewers assigned to a specific round.
+   * @param roundId - The ID of the interview round.
+   * @returns An array of interview round members.
+   */
   async getInterviewers(roundId: string): Promise<InterviewRoundMember[]> {
     return prisma.interviewRoundMember.findMany({
       where: { roundId },
@@ -71,6 +105,11 @@ export class InterviewRoundRepository implements IInterviewRoundRepository {
 }
 
 export class InterviewScorecardRepository implements IInterviewScorecardRepository {
+  /**
+   * Upserts (creates or updates) an interview scorecard.
+   * @param data - The scorecard data.
+   * @returns The upserted interview scorecard.
+   */
   async upsert(data: SubmitScorecardDTO & { interviewerId: string }): Promise<InterviewScorecard> {
     const existing = await this.findByRoundAndInterviewer(data.roundId, data.interviewerId);
     
@@ -98,12 +137,23 @@ export class InterviewScorecardRepository implements IInterviewScorecardReposito
     });
   }
 
+  /**
+   * Retrieves all scorecards for a specific interview round.
+   * @param roundId - The ID of the interview round.
+   * @returns An array of interview scorecards.
+   */
   async findByRoundId(roundId: string): Promise<InterviewScorecard[]> {
     return prisma.interviewScorecard.findMany({
       where: { roundId }
     });
   }
 
+  /**
+   * Finds a scorecard by round ID and interviewer ID.
+   * @param roundId - The ID of the interview round.
+   * @param interviewerId - The ID of the interviewer.
+   * @returns The interview scorecard, or null if not found.
+   */
   async findByRoundAndInterviewer(roundId: string, interviewerId: string): Promise<InterviewScorecard | null> {
     return prisma.interviewScorecard.findUnique({
       where: {
