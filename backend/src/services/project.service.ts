@@ -1,3 +1,4 @@
+import { EMPLOYEE_TYPE } from "@/configs/entities/employee.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { PrismaClient } from "@prisma/client"
 import {
@@ -247,14 +248,14 @@ export class ProjectService implements IProjectService {
     projectId: string,
     employeeId: string,
     userId: string,
-    userRole: string
+    userRole: string,
+    options?: { hourlyRate?: number | null; workMode?: string },
   ): Promise<boolean> {
     const project = await this.repository.findById(projectId)
     if (!project) {
       throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "ProjectService")
     }
 
-    // Only GM/Admin or the project's Team Leader can manage members
     const isTL = project.teamLeaderId === userId
     if (!this.isAuthorizedAdminOrGM(userRole) && !isTL) {
       throw new AppError(
@@ -264,19 +265,30 @@ export class ProjectService implements IProjectService {
       )
     }
 
-    // Check if the employee to be added exists
     const employee = await this.employeeRepository.findById(employeeId)
     if (!employee) {
       throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "ProjectService")
     }
 
-    // Check if already a project member
+    if (
+      employee.employeeType === EMPLOYEE_TYPE.PART_TIME &&
+      (options?.hourlyRate == null || options.hourlyRate <= 0)
+    ) {
+      // Rate is required on ProjectMember — payroll reads it per project, not base salary alone.
+      throw new AppError(
+        "Part-time members require an hourly rate",
+        HttpStatusCode.UNPROCESSABLE_ENTITY,
+        "ProjectService"
+      )
+    }
+
     const alreadyMember = await this.repository.isMember(projectId, employeeId)
     if (alreadyMember) {
       throw new AppError("Employee is already a member of this project", HttpStatusCode.CONFLICT, "ProjectService")
     }
 
-    return this.repository.addMember(projectId, employeeId)
+    // workMode: remote → Spent Time only | onsite → one GPS check-in/day then Spent Time.
+    return this.repository.addMember(projectId, employeeId, options)
   }
 
   /**
@@ -313,6 +325,59 @@ export class ProjectService implements IProjectService {
     }
 
     return this.repository.removeMember(projectId, employeeId)
+  }
+
+  /**
+   * Updates hourly rate or work mode for an existing project member.
+   * workMode drives attendance rules: remote → Spent Time only; onsite → GPS check-in once.
+   */
+  async updateMember(
+    projectId: string,
+    employeeId: string,
+    userId: string,
+    userRole: string,
+    data: { hourlyRate?: number | null; workMode?: string },
+  ): Promise<boolean> {
+    const project = await this.repository.findById(projectId)
+    if (!project) {
+      throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "ProjectService")
+    }
+
+    const isTL = project.teamLeaderId === userId
+    if (!this.isAuthorizedAdminOrGM(userRole) && !isTL) {
+      throw new AppError(
+        "Only Admins, GMs, or the Project's Team Leader can manage members",
+        HttpStatusCode.FORBIDDEN,
+        "ProjectService",
+      )
+    }
+
+    const isMember = await this.repository.isMember(projectId, employeeId)
+    if (!isMember) {
+      throw new AppError("Employee is not a member of this project", HttpStatusCode.NOT_FOUND, "ProjectService")
+    }
+
+    const employee = await this.employeeRepository.findById(employeeId)
+    if (!employee) {
+      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "ProjectService")
+    }
+
+    const existingMember = await this.repository.getMember(projectId, employeeId)
+    const resolvedHourlyRate =
+      data.hourlyRate !== undefined ? data.hourlyRate : (existingMember?.hourlyRate ?? null)
+
+    if (
+      employee.employeeType === EMPLOYEE_TYPE.PART_TIME &&
+      (resolvedHourlyRate == null || resolvedHourlyRate <= 0)
+    ) {
+      throw new AppError(
+        "Part-time members require an hourly rate",
+        HttpStatusCode.UNPROCESSABLE_ENTITY,
+        "ProjectService",
+      )
+    }
+
+    return this.repository.updateMember(projectId, employeeId, data)
   }
 
   /**

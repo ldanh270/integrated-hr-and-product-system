@@ -126,9 +126,7 @@ export const SPENT_TIME_ACTIVITIES = [
   SPENT_TIME_ACTIVITY.OTHER,
 ] as const
 
-/**
- * Spent time work time types
- */
+/** working_day = 1× rate; overtime = OT multiplier in PT payroll (see spent-time.config). */
 export const SPENT_TIME_WORK_TIME_TYPE = {
   WORKING_DAY: "working_day",
   OVERTIME: "overtime",
@@ -138,3 +136,65 @@ export const SPENT_TIME_WORK_TIME_TYPES = [
   SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY,
   SPENT_TIME_WORK_TIME_TYPE.OVERTIME,
 ] as const
+
+/** pending → lead review | approved → payroll | rejected → excluded from totals */
+export const SPENT_TIME_STATUS = {
+  PENDING: "pending",
+  APPROVED: "approved",
+  REJECTED: "rejected",
+} as const
+
+export const SPENT_TIME_STATUSES = [
+  SPENT_TIME_STATUS.PENDING,
+  SPENT_TIME_STATUS.APPROVED,
+  SPENT_TIME_STATUS.REJECTED,
+] as const
+
+export const SPENT_TIME_STATUS_LABELS: Record<(typeof SPENT_TIME_STATUSES)[number], string> = {
+  [SPENT_TIME_STATUS.PENDING]: "Chờ duyệt",
+  [SPENT_TIME_STATUS.APPROVED]: "Đã duyệt",
+  [SPENT_TIME_STATUS.REJECTED]: "Từ chối",
+}
+
+/** remote: Spent Time only | onsite: one GPS check-in/day, then Spent Time */
+export const PROJECT_MEMBER_WORK_MODE = {
+  REMOTE: "remote",
+  ONSITE: "onsite",
+} as const
+
+export const PROJECT_MEMBER_WORK_MODES = [
+  PROJECT_MEMBER_WORK_MODE.REMOTE,
+  PROJECT_MEMBER_WORK_MODE.ONSITE,
+] as const
+
+export const PROJECT_MEMBER_WORK_MODE_LABELS: Record<(typeof PROJECT_MEMBER_WORK_MODES)[number], string> = {
+  [PROJECT_MEMBER_WORK_MODE.REMOTE]: "Remote",
+  [PROJECT_MEMBER_WORK_MODE.ONSITE]: "Onsite",
+}
+
+export type SpentTimeStatusValue = (typeof SPENT_TIME_STATUSES)[number]
+export type ProjectMemberWorkModeValue = (typeof PROJECT_MEMBER_WORK_MODES)[number]
+
+export function getSpentTimeStatusLabel(status: string): string {
+  switch (status) {
+    case SPENT_TIME_STATUS.PENDING:
+      return SPENT_TIME_STATUS_LABELS[SPENT_TIME_STATUS.PENDING]
+    case SPENT_TIME_STATUS.APPROVED:
+      return SPENT_TIME_STATUS_LABELS[SPENT_TIME_STATUS.APPROVED]
+    case SPENT_TIME_STATUS.REJECTED:
+      return SPENT_TIME_STATUS_LABELS[SPENT_TIME_STATUS.REJECTED]
+    default:
+      return status
+  }
+}
+
+export function getProjectMemberWorkModeLabel(mode: string): string {
+  switch (mode) {
+    case PROJECT_MEMBER_WORK_MODE.REMOTE:
+      return PROJECT_MEMBER_WORK_MODE_LABELS[PROJECT_MEMBER_WORK_MODE.REMOTE]
+    case PROJECT_MEMBER_WORK_MODE.ONSITE:
+      return PROJECT_MEMBER_WORK_MODE_LABELS[PROJECT_MEMBER_WORK_MODE.ONSITE]
+    default:
+      return mode
+  }
+}

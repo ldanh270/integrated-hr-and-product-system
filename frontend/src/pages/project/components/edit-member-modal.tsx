@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import {
@@ -29,48 +29,47 @@ import { extractErrorMessage } from "@/utils/error-helper"
 import type { Employee } from "@/types/employee.types"
 import type { ProjectMember } from "@/types/project.types"
 
-interface AddMemberModalProps {
+/** Edit hourlyRate / workMode — workMode change toggles GPS requirement for onsite PT. */
+interface EditMemberModalProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   projectId: string
-  members: ProjectMember[]
+  member: ProjectMember | null
   allEmployees: Employee[]
-  teamLeaderId?: string | null
 }
 
-const SELECT_NONE_VALUE = "none"
-
-/** Add employee to project with PT-specific hourlyRate and workMode (remote/onsite). */
-export function AddMemberModal({
+export function EditMemberModal({
   isOpen,
   onOpenChange,
   projectId,
-  members,
+  member,
   allEmployees,
-  teamLeaderId,
-}: AddMemberModalProps) {
+}: EditMemberModalProps) {
   const queryClient = useQueryClient()
-  const [memberEmployeeId, setMemberEmployeeId] = useState(SELECT_NONE_VALUE)
   const [hourlyRate, setHourlyRate] = useState("")
-  // Default remote: PT logs Spent Time without GPS. TL can switch to onsite per project.
   const [workMode, setWorkMode] = useState<string>(PROJECT_MEMBER_WORK_MODE.REMOTE)
   const [memberError, setMemberError] = useState<string | null>(null)
 
-  const selectedEmployee = allEmployees.find((e) => e.id === memberEmployeeId)
-  const isPartTime = selectedEmployee?.employeeType === EMPLOYEE_TYPE.PART_TIME
+  const employee = allEmployees.find((e) => e.id === member?.employeeId)
+  const isPartTime = employee?.employeeType === EMPLOYEE_TYPE.PART_TIME
 
-  const addMemberMutation = useMutation({
+  useEffect(() => {
+    if (member && isOpen) {
+      setHourlyRate(member.hourlyRate != null ? String(member.hourlyRate) : "")
+      setWorkMode(member.workMode || PROJECT_MEMBER_WORK_MODE.REMOTE)
+      setMemberError(null)
+    }
+  }, [member, isOpen])
+
+  // Rate/mode changes apply on next payroll run; workMode flips GPS requirement immediately.
+  const updateMemberMutation = useMutation({
     mutationFn: async () => {
-      if (memberEmployeeId === SELECT_NONE_VALUE) {
-        throw new Error("Vui lòng chọn nhân viên")
-      }
+      if (!member) throw new Error("Không tìm thấy thành viên")
       if (isPartTime && (!hourlyRate || Number(hourlyRate) <= 0)) {
-        // Backend rejects PT members without rate — payroll uses ProjectMember.hourlyRate.
         throw new Error("Nhân viên part-time cần mức lương theo giờ")
       }
 
-      return projectApi.addMember(projectId, {
-        employeeId: memberEmployeeId,
+      return projectApi.updateMember(projectId, member.employeeId, {
         hourlyRate: hourlyRate ? Number(hourlyRate) : null,
         workMode,
       })
@@ -78,11 +77,7 @@ export function AddMemberModal({
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["members", projectId] })
       onOpenChange(false)
-      setMemberEmployeeId(SELECT_NONE_VALUE)
-      setHourlyRate("")
-      setWorkMode(PROJECT_MEMBER_WORK_MODE.REMOTE)
-      setMemberError(null)
-      toast.success("Thêm thành viên vào dự án thành công")
+      toast.success("Cập nhật thành viên thành công")
     },
     onError: (err: unknown) => {
       setMemberError(extractErrorMessage(err))
@@ -92,24 +87,32 @@ export function AddMemberModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setMemberError(null)
-    addMemberMutation.mutate()
+    updateMemberMutation.mutate()
   }
 
   const handleClose = () => {
-    setMemberEmployeeId(SELECT_NONE_VALUE)
-    setHourlyRate("")
-    setWorkMode(PROJECT_MEMBER_WORK_MODE.REMOTE)
     setMemberError(null)
     onOpenChange(false)
   }
 
+  if (!member) return null
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); else onOpenChange(true); }}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) handleClose()
+        else onOpenChange(true)
+      }}
+    >
       <DialogContent className="sm:max-w-[450px] rounded-xl bg-background border-border p-6 shadow-lg">
         <DialogHeader>
-          <DialogTitle className="text-lg font-bold text-foreground">Thêm thành viên dự án</DialogTitle>
+          <DialogTitle className="text-lg font-bold text-foreground">
+            Chỉnh sửa thành viên
+          </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Chọn nhân viên, mức lương/giờ (bắt buộc với part-time) và chế độ làm việc.
+            Cập nhật mức lương/giờ và chế độ làm việc cho{" "}
+            {member.employee?.fullName ?? "thành viên"}.
           </DialogDescription>
         </DialogHeader>
 
@@ -121,36 +124,11 @@ export function AddMemberModal({
           )}
 
           <div className="space-y-1.5">
-            <Label htmlFor="memberEmp" className="text-xs font-semibold text-muted-foreground">
-              Chọn nhân sự
-            </Label>
-            <Select value={memberEmployeeId} onValueChange={setMemberEmployeeId}>
-              <SelectTrigger id="memberEmp" className="w-full h-10 border-border rounded-full px-4 bg-background">
-                <SelectValue placeholder="Chọn nhân sự" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-border bg-popover">
-                <SelectItem value={SELECT_NONE_VALUE} className="rounded-lg">Chọn nhân viên</SelectItem>
-                {allEmployees
-                  .filter(
-                    (emp) =>
-                      !members.some((m) => m.employeeId === emp.id) &&
-                      emp.id !== teamLeaderId
-                  )
-                  .map((emp) => (
-                    <SelectItem key={emp.id} value={emp.id} className="rounded-lg">
-                      {emp.fullName}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="hourlyRate" className="text-xs font-semibold text-muted-foreground">
+            <Label htmlFor="editHourlyRate" className="text-xs font-semibold text-muted-foreground">
               Lương theo giờ (VND){isPartTime ? " *" : ""}
             </Label>
             <Input
-              id="hourlyRate"
+              id="editHourlyRate"
               type="number"
               min="0"
               step="1000"
@@ -164,11 +142,14 @@ export function AddMemberModal({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="workMode" className="text-xs font-semibold text-muted-foreground">
+            <Label htmlFor="editWorkMode" className="text-xs font-semibold text-muted-foreground">
               Chế độ làm việc
             </Label>
             <Select value={workMode} onValueChange={setWorkMode}>
-              <SelectTrigger id="workMode" className="w-full h-10 border-border rounded-full px-4 bg-background">
+              <SelectTrigger
+                id="editWorkMode"
+                className="w-full h-10 border-border rounded-full px-4 bg-background"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-xl border-border bg-popover">
@@ -187,16 +168,16 @@ export function AddMemberModal({
               variant="outline"
               onClick={handleClose}
               className="h-10 rounded-full px-5 text-sm"
-              disabled={addMemberMutation.isPending}
+              disabled={updateMemberMutation.isPending}
             >
               Hủy
             </Button>
             <Button
               type="submit"
               className="h-10 rounded-full px-5 text-sm bg-primary text-primary-foreground hover:bg-primary/95"
-              disabled={addMemberMutation.isPending}
+              disabled={updateMemberMutation.isPending}
             >
-              {addMemberMutation.isPending ? "Đang thêm..." : "Thêm thành viên"}
+              {updateMemberMutation.isPending ? "Đang lưu..." : "Lưu thay đổi"}
             </Button>
           </div>
         </form>

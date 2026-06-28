@@ -40,7 +40,7 @@ export const taskApi = {
     await apiClient.delete<ApiResponse<null>>(`/tasks/${id}`)
   },
 
-  // Spent Time APIs
+  /** Lists Spent Time logs — filter by projectId/status for lead approval queue. */
   listSpentTimes: async (query?: SpentTimeQuery): Promise<SpentTime[]> => {
     const response = await apiClient.get<ApiResponse<SpentTime[]>>("/spent-times", {
       params: query,
@@ -48,17 +48,34 @@ export const taskApi = {
     return response.data.data
   },
 
+  /** Creates a pending Spent Time log — PT primary time input (not weekly attendance). */
   logSpentTime: async (data: CreateSpentTimeDto): Promise<SpentTime> => {
     const response = await apiClient.post<ApiResponse<SpentTime>>("/spent-times", data)
     return response.data.data
   },
 
+  /** Updates a pending log — approved/rejected rows are locked on the server. */
   updateSpentTime: async (id: string, data: UpdateSpentTimeDto): Promise<SpentTime> => {
     const response = await apiClient.patch<ApiResponse<SpentTime>>(`/spent-times/${id}`, data)
     return response.data.data
   },
 
+  /** Deletes a pending log only — cannot remove payroll-eligible approved rows. */
   deleteSpentTime: async (id: string): Promise<void> => {
     await apiClient.delete<ApiResponse<null>>(`/spent-times/${id}`)
+  },
+
+  /** Lead approves hours — included in next PT payroll calculation. */
+  approveSpentTime: async (id: string): Promise<SpentTime> => {
+    const response = await apiClient.post<ApiResponse<SpentTime>>(`/spent-times/${id}/approve`)
+    return response.data.data
+  },
+
+  /** Lead rejects with reason — hours excluded from payroll and task totals. */
+  rejectSpentTime: async (id: string, reason: string): Promise<SpentTime> => {
+    const response = await apiClient.post<ApiResponse<SpentTime>>(`/spent-times/${id}/reject`, {
+      reason,
+    })
+    return response.data.data
   },
 }

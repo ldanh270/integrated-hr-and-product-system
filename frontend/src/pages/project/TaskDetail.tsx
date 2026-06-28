@@ -28,7 +28,17 @@ import { RichTextEditor } from "@/components/ui/rich-text-editor"
 // Import employee role specifications
 import { ROLE } from "@/config/entities/employee.config"
 // Import task property categories lists
-import { TASK_PRIORITIES, TASK_STATUS, TASK_TRACKERS } from "@/config/entities/project.config"
+import {
+  SPENT_TIME_STATUS,
+  TASK_PRIORITIES,
+  TASK_STATUS,
+  TASK_TRACKERS,
+  getSpentTimeStatusLabel,
+} from "@/config/entities/project.config"
+import {
+  SPENT_TIME_UI,
+  getSpentTimeStatusPillVariant,
+} from "@/config/rules/spent-time.config"
 // Import API endpoint wrapper clients
 import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
@@ -44,6 +54,7 @@ import type { ProjectTaskStatus } from "@/types/project-task-status.types"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 // Import toast notification client
 import { toast } from "sonner"
+import { extractErrorMessage } from "@/utils/error-helper"
 // Import Lucide icons
 import {
   AlertCircle,
@@ -55,6 +66,8 @@ import {
   Plus,
   Trash2,
   User,
+  Check,
+  X,
 } from "lucide-react"
 // Import standard React hooks
 import { useState, useEffect } from "react"
@@ -144,7 +157,7 @@ export default function TaskDetail() {
     }
   }, [task?.projectId])
 
-  // 2. Query hook to fetch spent time records log belonging to this task
+  // Query hook to fetch spent time records log belonging to this task (PT primary input)
   const { data: spentTimes, isLoading: isLoadingSpent } = useQuery({
     queryKey: ["spentTimes", id],
     queryFn: () => taskApi.listSpentTimes({ taskId: id }),
@@ -181,7 +194,9 @@ export default function TaskDetail() {
   })
   const statuses = statusesData || []
 
-  const totalSpentHours = spentTimes?.reduce((sum, st) => sum + st.hours, 0) || 0
+  // PT task totals exclude rejected logs; pending + approved count toward estimate cap
+  const totalSpentHours =
+    spentTimes?.filter((st) => st.status !== SPENT_TIME_STATUS.REJECTED).reduce((sum, st) => sum + st.hours, 0) || 0
 
   // Check roles/permissions
   const isCreator = task?.createdById === user?.id
@@ -245,6 +260,28 @@ export default function TaskDetail() {
       }
       setEditError(errorMessage)
     },
+  })
+
+  // Lead approval is required before PT hours flow into payroll
+  const canApproveSpentTime = isAdminOrGM || isLeader
+
+  const approveSpentTimeMutation = useMutation({
+    mutationFn: (logId: string) => taskApi.approveSpentTime(logId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["spentTimes", id] })
+      toast.success(SPENT_TIME_UI.TASK_TOAST_APPROVED)
+    },
+    onError: (err: unknown) => toast.error(extractErrorMessage(err)),
+  })
+
+  const rejectSpentTimeMutation = useMutation({
+    mutationFn: ({ logId, reason }: { logId: string; reason: string }) =>
+      taskApi.rejectSpentTime(logId, reason),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["spentTimes", id] })
+      toast.success(SPENT_TIME_UI.TASK_TOAST_REJECTED)
+    },
+    onError: (err: unknown) => toast.error(extractErrorMessage(err)),
   })
 
   // Delete Spent Time log mutation
@@ -559,16 +596,16 @@ export default function TaskDetail() {
           )}
         </div>
 
-        {/* Right Side: Spent Time logs list */}
+        {/* Right Side: Spent Time logs — PT employees log here; lead approves before payroll */}
         <div className="col-span-12 lg:col-span-4 space-y-6">
           <PageCard className="p-6">
             <h3 className="font-bold text-base text-foreground mb-4 border-b border-border pb-2 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <Clock className="size-4 text-muted-foreground" />
-                Spent Time
+                {SPENT_TIME_UI.TASK_SECTION_TITLE}
               </span>
               <span className="text-xs bg-primary/10 text-primary font-bold rounded-full px-2.5 py-0.5">
-                {totalSpentHours.toFixed(1)} giờ
+                {totalSpentHours.toFixed(1)} {SPENT_TIME_UI.TASK_HOURS_SUFFIX}
               </span>
             </h3>
 
@@ -579,13 +616,17 @@ export default function TaskDetail() {
               </div>
             ) : !spentTimes || spentTimes.length === 0 ? (
               <div className="text-center py-8 text-xs text-muted-foreground italic">
-                Chưa có thời gian làm việc nào được ghi nhận.
+                {SPENT_TIME_UI.TASK_EMPTY_LIST}
               </div>
             ) : (
               <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
                 {spentTimes.map((st) => {
                   const isLogOwner = st.employeeId === user?.id
-                  const canDeleteLog = isAdminOrGM || isLogOwner
+                  const isPending = st.status === SPENT_TIME_STATUS.PENDING
+                  const canDeleteLog = (isAdminOrGM || isLogOwner) && isPending
+                  const canEditLog = canDeleteLog
+
+                  const statusVariant = getSpentTimeStatusPillVariant(st.status)
 
                   return (
                     <div
@@ -603,36 +644,71 @@ export default function TaskDetail() {
                         </div>
 
                         <div className="flex items-center gap-2">
+                          <StatusPill
+                            variant={statusVariant}
+                            className="text-[9px] px-2 py-0"
+                            label={getSpentTimeStatusLabel(st.status)}
+                          />
                           <Badge variant="outline" className="rounded-full text-[9px] bg-primary/5 text-primary border-primary/10 font-black">
-                            {st.hours} h
+                            {st.hours} {SPENT_TIME_UI.TASK_HOURS_BADGE_SUFFIX}
                           </Badge>
 
-                          {canDeleteLog && (
+                          {canApproveSpentTime && isPending && (
                             <>
                               <Button
                                 variant="ghost"
                                 size="icon-xs"
                                 className="text-primary hover:bg-primary/10 rounded-full cursor-pointer size-6 p-0"
+                                title={SPENT_TIME_UI.APPROVE_ACTION_TITLE}
                                 onClick={() => {
-                                  setEditingSpentTime(st)
-                                  setIsOpenLogTimeModal(true)
+                                  approveSpentTimeMutation.mutate(st.id)
                                 }}
                               >
-                                <Edit className="size-3" />
+                                <Check className="size-3" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="icon-xs"
                                 className="text-destructive hover:bg-destructive/10 rounded-full cursor-pointer size-6 p-0"
+                                title={SPENT_TIME_UI.REJECT_ACTION_TITLE}
                                 onClick={() => {
-                                  if (window.confirm("Bạn có chắc chắn muốn xóa nhật ký này?")) {
-                                    deleteSpentTimeMutation.mutate(st.id)
+                                  const reason = window.prompt(SPENT_TIME_UI.REJECT_REASON_PROMPT)
+                                  if (reason?.trim()) {
+                                    rejectSpentTimeMutation.mutate({ logId: st.id, reason: reason.trim() })
                                   }
                                 }}
                               >
-                                <Trash2 className="size-3" />
+                                <X className="size-3" />
                               </Button>
                             </>
+                          )}
+
+                          {canEditLog && (
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              className="text-primary hover:bg-primary/10 rounded-full cursor-pointer size-6 p-0"
+                              onClick={() => {
+                                setEditingSpentTime(st)
+                                setIsOpenLogTimeModal(true)
+                              }}
+                            >
+                              <Edit className="size-3" />
+                            </Button>
+                          )}
+                          {canDeleteLog && (
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              className="text-destructive hover:bg-destructive/10 rounded-full cursor-pointer size-6 p-0"
+                              onClick={() => {
+                                if (window.confirm(SPENT_TIME_UI.TASK_DELETE_CONFIRM)) {
+                                  deleteSpentTimeMutation.mutate(st.id)
+                                }
+                              }}
+                            >
+                              <Trash2 className="size-3" />
+                            </Button>
                           )}
                         </div>
                       </div>
@@ -640,7 +716,14 @@ export default function TaskDetail() {
                       <div className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1">
                         <History className="size-3 text-muted-foreground" />
                         {formatActivity(st.activity)}
+                        {st.workTimeType === "overtime" ? " · OT" : ""}
                       </div>
+
+                      {st.rejectionReason && (
+                        <div className="text-[10px] text-destructive italic">
+                          Lý do từ chối: {st.rejectionReason}
+                        </div>
+                      )}
 
                       {st.comment && (
                         <div className="text-xs text-muted-foreground italic bg-background/50 border border-border/40 p-2 rounded-lg mt-1">
@@ -663,6 +746,8 @@ export default function TaskDetail() {
         taskId={task.id}
         taskTitle={task.title}
         spentTime={editingSpentTime}
+        estimatedTime={task.estimatedTime}
+        loggedHours={totalSpentHours}
       />
 
       {/* EDIT TASK DIALOG */}

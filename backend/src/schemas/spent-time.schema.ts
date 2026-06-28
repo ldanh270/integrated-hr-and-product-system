@@ -1,4 +1,5 @@
-import { SPENT_TIME_ACTIVITIES, SPENT_TIME_WORK_TIME_TYPES } from "@/configs/entities/project.config.ts"
+/** Zod boundary for PT spent-time API — logs start pending; workTimeType affects OT payroll multiplier. */
+import { SPENT_TIME_ACTIVITIES, SPENT_TIME_STATUSES, SPENT_TIME_WORK_TIME_TYPES } from "@/configs/entities/project.config.ts"
 import { z } from "zod"
 
 export const createSpentTimeSchema = z
@@ -15,6 +16,7 @@ export const createSpentTimeSchema = z
       .max(24, "Hours cannot exceed 24 hours per day"),
     comment: z.string().max(255, "Comment too long").trim().optional().nullable(),
     activity: z.enum(SPENT_TIME_ACTIVITIES),
+    // working_day = 1× rate; overtime = SPENT_TIME_RULES.OVERTIME_MULTIPLIER in payroll.
     workTimeType: z.enum(SPENT_TIME_WORK_TIME_TYPES).optional().default("working_day"),
   })
   .strict()
@@ -46,6 +48,7 @@ export const spentTimeQuerySchema = z
     taskId: z.string().optional(),
     employeeId: z.string().optional(),
     projectId: z.string().optional(),
+    status: z.enum(SPENT_TIME_STATUSES).optional(),
     startDate: z
       .string()
       .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid startDate format" })
@@ -58,3 +61,11 @@ export const spentTimeQuerySchema = z
   .strict()
 
 export type SpentTimeQuerySchemaType = z.infer<typeof spentTimeQuerySchema>
+
+export const rejectSpentTimeSchema = z
+  .object({
+    reason: z.string().min(1, "Rejection reason is required").max(500).trim(),
+  })
+  .strict()
+
+export type RejectSpentTimeSchemaType = z.infer<typeof rejectSpentTimeSchema>

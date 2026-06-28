@@ -4,6 +4,7 @@ import { PrismaEmployeeSalaryConfigRepository } from "@/repositories/employee-sa
 import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
 import { PrismaPayrollRepository } from "@/repositories/payroll.repository.ts"
 import { PrismaPayslipRepository } from "@/repositories/payslip.repository.ts"
+import { PrismaSpentTimeRepository } from "@/repositories/spent-time.repository.ts"
 import { PayrollService } from "@/services/payroll.service.ts"
 
 import cron from "node-cron"
@@ -12,6 +13,8 @@ const payrollRepo = new PrismaPayrollRepository(prisma)
 const payslipRepo = new PrismaPayslipRepository(prisma)
 const configRepo = new PrismaEmployeeSalaryConfigRepository(prisma)
 const attendanceRepo = new PrismaAttendanceRepository(prisma)
+// Monthly cron includes PT employees via approved spent-time rows (see PayrollService).
+const spentTimeRepo = new PrismaSpentTimeRepository(prisma)
 const employeeRepo = new PrismaEmployeeRepository(prisma)
 const settingsRepo = {
   findGlobal: async () => {
@@ -33,6 +36,7 @@ const payrollService = new PayrollService(
   configRepo,
   attendanceRepo,
   employeeRepo,
+  spentTimeRepo,
   settingsRepo,
   prisma,
 )

@@ -1,5 +1,8 @@
+import { EMPLOYEE_TYPE } from "@/configs/entities/employee.config.ts"
+import { WEEKLY_SCHEDULE_MESSAGES } from "@/configs/messages/weekly-schedule.message.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { IEmployeeShiftRepository, IShiftScheduleRepository } from "@/types/shift.types.ts"
+import { IEmployeeRepository } from "@/types/employee.types.ts"
 import {
   IApplyWeeklyScheduleTemplateDTO,
   ICreateWeeklyScheduleTemplateDTO,
@@ -19,8 +22,11 @@ export class WeeklyScheduleTemplateService implements IWeeklyScheduleTemplateSer
     private templateRepo: IWeeklyScheduleTemplateRepository,
     private scheduleRepo: IShiftScheduleRepository,
     private employeeShiftRepo: IEmployeeShiftRepository,
+    /** Used in applyTemplate to block PART_TIME employees (project Spent Time model). */
+    private employeeRepo: IEmployeeRepository,
   ) {}
 
+  /** Creates a reusable weekly shift template (full-time employees only at apply time). */
   createTemplate(data: ICreateWeeklyScheduleTemplateDTO): Promise<IWeeklyScheduleTemplateWithWeeks> {
     return this.templateRepo.create(data)
   }
@@ -79,6 +85,18 @@ export class WeeklyScheduleTemplateService implements IWeeklyScheduleTemplateSer
 
     if (scheduleDays.length === 0) {
       throw new AppError("Template không có ca làm việc nào để áp dụng", HttpStatusCode.BAD_REQUEST, "service")
+    }
+
+    for (const employeeId of data.employeeIds) {
+      const employee = await this.employeeRepo.findById(employeeId)
+      // PT uses per-project Spent Time, not company weekly shift templates.
+      if (employee?.employeeType === EMPLOYEE_TYPE.PART_TIME) {
+        throw new AppError(
+          WEEKLY_SCHEDULE_MESSAGES.PART_TIME_NOT_APPLICABLE,
+          HttpStatusCode.UNPROCESSABLE_ENTITY,
+          "service",
+        )
+      }
     }
 
     const results = await Promise.all(

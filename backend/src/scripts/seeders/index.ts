@@ -18,6 +18,7 @@ import "./14-payrolls.seeder.ts"
 import "./15-tasks.seeder.ts"
 import "./16-payslips.seeder.ts"
 import "./17-activity-logs.seeder.ts"
+import "./18-spent-times.seeder.ts"
 
 export { registry } from "./seeder.registry.ts"
 export type { ISeeder } from "./seeder.interface.ts"

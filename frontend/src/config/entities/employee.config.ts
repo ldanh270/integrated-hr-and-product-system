@@ -16,6 +16,17 @@ export const EMPLOYEE_STATUS = {
 export const EMPLOYEE_TYPES = ["full_time", "part_time", "contractor", "intern"] as const
 export type IEmployeeType = (typeof EMPLOYEE_TYPES)[number]
 
+/**
+ * Contract type keys — values must match backend/Prisma EmployeeType exactly.
+ * PART_TIME: Spent Time workflow; weekly schedule UI hidden in EmployeeEditDrawer.
+ */
+export const EMPLOYEE_TYPE = {
+  FULL_TIME: "full_time",
+  PART_TIME: "part_time",
+  CONTRACTOR: "contractor",
+  INTERN: "intern",
+} as const
+
 export const EMPLOYEE_STATUSES = [
   EMPLOYEE_STATUS.ACTIVE,
   EMPLOYEE_STATUS.INACTIVE,
