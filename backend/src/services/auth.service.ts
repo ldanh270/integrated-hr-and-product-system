@@ -248,6 +248,22 @@ export class AuthService implements IAuthService {
     }
 
     if (oldToken.revokedAt !== null) {
+      // GRACE PERIOD: 30 seconds
+      // Prevent Token Reuse False Positives when multiple tabs refresh concurrently
+      const GRACE_PERIOD_MS = 30 * 1000
+      if (Date.now() - oldToken.revokedAt.getTime() <= GRACE_PERIOD_MS) {
+        const employee = await this.repo.findById(oldToken.employeeId)
+        if (!employee || employee.status !== EMPLOYEE_STATUS.ACTIVE) {
+          throw new AppError("Account inactive", HttpStatusCode.FORBIDDEN, "Authentication")
+        }
+        
+        const tokens = await this.generateTokens(employee, oldToken.expiresAt)
+        return {
+          employee: await toAuthEmployee(employee),
+          ...tokens,
+        }
+      }
+
       await this.repo.revokeAllUserRefreshTokens(oldToken.employeeId)
       await this.repo.logActivity({
         empId: oldToken.employeeId,

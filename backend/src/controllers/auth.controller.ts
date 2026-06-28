@@ -98,6 +98,12 @@ export class AuthController {
   refresh = async (req: Request, res: Response) => {
     try {
       const rawRefreshToken = req.cookies["refresh_token"]
+
+      // DEBUG — xóa sau khi fix xong
+      console.log("[REFRESH DEBUG] cookies received:", Object.keys(req.cookies))
+      console.log("[REFRESH DEBUG] refresh_token present:", !!rawRefreshToken)
+      console.log("[REFRESH DEBUG] refresh_token value (first 20 chars):", rawRefreshToken?.slice(0, 20))
+
       if (!rawRefreshToken) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           status: RESPONSE_STATUS.ERROR,
@@ -116,6 +122,7 @@ export class AuthController {
         data: authData,
       })
     } catch (error: any) {
+      console.log("[REFRESH DEBUG] error:", error.message)
       res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
         status: RESPONSE_STATUS.ERROR,
         message: error.message || "Refresh failed",
