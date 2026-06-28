@@ -274,9 +274,6 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     description: "Quản lý dự án, tiến độ công việc và báo cáo",
     icon: Briefcase,
     routePrefix: "/project",
-    sidebarItems: [
-      { name: "Tổng quan", path: ROUTES.PERSONAL.PROJECTS, icon: FileText },
-      { name: "Danh sách dự án", path: ROUTES.PROJECT.LIST, icon: Briefcase },
-    ],
+    sidebarItems: [{ name: "Danh sách dự án", path: ROUTES.PROJECT.LIST, icon: Briefcase }],
   },
 ]

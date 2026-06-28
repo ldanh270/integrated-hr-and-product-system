@@ -789,6 +789,7 @@ model Project {
   members    ProjectMember[]
   tasks      Task[]
   customQueries CustomQuery[]
+  taskStatuses  ProjectTaskStatus[]
 
   @@index([status])
   @@index([teamLeaderId, status])
@@ -837,12 +838,16 @@ model Task {
   parentTask      Task?         @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: Cascade)
   subtasks        Task[]        @relation("TaskSubtasks")
 
+  statusId        String?
+  customStatus    ProjectTaskStatus? @relation(fields: [statusId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   spentTimes SpentTime[] @relation("TaskSpentTimes")
 
   @@index([projectId, status])
+  @@index([projectId, statusId])
   @@index([assigneeId, status])
   @@index([dueDate, status])
   @@index([createdById])
@@ -940,5 +945,22 @@ model CustomQuery {
   updatedAt   DateTime @updatedAt
 
   @@index([employeeId, type])
+}
+
+model ProjectTaskStatus {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String   // Tên trạng thái, ví dụ: "Idea", "To Do", "In Progress", "Done"
+  color       String   @default("#A3A3A3") // Mã màu sắc đại diện
+  order       Int      @default(0)         // Thứ tự hiển thị cột trên Kanban Board
+  isDefault   Boolean  @default(false)     // Nhãn mặc định khi tạo mới Task
+  isCompleted Boolean  @default(false)     // Đánh dấu trạng thái đã hoàn thành (như Done, Closed)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tasks       Task[]
+
+  @@unique([projectId, name])
+  @@index([projectId])
 }
 

@@ -4,6 +4,7 @@ import { authenticate } from "@/middlewares/auth.middleware.ts"
 import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
 import { PrismaProjectRepository } from "@/repositories/project.repository.ts"
 import { PrismaTaskRepository } from "@/repositories/task.repository.ts"
+import { ProjectTaskStatusRepository } from "@/repositories/project-task-status.repository.ts"
 import { TaskService } from "@/services/task.service.ts"
 
 import express from "express"
@@ -13,7 +14,8 @@ const taskRoutes = express.Router()
 const employeeRepository = new PrismaEmployeeRepository(prisma)
 const projectRepository = new PrismaProjectRepository(prisma)
 const repository = new PrismaTaskRepository(prisma)
-const service = new TaskService(repository, projectRepository, employeeRepository)
+const statusRepository = new ProjectTaskStatusRepository(prisma)
+const service = new TaskService(repository, projectRepository, employeeRepository, statusRepository)
 const controller = new TaskController(service)
 
 // All task routes require authentication
