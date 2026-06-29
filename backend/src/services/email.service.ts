@@ -17,7 +17,7 @@ export class EmailService {
   private fromEmail = "no-reply@hrp.domain.com";
 
   constructor() {
-    this.resend = new Resend(process.env.RESEND_API_KEY);
+    this.resend = new Resend(process.env.RESEND_API_KEY || "re_123");
   }
 
   /**
