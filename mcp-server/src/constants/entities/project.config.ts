@@ -46,7 +46,14 @@ export const TASK_PRIORITIES = ["low", "medium", "high", "urgent"] as const
  * Task status enumeration
  * Represents the workflow states of a task
  */
-export const TASK_STATUSES = ["todo", "in_progress", "in_review", "done", "cancelled", "reopened"] as const
+export const TASK_STATUSES = [
+  "todo",
+  "in_progress",
+  "in_review",
+  "done",
+  "cancelled",
+  "reopened",
+] as const
 
 /**
  * Spent time activity types

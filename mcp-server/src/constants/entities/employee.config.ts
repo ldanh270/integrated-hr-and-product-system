@@ -33,3 +33,4 @@ export const EMPLOYEE_ROLES = [
 ] as const
 
 export const GM_SCOPES = ["all", "department", "region"] as const
+export type IGMScope = (typeof GM_SCOPES)[number]

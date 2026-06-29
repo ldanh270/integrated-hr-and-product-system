@@ -1,21 +1,21 @@
 export interface EmployeeDetails {
-  id: string;
-  username: string;
-  email: string;
-  fullName: string;
-  role: string;
+  id: string
+  username: string
+  email: string
+  fullName: string
+  role: string
 }
 
 export interface LoginResponse {
-  status: string;
+  status: string
   data: {
-    token: string;
-    employee: EmployeeDetails;
-  };
+    token: string
+    employee: EmployeeDetails
+  }
 }
 
 export interface GenericResponse<T = any> {
-  status: string;
-  message?: string;
-  data?: T;
+  status: string
+  message?: string
+  data?: T
 }

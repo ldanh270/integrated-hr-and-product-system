@@ -1,12 +1,15 @@
 {
   "scripts": {
     "dev": "concurrently \"nr dev:backend\" \"nr dev:frontend\"",
-    "dev:all": "concurrently \"nr dev:backend\" \"nr dev:frontend\" \"nr db:studio\"",
-    "i:all": "concurrently \"nr i:backend\" \"nr i:frontend\"",
+    "dev:stage": "concurrently \"nr dev:backend\" \"nr dev:frontend\" \"nr dev:mcp\"",
+    "dev:all": "concurrently \"nr dev:backend\" \"nr dev:frontend\" \"nr dev:mcp\" \"nr db:studio\"",
+    "i:all": "concurrently \"nr i:backend\" \"nr i:frontend\" \"nr i:mcp\"",
     "i:backend": "cd backend && ni",
     "i:frontend": "cd frontend && ni",
+    "i:mcp": "cd mcp-server && ni",
     "dev:backend": "cd backend && bun --watch src/index.ts",
     "dev:frontend": "cd frontend && nr dev",
+    "dev:mcp": "cd mcp-server && bun --watch src/index.ts",
     "build": "nr db:reset:force && nr db:deploy && nr build:frontend",
     "build:frontend": "cd frontend && nr build",
     "db:deploy": "cd backend && nlx prisma generate && nlx prisma migrate deploy",
