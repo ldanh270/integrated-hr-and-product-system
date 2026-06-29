@@ -8,8 +8,7 @@ import { BackgroundCheckService } from "../services/background-check.service";
 import { BackgroundCheckController } from "../controllers/background-check.controller";
 import { UpdateBackgroundCheckSchema } from "../schemas/recruitment/background-check.schema";
 import { z } from "zod";
-
-
+import { internalLimiter } from "../middlewares/rate-limit.middleware";
 
 const router = Router();
 
@@ -24,7 +23,7 @@ const InitiateCheckSchema = z.object({
 });
 
 // Routes
-
+router.use(internalLimiter);
 router.use(authenticate);
 
 router.post("/", validate(InitiateCheckSchema), controller.initiate);

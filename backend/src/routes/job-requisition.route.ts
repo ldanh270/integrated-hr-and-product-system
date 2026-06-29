@@ -6,8 +6,7 @@ import { JobRequisitionRepository } from "../repositories/job-requisition.reposi
 import { JobRequisitionService } from "../services/job-requisition.service";
 import { JobRequisitionController } from "../controllers/job-requisition.controller";
 import { CreateJobRequisitionSchema, RejectJobRequisitionSchema } from "../schemas/recruitment/job-requisition.schema";
-
-
+import { internalLimiter } from "../middlewares/rate-limit.middleware";
 
 const router = Router();
 
@@ -17,7 +16,7 @@ const service = new JobRequisitionService(repository);
 const controller = new JobRequisitionController(service);
 
 // Routes
-
+router.use(internalLimiter);
 router.use(authenticate);
 
 // List and create

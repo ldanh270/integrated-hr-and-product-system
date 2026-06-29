@@ -7,8 +7,7 @@ import { OfferRepository } from "../repositories/offer.repository";
 import { OnboardingService } from "../services/onboarding.service";
 import { OnboardingController } from "../controllers/onboarding.controller";
 import { ConvertToEmployeeSchema } from "../schemas/recruitment/onboarding.schema";
-
-
+import { internalLimiter } from "../middlewares/rate-limit.middleware";
 
 const router = Router();
 
@@ -19,7 +18,7 @@ const service = new OnboardingService(applicationRepository, offerRepository);
 const controller = new OnboardingController(service);
 
 // Routes
-
+router.use(internalLimiter);
 router.use(authenticate);
 
 router.post("/convert", validate(ConvertToEmployeeSchema), controller.convert);

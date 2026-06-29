@@ -8,8 +8,7 @@ import { JobRequisitionRepository } from "../repositories/job-requisition.reposi
 import { JobApplicationService } from "../services/job-application.service";
 import { JobApplicationController } from "../controllers/job-application.controller";
 import { ApplyJobSchema, UpdateApplicationStatusSchema, RejectApplicationSchema, UpdateKanbanOrderSchema } from "../schemas/recruitment/job-application.schema";
-
-
+import { apiLimiter, internalLimiter } from "../middlewares/rate-limit.middleware";
 
 const router = Router();
 
@@ -21,10 +20,10 @@ const service = new JobApplicationService(applicationRepository, candidateReposi
 const controller = new JobApplicationController(service);
 
 // Public or semi-public route for candidates to apply
-router.post("/apply", validate(ApplyJobSchema), controller.apply);
+router.post("/apply", apiLimiter, validate(ApplyJobSchema), controller.apply);
 
 // Private routes for HR/HM
-
+router.use(internalLimiter);
 router.use(authenticate);
 
 router.get("/", controller.getAll);
