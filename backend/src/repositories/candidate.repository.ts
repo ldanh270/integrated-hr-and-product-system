@@ -2,11 +2,21 @@ import { Candidate, Prisma } from "@prisma/client";
 import { prisma } from "../libs/database";
 import { CreateCandidateDTO, ICandidateRepository } from "../types/recruitment/job-application.types";
 
+/**
+ * Repository class for handling Candidate data operations.
+ * Implements the ICandidateRepository interface.
+ */
 export class CandidateRepository implements ICandidateRepository {
+  /**
+   * Creates a new candidate or updates an existing one based on their email address.
+   * This uses an atomic upsert operation to avoid unique constraint violations.
+   * 
+   * @param data The candidate data to insert or update.
+   * @returns The created or updated Candidate record.
+   */
   async upsert(data: CreateCandidateDTO): Promise<Candidate> {
     const { email, ...rest } = data;
 
-    // Use Prisma's atomic upsert to avoid unique constraint violations
     return prisma.candidate.upsert({
       where: { email },
       update: {
@@ -25,6 +35,13 @@ export class CandidateRepository implements ICandidateRepository {
     });
   }
 
+  /**
+   * Finds a candidate by their email address or phone number.
+   * 
+   * @param email The email address to search for.
+   * @param phone The phone number to search for (optional).
+   * @returns The Candidate record if found, otherwise null.
+   */
   async findByEmailOrPhone(email: string, phone?: string): Promise<Candidate | null> {
     const whereClause: Prisma.CandidateWhereInput[] = [{ email }];
     if (phone) {
@@ -38,6 +55,12 @@ export class CandidateRepository implements ICandidateRepository {
     });
   }
 
+  /**
+   * Retrieves a candidate by their unique identifier.
+   * 
+   * @param id The unique ID of the candidate.
+   * @returns The Candidate record if found, otherwise null.
+   */
   async findById(id: string): Promise<Candidate | null> {
     return prisma.candidate.findUnique({
       where: { id }
