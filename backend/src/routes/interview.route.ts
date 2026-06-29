@@ -8,7 +8,7 @@ import { InterviewService } from "../services/interview.service";
 import { InterviewController } from "../controllers/interview.controller";
 import { CreateInterviewRoundSchema, SubmitScorecardSchema } from "../schemas/recruitment/interview.schema";
 
-import { apiLimiter } from "../middlewares/rate-limit.middleware";
+
 
 const router = Router();
 
@@ -20,7 +20,7 @@ const service = new InterviewService(roundRepository, scorecardRepository, appli
 const controller = new InterviewController(service);
 
 // Routes
-router.use(apiLimiter);
+
 router.use(authenticate);
 
 router.post("/schedule", validate(CreateInterviewRoundSchema), controller.schedule);

@@ -10,7 +10,7 @@ import { CreateJobPostingSchema, PublishChannelSchema } from "../schemas/recruit
 import { z } from "zod";
 import { POSTING_STATUS_VALUES } from "../configs/entities/recruitment.config";
 
-import { apiLimiter } from "../middlewares/rate-limit.middleware";
+
 
 const router = Router();
 
@@ -26,7 +26,7 @@ const UpdateStatusSchema = z.object({
 });
 
 // Routes
-router.use(apiLimiter);
+
 router.use(authenticate);
 
 router.get("/", controller.getAll);
