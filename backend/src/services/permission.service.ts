@@ -1,7 +1,10 @@
+import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
-import { authorizationService } from "./authorization.service.ts"
-import { auditService } from "./audit.service.ts"
-
+import {
+  PERMISSION_AUDIT_ACTIONS,
+  PERMISSION_ERROR_CODES,
+  PERMISSION_ERROR_MESSAGES,
+} from "@/constants/permission.constants.ts"
 import {
   CreatePermissionDto,
   IPermissionRepository,
@@ -12,6 +15,9 @@ import {
   UpdatePermissionDto,
 } from "@/types"
 import { AppError } from "@/utils/error.util.ts"
+
+import { auditService } from "./audit.service.ts"
+import { authorizationService } from "./authorization.service.ts"
 
 /**
  * Service for managing permission-related business logic operations.
@@ -41,7 +47,11 @@ export class PermissionService implements IPermissionService {
   async getPermission(id: string): Promise<Permission | null> {
     const permission = await this.repository.findById(id)
     if (!permission) {
-      throw new AppError("Permission not found", HttpStatusCode.NOT_FOUND, "PermissionService")
+      throw new AppError(
+        PERMISSION_ERROR_MESSAGES.NOT_FOUND,
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+      )
     }
     return permission
   }
@@ -59,7 +69,7 @@ export class PermissionService implements IPermissionService {
       throw new AppError(
         `Permission with code '${data.code}' already exists.`,
         HttpStatusCode.CONFLICT,
-        "PermissionService",
+        ErrorLayer.SERVICE,
       )
     }
 
@@ -74,7 +84,7 @@ export class PermissionService implements IPermissionService {
     await auditService.log({
       actorId: data.actorId,
       targetPermissionId: permission.id,
-      action: "PERMISSION_CREATED",
+      action: PERMISSION_AUDIT_ACTIONS.CREATED,
       newValue: { name: permission.name, code: permission.code, module: permission.module },
     })
 
@@ -97,15 +107,20 @@ export class PermissionService implements IPermissionService {
     if (!current) return null
 
     if (current.isSystem) {
-      throw new AppError("Cannot update system permissions.", HttpStatusCode.FORBIDDEN, "PermissionService", "SYSTEM_ROLE_PROTECTED")
+      throw new AppError(
+        PERMISSION_ERROR_MESSAGES.SYSTEM_UPDATE,
+        HttpStatusCode.FORBIDDEN,
+        ErrorLayer.SERVICE,
+        PERMISSION_ERROR_CODES.SYSTEM_PROTECTED,
+      )
     }
 
     // Permission code is immutable
     if (data.code && data.code !== current.code) {
       throw new AppError(
-        "Permission code is immutable and cannot be modified.",
+        PERMISSION_ERROR_MESSAGES.CODE_IMMUTABLE,
         HttpStatusCode.BAD_REQUEST,
-        "PermissionService"
+        ErrorLayer.SERVICE,
       )
     }
 
@@ -123,9 +138,17 @@ export class PermissionService implements IPermissionService {
       await auditService.log({
         actorId: data.actorId,
         targetPermissionId: id,
-        action: "PERMISSION_UPDATED",
-        oldValue: { name: current.name, description: current.description, isActive: current.isActive },
-        newValue: { name: updated.name, description: updated.description, isActive: updated.isActive },
+        action: PERMISSION_AUDIT_ACTIONS.UPDATED,
+        oldValue: {
+          name: current.name,
+          description: current.description,
+          isActive: current.isActive,
+        },
+        newValue: {
+          name: updated.name,
+          description: updated.description,
+          isActive: updated.isActive,
+        },
       })
     }
 
@@ -147,10 +170,10 @@ export class PermissionService implements IPermissionService {
 
     if (permission.isSystem) {
       throw new AppError(
-        "Cannot delete a protected system permission.",
+        PERMISSION_ERROR_MESSAGES.SYSTEM_DELETE,
         HttpStatusCode.FORBIDDEN,
-        "PermissionService",
-        "SYSTEM_ROLE_PROTECTED"
+        ErrorLayer.SERVICE,
+        PERMISSION_ERROR_CODES.SYSTEM_PROTECTED,
       )
     }
 
@@ -161,17 +184,17 @@ export class PermissionService implements IPermissionService {
         await auditService.log({
           actorId,
           targetPermissionId: id,
-          action: "PERMISSION_DELETED",
+          action: PERMISSION_AUDIT_ACTIONS.DELETED,
         })
       }
       return deleted
     } catch (error) {
-      if (error instanceof Error && error.message === "PERMISSION_ASSIGNED") {
+      if (error instanceof Error && error.message === PERMISSION_ERROR_CODES.ASSIGNED) {
         throw new AppError(
-          "Permission is assigned to one or more roles.",
+          PERMISSION_ERROR_MESSAGES.ASSIGNED,
           HttpStatusCode.CONFLICT,
-          "PermissionService",
-          "PERMISSION_ASSIGNED"
+          ErrorLayer.SERVICE,
+          PERMISSION_ERROR_CODES.ASSIGNED,
         )
       }
       throw error

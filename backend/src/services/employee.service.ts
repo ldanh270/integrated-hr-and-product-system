@@ -1,7 +1,8 @@
 import { EMPLOYEE_STATUS, SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
 import { ACTIVITY_ACTION, ACTIVITY_CATEGORY } from "@/configs/auth/auth.config.ts"
-import { APPROVAL_CONFIG } from "@/configs/rules/approval.config.ts"
+import { APPROVAL_CATEGORY, APPROVAL_CONFIG } from "@/configs/rules/approval.config.ts"
 import { DB_ERROR_CODES } from "@/configs/system/db.config.ts"
+import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { authorizationService } from "./authorization.service.ts"
@@ -54,7 +55,7 @@ export class EmployeeService implements IEmployeeService {
   async getEmployee(id: string): Promise<Employee | null> {
     const employee = await this.repository.findById(id)
     if (!employee) {
-      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "EmployeeService")
+      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
     }
     return employee
   }
@@ -70,7 +71,7 @@ export class EmployeeService implements IEmployeeService {
       throw new AppError(
         "Password is required to create employee",
         HttpStatusCode.BAD_REQUEST,
-        "EmployeeService",
+        ErrorLayer.SERVICE,
       )
     }
 
@@ -82,7 +83,7 @@ export class EmployeeService implements IEmployeeService {
     })
 
     if (!initialRole) {
-      throw new AppError("Role not found or inactive", HttpStatusCode.NOT_FOUND, "EmployeeService")
+      throw new AppError("Role not found or inactive", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
     }
 
     // Remove password from data before passing to repo
@@ -99,7 +100,7 @@ export class EmployeeService implements IEmployeeService {
         throw new AppError(
           "Username, email, phone, or national ID already exists",
           HttpStatusCode.CONFLICT,
-          "EmployeeService",
+          ErrorLayer.SERVICE,
         )
       }
       throw error
@@ -179,7 +180,7 @@ export class EmployeeService implements IEmployeeService {
       // Check active admins remaining
       const adminCount = await this.repository.countActiveAdmins(tx)
       if (adminCount === 0) {
-        throw new AppError("CANNOT_REMOVE_LAST_ADMIN", HttpStatusCode.CONFLICT, "EmployeeService")
+        throw new AppError("CANNOT_REMOVE_LAST_ADMIN", HttpStatusCode.CONFLICT, ErrorLayer.SERVICE)
       }
 
       return updated
@@ -187,7 +188,7 @@ export class EmployeeService implements IEmployeeService {
 
     if (result) {
       await authorizationService.invalidateUserCache(id)
-      if (status === "inactive" && currentEmployee.status !== "inactive") {
+      if (status === EMPLOYEE_STATUS.INACTIVE && currentEmployee.status !== EMPLOYEE_STATUS.INACTIVE) {
         await auditService.log({
           actorId,
           targetEmployeeId: id,
@@ -229,7 +230,7 @@ export class EmployeeService implements IEmployeeService {
         where: { id },
         data: {
           deletedAt: new Date(),
-          status: "terminated",
+          status: EMPLOYEE_STATUS.TERMINATED,
           email: `deleted_${timestamp}_${record.email}`,
           username: `deleted_${timestamp}_${record.username}`,
           phone: record.phone ? `deleted_${timestamp}_${record.phone}` : null,
@@ -240,7 +241,7 @@ export class EmployeeService implements IEmployeeService {
       // Check active admins remaining
       const adminCount = await this.repository.countActiveAdmins(tx)
       if (adminCount === 0) {
-        throw new AppError("CANNOT_REMOVE_LAST_ADMIN", HttpStatusCode.CONFLICT, "EmployeeService")
+        throw new AppError("CANNOT_REMOVE_LAST_ADMIN", HttpStatusCode.CONFLICT, ErrorLayer.SERVICE)
       }
 
       return true
@@ -260,7 +261,7 @@ export class EmployeeService implements IEmployeeService {
   async getEmployeeRoles(employeeId: string): Promise<AppRole[]> {
     const emp = await this.repository.findById(employeeId)
     if (!emp) {
-      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "EmployeeService")
+      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
     }
     return this.repository.findRolesByEmployeeId(employeeId)
   }
@@ -272,13 +273,13 @@ export class EmployeeService implements IEmployeeService {
   ): Promise<{ success: boolean; created: boolean }> {
     const emp = await this.repository.findById(employeeId)
     if (!emp) {
-      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "EmployeeService")
+      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
     }
     const role = await prisma.appRole.findFirst({
       where: { id: roleId, deletedAt: null, isActive: true },
     })
     if (!role) {
-      throw new AppError("Role not found or inactive", HttpStatusCode.NOT_FOUND, "EmployeeService")
+      throw new AppError("Role not found or inactive", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
     }
 
     const res = await this.repository.assignRole(employeeId, roleId, actorId)
@@ -327,7 +328,7 @@ export class EmployeeService implements IEmployeeService {
       // Check active admins remaining
       const adminCount = await this.repository.countActiveAdmins(tx)
       if (adminCount === 0) {
-        throw new AppError("CANNOT_REMOVE_LAST_ADMIN", HttpStatusCode.CONFLICT, "EmployeeService")
+        throw new AppError("CANNOT_REMOVE_LAST_ADMIN", HttpStatusCode.CONFLICT, ErrorLayer.SERVICE)
       }
 
       await authorizationService.invalidateUserCache(employeeId)
@@ -350,7 +351,7 @@ export class EmployeeService implements IEmployeeService {
   ): Promise<void> {
     const emp = await this.repository.findById(employeeId)
     if (!emp) {
-      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "EmployeeService")
+      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
     }
 
     if (roleIds.length > 0) {
@@ -362,7 +363,7 @@ export class EmployeeService implements IEmployeeService {
         },
       })
       if (roles.length !== roleIds.length) {
-        throw new AppError("One or more roles not found or inactive", HttpStatusCode.NOT_FOUND, "EmployeeService")
+        throw new AppError("One or more roles not found or inactive", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
       }
     }
 
@@ -387,7 +388,7 @@ export class EmployeeService implements IEmployeeService {
    * @returns List of approver employees with minimal fields.
    */
   async listApprovers(): Promise<{ id: string; fullName: string; position: string | null; role: string }[]> {
-    const approvalRoles = [...APPROVAL_CONFIG.application.roles]
+    const approvalRoles = [...APPROVAL_CONFIG[APPROVAL_CATEGORY.APPLICATION].roles]
     const approvers = await prisma.employee.findMany({
       where: {
         status: EMPLOYEE_STATUS.ACTIVE,

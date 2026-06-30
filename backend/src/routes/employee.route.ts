@@ -1,17 +1,22 @@
+import { PERMISSION_CODE } from "@/configs/entities/permission.config.ts"
 import { EmployeeController } from "@/controllers/employee.controller.ts"
+import { RbacManagementController } from "@/controllers/rbac-management.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
 import { requirePermission } from "@/middlewares/permission.middleware.ts"
 import { validate } from "@/middlewares/validate.middleware.ts"
 import { PrismaAuthRepository } from "@/repositories/auth.repository.ts"
 import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
+import { PrismaRoleRepository } from "@/repositories/role.repository.ts"
 import {
   createEmployeeSchema,
   listEmployeesQuerySchema,
   updateEmployeeSchema,
   updateEmployeeStatusSchema,
 } from "@/schemas/employee.schema.ts"
+import { updateEmployeeRolesSchema } from "@/schemas/rbac-management.schema.ts"
 import { EmployeeService } from "@/services/employee.service.ts"
+import { RoleService } from "@/services/role.service.ts"
 
 import express from "express"
 
@@ -45,7 +50,11 @@ employeeRoutes.get("/approvers", controller.listApprovers as express.RequestHand
  * Retrieve details of a specific employee by ID.
  * Accessible to all authenticated users.
  */
-employeeRoutes.get("/:id", requirePermission("employee.read"), controller.getOne as express.RequestHandler)
+employeeRoutes.get(
+  "/:id",
+  requirePermission("employee.read"),
+  controller.getOne as express.RequestHandler,
+)
 
 /**
  * POST /employees
@@ -94,39 +103,33 @@ employeeRoutes.delete(
   controller.delete as express.RequestHandler,
 )
 
-// Dynamic RBAC Mappings
-import { RbacManagementController } from "@/controllers/rbac-management.controller.ts"
-import { PrismaRoleRepository } from "@/repositories/role.repository.ts"
-import { RoleService } from "@/services/role.service.ts"
-import { updateEmployeeRolesSchema } from "@/schemas/rbac-management.schema.ts"
-
 const roleRepository = new PrismaRoleRepository(prisma)
 const roleService = new RoleService(roleRepository)
 const rbacController = new RbacManagementController(service, roleService)
 
 employeeRoutes.get(
   "/:id/roles",
-  requirePermission("employee.role.read"),
-  rbacController.getEmployeeRoles as express.RequestHandler
+  requirePermission(PERMISSION_CODE.EMPLOYEE_ROLE_READ),
+  rbacController.getEmployeeRoles as express.RequestHandler,
 )
 
 employeeRoutes.put(
   "/:id/roles",
-  requirePermission("employee.role.update"),
+  requirePermission(PERMISSION_CODE.EMPLOYEE_ROLE_UPDATE),
   validate(updateEmployeeRolesSchema, "body"),
-  rbacController.updateRoles as express.RequestHandler
+  rbacController.updateRoles as express.RequestHandler,
 )
 
 employeeRoutes.post(
   "/:id/roles/:roleId",
-  requirePermission("employee.role.update"),
-  rbacController.assignRole as express.RequestHandler
+  requirePermission(PERMISSION_CODE.EMPLOYEE_ROLE_UPDATE),
+  rbacController.assignRole as express.RequestHandler,
 )
 
 employeeRoutes.delete(
   "/:id/roles/:roleId",
-  requirePermission("employee.role.update"),
-  rbacController.revokeRole as express.RequestHandler
+  requirePermission(PERMISSION_CODE.EMPLOYEE_ROLE_UPDATE),
+  rbacController.revokeRole as express.RequestHandler,
 )
 
 export default employeeRoutes

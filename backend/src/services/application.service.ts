@@ -4,7 +4,8 @@ import {
   LEAVE_BALANCE_DEFAULTS,
   PAID_LEAVE_TYPES,
 } from "@/configs/entities/attendance.config.ts"
-import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
+import { EMPLOYEE_STATUS, SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
+import { APPROVAL_CONFIG, APPROVAL_CATEGORY } from "@/configs/rules/approval.config.ts"
 import { authorizationService } from "@/services/authorization.service.ts"
 import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
@@ -209,9 +210,13 @@ export class ApplicationService implements IApplicationService {
     if (requester && employeeId !== requester.empId) {
       const authContext = await authorizationService.getAuthorizationContext(requester.empId)
       const roles = authContext.roles
-      const isGlobalApprover = authContext.isDynamicAdmin || roles.has("admin") || roles.has("general_manager") || roles.has("hr_manager")
+      const isGlobalApprover =
+        authContext.isDynamicAdmin ||
+        roles.has(SYSTEM_ROLE.ADMIN) ||
+        roles.has(SYSTEM_ROLE.GENERAL_MANAGER) ||
+        roles.has(SYSTEM_ROLE.HR_MANAGER)
       
-      if (!isGlobalApprover && roles.has("team_leader")) {
+      if (!isGlobalApprover && roles.has(SYSTEM_ROLE.TEAM_LEADER)) {
         const activeProject = await prisma.project.findFirst({
           where: {
             teamLeaderId: requester.empId,
@@ -543,20 +548,22 @@ export class ApplicationService implements IApplicationService {
       throw new AppError(
         `Assigned approver '${employeeId}' not found`,
         HttpStatusCode.NOT_FOUND,
-        "Service",
+        ErrorLayer.SERVICE,
         "APPROVER_NOT_FOUND",
       )
     }
 
     const authContext = await authorizationService.getAuthorizationContext(employeeId)
     const roles = authContext.roles
-    const isApprover = authContext.isDynamicAdmin || ["admin", "general_manager", "hr_manager", "team_leader"].some((r) => roles.has(r))
+    const isApprover =
+      authContext.isDynamicAdmin ||
+      APPROVAL_CONFIG[APPROVAL_CATEGORY.APPLICATION].roles.some((role) => roles.has(role))
 
     if (!isApprover) {
       throw new AppError(
         "The selected assignee does not have permission to approve applications",
         HttpStatusCode.BAD_REQUEST,
-        "Service",
+        ErrorLayer.SERVICE,
         "INVALID_APPROVER_ROLE",
       )
     }

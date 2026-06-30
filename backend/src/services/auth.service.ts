@@ -7,6 +7,7 @@ import {
   REFRESH_TOKEN_TTL_MS,
 } from "@/configs/auth/auth.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
+import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { ENVIRONMENT, ENV_ENVIRONMENT } from "@/configs/system/server.config.ts"
 import { AUTH_ERROR_MESSAGES } from "@/constants/auth.constants.ts"
@@ -30,18 +31,26 @@ import {
   TokenValidationResponseDto,
   ValidateResetTokenDto,
 } from "@/types/auth.types.ts"
+import { getPersonalEmployeeLink } from "@/utils/attendance/resolve-personal-employee-id.ts"
 import { EmailUtil } from "@/utils/email.util.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
 import { JwtUtil } from "@/utils/jwt.util.ts"
-import { getPersonalEmployeeLink } from "@/utils/attendance/resolve-personal-employee-id.ts"
-import { authorizationService } from "./authorization.service.ts"
 
 import crypto from "crypto"
 
-async function toAuthEmployee(employee: AuthEmployeeDocument): Promise<AuthResponseDto["employee"]> {
+import { authorizationService } from "./authorization.service.ts"
+
+/**
+ * Maps an authenticated employee into the auth response shape with resolved access context.
+ */
+async function toAuthEmployee(
+  employee: AuthEmployeeDocument,
+): Promise<AuthResponseDto["employee"]> {
   const link = await getPersonalEmployeeLink(employee.id)
-  const authContext = await authorizationService.getAuthorizationContext(employee.id, { skipCache: false })
+  const authContext = await authorizationService.getAuthorizationContext(employee.id, {
+    skipCache: false,
+  })
 
   return {
     id: employee.id,
@@ -113,7 +122,7 @@ export class AuthService implements IAuthService {
       throw new AppError(
         AUTH_ERROR_MESSAGES.INVALID_CREDENTIALS,
         HttpStatusCode.UNAUTHORIZED,
-        "Authentication",
+        ErrorLayer.SERVICE,
       )
     }
 
@@ -122,7 +131,7 @@ export class AuthService implements IAuthService {
       throw new AppError(
         "Tài khoản đã bị chấm dứt do nghỉ việc (Account terminated)",
         HttpStatusCode.FORBIDDEN,
-        "Authentication",
+        ErrorLayer.SERVICE,
       )
     }
 
@@ -130,7 +139,7 @@ export class AuthService implements IAuthService {
       throw new AppError(
         "Account is disabled or inactive",
         HttpStatusCode.FORBIDDEN,
-        "Authentication",
+        ErrorLayer.SERVICE,
       )
     }
 
@@ -139,7 +148,7 @@ export class AuthService implements IAuthService {
       throw new AppError(
         `Account is temporarily locked. Try again after ${employee.lockedUntil.toLocaleString()}`,
         HttpStatusCode.FORBIDDEN,
-        "Authentication",
+        ErrorLayer.SERVICE,
       )
     }
 
@@ -198,7 +207,7 @@ export class AuthService implements IAuthService {
       throw new AppError(
         AUTH_ERROR_MESSAGES.INVALID_CREDENTIALS,
         HttpStatusCode.UNAUTHORIZED,
-        "Authentication",
+        ErrorLayer.SERVICE,
       )
     }
 
@@ -229,6 +238,9 @@ export class AuthService implements IAuthService {
     }
   }
 
+  /**
+   * Refreshes an authenticated session using a valid refresh token.
+   */
   async refresh(
     rawRefreshToken: string,
   ): Promise<
@@ -239,7 +251,7 @@ export class AuthService implements IAuthService {
       throw new AppError(
         "Invalid or expired refresh token",
         HttpStatusCode.UNAUTHORIZED,
-        "Authentication",
+        ErrorLayer.SERVICE,
       )
     }
 
@@ -247,7 +259,7 @@ export class AuthService implements IAuthService {
     const oldToken = await this.repo.findRefreshTokenByHash(tokenHash)
 
     if (!oldToken) {
-      throw new AppError("Refresh token not found", HttpStatusCode.UNAUTHORIZED, "Authentication")
+      throw new AppError("Refresh token not found", HttpStatusCode.UNAUTHORIZED, ErrorLayer.SERVICE)
     }
 
     if (oldToken.revokedAt !== null) {
@@ -262,17 +274,17 @@ export class AuthService implements IAuthService {
       throw new AppError(
         "Phiên đăng nhập bất thường",
         HttpStatusCode.UNAUTHORIZED,
-        "Authentication",
+        ErrorLayer.SERVICE,
       )
     }
 
     if (oldToken.expiresAt < new Date()) {
-      throw new AppError("Refresh token expired", HttpStatusCode.UNAUTHORIZED, "Authentication")
+      throw new AppError("Refresh token expired", HttpStatusCode.UNAUTHORIZED, ErrorLayer.SERVICE)
     }
 
     const employee = await this.repo.findById(oldToken.employeeId)
     if (!employee || employee.status !== EMPLOYEE_STATUS.ACTIVE) {
-      throw new AppError("Account inactive", HttpStatusCode.FORBIDDEN, "Authentication")
+      throw new AppError("Account inactive", HttpStatusCode.FORBIDDEN, ErrorLayer.SERVICE)
     }
 
     await this.repo.revokeRefreshToken(oldToken.id)
@@ -285,13 +297,16 @@ export class AuthService implements IAuthService {
     }
   }
 
+  /**
+   * Retrieves current authenticated employee profile details.
+   */
   async getMe(empId: string): Promise<AuthResponseDto["employee"]> {
     const employee = await this.repo.findById(empId)
     if (!employee || employee.status !== EMPLOYEE_STATUS.ACTIVE) {
       throw new AppError(
         "Account inactive or not found",
         HttpStatusCode.FORBIDDEN,
-        "Authentication",
+        ErrorLayer.SERVICE,
       )
     }
 
@@ -433,20 +448,20 @@ export class AuthService implements IAuthService {
       throw new AppError(
         validation.message || "Invalid token",
         HttpStatusCode.BAD_REQUEST,
-        "Authentication",
+        ErrorLayer.SERVICE,
       )
     }
 
     // Find the request again to get employee info
     const request = await this.repo.findResetRequestByToken(token)
     if (!request) {
-      throw new AppError("Reset request not found", HttpStatusCode.NOT_FOUND, "Authentication")
+      throw new AppError("Reset request not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
     }
 
     // Update employee password
     const employee = await this.repo.findById(request.employeeId)
     if (!employee) {
-      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "Authentication")
+      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
     }
 
     // Security: Prevent resetting to the same password
@@ -455,7 +470,7 @@ export class AuthService implements IAuthService {
       throw new AppError(
         "New password must be different from current password",
         HttpStatusCode.BAD_REQUEST,
-        "Authentication",
+        ErrorLayer.SERVICE,
       )
     }
 
@@ -477,7 +492,7 @@ export class AuthService implements IAuthService {
     // Fetch employee with password hash
     const employee = await this.repo.findById(empId)
     if (!employee) {
-      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "Authentication")
+      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
     }
 
     // Verify current password
@@ -486,7 +501,7 @@ export class AuthService implements IAuthService {
       throw new AppError(
         "Incorrect current password",
         HttpStatusCode.UNAUTHORIZED,
-        "Authentication",
+        ErrorLayer.SERVICE,
       )
     }
 
@@ -496,7 +511,7 @@ export class AuthService implements IAuthService {
       throw new AppError(
         "New password must be different from current password",
         HttpStatusCode.BAD_REQUEST,
-        "Authentication",
+        ErrorLayer.SERVICE,
       )
     }
 
@@ -507,6 +522,9 @@ export class AuthService implements IAuthService {
     return { message: "Password changed successfully." }
   }
 
+  /**
+   * Returns activity logs based on the provided query filters.
+   */
   async getActivityLogs(query: ActivityLogQuery): Promise<PaginatedActivityLogsDto> {
     return this.repo.listActivityLogs(query)
   }
@@ -515,7 +533,10 @@ export class AuthService implements IAuthService {
    * Gets activity logs for a specific user (Personal History)
    * This implementation ensures IDOR protection by overriding employeeId from token
    */
-  async getMyActivityLogs(empId: string, query: ActivityLogQuery): Promise<PaginatedActivityLogsDto> {
+  async getMyActivityLogs(
+    empId: string,
+    query: ActivityLogQuery,
+  ): Promise<PaginatedActivityLogsDto> {
     // IDOR Protection: Always use empId from token, ignoring anything in query
     return this.repo.listActivityLogs({ ...query, employeeId: empId })
   }
@@ -527,6 +548,9 @@ export class AuthService implements IAuthService {
     return this.repo.getActivityLogById(id)
   }
 
+  /**
+   * Retrieves a single personal activity log when it belongs to the authenticated employee.
+   */
   async getMyActivityLogDetail(empId: string, id: string): Promise<ActivityLogItem | null> {
     return this.repo.getActivityLogByIdForEmployee(id, empId)
   }
@@ -571,7 +595,7 @@ export class AuthService implements IAuthService {
   async unlockAccount(empId: string, actorId: string, ipAddress?: string): Promise<void> {
     const employee = await this.repo.findById(empId)
     if (!employee) {
-      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "Authentication")
+      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
     }
 
     await this.repo.unlockEmployee(empId)

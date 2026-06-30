@@ -1,4 +1,4 @@
-import { EMPLOYEE_TYPES } from "@/configs/entities/employee.config.ts"
+import { EMPLOYEE_TYPES, SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
 import { getSeedPassword } from "@/scripts/seeders/seed-password.util.ts"
@@ -17,17 +17,17 @@ export class EmployeesSeeder implements ISeeder {
 
     // Ensure all 5 core role accounts exist (especially since seed-all clears the DB)
     const rolesToSeed = [
-      "admin",
-      "hr_manager",
-      "general_manager",
-      "team_leader",
-      "employee",
+      SYSTEM_ROLE.ADMIN,
+      SYSTEM_ROLE.HR_MANAGER,
+      SYSTEM_ROLE.GENERAL_MANAGER,
+      SYSTEM_ROLE.TEAM_LEADER,
+      SYSTEM_ROLE.EMPLOYEE,
     ]
     let adminId = ""
     const passwordHashCore = await HashUtil.hash(getSeedPassword("SEED_CORE_ACCOUNTS_PASSWORD"))
 
     for (const role of rolesToSeed) {
-      const username = role === "admin" ? "admin" : role
+      const username = role === SYSTEM_ROLE.ADMIN ? SYSTEM_ROLE.ADMIN : role
       const fullName = role
         .split("_")
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -37,11 +37,11 @@ export class EmployeesSeeder implements ISeeder {
 
       if (!existing) {
         let phoneSuffix = "0"
-        if (role === "admin") phoneSuffix = "1"
-        else if (role === "hr_manager") phoneSuffix = "2"
-        else if (role === "general_manager") phoneSuffix = "3"
-        else if (role === "team_leader") phoneSuffix = "4"
-        else if (role === "employee") phoneSuffix = "5"
+        if (role === SYSTEM_ROLE.ADMIN) phoneSuffix = "1"
+        else if (role === SYSTEM_ROLE.HR_MANAGER) phoneSuffix = "2"
+        else if (role === SYSTEM_ROLE.GENERAL_MANAGER) phoneSuffix = "3"
+        else if (role === SYSTEM_ROLE.TEAM_LEADER) phoneSuffix = "4"
+        else if (role === SYSTEM_ROLE.EMPLOYEE) phoneSuffix = "5"
 
         existing = await prisma.employee.create({
           data: {
@@ -58,7 +58,7 @@ export class EmployeesSeeder implements ISeeder {
         console.log(`  [!] Core account missing, created default account: ${username}`)
       }
 
-      if (role === "admin") {
+      if (role === SYSTEM_ROLE.ADMIN) {
         adminId = existing.id
       }
     }

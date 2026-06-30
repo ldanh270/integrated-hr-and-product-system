@@ -1,5 +1,5 @@
-import { Prisma, PrismaClient, Permission as PrismaPermission } from "@prisma/client"
 import { SORT_ORDER } from "@/configs/system/db.config.ts"
+import { PERMISSION_ERROR_CODES } from "@/constants/permission.constants.ts"
 import {
   CreatePermissionDto,
   IPermissionRepository,
@@ -8,6 +8,9 @@ import {
   PermissionListQuery,
   UpdatePermissionDto,
 } from "@/types"
+
+import { Prisma, PrismaClient, Permission as PrismaPermission } from "@prisma/client"
+
 import { BaseRepository } from "./base.repository.ts"
 
 /**
@@ -193,7 +196,7 @@ export class PrismaPermissionRepository extends BaseRepository implements IPermi
         where: { permissionId: id },
       })
       if (assignmentsCount > 0) {
-        throw new Error("PERMISSION_ASSIGNED")
+        throw new Error(PERMISSION_ERROR_CODES.ASSIGNED)
       }
 
       const timestamp = Date.now()

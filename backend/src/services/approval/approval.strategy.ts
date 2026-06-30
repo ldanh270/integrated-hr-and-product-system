@@ -1,4 +1,5 @@
 import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
+import { SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
 import { APPROVAL_CONFIG, RequestCategory } from "@/configs/rules/approval.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { authorizationService } from "@/services/authorization.service.ts"
@@ -32,7 +33,7 @@ export class HRApprovalStrategy implements IApprovalStrategy {
   ): Promise<boolean> {
     if (applicantId === processorId) return false
     const allowedRoles = APPROVAL_CONFIG[category]?.roles || []
-    return (allowedRoles as readonly string[]).includes("hr_manager")
+    return (allowedRoles as readonly string[]).includes(SYSTEM_ROLE.HR_MANAGER)
   }
 }
 
@@ -48,7 +49,7 @@ export class TeamLeaderApprovalStrategy implements IApprovalStrategy {
     if (applicantId === processorId) return false
 
     const allowedRoles = APPROVAL_CONFIG[category]?.roles || []
-    if (!(allowedRoles as readonly string[]).includes("team_leader")) return false
+    if (!(allowedRoles as readonly string[]).includes(SYSTEM_ROLE.TEAM_LEADER)) return false
 
     // Verify if applicant is an active member in any active project led by the TL
     const activeProject = await prisma.project.findFirst({
@@ -96,13 +97,13 @@ export class ApprovalStrategyFactory {
 
     const roles = authContext.roles
 
-    if (roles.has("admin") || roles.has("general_manager")) {
+    if (roles.has(SYSTEM_ROLE.ADMIN) || roles.has(SYSTEM_ROLE.GENERAL_MANAGER)) {
       return new AdminGMApprovalStrategy()
     }
-    if (roles.has("hr_manager")) {
+    if (roles.has(SYSTEM_ROLE.HR_MANAGER)) {
       return new HRApprovalStrategy()
     }
-    if (roles.has("team_leader")) {
+    if (roles.has(SYSTEM_ROLE.TEAM_LEADER)) {
       return new TeamLeaderApprovalStrategy()
     }
     return new DefaultApprovalStrategy()

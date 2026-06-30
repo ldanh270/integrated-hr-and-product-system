@@ -1,16 +1,17 @@
-
+import { PERMISSION_CODE } from "@/configs/entities/permission.config.ts"
+import { RbacManagementController } from "@/controllers/rbac-management.controller.ts"
 import { RoleController } from "@/controllers/role.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
 import { requirePermission } from "@/middlewares/permission.middleware.ts"
 import { validate } from "@/middlewares/validate.middleware.ts"
+import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
 import { PrismaRoleRepository } from "@/repositories/role.repository.ts"
-import {
-  createRoleSchema,
-  listRolesQuerySchema,
-  updateRoleSchema,
-} from "@/schemas/role.schema.ts"
+import { updateRolePermissionsSchema } from "@/schemas/rbac-management.schema.ts"
+import { createRoleSchema, listRolesQuerySchema, updateRoleSchema } from "@/schemas/role.schema.ts"
+import { EmployeeService } from "@/services/employee.service.ts"
 import { RoleService } from "@/services/role.service.ts"
+
 import express from "express"
 
 /**
@@ -27,53 +28,71 @@ const controller = new RoleController(service)
 roleRoutes.use(authenticate)
 
 // GET /roles - List paginated roles
-roleRoutes.get("/", requirePermission("role.read"), validate(listRolesQuerySchema, "query"), controller.list as express.RequestHandler)
+roleRoutes.get(
+  "/",
+  requirePermission("role.read"),
+  validate(listRolesQuerySchema, "query"),
+  controller.list as express.RequestHandler,
+)
 
 // GET /roles/:id - Retrieve single role details
 roleRoutes.get("/:id", requirePermission("role.read"), controller.getOne as express.RequestHandler)
 
 // POST /roles - Create new role
-roleRoutes.post("/", requirePermission("role.create"), validate(createRoleSchema, "body"), controller.create as express.RequestHandler)
+roleRoutes.post(
+  "/",
+  requirePermission("role.create"),
+  validate(createRoleSchema, "body"),
+  controller.create as express.RequestHandler,
+)
 
 // PUT /roles/:id - Update role details
-roleRoutes.put("/:id", requirePermission("role.update"), validate(updateRoleSchema, "body"), controller.update as express.RequestHandler)
+roleRoutes.put(
+  "/:id",
+  requirePermission("role.update"),
+  validate(updateRoleSchema, "body"),
+  controller.update as express.RequestHandler,
+)
 
 // DELETE /roles/:id - Soft delete role
-roleRoutes.delete("/:id", requirePermission("role.delete"), controller.delete as express.RequestHandler)
+roleRoutes.delete(
+  "/:id",
+  requirePermission("role.delete"),
+  controller.delete as express.RequestHandler,
+)
 
-// Dynamic RBAC Mappings
-import { RbacManagementController } from "@/controllers/rbac-management.controller.ts"
-import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
-import { EmployeeService } from "@/services/employee.service.ts"
-import { updateRolePermissionsSchema } from "@/schemas/rbac-management.schema.ts"
-
+// Wire RBAC mapping dependencies
 const employeeRepository = new PrismaEmployeeRepository(prisma)
 const employeeService = new EmployeeService(employeeRepository)
 const rbacController = new RbacManagementController(employeeService, service)
 
+// GET /roles/:id/permissions - List permissions assigned to a specific role
 roleRoutes.get(
   "/:id/permissions",
-  requirePermission("role.permission.read"),
-  rbacController.getRolePermissions as express.RequestHandler
+  requirePermission(PERMISSION_CODE.ROLE_PERMISSION_READ),
+  rbacController.getRolePermissions as express.RequestHandler,
 )
 
+// PUT /roles/:id/permissions - Replace permission assignments for a specific role
 roleRoutes.put(
   "/:id/permissions",
-  requirePermission("role.permission.update"),
+  requirePermission(PERMISSION_CODE.ROLE_PERMISSION_UPDATE),
   validate(updateRolePermissionsSchema, "body"),
-  rbacController.updatePermissions as express.RequestHandler
+  rbacController.updatePermissions as express.RequestHandler,
 )
 
+// POST /roles/:id/permissions/:permissionId - Assign one permission to a specific role
 roleRoutes.post(
   "/:id/permissions/:permissionId",
-  requirePermission("role.permission.update"),
-  rbacController.assignPermission as express.RequestHandler
+  requirePermission(PERMISSION_CODE.ROLE_PERMISSION_UPDATE),
+  rbacController.assignPermission as express.RequestHandler,
 )
 
+// DELETE /roles/:id/permissions/:permissionId - Revoke one permission from a specific role
 roleRoutes.delete(
   "/:id/permissions/:permissionId",
-  requirePermission("role.permission.update"),
-  rbacController.revokePermission as express.RequestHandler
+  requirePermission(PERMISSION_CODE.ROLE_PERMISSION_UPDATE),
+  rbacController.revokePermission as express.RequestHandler,
 )
 
 export default roleRoutes
