@@ -1,3 +1,4 @@
+import { SECURITY_QUERY_KEY, SECURITY_QUERY_SCOPE, type ISecurityQueryScope } from "@/config/entities/security.config"
 import { securityApi } from "@/lib/api/security.api"
 import type { ActivityLogQuery } from "@/types/security.types"
 import { employeeKeys } from "@/hooks/employees/queries/useEmployeeQuery"
@@ -9,19 +10,22 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
  * Keeps cache invalidation consistent across summary, audit logs, roles, and permissions flows.
  */
 export const securityKeys = {
-  all: ["security"] as const,
-  summary: () => [...securityKeys.all, "summary"] as const,
-  lockedAccounts: () => [...securityKeys.all, "locked-accounts"] as const,
-  logs: () => [...securityKeys.all, "logs"] as const,
+  all: [SECURITY_QUERY_KEY.ROOT] as const,
+  summary: () => [...securityKeys.all, SECURITY_QUERY_KEY.SUMMARY] as const,
+  lockedAccounts: () => [...securityKeys.all, SECURITY_QUERY_KEY.LOCKED_ACCOUNTS] as const,
+  logs: () => [...securityKeys.all, SECURITY_QUERY_KEY.LOGS] as const,
   logList: (query: ActivityLogQuery) => [...securityKeys.logs(), query] as const,
-  myLogList: (query: ActivityLogQuery) => [...securityKeys.logs(), "me", query] as const,
-  logDetail: (scope: "all" | "me", id: string) => [...securityKeys.logs(), scope, "detail", id] as const,
-  roles: () => [...securityKeys.all, "roles"] as const,
+  myLogList: (query: ActivityLogQuery) => [...securityKeys.logs(), SECURITY_QUERY_SCOPE.ME, query] as const,
+  logDetail: (scope: ISecurityQueryScope, id: string) =>
+    [...securityKeys.logs(), scope, SECURITY_QUERY_KEY.DETAIL, id] as const,
+  roles: () => [...securityKeys.all, SECURITY_QUERY_KEY.ROLES] as const,
   roleList: (params?: { page?: number; limit?: number }) => [...securityKeys.roles(), params] as const,
-  roleDetail: (id: string) => [...securityKeys.roles(), "detail", id] as const,
-  rolePermissions: (roleId: string) => [...securityKeys.roles(), "permissions", roleId] as const,
-  permissions: (params?: { page?: number; limit?: number }) => [...securityKeys.all, "permissions", params] as const,
-  employeeRoles: (employeeId: string) => [...securityKeys.all, "employees", "roles", employeeId] as const,
+  roleDetail: (id: string) => [...securityKeys.roles(), SECURITY_QUERY_KEY.DETAIL, id] as const,
+  rolePermissions: (roleId: string) => [...securityKeys.roles(), SECURITY_QUERY_KEY.PERMISSIONS, roleId] as const,
+  permissions: (params?: { page?: number; limit?: number }) =>
+    [...securityKeys.all, SECURITY_QUERY_KEY.PERMISSIONS, params] as const,
+  employeeRoles: (employeeId: string) =>
+    [...securityKeys.all, SECURITY_QUERY_KEY.EMPLOYEES, SECURITY_QUERY_KEY.ROLES, employeeId] as const,
 }
 
 /**
@@ -88,11 +92,13 @@ export function useMyActivityLogs(query: ActivityLogQuery) {
 /**
  * Loads the detail view for one activity log, either from the global scope or "my logs" scope.
  * @param id The log ID
+ * @param scope The log visibility scope used to choose the correct endpoint and cache key
  */
-export function useActivityLog(id: string, scope: "all" | "me" = "all") {
+export function useActivityLog(id: string, scope: ISecurityQueryScope = SECURITY_QUERY_SCOPE.ALL) {
   return useQuery({
     queryKey: securityKeys.logDetail(scope, id),
-    queryFn: () => (scope === "me" ? securityApi.getMyLogDetail(id) : securityApi.getLogDetail(id)),
+    queryFn: () =>
+      scope === SECURITY_QUERY_SCOPE.ME ? securityApi.getMyLogDetail(id) : securityApi.getLogDetail(id),
     enabled: !!id,
   })
 }
