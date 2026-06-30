@@ -18,7 +18,8 @@ import {
   useEmployeeRoles,
   useUpdateEmployeeRoles,
 } from "@/hooks/security/queries/use-security-query"
-import { useEffect, useState } from "react"
+import type { Role } from "@/types/security.types"
+import { startTransition, useEffect, useState } from "react"
 import { RefreshCw } from "lucide-react"
 
 import { toast } from "sonner"
@@ -58,11 +59,15 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
 
   useEffect(() => {
     if (employeeRoles) {
-      setSelectedRoleIds(employeeRoles.map((role) => role.id))
+      startTransition(() => {
+        setSelectedRoleIds(employeeRoles.map((role) => role.id))
+      })
       return
     }
 
-    setSelectedRoleIds([])
+    startTransition(() => {
+      setSelectedRoleIds([])
+    })
   }, [employeeRoles])
 
   const onSubmit = handleSubmit(async (data) => {
@@ -170,7 +175,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 gap-2 pt-1">
-                        {allRoles?.data?.map((role: any) => {
+                        {allRoles?.data?.map((role: Role) => {
                           const isChecked = selectedRoleIds.includes(role.id)
                           return (
                             <label
