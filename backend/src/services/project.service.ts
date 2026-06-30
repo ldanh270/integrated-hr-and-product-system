@@ -22,6 +22,10 @@ import { AppError } from "@/utils/error.util.ts"
 
 import { PrismaClient } from "@prisma/client"
 
+/**
+ * Handles project lifecycle, access control, and project-member rules.
+ * Part-time membership settings are validated here before repository writes.
+ */
 export class ProjectService implements IProjectService {
   constructor(
     private repository: IProjectRepository,
@@ -30,12 +34,18 @@ export class ProjectService implements IProjectService {
     private statusService?: IProjectTaskStatusService,
   ) {}
 
+  /**
+   * Resolves whether the caller can bypass project scoping checks.
+   */
   private async checkIsAdminOrGM(userId: string): Promise<boolean> {
     const authContext = await authorizationService.getAuthorizationContext(userId)
     const roles = authContext.roles
     return authContext.isDynamicAdmin || roles.has("admin") || roles.has("general_manager")
   }
 
+  /**
+   * Returns one project when the caller is allowed to view it.
+   */
   async getProject(id: string, userId: string): Promise<Project | null> {
     const project = await this.repository.findById(id)
     if (!project) {
@@ -54,11 +64,17 @@ export class ProjectService implements IProjectService {
     return project
   }
 
+  /**
+   * Lists projects with repository-level filtering based on the caller's visibility scope.
+   */
   async listProjects(query: ProjectListQuery, userId: string): Promise<PaginatedProjectsDto> {
     const isAdminOrGM = await this.checkIsAdminOrGM(userId)
     return this.repository.listProjects(query, userId, isAdminOrGM)
   }
 
+  /**
+   * Creates a project and optionally seeds its default task-status columns.
+   */
   async createProject(data: CreateProjectDto, userId: string): Promise<Project> {
     const isAdminOrGM = await this.checkIsAdminOrGM(userId)
     if (!isAdminOrGM) {
@@ -127,6 +143,9 @@ export class ProjectService implements IProjectService {
     })
   }
 
+  /**
+   * Updates project metadata after validating ownership, uniqueness, and date constraints.
+   */
   async updateProject(id: string, data: UpdateProjectDto, userId: string): Promise<Project | null> {
     const project = await this.repository.findById(id)
     if (!project) {
@@ -201,6 +220,9 @@ export class ProjectService implements IProjectService {
     return this.repository.updateProject(id, data)
   }
 
+  /**
+   * Deletes a project. This operation is restricted to Admin/GM users.
+   */
   async deleteProject(id: string, userId: string): Promise<boolean> {
     const isAdminOrGM = await this.checkIsAdminOrGM(userId)
     if (!isAdminOrGM) {
@@ -219,6 +241,9 @@ export class ProjectService implements IProjectService {
     return this.repository.deleteProject(id)
   }
 
+  /**
+   * Adds an employee to a project and enforces part-time hourly-rate requirements.
+   */
   async addMember(
     projectId: string,
     employeeId: string,
@@ -268,6 +293,9 @@ export class ProjectService implements IProjectService {
     return this.repository.addMember(projectId, employeeId, options)
   }
 
+  /**
+   * Removes an existing member from a project after permission and membership checks.
+   */
   async removeMember(projectId: string, employeeId: string, userId: string): Promise<boolean> {
     const project = await this.repository.findById(projectId)
     if (!project) {
@@ -292,6 +320,9 @@ export class ProjectService implements IProjectService {
     return this.repository.removeMember(projectId, employeeId)
   }
 
+  /**
+   * Updates per-project member settings such as hourly rate and work mode.
+   */
   async updateMember(
     projectId: string,
     employeeId: string,
@@ -341,6 +372,9 @@ export class ProjectService implements IProjectService {
     return this.repository.updateMember(projectId, employeeId, data)
   }
 
+  /**
+   * Returns the active member list for one project when the caller can access that project.
+   */
   async getMembers(projectId: string, userId: string): Promise<any[]> {
     const project = await this.getProject(projectId, userId)
     if (!project) {
@@ -350,6 +384,9 @@ export class ProjectService implements IProjectService {
     return this.repository.getMembers(projectId)
   }
 
+  /**
+   * Loads the aggregated Gantt payload for a project, including tasks and member data.
+   */
   async getGanttData(projectId: string, userId: string): Promise<GanttDataDto> {
     const project = await this.getProject(projectId, userId)
     if (!project) {

@@ -20,6 +20,10 @@ import { AppError } from "@/utils/error.util.ts"
 
 const LAYER_NAME = "SpentTimeService"
 
+/**
+ * Handles spent-time logging, approval flow, and project-specific PT validation rules.
+ * Pending logs may be edited by owners; approval actions are restricted to project leads/admins.
+ */
 export class SpentTimeService implements ISpentTimeService {
   constructor(
     private repository: ISpentTimeRepository,
@@ -28,6 +32,9 @@ export class SpentTimeService implements ISpentTimeService {
     private attendanceRepository: IAttendanceRepository,
   ) {}
 
+  /**
+   * Resolves whether the caller can bypass spent-time ownership checks.
+   */
   private async isAuthorizedAdminOrGM(userId: string): Promise<boolean> {
     const authContext = await authorizationService.getAuthorizationContext(userId)
     if (authContext.isDynamicAdmin) return true
@@ -35,6 +42,9 @@ export class SpentTimeService implements ISpentTimeService {
     return roles.has("admin") || roles.has("general_manager")
   }
 
+  /**
+   * Ensures the caller is allowed to approve or reject logs for the target project.
+   */
   private async assertProjectLeadAccess(projectId: string, userId: string): Promise<void> {
     if (await this.isAuthorizedAdminOrGM(userId)) return
 
@@ -47,6 +57,10 @@ export class SpentTimeService implements ISpentTimeService {
     }
   }
 
+  /**
+   * Applies business rules before a log is created or updated.
+   * This includes estimate caps and onsite attendance prerequisites.
+   */
   private async validateBusinessRules(
     taskId: string,
     employeeId: string,
@@ -83,6 +97,9 @@ export class SpentTimeService implements ISpentTimeService {
     }
   }
 
+  /**
+   * Returns a single spent-time record if the caller owns it or can review the parent project.
+   */
   async getSpentTime(id: string, userId: string): Promise<SpentTime | null> {
     const record = await this.repository.findById(id)
     if (!record) {
@@ -104,6 +121,9 @@ export class SpentTimeService implements ISpentTimeService {
     return record
   }
 
+  /**
+   * Lists spent-time rows with automatic scoping for non-admin users.
+   */
   async listSpentTimes(query: SpentTimeQuery, userId: string): Promise<SpentTime[]> {
     const isGlobalApprover = await this.isAuthorizedAdminOrGM(userId)
     if (!isGlobalApprover) {
@@ -139,6 +159,9 @@ export class SpentTimeService implements ISpentTimeService {
     return this.repository.list(query)
   }
 
+  /**
+   * Creates a new spent-time log after membership and business-rule validation.
+   */
   async createSpentTime(data: CreateSpentTimeDto, userId: string): Promise<SpentTime> {
     const task = await this.taskRepository.findById(data.taskId)
     if (!task) {
@@ -168,6 +191,9 @@ export class SpentTimeService implements ISpentTimeService {
     return this.repository.create(data)
   }
 
+  /**
+   * Updates a pending log owned by the caller or an elevated reviewer.
+   */
   async updateSpentTime(
     id: string,
     data: UpdateSpentTimeDto,
@@ -194,6 +220,9 @@ export class SpentTimeService implements ISpentTimeService {
     return this.repository.update(id, data)
   }
 
+  /**
+   * Deletes a pending spent-time log after access checks succeed.
+   */
   async deleteSpentTime(id: string, userId: string): Promise<boolean> {
     const record = await this.repository.findById(id)
     if (!record) {
@@ -212,6 +241,9 @@ export class SpentTimeService implements ISpentTimeService {
     return this.repository.delete(id)
   }
 
+  /**
+   * Approves one pending log and makes it eligible for downstream payroll calculations.
+   */
   async approveSpentTime(id: string, userId: string): Promise<SpentTime> {
     const record = await this.repository.findById(id)
     if (!record) {
@@ -236,6 +268,9 @@ export class SpentTimeService implements ISpentTimeService {
     return updated
   }
 
+  /**
+   * Rejects one pending log with a reason supplied by the reviewer.
+   */
   async rejectSpentTime(id: string, reason: string, userId: string): Promise<SpentTime> {
     const record = await this.repository.findById(id)
     if (!record) {

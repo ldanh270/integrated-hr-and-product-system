@@ -258,6 +258,10 @@ export class EmployeeService implements IEmployeeService {
     return success
   }
 
+  /**
+   * Returns all currently assigned application roles for a specific employee.
+   * Throws when the target employee does not exist.
+   */
   async getEmployeeRoles(employeeId: string): Promise<AppRole[]> {
     const emp = await this.repository.findById(employeeId)
     if (!emp) {
@@ -266,6 +270,10 @@ export class EmployeeService implements IEmployeeService {
     return this.repository.findRolesByEmployeeId(employeeId)
   }
 
+  /**
+   * Assigns an active role to an employee and invalidates the authorization cache.
+   * Audit data is recorded only when the assignment succeeds.
+   */
   async assignRole(
     employeeId: string,
     roleId: string,
@@ -296,6 +304,10 @@ export class EmployeeService implements IEmployeeService {
     return res
   }
 
+  /**
+   * Revokes one role from an employee while protecting the last active admin.
+   * The change is executed inside a transaction to keep role state consistent.
+   */
   async revokeRole(employeeId: string, roleId: string, actorId?: string): Promise<boolean> {
     return prisma.$transaction(async (tx) => {
       // Acquire lock
@@ -343,6 +355,10 @@ export class EmployeeService implements IEmployeeService {
     })
   }
 
+  /**
+   * Replaces the full role set for an employee using optimistic version checks.
+   * Cache invalidation and audit logging run after the repository update succeeds.
+   */
   async updateRoles(
     employeeId: string,
     roleIds: string[],
@@ -443,5 +459,4 @@ export class EmployeeService implements IEmployeeService {
       }]
     })
   }
-
 }

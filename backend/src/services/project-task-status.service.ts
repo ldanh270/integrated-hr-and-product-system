@@ -15,6 +15,10 @@ import { mapStatusNameToEnum } from "@/utils/status-mapping.util.ts"
 
 const LAYER_NAME = "ProjectTaskStatusService"
 
+/**
+ * Manages project-specific task status columns and keeps legacy task status values in sync.
+ * Read access is granted to project members, while write access is limited to TL/Admin/GM.
+ */
 export class ProjectTaskStatusService implements IProjectTaskStatusService {
   constructor(
     private repository: IProjectTaskStatusRepository,
@@ -22,11 +26,18 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
     private taskRepository: ITaskRepository,
   ) {}
 
+  /**
+   * Resolves whether the given user should bypass project-level restrictions.
+   */
   private async isAuthorizedAdminOrGM(userId: string): Promise<boolean> {
     const authContext = await authorizationService.getAuthorizationContext(userId)
     return authContext.isDynamicAdmin || authContext.roles.has("admin") || authContext.roles.has("general_manager")
   }
 
+  /**
+   * Validates read/write access for project task-status operations.
+   * Write operations require team-leader or manager privileges.
+   */
   private async checkProjectAccess(
     projectId: string,
     userId: string,
@@ -59,6 +70,9 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
     }
   }
 
+  /**
+   * Returns one custom status after confirming the caller can access the project.
+   */
   async getStatus(id: string, userId: string): Promise<ProjectTaskStatus | null> {
     const status = await this.repository.findById(id)
     if (!status) {
@@ -68,11 +82,17 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
     return status
   }
 
+  /**
+   * Lists all custom statuses configured for a project.
+   */
   async listStatuses(projectId: string, userId: string): Promise<ProjectTaskStatus[]> {
     await this.checkProjectAccess(projectId, userId)
     return this.repository.listByProjectId(projectId)
   }
 
+  /**
+   * Creates a new status column and ensures default/order rules remain valid.
+   */
   async createStatus(data: CreateProjectTaskStatusDto, userId: string): Promise<ProjectTaskStatus> {
     await this.checkProjectAccess(data.projectId, userId, true)
 
@@ -98,6 +118,9 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
     return this.repository.create(data)
   }
 
+  /**
+   * Updates one custom status and propagates status-name/completion changes to legacy task fields.
+   */
   async updateStatus(
     id: string,
     data: UpdateProjectTaskStatusDto,
@@ -136,6 +159,10 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
     return updated
   }
 
+  /**
+   * Deletes a status column after moving attached tasks to a fallback column when provided.
+   * The default status and the last remaining status cannot be removed.
+   */
   async deleteStatus(id: string, fallbackStatusId: string | undefined, userId: string): Promise<boolean> {
     const status = await this.repository.findById(id)
     if (!status) {
@@ -182,6 +209,9 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
     return this.repository.delete(id)
   }
 
+  /**
+   * Seeds the standard default status columns for a newly created project.
+   */
   async createDefaultStatuses(projectId: string): Promise<ProjectTaskStatus[]> {
     const created: ProjectTaskStatus[] = []
     for (const item of DEFAULT_PROJECT_TASK_STATUSES) {
