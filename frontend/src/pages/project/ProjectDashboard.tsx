@@ -264,7 +264,7 @@ export default function ProjectDashboard() {
                   {/* Task subject title with direct link to details page */}
                   <TableCell className="max-w-[200px] truncate">
                     <Link
-                      to={`/project/tasks/${task.id}`}
+                      to={`/project/task/${task.id}`}
                       className="text-primary font-medium hover:underline inline-flex items-center gap-1 group"
                     >
                       {task.title}
@@ -490,7 +490,7 @@ export default function ProjectDashboard() {
                 <PageCard
                   key={proj.id}
                   className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 border border-border/85 flex flex-col justify-between p-5 min-h-[140px] space-y-4 hover:border-primary/50 cursor-pointer group"
-                  onClick={() => { navigate(`/project/${proj.id}`); }}
+                  onClick={() => { navigate("/project/list"); }}
                 >
                   <div className="space-y-2">
                     <div className="flex items-start justify-between gap-3">
@@ -516,8 +516,8 @@ export default function ProjectDashboard() {
                       {/* Show create task shortcut link if current user matches creation policies */}
                       {canCreateInProj && (
                         <Link
-                          to={`/project/${proj.id}?createTask=true`}
-                          onClick={(e) => { e.stopPropagation(); }}
+                          to="/project/task/new"
+                          onClick={(e) => { e.stopPropagation(); sessionStorage.setItem("activeProjectId", proj.id); }}
                           className="rounded-full bg-primary/10 hover:bg-primary/20 text-primary px-2.5 py-1 font-bold text-[10px] flex items-center gap-1 transition-all duration-200 cursor-pointer"
                         >
                           <Plus className="size-3" />
@@ -612,7 +612,7 @@ export default function ProjectDashboard() {
         >
           {/* Link to edit page / details page */}
           <Link
-            to={`/project/tasks/${activeTask.id}`}
+            to={`/project/task/${activeTask.id}`}
             onClick={() => { setContextMenu({ isOpen: false, x: 0, y: 0, task: null }); }}
             className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground hover:no-underline"
           >
@@ -829,8 +829,8 @@ export default function ProjectDashboard() {
 
           {/* Shortcut link to add subtask associated with active task */}
           <Link
-            to={`/project/${activeTask.projectId}/tasks/new?parentTaskId=${activeTask.id}`}
-            onClick={() => { setContextMenu({ isOpen: false, x: 0, y: 0, task: null }); }}
+            to="/project/task/new"
+            onClick={() => { sessionStorage.setItem("activeProjectId", activeTask.projectId); sessionStorage.setItem("parentTaskId", activeTask.id); setContextMenu({ isOpen: false, x: 0, y: 0, task: null }); }}
             className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground hover:no-underline"
           >
             <Plus size={12} className="shrink-0" />
@@ -840,7 +840,7 @@ export default function ProjectDashboard() {
           {/* Shortcut button to copy link address of active task to clipboard */}
           <button
             onClick={() => {
-              const link = window.location.origin + `/project/tasks/${activeTask.id}`
+              const link = window.location.origin + `/project/task/${activeTask.id}`
               void navigator.clipboard.writeText(link)
               toast.success("Đã sao chép liên kết vào bộ nhớ tạm")
               setContextMenu({ isOpen: false, x: 0, y: 0, task: null })

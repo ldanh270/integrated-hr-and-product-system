@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { format, differenceInDays, addDays, eachDayOfInterval } from "date-fns"
@@ -10,7 +10,7 @@ import { ROLE } from "@/config/entities/employee.config"
 import { TASK_STATUS, TASK_PRIORITY, TASK_TRACKER, CUSTOM_QUERY_TYPE } from "@/config/entities/project.config"
 import { useAuthStore } from "@/store/auth-store"
 import { extractErrorMessage } from "@/utils/error-helper"
-import type { Project, GanttLeaveDay } from "@/types/project.types"
+import type { Project } from "@/types/project.types"
 import type { Task, UpdateTaskDto } from "@/types/task.types"
 import {
   FILTER_DEFINITIONS,
@@ -41,6 +41,15 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     return new Date()
   })
 
+  // Timeline view range configuration (timeline end date)
+  const [timelineEnd, setTimelineEnd] = useState<Date>(() => {
+    const start = project.startDate ? new Date(project.startDate) : new Date()
+    return addDays(start, DEFAULT_MONTHS_RANGE * 30 - 1)
+  })
+
+  // Track if we have initialized the timeline dynamically from tasks
+  const [hasInitializedTimeline, setHasInitializedTimeline] = useState(false)
+
   // Selected task state for completion / review modal
   const [selectedTaskForReview, setSelectedTaskForReview] = useState<Task | null>(null)
 
@@ -49,8 +58,6 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   const [showEstTime, setShowEstTime] = useState(true)
   const [showAssignee, setShowAssignee] = useState(true)
   const [showProgress, setShowProgress] = useState(true)
-  const [showLeaves, setShowLeaves] = useState(true)
-  const [showConflicts, setShowConflicts] = useState(true)
 
   // Filter form states
   const [monthsInput, setMonthsInput] = useState(DEFAULT_MONTHS_RANGE_STRING) // default 6 months from project start
@@ -106,11 +113,11 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
 
   // Mutation to save custom query
   const saveQueryMutation = useMutation({
-    mutationFn: async (data: { name: string; queryData: string }) => {
+    mutationFn: async (data: { name: string; projectId?: string | null; queryData: string }) => {
       return customQueryApi.create({
         name: data.name,
         type: CUSTOM_QUERY_TYPE.GANTT,
-        projectId,
+        projectId: data.projectId !== undefined ? data.projectId : projectId,
         queryData: data.queryData,
       })
     },
@@ -146,6 +153,14 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
         setFilterStates(data.filterStates)
         setAppliedFilterKeys(data.activeFilterKeys)
         setAppliedFilterStates(data.filterStates)
+
+        // Also apply view options if saved
+        if (data.options) {
+          if (data.options.showEstTime !== undefined) setShowEstTime(data.options.showEstTime)
+          if (data.options.showAssignee !== undefined) setShowAssignee(data.options.showAssignee)
+          if (data.options.showProgress !== undefined) setShowProgress(data.options.showProgress)
+        }
+
         toast.success(`Đã áp dụng truy vấn: ${savedQuery.name}`)
       } else {
         toast.error("Dữ liệu truy vấn không hợp lệ")
@@ -156,19 +171,8 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   }
 
   // Handle saving new custom query
-  const handleSaveQuery = () => {
-    const name = prompt("Nhập tên truy vấn riêng cần lưu:")
-    if (!name || !name.trim()) return
-
-    const queryDataObj = {
-      activeFilterKeys,
-      filterStates,
-    }
-
-    saveQueryMutation.mutate({
-      name: name.trim(),
-      queryData: JSON.stringify(queryDataObj),
-    })
+  const handleSaveQuery = (data: { name: string; projectId?: string | null; queryData: string }) => {
+    saveQueryMutation.mutate(data)
   }
 
   const tasks = useMemo(() => ganttData?.tasks || [], [ganttData?.tasks])
@@ -195,6 +199,48 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     
     return list
   }, [project, ganttData])
+
+  // Sync timeline range dynamically with loaded tasks once
+  useEffect(() => {
+    if (tasks && tasks.length > 0 && !hasInitializedTimeline) {
+      let minStart: Date | null = null
+      let maxEnd: Date | null = null
+
+      for (const t of tasks) {
+        if (t.startDate) {
+          const d = new Date(t.startDate)
+          if (!minStart || d.getTime() < minStart.getTime()) minStart = d
+        }
+        
+        const dates: Date[] = []
+        if (t.updatedAt) dates.push(new Date(t.updatedAt))
+        if (t.completedAt) dates.push(new Date(t.completedAt))
+        if (t.dueDate) dates.push(new Date(t.dueDate))
+        
+        for (const d of dates) {
+          if (!maxEnd || d.getTime() > maxEnd.getTime()) maxEnd = d
+        }
+      }
+
+      if (minStart) {
+        setTimelineStart(minStart)
+        setMonthInput(minStart.getMonth())
+        setYearInput(minStart.getFullYear())
+      }
+      
+      if (minStart && maxEnd) {
+        // Add 2 days buffer at the end for clean design
+        const bufferedEnd = addDays(maxEnd, 2)
+        setTimelineEnd(bufferedEnd)
+        
+        const days = differenceInDays(bufferedEnd, minStart) + 1
+        const months = Math.max(1, Math.ceil(days / 30))
+        setMonthsInput(months.toString())
+        setMonthsRange(months)
+      }
+      setHasInitializedTimeline(true)
+    }
+  }, [tasks, hasInitializedTimeline])
 
   const getDefaultOperator = (key: string) => {
     const def = Reflect.get(FILTER_DEFINITIONS, key) as { label: string; type: string; group: string } | undefined
@@ -236,34 +282,47 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     },
   })
 
-  // Timeline days calculation (monthsRange months starting from timelineStart)
+  // Timeline days calculation dynamically based on start and end dates
   const timelineDays = useMemo(() => {
-    const end = addDays(addDays(timelineStart, monthsRange * 30), -1)
-    const daysInterval = eachDayOfInterval({ start: timelineStart, end })
+    const start = timelineStart
+    const end = timelineEnd < timelineStart ? timelineStart : timelineEnd
+    const daysInterval = eachDayOfInterval({ start, end })
     return daysInterval.slice(0, 180) // Cap at 180 days max
-  }, [timelineStart, monthsRange])
+  }, [timelineStart, timelineEnd])
 
   // Month spans grouping for timeline header
   const monthSpans = useMemo(() => {
     if (timelineDays.length === 0) return []
-    const spans: { label: string; colSpan: number }[] = []
+    const spans: { label: string; colSpan: number; startCol: number; endCol: number }[] = []
     
     let currentLabel = format(timelineDays[0], "yyyy-M")
     let currentCount = 0
+    let startIndex = 1
     
-    timelineDays.forEach((day) => {
+    timelineDays.forEach((day, index) => {
       const label = format(day, "yyyy-M")
       if (label === currentLabel) {
         currentCount++
       } else {
-        spans.push({ label: currentLabel, colSpan: currentCount })
+        spans.push({ 
+          label: currentLabel, 
+          colSpan: currentCount, 
+          startCol: startIndex, 
+          endCol: startIndex + currentCount 
+        })
         currentLabel = label
+        startIndex = index + 1
         currentCount = 1
       }
     })
     
     if (currentCount > 0) {
-      spans.push({ label: currentLabel, colSpan: currentCount })
+      spans.push({ 
+        label: currentLabel, 
+        colSpan: currentCount, 
+        startCol: startIndex, 
+        endCol: startIndex + currentCount 
+      })
     }
     
     return spans
@@ -440,86 +499,47 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   // Navigate timeline view
   const shiftTimeline = (days: number) => {
     setTimelineStart((prev) => addDays(prev, days))
+    setTimelineEnd((prev) => addDays(prev, days))
   }
 
   // Reset timeline to project start
   const resetTimelineToProjectStart = () => {
-    if (project.startDate) {
-      setTimelineStart(new Date(project.startDate))
-    } else {
-      setTimelineStart(new Date())
-    }
+    const start = project.startDate ? new Date(project.startDate) : new Date()
+    const duration = differenceInDays(timelineEnd, timelineStart)
+    setTimelineStart(start)
+    setTimelineEnd(addDays(start, duration))
   }
 
   // Check roles/permissions
   const isLeader = project.teamLeaderId === user?.id
   const isAdminOrGM = user?.role === ROLE.ADMIN || user?.role === ROLE.GENERAL_MANAGER
 
-  // Find overlap leave days for a task and its assignee
-  const getLeaveConflict = (task: Task) => {
-    if (!task.assigneeId || !task.startDate || !task.dueDate) return null
+  // Overlap leave days check removed per user request
 
-    const taskStart = new Date(task.startDate)
-    const taskDue = new Date(task.dueDate)
-
-    // Filter approved leaves for this assignee
-    const assigneeLeaves = leaveDays.filter((l: GanttLeaveDay) => l.employeeId === task.assigneeId)
-
-    const conflictingLeaves = assigneeLeaves.filter((leave: GanttLeaveDay) => {
-      const leaveStart = new Date(leave.startDate)
-      const leaveEnd = new Date(leave.endDate)
-
-      // Check interval overlap
-      return (
-        taskStart <= leaveEnd && taskDue >= leaveStart
-      )
-    })
-
-    if (conflictingLeaves.length === 0) return null
-
-    // Format leave dates for tooltips
-    return conflictingLeaves.map((l: GanttLeaveDay) => {
-      const startStr = format(new Date(l.startDate), "dd/MM")
-      const endStr = format(new Date(l.endDate), "dd/MM")
-      return `${startStr} - ${endStr}${l.reason ? ` (${l.reason})` : ""}`
-    }).join(", ")
-  }
-
-  // Helper to check if a member is on leave on a specific day
-  const isEmployeeOnLeaveOnDay = (employeeId: string, day: Date) => {
-    const employeeLeaves = leaveDays.filter((l: GanttLeaveDay) => l.employeeId === employeeId)
-    return employeeLeaves.some((leave: GanttLeaveDay) => {
-      const start = new Date(leave.startDate)
-      const end = new Date(leave.endDate)
-      // Check if day is within [start, end]
-      return day >= start && day <= end
-    })
-  }
-
-  // Helper to render task bar position and duration
+  // Helper to render task bar position and duration (based on startDate to updatedAt)
   const getTaskGridStyle = (task: Task) => {
-    if (!task.startDate || !task.dueDate) return null
+    if (!task.startDate) return null
 
     const taskStart = new Date(task.startDate)
-    const taskDue = new Date(task.dueDate)
+    const taskEnd = task.updatedAt ? new Date(task.updatedAt) : new Date()
 
     // Check if task falls completely out of timeline view
-    const timelineEnd = addDays(timelineStart, 29)
-    if (taskDue < timelineStart || taskStart > timelineEnd) {
+    if (taskEnd < timelineStart || taskStart > timelineEnd) {
       return null
     }
 
     // Calculate grid positions (1-indexed columns, 1 column per day)
     let startCol = differenceInDays(taskStart, timelineStart) + 1
-    let span = differenceInDays(taskDue, taskStart) + 1
+    let span = differenceInDays(taskEnd, taskStart) + 1
 
     // Crop to timeline bounds
     if (startCol < 1) {
       span += startCol - 1
       startCol = 1
     }
-    if (startCol + span > 30) {
-      span = 31 - startCol
+    const maxCols = timelineDays.length
+    if (startCol + span > maxCols + 1) {
+      span = maxCols + 1 - startCol
     }
 
     if (span <= 0) return null
@@ -551,6 +571,8 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
       const newDate = new Date(prev.getFullYear(), prev.getMonth() + months, 1)
       setMonthInput(newDate.getMonth())
       setYearInput(newDate.getFullYear())
+      const duration = differenceInDays(timelineEnd, prev)
+      setTimelineEnd(addDays(newDate, duration))
       return newDate
     })
   }
@@ -579,6 +601,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     setMonthsRange(range)
     const newStart = new Date(yearInput, monthInput, 1)
     setTimelineStart(newStart)
+    setTimelineEnd(addDays(newStart, range * 30 - 1))
     
     // Apply filters
     setAppliedFilterKeys([...activeFilterKeys])
@@ -589,18 +612,53 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
 
   // Clear/Reset filters
   const handleClearFilters = () => {
-    setMonthsInput("6")
-    setMonthsRange(6)
-    if (project.startDate) {
-      const pStart = new Date(project.startDate)
-      setTimelineStart(pStart)
-      setMonthInput(pStart.getMonth())
-      setYearInput(pStart.getFullYear())
+    if (tasks && tasks.length > 0) {
+      let minStart: Date | null = null
+      let maxEnd: Date | null = null
+
+      for (const t of tasks) {
+        if (t.startDate) {
+          const d = new Date(t.startDate)
+          if (!minStart || d.getTime() < minStart.getTime()) minStart = d
+        }
+        const dates: Date[] = []
+        if (t.updatedAt) dates.push(new Date(t.updatedAt))
+        if (t.completedAt) dates.push(new Date(t.completedAt))
+        if (t.dueDate) dates.push(new Date(t.dueDate))
+        for (const d of dates) {
+          if (!maxEnd || d.getTime() > maxEnd.getTime()) maxEnd = d
+        }
+      }
+
+      if (minStart) {
+        setTimelineStart(minStart)
+        setMonthInput(minStart.getMonth())
+        setYearInput(minStart.getFullYear())
+      }
+      if (minStart && maxEnd) {
+        const bufferedEnd = addDays(maxEnd, 2)
+        setTimelineEnd(bufferedEnd)
+        const days = differenceInDays(bufferedEnd, minStart) + 1
+        const months = Math.max(1, Math.ceil(days / 30))
+        setMonthsInput(months.toString())
+        setMonthsRange(months)
+      }
     } else {
-      const today = new Date()
-      setTimelineStart(today)
-      setMonthInput(today.getMonth())
-      setYearInput(today.getFullYear())
+      setMonthsInput("6")
+      setMonthsRange(6)
+      if (project.startDate) {
+        const pStart = new Date(project.startDate)
+        setTimelineStart(pStart)
+        setTimelineEnd(addDays(pStart, 6 * 30 - 1))
+        setMonthInput(pStart.getMonth())
+        setYearInput(pStart.getFullYear())
+      } else {
+        const today = new Date()
+        setTimelineStart(today)
+        setTimelineEnd(addDays(today, 6 * 30 - 1))
+        setMonthInput(today.getMonth())
+        setYearInput(today.getFullYear())
+      }
     }
 
     // Reset filters
@@ -693,10 +751,6 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     setShowAssignee,
     showProgress,
     setShowProgress,
-    showLeaves,
-    setShowLeaves,
-    showConflicts,
-    setShowConflicts,
     monthsInput,
     setMonthsInput,
     monthInput,
@@ -733,8 +787,6 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     resetTimelineToProjectStart,
     isLeader,
     isAdminOrGM,
-    getLeaveConflict,
-    isEmployeeOnLeaveOnDay,
     getTaskGridStyle,
     shiftTaskDates,
     shiftTimelineByMonth,

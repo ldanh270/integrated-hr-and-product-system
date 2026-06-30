@@ -18,7 +18,8 @@ export interface ICreateWorkingShiftDTO {
   startTime: string // "HH:mm"
   endTime: string // "HH:mm"
   gracePeriodMinutes?: number
-  gps?: IGpsLocationDTO
+  /** null on PATCH removes geofence; optional on create. */
+  gps?: IGpsLocationDTO | null
   isActive?: boolean
   createdById: string
 }

@@ -2,25 +2,30 @@ import { SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
 import { TASK_CREATION_POLICY, TASK_STATUS } from "@/configs/entities/project.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
 import {
   CreateTaskDto,
-  Task,
-  TaskListQuery,
-  ITaskRepository,
-  IProjectRepository,
   IEmployeeRepository,
+  IProjectRepository,
+  IProjectTaskStatusRepository,
+  ITaskRepository,
   ITaskService,
   PaginatedTasksDto,
+  Task,
+  TaskListQuery,
   UpdateTaskDto,
 } from "@/types"
 import { AppError } from "@/utils/error.util.ts"
-import { authorizationService } from "@/services/authorization.service.ts"
+import { mapStatusNameToEnum } from "@/utils/status-mapping.util.ts"
+
+const LAYER_NAME = "TaskService"
 
 export class TaskService implements ITaskService {
   constructor(
     private repository: ITaskRepository,
     private projectRepository: IProjectRepository,
-    private employeeRepository: IEmployeeRepository
+    private employeeRepository: IEmployeeRepository,
+    private statusRepository?: IProjectTaskStatusRepository,
   ) {}
 
   private async isAuthorizedAdminOrGM(userId: string): Promise<boolean> {
@@ -30,19 +35,12 @@ export class TaskService implements ITaskService {
     return roles.has(SYSTEM_ROLE.ADMIN) || roles.has(SYSTEM_ROLE.GENERAL_MANAGER)
   }
 
-  /**
-   * Retrieves a task with project-based access control
-   * Admins/GMs can view any task
-   * Others can only view if they are in the project (leader or member)
-   * Throws error if task not found or user lacks access
-   */
   async getTask(id: string, userId: string): Promise<Task | null> {
     const task = await this.repository.findById(id)
     if (!task) {
       throw new AppError("Task not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
     }
 
-    // Check access permission to the project containing the task
     const isGlobalApprover = await this.isAuthorizedAdminOrGM(userId)
     if (!isGlobalApprover) {
       const project = await this.projectRepository.findById(task.projectId)
@@ -61,21 +59,14 @@ export class TaskService implements ITaskService {
     return task
   }
 
-  /**
-   * Lists tasks with project-based access control
-   * Non-admins must provide projectId and be member/leader of that project
-   * Admins can list tasks across all projects
-   * Throws error if user lacks access to specified project
-   */
   async listTasks(query: TaskListQuery, userId: string): Promise<PaginatedTasksDto> {
-    // If not GM/Admin, projectId is required and the user must belong to that project to view tasks
     const isGlobalApprover = await this.isAuthorizedAdminOrGM(userId)
     if (!isGlobalApprover) {
       if (!query.projectId) {
         throw new AppError(
           "Project ID is required to view tasks",
           HttpStatusCode.BAD_REQUEST,
-          ErrorLayer.SERVICE
+          ErrorLayer.SERVICE,
         )
       }
 
@@ -95,13 +86,6 @@ export class TaskService implements ITaskService {
     return this.repository.listTasks(query)
   }
 
-  /**
-   * Creates a new task in a project
-   * Enforces project's task creation policy (leader_only or all_members)
-   * Validates assignee is a member or leader of the project
-   * Only Admins, GMs, project leaders, or members (if policy allows) can create
-   * Throws error if user lacks permission or data is invalid
-   */
   async createTask(data: CreateTaskDto, userId: string): Promise<Task> {
     const project = await this.projectRepository.findById(data.projectId)
     if (!project) {
@@ -111,24 +95,21 @@ export class TaskService implements ITaskService {
     const isGM = await this.isAuthorizedAdminOrGM(userId)
     const isTL = project.teamLeaderId === userId
 
-    // Apply the project's task creation policy
     if (!isGM && !isTL) {
       const isMember = await this.projectRepository.isMember(data.projectId, userId)
       if (!isMember) {
         throw new AppError("You are not a member of this project", HttpStatusCode.FORBIDDEN, ErrorLayer.SERVICE)
       }
 
-      // Check policy
       if (project.taskCreationPolicy === TASK_CREATION_POLICY.LEADER_ONLY) {
         throw new AppError(
           "Only Team Leaders or Managers can create tasks in this project",
           HttpStatusCode.FORBIDDEN,
-          ErrorLayer.SERVICE
+          ErrorLayer.SERVICE,
         )
       }
     }
 
-    //Constraint: The person assigned the task (Assignee) must belong to that project.
     if (data.assigneeId) {
       const assignee = await this.employeeRepository.findById(data.assigneeId)
       if (!assignee) {
@@ -141,7 +122,7 @@ export class TaskService implements ITaskService {
         throw new AppError(
           "Assignee must be a member or the leader of this project",
           HttpStatusCode.BAD_REQUEST,
-          ErrorLayer.SERVICE
+          ErrorLayer.SERVICE,
         )
       }
     }
@@ -153,24 +134,34 @@ export class TaskService implements ITaskService {
       }
     }
 
+    let statusId = data.statusId
+    let statusEnum = data.status
+
+    if (this.statusRepository) {
+      if (statusId) {
+        const customStatus = await this.statusRepository.findById(statusId)
+        if (!customStatus || customStatus.projectId !== data.projectId) {
+          throw new AppError("Invalid task status for this project", HttpStatusCode.BAD_REQUEST, LAYER_NAME)
+        }
+        statusEnum = mapStatusNameToEnum(customStatus.name, customStatus.isCompleted)
+      } else {
+        const defaultStatus = await this.statusRepository.findDefaultStatus(data.projectId)
+        if (defaultStatus) {
+          statusId = defaultStatus.id
+          statusEnum = mapStatusNameToEnum(defaultStatus.name, defaultStatus.isCompleted)
+        }
+      }
+    }
+
     return this.repository.createTask({
       ...data,
+      status: statusEnum,
+      statusId,
       createdById: userId,
     })
   }
 
-  /**
-   * Updates an existing task
-   * Only Admins, GMs, project team leader, task creator, or assignee can update
-   * Validates new assignee is a member or leader of the project
-   * Throws error if user lacks permission or task not found
-   */
-  async updateTask(
-    id: string,
-    data: UpdateTaskDto,
-    userId: string
-
-  ): Promise<Task | null> {
+  async updateTask(id: string, data: UpdateTaskDto, userId: string): Promise<Task | null> {
     const task = await this.repository.findById(id)
     if (!task) {
       throw new AppError("Task not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
@@ -186,16 +177,17 @@ export class TaskService implements ITaskService {
     const isCreator = task.createdById === userId
     const isAssignee = task.assigneeId === userId
 
-    // Update permissions: GM, Project Team Leader, Creator, or Assignee
     if (!isGM && !isTL && !isCreator && !isAssignee) {
       throw new AppError(
         "You do not have permission to update this task",
         HttpStatusCode.FORBIDDEN,
-        ErrorLayer.SERVICE
+        ErrorLayer.SERVICE,
       )
     }
 
-    // Check if the new Assignee is part of the project.
+    const employee = await this.employeeRepository.findById(userId)
+    const isTester = employee?.position?.toLowerCase() === "tester"
+
     if (data.assigneeId) {
       const assignee = await this.employeeRepository.findById(data.assigneeId)
       if (!assignee) {
@@ -208,7 +200,7 @@ export class TaskService implements ITaskService {
         throw new AppError(
           "Assignee must be a member or the leader of this project",
           HttpStatusCode.BAD_REQUEST,
-          ErrorLayer.SERVICE
+          ErrorLayer.SERVICE,
         )
       }
     }
@@ -223,42 +215,80 @@ export class TaskService implements ITaskService {
       }
     }
 
-    // Validate status transitions and deliverables
-    if (data.status && data.status !== task.status) {
-      // 1. Enforce that only Team Leader or GM/Admin can approve task completion (status = done)
-      if (data.status === TASK_STATUS.DONE) {
-        if (!isGM && !isTL) {
-          throw new AppError(
-            "Chỉ Team Leader hoặc Manager mới có quyền phê duyệt hoàn thành công việc",
-            HttpStatusCode.FORBIDDEN,
-            ErrorLayer.SERVICE
-          )
-        }
-      }
+    let statusId = data.statusId
+    let statusEnum = data.status
 
-      // 2. Enforce deliverables when transitioning to in_review (waiting for review)
-      if (data.status === TASK_STATUS.IN_REVIEW) {
-        const hasResultUrl = data.resultUrl !== undefined ? !!data.resultUrl : !!task.resultUrl
-        const hasResultNotes = data.resultNotes !== undefined ? !!data.resultNotes : !!task.resultNotes
-        
-        if (!hasResultUrl && !hasResultNotes) {
+    if (this.statusRepository && statusId !== undefined && statusId !== task.statusId) {
+      if (statusId !== null) {
+        const customStatus = await this.statusRepository.findById(statusId)
+        if (!customStatus || customStatus.projectId !== task.projectId) {
+          throw new AppError("Invalid task status for this project", HttpStatusCode.BAD_REQUEST, LAYER_NAME)
+        }
+        statusEnum = mapStatusNameToEnum(customStatus.name, customStatus.isCompleted)
+
+        let currentIsCompleted = false
+        if (task.statusId) {
+          const currentStatus = await this.statusRepository.findById(task.statusId)
+          if (currentStatus) {
+            currentIsCompleted = currentStatus.isCompleted
+          }
+        } else {
+          currentIsCompleted = task.status === TASK_STATUS.DONE || task.status === TASK_STATUS.CANCELLED
+        }
+
+        if (customStatus.isCompleted !== currentIsCompleted && !isGM && !isTL && !isTester) {
+          const actionText = customStatus.isCompleted ? "hoĂ n thĂ nh" : "má»Ÿ láº¡i/di chuyá»ƒn"
           throw new AppError(
-            "Bắt buộc phải đính kèm link sản phẩm hoặc ghi chú kết quả khi gửi yêu cầu đánh giá công việc (in_review)",
-            HttpStatusCode.BAD_REQUEST,
-            ErrorLayer.SERVICE
+            `Chá»‰ Team Leader, Manager hoáº·c Tester má»›i cĂ³ quyá»n ${actionText} cĂ´ng viá»‡c nĂ y.`,
+            HttpStatusCode.FORBIDDEN,
+            LAYER_NAME,
           )
         }
       }
     }
 
-    return this.repository.updateTask(id, data)
+    if (this.statusRepository && statusId === undefined && statusEnum && statusEnum !== task.status) {
+      const projectStatuses = await this.statusRepository.listByProjectId(task.projectId)
+      const matchingStatus = projectStatuses.find(
+        (ps) => mapStatusNameToEnum(ps.name, ps.isCompleted) === statusEnum,
+      )
+      if (matchingStatus) {
+        statusId = matchingStatus.id
+      }
+    }
+
+    if (statusEnum && statusEnum !== task.status) {
+      if (statusEnum === TASK_STATUS.DONE) {
+        if (!isGM && !isTL && !isTester) {
+          throw new AppError(
+            "Chá»‰ Team Leader, Manager hoáº·c Tester má»›i cĂ³ quyá»n phĂª duyá»‡t hoĂ n thĂ nh cĂ´ng viá»‡c",
+            HttpStatusCode.FORBIDDEN,
+            ErrorLayer.SERVICE,
+          )
+        }
+      }
+
+      if (statusEnum === TASK_STATUS.IN_REVIEW) {
+        const hasResultUrl = data.resultUrl !== undefined ? !!data.resultUrl : !!task.resultUrl
+        const hasResultNotes = data.resultNotes !== undefined ? !!data.resultNotes : !!task.resultNotes
+
+        if (!hasResultUrl && !hasResultNotes) {
+          throw new AppError(
+            "Báº¯t buá»™c pháº£i Ä‘Ă­nh kĂ¨m link sáº£n pháº©m hoáº·c ghi chĂº káº¿t quáº£ khi gá»­i yĂªu cáº§u Ä‘Ă¡nh giĂ¡ cĂ´ng viá»‡c (in_review)",
+            HttpStatusCode.BAD_REQUEST,
+            ErrorLayer.SERVICE,
+          )
+        }
+      }
+    }
+
+    return this.repository.updateTask(id, {
+      ...data,
+      status: statusEnum,
+      statusId,
+    })
   }
 
-  /**
-   * Deletes a task
-   * Only Admins, GMs, project team leader, or task creator can delete
-   * Throws error if user lacks permission or task not found
-   */
   async deleteTask(id: string, userId: string): Promise<boolean> {
     const task = await this.repository.findById(id)
     if (!task) {
@@ -274,12 +304,11 @@ export class TaskService implements ITaskService {
     const isTL = project.teamLeaderId === userId
     const isCreator = task.createdById === userId
 
-    // Delete permissions: GM, Project Team Leader, or Creator
     if (!isGM && !isTL && !isCreator) {
       throw new AppError(
         "You do not have permission to delete this task",
         HttpStatusCode.FORBIDDEN,
-        ErrorLayer.SERVICE
+        ErrorLayer.SERVICE,
       )
     }
 

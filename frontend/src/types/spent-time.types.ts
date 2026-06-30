@@ -1,7 +1,13 @@
-import { SPENT_TIME_ACTIVITIES, SPENT_TIME_WORK_TIME_TYPES } from "@/config/entities/project.config"
+import {
+  SPENT_TIME_ACTIVITIES,
+  SPENT_TIME_STATUSES,
+  SPENT_TIME_WORK_TIME_TYPES,
+} from "@/config/entities/project.config"
 
 export type SpentTimeActivity = (typeof SPENT_TIME_ACTIVITIES)[number]
 export type SpentTimeWorkTimeType = (typeof SPENT_TIME_WORK_TIME_TYPES)[number]
+/** pending → lead review | approved → payroll | rejected → excluded from totals */
+export type SpentTimeStatus = (typeof SPENT_TIME_STATUSES)[number]
 
 export interface SpentTime {
   id: string
@@ -12,6 +18,10 @@ export interface SpentTime {
   comment: string | null
   activity: SpentTimeActivity
   workTimeType: SpentTimeWorkTimeType
+  status: SpentTimeStatus
+  approvedById: string | null
+  approvedAt: string | null
+  rejectionReason: string | null
   createdAt: string
   updatedAt: string
   task?: {
@@ -28,6 +38,10 @@ export interface SpentTime {
     fullName: string
     email: string
   }
+  approvedBy?: {
+    id: string
+    fullName: string
+  } | null
 }
 
 export interface CreateSpentTimeDto {
@@ -52,6 +66,7 @@ export interface SpentTimeQuery {
   taskId?: string
   employeeId?: string
   projectId?: string
+  status?: SpentTimeStatus
   startDate?: string
   endDate?: string
 }

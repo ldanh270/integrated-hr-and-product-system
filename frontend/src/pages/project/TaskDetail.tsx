@@ -1,5 +1,6 @@
+/* eslint-disable security/detect-object-injection */
 // Import common layout containers
-import { PageCard, StatusPill } from "@/components/common"
+import { PageCard, StatusPill, SafeHtml } from "@/components/common"
 // Import spent time modal component
 import LogTimeModal from "@/components/features/project/LogTimeModal"
 // Import custom UI elements
@@ -23,25 +24,38 @@ import {
 } from "@/components/ui/select"
 // Import Skeleton screen layout loading helpers
 import { Skeleton } from "@/components/ui/skeleton"
-import { Textarea } from "@/components/ui/textarea"
+import { RichTextEditor } from "@/components/ui/rich-text-editor"
 // Import employee role specifications
 import { ROLE } from "@/config/entities/employee.config"
 import { usePermission } from "@/hooks/use-permission"
 // Import task property categories lists
-import { TASK_PRIORITIES, TASK_STATUSES, TASK_TRACKERS } from "@/config/entities/project.config"
+import {
+  SPENT_TIME_STATUS,
+  TASK_PRIORITIES,
+  TASK_STATUS,
+  TASK_TRACKERS,
+  getSpentTimeStatusLabel,
+} from "@/config/entities/project.config"
+import {
+  SPENT_TIME_UI,
+  getSpentTimeStatusPillVariant,
+} from "@/config/rules/spent-time.config"
 // Import API endpoint wrapper clients
 import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
+import { projectTaskStatusApi } from "@/lib/api/project-task-status.api"
 // Import authorization store
 import { useAuthStore } from "@/store/auth-store"
 // Import Spent Time log type structure
 import type { SpentTime } from "@/types/spent-time.types"
 // Import task types
-import type { TaskTracker, TaskPriority, TaskStatus } from "@/types/task.types"
+import type { TaskTracker, TaskPriority } from "@/types/task.types"
+import type { ProjectTaskStatus } from "@/types/project-task-status.types"
 // Import React Query hooks for fetching and mutations
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 // Import toast notification client
 import { toast } from "sonner"
+import { extractErrorMessage } from "@/utils/error-helper"
 // Import Lucide icons
 import {
   AlertCircle,
@@ -53,23 +67,60 @@ import {
   Plus,
   Trash2,
   User,
+  Check,
+  X,
 } from "lucide-react"
 // Import standard React hooks
-import { useState } from "react"
+import { useState, useEffect } from "react"
 // Import routing navigation
 import { Link, useNavigate, useParams } from "react-router-dom"
 
+const cleanHtml = (html: string) => {
+  if (!html) return null
+  let insideTag = false
+  let textLength = 0
+  for (let i = 0; i < html.length; i++) {
+    const char = html.charAt(i)
+    if (char === "<") {
+      insideTag = true
+    } else if (char === ">") {
+      insideTag = false
+    } else if (!insideTag && /\S/.test(char)) {
+      textLength++
+    }
+  }
+  return textLength === 0 ? null : html.trim()
+}
+
 // Main component to render task detailed specifications
 export default function TaskDetail() {
-  // Extract task ID from URL parameters
-  const { id: taskId } = useParams<{ id: string }>()
-  const id = taskId || ""
-  
   // Initialize query client, route navigation, and auth store
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const { roles } = usePermission()
+
+  // Extract task ID from URL parameters
+  const { id: taskId } = useParams<{ id: string }>()
+
+  // Resolve active task ID: prefer URL param, then sessionStorage
+  const activeTaskId = taskId || sessionStorage.getItem("activeTaskId") || ""
+
+  // Redirect to task-specific URL if accessing /project/task without an ID
+  useEffect(() => {
+    if (!taskId) {
+      if (activeTaskId) {
+        navigate(`/project/task/${activeTaskId}`, { replace: true })
+      } else {
+        toast.error("Vui lòng chọn một công việc để xem chi tiết")
+        navigate("/project/list", { replace: true })
+      }
+    } else {
+      sessionStorage.setItem("activeTaskId", taskId)
+    }
+  }, [taskId, activeTaskId, navigate])
+
+  const id = taskId || activeTaskId
 
   // State hooks to control dialog modal views
   const [isOpenLogTimeModal, setIsOpenLogTimeModal] = useState(false) // Visibility of log time modal
@@ -79,14 +130,15 @@ export default function TaskDetail() {
   // State hooks to bind edit task form inputs
   const [taskTitle, setTaskTitle] = useState("") // Title text
   const [taskDesc, setTaskDesc] = useState("") // Description text
-  const [taskTracker, setTaskTracker] = useState("") // Tracker choice
-  const [taskPriority, setTaskPriority] = useState("") // Priority choice
-  const [taskStatus, setTaskStatus] = useState("") // Status choice
-  const [taskAssignee, setTaskAssignee] = useState("") // Assignee member ID
+  const [taskTracker, setTaskTracker] = useState("") // Task tracker
+  const [taskPriority, setTaskPriority] = useState("") // Task priority
+  const [taskStatusId, setTaskStatusId] = useState("") // Custom status ID
+  const [taskAssignee, setTaskAssignee] = useState("") // Task assignee ID
   const [taskStart, setTaskStart] = useState("") // Start date
   const [taskDue, setTaskDue] = useState("") // Due date
-  const [taskEstimate, setTaskEstimate] = useState("") // Estimated hours
-  const [taskProgress, setTaskProgress] = useState(0) // Percent progress value
+  const [taskEstimate, setTaskEstimate] = useState("") // Time estimate
+  const [taskProgress, setTaskProgress] = useState(0) // Completion progress percentage
+  const [resultNotes, setResultNotes] = useState("") // Product result notes
   const [editError, setEditError] = useState<string | null>(null) // Errors during form submission
 
   // 1. Query hook to fetch detailed data for the targeted task
@@ -96,10 +148,18 @@ export default function TaskDetail() {
     enabled: !!id,
   })
 
+
   // Capture project ID associated with this task
   const projectId = task?.projectId || ""
 
-  // 2. Query hook to fetch spent time records log belonging to this task
+  // Synchronize active project ID with sessionStorage
+  useEffect(() => {
+    if (task?.projectId) {
+      sessionStorage.setItem("activeProjectId", task.projectId)
+    }
+  }, [task?.projectId])
+
+  // Query hook to fetch spent time records log belonging to this task (PT primary input)
   const { data: spentTimes, isLoading: isLoadingSpent } = useQuery({
     queryKey: ["spentTimes", id],
     queryFn: () => taskApi.listSpentTimes({ taskId: id }),
@@ -128,7 +188,17 @@ export default function TaskDetail() {
   })
 
 
-  const totalSpentHours = spentTimes?.reduce((sum, st) => sum + st.hours, 0) || 0
+  // Query hook to fetch project custom statuses
+  const { data: statusesData } = useQuery({
+    queryKey: ["project-statuses", projectId],
+    queryFn: () => projectTaskStatusApi.list(projectId),
+    enabled: !!projectId,
+  })
+  const statuses = statusesData || []
+
+  // PT task totals exclude rejected logs; pending + approved count toward estimate cap
+  const totalSpentHours =
+    spentTimes?.filter((st) => st.status !== SPENT_TIME_STATUS.REJECTED).reduce((sum, st) => sum + st.hours, 0) || 0
 
   // Check roles/permissions
   const isCreator = task?.createdById === user?.id
@@ -147,12 +217,13 @@ export default function TaskDetail() {
     setTaskDesc(task.description || "")
     setTaskTracker(task.tracker)
     setTaskPriority(task.priority)
-    setTaskStatus(task.status)
+    setTaskStatusId(task.statusId || "")
     setTaskAssignee(task.assigneeId || "none")
     setTaskStart(task.startDate ? new Date(task.startDate).toISOString().split("T")[0] : "")
     setTaskDue(task.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : "")
     setTaskEstimate(task.estimatedTime ? String(task.estimatedTime) : "")
     setTaskProgress(task.progress)
+    setResultNotes(task.resultNotes || "")
     setIsOpenEditModal(true)
   }
 
@@ -161,15 +232,17 @@ export default function TaskDetail() {
     mutationFn: async () => {
       return taskApi.update(id, {
         title: taskTitle,
-        description: taskDesc.trim() || null,
+        description: cleanHtml(taskDesc),
         tracker: taskTracker as TaskTracker,
         priority: taskPriority as TaskPriority,
-        status: taskStatus as TaskStatus,
+        statusId: taskStatusId || null,
         assigneeId: taskAssignee === "none" ? null : taskAssignee,
         startDate: taskStart || null,
         dueDate: taskDue || null,
         estimatedTime: taskEstimate ? parseFloat(taskEstimate) : null,
         progress: Number(taskProgress),
+        resultUrl: null, // Clear resultUrl as it is removed from UI
+        resultNotes: cleanHtml(resultNotes),
       })
     },
     onSuccess: () => {
@@ -192,6 +265,28 @@ export default function TaskDetail() {
     },
   })
 
+  // Lead approval is required before PT hours flow into payroll
+  const canApproveSpentTime = isAdminOrGM || isLeader
+
+  const approveSpentTimeMutation = useMutation({
+    mutationFn: (logId: string) => taskApi.approveSpentTime(logId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["spentTimes", id] })
+      toast.success(SPENT_TIME_UI.TASK_TOAST_APPROVED)
+    },
+    onError: (err: unknown) => toast.error(extractErrorMessage(err)),
+  })
+
+  const rejectSpentTimeMutation = useMutation({
+    mutationFn: ({ logId, reason }: { logId: string; reason: string }) =>
+      taskApi.rejectSpentTime(logId, reason),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["spentTimes", id] })
+      toast.success(SPENT_TIME_UI.TASK_TOAST_REJECTED)
+    },
+    onError: (err: unknown) => toast.error(extractErrorMessage(err)),
+  })
+
   // Delete Spent Time log mutation
   const deleteSpentTimeMutation = useMutation({
     mutationFn: async (logId: string) => {
@@ -210,7 +305,7 @@ export default function TaskDetail() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["tasks", "project", projectId] })
-      navigate(`/project/${projectId}`)
+      navigate("/project/overview")
     },
   })
 
@@ -248,23 +343,16 @@ export default function TaskDetail() {
 
   // Formatting helpers
   const formatStatus = (status: string) => {
-    if (status === "todo") return "Đang mở"
-    if (status === "in_progress") return "Đang làm"
-    if (status === "in_review") return "Đánh giá"
-    if (status === "done") return "Hoàn thành"
-    if (status === "cancelled") return "Đã hủy"
-    if (status === "reopened") return "Mở lại"
+    if (status === TASK_STATUS.TODO) return "Đang mở"
+    if (status === TASK_STATUS.IN_PROGRESS) return "Đang làm"
+    if (status === TASK_STATUS.IN_REVIEW) return "Đánh giá"
+    if (status === TASK_STATUS.DONE) return "Hoàn thành"
+    if (status === TASK_STATUS.CANCELLED) return "Đã hủy"
+    if (status === TASK_STATUS.REOPENED) return "Mở lại"
     return status
   }
 
-  const getStatusVariant = (status: string) => {
-    if (status === "done") return "success"
-    if (status === "in_progress") return "warning"
-    if (status === "in_review") return "info"
-    if (status === "cancelled") return "danger"
-    if (status === "reopened") return "info"
-    return "neutral"
-  }
+
 
   const formatPriority = (priority: string) => {
     if (priority === "low") return "Thấp"
@@ -302,7 +390,7 @@ export default function TaskDetail() {
                 Dự án
               </Link>
               <span>/</span>
-              <Link to={`/project/${task.projectId}`} className="hover:text-primary transition-colors font-semibold">
+              <Link to="/project/overview" className="hover:text-primary transition-colors font-semibold">
                 {task.project?.name || "Chi tiết dự án"}
               </Link>
               <span>/</span>
@@ -314,7 +402,12 @@ export default function TaskDetail() {
                 <Button
                   variant="ghost"
                   disabled={!prevTaskId}
-                  onClick={() => { navigate(`/project/tasks/${prevTaskId}`); }}
+                  onClick={() => {
+                    if (prevTaskId) {
+                      sessionStorage.setItem("activeTaskId", prevTaskId)
+                      navigate(`/project/task/${prevTaskId}`)
+                    }
+                  }}
                   className="rounded-full h-5 px-1.5 text-[9px] font-bold disabled:opacity-40 hover:bg-background cursor-pointer"
                 >
                   « Trước
@@ -325,7 +418,12 @@ export default function TaskDetail() {
                 <Button
                   variant="ghost"
                   disabled={!nextTaskId}
-                  onClick={() => { navigate(`/project/tasks/${nextTaskId}`); }}
+                  onClick={() => {
+                    if (nextTaskId) {
+                      sessionStorage.setItem("activeTaskId", nextTaskId)
+                      navigate(`/project/task/${nextTaskId}`)
+                    }
+                  }}
                   className="rounded-full h-5 px-1.5 text-[9px] font-bold disabled:opacity-40 hover:bg-background cursor-pointer"
                 >
                   Sau »
@@ -390,7 +488,13 @@ export default function TaskDetail() {
             <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
               <div className="flex justify-between border-b border-border/40 pb-2">
                 <span className="font-medium text-muted-foreground">Trạng thái:</span>
-                <StatusPill label={formatStatus(task.status)} variant={getStatusVariant(task.status)} />
+                {(() => {
+                  const customStatus = statuses.find((s: ProjectTaskStatus) => s.id === task.statusId)
+                  const label = customStatus ? customStatus.name : formatStatus(task.status)
+                  const isCompleted = customStatus ? customStatus.isCompleted : (task.status === TASK_STATUS.DONE || task.status === TASK_STATUS.CANCELLED)
+                  const variant = isCompleted ? "success" : (customStatus?.name.toLowerCase().includes("progress") ? "warning" : "info")
+                  return <StatusPill label={label} variant={variant} />
+                })()}
               </div>
 
               <div className="flex justify-between border-b border-border/40 pb-2">
@@ -466,25 +570,45 @@ export default function TaskDetail() {
               Mô tả chi tiết
             </h3>
             {task.description ? (
-              <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
-                {task.description}
-              </p>
+              <SafeHtml 
+                content={task.description}
+                className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground leading-relaxed"
+              />
             ) : (
               <p className="text-xs text-muted-foreground italic">Không có mô tả chi tiết cho công việc này.</p>
             )}
           </PageCard>
+
+          {/* Task results */}
+          {task.resultNotes && (
+            <PageCard className="p-6">
+              <h3 className="font-bold text-base text-foreground mb-3 border-b border-border pb-2 flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-success" />
+                Kết quả công việc
+              </h3>
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <span className="text-xs font-semibold text-muted-foreground">Ghi chú kết quả:</span>
+                  <SafeHtml 
+                    content={task.resultNotes}
+                    className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground leading-relaxed bg-muted/30 p-3 rounded-lg border border-border/40"
+                  />
+                </div>
+              </div>
+            </PageCard>
+          )}
         </div>
 
-        {/* Right Side: Spent Time logs list */}
+        {/* Right Side: Spent Time logs — PT employees log here; lead approves before payroll */}
         <div className="col-span-12 lg:col-span-4 space-y-6">
           <PageCard className="p-6">
             <h3 className="font-bold text-base text-foreground mb-4 border-b border-border pb-2 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <Clock className="size-4 text-muted-foreground" />
-                Spent Time
+                {SPENT_TIME_UI.TASK_SECTION_TITLE}
               </span>
               <span className="text-xs bg-primary/10 text-primary font-bold rounded-full px-2.5 py-0.5">
-                {totalSpentHours.toFixed(1)} giờ
+                {totalSpentHours.toFixed(1)} {SPENT_TIME_UI.TASK_HOURS_SUFFIX}
               </span>
             </h3>
 
@@ -495,13 +619,17 @@ export default function TaskDetail() {
               </div>
             ) : !spentTimes || spentTimes.length === 0 ? (
               <div className="text-center py-8 text-xs text-muted-foreground italic">
-                Chưa có thời gian làm việc nào được ghi nhận.
+                {SPENT_TIME_UI.TASK_EMPTY_LIST}
               </div>
             ) : (
               <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
                 {spentTimes.map((st) => {
                   const isLogOwner = st.employeeId === user?.id
-                  const canDeleteLog = isAdminOrGM || isLogOwner
+                  const isPending = st.status === SPENT_TIME_STATUS.PENDING
+                  const canDeleteLog = (isAdminOrGM || isLogOwner) && isPending
+                  const canEditLog = canDeleteLog
+
+                  const statusVariant = getSpentTimeStatusPillVariant(st.status)
 
                   return (
                     <div
@@ -519,38 +647,73 @@ export default function TaskDetail() {
                         </div>
 
                         <div className="flex items-center gap-2">
+                          <StatusPill
+                            variant={statusVariant}
+                            className="text-[9px] px-2 py-0"
+                            label={getSpentTimeStatusLabel(st.status)}
+                          />
                           <Badge variant="outline" className="rounded-full text-[9px] bg-primary/5 text-primary border-primary/10 font-black">
-                            {st.hours} h
+                            {st.hours} {SPENT_TIME_UI.TASK_HOURS_BADGE_SUFFIX}
                           </Badge>
 
-                          {canDeleteLog && (
+                          {canApproveSpentTime && isPending && (
                             <>
                               <Button
                                 variant="ghost"
                                 size="icon-xs"
                                 className="text-primary hover:bg-primary/10 rounded-full cursor-pointer size-6 p-0"
+                                title={SPENT_TIME_UI.APPROVE_ACTION_TITLE}
                                 onClick={() => {
-                                  setEditingSpentTime(st)
-                                  setIsOpenLogTimeModal(true)
+                                  approveSpentTimeMutation.mutate(st.id)
                                 }}
                                 aria-label="Chỉnh sửa nhật ký thời gian"
                               >
-                                <Edit className="size-3" />
+                                <Check className="size-3" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="icon-xs"
                                 className="text-destructive hover:bg-destructive/10 rounded-full cursor-pointer size-6 p-0"
                                 aria-label="Xóa nhật ký thời gian"
+                                title={SPENT_TIME_UI.REJECT_ACTION_TITLE}
                                 onClick={() => {
-                                  if (window.confirm("Bạn có chắc chắn muốn xóa nhật ký này?")) {
-                                    deleteSpentTimeMutation.mutate(st.id)
+                                  const reason = window.prompt(SPENT_TIME_UI.REJECT_REASON_PROMPT)
+                                  if (reason?.trim()) {
+                                    rejectSpentTimeMutation.mutate({ logId: st.id, reason: reason.trim() })
                                   }
                                 }}
                               >
-                                <Trash2 className="size-3" />
+                                <X className="size-3" />
                               </Button>
                             </>
+                          )}
+
+                          {canEditLog && (
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              className="text-primary hover:bg-primary/10 rounded-full cursor-pointer size-6 p-0"
+                              onClick={() => {
+                                setEditingSpentTime(st)
+                                setIsOpenLogTimeModal(true)
+                              }}
+                            >
+                              <Edit className="size-3" />
+                            </Button>
+                          )}
+                          {canDeleteLog && (
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              className="text-destructive hover:bg-destructive/10 rounded-full cursor-pointer size-6 p-0"
+                              onClick={() => {
+                                if (window.confirm(SPENT_TIME_UI.TASK_DELETE_CONFIRM)) {
+                                  deleteSpentTimeMutation.mutate(st.id)
+                                }
+                              }}
+                            >
+                              <Trash2 className="size-3" />
+                            </Button>
                           )}
                         </div>
                       </div>
@@ -558,7 +721,14 @@ export default function TaskDetail() {
                       <div className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1">
                         <History className="size-3 text-muted-foreground" />
                         {formatActivity(st.activity)}
+                        {st.workTimeType === "overtime" ? " · OT" : ""}
                       </div>
+
+                      {st.rejectionReason && (
+                        <div className="text-[10px] text-destructive italic">
+                          Lý do từ chối: {st.rejectionReason}
+                        </div>
+                      )}
 
                       {st.comment && (
                         <div className="text-xs text-muted-foreground italic bg-background/50 border border-border/40 p-2 rounded-lg mt-1">
@@ -581,6 +751,8 @@ export default function TaskDetail() {
         taskId={task.id}
         taskTitle={task.title}
         spentTime={editingSpentTime}
+        estimatedTime={task.estimatedTime}
+        loggedHours={totalSpentHours}
       />
 
       {/* EDIT TASK DIALOG */}
@@ -632,11 +804,10 @@ export default function TaskDetail() {
               <Label htmlFor="editDesc" className="text-xs font-semibold text-muted-foreground">
                 Mô tả chi tiết
               </Label>
-              <Textarea
-                id="editDesc"
+              <RichTextEditor
                 value={taskDesc}
-                onChange={(e) => { setTaskDesc(e.target.value); }}
-                className="min-h-[90px] rounded-xl border-border p-3 text-sm focus-visible:ring-1 focus-visible:ring-ring"
+                onChange={setTaskDesc}
+                placeholder="Cung cấp chi tiết các bước, ngữ cảnh hoặc yêu cầu..."
               />
             </div>
 
@@ -681,14 +852,17 @@ export default function TaskDetail() {
                 <Label htmlFor="editStatus" className="text-xs font-semibold text-muted-foreground">
                   Trạng thái
                 </Label>
-                <Select value={taskStatus} onValueChange={setTaskStatus}>
+                <Select value={taskStatusId} onValueChange={setTaskStatusId}>
                   <SelectTrigger id="editStatus" className="w-full h-10 border-border rounded-full px-4 bg-background">
-                    <SelectValue />
+                    <SelectValue placeholder="Chọn trạng thái..." />
                   </SelectTrigger>
                   <SelectContent position="popper" className="rounded-xl border-border bg-popover">
-                    {TASK_STATUSES.map((st) => (
-                      <SelectItem key={st} value={st} className="rounded-lg">
-                        {formatStatus(st)}
+                    {statuses.map((st: ProjectTaskStatus) => (
+                      <SelectItem key={st.id} value={st.id} className="rounded-lg">
+                        <span className="flex items-center gap-2">
+                          <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: st.color }} />
+                          {st.name} {st.isDefault && " (Mặc định)"}
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -777,6 +951,25 @@ export default function TaskDetail() {
               </div>
             </div>
 
+            <div className="border-t border-border/60 pt-3 space-y-3">
+              <div className="text-xs font-bold text-foreground">Kết quả công việc</div>
+              <div className="grid grid-cols-1 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="editResultNotes" className="text-xs font-semibold text-muted-foreground">
+                    Ghi chú kết quả (resultNotes)
+                  </Label>
+                  <RichTextEditor
+                    value={resultNotes}
+                    onChange={setResultNotes}
+                    placeholder="Mô tả kết quả công việc, tính năng đã hoàn thiện hoặc hướng dẫn test..."
+                  />
+                </div>
+              </div>
+              <div className="text-[10px] text-muted-foreground italic">
+                * Lưu ý: Bắt buộc điền ghi chú kết quả khi gửi yêu cầu đánh giá công việc (in_review).
+              </div>
+            </div>
+
             <div className="flex justify-end gap-2 pt-2">
               <Button
                 type="button"
@@ -801,3 +994,4 @@ export default function TaskDetail() {
     </div>
   )
 }
+

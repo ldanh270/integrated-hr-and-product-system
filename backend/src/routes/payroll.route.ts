@@ -9,6 +9,7 @@ import { PrismaEmployeeSalaryConfigRepository } from "@/repositories/employee-sa
 import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
 import { PrismaPayrollRepository } from "@/repositories/payroll.repository.ts"
 import { PrismaPayslipRepository } from "@/repositories/payslip.repository.ts"
+import { PrismaSpentTimeRepository } from "@/repositories/spent-time.repository.ts"
 import { PayrollService } from "@/services/payroll.service.ts"
 import { AppError } from "@/utils/error.util.ts"
 
@@ -20,6 +21,8 @@ const payrollRepo = new PrismaPayrollRepository(prisma)
 const payslipRepo = new PrismaPayslipRepository(prisma)
 const configRepo = new PrismaEmployeeSalaryConfigRepository(prisma)
 const attendanceRepo = new PrismaAttendanceRepository(prisma)
+// PT payroll lines come from approved Spent Time × project member hourlyRate, not attendance.
+const spentTimeRepo = new PrismaSpentTimeRepository(prisma)
 const employeeRepo = new PrismaEmployeeRepository(prisma)
 const settingsRepo = {
   findGlobal: async () => {
@@ -34,6 +37,7 @@ const service = new PayrollService(
   configRepo,
   attendanceRepo,
   employeeRepo,
+  spentTimeRepo,
   settingsRepo,
   prisma,
 )

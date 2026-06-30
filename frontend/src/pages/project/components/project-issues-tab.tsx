@@ -1,7 +1,21 @@
+/* eslint-disable security/detect-object-injection */
 import { useState, useEffect } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Link } from "react-router-dom"
-import { AlertCircle, MoreVertical, Search } from "lucide-react"
+import {
+  AlertCircle,
+  MoreVertical,
+  Search,
+  Plus,
+  Trash2,
+  ArrowRight,
+  ArrowLeft,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUp,
+  ChevronsDown,
+  Save,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import { PageCard, StatusPill } from "@/components/common"
@@ -16,6 +30,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { customQueryApi } from "@/lib/api/custom-query.api"
+import type { CustomQuery } from "@/lib/api/custom-query.api"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -33,13 +50,13 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 import { taskApi } from "@/lib/api/task.api"
+import { projectTaskStatusApi } from "@/lib/api/project-task-status.api"
 import { extractErrorMessage } from "@/utils/error-helper"
 import {
   TASK_TRACKERS,
-  TASK_STATUSES,
   TASK_PRIORITIES,
 } from "@/config/entities/project.config"
-import type { TaskTracker, TaskPriority, TaskStatus } from "@/types/task.types"
+import type { Task, TaskTracker, TaskPriority } from "@/types/task.types"
 import type { ProjectMember } from "@/types/project.types"
 
 interface ProjectIssuesTabProps {
@@ -59,6 +76,200 @@ interface ProjectIssuesTabProps {
 
 const ALL_FILTER_VALUE = "all"
 
+const formatStatus = (status: string) => {
+  switch (status) {
+    case "todo":
+      return "Đang mở"
+    case "in_progress":
+      return "Đang làm"
+    case "in_review":
+      return "Đánh giá"
+    case "done":
+      return "Hoàn thành"
+    case "cancelled":
+      return "Đã hủy"
+    case "reopened":
+      return "Mở lại"
+    default:
+      return status
+  }
+}
+
+const AVAILABLE_COLUMNS = [
+  { key: "id", label: "ID" },
+  { key: "tracker", label: "Kiểu công việc" },
+  { key: "title", label: "Chủ đề" },
+  { key: "assignee", label: "Người thực hiện" },
+  { key: "status", label: "Trạng thái" },
+  { key: "priority", label: "Mức ưu tiên" },
+  { key: "progress", label: "Tiến độ" },
+  { key: "author", label: "Tác giả" },
+  { key: "startDate", label: "Bắt đầu" },
+  { key: "dueDate", label: "Hết hạn" },
+  { key: "estimatedTime", label: "Thời gian ước lượng" },
+  { key: "updatedAt", label: "Cập nhật" }
+]
+
+const COLUMN_METADATA = {
+  id: {
+    label: "ID",
+    className: "w-16 font-semibold text-xs",
+    render: (task: Task) => (
+      <TableCell className="font-mono text-[10px] font-semibold text-muted-foreground">
+        #{task.id.substring(0, 5)}
+      </TableCell>
+    )
+  },
+  tracker: {
+    label: "Kiểu công việc",
+    className: "w-24 font-semibold text-xs",
+    render: (task: Task) => {
+      let trackerColor = "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
+      if (task.tracker === "bug") {
+        trackerColor = "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"
+      } else if (task.tracker === "feature") {
+        trackerColor = "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+      } else if (task.tracker === "support") {
+        trackerColor = "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300"
+      }
+      return (
+        <TableCell>
+          <Badge
+            variant="outline"
+            className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${trackerColor}`}
+          >
+            {task.tracker}
+          </Badge>
+        </TableCell>
+      )
+    }
+  },
+  title: {
+    label: "Chủ đề",
+    className: "font-semibold text-xs min-w-[200px]",
+    render: (task: Task) => (
+      <TableCell className="max-w-[250px] truncate font-medium">
+        <Link
+          to={`/project/task/${task.id}`}
+          className="text-primary hover:underline flex items-center gap-1"
+        >
+          {task.title}
+        </Link>
+      </TableCell>
+    )
+  },
+  assignee: {
+    label: "Người thực hiện",
+    className: "w-28 font-semibold text-xs",
+    render: (task: Task) => (
+      <TableCell className="text-xs">
+        {task.assignee ? (
+          <span className="font-semibold text-foreground">
+            {task.assignee.fullName}
+          </span>
+        ) : (
+          <span className="text-muted-foreground italic">Không chỉ định</span>
+        )}
+      </TableCell>
+    )
+  },
+  status: {
+    label: "Trạng thái",
+    className: "w-28 font-semibold text-xs",
+    render: (task: Task, statuses: { id: string; name: string; isCompleted: boolean }[]) => {
+      const customStatus = statuses.find((s) => s.id === task.statusId)
+      const label = customStatus ? customStatus.name : formatStatus(task.status)
+      const isCompleted = customStatus ? customStatus.isCompleted : (task.status === "done" || task.status === "cancelled")
+      const variant = isCompleted ? "success" : (customStatus?.name.toLowerCase().includes("progress") ? "warning" : "info")
+      return (
+        <TableCell>
+          <StatusPill
+            label={label}
+            variant={variant}
+          />
+        </TableCell>
+      )
+    }
+  },
+  priority: {
+    label: "Mức ưu tiên",
+    className: "w-24 font-semibold text-xs",
+    render: (task: Task) => {
+      let priorityColor = "bg-secondary text-secondary-foreground"
+      if (task.priority === "urgent") {
+        priorityColor = "bg-destructive/10 text-destructive border-destructive/20"
+      } else if (task.priority === "high") {
+        priorityColor =
+          "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-500"
+      } else if (task.priority === "medium") {
+        priorityColor =
+          "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400"
+      }
+      return (
+        <TableCell>
+          <Badge variant="outline" className={`rounded-full text-[9px] ${priorityColor}`}>
+            {task.priority}
+          </Badge>
+        </TableCell>
+      )
+    }
+  },
+  progress: {
+    label: "Tiến độ",
+    className: "w-16 text-right font-semibold text-xs",
+    render: (task: Task) => (
+      <TableCell className="text-right font-bold text-xs">
+        {task.progress}%
+      </TableCell>
+    )
+  },
+  author: {
+    label: "Tác giả",
+    className: "w-28 font-semibold text-xs",
+    render: (task: Task) => (
+      <TableCell className="text-xs text-foreground font-semibold">
+        {task.createdBy ? task.createdBy.fullName : "Chưa rõ"}
+      </TableCell>
+    )
+  },
+  startDate: {
+    label: "Bắt đầu",
+    className: "w-24 font-semibold text-xs",
+    render: (task: Task) => (
+      <TableCell className="text-xs text-muted-foreground font-mono">
+        {task.startDate ? new Date(task.startDate).toLocaleDateString("vi-VN") : "-"}
+      </TableCell>
+    )
+  },
+  dueDate: {
+    label: "Hết hạn",
+    className: "w-24 font-semibold text-xs",
+    render: (task: Task) => (
+      <TableCell className="text-xs text-muted-foreground font-mono">
+        {task.dueDate ? new Date(task.dueDate).toLocaleDateString("vi-VN") : "-"}
+      </TableCell>
+    )
+  },
+  estimatedTime: {
+    label: "Thời gian ước lượng",
+    className: "w-24 font-semibold text-xs text-right",
+    render: (task: Task) => (
+      <TableCell className="text-xs text-right font-mono font-semibold">
+        {task.estimatedTime ? `${task.estimatedTime}h` : "-"}
+      </TableCell>
+    )
+  },
+  updatedAt: {
+    label: "Cập nhật",
+    className: "w-28 font-semibold text-xs",
+    render: (task: Task) => (
+      <TableCell className="text-xs text-muted-foreground font-mono">
+        {task.updatedAt ? new Date(task.updatedAt).toLocaleDateString("vi-VN") : "-"}
+      </TableCell>
+    )
+  }
+}
+
 export function ProjectIssuesTab({
   projectId,
   members,
@@ -67,6 +278,174 @@ export function ProjectIssuesTab({
 }: ProjectIssuesTabProps) {
   const queryClient = useQueryClient()
 
+  // Display Columns State
+  const [displayColumns, setDisplayColumns] = useState<string[]>([
+    "id",
+    "tracker",
+    "title",
+    "assignee",
+    "status",
+    "priority",
+    "progress",
+  ])
+
+  // New Query Form States
+  const [isNewQueryOpen, setIsNewQueryOpen] = useState(false)
+  const [newQueryName, setNewQueryName] = useState("")
+  const [newQueryDesc, setNewQueryDesc] = useState("")
+  const [newQueryForAll, setNewQueryForAll] = useState(false)
+  const [newQueryDefaultCols, setNewQueryDefaultCols] = useState(true)
+  const [newQueryShowRelated, setNewQueryShowRelated] = useState(true)
+  const [newQueryShowProgress, setNewQueryShowProgress] = useState(false)
+
+  
+  const [newQuerySelectedCols, setNewQuerySelectedCols] = useState<string[]>([
+    "id",
+    "tracker",
+    "title",
+    "assignee",
+    "status",
+    "priority",
+    "progress",
+  ])
+  const [availSelectedKey, setAvailSelectedKey] = useState<string | null>(null)
+  const [selSelectedKey, setSelSelectedKey] = useState<string | null>(null)
+
+  const [newQueryFilters, setNewQueryFilters] = useState({
+    status: { enabled: true, value: "open" },
+    tracker: { enabled: false, value: "all" },
+    priority: { enabled: false, value: "all" },
+    assignee: { enabled: false, value: "all" },
+    createdBy: { enabled: false, value: "all" }
+  })
+
+  // Fetch custom queries for this project and type 'issues'
+  const { data: savedQueries = [] } = useQuery({
+    queryKey: ["customQueries", projectId, "issues"],
+    queryFn: () => customQueryApi.list(projectId, "issues"),
+    enabled: !!projectId,
+  })
+
+  // Save query mutation
+  const saveQueryMutation = useMutation({
+    mutationFn: async (data: { name: string; projectId: string | null; queryData: string }) => {
+      return customQueryApi.create({
+        name: data.name,
+        type: "issues",
+        projectId: data.projectId,
+        queryData: data.queryData,
+      })
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["customQueries", projectId, "issues"] })
+      toast.success("Đã lưu truy vấn thành công")
+      setIsNewQueryOpen(false)
+      // Reset form
+      setNewQueryName("")
+      setNewQueryDesc("")
+      setNewQueryForAll(false)
+      setNewQueryDefaultCols(true)
+      setNewQueryShowRelated(true)
+      setNewQueryShowProgress(false)
+
+      setNewQuerySelectedCols(["id", "tracker", "title", "assignee", "status", "priority", "progress"])
+      setNewQueryFilters({
+        status: { enabled: true, value: "open" },
+        tracker: { enabled: false, value: "all" },
+        priority: { enabled: false, value: "all" },
+        assignee: { enabled: false, value: "all" },
+        createdBy: { enabled: false, value: "all" }
+      })
+    },
+    onError: (err: unknown) => {
+      toast.error(extractErrorMessage(err))
+    },
+  })
+
+  // Delete query mutation
+  const deleteQueryMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return customQueryApi.delete(id)
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["customQueries", projectId, "issues"] })
+      toast.success("Đã xóa truy vấn thành công")
+    },
+    onError: (err: unknown) => {
+      toast.error(extractErrorMessage(err))
+    },
+  })
+
+  // Apply saved query
+  const applySavedQuery = (q: CustomQuery) => {
+    try {
+      const data = JSON.parse(q.queryData)
+      
+      // Set columns
+      if (data.defaultColumns) {
+        setDisplayColumns(["id", "tracker", "title", "assignee", "status", "priority", "progress"])
+      } else if (Array.isArray(data.selectedColumns)) {
+        setDisplayColumns(data.selectedColumns)
+      }
+      
+      // Set filters
+      if (data.filters) {
+        if (data.filters.status?.enabled) {
+          setStatusFilter(data.filters.status.value)
+        } else {
+          setStatusFilter(ALL_FILTER_VALUE)
+        }
+        if (data.filters.tracker?.enabled) {
+          setTrackerFilter(data.filters.tracker.value)
+        } else {
+          setTrackerFilter(ALL_FILTER_VALUE)
+        }
+        if (data.filters.priority?.enabled) {
+          setPriorityFilter(data.filters.priority.value)
+        } else {
+          setPriorityFilter(ALL_FILTER_VALUE)
+        }
+        if (data.filters.assignee?.enabled) {
+          setAssigneeFilter(data.filters.assignee.value === "me" ? (user?.id || ALL_FILTER_VALUE) : data.filters.assignee.value)
+        } else {
+          setAssigneeFilter(ALL_FILTER_VALUE)
+        }
+        if (data.filters.createdBy?.enabled) {
+          setCreatedByIdFilter(data.filters.createdBy.value === "me" ? (user?.id || ALL_FILTER_VALUE) : data.filters.createdBy.value)
+        } else {
+          setCreatedByIdFilter(ALL_FILTER_VALUE)
+        }
+      }
+      toast.success(`Đã áp dụng truy vấn: ${q.name}`)
+    } catch (e) {
+      toast.error("Không thể đọc dữ liệu truy vấn đã lưu")
+    }
+  }
+
+  const handleSubmitSaveQuery = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newQueryName.trim()) return
+
+    const queryDataObj = {
+      description: newQueryDesc.trim(),
+      defaultColumns: newQueryDefaultCols,
+      selectedColumns: newQuerySelectedCols,
+      filters: newQueryFilters,
+    }
+
+    saveQueryMutation.mutate({
+      name: newQueryName.trim(),
+      projectId: newQueryForAll ? null : projectId,
+      queryData: JSON.stringify(queryDataObj),
+    })
+  }
+
+  // Fetch project statuses
+  const { data: statuses = [] } = useQuery({
+    queryKey: ["projectStatuses", projectId],
+    queryFn: () => projectTaskStatusApi.list(projectId),
+    enabled: !!projectId,
+  })
 
   // Filter & Pagination States
   const [issueSearch, setIssueSearch] = useState("")
@@ -116,7 +495,7 @@ export function ProjectIssuesTab({
         limit: pageSize,
         search: issueSearch || undefined,
         tracker: trackerFilter === ALL_FILTER_VALUE ? undefined : (trackerFilter as TaskTracker),
-        status: statusFilter === ALL_FILTER_VALUE ? undefined : (statusFilter as TaskStatus),
+        statusId: statusFilter === ALL_FILTER_VALUE ? undefined : statusFilter,
         priority: priorityFilter === ALL_FILTER_VALUE ? undefined : (priorityFilter as TaskPriority),
         assigneeId: assigneeFilter === ALL_FILTER_VALUE ? undefined : assigneeFilter,
         createdById: createdByIdFilter === ALL_FILTER_VALUE ? undefined : createdByIdFilter,
@@ -128,8 +507,8 @@ export function ProjectIssuesTab({
 
   // Quick Status update mutation
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ taskId, status }: { taskId: string; status: string }) => {
-      return taskApi.update(taskId, { status: status as TaskStatus })
+    mutationFn: async ({ taskId, statusId }: { taskId: string; statusId: string }) => {
+      return taskApi.update(taskId, { statusId })
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["tasks", "project", projectId] })
@@ -163,41 +542,6 @@ export function ProjectIssuesTab({
     return pages
   }
 
-  const formatStatus = (status: string) => {
-    switch (status) {
-      case "todo":
-        return "Đang mở"
-      case "in_progress":
-        return "Đang làm"
-      case "in_review":
-        return "Đánh giá"
-      case "done":
-        return "Hoàn thành"
-      case "cancelled":
-        return "Đã hủy"
-      case "reopened":
-        return "Mở lại"
-      default:
-        return status
-    }
-  }
-
-  const getStatusVariant = (status: string) => {
-    switch (status) {
-      case "done":
-        return "success"
-      case "in_progress":
-        return "warning"
-      case "in_review":
-        return "info"
-      case "cancelled":
-        return "danger"
-      case "reopened":
-        return "info"
-      default:
-        return "neutral"
-    }
-  }
 
   return (
     <div className="grid grid-cols-12 gap-6">
@@ -245,8 +589,8 @@ export function ProjectIssuesTab({
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
                   <SelectItem value={ALL_FILTER_VALUE}>Tất cả</SelectItem>
-                  {TASK_STATUSES.map((st) => (
-                    <SelectItem key={st} value={st}>{formatStatus(st)}</SelectItem>
+                  {statuses.map((st) => (
+                    <SelectItem key={st.id} value={st.id}>{st.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -320,114 +664,58 @@ export function ProjectIssuesTab({
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent h-10">
-                      <TableHead className="w-16 font-semibold text-xs">ID</TableHead>
-                      <TableHead className="w-24 font-semibold text-xs">Tracker</TableHead>
-                      <TableHead className="font-semibold text-xs">Tiêu đề</TableHead>
-                      <TableHead className="w-28 font-semibold text-xs">Người thực hiện</TableHead>
-                      <TableHead className="w-28 font-semibold text-xs">Trạng thái</TableHead>
-                      <TableHead className="w-24 font-semibold text-xs">Độ ưu tiên</TableHead>
-                      <TableHead className="w-16 text-right font-semibold text-xs">%</TableHead>
+                      {displayColumns.map((colKey) => {
+                        const col = COLUMN_METADATA[colKey as keyof typeof COLUMN_METADATA]
+                        return (
+                          <TableHead key={colKey} className={col.className}>
+                            {col.label}
+                          </TableHead>
+                        )
+                      })}
                       <TableHead className="w-10 font-semibold text-xs"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {tasks.map((task) => {
-                      let priorityColor = "bg-secondary text-secondary-foreground"
-                      if (task.priority === "urgent") {
-                        priorityColor = "bg-destructive/10 text-destructive border-destructive/20"
-                      } else if (task.priority === "high") {
-                        priorityColor =
-                          "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-500"
-                      } else if (task.priority === "medium") {
-                        priorityColor =
-                          "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400"
-                      }
-
-                      let trackerColor = "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
-                      if (task.tracker === "bug") {
-                        trackerColor = "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"
-                      } else if (task.tracker === "feature") {
-                        trackerColor = "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                      } else if (task.tracker === "support") {
-                        trackerColor = "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300"
-                      }
-
-                      return (
-                        <TableRow key={task.id} className="h-14 hover:bg-muted/30">
-                          <TableCell className="font-mono text-[10px] font-semibold text-muted-foreground">
-                            #{task.id.substring(0, 5)}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${trackerColor}`}
-                            >
-                              {task.tracker}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="max-w-[200px] truncate font-medium">
-                            <Link
-                              to={`/project/tasks/${task.id}`}
-                              className="text-primary hover:underline flex items-center gap-1"
-                            >
-                              {task.title}
-                            </Link>
-                          </TableCell>
-
-                          <TableCell className="text-xs">
-                            {task.assignee ? (
-                              <span className="font-semibold text-foreground">
-                                {task.assignee.fullName}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground italic">Không chỉ định</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <StatusPill
-                              label={formatStatus(task.status)}
-                              variant={getStatusVariant(task.status)}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={`rounded-full text-[9px] ${priorityColor}`}>
-                              {task.priority}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right font-bold text-xs">
-                            {task.progress}%
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon-xs" className="rounded-full cursor-pointer">
-                                  <MoreVertical className="size-3.5" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="rounded-xl border-border bg-popover">
+                    {tasks.map((task) => (
+                      <TableRow key={task.id} className="h-14 hover:bg-muted/30">
+                        {displayColumns.map((colKey) => {
+                          const col = COLUMN_METADATA[colKey as keyof typeof COLUMN_METADATA]
+                          const renderFn = col.render as (t: Task, s?: typeof statuses) => React.ReactNode
+                          if (colKey === "status") {
+                            return renderFn(task, statuses)
+                          }
+                          return renderFn(task)
+                        })}
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon-xs" className="rounded-full cursor-pointer">
+                                <MoreVertical className="size-3.5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="rounded-xl border-border bg-popover">
+                              <DropdownMenuItem
+                                asChild
+                                className="rounded-lg text-xs font-semibold cursor-pointer"
+                              >
+                                <Link to={`/project/task/${task.id}`}>Xem chi tiết</Link>
+                              </DropdownMenuItem>
+                              {statuses.map((st) => (
                                 <DropdownMenuItem
-                                  asChild
-                                  className="rounded-lg text-xs font-semibold cursor-pointer"
+                                  key={st.id}
+                                  className="rounded-lg text-xs font-medium cursor-pointer"
+                                  onClick={() => {
+                                    updateStatusMutation.mutate({ taskId: task.id, statusId: st.id })
+                                  }}
                                 >
-                                  <Link to={`/project/tasks/${task.id}`}>Xem chi tiết</Link>
+                                  Đổi thành: {st.name}
                                 </DropdownMenuItem>
-                                {TASK_STATUSES.map((st) => (
-                                  <DropdownMenuItem
-                                    key={st}
-                                    className="rounded-lg text-xs font-medium cursor-pointer"
-                                    onClick={() => {
-                                      updateStatusMutation.mutate({ taskId: task.id, status: st })
-                                    }}
-                                  >
-                                    Đổi thành: {formatStatus(st)}
-                                  </DropdownMenuItem>
-                                ))}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
@@ -524,7 +812,7 @@ export function ProjectIssuesTab({
       </div>
 
       {/* Sidebar Queries filters section */}
-      <div className="col-span-12 lg:col-span-3">
+      <div className="col-span-12 lg:col-span-3 space-y-4">
         <PageCard className="p-4 space-y-4">
           <h4 className="font-bold text-xs uppercase tracking-wider text-muted-foreground pb-2 border-b border-border">
             Truy vấn nhanh
@@ -579,6 +867,15 @@ export function ProjectIssuesTab({
                 setIssueSearch("")
                 setSortBy("createdAt")
                 setSortOrder("desc")
+                setDisplayColumns([
+                  "id",
+                  "tracker",
+                  "title",
+                  "assignee",
+                  "status",
+                  "priority",
+                  "progress",
+                ])
               }}
               className="text-left text-xs font-semibold px-3 py-2 rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground border border-dashed border-border mt-2 cursor-pointer"
             >
@@ -586,7 +883,601 @@ export function ProjectIssuesTab({
             </button>
           </div>
         </PageCard>
+
+        {/* Saved Custom Queries Card */}
+        <PageCard className="p-4 space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-border">
+            <h4 className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
+              Truy vấn riêng
+            </h4>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => { setIsNewQueryOpen(true); }}
+              className="rounded-full cursor-pointer hover:bg-muted text-primary"
+              title="Tạo truy vấn mới"
+            >
+              <Plus className="size-3.5" />
+            </Button>
+          </div>
+          
+          <div className="flex flex-col gap-2">
+            {savedQueries && savedQueries.length > 0 ? (
+              savedQueries.map((q) => (
+                <div key={q.id} className="flex items-center justify-between group">
+                  <button
+                    onClick={() => { applySavedQuery(q); }}
+                    className="text-left text-xs font-semibold px-2 py-1.5 rounded-lg text-sky-600 dark:text-sky-400 hover:underline truncate max-w-[170px]"
+                    title={q.name}
+                  >
+                    {q.name}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (confirm(`Bạn chắc chắn muốn xóa truy vấn "${q.name}"?`)) {
+                        deleteQueryMutation.mutate(q.id)
+                      }
+                    }}
+                    className="text-muted-foreground hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-muted shrink-0 cursor-pointer"
+                    title="Xóa truy vấn này"
+                  >
+                    <Trash2 className="size-3" />
+                  </button>
+                </div>
+              ))
+            ) : (
+              <span className="text-xs text-muted-foreground italic px-2">Chưa có truy vấn nào được lưu</span>
+            )}
+          </div>
+        </PageCard>
       </div>
+
+      {/* Dialog for Creating New Custom Query */}
+      <Dialog open={isNewQueryOpen} onOpenChange={setIsNewQueryOpen}>
+        <DialogContent className="max-w-3xl rounded-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold flex items-center gap-2">
+              <Save className="size-4 text-primary" />
+              Truy vấn mới
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmitSaveQuery} className="space-y-4 pt-2">
+            {/* Top inputs block */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="query-name" className="text-xs font-semibold text-foreground flex items-center gap-0.5">
+                  Tên truy vấn <span className="text-rose-500">*</span>
+                </Label>
+                <Input
+                  id="query-name"
+                  value={newQueryName}
+                  onChange={(e) => { setNewQueryName(e.target.value); }}
+                  placeholder="Ví dụ: Công việc mở tuần này..."
+                  className="h-9 text-xs rounded-lg border-border"
+                  autoFocus
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="query-desc" className="text-xs font-semibold text-foreground">
+                  Mô tả
+                </Label>
+                <Input
+                  id="query-desc"
+                  value={newQueryDesc}
+                  onChange={(e) => { setNewQueryDesc(e.target.value); }}
+                  placeholder="Mô tả mục đích của truy vấn..."
+                  className="h-9 text-xs rounded-lg border-border"
+                />
+              </div>
+            </div>
+
+            {/* Checkbox For All Projects */}
+            <div className="flex items-center gap-2">
+              <input
+                id="query-for-all"
+                type="checkbox"
+                checked={newQueryForAll}
+                onChange={(e) => { setNewQueryForAll(e.target.checked); }}
+                className="rounded border-border size-4"
+              />
+              <Label htmlFor="query-for-all" className="text-xs font-semibold cursor-pointer">
+                Cho mọi dự án
+              </Label>
+            </div>
+
+            {/* Options section */}
+            <div className="border-t border-border pt-3 space-y-2.5">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tùy chọn</span>
+              
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    id="query-default-cols"
+                    type="checkbox"
+                    checked={newQueryDefaultCols}
+                    onChange={(e) => {
+                      setNewQueryDefaultCols(e.target.checked)
+                      if (e.target.checked) {
+                        setNewQuerySelectedCols(["id", "tracker", "title", "assignee", "status", "priority", "progress"])
+                      }
+                    }}
+                    className="rounded border-border size-4"
+                  />
+                  <Label htmlFor="query-default-cols" className="text-xs font-semibold cursor-pointer">
+                    Cột mặc định
+                  </Label>
+                </div>
+
+                <div className="flex items-center gap-4 text-xs font-semibold pl-1">
+                  <span className="text-muted-foreground">Hiện:</span>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newQueryShowRelated}
+                      onChange={(e) => { setNewQueryShowRelated(e.target.checked); }}
+                      className="rounded border-border size-3.5"
+                    />
+                    Liên quan
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newQueryShowProgress}
+                      onChange={(e) => { setNewQueryShowProgress(e.target.checked); }}
+                      className="rounded border-border size-3.5"
+                    />
+                    Tiến độ
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!newQueryDefaultCols}
+                      onChange={(e) => {
+                        setNewQueryDefaultCols(!e.target.checked)
+                        if (!e.target.checked) {
+                          setNewQuerySelectedCols(["id", "tracker", "title", "assignee", "status", "priority", "progress"])
+                        }
+                      }}
+                      className="rounded border-border size-3.5"
+                    />
+                    Các cột được lựa chọn
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Filters section */}
+            <div className="space-y-3 border-t border-border pt-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Bộ lọc</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Thêm lọc:</span>
+                  <Select
+                    value=""
+                    onValueChange={(filterKey) => {
+                      setNewQueryFilters(prev => ({
+                        ...prev,
+                        [filterKey]: { ...prev[filterKey as keyof typeof prev], enabled: true }
+                      }))
+                    }}
+                  >
+                    <SelectTrigger className="w-36 h-7 text-[10px] border-border rounded-md bg-background">
+                      <SelectValue placeholder="Chọn bộ lọc..." />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl bg-popover">
+                      {!newQueryFilters.status.enabled && <SelectItem value="status" className="text-xs">Trạng thái</SelectItem>}
+                      {!newQueryFilters.tracker.enabled && <SelectItem value="tracker" className="text-xs">Kiểu công việc</SelectItem>}
+                      {!newQueryFilters.priority.enabled && <SelectItem value="priority" className="text-xs">Mức ưu tiên</SelectItem>}
+                      {!newQueryFilters.assignee.enabled && <SelectItem value="assignee" className="text-xs">Người thực hiện</SelectItem>}
+                      {!newQueryFilters.createdBy.enabled && <SelectItem value="createdBy" className="text-xs">Tác giả</SelectItem>}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                {newQueryFilters.status.enabled && (
+                  <div className="flex items-center gap-4 py-1">
+                    <label className="flex items-center gap-2 text-xs font-semibold w-32 shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={newQueryFilters.status.enabled}
+                        onChange={(e) => {
+                          setNewQueryFilters(prev => ({
+                            ...prev,
+                            status: { ...prev.status, enabled: e.target.checked }
+                          }))
+                        }}
+                        className="rounded border-border size-3.5"
+                      />
+                      Trạng thái
+                    </label>
+                    <Select
+                      value={newQueryFilters.status.value}
+                      onValueChange={(val) => {
+                        setNewQueryFilters(prev => ({
+                          ...prev,
+                          status: { ...prev.status, value: val }
+                        }))
+                      }}
+                    >
+                      <SelectTrigger className="w-44 h-8 text-xs border-border rounded-md bg-background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl bg-popover">
+                        <SelectItem value="open">mở (open)</SelectItem>
+                        <SelectItem value="all">tất cả (all)</SelectItem>
+                        {statuses.map(st => (
+                          <SelectItem key={st.id} value={st.id}>{st.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {newQueryFilters.tracker.enabled && (
+                  <div className="flex items-center gap-4 py-1">
+                    <label className="flex items-center gap-2 text-xs font-semibold w-32 shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={newQueryFilters.tracker.enabled}
+                        onChange={(e) => {
+                          setNewQueryFilters(prev => ({
+                            ...prev,
+                            tracker: { ...prev.tracker, enabled: e.target.checked }
+                          }))
+                        }}
+                        className="rounded border-border size-3.5"
+                      />
+                      Kiểu công việc
+                    </label>
+                    <Select
+                      value={newQueryFilters.tracker.value}
+                      onValueChange={(val) => {
+                        setNewQueryFilters(prev => ({
+                          ...prev,
+                          tracker: { ...prev.tracker, value: val }
+                        }))
+                      }}
+                    >
+                      <SelectTrigger className="w-44 h-8 text-xs border-border rounded-md bg-background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl bg-popover">
+                        <SelectItem value="all">tất cả</SelectItem>
+                        {TASK_TRACKERS.map(tr => (
+                          <SelectItem key={tr} value={tr}>{tr}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {newQueryFilters.priority.enabled && (
+                  <div className="flex items-center gap-4 py-1">
+                    <label className="flex items-center gap-2 text-xs font-semibold w-32 shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={newQueryFilters.priority.enabled}
+                        onChange={(e) => {
+                          setNewQueryFilters(prev => ({
+                            ...prev,
+                            priority: { ...prev.priority, enabled: e.target.checked }
+                          }))
+                        }}
+                        className="rounded border-border size-3.5"
+                      />
+                      Mức ưu tiên
+                    </label>
+                    <Select
+                      value={newQueryFilters.priority.value}
+                      onValueChange={(val) => {
+                        setNewQueryFilters(prev => ({
+                          ...prev,
+                          priority: { ...prev.priority, value: val }
+                        }))
+                      }}
+                    >
+                      <SelectTrigger className="w-44 h-8 text-xs border-border rounded-md bg-background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl bg-popover">
+                        <SelectItem value="all">tất cả</SelectItem>
+                        {TASK_PRIORITIES.map(pr => (
+                          <SelectItem key={pr} value={pr}>{pr}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {newQueryFilters.assignee.enabled && (
+                  <div className="flex items-center gap-4 py-1">
+                    <label className="flex items-center gap-2 text-xs font-semibold w-32 shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={newQueryFilters.assignee.enabled}
+                        onChange={(e) => {
+                          setNewQueryFilters(prev => ({
+                            ...prev,
+                            assignee: { ...prev.assignee, enabled: e.target.checked }
+                          }))
+                        }}
+                        className="rounded border-border size-3.5"
+                      />
+                      Người thực hiện
+                    </label>
+                    <Select
+                      value={newQueryFilters.assignee.value}
+                      onValueChange={(val) => {
+                        setNewQueryFilters(prev => ({
+                          ...prev,
+                          assignee: { ...prev.assignee, value: val }
+                        }))
+                      }}
+                    >
+                      <SelectTrigger className="w-44 h-8 text-xs border-border rounded-md bg-background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl bg-popover">
+                        <SelectItem value="all">tất cả</SelectItem>
+                        <SelectItem value="me">Tôi (Người đăng nhập)</SelectItem>
+                        {teamLeader && (
+                          <SelectItem value={teamLeader.id}>
+                            {teamLeader.fullName} (TL)
+                          </SelectItem>
+                        )}
+                        {members.map(m => (
+                          <SelectItem key={m.employeeId} value={m.employeeId}>
+                            {m.employee?.fullName || "Chưa rõ"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {newQueryFilters.createdBy.enabled && (
+                  <div className="flex items-center gap-4 py-1">
+                    <label className="flex items-center gap-2 text-xs font-semibold w-32 shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={newQueryFilters.createdBy.enabled}
+                        onChange={(e) => {
+                          setNewQueryFilters(prev => ({
+                            ...prev,
+                            createdBy: { ...prev.createdBy, enabled: e.target.checked }
+                          }))
+                        }}
+                        className="rounded border-border size-3.5"
+                      />
+                      Tác giả
+                    </label>
+                    <Select
+                      value={newQueryFilters.createdBy.value}
+                      onValueChange={(val) => {
+                        setNewQueryFilters(prev => ({
+                          ...prev,
+                          createdBy: { ...prev.createdBy, value: val }
+                        }))
+                      }}
+                    >
+                      <SelectTrigger className="w-44 h-8 text-xs border-border rounded-md bg-background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl bg-popover">
+                        <SelectItem value="all">tất cả</SelectItem>
+                        <SelectItem value="me">Tôi (Người tạo)</SelectItem>
+                        {teamLeader && (
+                          <SelectItem value={teamLeader.id}>
+                            {teamLeader.fullName} (TL)
+                          </SelectItem>
+                        )}
+                        {members.map(m => (
+                          <SelectItem key={m.employeeId} value={m.employeeId}>
+                            {m.employee?.fullName || "Chưa rõ"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Columns selection section */}
+            {!newQueryDefaultCols && (
+              <div className="space-y-2 border-t border-border pt-3">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Cột</span>
+                <div className="grid grid-cols-12 gap-3 items-center">
+                  {/* Available */}
+                  <div className="col-span-5 flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Các cột có sẵn</label>
+                    <select
+                      multiple
+                      size={6}
+                      value={availSelectedKey ? [availSelectedKey] : []}
+                      onChange={(e) => { setAvailSelectedKey(e.target.value); }}
+                      className="w-full text-xs p-1.5 border border-border rounded-md h-32 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      {AVAILABLE_COLUMNS.filter(col => !newQuerySelectedCols.includes(col.key)).map(col => (
+                        <option key={col.key} value={col.key} className="p-0.5 rounded hover:bg-muted">
+                          {col.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Transfer buttons */}
+                  <div className="col-span-2 flex flex-col gap-2 items-center justify-center pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon-xs"
+                      disabled={!availSelectedKey}
+                      onClick={() => {
+                        if (availSelectedKey) {
+                          setNewQuerySelectedCols(prev => [...prev, availSelectedKey])
+                          setAvailSelectedKey(null)
+                        }
+                      }}
+                      className="rounded-md"
+                    >
+                      <ArrowRight className="size-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon-xs"
+                      disabled={!selSelectedKey}
+                      onClick={() => {
+                        if (selSelectedKey) {
+                          setNewQuerySelectedCols(prev => prev.filter(k => k !== selSelectedKey))
+                          setSelSelectedKey(null)
+                        }
+                      }}
+                      className="rounded-md"
+                    >
+                      <ArrowLeft className="size-3.5" />
+                    </Button>
+                  </div>
+
+                  {/* Selected */}
+                  <div className="col-span-4 flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Các cột được lựa chọn</label>
+                    <select
+                      multiple
+                      size={6}
+                      value={selSelectedKey ? [selSelectedKey] : []}
+                      onChange={(e) => { setSelSelectedKey(e.target.value); }}
+                      className="w-full text-xs p-1.5 border border-border rounded-md h-32 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      {newQuerySelectedCols.map(colKey => {
+                        const col = AVAILABLE_COLUMNS.find(c => c.key === colKey)
+                        return (
+                          <option key={colKey} value={colKey} className="p-0.5 rounded hover:bg-muted">
+                            {col ? col.label : colKey}
+                          </option>
+                        )
+                      })}
+                    </select>
+                  </div>
+
+                  {/* Reorder buttons */}
+                  <div className="col-span-1 flex flex-col gap-1.5 items-center justify-center pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon-xs"
+                      disabled={!selSelectedKey || newQuerySelectedCols.indexOf(selSelectedKey) === 0}
+                      onClick={() => {
+                        if (selSelectedKey) {
+                          setNewQuerySelectedCols(prev => {
+                            const filtered = prev.filter(k => k !== selSelectedKey)
+                            return [selSelectedKey, ...filtered]
+                          })
+                        }
+                      }}
+                      title="Đưa lên đầu"
+                      className="rounded-md"
+                    >
+                      <ChevronsUp className="size-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon-xs"
+                      disabled={!selSelectedKey || newQuerySelectedCols.indexOf(selSelectedKey) === 0}
+                      onClick={() => {
+                        if (selSelectedKey) {
+                          setNewQuerySelectedCols(prev => {
+                            const idx = prev.indexOf(selSelectedKey)
+                            if (idx > 0) {
+                              const copy = [...prev]
+                              copy[idx] = copy[idx - 1]
+                              copy[idx - 1] = selSelectedKey
+                              return copy
+                            }
+                            return prev
+                          })
+                        }
+                      }}
+                      title="Lên một vị trí"
+                      className="rounded-md"
+                    >
+                      <ChevronUp className="size-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon-xs"
+                      disabled={!selSelectedKey || newQuerySelectedCols.indexOf(selSelectedKey) === newQuerySelectedCols.length - 1}
+                      onClick={() => {
+                        if (selSelectedKey) {
+                          setNewQuerySelectedCols(prev => {
+                            const idx = prev.indexOf(selSelectedKey)
+                            if (idx < prev.length - 1) {
+                              const copy = [...prev]
+                              copy[idx] = copy[idx + 1]
+                              copy[idx + 1] = selSelectedKey
+                              return copy
+                            }
+                            return prev
+                          })
+                        }
+                      }}
+                      title="Xuống một vị trí"
+                      className="rounded-md"
+                    >
+                      <ChevronDown className="size-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon-xs"
+                      disabled={!selSelectedKey || newQuerySelectedCols.indexOf(selSelectedKey) === newQuerySelectedCols.length - 1}
+                      onClick={() => {
+                        if (selSelectedKey) {
+                          setNewQuerySelectedCols(prev => {
+                            const filtered = prev.filter(k => k !== selSelectedKey)
+                            return [...filtered, selSelectedKey]
+                          })
+                        }
+                      }}
+                      title="Đưa xuống cuối"
+                      className="rounded-md"
+                    >
+                      <ChevronsDown className="size-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <DialogFooter className="gap-2 pt-2 border-t border-border">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => { setIsNewQueryOpen(false); }}
+                className="h-9 text-xs rounded-full cursor-pointer"
+              >
+                Hủy
+              </Button>
+              <Button
+                type="submit"
+                disabled={!newQueryName.trim() || saveQueryMutation.isPending}
+                className="h-9 text-xs rounded-full cursor-pointer"
+              >
+                {saveQueryMutation.isPending ? "Đang lưu..." : "Lưu"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

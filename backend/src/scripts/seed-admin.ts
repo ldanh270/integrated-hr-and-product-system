@@ -1,4 +1,5 @@
 import { SYSTEM_ROLE } from "../configs/entities/employee.config.ts"
+import { EMPLOYEE_TYPE } from "../configs/entities/employee.config.ts"
 import { prisma } from "../libs/database.ts"
 import { getSeedPassword } from "./seeders/seed-password.util.ts"
 import { HashUtil } from "../utils/hash.util.ts"
@@ -60,6 +61,28 @@ async function seedAdminAccounts() {
       }
       console.log(`[✓] Created account: ${username} (Role: ${role})`)
     }
+
+    const partTimeUsername = "part_time"
+    // Demo / E2E account — employeeType part_time, not full-time shift model.
+    const partTimeExisting = await prisma.employee.findFirst({ where: { username: partTimeUsername } })
+    const partTimeData = {
+      username: partTimeUsername,
+      passwordHash,
+      role: SYSTEM_ROLE.EMPLOYEE,
+      employeeType: EMPLOYEE_TYPE.PART_TIME,
+      fullName: "Part Time User",
+      email: "part_time@example.com",
+      phone: "0123456786",
+      address: "System Generated",
+      position: "Part-time Developer",
+    }
+
+    if (partTimeExisting) {
+      await prisma.employee.update({ where: { id: partTimeExisting.id }, data: partTimeData })
+    } else {
+      await prisma.employee.create({ data: partTimeData })
+    }
+    console.log(`[✓] Created account: ${partTimeUsername} (Type: part_time)`)
 
     console.log("\nAdmin and role accounts seeded successfully.")
     console.log(`Password for all accounts: ${PASSWORD}`)

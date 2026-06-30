@@ -153,3 +153,7 @@ plans
 findings.md
 progress.md
 task_plan.md
+
+# Playwright test artifacts
+playwright-report/
+test-results/

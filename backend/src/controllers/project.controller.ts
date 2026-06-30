@@ -5,6 +5,7 @@ import {
   addProjectMemberSchema,
   createProjectSchema,
   listProjectsQuerySchema,
+  updateProjectMemberSchema,
   updateProjectSchema,
 } from "@/schemas/project.schema.ts"
 import { ApiResponse, IProjectService, PaginatedProjectsDto, Project, GanttDataDto } from "@/types"
@@ -163,9 +164,9 @@ export class ProjectController {
   }
 
   /**
-   * Adds a member to a project
-   * Only Admins, GMs, and the project's Team Leader can add members
-   * Validates that the employee exists and is not already a member
+   * Adds a member to a project.
+   * PT-specific: hourlyRate (payroll input) and workMode (remote = Spent Time only,
+   * onsite = GPS check-in once/day then Spent Time). Service enforces rate for PT.
    */
   addMember = async (req: AuthRequest, res: Response<ApiResponse<null>>) => {
     try {
@@ -176,8 +177,13 @@ export class ProjectController {
         })
       }
 
-      const { employeeId } = addProjectMemberSchema.parse(req.body)
-      await this.service.addMember(String(req.params.id), employeeId, req.user.empId)
+      const { employeeId, hourlyRate, workMode } = addProjectMemberSchema.parse(req.body)
+      await this.service.addMember(
+        String(req.params.id),
+        employeeId,
+        req.user.empId,
+        { hourlyRate, workMode },
+      )
       res.status(HttpStatusCode.OK).json({ data: null, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -215,8 +221,43 @@ export class ProjectController {
   }
 
   /**
-   * Retrieves all members of a project
-   * User must have access to the project to view its members
+   * Updates PT member settings on a project (hourlyRate, workMode).
+   * workMode change toggles attendance rules without re-adding the member.
+   */
+  updateMember = async (req: AuthRequest, res: Response<ApiResponse<null>>) => {
+    try {
+      if (!req.user) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          data: null,
+          error: { message: "Unauthorized", code: ErrorCode.UNAUTHORIZED },
+        })
+      }
+
+      const body = updateProjectMemberSchema.parse(req.body)
+      await this.service.updateMember(
+        String(req.params.id),
+        String(req.params.employeeId),
+        req.user.empId,
+        body,
+      )
+      res.status(HttpStatusCode.OK).json({ data: null, error: null })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: {
+            message: "Validation error",
+            code: ErrorCode.VALIDATION_ERROR,
+            meta: error.issues,
+          },
+        })
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Retrieves all members of a project (includes hourlyRate/workMode for PT payroll setup).
    */
   getMembers = async (req: AuthRequest, res: Response<ApiResponse<any[]>>) => {
     if (!req.user) {
