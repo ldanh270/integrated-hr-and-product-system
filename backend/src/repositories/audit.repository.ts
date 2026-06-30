@@ -1,22 +1,35 @@
-import { Prisma, PrismaClient, AuthorizationAuditLog as PrismaAuditLog } from "@prisma/client"
 import {
+  AuditLogQuery,
+  AuthorizationAuditLog,
   CreateAuditLogDto,
   IAuditRepository,
   PaginatedAuditLogsDto,
-  AuthorizationAuditLog,
-  AuditLogQuery,
 } from "@/types"
+
+import { Prisma, AuthorizationAuditLog as PrismaAuditLog, PrismaClient } from "@prisma/client"
+
 import { BaseRepository } from "./base.repository.ts"
 
 /**
  * Repository implementation for managing AuthorizationAuditLog records in PostgreSQL.
  */
 export class PrismaAuditRepository extends BaseRepository implements IAuditRepository {
+  /**
+   * Initializes audit repository with Prisma client.
+   */
   constructor(prisma: PrismaClient) {
     super(prisma)
   }
 
-  protected mapToDomain(log: PrismaAuditLog & { actor?: { fullName: string } | null; targetEmployee?: { fullName: string } | null }): AuthorizationAuditLog {
+  /**
+   * Maps Prisma audit log record to domain audit log object.
+   */
+  protected mapToDomain(
+    log: PrismaAuditLog & {
+      actor?: { fullName: string } | null
+      targetEmployee?: { fullName: string } | null
+    },
+  ): AuthorizationAuditLog {
     return {
       id: log.id,
       actorId: log.actorId,
@@ -33,6 +46,9 @@ export class PrismaAuditRepository extends BaseRepository implements IAuditRepos
     }
   }
 
+  /**
+   * Creates a new authorization audit log entry.
+   */
   async createLog(data: CreateAuditLogDto): Promise<AuthorizationAuditLog> {
     const log = await this.prisma.authorizationAuditLog.create({
       data: {
@@ -41,14 +57,20 @@ export class PrismaAuditRepository extends BaseRepository implements IAuditRepos
         targetRoleId: data.targetRoleId || null,
         targetPermissionId: data.targetPermissionId || null,
         action: data.action,
-        oldValue: data.oldValue !== undefined ? (data.oldValue as Prisma.InputJsonValue) : Prisma.JsonNull,
-        newValue: data.newValue !== undefined ? (data.newValue as Prisma.InputJsonValue) : Prisma.JsonNull,
-        metadata: data.metadata !== undefined ? (data.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
+        oldValue:
+          data.oldValue !== undefined ? (data.oldValue as Prisma.InputJsonValue) : Prisma.JsonNull,
+        newValue:
+          data.newValue !== undefined ? (data.newValue as Prisma.InputJsonValue) : Prisma.JsonNull,
+        metadata:
+          data.metadata !== undefined ? (data.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
       },
     })
     return this.mapToDomain(log)
   }
 
+  /**
+   * Retrieves a single audit log by its identifier.
+   */
   async findLogById(id: string): Promise<AuthorizationAuditLog | null> {
     const log = await this.prisma.authorizationAuditLog.findUnique({
       where: { id },
@@ -60,22 +82,51 @@ export class PrismaAuditRepository extends BaseRepository implements IAuditRepos
     return log ? this.mapToDomain(log) : null
   }
 
+  /**
+   * Lists audit logs with pagination and optional filtering.
+   */
   async listLogsPaginated(query: AuditLogQuery): Promise<PaginatedAuditLogsDto> {
-    const { page = 1, limit = 50, actorId, targetEmployeeId, targetRoleId, action, category } = query
+    const {
+      page = 1,
+      limit = 50,
+      actorId,
+      targetEmployeeId,
+      targetRoleId,
+      action,
+      category,
+    } = query
     const skip = (page - 1) * limit
     const where: Prisma.AuthorizationAuditLogWhereInput = {}
 
     if (actorId) where.actorId = actorId
     if (targetEmployeeId) where.targetEmployeeId = targetEmployeeId
     if (targetRoleId) where.targetRoleId = targetRoleId
-    
+
     if (action) {
       where.action = action
     } else if (category) {
       if (category === "role") {
-        where.action = { in: ["ROLE_ASSIGNED", "ROLE_REVOKED", "ROLE_REPLACED", "ROLE_CREATED", "ROLE_UPDATED", "ROLE_DELETED"] }
+        where.action = {
+          in: [
+            "ROLE_ASSIGNED",
+            "ROLE_REVOKED",
+            "ROLE_REPLACED",
+            "ROLE_CREATED",
+            "ROLE_UPDATED",
+            "ROLE_DELETED",
+          ],
+        }
       } else if (category === "permission") {
-        where.action = { in: ["PERMISSION_ASSIGNED", "PERMISSION_REVOKED", "PERMISSION_REPLACED", "PERMISSION_CREATED", "PERMISSION_UPDATED", "PERMISSION_DELETED"] }
+        where.action = {
+          in: [
+            "PERMISSION_ASSIGNED",
+            "PERMISSION_REVOKED",
+            "PERMISSION_REPLACED",
+            "PERMISSION_CREATED",
+            "PERMISSION_UPDATED",
+            "PERMISSION_DELETED",
+          ],
+        }
       } else if (category === "employee") {
         where.action = { in: ["EMPLOYEE_DEACTIVATED", "EMPLOYEE_DELETED"] }
       }
@@ -106,11 +157,23 @@ export class PrismaAuditRepository extends BaseRepository implements IAuditRepos
     }
   }
 
-  async listLogsByEmployeeId(employeeId: string, query: Omit<AuditLogQuery, "targetEmployeeId">): Promise<PaginatedAuditLogsDto> {
+  /**
+   * Lists audit logs scoped to a specific employee.
+   */
+  async listLogsByEmployeeId(
+    employeeId: string,
+    query: Omit<AuditLogQuery, "targetEmployeeId">,
+  ): Promise<PaginatedAuditLogsDto> {
     return this.listLogsPaginated({ ...query, targetEmployeeId: employeeId })
   }
 
-  async listLogsByRoleId(roleId: string, query: Omit<AuditLogQuery, "targetRoleId">): Promise<PaginatedAuditLogsDto> {
+  /**
+   * Lists audit logs scoped to a specific role.
+   */
+  async listLogsByRoleId(
+    roleId: string,
+    query: Omit<AuditLogQuery, "targetRoleId">,
+  ): Promise<PaginatedAuditLogsDto> {
     return this.listLogsPaginated({ ...query, targetRoleId: roleId })
   }
 }

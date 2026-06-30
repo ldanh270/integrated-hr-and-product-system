@@ -7,10 +7,16 @@ interface CacheEntry {
   expiresAt: number | null
 }
 
+/**
+ * In-memory cache service used for local key-value storage and lightweight pub/sub.
+ */
 export class InMemoryCacheService implements ICacheService {
   private cache = new Map<string, CacheEntry>()
   private emitter = new EventEmitter()
 
+  /**
+   * Retrieves a cached value from in-memory storage when it exists and is not expired.
+   */
   async get<T>(key: string): Promise<T | null> {
     const entry = this.cache.get(key)
     if (!entry) return null
@@ -21,28 +27,46 @@ export class InMemoryCacheService implements ICacheService {
     return entry.value as T
   }
 
+  /**
+   * Stores a value in in-memory cache with an optional TTL.
+   */
   async set<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
     const expiresAt = ttlSeconds ? Date.now() + ttlSeconds * 1000 : null
     this.cache.set(key, { value, expiresAt })
   }
 
+  /**
+   * Removes a single cached entry from in-memory storage.
+   */
   async del(key: string): Promise<void> {
     this.cache.delete(key)
   }
 
+  /**
+   * Clears all entries from in-memory cache storage.
+   */
   async clear(): Promise<void> {
     this.cache.clear()
   }
 
+  /**
+   * Registers an in-memory subscriber for a cache channel.
+   */
   async subscribe(channel: string, callback: (message: string) => void): Promise<void> {
     this.emitter.on(channel, callback)
   }
 
+  /**
+   * Publishes a message to in-memory subscribers for a cache channel.
+   */
   async publish(channel: string, message: string): Promise<void> {
     this.emitter.emit(channel, message)
   }
 }
 
+/**
+ * Redis-backed cache service with automatic fallback to in-memory storage when Redis is unavailable.
+ */
 export class RedisCacheService implements ICacheService {
   private client: Redis | null = null
   private subClient: Redis | null = null
@@ -50,6 +74,9 @@ export class RedisCacheService implements ICacheService {
   private isRedisAvailable = false
   private connectionString: string
 
+  /**
+   * Initializes Redis clients and prepares in-memory fallback behavior.
+   */
   constructor(connectionString: string) {
     this.connectionString = connectionString
     try {
@@ -74,6 +101,9 @@ export class RedisCacheService implements ICacheService {
     }
   }
 
+  /**
+   * Retrieves a cached value from Redis, with fallback to in-memory storage when needed.
+   */
   async get<T>(key: string): Promise<T | null> {
     if (!this.isRedisAvailable || !this.client) {
       return this.fallbackMemory.get<T>(key)
@@ -97,6 +127,9 @@ export class RedisCacheService implements ICacheService {
     }
   }
 
+  /**
+   * Stores a value in Redis and keeps the in-memory fallback synchronized.
+   */
   async set<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
     // Keep local fallback updated
     await this.fallbackMemory.set<T>(key, value, ttlSeconds)
@@ -116,6 +149,9 @@ export class RedisCacheService implements ICacheService {
     }
   }
 
+  /**
+   * Deletes a cached entry from Redis and the in-memory fallback.
+   */
   async del(key: string): Promise<void> {
     await this.fallbackMemory.del(key)
 
@@ -129,6 +165,9 @@ export class RedisCacheService implements ICacheService {
     }
   }
 
+  /**
+   * Clears all cached data from Redis and the in-memory fallback.
+   */
   async clear(): Promise<void> {
     await this.fallbackMemory.clear()
 
@@ -142,6 +181,9 @@ export class RedisCacheService implements ICacheService {
     }
   }
 
+  /**
+   * Subscribes to a pub/sub channel using Redis with in-memory fallback support.
+   */
   async subscribe(channel: string, callback: (message: string) => void): Promise<void> {
     await this.fallbackMemory.subscribe(channel, callback)
 
@@ -169,6 +211,9 @@ export class RedisCacheService implements ICacheService {
     }
   }
 
+  /**
+   * Publishes a pub/sub message through Redis and the in-memory fallback.
+   */
   async publish(channel: string, message: string): Promise<void> {
     await this.fallbackMemory.publish(channel, message)
 
@@ -184,6 +229,9 @@ export class RedisCacheService implements ICacheService {
 }
 
 // Global cache service factory helper based on environment variable
+/**
+ * Creates the active cache service implementation based on runtime configuration.
+ */
 export function createCacheService(): ICacheService {
   const redisUrl = process.env.REDIS_URL
   if (redisUrl) {

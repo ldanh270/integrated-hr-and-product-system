@@ -3,6 +3,9 @@ import { ICacheService, AuthorizationContext, IAuthorizationService } from "../t
 import { cacheService } from "./cache.service.ts"
 import { logger } from "../utils/logger.util.ts"
 
+/**
+ * Authorization service responsible for resolving, caching, and invalidating user access context.
+ */
 export class AuthorizationService implements IAuthorizationService {
   private singleFlightMap = new Map<string, Promise<AuthorizationContext>>()
   private globalVersion = 1
@@ -15,18 +18,30 @@ export class AuthorizationService implements IAuthorizationService {
     authorization_resolve_duration_ms: 0,
   }
 
+  /**
+   * Initializes the authorization service with its cache dependency.
+   */
   constructor(private cache: ICacheService) {}
 
+  /**
+   * Increments a tracked authorization metric when the metric key is known.
+   */
   incrementMetric(metric: string): void {
     if (metric in this.metrics) {
       this.metrics[metric as keyof typeof this.metrics]++
     }
   }
 
+  /**
+   * Returns a snapshot of current authorization service metrics.
+   */
   getMetrics(): typeof this.metrics {
     return { ...this.metrics }
   }
 
+  /**
+   * Records an authorization decision for metrics and optional debug logging.
+   */
   logDecision(employeeId: string, permission: string, allowed: boolean, source: string): void {
     if (allowed) {
       this.metrics.authorization_allowed_total++
@@ -46,6 +61,9 @@ export class AuthorizationService implements IAuthorizationService {
     }
   }
 
+  /**
+   * Resolves the effective authorization context for an employee, with optional cache bypass.
+   */
   async getAuthorizationContext(
     employeeId: string,
     options?: { skipCache?: boolean }
@@ -100,6 +118,9 @@ export class AuthorizationService implements IAuthorizationService {
     }
   }
 
+  /**
+   * Loads authorization data from the database and persists a cacheable snapshot.
+   */
   private async fetchAndCacheContext(
     employeeId: string,
     snapshotVersion: number,
@@ -208,6 +229,9 @@ export class AuthorizationService implements IAuthorizationService {
     return context
   }
 
+  /**
+   * Invalidates cached authorization context for a single employee by bumping its version.
+   */
   async invalidateUserCache(employeeId: string): Promise<void> {
     await prisma.employee.update({
       where: { id: employeeId },
@@ -219,10 +243,16 @@ export class AuthorizationService implements IAuthorizationService {
     })
   }
 
+  /**
+   * Returns the current global authorization version marker.
+   */
   async getGlobalVersion(): Promise<number> {
     return this.globalVersion
   }
 
+  /**
+   * Invalidates authorization context for all active employees by bumping their versions.
+   */
   async invalidateGlobalVersion(): Promise<void> {
     this.globalVersion++
     // Global version invalidation: increment version for all active employees
@@ -236,6 +266,9 @@ export class AuthorizationService implements IAuthorizationService {
     })
   }
 
+  /**
+   * Invalidates authorization context for employees assigned to a specific role.
+   */
   async invalidateRoleCache(roleId: string): Promise<void> {
     const mappings = await prisma.employeeRole.findMany({
       where: {
@@ -261,6 +294,9 @@ export class AuthorizationService implements IAuthorizationService {
     }
   }
 
+  /**
+   * Invalidates authorization context for employees affected by a permission change.
+   */
   async invalidatePermissionCache(permissionId: string): Promise<void> {
     const rolePermissions = await prisma.rolePermission.findMany({
       where: { permissionId },

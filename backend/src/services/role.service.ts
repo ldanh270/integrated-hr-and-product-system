@@ -232,6 +232,9 @@ export class RoleService implements IRoleService {
     }
   }
 
+  /**
+   * Retrieves permissions currently assigned to a specific role.
+   */
   async getRolePermissions(roleId: string): Promise<Permission[]> {
     const role = await this.repository.findById(roleId)
     if (!role) {
@@ -240,6 +243,9 @@ export class RoleService implements IRoleService {
     return this.repository.findPermissionsByRoleId(roleId)
   }
 
+  /**
+   * Assigns a permission to a role after validating role, permission, and protected access rules.
+   */
   async assignPermission(
     roleId: string,
     permissionId: string,
@@ -281,6 +287,9 @@ export class RoleService implements IRoleService {
     return res
   }
 
+  /**
+   * Revokes a permission from a role while enforcing protected permission rules.
+   */
   async revokePermission(roleId: string, permissionId: string, actorId?: string): Promise<boolean> {
     const perm = await prisma.permission.findFirst({
       where: { id: permissionId, deletedAt: null },
@@ -311,6 +320,9 @@ export class RoleService implements IRoleService {
     return res
   }
 
+  /**
+   * Replaces the full permission set of a role after validating affected permissions.
+   */
   async updatePermissions(
     roleId: string,
     permissionIds: string[],

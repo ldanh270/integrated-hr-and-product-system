@@ -391,6 +391,9 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     return true
   }
 
+  /**
+   * Maps a Prisma role record to the application AppRole type.
+   */
   private mapRoleToDomain(role: any): AppRole {
     return {
       id: role.id,
@@ -407,6 +410,9 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     }
   }
 
+  /**
+   * Retrieves all active roles assigned to a specific employee.
+   */
   async findRolesByEmployeeId(employeeId: string): Promise<AppRole[]> {
     const employeeRoles = await this.prisma.employeeRole.findMany({
       where: {
@@ -422,6 +428,9 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     return employeeRoles.map((er) => this.mapRoleToDomain(er.role))
   }
 
+  /**
+   * Assigns a role to an employee if assignment does not already exist.
+   */
   async assignRole(
     employeeId: string,
     roleId: string,
@@ -448,6 +457,9 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     return { success: true, created: true }
   }
 
+  /**
+   * Revokes an existing role assignment from an employee.
+   */
   async revokeRole(employeeId: string, roleId: string): Promise<boolean> {
     const existing = await this.prisma.employeeRole.findUnique({
       where: {
@@ -471,6 +483,9 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     return true
   }
 
+  /**
+   * Replaces all role assignments for an employee using optimistic concurrency.
+   */
   async updateRoles(
     employeeId: string,
     roleIds: string[],
@@ -549,6 +564,9 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     })
   }
 
+  /**
+   * Counts all active employees holding an active administrative role.
+   */
   async countActiveAdmins(tx?: Prisma.TransactionClient): Promise<number> {
     const client = tx || this.prisma
     return client.employee.count({

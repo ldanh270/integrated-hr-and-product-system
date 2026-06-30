@@ -1,4 +1,4 @@
-
+import { PERMISSION_CODE } from "@/configs/entities/permission.config.ts"
 import { PermissionController } from "@/controllers/permission.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
@@ -11,6 +11,7 @@ import {
   updatePermissionSchema,
 } from "@/schemas/permission.schema.ts"
 import { PermissionService } from "@/services/permission.service.ts"
+
 import express from "express"
 
 /**
@@ -27,18 +28,41 @@ const controller = new PermissionController(service)
 permissionRoutes.use(authenticate)
 
 // GET /permissions - List paginated permissions
-permissionRoutes.get("/", requirePermission("permission.read"), validate(listPermissionsQuerySchema, "query"), controller.list as express.RequestHandler)
+permissionRoutes.get(
+  "/",
+  requirePermission(PERMISSION_CODE.PERMISSION_READ),
+  validate(listPermissionsQuerySchema, "query"),
+  controller.list as express.RequestHandler,
+)
 
 // GET /permissions/:id - Retrieve single permission details
-permissionRoutes.get("/:id", requirePermission("permission.read"), controller.getOne as express.RequestHandler)
+permissionRoutes.get(
+  "/:id",
+  requirePermission(PERMISSION_CODE.PERMISSION_READ),
+  controller.getOne as express.RequestHandler,
+)
 
 // POST /permissions - Create new permission
-permissionRoutes.post("/", requirePermission("permission.create"), validate(createPermissionSchema, "body"), controller.create as express.RequestHandler)
+permissionRoutes.post(
+  "/",
+  requirePermission(PERMISSION_CODE.PERMISSION_CREATE),
+  validate(createPermissionSchema, "body"),
+  controller.create as express.RequestHandler,
+)
 
 // PUT /permissions/:id - Fully/Partially update permission details
-permissionRoutes.put("/:id", requirePermission("permission.update"), validate(updatePermissionSchema, "body"), controller.update as express.RequestHandler)
+permissionRoutes.put(
+  "/:id",
+  requirePermission(PERMISSION_CODE.PERMISSION_UPDATE),
+  validate(updatePermissionSchema, "body"),
+  controller.update as express.RequestHandler,
+)
 
 // DELETE /permissions/:id - Soft delete permission
-permissionRoutes.delete("/:id", requirePermission("permission.delete"), controller.delete as express.RequestHandler)
+permissionRoutes.delete(
+  "/:id",
+  requirePermission(PERMISSION_CODE.PERMISSION_DELETE),
+  controller.delete as express.RequestHandler,
+)
 
 export default permissionRoutes

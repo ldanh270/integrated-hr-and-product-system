@@ -24,6 +24,9 @@ import { BaseRepository } from "./base.repository.ts"
  * Follows the Repository Pattern to decouple business logic from the database
  */
 export class PrismaAuthRepository extends BaseRepository implements IAuthRepository {
+  /**
+   * Initializes auth repository with Prisma client.
+   */
   constructor(prisma: PrismaClient) {
     super(prisma)
   }
@@ -368,7 +371,13 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
     }
   }
 
-  async getActivityLogByIdForEmployee(id: string, employeeId: string): Promise<ActivityLogItem | null> {
+  /**
+   * Retrieves a single activity log by ID for a specific employee.
+   */
+  async getActivityLogByIdForEmployee(
+    id: string,
+    employeeId: string,
+  ): Promise<ActivityLogItem | null> {
     const log = await this.prisma.activityLog.findFirst({
       where: {
         id,

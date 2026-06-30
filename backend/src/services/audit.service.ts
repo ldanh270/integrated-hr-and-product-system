@@ -16,6 +16,9 @@ import { PrismaAuditRepository } from "../repositories/audit.repository.ts"
  * Service implementation for managing audit logs, ensuring mutations are logged asynchronously.
  */
 export class AuditService implements IAuditService {
+  /**
+   * Initializes the audit service with its repository dependency.
+   */
   constructor(private auditRepository: IAuditRepository) {}
 
   /**
@@ -29,6 +32,9 @@ export class AuditService implements IAuditService {
     })
   }
 
+  /**
+   * Retrieves a single audit log by its identifier.
+   */
   async getLogById(id: string): Promise<AuthorizationAuditLog | null> {
     const log = await this.auditRepository.findLogById(id)
     if (!log) {
@@ -37,14 +43,23 @@ export class AuditService implements IAuditService {
     return log
   }
 
+  /**
+   * Lists audit logs using pagination and filter criteria.
+   */
   async listLogs(query: AuditLogQuery): Promise<PaginatedAuditLogsDto> {
     return this.auditRepository.listLogsPaginated(query)
   }
 
+  /**
+   * Lists audit logs associated with a specific employee.
+   */
   async listLogsByEmployee(employeeId: string, query: Omit<AuditLogQuery, "targetEmployeeId">): Promise<PaginatedAuditLogsDto> {
     return this.auditRepository.listLogsByEmployeeId(employeeId, query)
   }
 
+  /**
+   * Lists audit logs associated with a specific role.
+   */
   async listLogsByRole(roleId: string, query: Omit<AuditLogQuery, "targetRoleId">): Promise<PaginatedAuditLogsDto> {
     return this.auditRepository.listLogsByRoleId(roleId, query)
   }
