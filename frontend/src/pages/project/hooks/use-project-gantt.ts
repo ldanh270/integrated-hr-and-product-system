@@ -150,7 +150,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
       } else {
         toast.error("Dữ liệu truy vấn không hợp lệ")
       }
-    } catch (e) {
+    } catch {
       toast.error("Không thể đọc dữ liệu truy vấn đã lưu")
     }
   }
@@ -171,8 +171,8 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     })
   }
 
-  const tasks = ganttData?.tasks || []
-  const leaveDays = ganttData?.leaveDays || []
+  const tasks = useMemo(() => ganttData?.tasks || [], [ganttData?.tasks])
+  const leaveDays = useMemo(() => ganttData?.leaveDays || [], [ganttData?.leaveDays])
 
   // Find all unique assignees (team leader + project members)
   const assignees = useMemo(() => {
