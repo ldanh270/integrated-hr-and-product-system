@@ -15,6 +15,12 @@ export const securityKeys = {
   logList: (query: ActivityLogQuery) => [...securityKeys.logs(), query] as const,
   myLogList: (query: ActivityLogQuery) => [...securityKeys.logs(), "me", query] as const,
   logDetail: (scope: "all" | "me", id: string) => [...securityKeys.logs(), scope, "detail", id] as const,
+  roles: () => [...securityKeys.all, "roles"] as const,
+  roleList: (params?: { page?: number; limit?: number }) => [...securityKeys.roles(), params] as const,
+  roleDetail: (id: string) => [...securityKeys.roles(), "detail", id] as const,
+  rolePermissions: (roleId: string) => [...securityKeys.roles(), "permissions", roleId] as const,
+  permissions: (params?: { page?: number; limit?: number }) => [...securityKeys.all, "permissions", params] as const,
+  employeeRoles: (employeeId: string) => [...securityKeys.all, "employees", "roles", employeeId] as const,
 }
 
 /**
@@ -91,14 +97,14 @@ export function useActivityLog(id: string, scope: "all" | "me" = "all") {
 
 export function useRoles(params?: { page?: number; limit?: number }) {
   return useQuery({
-    queryKey: ["security", "roles", params],
+    queryKey: securityKeys.roleList(params),
     queryFn: () => securityApi.listRoles(params),
   })
 }
 
 export function useRole(id: string) {
   return useQuery({
-    queryKey: ["security", "roles", "detail", id],
+    queryKey: securityKeys.roleDetail(id),
     queryFn: () => securityApi.getRole(id),
     enabled: !!id,
   })
@@ -109,7 +115,7 @@ export function useCreateRole() {
   return useMutation({
     mutationFn: securityApi.createRole,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["security", "roles"] })
+      void queryClient.invalidateQueries({ queryKey: securityKeys.roles() })
     },
   })
 }
@@ -120,8 +126,8 @@ export function useUpdateRole() {
     mutationFn: ({ id, data }: { id: string; data: { name: string; description: string } }) =>
       securityApi.updateRole(id, data),
     onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: ["security", "roles"] })
-      void queryClient.invalidateQueries({ queryKey: ["security", "roles", "detail", id] })
+      void queryClient.invalidateQueries({ queryKey: securityKeys.roles() })
+      void queryClient.invalidateQueries({ queryKey: securityKeys.roleDetail(id) })
     },
   })
 }
@@ -131,14 +137,14 @@ export function useDeleteRole() {
   return useMutation({
     mutationFn: securityApi.deleteRole,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["security", "roles"] })
+      void queryClient.invalidateQueries({ queryKey: securityKeys.roles() })
     },
   })
 }
 
 export function useRolePermissions(roleId: string) {
   return useQuery({
-    queryKey: ["security", "roles", "permissions", roleId],
+    queryKey: securityKeys.rolePermissions(roleId),
     queryFn: () => securityApi.getRolePermissions(roleId),
     enabled: !!roleId,
   })
@@ -150,21 +156,21 @@ export function useUpdateRolePermissions() {
     mutationFn: ({ roleId, permissionIds }: { roleId: string; permissionIds: string[] }) =>
       securityApi.updateRolePermissions(roleId, permissionIds),
     onSuccess: (_, { roleId }) => {
-      void queryClient.invalidateQueries({ queryKey: ["security", "roles", "permissions", roleId] })
+      void queryClient.invalidateQueries({ queryKey: securityKeys.rolePermissions(roleId) })
     },
   })
 }
 
 export function usePermissions(params?: { page?: number; limit?: number }) {
   return useQuery({
-    queryKey: ["security", "permissions", params],
+    queryKey: securityKeys.permissions(params),
     queryFn: () => securityApi.listPermissions(params),
   })
 }
 
 export function useEmployeeRoles(employeeId: string) {
   return useQuery({
-    queryKey: ["security", "employees", "roles", employeeId],
+    queryKey: securityKeys.employeeRoles(employeeId),
     queryFn: () => securityApi.getEmployeeRoles(employeeId),
     enabled: !!employeeId,
   })
@@ -176,8 +182,8 @@ export function useUpdateEmployeeRoles() {
     mutationFn: ({ employeeId, roleIds, version }: { employeeId: string; roleIds: string[]; version: number }) =>
       securityApi.updateEmployeeRoles(employeeId, roleIds, version),
     onSuccess: (_, { employeeId }) => {
-      void queryClient.invalidateQueries({ queryKey: ["security", "employees", "roles", employeeId] })
-      void queryClient.invalidateQueries({ queryKey: ["employees", "list"] })
+      void queryClient.invalidateQueries({ queryKey: securityKeys.employeeRoles(employeeId) })
+      void queryClient.invalidateQueries({ queryKey: employeeKeys.lists() })
     },
   })
 }
