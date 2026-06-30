@@ -39,7 +39,7 @@ export class ProjectMembersSeeder implements ISeeder {
 
       if (projectIndex === 0 && partTimeUser && !selectedEmployees.some((e) => e.id === partTimeUser.id)) {
         // Ensure demo PT user is on first project for spent-time / payroll samples.
-        selectedEmployees[0] = { id: partTimeUser.id, role: "employee", username: "part_time" }
+        selectedEmployees[0] = { id: partTimeUser.id, position: null, username: "part_time" }
       }
 
       for (const emp of selectedEmployees) {

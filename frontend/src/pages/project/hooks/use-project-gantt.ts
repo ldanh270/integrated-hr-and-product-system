@@ -176,7 +176,6 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   }
 
   const tasks = useMemo(() => ganttData?.tasks || [], [ganttData?.tasks])
-  const leaveDays = useMemo(() => ganttData?.leaveDays || [], [ganttData?.leaveDays])
 
   // Find all unique assignees (team leader + project members)
   const assignees = useMemo(() => {
