@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from "@/config/api.config"
+import { SECURITY_ACTIVITY_CATEGORY, SECURITY_AUDIT_ACTION_PREFIX } from "@/config/entities/security.config"
 import apiClient from "@/lib/api-client"
 import type {
   ActivityLogItem,
@@ -44,14 +45,14 @@ interface PaginatedLogs {
 }
 
 function mapAuditToActivity(log: BackendAuditLog): ActivityLogItem {
-  let category = "security"
+  let category: string = SECURITY_ACTIVITY_CATEGORY.SECURITY
   const action = log.action || ""
-  if (action.startsWith("ROLE_")) {
-    category = "role"
-  } else if (action.startsWith("PERMISSION_")) {
-    category = "permission"
-  } else if (action.startsWith("EMPLOYEE_")) {
-    category = "employee"
+  if (action.startsWith(SECURITY_AUDIT_ACTION_PREFIX.ROLE)) {
+    category = SECURITY_ACTIVITY_CATEGORY.ROLE
+  } else if (action.startsWith(SECURITY_AUDIT_ACTION_PREFIX.PERMISSION)) {
+    category = SECURITY_ACTIVITY_CATEGORY.PERMISSION
+  } else if (action.startsWith(SECURITY_AUDIT_ACTION_PREFIX.EMPLOYEE)) {
+    category = SECURITY_ACTIVITY_CATEGORY.EMPLOYEE
   }
 
   const ipAddress = (log.metadata?.ipAddress as string) || (log.metadata?.ip as string) || null
