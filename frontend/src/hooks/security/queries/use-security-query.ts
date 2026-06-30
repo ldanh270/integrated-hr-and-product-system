@@ -5,7 +5,8 @@ import { employeeKeys } from "@/hooks/employees/queries/useEmployeeQuery"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 /**
- * Query keys for security module
+ * Query-key factory for the security module.
+ * Keeps cache invalidation consistent across summary, audit logs, roles, and permissions flows.
  */
 export const securityKeys = {
   all: ["security"] as const,
@@ -24,7 +25,7 @@ export const securityKeys = {
 }
 
 /**
- * Hook to get security summary statistics
+ * Loads the top-level security dashboard summary.
  */
 export function useSecuritySummary() {
   return useQuery({
@@ -34,7 +35,7 @@ export function useSecuritySummary() {
 }
 
 /**
- * Hook to get locked user accounts
+ * Loads the list of accounts currently locked by security rules.
  */
 export function useLockedAccounts() {
   return useQuery({
@@ -44,7 +45,7 @@ export function useLockedAccounts() {
 }
 
 /**
- * Hook to unlock a user account
+ * Unlocks one employee account and refreshes related summary/list caches.
  */
 export function useUnlockAccount() {
   const queryClient = useQueryClient()
@@ -60,7 +61,8 @@ export function useUnlockAccount() {
 }
 
 /**
- * Hook to get paginated activity logs
+ * Loads paginated activity logs for administrators.
+ * Keeps previous data visible while query params change between pages/filters.
  * @param query Query filters and pagination
  */
 export function useActivityLogs(query: ActivityLogQuery) {
@@ -72,7 +74,7 @@ export function useActivityLogs(query: ActivityLogQuery) {
 }
 
 /**
- * Hook to get paginated activity logs of the current user
+ * Loads paginated activity logs scoped to the current authenticated user.
  * @param query Query filters and pagination
  */
 export function useMyActivityLogs(query: ActivityLogQuery) {
@@ -84,7 +86,7 @@ export function useMyActivityLogs(query: ActivityLogQuery) {
 }
 
 /**
- * Hook to get detail of a specific activity log
+ * Loads the detail view for one activity log, either from the global scope or "my logs" scope.
  * @param id The log ID
  */
 export function useActivityLog(id: string, scope: "all" | "me" = "all") {
@@ -95,6 +97,9 @@ export function useActivityLog(id: string, scope: "all" | "me" = "all") {
   })
 }
 
+/**
+ * Loads paginated role data for the security/administration screens.
+ */
 export function useRoles(params?: { page?: number; limit?: number }) {
   return useQuery({
     queryKey: securityKeys.roleList(params),
@@ -102,6 +107,9 @@ export function useRoles(params?: { page?: number; limit?: number }) {
   })
 }
 
+/**
+ * Loads one role detail record by ID.
+ */
 export function useRole(id: string) {
   return useQuery({
     queryKey: securityKeys.roleDetail(id),
@@ -110,6 +118,9 @@ export function useRole(id: string) {
   })
 }
 
+/**
+ * Creates a new role and refreshes cached role lists afterwards.
+ */
 export function useCreateRole() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -120,6 +131,9 @@ export function useCreateRole() {
   })
 }
 
+/**
+ * Updates role metadata and refreshes both list and detail caches for the edited role.
+ */
 export function useUpdateRole() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -132,6 +146,9 @@ export function useUpdateRole() {
   })
 }
 
+/**
+ * Deletes one role and invalidates role-list caches.
+ */
 export function useDeleteRole() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -142,6 +159,9 @@ export function useDeleteRole() {
   })
 }
 
+/**
+ * Loads the permission set currently assigned to one role.
+ */
 export function useRolePermissions(roleId: string) {
   return useQuery({
     queryKey: securityKeys.rolePermissions(roleId),
@@ -150,6 +170,9 @@ export function useRolePermissions(roleId: string) {
   })
 }
 
+/**
+ * Replaces the permission assignments for a role, then refreshes that role-permission cache.
+ */
 export function useUpdateRolePermissions() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -161,6 +184,9 @@ export function useUpdateRolePermissions() {
   })
 }
 
+/**
+ * Loads paginated permission records for administration screens.
+ */
 export function usePermissions(params?: { page?: number; limit?: number }) {
   return useQuery({
     queryKey: securityKeys.permissions(params),
@@ -168,6 +194,9 @@ export function usePermissions(params?: { page?: number; limit?: number }) {
   })
 }
 
+/**
+ * Loads the active role assignments of one employee.
+ */
 export function useEmployeeRoles(employeeId: string) {
   return useQuery({
     queryKey: securityKeys.employeeRoles(employeeId),
@@ -176,6 +205,9 @@ export function useEmployeeRoles(employeeId: string) {
   })
 }
 
+/**
+ * Replaces the role set of one employee and refreshes both employee-role and employee-list caches.
+ */
 export function useUpdateEmployeeRoles() {
   const queryClient = useQueryClient()
   return useMutation({
