@@ -20,6 +20,9 @@ import { mapStatusNameToEnum } from "@/utils/status-mapping.util.ts"
 
 const LAYER_NAME = "TaskService"
 
+/**
+ * Handles task access control, validation, and status transitions within a project.
+ */
 export class TaskService implements ITaskService {
   constructor(
     private repository: ITaskRepository,
@@ -28,6 +31,10 @@ export class TaskService implements ITaskService {
     private statusRepository?: IProjectTaskStatusRepository,
   ) {}
 
+  /**
+   * Resolves whether the caller has global admin or general-manager privileges.
+   * @param userId The authenticated user ID
+   */
   private async isAuthorizedAdminOrGM(userId: string): Promise<boolean> {
     const authContext = await authorizationService.getAuthorizationContext(userId)
     if (authContext.isDynamicAdmin) return true
@@ -35,6 +42,11 @@ export class TaskService implements ITaskService {
     return roles.has(SYSTEM_ROLE.ADMIN) || roles.has(SYSTEM_ROLE.GENERAL_MANAGER)
   }
 
+  /**
+   * Returns one task after verifying the caller can access the parent project.
+   * @param id The task ID
+   * @param userId The authenticated user ID
+   */
   async getTask(id: string, userId: string): Promise<Task | null> {
     const task = await this.repository.findById(id)
     if (!task) {
@@ -59,6 +71,11 @@ export class TaskService implements ITaskService {
     return task
   }
 
+  /**
+   * Lists tasks with project-level access checks for non-admin users.
+   * @param query Task filters and pagination options
+   * @param userId The authenticated user ID
+   */
   async listTasks(query: TaskListQuery, userId: string): Promise<PaginatedTasksDto> {
     const isGlobalApprover = await this.isAuthorizedAdminOrGM(userId)
     if (!isGlobalApprover) {
@@ -86,6 +103,11 @@ export class TaskService implements ITaskService {
     return this.repository.listTasks(query)
   }
 
+  /**
+   * Creates a task after validating project membership, assignee eligibility, and status defaults.
+   * @param data The task payload to create
+   * @param userId The authenticated user ID
+   */
   async createTask(data: CreateTaskDto, userId: string): Promise<Task> {
     const project = await this.projectRepository.findById(data.projectId)
     if (!project) {
@@ -161,6 +183,12 @@ export class TaskService implements ITaskService {
     })
   }
 
+  /**
+   * Updates a task after permission checks and transition validation.
+   * @param id The task ID
+   * @param data The task fields to update
+   * @param userId The authenticated user ID
+   */
   async updateTask(id: string, data: UpdateTaskDto, userId: string): Promise<Task | null> {
     const task = await this.repository.findById(id)
     if (!task) {
@@ -237,9 +265,9 @@ export class TaskService implements ITaskService {
         }
 
         if (customStatus.isCompleted !== currentIsCompleted && !isGM && !isTL && !isTester) {
-          const actionText = customStatus.isCompleted ? "hoĂ n thĂ nh" : "má»Ÿ láº¡i/di chuyá»ƒn"
+          const actionText = customStatus.isCompleted ? "hoàn thành" : "mở lại/di chuyển"
           throw new AppError(
-            `Chá»‰ Team Leader, Manager hoáº·c Tester má»›i cĂ³ quyá»n ${actionText} cĂ´ng viá»‡c nĂ y.`,
+            `Chỉ Team Leader, Manager hoặc Tester mới có quyền ${actionText} công việc này.`,
             HttpStatusCode.FORBIDDEN,
             LAYER_NAME,
           )
@@ -261,7 +289,7 @@ export class TaskService implements ITaskService {
       if (statusEnum === TASK_STATUS.DONE) {
         if (!isGM && !isTL && !isTester) {
           throw new AppError(
-            "Chá»‰ Team Leader, Manager hoáº·c Tester má»›i cĂ³ quyá»n phĂª duyá»‡t hoĂ n thĂ nh cĂ´ng viá»‡c",
+            "Chỉ Team Leader, Manager hoặc Tester mới có quyền phê duyệt hoàn thành công việc",
             HttpStatusCode.FORBIDDEN,
             ErrorLayer.SERVICE,
           )
@@ -274,7 +302,7 @@ export class TaskService implements ITaskService {
 
         if (!hasResultUrl && !hasResultNotes) {
           throw new AppError(
-            "Báº¯t buá»™c pháº£i Ä‘Ă­nh kĂ¨m link sáº£n pháº©m hoáº·c ghi chĂº káº¿t quáº£ khi gá»­i yĂªu cáº§u Ä‘Ă¡nh giĂ¡ cĂ´ng viá»‡c (in_review)",
+            "Bắt buộc phải đính kèm link sản phẩm hoặc ghi chú kết quả khi gửi yêu cầu đánh giá công việc (in_review)",
             HttpStatusCode.BAD_REQUEST,
             ErrorLayer.SERVICE,
           )
@@ -289,6 +317,11 @@ export class TaskService implements ITaskService {
     })
   }
 
+  /**
+   * Deletes a task when the caller is its creator, project lead, or an elevated manager.
+   * @param id The task ID
+   * @param userId The authenticated user ID
+   */
   async deleteTask(id: string, userId: string): Promise<boolean> {
     const task = await this.repository.findById(id)
     if (!task) {
