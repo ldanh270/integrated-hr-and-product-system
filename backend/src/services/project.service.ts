@@ -102,7 +102,7 @@ export class ProjectService implements IProjectService {
       const end = new Date(data.expectedEndDate)
       if (start > end) {
         throw new AppError(
-          "NgĂ y báº¯t Ä‘áº§u khĂ´ng Ä‘Æ°á»£c lá»›n hÆ¡n ngĂ y káº¿t thĂºc dá»± kiáº¿n",
+          "Ngày bắt đầu không được lớn hơn ngày kết thúc dự kiến",
           HttpStatusCode.BAD_REQUEST,
           "ProjectService",
         )
@@ -203,7 +203,7 @@ export class ProjectService implements IProjectService {
 
     if (start && end && start > end) {
       throw new AppError(
-        "NgĂ y báº¯t Ä‘áº§u khĂ´ng Ä‘Æ°á»£c lá»›n hÆ¡n ngĂ y káº¿t thĂºc dá»± kiáº¿n",
+        "Ngày bắt đầu không được lớn hơn ngày kết thúc dự kiến",
         HttpStatusCode.BAD_REQUEST,
         "ProjectService",
       )
@@ -211,7 +211,7 @@ export class ProjectService implements IProjectService {
 
     if (start && actualEnd && start > actualEnd) {
       throw new AppError(
-        "NgĂ y báº¯t Ä‘áº§u khĂ´ng Ä‘Æ°á»£c lá»›n hÆ¡n ngĂ y káº¿t thĂºc thá»±c táº¿",
+        "Ngày bắt đầu không được lớn hơn ngày kết thúc thực tế",
         HttpStatusCode.BAD_REQUEST,
         "ProjectService",
       )
@@ -221,7 +221,8 @@ export class ProjectService implements IProjectService {
   }
 
   /**
-   * Deletes a project. This operation is restricted to Admin/GM users.
+   * Deletes a project
+   * Only Admins and General Managers can delete projects
    */
   async deleteProject(id: string, userId: string): Promise<boolean> {
     const isAdminOrGM = await this.checkIsAdminOrGM(userId)

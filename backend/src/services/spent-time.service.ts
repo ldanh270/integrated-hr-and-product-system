@@ -1,4 +1,4 @@
-import {
+﻿import {
   PROJECT_MEMBER_WORK_MODE,
   SPENT_TIME_STATUS,
 } from "@/configs/entities/project.config.ts"
@@ -77,7 +77,7 @@ export class SpentTimeService implements ISpentTimeService {
       const currentTotal = await this.repository.sumTaskHours(taskId, excludeId)
       if (currentTotal + hours > task.estimatedTime) {
         throw new AppError(
-          `Tá»•ng giá» lĂ m (${(currentTotal + hours).toFixed(1)}h) vÆ°á»£t Æ°á»›c tĂ­nh (${task.estimatedTime}h)`,
+          `Tổng giờ làm (${(currentTotal + hours).toFixed(1)}h) vượt ước tính (${task.estimatedTime}h)`,
           HttpStatusCode.UNPROCESSABLE_ENTITY,
           LAYER_NAME,
         )
@@ -89,7 +89,7 @@ export class SpentTimeService implements ISpentTimeService {
       const attendance = await this.attendanceRepository.findByEmployeeAndDate(employeeId, date)
       if (!attendance?.checkInAt) {
         throw new AppError(
-          "NhĂ¢n viĂªn onsite pháº£i check-in trÆ°á»›c khi ghi Spent Time",
+          "Nhân viên onsite phải check-in trước khi ghi Spent Time",
           HttpStatusCode.UNPROCESSABLE_ENTITY,
           LAYER_NAME,
         )
@@ -205,7 +205,7 @@ export class SpentTimeService implements ISpentTimeService {
     }
 
     if (record.status !== SPENT_TIME_STATUS.PENDING) {
-      throw new AppError("Chá»‰ cĂ³ thá»ƒ sá»­a log Ä‘ang chá» duyá»‡t", HttpStatusCode.CONFLICT, LAYER_NAME)
+      throw new AppError("Chỉ có thể sửa log đang chờ duyệt", HttpStatusCode.CONFLICT, LAYER_NAME)
     }
 
     const isGlobalApprover = await this.isAuthorizedAdminOrGM(userId)
@@ -230,7 +230,7 @@ export class SpentTimeService implements ISpentTimeService {
     }
 
     if (record.status !== SPENT_TIME_STATUS.PENDING) {
-      throw new AppError("Chá»‰ cĂ³ thá»ƒ xĂ³a log Ä‘ang chá» duyá»‡t", HttpStatusCode.CONFLICT, LAYER_NAME)
+      throw new AppError("Chỉ có thể xóa log đang chờ duyệt", HttpStatusCode.CONFLICT, LAYER_NAME)
     }
 
     const isGlobalApprover = await this.isAuthorizedAdminOrGM(userId)
@@ -258,7 +258,7 @@ export class SpentTimeService implements ISpentTimeService {
     await this.assertProjectLeadAccess(task.projectId, userId)
 
     if (record.status !== SPENT_TIME_STATUS.PENDING) {
-      throw new AppError("Log Ä‘Ă£ Ä‘Æ°á»£c xá»­ lĂ½", HttpStatusCode.CONFLICT, LAYER_NAME)
+      throw new AppError("Log đã được xử lý", HttpStatusCode.CONFLICT, LAYER_NAME)
     }
 
     const updated = await this.repository.approve(id, userId)
@@ -285,7 +285,7 @@ export class SpentTimeService implements ISpentTimeService {
     await this.assertProjectLeadAccess(task.projectId, userId)
 
     if (record.status !== SPENT_TIME_STATUS.PENDING) {
-      throw new AppError("Log Ä‘Ă£ Ä‘Æ°á»£c xá»­ lĂ½", HttpStatusCode.CONFLICT, LAYER_NAME)
+      throw new AppError("Log đã được xử lý", HttpStatusCode.CONFLICT, LAYER_NAME)
     }
 
     const updated = await this.repository.reject(id, userId, reason)
