@@ -33,6 +33,13 @@ export const EMPLOYEE_ROLES = [
 ] as const
 export type IEmployeeRole = (typeof EMPLOYEE_ROLES)[number]
 
+export const MANAGER_ROLES = [
+  ROLE.ADMIN,
+  ROLE.HR_MANAGER,
+  ROLE.GENERAL_MANAGER,
+  ROLE.TEAM_LEADER,
+] as const
+
 export const ROLE_LABELS: Record<string, string> = {
   [ROLE.ADMIN]: "Quản trị viên",
   [ROLE.GENERAL_MANAGER]: "Tổng quản lý",
