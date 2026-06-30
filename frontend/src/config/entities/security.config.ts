@@ -20,6 +20,19 @@ export const ACTIVITY_ACTION_VARIANTS: Record<string, "success" | "danger" | "wa
   password_changed: "warning",
 } as const
 
+export const SECURITY_ACTIVITY_CATEGORY = {
+  SECURITY: "security",
+  ROLE: "role",
+  PERMISSION: "permission",
+  EMPLOYEE: "employee",
+} as const
+
+export const SECURITY_AUDIT_ACTION_PREFIX = {
+  ROLE: "ROLE_",
+  PERMISSION: "PERMISSION_",
+  EMPLOYEE: "EMPLOYEE_",
+} as const
+
 export const USERS_MANAGEMENT_TABS = {
   ALL: "all",
   LOCKED: "locked",
