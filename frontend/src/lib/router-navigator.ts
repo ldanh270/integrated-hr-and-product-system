@@ -40,6 +40,18 @@ export const routerNavigate = (to: string, options?: NavigateOptions): void => {
     _navigate(to, options)
   } else {
     // Fallback: navigator not ready yet (should be extremely rare)
-    window.location.href = to
+    // Security: Strict validation via URL API to clear static analysis taint
+    try {
+      const parsedUrl = new URL(to, window.location.origin)
+      // Only allow redirects to the same origin
+      if (parsedUrl.origin === window.location.origin) {
+        window.location.assign(parsedUrl.pathname + parsedUrl.search + parsedUrl.hash)
+      } else {
+        console.error("routerNavigate blocked an unsafe redirection attempt:", to)
+        window.location.assign("/")
+      }
+    } catch {
+      window.location.assign("/")
+    }
   }
 }
