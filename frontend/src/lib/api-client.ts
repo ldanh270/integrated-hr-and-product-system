@@ -1,3 +1,5 @@
+import { ROUTES } from "@/config/routes.config"
+import { routerNavigate } from "@/lib/router-navigator"
 import { useAuthStore } from "@/store/auth-store"
 
 import axios from "axios"
@@ -67,44 +69,50 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
-    if (error.response?.status === 401 && !isPublicAuthPath(originalRequest?.url)) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject })
-        })
-          .then(() => {
-            return apiClient(originalRequest)
-          })
-          .catch((err) => {
-            return Promise.reject(err)
-          })
-      }
-
-      originalRequest._retry = true
-      isRefreshing = true
-
-      try {
-        await apiClient.post("/auth/refresh")
-        processQueue(null)
-        return apiClient(originalRequest)
-      } catch (refreshError) {
-        processQueue(refreshError, null)
-
-        // Only treat as session expiration if the user was actually logged in
-        const isAuthenticated = useAuthStore.getState().isAuthenticated
-
-        if (isAuthenticated) {
-          useAuthStore.getState().clearAuth()
-          toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.")
-          localStorage.removeItem("auth-storage")
-          window.location.href = "/login"
-        }
-        return Promise.reject(error)
-      } finally {
-        isRefreshing = false
-      }
+    // Không handle nếu: không phải 401, là public auth path, hoặc đã retry rồi
+    if (
+      error.response?.status !== 401 ||
+      isPublicAuthPath(originalRequest?.url) ||
+      originalRequest?._retry
+    ) {
+      return Promise.reject(error)
     }
-    return Promise.reject(error)
+
+    // Nếu đang refresh, đẩy request vào hàng đợi
+    if (isRefreshing) {
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject })
+      })
+        .then(() => {
+          originalRequest._retry = true  // mark trước khi retry
+          return apiClient(originalRequest)
+        })
+        .catch((err) => Promise.reject(err))
+    }
+
+    // Đánh dấu đã retry để tránh vòng lặp vô hạn
+    originalRequest._retry = true
+    isRefreshing = true
+
+    try {
+      await apiClient.post("/auth/refresh")
+      processQueue(null)
+      return apiClient(originalRequest)
+    } catch (refreshError) {
+      processQueue(refreshError, null)
+
+      // Chỉ đăng xuất nếu user đang thực sự logged in
+      const isAuthenticated = useAuthStore.getState().isAuthenticated
+      if (isAuthenticated) {
+        useAuthStore.getState().clearAuth()
+        localStorage.removeItem("auth-storage")
+        toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.")
+        routerNavigate(ROUTES.AUTH.LOGIN, { replace: true })
+      }
+      return Promise.reject(error)
+    } finally {
+      isRefreshing = false
+    }
   },
 )
 

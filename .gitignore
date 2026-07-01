@@ -157,3 +157,6 @@ task_plan.md
 # Playwright test artifacts
 playwright-report/
 test-results/
+
+# Chore
+*.drawio.bkp

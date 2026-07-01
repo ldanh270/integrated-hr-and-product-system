@@ -72,7 +72,6 @@ export class EmployeesSeeder implements ISeeder {
         data: {
           username: partTimeUsername,
           passwordHash: passwordHashCore,
-          role: SYSTEM_ROLE.EMPLOYEE,
           employeeType: EMPLOYEE_TYPE.PART_TIME,
           fullName: "Part Time User",
           email: "part_time@example.com",

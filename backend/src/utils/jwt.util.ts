@@ -7,6 +7,7 @@ import {
 import { JwtPayload } from "@/types/auth.types.ts"
 
 import jwt from "jsonwebtoken"
+import crypto from "crypto"
 
 /**
  * JwtUtil provides helper methods for signing and verifying JSON Web Tokens
@@ -16,7 +17,8 @@ export class JwtUtil {
    * Generates a new Access Token for a given payload
    */
   static generateAccessToken(payload: object): string {
-    return jwt.sign(payload, ACCESS_TOKEN_SECRET, {
+    const uniquePayload = { ...payload, jti: crypto.randomUUID() }
+    return jwt.sign(uniquePayload, ACCESS_TOKEN_SECRET, {
       expiresIn: ACCESS_TOKEN_TTL as jwt.SignOptions["expiresIn"],
     })
   }
@@ -25,7 +27,8 @@ export class JwtUtil {
    * Generates a new Refresh Token for a given payload
    */
   static generateRefreshToken(payload: object): string {
-    return jwt.sign(payload, REFRESH_TOKEN_SECRET, {
+    const uniquePayload = { ...payload, jti: crypto.randomUUID() }
+    return jwt.sign(uniquePayload, REFRESH_TOKEN_SECRET, {
       expiresIn: REFRESH_TOKEN_TTL as jwt.SignOptions["expiresIn"],
     })
   }

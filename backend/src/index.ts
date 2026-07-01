@@ -34,21 +34,12 @@ import { countStaticRoleReferences, bootstrapAdmin } from "@/utils/startup-asser
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
 import express from "express"
-import path from "path"
-import swaggerUi from "swagger-ui-express"
-import YAML from "yamljs"
 
 /**
  * Server configurations
  */
 dotenv.config() // Create config for using .env variables
 const app = express()
-
-/**
- * Swagger Setup
- */
-const swaggerDocument = YAML.load(path.join(process.cwd(), "swagger.yaml"))
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 
 /**
  * Middleware

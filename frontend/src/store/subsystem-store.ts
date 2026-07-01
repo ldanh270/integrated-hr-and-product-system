@@ -10,7 +10,7 @@ interface SubsystemState {
 }
 
 export const useSubsystemStore = create<SubsystemState>((set, get) => ({
-  activeSubsystem: "hrm", // Default to hrm
+  activeSubsystem: "personal", // Default to personal
 
   setActiveSubsystem: (id) => set({ activeSubsystem: id }),
 
