@@ -272,6 +272,75 @@ export class AuthController {
   }
 
   /**
+   * Lists activity logs for the authenticated user (Personal History)
+   */
+  listMyActivityLogs = async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          status: RESPONSE_STATUS.ERROR,
+          message: "Unauthorized",
+        })
+      }
+
+      // Validate request query using shared activity log schema
+      const validatedQuery = activityLogQuerySchema.parse(req.query)
+
+      // Delegate to service with empId from token
+      const result = await this.service.getMyActivityLogs(req.user.empId, validatedQuery)
+
+      res.status(HttpStatusCode.OK).json({
+        status: RESPONSE_STATUS.SUCCESS,
+        data: result,
+      })
+    } catch (error: any) {
+      const statusCode =
+        error instanceof z.ZodError
+          ? HttpStatusCode.BAD_REQUEST
+          : error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
+
+      res.status(statusCode).json({
+        status: RESPONSE_STATUS.ERROR,
+        message: error.message || "Failed to fetch personal activity logs",
+        errors: error instanceof z.ZodError ? error.issues : undefined,
+      })
+    }
+  }
+
+  getMyActivityLogDetail = async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          status: RESPONSE_STATUS.ERROR,
+          message: AUTH_ERROR_MESSAGES.UNAUTHORIZED,
+        })
+      }
+
+      const result = await this.service.getMyActivityLogDetail(
+        req.user.empId,
+        String(req.params.id),
+      )
+
+      if (!result) {
+        return res.status(HttpStatusCode.NOT_FOUND).json({
+          status: RESPONSE_STATUS.ERROR,
+          message: "Activity log not found",
+        })
+      }
+
+      res.status(HttpStatusCode.OK).json({
+        status: RESPONSE_STATUS.SUCCESS,
+        data: result,
+      })
+    } catch (error: any) {
+      res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
+        status: RESPONSE_STATUS.ERROR,
+        message: error.message || "Failed to fetch personal activity log detail",
+      })
+    }
+  }
+
+  /**
    * Lists activity logs with filters
    */
   listActivityLogs = async (req: AuthRequest, res: Response) => {

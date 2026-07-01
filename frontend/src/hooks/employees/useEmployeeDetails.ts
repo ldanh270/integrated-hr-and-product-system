@@ -1,6 +1,6 @@
 import { ROLE } from "@/config/entities/employee.config"
+import { usePermission } from "@/hooks/use-permission"
 import { ROUTES } from "@/config/routes.config"
-import { useAuthStore } from "@/store/auth-store"
 
 import { useState } from "react"
 
@@ -13,12 +13,11 @@ export const useEmployeeDetails = () => {
   const navigate = useNavigate()
 
   const { data: employee, isLoading, error } = useEmployee(id!)
-  const user = useAuthStore((state) => state.user)
+  const { hasRole, roles } = usePermission()
 
   const isAdminOrManager =
-    user?.role === ROLE.ADMIN ||
-    user?.role === ROLE.HR_MANAGER ||
-    user?.role === ROLE.GENERAL_MANAGER
+    roles.length > 0 &&
+    [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER].some((role) => hasRole(role))
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 

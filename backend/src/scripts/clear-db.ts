@@ -6,6 +6,11 @@ export async function clearDatabase() {
     "PasswordResetRequest",
     "ActivityLog",
 
+    "employee_roles",
+    "role_permissions",
+    "roles",
+    "permissions",
+
     "Task",
     "ProjectMember",
     "Project",

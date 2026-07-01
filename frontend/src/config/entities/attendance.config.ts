@@ -47,6 +47,15 @@ export const APPLICATION_STATUSES = [
 export type IApplicationStatus = (typeof APPLICATION_STATUSES)[number]
 export type IApplicationFilterStatus = IApplicationStatus | "all"
 
+export const APPLICATION_FILTER = {
+  ALL: "all",
+} as const
+
+export const APPLICATION_VIEW_MODE = {
+  MINE: "mine",
+  MANAGE: "manage",
+} as const
+
 export const REGIME_TYPE = {
   PAID: "paid",
   UNPAID: "unpaid",

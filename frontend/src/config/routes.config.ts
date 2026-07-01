@@ -7,6 +7,7 @@ export const ROUTES = {
     DASHBOARD: "/hrm/dashboard",
     PROFILE: "/hrm/profile",
     EMPLOYEES: "/hrm/employees",
+    LOGIN_HISTORY: "/profile/login-history",
   },
   APPLICATION: {
     DASHBOARD: "/application/dashboard",
@@ -44,13 +45,14 @@ export const ROUTES = {
   },
   SECURITY: {
     DASHBOARD: "/security/dashboard",
-    ROLES: "/security/roles",
     USERS: "/security/users",
     ACTIVITY_LOGS: "/security/activity-logs",
-    PERMISSION_MATRIX: "/security/permission-matrix",
   },
   SETTINGS: {
     DASHBOARD: "/settings/dashboard",
+    ROLES: "/settings/roles",
+    ROLE_PERMISSIONS: "/settings/role-permissions",
+    PERMISSIONS: "/settings/permissions",
   },
   PROJECT: {
     LIST: "/project/list",

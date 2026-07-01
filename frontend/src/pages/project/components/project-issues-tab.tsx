@@ -69,7 +69,7 @@ interface ProjectIssuesTabProps {
   } | null
   user: {
     id: string
-    role: string
+    role?: string
     fullName: string
   } | null
 }

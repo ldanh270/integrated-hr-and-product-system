@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "seed": "bun run src/scripts/seed-all.ts",
     "seed:admin": "bun run src/scripts/seed-admin.ts",
-    "clear": "bun run src/scripts/clear-db.ts"
+    "clear": "bun run src/scripts/clear-db.ts",
+    "repair:admin": "bun run src/scripts/repair-admin.ts"
   },
   "type": "module",
   "author": "ldanh270",
@@ -27,6 +28,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
+    "ioredis": "^5.11.1",
     "jsonwebtoken": "^9.0.3",
     "mathjs": "^15.2.0",
     "mongodb": "^7.2.0",
@@ -42,6 +44,7 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^10.4.0",
+    "@types/ioredis": "^5.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node-cron": "^3.0.11",
     "@types/swagger-ui-express": "^4.1.8",

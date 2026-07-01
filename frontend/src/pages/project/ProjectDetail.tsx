@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { ROLE } from "@/config/entities/employee.config"
+import { usePermission } from "@/hooks/use-permission"
 import { TASK_TRACKERS, SPENT_TIME_STATUS } from "@/config/entities/project.config"
 import { projectApi } from "@/lib/api/project.api"
 import { employeeApi } from "@/lib/api/employee.api"
@@ -58,6 +59,7 @@ export default function ProjectDetail() {
   const [searchParams] = useSearchParams()
   const openCreateParam = searchParams.get("createTask") === "true"
   const { user } = useAuthStore()
+  const { roles } = usePermission()
 
   // Route format: /project/:tab  (e.g., /project/overview)
   // Project ID is always stored in sessionStorage (set when clicking a project from the list)
@@ -127,7 +129,8 @@ export default function ProjectDetail() {
 
   // Check roles/permissions
   const isLeader = project?.teamLeaderId === user?.id
-  const isAdminOrGM = user?.role === ROLE.ADMIN || user?.role === ROLE.GENERAL_MANAGER
+  const isAdminOrGM =
+    !!user && [ROLE.ADMIN, ROLE.GENERAL_MANAGER].some((role) => roles.includes(role))
   const isProjectMember = projectMembers.some((m) => m.employeeId === user?.id) || isLeader
 
   // Enforce task creation policy based on user roles and project configuration settings

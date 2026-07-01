@@ -1,8 +1,7 @@
-import { ROLE } from "@/configs/entities/employee.config.ts"
 import { SalaryVariableController } from "@/controllers/salary-variable.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
-import { authorizeRoles } from "@/middlewares/role.middleware.ts"
+import { requirePermission } from "@/middlewares/permission.middleware.ts"
 import { PrismaSalaryVariableRepository } from "@/repositories/salary-variable.repository.ts"
 import { SalaryVariableService } from "@/services/salary-variable.service.ts"
 
@@ -16,12 +15,12 @@ const controller = new SalaryVariableController(service)
 
 // Protect all routes
 router.use(authenticate)
-router.use(authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER))
+router.use(requirePermission("payroll.read"))
 
 router.get("/", controller.listVariables)
 router.get("/:id", controller.getVariable)
-router.post("/", controller.createVariable)
-router.put("/:id", controller.updateVariable)
-router.delete("/:id", controller.deleteVariable)
+router.post("/", requirePermission("payroll.create"), controller.createVariable)
+router.put("/:id", requirePermission("payroll.update"), controller.updateVariable)
+router.delete("/:id", requirePermission("payroll.delete"), controller.deleteVariable)
 
 export default router

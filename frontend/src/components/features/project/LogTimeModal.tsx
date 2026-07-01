@@ -30,7 +30,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { taskApi } from "@/lib/api/task.api"
 import type { SpentTime, SpentTimeActivity, SpentTimeWorkTimeType } from "@/types/spent-time.types"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import React, { useState, useEffect } from "react"
+import React, { startTransition, useState, useEffect } from "react"
 
 interface LogTimeModalProps {
   open: boolean
@@ -64,20 +64,22 @@ export default function LogTimeModal({
   // Sync state with spentTime when editing
   useEffect(() => {
     if (open) {
-      if (spentTime) {
-        setDate(new Date(spentTime.date).toISOString().split("T")[0])
-        setHours(String(spentTime.hours))
-        setActivity(spentTime.activity)
-        setWorkTimeType(spentTime.workTimeType)
-        setComment(spentTime.comment || "")
-      } else {
-        setDate(new Date().toISOString().split("T")[0])
-        setHours("")
-        setActivity(SPENT_TIME_ACTIVITY.DEVELOP)
-        setWorkTimeType(SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY)
-        setComment("")
-      }
-      setError(null)
+      startTransition(() => {
+        if (spentTime) {
+          setDate(new Date(spentTime.date).toISOString().split("T")[0])
+          setHours(String(spentTime.hours))
+          setActivity(spentTime.activity)
+          setWorkTimeType(spentTime.workTimeType)
+          setComment(spentTime.comment || "")
+        } else {
+          setDate(new Date().toISOString().split("T")[0])
+          setHours("")
+          setActivity(SPENT_TIME_ACTIVITY.DEVELOP)
+          setWorkTimeType(SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY)
+          setComment("")
+        }
+        setError(null)
+      })
     }
   }, [open, spentTime])
 
