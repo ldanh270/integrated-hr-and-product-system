@@ -6,7 +6,6 @@ export const ROUTES = {
   },
   HRM: {
     BASE: "/hrm",
-    DASHBOARD: "/hrm/dashboard",
     PROFILE: "/hrm/profile",
     EMPLOYEES: "/hrm/employees",
     LOGIN_HISTORY: "/profile/login-history",

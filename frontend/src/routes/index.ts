@@ -27,11 +27,6 @@ export interface RouteConfig {
 
 const privateRoutes: RouteConfig[] = [
   {
-    path: ROUTES.HRM.DASHBOARD,
-    component: lazy(() => import("@/pages/Dashboard.tsx")),
-    layout: MainLayout,
-  },
-  {
     path: ROUTES.HRM.EMPLOYEES,
     component: lazy(() => import("@/pages/EmployeeList.tsx")),
     layout: MainLayout,
