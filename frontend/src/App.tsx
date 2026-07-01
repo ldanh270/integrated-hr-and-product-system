@@ -173,18 +173,8 @@ const App = () => {
             })}
 
             {SUBSYSTEMS.map((subsystem) => {
-              const subsystemKey = subsystem.id.toUpperCase() as keyof typeof ROUTES
-              const routeObj = ROUTES[subsystemKey]
-
-              let firstPath =
+              const firstPath =
                 subsystem.sidebarItems[0]?.path || `${subsystem.routePrefix}/dashboard`
-
-              if (routeObj && typeof routeObj === "object") {
-                const values = Object.values(routeObj)
-                if (values.length > 0 && typeof values[0] === "string") {
-                  firstPath = values[0]
-                }
-              }
 
               if (firstPath === subsystem.routePrefix) {
                 return null

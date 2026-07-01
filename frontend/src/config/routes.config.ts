@@ -2,19 +2,23 @@ export const ROUTES = {
   AUTH: {
     LOGIN: "/login",
     FORGOT_PASSWORD: "/forgot-password",
+    RESET_PASSWORD: "/reset-password",
   },
   HRM: {
+    BASE: "/hrm",
     DASHBOARD: "/hrm/dashboard",
     PROFILE: "/hrm/profile",
     EMPLOYEES: "/hrm/employees",
     LOGIN_HISTORY: "/profile/login-history",
   },
   APPLICATION: {
+    BASE: "/application",
     DASHBOARD: "/application/dashboard",
     CREATE: "/application/create",
   },
   ATTENDANCE: {
-    DASHBOARD: "/attendance",
+    BASE: "/attendance",
+    DASHBOARD: "/attendance/dashboard",
     SUMMARY: "/attendance/summary",
     MY_SCHEDULE: "/attendance/my-schedule",
     WORK_SCHEDULES: "/attendance/work-schedules",
@@ -26,6 +30,7 @@ export const ROUTES = {
     HOLIDAYS: "/attendance/holidays",
   },
   PAYROLL: {
+    BASE: "/payroll",
     LIST: "/payroll/list",
     SALARY_COMPONENTS: "/payroll/salary-components",
     SALARY_VARIABLES: "/payroll/salary-variables",
@@ -35,32 +40,37 @@ export const ROUTES = {
     MY_PAYSLIPS: "/payroll/my-payslips",
   },
   ASSET: {
+    BASE: "/asset",
     DASHBOARD: "/asset/dashboard",
   },
   RECRUITMENT: {
+    BASE: "/recruitment",
     DASHBOARD: "/recruitment/dashboard",
   },
-  TRAINING: {
-    DASHBOARD: "/training/dashboard",
-  },
   SECURITY: {
+    BASE: "/security",
     DASHBOARD: "/security/dashboard",
     USERS: "/security/users",
     ACTIVITY_LOGS: "/security/activity-logs",
   },
   SETTINGS: {
+    BASE: "/settings",
     DASHBOARD: "/settings/dashboard",
     ROLES: "/settings/roles",
     ROLE_PERMISSIONS: "/settings/role-permissions",
     PERMISSIONS: "/settings/permissions",
   },
   PROJECT: {
+    BASE: "/project",
     LIST: "/project/list",
     DASHBOARD: "/project/dashboard",
     OVERVIEW: "/project/overview",
     ISSUES: "/project/issues",
     TASK_NEW: "/project/task/new",
     TASK_DETAIL: "/project/task",
+    DETAIL_TAB: "/project/:tab",
+    TASK_NEW_WITH_ID: "/project/:id/task/new",
+    TASK_DETAIL_WITH_ID: "/project/task/:id",
   },
   PERSONAL: {
     BASE: "/personal",
