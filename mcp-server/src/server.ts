@@ -2,6 +2,7 @@ import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import "dotenv/config"
 import express from "express"
+import rateLimit from "express-rate-limit"
 import path from "path"
 import { fileURLToPath } from "url"
 
@@ -18,8 +19,13 @@ const __dirname = path.dirname(__filename)
 registerTools()
 
 const mountAuthRoutes = (app: any) => {
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // max 100 requests per windowMs
+  })
+
   // 1. Serve the login page
-  app.get("/auth/login", (req: express.Request, res: express.Response) => {
+  app.get("/auth/login", authLimiter, (req: express.Request, res: express.Response) => {
     const loginId = req.query.id as string
     if (!loginId || !loginStore.get(loginId)) {
       res.status(400).send("Invalid or expired login ID. Please try again from the AI assistant.")
@@ -29,55 +35,60 @@ const mountAuthRoutes = (app: any) => {
   })
 
   // 2. Handle form submission
-  app.post("/auth/submit", express.json(), async (req: express.Request, res: express.Response) => {
-    const { loginId, username, password } = req.body
+  app.post(
+    "/auth/submit",
+    authLimiter,
+    express.json(),
+    async (req: express.Request, res: express.Response) => {
+      const { loginId, username, password } = req.body
 
-    if (!loginId || !username || !password) {
-      res.status(400).json({ error: "Missing required fields" })
-      return
-    }
-
-    const loginReq = loginStore.get(loginId)
-    if (!loginReq) {
-      res.status(400).json({ error: "Login request expired or invalid. Please try again." })
-      return
-    }
-
-    try {
-      // Call HRP backend to authenticate
-      const { data, cookies } = await authService.login({ username, password })
-      logger.debug("HRP API Login Result:", data)
-
-      // Extract token properly based on actual backend response structure.
-      // Sometimes backends return `accessToken` instead of `token`.
-      const token =
-        data.data?.token ||
-        (data.data as any)?.accessToken ||
-        (data as any).token ||
-        (data as any).accessToken
-
-      if (!token && (!cookies || cookies.length === 0)) {
-        logger.error("Token and cookies are missing in the HRP API response!", data)
+      if (!loginId || !username || !password) {
+        res.status(400).json({ error: "Missing required fields" })
+        return
       }
 
-      // Save session
-      const sessionId = sessionManager.create({
-        jwt: token || "", // Fallback to empty if not provided in body
-        role: data.data?.employee?.role || "unknown",
-        employeeId: data.data?.employee?.id || "unknown",
-        cookies: cookies,
-      })
+      const loginReq = loginStore.get(loginId)
+      if (!loginReq) {
+        res.status(400).json({ error: "Login request expired or invalid. Please try again." })
+        return
+      }
 
-      // Update login store
-      loginStore.setCompleted(loginId, sessionId)
+      try {
+        // Call HRP backend to authenticate
+        const { data, cookies } = await authService.login({ username, password })
+        logger.debug("HRP API Login Result:", data)
 
-      res.json({ success: true })
-    } catch (error: any) {
-      logger.error(`Login failed for ${username}:`, error.message)
-      loginStore.setFailed(loginId, error.message)
-      res.status(401).json({ error: "Invalid credentials or server error" })
-    }
-  })
+        // Extract token properly based on actual backend response structure.
+        // Sometimes backends return `accessToken` instead of `token`.
+        const token =
+          data.data?.token ||
+          (data.data as any)?.accessToken ||
+          (data as any).token ||
+          (data as any).accessToken
+
+        if (!token && (!cookies || cookies.length === 0)) {
+          logger.error("Token and cookies are missing in the HRP API response!", data)
+        }
+
+        // Save session
+        const sessionId = sessionManager.create({
+          jwt: token || "", // Fallback to empty if not provided in body
+          role: data.data?.employee?.role || "unknown",
+          employeeId: data.data?.employee?.id || "unknown",
+          cookies: cookies,
+        })
+
+        // Update login store
+        loginStore.setCompleted(loginId, sessionId)
+
+        res.json({ success: true })
+      } catch (error: any) {
+        logger.error(`Login failed for ${username}:`, error.message)
+        loginStore.setFailed(loginId, error.message)
+        res.status(401).json({ error: "Invalid credentials or server error" })
+      }
+    },
+  )
 }
 
 const startSSEServer = () => {
