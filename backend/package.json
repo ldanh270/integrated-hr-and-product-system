@@ -6,8 +6,8 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "nlx prisma generate",
-    "postinstall": "nlx prisma generate",
+    "build": "prisma generate",
+    "postinstall": "prisma generate",
     "typecheck": "tsc --noEmit",
     "seed": "tsx src/scripts/seed-all.ts",
     "seed:admin": "tsx src/scripts/seed-admin.ts",
