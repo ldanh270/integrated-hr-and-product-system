@@ -126,7 +126,7 @@ registry.register(new PayslipsSeeder())
 
 if (import.meta.main) {
   const seeder = new PayslipsSeeder()
-  const emps = await prisma.employee.findMany({ select: { id: true, role: true, username: true } })
+  const emps = await prisma.employee.findMany({ select: { id: true, position: true, username: true } })
   const payrolls = await prisma.payroll.findMany()
   const configs = await prisma.employeeSalaryConfig.findMany()
 

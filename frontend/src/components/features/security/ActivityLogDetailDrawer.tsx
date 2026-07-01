@@ -1,5 +1,6 @@
 import { AppDrawer } from "@/components/common"
 import { useActivityLog } from "@/hooks/security/queries/use-security-query"
+import { SheetDescription, SheetTitle } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 
 import { FileText, Loader2 } from "lucide-react"
@@ -7,14 +8,23 @@ import { FileText, Loader2 } from "lucide-react"
 interface ActivityLogDetailDrawerProps {
   logId: string | null
   onClose: () => void
+  scope?: "all" | "me"
 }
 
-export function ActivityLogDetailDrawer({ logId, onClose }: ActivityLogDetailDrawerProps) {
-  const { data: log, isLoading } = useActivityLog(logId || "")
+export function ActivityLogDetailDrawer({
+  logId,
+  onClose,
+  scope = "all",
+}: ActivityLogDetailDrawerProps) {
+  const { data: log, isLoading } = useActivityLog(logId || "", scope)
 
   return (
     <AppDrawer isOpen={!!logId} onClose={onClose}>
       <div className="flex flex-col h-full overflow-y-auto px-6 pt-16 pb-8">
+        <SheetTitle className="sr-only">Chi tiết nhật ký hoạt động</SheetTitle>
+        <SheetDescription className="sr-only">
+          Xem thông tin chi tiết của bản ghi nhật ký hoạt động đã chọn.
+        </SheetDescription>
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />

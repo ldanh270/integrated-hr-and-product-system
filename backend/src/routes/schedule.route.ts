@@ -1,4 +1,3 @@
-import { ROLE } from "@/configs/entities/employee.config.ts"
 import {
   DAY_OF_WEEK_VALUES,
   WEEKLY_SCHEDULE_SETTINGS_ID,
@@ -9,7 +8,7 @@ import { ScheduleController } from "@/controllers/schedule.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { getDefaultWeeklyScheduleSettings } from "@/libs/weekly-schedule-cron.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
-import { authorizeRoles } from "@/middlewares/role.middleware.ts"
+import { requirePermission } from "@/middlewares/permission.middleware.ts"
 import { PrismaEmployeeShiftRepository } from "@/repositories/employee-shift.repository.ts"
 import { PrismaShiftScheduleRepository } from "@/repositories/schedule.repository.ts"
 import { ScheduleService } from "@/services/schedule.service.ts"
@@ -31,39 +30,39 @@ scheduleRoutes.get("/my/all", controller.listEmployeeSchedules)
 
 scheduleRoutes.get(
   "/employee/:employeeId",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  requirePermission("attendance.read"),
   controller.getEmployeeScheduleById,
 )
 scheduleRoutes.get(
   "/employee/:employeeId/all",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  requirePermission("attendance.read"),
   controller.listEmployeeSchedulesById,
 )
 
 scheduleRoutes.post(
   "/assign",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  requirePermission("attendance.update"),
   controller.assignSchedule,
 )
 scheduleRoutes.post(
   "/override",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  requirePermission("attendance.update"),
   controller.overrideShift,
 )
 scheduleRoutes.post(
   "/generate/preview",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  requirePermission("attendance.update"),
   controller.previewGeneratedShifts,
 )
 scheduleRoutes.post(
   "/generate",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  requirePermission("attendance.update"),
   controller.generateShifts,
 )
 
 scheduleRoutes.get(
   "/settings",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  requirePermission("attendance.read"),
   async (_req, res, next) => {
     try {
       const settings = await prisma.weeklyScheduleSettings.findUnique({
@@ -78,7 +77,7 @@ scheduleRoutes.get(
 
 scheduleRoutes.put(
   "/settings",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  requirePermission("attendance.update"),
   async (req, res, next) => {
     try {
       const { triggerDayOfWeek, triggerHour, triggerMinute } = req.body

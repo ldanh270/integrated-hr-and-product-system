@@ -22,7 +22,7 @@ export default function SubsystemDropdown() {
   const activeConfig = getActiveSubsystemConfig()
 
   const navSubsystems = SUBSYSTEMS.filter(
-    (subsystem) => !subsystem.roles || (user && subsystem.roles.includes(user.role)),
+    (subsystem) => !subsystem.permissions || (user && subsystem.permissions.every((p) => user.permissions.includes(p))),
   )
 
   const handleSelectSubsystem = (subsystemId: string, routePrefix: string) => {

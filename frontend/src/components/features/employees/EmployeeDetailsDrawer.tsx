@@ -153,7 +153,7 @@ export function EmployeeDetailsDrawer({ employeeId, onClose }: EmployeeDetailsDr
                     <span className="text-[12px] font-medium">Phân quyền hệ thống</span>
                   </div>
                   <div className="text-[14px] text-foreground font-medium pl-6 capitalize">
-                    {ROLE_LABELS[employee.role] || employee.role}
+                    {employee.role ? (ROLE_LABELS[employee.role] || employee.role) : "—"}
                   </div>
                 </div>
                 <div className="border border-border rounded-xl p-4 bg-card sm:col-span-2">

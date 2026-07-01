@@ -71,3 +71,13 @@ export const AUTH_ERRORS = {
   },
   AUTH_ERROR: { message: "Không thể xác thực người dùng.", code: "AUTH_ERROR" },
 } as const
+
+export const PROTECTED_PERMISSIONS = process.env.PROTECTED_PERMISSIONS
+  ? process.env.PROTECTED_PERMISSIONS.split(",").map((p) => p.trim())
+  : [
+      "role.update",
+      "permission.update",
+      "employee.role.update",
+      "role.permission.update",
+    ]
+

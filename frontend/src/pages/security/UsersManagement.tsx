@@ -55,6 +55,8 @@ export default function UsersManagement() {
     visiblePages,
   } = useUsersManagementMaster()
 
+  const rows = (displayData ?? []) as UserListItem[]
+
   if (isLoading) {
     return (
       <div className="container px-6 py-8 flex flex-col items-center justify-center min-h-[400px]">
@@ -181,7 +183,7 @@ export default function UsersManagement() {
                   </td>
                 </tr>
               ) : (
-                displayData?.map((user: UserListItem) => {
+                rows.map((user) => {
                   const isLocked = activeTab === "locked" || lockedUsers?.some(lu => lu.employeeId === user.id)
                   
                   return (

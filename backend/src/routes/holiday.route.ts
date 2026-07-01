@@ -1,8 +1,7 @@
-import { ROLE } from "@/configs/entities/employee.config.ts"
 import { HolidayController } from "@/controllers/holiday.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
-import { authorizeRoles } from "@/middlewares/role.middleware.ts"
+import { requirePermission } from "@/middlewares/permission.middleware.ts"
 import { PrismaHolidayRepository } from "@/repositories/holiday.repository.ts"
 import { HolidayService } from "@/services/holiday.service.ts"
 
@@ -19,8 +18,8 @@ holidayRoutes.use(authenticate)
 holidayRoutes.get("/", controller.list)
 holidayRoutes.get("/check", controller.checkHoliday)
 
-holidayRoutes.post("/", authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER), controller.create)
-holidayRoutes.patch("/:id", authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER), controller.update)
-holidayRoutes.delete("/:id", authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER), controller.delete)
+holidayRoutes.post("/", requirePermission("attendance.update"), controller.create)
+holidayRoutes.patch("/:id", requirePermission("attendance.update"), controller.update)
+holidayRoutes.delete("/:id", requirePermission("attendance.delete"), controller.delete)
 
 export default holidayRoutes

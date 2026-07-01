@@ -1,5 +1,4 @@
 import { PageCard } from "@/components/common"
-import { ROLE, ROLE_LABELS } from "@/config/entities/employee.config"
 import { SUBSYSTEMS } from "@/config/subsystem.config"
 import { cn } from "@/lib/utils"
 import { privateRoutes } from "@/routes"
@@ -20,21 +19,13 @@ interface MatrixRow {
   name: string
   path: string
   subsystemName: string
-  sidebarRoles: string[] // "all", "hidden", or array of roles
-  routeRoles: string[] // "all" or array of roles
+  sidebarPermissions: string[] // "all", "hidden", or array of permissions
+  routePermissions: string[] // "all" or array of permissions
   isSidebarRestricted: boolean
   isRouteRestricted: boolean
   status: "match" | "mismatch" | "subroute" | "orphaned"
   statusDetail: string
 }
-
-const ALL_ROLES = [
-  ROLE.ADMIN,
-  ROLE.HR_MANAGER,
-  ROLE.GENERAL_MANAGER,
-  ROLE.TEAM_LEADER,
-  ROLE.EMPLOYEE,
-]
 
 export default function PermissionMatrix() {
   const matrixData = useMemo(() => {
@@ -50,14 +41,14 @@ export default function PermissionMatrix() {
           matchedRoutePaths.add(matchingRoute.path)
         }
 
-        // Determine sidebar visibility roles
-        const sidebarRoles = item.roles || subsystem.roles || ["all"]
-        const routeRoles = matchingRoute?.roles || ["all"]
+        // Determine sidebar visibility permissions
+        const sidebarPermissions = item.permissions || subsystem.permissions || ["all"]
+        const routePermissions = matchingRoute?.permissions || ["all"]
 
-        const isSidebarRestricted = !sidebarRoles.includes("all")
-        const isRouteRestricted = !routeRoles.includes("all")
+        const isSidebarRestricted = !sidebarPermissions.includes("all")
+        const isRouteRestricted = !routePermissions.includes("all")
 
-        // Check for role matches
+        // Check for permission matches
         let status: "match" | "mismatch" | "orphaned" = "match"
         let statusDetail = "Cấu hình phân quyền trùng khớp."
 
@@ -65,14 +56,14 @@ export default function PermissionMatrix() {
           status = "orphaned"
           statusDetail = "Lỗi: Mục menu không trỏ tới route hợp lệ nào."
         } else {
-          // Compare allowed roles
-          const sRoles = sidebarRoles.includes("all") ? ALL_ROLES : sidebarRoles
-          const rRoles = routeRoles.includes("all") ? ALL_ROLES : routeRoles
+          // Compare allowed permissions
+          const sPerms = sidebarPermissions
+          const rPerms = routePermissions
 
           const hasMismatch =
-            sRoles.length !== rRoles.length ||
-            !sRoles.every((r) => rRoles.includes(r)) ||
-            !rRoles.every((r) => sRoles.includes(r))
+            sPerms.length !== rPerms.length ||
+            !sPerms.every((p) => rPerms.includes(p)) ||
+            !rPerms.every((p) => sPerms.includes(p))
 
           if (hasMismatch) {
             status = "mismatch"
@@ -84,8 +75,8 @@ export default function PermissionMatrix() {
           name: item.name,
           path: item.path,
           subsystemName: subsystem.name,
-          sidebarRoles,
-          routeRoles,
+          sidebarPermissions,
+          routePermissions,
           isSidebarRestricted,
           isRouteRestricted,
           status,
@@ -99,8 +90,8 @@ export default function PermissionMatrix() {
       if (matchedRoutePaths.has(route.path)) return
 
       // These are subroutes, details pages, etc. (hidden from sidebar but protected)
-      const routeRoles = route.roles || ["all"]
-      const isRouteRestricted = !routeRoles.includes("all")
+      const routePermissions = route.permissions || ["all"]
+      const isRouteRestricted = !routePermissions.includes("all")
 
       rows.push({
         name: `Trang phụ: ${route.path.split("/").pop() || route.path}`,
@@ -108,8 +99,8 @@ export default function PermissionMatrix() {
         subsystemName: route.path.startsWith("/hrm")
           ? "Nhân sự"
           : route.path.split("/")[1] || "Hệ thống",
-        sidebarRoles: ["hidden"],
-        routeRoles,
+        sidebarPermissions: ["hidden"],
+        routePermissions,
         isSidebarRestricted: true,
         isRouteRestricted,
         status: "subroute",
@@ -135,8 +126,8 @@ export default function PermissionMatrix() {
     return { matches, mismatches, subroutes, total: matrixData.length }
   }, [matrixData])
 
-  const renderRolesList = (roles: string[], isRestricted: boolean) => {
-    if (roles.includes("hidden")) {
+  const renderPermissionsList = (permissions: string[], isRestricted: boolean) => {
+    if (permissions.includes("hidden")) {
       return (
         <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground font-medium bg-muted/50 px-2 py-0.5 rounded border border-border/60">
           <EyeOff size={11} />
@@ -145,23 +136,23 @@ export default function PermissionMatrix() {
       )
     }
 
-    if (!isRestricted || roles.includes("all")) {
+    if (!isRestricted || permissions.includes("all")) {
       return (
         <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 font-semibold bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-900/30">
           <CheckCircle2 size={11} />
-          Tất cả vai trò
+          Tất cả quyền
         </span>
       )
     }
 
     return (
       <div className="flex flex-wrap gap-1">
-        {roles.map((r) => (
+        {permissions.map((p) => (
           <span
-            key={r}
-            className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-primary/5 text-primary border border-primary/10"
+            key={p}
+            className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-primary/5 text-primary border border-primary/10 font-mono"
           >
-            {Object.entries(ROLE_LABELS).find(([k]) => k === r)?.[1] || r}
+            {p}
           </span>
         ))}
       </div>
@@ -296,10 +287,10 @@ export default function PermissionMatrix() {
                       </span>
                     </td>
                     <td className="px-5 py-3.5">
-                      {renderRolesList(row.sidebarRoles, row.isSidebarRestricted)}
+                      {renderPermissionsList(row.sidebarPermissions, row.isSidebarRestricted)}
                     </td>
                     <td className="px-5 py-3.5">
-                      {renderRolesList(row.routeRoles, row.isRouteRestricted)}
+                      {renderPermissionsList(row.routePermissions, row.isRouteRestricted)}
                     </td>
                     <td className="px-5 py-3.5 text-center">
                       {row.status === "match" ? (

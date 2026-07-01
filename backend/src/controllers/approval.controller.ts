@@ -24,8 +24,8 @@ export class ApprovalController {
         })
       }
 
-      const { empId, role } = req.user
-      const approvals = await this.service.getPendingApprovals(empId, role)
+      const { empId } = req.user
+      const approvals = await this.service.getPendingApprovals(empId)
 
       res.status(HttpStatusCode.OK).json({
         data: approvals,

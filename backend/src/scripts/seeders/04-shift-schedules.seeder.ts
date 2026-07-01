@@ -25,35 +25,34 @@ export class ShiftSchedulesSeeder implements ISeeder {
     validFrom.setMonth(validFrom.getMonth() - 2) // Valid from 2 months ago
     validFrom.setDate(1) // Start of month
 
-    const schedules = await Promise.all(
-      employees.map(async (emp, index) => {
-        // Just pick one shift (typically Morning for most, Afternoon for some)
-        const primaryShiftId = workingShiftIds[index % Math.min(2, workingShiftIds.length)]
+    const schedules = []
+    for (let index = 0; index < employees.length; index++) {
+      const emp = employees[index]
+      const primaryShiftId = workingShiftIds[index % Math.min(2, workingShiftIds.length)]
 
-        const schedule = await prisma.shiftSchedule.create({
-          data: {
-            employeeId: emp.id,
-            validFrom,
-            createdById: adminId,
-            days: {
-              create: [
-                ...[1, 2, 3, 4, 5].map((dayOfWeek) => ({
-                  dayOfWeek,
-                  shiftId: primaryShiftId,
-                })),
-                // Saturday: night shift when available (index 2)
-                ...(workingShiftIds[2]
-                  ? [{ dayOfWeek: 6, shiftId: workingShiftIds[2] }]
-                  : []),
-              ],
-            },
+      const schedule = await prisma.shiftSchedule.create({
+        data: {
+          employeeId: emp.id,
+          validFrom,
+          createdById: adminId,
+          days: {
+            create: [
+              ...[1, 2, 3, 4, 5].map((dayOfWeek) => ({
+                dayOfWeek,
+                shiftId: primaryShiftId,
+              })),
+              // Saturday: night shift when available (index 2)
+              ...(workingShiftIds[2]
+                ? [{ dayOfWeek: 6, shiftId: workingShiftIds[2] }]
+                : []),
+            ],
           },
-        })
+        },
+      })
 
-        shiftScheduleMap[emp.id] = schedule.id
-        return schedule
-      }),
-    )
+      shiftScheduleMap[emp.id] = schedule.id
+      schedules.push(schedule)
+    }
 
     console.log(`  Seeded ${schedules.length} shift schedules.`)
 
@@ -70,7 +69,7 @@ if (import.meta.main) {
   const admin = await prisma.employee.findFirst({ where: { username: "admin" } })
   const emps = await prisma.employee.findMany({
     take: 10,
-    select: { id: true, role: true, username: true },
+    select: { id: true, position: true, username: true },
   })
   const shifts = await prisma.workingShift.findMany({ take: 2 })
 

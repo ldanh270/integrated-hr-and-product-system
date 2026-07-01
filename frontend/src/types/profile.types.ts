@@ -18,7 +18,7 @@ export interface ProfileDto {
   nationalId: string | null
   address: string | null
   position: string | null
-  role: EmployeeRole
+  roles: EmployeeRole[]
   employeeType: EmployeeType
   status: EmployeeStatus
   startDate: string | null

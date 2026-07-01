@@ -19,8 +19,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
   // Sync active subsystem based on current URL
   useEffect(() => {
     const currentPath = location.pathname
-    // Find the subsystem whose routePrefix matches the current path
-    const matchedSubsystem = SUBSYSTEMS.find((sub) => currentPath.startsWith(sub.routePrefix))
+    // Find the subsystem whose routePrefix matches or has a sidebarItem matching the current path
+    const matchedSubsystem = SUBSYSTEMS.find(
+      (sub) =>
+        currentPath.startsWith(sub.routePrefix) ||
+        sub.sidebarItems.some((item) => currentPath.startsWith(item.path.split("?")[0])),
+    )
     if (matchedSubsystem) {
       setActiveSubsystem(matchedSubsystem.id)
     }

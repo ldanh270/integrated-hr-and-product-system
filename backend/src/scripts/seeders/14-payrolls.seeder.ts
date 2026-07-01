@@ -57,7 +57,7 @@ export class PayrollsSeeder implements ISeeder {
           create: data,
         }),
       ),
-      { timeout: 30000 },
+      { timeout: 120000 },
     )
 
     console.log(`  Seeded ${createdPayrolls.length} payrolls.`)
