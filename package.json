@@ -7,9 +7,9 @@
     "i:backend": "cd backend && ni",
     "i:frontend": "cd frontend && ni",
     "i:mcp": "cd mcp-server && ni",
-    "dev:backend": "cd backend && bun --watch src/index.ts",
+    "dev:backend": "cd backend && nr dev",
     "dev:frontend": "cd frontend && nr dev",
-    "dev:mcp": "cd mcp-server && bun --watch src/index.ts",
+    "dev:mcp": "cd mcp-server && nr dev",
     "build": "nr db:reset:force && nr db:deploy && nr build:frontend",
     "build:frontend": "cd frontend && nr build",
     "db:deploy": "cd backend && nlx prisma generate && nlx prisma migrate deploy",
@@ -21,7 +21,7 @@
     "db:seed": "cd backend && nr seed",
     "db:seed:admin": "cd backend && nr seed:admin",
     "db:clear": "cd backend && nr clear",
-    "hash-password": "cd backend && bun src/scripts/hash-password.ts"
+    "hash-password": "cd backend && nr hash-password"
   },
   "dependencies": {
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
