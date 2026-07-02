@@ -8,7 +8,8 @@ export const ROUTES = {
     BASE: "/hrm",
     PROFILE: "/hrm/profile",
     EMPLOYEES: "/hrm/employees",
-    LOGIN_HISTORY: "/profile/login-history",
+    ACTIVITY_LOGS: "/hrm/activity-logs",
+    LOGIN_HISTORY: "/hrm/login-history",
   },
   APPLICATION: {
     BASE: "/application",
