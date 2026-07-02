@@ -11,6 +11,7 @@ interface NavItem {
   path: string
   icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>
   roles?: string[]
+  permissions?: string[]
 }
 
 interface SidebarProps {
@@ -32,7 +33,9 @@ export default function Sidebar({ className, isMobile, onNavClick }: SidebarProp
   const { isCollapsed } = useSidebarStore()
 
   const navItems: NavItem[] = (activeSubsystemConfig?.sidebarItems || []).filter(
-    (item: NavItem) => !item.roles || (user && item.roles.includes(user.role)),
+    (item: NavItem) =>
+      !item.permissions ||
+      (user && item.permissions.every((p: string) => user.permissions?.includes(p))),
   )
 
   // Mobile mode effectively ignores 'isCollapsed' for layout purposes since it's a drawer

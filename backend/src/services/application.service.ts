@@ -4,7 +4,9 @@ import {
   LEAVE_BALANCE_DEFAULTS,
   PAID_LEAVE_TYPES,
 } from "@/configs/entities/attendance.config.ts"
-import { EMPLOYEE_STATUS, ROLE } from "@/configs/entities/employee.config.ts"
+import { EMPLOYEE_STATUS, SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
+import { APPROVAL_CONFIG, APPROVAL_CATEGORY } from "@/configs/rules/approval.config.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
 import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
@@ -187,7 +189,7 @@ export class ApplicationService implements IApplicationService {
   async getEmployeeApplications(
     employeeId: string,
     query: IListApplicationsQueryDTO,
-    requester?: { empId: string; role: string },
+    requester?: { empId: string },
   ): Promise<{ data: any[]; total: number }> {
     // Verify target employee exists and is not soft-deleted
     const employeeExists = await prisma.employee.findFirst({
@@ -204,28 +206,38 @@ export class ApplicationService implements IApplicationService {
       )
     }
 
-    // If requester is team_leader, enforce access rules
-    if (requester && requester.role === ROLE.TEAM_LEADER && employeeId !== requester.empId) {
-      const activeProject = await prisma.project.findFirst({
-        where: {
-          teamLeaderId: requester.empId,
-          status: PROJECT_STATUS.ACTIVE,
-          members: {
-            some: {
-              employeeId: employeeId,
-              removedAt: null,
+    // If requester is team_leader (and not a global approver), enforce access rules
+    if (requester && employeeId !== requester.empId) {
+      const authContext = await authorizationService.getAuthorizationContext(requester.empId)
+      const roles = authContext.roles
+      const isGlobalApprover =
+        authContext.isDynamicAdmin ||
+        roles.has(SYSTEM_ROLE.ADMIN) ||
+        roles.has(SYSTEM_ROLE.GENERAL_MANAGER) ||
+        roles.has(SYSTEM_ROLE.HR_MANAGER)
+      
+      if (!isGlobalApprover && roles.has(SYSTEM_ROLE.TEAM_LEADER)) {
+        const activeProject = await prisma.project.findFirst({
+          where: {
+            teamLeaderId: requester.empId,
+            status: PROJECT_STATUS.ACTIVE,
+            members: {
+              some: {
+                employeeId: employeeId,
+                removedAt: null,
+              },
             },
           },
-        },
-      })
+        })
 
-      if (!activeProject) {
-        throw new AppError(
-          "Forbidden: You can only view applications of employees in your projects",
-          HttpStatusCode.FORBIDDEN,
-          ErrorLayer.SERVICE,
-          "FORBIDDEN",
-        )
+        if (!activeProject) {
+          throw new AppError(
+            "Forbidden: You can only view applications of employees in your projects",
+            HttpStatusCode.FORBIDDEN,
+            ErrorLayer.SERVICE,
+            "FORBIDDEN",
+          )
+        }
       }
     }
 
@@ -527,32 +539,31 @@ export class ApplicationService implements IApplicationService {
    * @throws {AppError} If not found or role is not approver-eligible.
    */
   private async _validateApproverRole(employeeId: string): Promise<void> {
-    const APPROVER_ROLES = [
-      ROLE.ADMIN,
-      ROLE.GENERAL_MANAGER,
-      ROLE.HR_MANAGER,
-      ROLE.TEAM_LEADER,
-    ] as string[]
-
     const employee = await prisma.employee.findUnique({
       where: { id: employeeId },
-      select: { id: true, role: true, status: true },
+      select: { id: true, status: true },
     })
 
     if (!employee) {
       throw new AppError(
         `Assigned approver '${employeeId}' not found`,
         HttpStatusCode.NOT_FOUND,
-        "Service",
+        ErrorLayer.SERVICE,
         "APPROVER_NOT_FOUND",
       )
     }
 
-    if (!APPROVER_ROLES.includes(employee.role)) {
+    const authContext = await authorizationService.getAuthorizationContext(employeeId)
+    const roles = authContext.roles
+    const isApprover =
+      authContext.isDynamicAdmin ||
+      APPROVAL_CONFIG[APPROVAL_CATEGORY.APPLICATION].roles.some((role) => roles.has(role))
+
+    if (!isApprover) {
       throw new AppError(
         "The selected assignee does not have permission to approve applications",
         HttpStatusCode.BAD_REQUEST,
-        "Service",
+        ErrorLayer.SERVICE,
         "INVALID_APPROVER_ROLE",
       )
     }

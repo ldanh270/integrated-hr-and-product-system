@@ -1,8 +1,7 @@
-import { ROLE } from "@/configs/entities/employee.config.ts"
 import { AuthController } from "@/controllers/auth.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
-import { authorizeRoles } from "@/middlewares/role.middleware.ts"
+import { requirePermission } from "@/middlewares/permission.middleware.ts"
 import { PrismaAuthRepository } from "@/repositories/auth.repository.ts"
 import { AuthService } from "@/services/auth.service.ts"
 
@@ -50,6 +49,23 @@ authRoutes.post("/refresh", controller.refresh)
 authRoutes.get("/me", authenticate, controller.getMe as express.RequestHandler)
 
 /**
+ * @route GET /api/auth/me/activity-logs
+ * @desc Get personal activity logs for the authenticated user
+ * @access Private (Requires valid token)
+ */
+authRoutes.get(
+  "/me/activity-logs",
+  authenticate,
+  controller.listMyActivityLogs as express.RequestHandler,
+)
+
+authRoutes.get(
+  "/me/activity-logs/:id",
+  authenticate,
+  controller.getMyActivityLogDetail as express.RequestHandler,
+)
+
+/**
  * @route POST /api/auth/change-password
  * @desc Change password for authenticated user
  * @access Private (Requires valid token)
@@ -84,24 +100,24 @@ authRoutes.post("/reset-password", controller.resetPassword)
 /**
  * @route GET /api/auth/activity-logs
  * @desc Get activity logs with filters
- * @access Private (Admin/HR/GM only)
+ * @access Private (security.read permission)
  */
 authRoutes.get(
   "/activity-logs",
   authenticate,
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  requirePermission("security.read"),
   controller.listActivityLogs as express.RequestHandler,
 )
 
 /**
  * @route GET /api/auth/activity-logs/:id
  * @desc Get activity log detail
- * @access Private (Admin/HR/GM only)
+ * @access Private (security.read permission)
  */
 authRoutes.get(
   "/activity-logs/:id",
   authenticate,
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  requirePermission("security.read"),
   controller.getActivityLogDetail as express.RequestHandler,
 )
 

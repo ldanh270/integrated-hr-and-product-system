@@ -7,7 +7,7 @@ import { useManageApplications } from "@/hooks/application/useManageApplications
 import { useMyApplications } from "@/hooks/application/useMyApplications"
 import type { IApplication } from "@/lib/api/application.api"
 
-import { useEffect, useState } from "react"
+import { startTransition, useEffect, useState } from "react"
 
 import { ChevronRight, Plus } from "lucide-react"
 import { useSearchParams } from "react-router-dom"
@@ -29,13 +29,17 @@ export default function ApplicationDashboard() {
 
   const myApps = useMyApplications()
   const manageApps = useManageApplications()
+  const { setTypeFilter: setMyTypeFilter } = myApps
+  const { setTypeFilter: setManageTypeFilter } = manageApps
 
   useEffect(() => {
-    setView("list")
-    setSelectedApp(null)
-    myApps.setTypeFilter(activeType)
-    manageApps.setTypeFilter(activeType)
-  }, [activeTab, activeType, myApps.setTypeFilter, manageApps.setTypeFilter])
+    startTransition(() => {
+      setView("list")
+      setSelectedApp(null)
+    })
+    setMyTypeFilter(activeType)
+    setManageTypeFilter(activeType)
+  }, [activeTab, activeType, setManageTypeFilter, setMyTypeFilter])
 
   const [showSubmitModal, setShowSubmitModal] = useState(false)
   const [showCreateMenu, setShowCreateMenu] = useState(false)

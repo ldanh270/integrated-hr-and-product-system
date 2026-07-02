@@ -1,5 +1,3 @@
-import { ROLE } from "@/configs/entities/employee.config.ts"
-import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
   ATTENDANCE_ERROR_CODES,
@@ -15,6 +13,7 @@ import {
 import { ApiResponse } from "@/types"
 import { IAttendanceService } from "@/types/attendance.types.ts"
 import { resolvePersonalEmployeeId } from "@/utils/attendance/resolve-personal-employee-id.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
 
 import { Request, Response } from "express"
 import { z } from "zod"
@@ -150,10 +149,9 @@ export class AttendanceController {
   queryRecords = async (req: AuthRequest, res: Response<ApiResponse<any[]>>) => {
     try {
       const query = attendanceRecordQuerySchema.parse(req.query)
-      const userRole = req.user?.role
       const userId = req.user?.empId
 
-      if (!userRole || !userId) {
+      if (!userId) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           data: null,
           error: {
@@ -163,8 +161,10 @@ export class AttendanceController {
         })
       }
 
-      const allowedRoles = [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER] as const
-      const canViewAll = allowedRoles.includes(userRole as (typeof allowedRoles)[number])
+      const authContext = await authorizationService.getAuthorizationContext(userId)
+      const canViewAll =
+        authContext.isDynamicAdmin || authContext.permissions.has("attendance.read")
+
       if (query.personalOnly) {
         query.employeeId = await resolvePersonalEmployeeId(userId)
       } else if (!canViewAll) {
@@ -197,31 +197,6 @@ export class AttendanceController {
   exportReport = async (req: AuthRequest, res: Response) => {
     try {
       const query = attendanceRecordQuerySchema.parse(req.query)
-      const userRole = req.user?.role
-      const userId = req.user?.empId
-
-      if (!userRole || !userId) {
-        return res.status(HttpStatusCode.UNAUTHORIZED).json({
-          data: null,
-          error: {
-            message: ATTENDANCE_ERROR_MESSAGES.UNAUTHORIZED,
-            code: ATTENDANCE_ERROR_CODES.UNAUTHORIZED,
-          },
-        })
-      }
-
-      const allowedRoles = [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER] as const
-      const canViewAll = allowedRoles.includes(userRole as (typeof allowedRoles)[number])
-      if (!canViewAll) {
-        return res.status(HttpStatusCode.FORBIDDEN).json({
-          data: null,
-          error: {
-            message: ATTENDANCE_ERROR_MESSAGES.FORBIDDEN_EXPORT,
-            code: ATTENDANCE_ERROR_CODES.FORBIDDEN,
-          },
-        })
-      }
-
       const records = await this.service.getAttendanceRecords(query)
 
       const csvRows = [ATTENDANCE_REPORT_HEADERS.join(",")]

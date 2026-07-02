@@ -1,9 +1,18 @@
 "use client"
 
-import { APPLICATION_STATUS, APPLICATION_TYPES } from "@/config/entities/attendance.config"
+import {
+  APPLICATION_FILTER,
+  APPLICATION_STATUS,
+  APPLICATION_TYPES,
+  APPLICATION_VIEW_MODE,
+  LEAVE_TYPE,
+  REGIME_TYPE,
+} from "@/config/entities/attendance.config"
+import { MANAGER_ROLES } from "@/config/entities/employee.config"
 import { useManageApplications } from "@/hooks/application/useManageApplications"
 import { useMyApplications } from "@/hooks/application/useMyApplications"
 import { useSubmitApplication } from "@/hooks/application/useSubmitApplication"
+import { usePermission } from "@/hooks/use-permission"
 import type { IApplication } from "@/lib/api/application.api"
 import { useAuthStore } from "@/store/auth-store"
 
@@ -47,7 +56,7 @@ const APP_TYPE_META: Record<
     hint: string
   }
 > = {
-  leave: {
+  [APPLICATION_TYPES.LEAVE.LABEL]: {
     label: "Nghỉ phép",
     icon: Calendar,
     color: "text-violet-600",
@@ -55,7 +64,7 @@ const APP_TYPE_META: Record<
     border: "border-violet-200",
     hint: "Xin nghỉ phép năm, thai sản, ốm...",
   },
-  overtime: {
+  [APPLICATION_TYPES.OVERTIME.LABEL]: {
     label: "Tăng ca",
     icon: Clock,
     color: "text-amber-600",
@@ -63,7 +72,7 @@ const APP_TYPE_META: Record<
     border: "border-amber-200",
     hint: "Đăng ký tăng ca ngoài ca",
   },
-  work_from_home: {
+  [APPLICATION_TYPES.WORK_FROM_HOME.LABEL]: {
     label: "WFH",
     icon: Laptop,
     color: "text-sky-600",
@@ -71,7 +80,7 @@ const APP_TYPE_META: Record<
     border: "border-sky-200",
     hint: "Làm việc từ xa / tại nhà",
   },
-  shift_swap: {
+  [APPLICATION_TYPES.SHIFT_SWAP.LABEL]: {
     label: "Đổi ca",
     icon: Repeat2,
     color: "text-teal-600",
@@ -123,28 +132,28 @@ const STATUS_META: Record<
     icon: React.FC<{ size?: number }>
   }
 > = {
-  pending: {
+  [APPLICATION_STATUS.PENDING]: {
     label: "Chờ duyệt",
     color: "text-amber-700",
     bg: "bg-amber-50",
     border: "border-amber-200",
     icon: Hourglass,
   },
-  approved: {
+  [APPLICATION_STATUS.APPROVED]: {
     label: "Đã duyệt",
     color: "text-emerald-700",
     bg: "bg-emerald-50",
     border: "border-emerald-200",
     icon: FileCheck2,
   },
-  rejected: {
+  [APPLICATION_STATUS.REJECTED]: {
     label: "Từ chối",
     color: "text-red-700",
     bg: "bg-red-50",
     border: "border-red-200",
     icon: FileX2,
   },
-  cancelled: {
+  [APPLICATION_STATUS.CANCELLED]: {
     label: "Đã hủy",
     color: "text-slate-500",
     bg: "bg-slate-50",
@@ -162,13 +171,13 @@ interface SubmitModalProps {
 
 /** Correct leave type values matching backend LEAVE_TYPE_VALUES enum */
 const LEAVE_TYPE_OPTIONS = [
-  { value: "annual_leave", label: "Nghỉ phép năm" },
-  { value: "sick_leave", label: "Nghỉ ốm" },
-  { value: "maternity_leave", label: "Thai sản" },
-  { value: "bereavement_leave", label: "Nghỉ tang" },
-  { value: "marriage_leave", label: "Nghỉ cưới" },
-  { value: "unpaid_leave", label: "Nghỉ không lương" },
-  { value: "other", label: "Khác" },
+  { value: LEAVE_TYPE.ANNUAL_LEAVE, label: "Nghỉ phép năm" },
+  { value: LEAVE_TYPE.SICK_LEAVE, label: "Nghỉ ốm" },
+  { value: LEAVE_TYPE.MATERNITY_LEAVE, label: "Thai sản" },
+  { value: LEAVE_TYPE.BEREAVEMENT_LEAVE, label: "Nghỉ tang" },
+  { value: LEAVE_TYPE.MARRIAGE_LEAVE, label: "Nghỉ cưới" },
+  { value: LEAVE_TYPE.UNPAID_LEAVE, label: "Nghỉ không lương" },
+  { value: LEAVE_TYPE.OTHER, label: "Khác" },
 ] as const
 
 function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
@@ -182,8 +191,8 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
     reason: "",
     note: "",
     // leave
-    leaveType: "annual_leave" as string,
-    leaveRegimeType: "paid" as "paid" | "unpaid",
+    leaveType: LEAVE_TYPE.ANNUAL_LEAVE as string,
+    leaveRegimeType: REGIME_TYPE.PAID as "paid" | "unpaid",
     // overtime / late_early / shift_swap
     employeeShiftId: "",
     // late_early specific
@@ -211,7 +220,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
     let detail: Record<string, unknown> = {}
 
     switch (selectedType) {
-      case "leave":
+      case APPLICATION_TYPES.LEAVE.LABEL:
         // Backend: { leaveType: LEAVE_TYPE_VALUES, regimeType: REGIME_TYPES }
         detail = {
           leaveType: form.leaveType,
@@ -219,7 +228,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
         }
         break
 
-      case "overtime":
+      case APPLICATION_TYPES.OVERTIME.LABEL:
         // Backend: { employeeShiftId: cuid }
         if (!form.employeeShiftId.trim()) {
           toast.error("Vui lòng nhập ID ca làm việc")
@@ -228,7 +237,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
         detail = { employeeShiftId: form.employeeShiftId.trim() }
         break
 
-      case "late_early":
+      case APPLICATION_TYPES.LATE_EARLY.LABEL:
         // Backend: { employeeShiftId: cuid, durationMinutes: int(1-480), isLate: boolean }
         if (!form.employeeShiftId.trim()) {
           toast.error("Vui lòng nhập ID ca làm việc")
@@ -245,7 +254,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
         }
         break
 
-      case "shift_swap":
+      case APPLICATION_TYPES.SHIFT_SWAP.LABEL:
         // Backend: { employeeShiftId: cuid, swapWithEmployeeId?: cuid, swapWithShiftId?: cuid }
         if (!form.employeeShiftId.trim()) {
           toast.error("Vui lòng nhập ID ca của bạn")
@@ -257,7 +266,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
         if (form.swapWithShiftId.trim()) detail.swapWithShiftId = form.swapWithShiftId.trim()
         break
 
-      case "work_from_home":
+      case APPLICATION_TYPES.WORK_FROM_HOME.LABEL:
         // Backend: { location?: string }  ← key is "location" not "workLocation"
         detail = form.location.trim() ? { location: form.location.trim() } : {}
         break
@@ -403,7 +412,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
               </div>
 
               {/* ── LEAVE ── */}
-              {selectedType === "leave" && (
+              {selectedType === APPLICATION_TYPES.LEAVE.LABEL && (
                 <>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-slate-600">Loại nghỉ phép *</label>
@@ -428,7 +437,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-slate-600">Chế độ lương *</label>
                     <div className="grid grid-cols-2 gap-2">
-                      {(["paid", "unpaid"] as const).map((rt) => (
+                      {([REGIME_TYPE.PAID, REGIME_TYPE.UNPAID] as const).map((rt) => (
                         <button
                           key={rt}
                           type="button"
@@ -448,7 +457,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
               )}
 
               {/* ── OVERTIME ── */}
-              {selectedType === "overtime" && (
+              {selectedType === APPLICATION_TYPES.OVERTIME.LABEL && (
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-slate-600">ID Ca làm việc *</label>
                   <input
@@ -463,7 +472,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
               )}
 
               {/* ── LATE / EARLY ── */}
-              {selectedType === "late_early" && (
+              {selectedType === APPLICATION_TYPES.LATE_EARLY.LABEL && (
                 <>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-slate-600">ID Ca làm việc *</label>
@@ -513,7 +522,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
               )}
 
               {/* ── SHIFT SWAP ── */}
-              {selectedType === "shift_swap" && (
+              {selectedType === APPLICATION_TYPES.SHIFT_SWAP.LABEL && (
                 <>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-slate-600">ID Ca của bạn *</label>
@@ -554,7 +563,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
               )}
 
               {/* ── WFH ── */}
-              {selectedType === "work_from_home" && (
+              {selectedType === APPLICATION_TYPES.WORK_FROM_HOME.LABEL && (
                 <div className="flex flex-col gap-1.5">
                   {/* Backend field name: "location" */}
                   <label className="text-xs font-semibold text-slate-600">Địa điểm làm việc</label>
@@ -915,23 +924,25 @@ function ApplicationSkeleton() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const STATUS_TABS = [
-  { value: "all", label: "Tất cả" },
-  { value: "pending", label: "Chờ duyệt" },
-  { value: "approved", label: "Đã duyệt" },
-  { value: "rejected", label: "Từ chối" },
-  { value: "cancelled", label: "Đã hủy" },
+  { value: APPLICATION_FILTER.ALL, label: "Tất cả" },
+  { value: APPLICATION_STATUS.PENDING, label: "Chờ duyệt" },
+  { value: APPLICATION_STATUS.APPROVED, label: "Đã duyệt" },
+  { value: APPLICATION_STATUS.REJECTED, label: "Từ chối" },
+  { value: APPLICATION_STATUS.CANCELLED, label: "Đã hủy" },
 ] as const
 
 export default function Applications() {
   const { user } = useAuthStore()
+  const { roles } = usePermission()
   const isManager =
-    user && ["admin", "hr_manager", "general_manager", "team_leader"].includes(user.role)
-  const [activeTab, setActiveTab] = useState<"mine" | "manage">("mine")
+    !!user &&
+    MANAGER_ROLES.some((role) => roles.includes(role))
+  const [activeTab, setActiveTab] = useState<"mine" | "manage">(APPLICATION_VIEW_MODE.MINE)
 
   const myApps = useMyApplications()
   const manageApps = useManageApplications()
 
-  const currentHooks = activeTab === "mine" ? myApps : manageApps
+  const currentHooks = activeTab === APPLICATION_VIEW_MODE.MINE ? myApps : manageApps
   const {
     applications,
     isLoading,
@@ -986,9 +997,9 @@ export default function Applications() {
       {isManager && (
         <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-full overflow-x-auto self-start">
           <button
-            onClick={() => { setActiveTab("mine"); }}
+            onClick={() => { setActiveTab(APPLICATION_VIEW_MODE.MINE); }}
             className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-              activeTab === "mine"
+              activeTab === APPLICATION_VIEW_MODE.MINE
                 ? "bg-white text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
@@ -996,9 +1007,9 @@ export default function Applications() {
             Đơn của tôi
           </button>
           <button
-            onClick={() => { setActiveTab("manage"); }}
+            onClick={() => { setActiveTab(APPLICATION_VIEW_MODE.MANAGE); }}
             className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-              activeTab === "manage"
+              activeTab === APPLICATION_VIEW_MODE.MANAGE
                 ? "bg-white text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
@@ -1092,7 +1103,7 @@ export default function Applications() {
             }}
             className="pl-3 pr-8 py-2 border border-slate-200 rounded-full text-xs font-semibold text-slate-600 bg-white focus:outline-none appearance-none"
           >
-            <option value="all">Tất cả loại đơn</option>
+            <option value={APPLICATION_FILTER.ALL}>Tất cả loại đơn</option>
             {Object.entries(APP_TYPE_META).map(([type, m]) => (
               <option key={type} value={type}>
                 {m.label}
@@ -1127,7 +1138,7 @@ export default function Applications() {
             <div>
               <p className="text-base font-bold text-slate-700">Chưa có đơn nào</p>
               <p className="text-sm text-slate-400 mt-1">
-                {statusFilter !== "all"
+                {statusFilter !== APPLICATION_FILTER.ALL
                   ? `Không có đơn ở trạng thái "${STATUS_TABS.find((t) => t.value === statusFilter)?.label}"`
                   : `Nhấn "Tạo đơn mới" để bắt đầu`}
               </p>

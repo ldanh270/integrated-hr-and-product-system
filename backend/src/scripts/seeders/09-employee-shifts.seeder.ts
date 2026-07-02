@@ -98,7 +98,7 @@ if (import.meta.main) {
   const seeder = new EmployeeShiftsSeeder()
   // Mock context
   const admin = await prisma.employee.findFirst({ where: { username: "admin" } })
-  const emps = await prisma.employee.findMany({ select: { id: true, role: true, username: true } })
+  const emps = await prisma.employee.findMany({ select: { id: true, position: true, username: true } })
   const schedules = await prisma.shiftSchedule.findMany()
 
   const ctx = createEmptyContext()

@@ -1,8 +1,7 @@
-import { ROLE } from "@/configs/entities/employee.config.ts"
 import { ShiftController } from "@/controllers/shift.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
-import { authorizeRoles } from "@/middlewares/role.middleware.ts"
+import { requirePermission } from "@/middlewares/permission.middleware.ts"
 import { PrismaWorkingShiftRepository } from "@/repositories/shift.repository.ts"
 import { ShiftService } from "@/services/shift.service.ts"
 
@@ -21,17 +20,17 @@ shiftRoutes.get("/:id", controller.getOne)
 
 shiftRoutes.post(
   "/",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  requirePermission("attendance.create"),
   controller.create,
 )
 shiftRoutes.patch(
   "/:id",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  requirePermission("attendance.update"),
   controller.update,
 )
 shiftRoutes.delete(
   "/:id",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  requirePermission("attendance.delete"),
   controller.delete,
 )
 

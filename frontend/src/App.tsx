@@ -3,27 +3,48 @@ import { API_ENDPOINTS } from "@/config/api.config"
 import { ROUTES } from "@/config/routes.config"
 import { SUBSYSTEMS } from "@/config/subsystem.config"
 import apiClient from "@/lib/api-client"
+import { setNavigate } from "@/lib/router-navigator"
 import { type RouteConfig, privateRoutes, publicRoutes } from "@/routes"
 import { useAuthStore } from "@/store/auth-store.ts"
 
 import { Fragment, type ReactNode, Suspense, lazy, useEffect, useState } from "react"
 
-import { Navigate, Outlet, Route, BrowserRouter as Router, Routes } from "react-router-dom"
+import {
+  Navigate,
+  Outlet,
+  Route,
+  BrowserRouter as Router,
+  Routes,
+  useNavigate,
+} from "react-router-dom"
 import { Toaster } from "sonner"
+
+/**
+ * Injects the React Router `navigate` function into the router-navigator singleton.
+ * Must be rendered inside <Router> so that `useNavigate` is available.
+ * Renders nothing — purely a side-effect component.
+ */
+const NavigatorInjector = () => {
+  const navigate = useNavigate()
+  useEffect(() => {
+    setNavigate(navigate)
+  }, [navigate])
+  return null
+}
 
 const NotFound = lazy(() => import("@/pages/NotFound.tsx"))
 
 /**
  * ProtectedRoute component
  * Redirects to /login if user is not authenticated
- * Redirects to /hrm/dashboard if user does not have required roles
+ * Redirects to /personal if user does not have required roles
  */
 const ProtectedRoute = ({
   children,
-  requiredRoles,
+  requiredPermissions,
 }: {
   children: React.ReactNode
-  requiredRoles?: string[]
+  requiredPermissions?: string[]
 }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const user = useAuthStore((state) => state.user)
@@ -35,7 +56,7 @@ const ProtectedRoute = ({
       apiClient
         .get(API_ENDPOINTS.AUTH.ME)
         .then((res) => {
-          setAuth(res.data.data)
+          setAuth(res.data.data.employee)
         })
         .catch(() => {})
         .finally(() => {
@@ -56,42 +77,40 @@ const ProtectedRoute = ({
     return <Navigate to={ROUTES.AUTH.LOGIN} replace />
   }
 
-  if (requiredRoles && user && !requiredRoles.includes(user.role)) {
-    return <Navigate to={ROUTES.HRM.DASHBOARD} replace />
+  if (requiredPermissions && user) {
+    const hasPermission = requiredPermissions.every((p) => user.permissions?.includes(p))
+    if (!hasPermission) {
+      return <Navigate to={ROUTES.PERSONAL.BASE} replace />
+    }
   }
 
   return <>{children}</>
 }
 
-/**
- * PublicRoute component
- * Redirects to /dashboard if user is already authenticated
- */
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  return isAuthenticated ? <Navigate to={ROUTES.HRM.DASHBOARD} replace /> : <>{children}</>
+  return isAuthenticated ? <Navigate to={ROUTES.PERSONAL.BASE} replace /> : <>{children}</>
 }
 
 /**
  * RootRedirect component
- * Redirects to /hrm/dashboard if authenticated, otherwise to /login
+ * Redirects to /personal if authenticated, otherwise to /login
  */
 const RootRedirect = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  return <Navigate to={isAuthenticated ? "/hrm/dashboard" : "/login"} replace />
+  return <Navigate to={isAuthenticated ? ROUTES.PERSONAL.BASE : ROUTES.AUTH.LOGIN} replace />
 }
 
 const renderPrivateRoute = (route: RouteConfig, index: number, keyPrefix: string): ReactNode => {
   const Layout = route.layout || Fragment
 
   if (route.children?.length) {
-    // Parent route: layout wraps Outlet; children render without their own layout
     return (
       <Route
         key={`${keyPrefix}-${index}`}
         path={route.path}
         element={
-          <ProtectedRoute requiredRoles={route.roles}>
+          <ProtectedRoute requiredPermissions={route.permissions}>
             <Layout>
               <Outlet />
             </Layout>
@@ -103,7 +122,6 @@ const renderPrivateRoute = (route: RouteConfig, index: number, keyPrefix: string
     )
   }
 
-  // Leaf route
   if (!route.component) return null
   const Page = route.component
   return (
@@ -111,7 +129,7 @@ const renderPrivateRoute = (route: RouteConfig, index: number, keyPrefix: string
       key={`${keyPrefix}-${index}`}
       path={route.path}
       element={
-        <ProtectedRoute requiredRoles={route.roles}>
+        <ProtectedRoute requiredPermissions={route.permissions}>
           <Layout>
             <Page />
           </Layout>
@@ -124,6 +142,7 @@ const renderPrivateRoute = (route: RouteConfig, index: number, keyPrefix: string
 const App = () => {
   return (
     <Router>
+      <NavigatorInjector />
       <Toaster position="top-right" richColors />
       <ConfirmProvider>
         <Suspense
@@ -134,7 +153,6 @@ const App = () => {
           }
         >
           <Routes>
-            {/* Public Routes */}
             {publicRoutes.map((route, index) => {
               const Page = route.component
               const Layout = route.layout || Fragment
@@ -154,23 +172,10 @@ const App = () => {
               )
             })}
 
-            {/* Subsystem Redirects */}
             {SUBSYSTEMS.map((subsystem) => {
-              const subsystemKey = subsystem.id.toUpperCase() as keyof typeof ROUTES
-              const routeObj = ROUTES[subsystemKey]
-
-              // Get from ROUTES object if available, otherwise get from sidebarItems
-              let firstPath =
+              const firstPath =
                 subsystem.sidebarItems[0]?.path || `${subsystem.routePrefix}/dashboard`
 
-              if (routeObj && typeof routeObj === "object") {
-                const values = Object.values(routeObj)
-                if (values.length > 0 && typeof values[0] === "string") {
-                  firstPath = values[0]
-                }
-              }
-
-              // Prevent infinite loop if the first path is the prefix itself (e.g. attendance)
               if (firstPath === subsystem.routePrefix) {
                 return null
               }
@@ -188,10 +193,8 @@ const App = () => {
               )
             })}
 
-            {/* Private Routes (supports nested children) */}
             {privateRoutes.map((route, index) => renderPrivateRoute(route, index, "private"))}
 
-            {/* Legacy redirects — keep old URLs working */}
             <Route
               path={ROUTES.ATTENDANCE.MY_SCHEDULE}
               element={

@@ -44,7 +44,7 @@ export class PayslipTemplatesSeeder implements ISeeder {
           },
         }),
       ),
-      { timeout: 30000 },
+      { timeout: 120000 },
     )
 
     console.log(`  Seeded 1 payslip template with ${salaryComponentIds.length} components.`)

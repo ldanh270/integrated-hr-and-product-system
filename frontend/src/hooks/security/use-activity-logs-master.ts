@@ -14,6 +14,8 @@ export function useActivityLogsMaster() {
 
   const categoryParam = searchParams.get("category") || undefined
   const actionTypeParam = searchParams.get("actionType") || undefined
+  const fromDateParam = searchParams.get("fromDate") || undefined
+  const toDateParam = searchParams.get("toDate") || undefined
   const pageRaw = searchParams.get("page")
   const pageParam = pageRaw ? parseInt(pageRaw, 10) : 1
 
@@ -22,6 +24,8 @@ export function useActivityLogsMaster() {
     limit: 20,
     category: categoryParam,
     actionType: actionTypeParam,
+    fromDate: fromDateParam,
+    toDate: toDateParam,
   })
 
   const [searchTerm, setSearchText] = useState("")
@@ -40,6 +44,8 @@ export function useActivityLogsMaster() {
     const params = new URLSearchParams()
     if (query.category) params.set("category", query.category)
     if (query.actionType) params.set("actionType", query.actionType)
+    if (query.fromDate) params.set("fromDate", query.fromDate)
+    if (query.toDate) params.set("toDate", query.toDate)
     if (query.page && query.page > 1) params.set("page", query.page.toString())
 
     const newStr = params.toString()
@@ -47,7 +53,7 @@ export function useActivityLogsMaster() {
     if (newStr !== currentStr) {
       setSearchParams(params, { replace: true })
     }
-  }, [query.category, query.actionType, query.page, searchParams, setSearchParams])
+  }, [query.actionType, query.category, query.fromDate, query.page, query.toDate, searchParams, setSearchParams])
 
   // Synchronize URL search params to local state (e.g. back/forward navigation or dashboard click)
   useEffect(() => {
@@ -56,6 +62,8 @@ export function useActivityLogsMaster() {
       if (
         prev.category === categoryParam &&
         prev.actionType === actionTypeParam &&
+        prev.fromDate === fromDateParam &&
+        prev.toDate === toDateParam &&
         prev.page === pageParam
       ) {
         return prev
@@ -64,10 +72,12 @@ export function useActivityLogsMaster() {
         ...prev,
         category: categoryParam,
         actionType: actionTypeParam,
+        fromDate: fromDateParam,
+        toDate: toDateParam,
         page: pageParam,
       }
     })
-  }, [categoryParam, actionTypeParam, pageParam])
+  }, [actionTypeParam, categoryParam, fromDateParam, pageParam, toDateParam])
 
   const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchText(e.target.value)

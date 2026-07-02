@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -17,6 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  PROJECT_MEMBER_WORK_MODE,
+  PROJECT_MEMBER_WORK_MODES,
+  getProjectMemberWorkModeLabel,
+} from "@/config/entities/project.config"
+import { EMPLOYEE_TYPE } from "@/config/entities/employee.config"
 import { projectApi } from "@/lib/api/project.api"
 import { extractErrorMessage } from "@/utils/error-helper"
 import type { Employee } from "@/types/employee.types"
@@ -33,6 +40,7 @@ interface AddMemberModalProps {
 
 const SELECT_NONE_VALUE = "none"
 
+/** Add employee to project with PT-specific hourlyRate and workMode (remote/onsite). */
 export function AddMemberModal({
   isOpen,
   onOpenChange,
@@ -43,19 +51,36 @@ export function AddMemberModal({
 }: AddMemberModalProps) {
   const queryClient = useQueryClient()
   const [memberEmployeeId, setMemberEmployeeId] = useState(SELECT_NONE_VALUE)
+  const [hourlyRate, setHourlyRate] = useState("")
+  // Default remote: PT logs Spent Time without GPS. TL can switch to onsite per project.
+  const [workMode, setWorkMode] = useState<string>(PROJECT_MEMBER_WORK_MODE.REMOTE)
   const [memberError, setMemberError] = useState<string | null>(null)
+
+  const selectedEmployee = allEmployees.find((e) => e.id === memberEmployeeId)
+  const isPartTime = selectedEmployee?.employeeType === EMPLOYEE_TYPE.PART_TIME
 
   const addMemberMutation = useMutation({
     mutationFn: async () => {
       if (memberEmployeeId === SELECT_NONE_VALUE) {
         throw new Error("Vui lòng chọn nhân viên")
       }
-      return projectApi.addMember(projectId, memberEmployeeId)
+      if (isPartTime && (!hourlyRate || Number(hourlyRate) <= 0)) {
+        // Backend rejects PT members without rate — payroll uses ProjectMember.hourlyRate.
+        throw new Error("Nhân viên part-time cần mức lương theo giờ")
+      }
+
+      return projectApi.addMember(projectId, {
+        employeeId: memberEmployeeId,
+        hourlyRate: hourlyRate ? Number(hourlyRate) : null,
+        workMode,
+      })
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["members", projectId] })
       onOpenChange(false)
       setMemberEmployeeId(SELECT_NONE_VALUE)
+      setHourlyRate("")
+      setWorkMode(PROJECT_MEMBER_WORK_MODE.REMOTE)
       setMemberError(null)
       toast.success("Thêm thành viên vào dự án thành công")
     },
@@ -72,6 +97,8 @@ export function AddMemberModal({
 
   const handleClose = () => {
     setMemberEmployeeId(SELECT_NONE_VALUE)
+    setHourlyRate("")
+    setWorkMode(PROJECT_MEMBER_WORK_MODE.REMOTE)
     setMemberError(null)
     onOpenChange(false)
   }
@@ -82,7 +109,7 @@ export function AddMemberModal({
         <DialogHeader>
           <DialogTitle className="text-lg font-bold text-foreground">Thêm thành viên dự án</DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Chọn một nhân viên để đưa họ vào tham gia dự án này.
+            Chọn nhân viên, mức lương/giờ (bắt buộc với part-time) và chế độ làm việc.
           </DialogDescription>
         </DialogHeader>
 
@@ -114,6 +141,42 @@ export function AddMemberModal({
                       {emp.fullName}
                     </SelectItem>
                   ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="hourlyRate" className="text-xs font-semibold text-muted-foreground">
+              Lương theo giờ (VND){isPartTime ? " *" : ""}
+            </Label>
+            <Input
+              id="hourlyRate"
+              type="number"
+              min="0"
+              step="1000"
+              value={hourlyRate}
+              onChange={(e) => {
+                setHourlyRate(e.target.value)
+              }}
+              placeholder="VD: 50000"
+              className="h-10 rounded-full"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="workMode" className="text-xs font-semibold text-muted-foreground">
+              Chế độ làm việc
+            </Label>
+            <Select value={workMode} onValueChange={setWorkMode}>
+              <SelectTrigger id="workMode" className="w-full h-10 border-border rounded-full px-4 bg-background">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-border bg-popover">
+                {PROJECT_MEMBER_WORK_MODES.map((mode) => (
+                  <SelectItem key={mode} value={mode} className="rounded-lg">
+                    {getProjectMemberWorkModeLabel(mode)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

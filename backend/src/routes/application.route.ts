@@ -1,8 +1,7 @@
-import { ROLE } from "@/configs/entities/employee.config.ts"
 import { ApplicationController } from "@/controllers/application.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
-import { authorizeRoles } from "@/middlewares/role.middleware.ts"
+import { requirePermission } from "@/middlewares/permission.middleware.ts"
 import { PrismaApplicationRepository } from "@/repositories/application.repository.ts"
 import { ApplicationService } from "@/services/application.service.ts"
 
@@ -33,31 +32,31 @@ applicationRoutes.patch("/:id/cancel", controller.cancel)
 
 // ─── Manager endpoints ────────────────────────────────────────
 
-// List all applications across all employees (HR / GM / admin / TL)
+// List all applications across all employees
 applicationRoutes.get(
   "/",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER, ROLE.TEAM_LEADER),
+  requirePermission("application.read"),
   controller.listAll,
 )
 
-// List applications for a specific employee (HR / GM / admin)
+// List applications for a specific employee
 applicationRoutes.get(
   "/employee/:employeeId",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER, ROLE.TEAM_LEADER),
+  requirePermission("application.read"),
   controller.listByEmployee,
 )
 
 // Approve an application (sets status=approved)
 applicationRoutes.patch(
   "/:id/approve",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER, ROLE.TEAM_LEADER),
+  requirePermission("application.approve"),
   controller.approve,
 )
 
 // Reject an application with a mandatory rejectReason
 applicationRoutes.patch(
   "/:id/reject",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER, ROLE.TEAM_LEADER),
+  requirePermission("application.approve"),
   controller.reject,
 )
 

@@ -20,6 +20,6 @@ export interface IApprovalItem {
 }
 
 export interface IApprovalService {
-  getPendingApprovals(processorId: string, role: string): Promise<IApprovalItem[]>
+  getPendingApprovals(processorId: string): Promise<IApprovalItem[]>
   processApproval(dto: IProcessApprovalDTO): Promise<any>
 }

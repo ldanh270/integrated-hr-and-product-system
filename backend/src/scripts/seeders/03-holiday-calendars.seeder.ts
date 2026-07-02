@@ -83,7 +83,7 @@ export class HolidayCalendarsSeeder implements ISeeder {
           create: data,
         }),
       ),
-      { timeout: 30000 },
+      { timeout: 120000 },
     )
 
     console.log(`  Seeded ${createdHolidays.length} holidays.`)
