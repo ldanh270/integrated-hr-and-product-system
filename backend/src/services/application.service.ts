@@ -3,12 +3,19 @@ import {
   APPLICATION_TYPES,
   PARTNER_APPROVAL_STATUS,
 } from "@/configs/entities/attendance.config.ts"
-import { ROLE } from "@/configs/entities/employee.config.ts"
-import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
+import { SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
 import { NOTIFICATION_TYPE } from "@/configs/entities/notification.config.ts"
+import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
+import { APPROVAL_CATEGORY, APPROVAL_CONFIG } from "@/configs/rules/approval.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { prisma } from "@/libs/database.ts"
+import {
+  ApplicationTypeStrategyFactory,
+  IStrategyDeps,
+} from "@/services/application-type.strategy.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
+import { NotificationService } from "@/services/notification.service.ts"
 import {
   IApplicationRepository,
   IApplicationService,
@@ -17,19 +24,15 @@ import {
   ISubmitApplicationDTO,
 } from "@/types/attendance.types.ts"
 import { AppError } from "@/utils/error.util.ts"
-import { Application } from "@prisma/client"
 
-import { NotificationService } from "@/services/notification.service.ts"
-import {
-  ApplicationTypeStrategyFactory,
-  IStrategyDeps,
-} from "@/services/application-type.strategy.ts"
+import { Application } from "@prisma/client"
 
 const SERVICE_ERRORS = {
   INVALID_DATE_RANGE: "endDate phải lớn hơn hoặc bằng startDate",
   NOT_FOUND: "Không tìm thấy đơn",
   CANCEL_FORBIDDEN: "Từ chối quyền: Bạn chỉ có thể hủy đơn của chính mình",
-  INVALID_STATUS_TRANSITION: (status: string) => `Không thể chuyển đổi trạng thái cho đơn có trạng thái '${status}'`,
+  INVALID_STATUS_TRANSITION: (status: string) =>
+    `Không thể chuyển đổi trạng thái cho đơn có trạng thái '${status}'`,
   CANCEL_FAILED: "Hủy đơn thất bại",
   EMPLOYEE_NOT_FOUND: (id: string) => `Không tìm thấy nhân viên '${id}'`,
   VIEW_FORBIDDEN: "Từ chối quyền: Bạn chỉ có thể xem đơn của nhân viên trong dự án của bạn",
@@ -55,7 +58,7 @@ const SERVICE_NOTIFICATIONS = {
 export class ApplicationService implements IApplicationService {
   constructor(
     private applicationRepo: IApplicationRepository,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
   ) {}
 
   /**
@@ -178,7 +181,7 @@ export class ApplicationService implements IApplicationService {
    */
   async listApplications(
     query: IListApplicationsQueryDTO,
-    user?: { empId: string; role: string }
+    user?: { empId: string; role: string },
   ): Promise<{ data: any[]; total: number }> {
     return this.applicationRepo.findAll(query, user)
   }
@@ -195,7 +198,7 @@ export class ApplicationService implements IApplicationService {
   async getEmployeeApplications(
     employeeId: string,
     query: IListApplicationsQueryDTO,
-    requester?: { empId: string; role: string },
+    requester?: { empId: string },
   ): Promise<{ data: any[]; total: number }> {
     // Verify target employee exists and is not soft-deleted
     const employeeExists = await prisma.employee.findFirst({
@@ -212,28 +215,38 @@ export class ApplicationService implements IApplicationService {
       )
     }
 
-    // If requester is team_leader, enforce access rules
-    if (requester && requester.role === ROLE.TEAM_LEADER && employeeId !== requester.empId) {
-      const activeProject = await prisma.project.findFirst({
-        where: {
-          teamLeaderId: requester.empId,
-          status: PROJECT_STATUS.ACTIVE,
-          members: {
-            some: {
-              employeeId: employeeId,
-              removedAt: null,
+    // If requester is team_leader (and not a global approver), enforce access rules
+    if (requester && employeeId !== requester.empId) {
+      const authContext = await authorizationService.getAuthorizationContext(requester.empId)
+      const roles = authContext.roles
+      const isGlobalApprover =
+        authContext.isDynamicAdmin ||
+        roles.has(SYSTEM_ROLE.ADMIN) ||
+        roles.has(SYSTEM_ROLE.GENERAL_MANAGER) ||
+        roles.has(SYSTEM_ROLE.HR_MANAGER)
+
+      if (!isGlobalApprover && roles.has(SYSTEM_ROLE.TEAM_LEADER)) {
+        const activeProject = await prisma.project.findFirst({
+          where: {
+            teamLeaderId: requester.empId,
+            status: PROJECT_STATUS.ACTIVE,
+            members: {
+              some: {
+                employeeId: employeeId,
+                removedAt: null,
+              },
             },
           },
-        },
-      })
+        })
 
-      if (!activeProject) {
-        throw new AppError(
-          SERVICE_ERRORS.VIEW_FORBIDDEN,
-          HttpStatusCode.FORBIDDEN,
-          ErrorLayer.SERVICE,
-          "FORBIDDEN",
-        )
+        if (!activeProject) {
+          throw new AppError(
+            "Forbidden: You can only view applications of employees in your projects",
+            HttpStatusCode.FORBIDDEN,
+            ErrorLayer.SERVICE,
+            "FORBIDDEN",
+          )
+        }
       }
     }
 
@@ -370,24 +383,43 @@ export class ApplicationService implements IApplicationService {
   /**
    * Approves or rejects a shift swap application as a partner.
    */
-  async partnerApproveSwap(id: string, partnerId: string, isApproved: boolean): Promise<Application> {
+  async partnerApproveSwap(
+    id: string,
+    partnerId: string,
+    isApproved: boolean,
+  ): Promise<Application> {
     const app = await this.applicationRepo.findById(id)
 
     if (!app || app.type !== APPLICATION_TYPES.SHIFT_SWAP.LABEL || !app.shiftSwapDetail) {
-      throw new AppError(SERVICE_ERRORS.INVALID_SWAP_APP, HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE)
+      throw new AppError(
+        SERVICE_ERRORS.INVALID_SWAP_APP,
+        HttpStatusCode.BAD_REQUEST,
+        ErrorLayer.SERVICE,
+      )
     }
 
     if (app.shiftSwapDetail.swapWithEmployeeId !== partnerId) {
-      throw new AppError(SERVICE_ERRORS.SWAP_PARTNER_FORBIDDEN, HttpStatusCode.FORBIDDEN, ErrorLayer.SERVICE)
+      throw new AppError(
+        SERVICE_ERRORS.SWAP_PARTNER_FORBIDDEN,
+        HttpStatusCode.FORBIDDEN,
+        ErrorLayer.SERVICE,
+      )
     }
 
     if (app.shiftSwapDetail.partnerApprovalStatus !== PARTNER_APPROVAL_STATUS.PENDING) {
-      throw new AppError(SERVICE_ERRORS.SWAP_PARTNER_RESPONDED, HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE)
+      throw new AppError(
+        SERVICE_ERRORS.SWAP_PARTNER_RESPONDED,
+        HttpStatusCode.BAD_REQUEST,
+        ErrorLayer.SERVICE,
+      )
     }
 
     if (isApproved) {
       // Update partner approval status
-      await this.applicationRepo.updateShiftSwapPartnerApproval(id, PARTNER_APPROVAL_STATUS.APPROVED)
+      await this.applicationRepo.updateShiftSwapPartnerApproval(
+        id,
+        PARTNER_APPROVAL_STATUS.APPROVED,
+      )
 
       // Notify manager if assignedToId exists
       if (app.assignedToId) {
@@ -395,12 +427,15 @@ export class ApplicationService implements IApplicationService {
           userId: app.assignedToId,
           title: SERVICE_NOTIFICATIONS.SWAP_AGREED_TITLE,
           message: SERVICE_NOTIFICATIONS.SWAP_AGREED_MSG,
-          type: NOTIFICATION_TYPE.APPROVAL
+          type: NOTIFICATION_TYPE.APPROVAL,
         })
       }
     } else {
       // Partner rejects -> reject the whole application
-      await this.applicationRepo.updateShiftSwapPartnerApproval(id, PARTNER_APPROVAL_STATUS.REJECTED)
+      await this.applicationRepo.updateShiftSwapPartnerApproval(
+        id,
+        PARTNER_APPROVAL_STATUS.REJECTED,
+      )
       await this.rejectApplication(id, partnerId, SERVICE_ERRORS.SWAP_REJECTED_REASON)
 
       // Notify requester
@@ -408,7 +443,7 @@ export class ApplicationService implements IApplicationService {
         userId: app.employeeId,
         title: SERVICE_NOTIFICATIONS.SWAP_REJECTED_TITLE,
         message: SERVICE_NOTIFICATIONS.SWAP_REJECTED_MSG,
-        type: NOTIFICATION_TYPE.SYSTEM
+        type: NOTIFICATION_TYPE.SYSTEM,
       })
     }
 
@@ -423,16 +458,9 @@ export class ApplicationService implements IApplicationService {
    * @throws {AppError} If not found or role is not approver-eligible.
    */
   private async _validateApproverRole(employeeId: string): Promise<void> {
-    const APPROVER_ROLES = [
-      ROLE.ADMIN,
-      ROLE.GENERAL_MANAGER,
-      ROLE.HR_MANAGER,
-      ROLE.TEAM_LEADER,
-    ] as string[]
-
     const employee = await prisma.employee.findUnique({
       where: { id: employeeId },
-      select: { id: true, role: true, status: true },
+      select: { id: true, status: true },
     })
 
     if (!employee) {
@@ -444,7 +472,13 @@ export class ApplicationService implements IApplicationService {
       )
     }
 
-    if (!APPROVER_ROLES.includes(employee.role)) {
+    const authContext = await authorizationService.getAuthorizationContext(employeeId)
+    const roles = authContext.roles
+    const isApprover =
+      authContext.isDynamicAdmin ||
+      APPROVAL_CONFIG[APPROVAL_CATEGORY.APPLICATION].roles.some((role) => roles.has(role))
+
+    if (!isApprover) {
       throw new AppError(
         SERVICE_ERRORS.INVALID_APPROVER_ROLE,
         HttpStatusCode.BAD_REQUEST,

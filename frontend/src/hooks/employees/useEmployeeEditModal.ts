@@ -1,5 +1,4 @@
 import {
-  EMPLOYEE_ROLES,
   EMPLOYEE_STATUSES,
   EMPLOYEE_TYPES,
 } from "@/config/entities/employee.config"
@@ -39,9 +38,6 @@ const editSchema = z.object({
     )
     .or(z.literal(""))
     .optional(),
-
-  role: z.enum(EMPLOYEE_ROLES).optional(),
-
   phone: z
     .string()
     .refine(
@@ -122,7 +118,6 @@ export function useEmployeeEditModal(
         fullName: employee.fullName,
         email: employee.email,
         username: employee.username,
-        role: employee.role,
         password: "",
         phone: employee.phone || undefined,
         position: employee.position || undefined,

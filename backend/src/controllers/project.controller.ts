@@ -5,6 +5,7 @@ import {
   addProjectMemberSchema,
   createProjectSchema,
   listProjectsQuerySchema,
+  updateProjectMemberSchema,
   updateProjectSchema,
 } from "@/schemas/project.schema.ts"
 import { ApiResponse, IProjectService, PaginatedProjectsDto, Project, GanttDataDto } from "@/types"
@@ -30,7 +31,7 @@ export class ProjectController {
       }
 
       const query = listProjectsQuerySchema.parse(req.query)
-      const result = await this.service.listProjects(query, req.user.empId, req.user.role)
+      const result = await this.service.listProjects(query, req.user.empId)
       res.status(HttpStatusCode.OK).json({ data: result, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -62,7 +63,6 @@ export class ProjectController {
     const project = await this.service.getProject(
       String(req.params.id),
       req.user.empId,
-      req.user.role,
     )
     if (!project) {
       return res.status(HttpStatusCode.NOT_FOUND).json({
@@ -88,7 +88,7 @@ export class ProjectController {
       }
 
       const data = createProjectSchema.parse(req.body)
-      const project = await this.service.createProject(data, req.user.empId, req.user.role)
+      const project = await this.service.createProject(data, req.user.empId)
       res.status(HttpStatusCode.CREATED).json({ data: project, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -124,7 +124,6 @@ export class ProjectController {
         String(req.params.id),
         data,
         req.user.empId,
-        req.user.role,
       )
       if (!project) {
         return res.status(HttpStatusCode.NOT_FOUND).json({
@@ -160,14 +159,14 @@ export class ProjectController {
       })
     }
 
-    await this.service.deleteProject(String(req.params.id), req.user.empId, req.user.role)
+    await this.service.deleteProject(String(req.params.id), req.user.empId)
     res.status(HttpStatusCode.OK).json({ data: null, error: null })
   }
 
   /**
-   * Adds a member to a project
-   * Only Admins, GMs, and the project's Team Leader can add members
-   * Validates that the employee exists and is not already a member
+   * Adds a member to a project.
+   * PT-specific: hourlyRate (payroll input) and workMode (remote = Spent Time only,
+   * onsite = GPS check-in once/day then Spent Time). Service enforces rate for PT.
    */
   addMember = async (req: AuthRequest, res: Response<ApiResponse<null>>) => {
     try {
@@ -178,8 +177,13 @@ export class ProjectController {
         })
       }
 
-      const { employeeId } = addProjectMemberSchema.parse(req.body)
-      await this.service.addMember(String(req.params.id), employeeId, req.user.empId, req.user.role)
+      const { employeeId, hourlyRate, workMode } = addProjectMemberSchema.parse(req.body)
+      await this.service.addMember(
+        String(req.params.id),
+        employeeId,
+        req.user.empId,
+        { hourlyRate, workMode },
+      )
       res.status(HttpStatusCode.OK).json({ data: null, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -212,14 +216,48 @@ export class ProjectController {
       String(req.params.id),
       String(req.params.employeeId),
       req.user.empId,
-      req.user.role,
     )
     res.status(HttpStatusCode.OK).json({ data: null, error: null })
   }
 
   /**
-   * Retrieves all members of a project
-   * User must have access to the project to view its members
+   * Updates PT member settings on a project (hourlyRate, workMode).
+   * workMode change toggles attendance rules without re-adding the member.
+   */
+  updateMember = async (req: AuthRequest, res: Response<ApiResponse<null>>) => {
+    try {
+      if (!req.user) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          data: null,
+          error: { message: "Unauthorized", code: ErrorCode.UNAUTHORIZED },
+        })
+      }
+
+      const body = updateProjectMemberSchema.parse(req.body)
+      await this.service.updateMember(
+        String(req.params.id),
+        String(req.params.employeeId),
+        req.user.empId,
+        body,
+      )
+      res.status(HttpStatusCode.OK).json({ data: null, error: null })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: {
+            message: "Validation error",
+            code: ErrorCode.VALIDATION_ERROR,
+            meta: error.issues,
+          },
+        })
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Retrieves all members of a project (includes hourlyRate/workMode for PT payroll setup).
    */
   getMembers = async (req: AuthRequest, res: Response<ApiResponse<any[]>>) => {
     if (!req.user) {
@@ -232,7 +270,6 @@ export class ProjectController {
     const members = await this.service.getMembers(
       String(req.params.id),
       req.user.empId,
-      req.user.role,
     )
     res.status(HttpStatusCode.OK).json({ data: members, error: null })
   }
@@ -252,7 +289,6 @@ export class ProjectController {
     const ganttData = await this.service.getGanttData(
       String(req.params.id),
       req.user.empId,
-      req.user.role,
     )
     res.status(HttpStatusCode.OK).json({ data: ganttData, error: null })
   }

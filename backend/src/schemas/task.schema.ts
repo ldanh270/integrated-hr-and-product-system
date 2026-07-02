@@ -19,6 +19,7 @@ export const createTaskSchema = z
     priority: z.enum(TASK_PRIORITIES).optional(),
 
     status: z.enum(TASK_STATUSES).optional(),
+    statusId: z.string().optional().nullable(),
 
     assigneeId: z.string().optional().nullable(),
 
@@ -58,6 +59,7 @@ export const updateTaskSchema = z
     priority: z.enum(TASK_PRIORITIES).optional(),
 
     status: z.enum(TASK_STATUSES).optional(),
+    statusId: z.string().optional().nullable(),
 
     assigneeId: z.string().optional().nullable(),
 
@@ -97,6 +99,7 @@ export const listTasksQuerySchema = z.object({
   search: z.string().optional(),
   tracker: z.enum(TASK_TRACKERS).optional(),
   status: z.enum(TASK_STATUSES).optional(),
+  statusId: z.string().optional(),
   priority: z.enum(TASK_PRIORITIES).optional(),
   assigneeId: z.string().optional(),
   createdById: z.string().optional(),

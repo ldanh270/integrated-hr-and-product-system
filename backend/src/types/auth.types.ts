@@ -1,19 +1,16 @@
 import { Request } from "express"
 
-import { EmployeeRole } from "./employee.types.ts"
-
 export interface AuthenticatedRequest extends Request {
   user: {
     empId: string
     username: string
-    role: string
   }
 }
 
 export interface JwtPayload {
   empId: string
   username: string
-  role: string
+  version?: number
   iat?: number
   exp?: number
 }
@@ -64,9 +61,8 @@ export interface AuthResponseDto {
     username: string
     email: string
     fullName: string
-    role: EmployeeRole
-    totalLeaves: number
-    usedLeaves: number
+    roles: string[]
+    permissions: string[]
     personalEmployeeId: string | null
     personalEmployee: {
       id: string
@@ -182,7 +178,6 @@ export interface AuthEmployeeDocument {
   email: string
   fullName: string
   passwordHash: string
-  role: EmployeeRole
   status: string
   lockedUntil?: Date | null
   failedLoginCount: number
@@ -295,6 +290,11 @@ export interface IAuthRepository {
   getActivityLogById(id: string): Promise<ActivityLogItem | null>
 
   /**
+   * Gets a single activity log by ID scoped to one employee
+   */
+  getActivityLogByIdForEmployee(id: string, employeeId: string): Promise<ActivityLogItem | null>
+
+  /**
    * Gets all currently locked employees
    */
   getLockedEmployees(): Promise<LockedAccountItem[]>
@@ -380,9 +380,19 @@ export interface IAuthService {
   getActivityLogs(query: ActivityLogQuery): Promise<PaginatedActivityLogsDto>
 
   /**
+   * Gets activity logs of current user
+   */
+  getMyActivityLogs(empId: string, query: ActivityLogQuery): Promise<PaginatedActivityLogsDto>
+
+  /**
    * Gets activity log detail
    */
   getActivityLogDetail(id: string): Promise<ActivityLogItem | null>
+
+  /**
+   * Gets activity log detail for current user only
+   */
+  getMyActivityLogDetail(empId: string, id: string): Promise<ActivityLogItem | null>
 
   /**
    * Gets security summary for dashboard

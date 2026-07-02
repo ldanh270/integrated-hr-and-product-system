@@ -21,6 +21,7 @@ import {
 } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
+import { TASK_STATUS } from "@/configs/entities/project.config.ts"
 
 type PrismaTaskWithRelations = PrismaTask & {
   project?: {
@@ -51,6 +52,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
       tracker: task.tracker as TaskTracker,
       priority: task.priority as TaskPriority,
       status: task.status as TaskStatus,
+      statusId: task.statusId,
       assigneeId: task.assigneeId,
       createdById: task.createdById,
       startDate: task.startDate,
@@ -127,6 +129,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
       search,
       tracker,
       status,
+      statusId,
       priority,
       assigneeId,
       createdById,
@@ -145,6 +148,25 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     }
     if (status) {
       where.status = status as PrismaTaskStatus
+    }
+    if (statusId) {
+      if (statusId === "open") {
+        where.OR = [
+          {
+            customStatus: {
+              isCompleted: false,
+            },
+          },
+          {
+            statusId: null,
+            status: {
+              in: [TASK_STATUS.TODO, TASK_STATUS.IN_PROGRESS, TASK_STATUS.IN_REVIEW, TASK_STATUS.REOPENED],
+            },
+          },
+        ]
+      } else {
+        where.statusId = statusId
+      }
     }
     if (priority) {
       where.priority = priority as PrismaTaskPriority
@@ -209,6 +231,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
         tracker: data.tracker as PrismaTaskTracker,
         priority: data.priority as PrismaTaskPriority,
         status: data.status as PrismaTaskStatus,
+        statusId: data.statusId,
         assigneeId: data.assigneeId,
         createdById: data.createdById,
         startDate: data.startDate ? new Date(data.startDate) : null,
@@ -246,6 +269,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
       tracker: data.tracker as PrismaTaskTracker,
       priority: data.priority as PrismaTaskPriority,
       status: data.status as PrismaTaskStatus,
+      statusId: data.statusId,
       assigneeId: data.assigneeId,
       startDate: data.startDate ? new Date(data.startDate) : undefined,
       dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
@@ -261,6 +285,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     if (data.startDate === null) updateData.startDate = null
     if (data.dueDate === null) updateData.dueDate = null
     if (data.assigneeId === null) updateData.assigneeId = null
+    if (data.statusId === null) updateData.statusId = null
     if (data.completedAt === null) updateData.completedAt = null
     if (data.estimatedTime === null) updateData.estimatedTime = null
     if (data.resultUrl === null) updateData.resultUrl = null
@@ -269,9 +294,9 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     if (data.parentTaskId === null) updateData.parentTaskId = null
 
     // Automatically set completedAt when switching status to Done, or clear it when moving away from Done
-    if (data.status === "done" && !data.completedAt) {
+    if (data.status === TASK_STATUS.DONE && !data.completedAt) {
       updateData.completedAt = new Date()
-    } else if (data.status && data.status !== "done") {
+    } else if (data.status && data.status !== TASK_STATUS.DONE) {
       updateData.completedAt = null
     }
 
@@ -303,5 +328,27 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
       where: { id },
     })
     return true
+  }
+
+  /**
+   * Reassigns all tasks under a project from one custom status ID to another (or null).
+   * Typically used as a fallback mapping when deleting a status column.
+   */
+  async updateTasksStatusId(projectId: string, fromStatusId: string, toStatusId: string | null): Promise<void> {
+    await this.prisma.task.updateMany({
+      where: { projectId, statusId: fromStatusId },
+      data: { statusId: toStatusId },
+    })
+  }
+
+  /**
+   * Synchronizes the legacy string status enum of all tasks mapped to a custom status ID.
+   * Ensures compatibility between old enum-based filters and new status columns.
+   */
+  async syncLegacyStatus(statusId: string, legacyStatus: PrismaTaskStatus): Promise<void> {
+    await this.prisma.task.updateMany({
+      where: { statusId },
+      data: { status: legacyStatus },
+    })
   }
 }

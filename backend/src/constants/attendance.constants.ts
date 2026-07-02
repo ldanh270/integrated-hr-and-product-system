@@ -12,6 +12,7 @@ export const ATTENDANCE_ERROR_MESSAGES = {
   VALIDATION_ERROR: "Validation error",
   FORBIDDEN_EXPORT: "Forbidden: Only HR and Admins can export reports",
   SHIFT_NOT_FOUND: "Không tìm thấy ca làm việc cho hôm nay",
+  NO_SCHEDULE_TODAY: "Hôm nay không có ca làm việc theo lịch",
   CHECK_IN_TOO_EARLY: "Chưa đến giờ check-in",
   CHECK_IN_TOO_LATE: "Đã quá giờ check-in",
   ALREADY_CHECKED_IN: "Đã check-in rồi",
@@ -20,6 +21,9 @@ export const ATTENDANCE_ERROR_MESSAGES = {
   CHECK_OUT_BEFORE_IN: "Cannot check out before check in",
   ALREADY_CHECKED_OUT: "Attendance already checked out",
   INVALID_DATE_FORMAT: "Invalid date format",
+  /** Shown when PT remote tries GPS check-in — hours must go through project Spent Time. */
+  PT_REMOTE_NO_GPS_CHECKIN:
+    "Nhân viên part-time remote ghi giờ qua Spent Time trên dự án, không dùng check-in GPS",
 } as const
 
 export const ATTENDANCE_LAYERS = {

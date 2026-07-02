@@ -177,13 +177,17 @@ export default function ApplicationDashboard() {
         <div className="flex border-b border-border">
           <button
             className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${dashboardTab === "list" ? "border-primary text-primary" : "border-transparent text-slate-500 hover:text-slate-700"}`}
-            onClick={() => { setDashboardTab("list") }}
+            onClick={() => {
+              setDashboardTab("list")
+            }}
           >
             Danh sách đơn
           </button>
           <button
             className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${dashboardTab === "leaves" ? "border-primary text-primary" : "border-transparent text-slate-500 hover:text-slate-700"}`}
-            onClick={() => { setDashboardTab("leaves") }}
+            onClick={() => {
+              setDashboardTab("leaves")
+            }}
           >
             Tổng phép
           </button>

@@ -16,9 +16,17 @@ type WeeklyScheduleSectionState = ReturnType<typeof useEmployeeWeeklyScheduleSec
 
 interface EmployeeWeeklyScheduleSectionProps {
   section: WeeklyScheduleSectionState
+  /** Hidden for PART_TIME — they use project Spent Time, not company weekly templates. */
+  hidden?: boolean
 }
 
-export function EmployeeWeeklyScheduleSection({ section }: EmployeeWeeklyScheduleSectionProps) {
+/**
+ * Weekly shift template picker in employee edit drawer.
+ * PART_TIME employees skip this block — hours are tracked via project Spent Time instead.
+ */
+export function EmployeeWeeklyScheduleSection({ section, hidden }: EmployeeWeeklyScheduleSectionProps) {
+  if (hidden) return null
+
   const {
     form,
     activeTemplates,

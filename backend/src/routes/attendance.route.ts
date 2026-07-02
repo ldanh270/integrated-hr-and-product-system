@@ -1,11 +1,12 @@
-import { ROLE } from "@/configs/entities/employee.config.ts"
 import { AttendanceController } from "@/controllers/attendance.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
-import { authorizeRoles } from "@/middlewares/role.middleware.ts"
+import { requirePermission } from "@/middlewares/permission.middleware.ts"
 import { PrismaAttendanceRepository } from "@/repositories/attendance.repository.ts"
 import { PrismaEmployeeShiftRepository } from "@/repositories/employee-shift.repository.ts"
 import { PrismaHolidayRepository } from "@/repositories/holiday.repository.ts"
+import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
+import { PrismaProjectRepository } from "@/repositories/project.repository.ts"
 import { PrismaShiftScheduleRepository } from "@/repositories/schedule.repository.ts"
 import { PrismaWorkingShiftRepository } from "@/repositories/shift.repository.ts"
 import { AttendanceService } from "@/services/attendance.service.ts"
@@ -19,6 +20,9 @@ const employeeShiftRepo = new PrismaEmployeeShiftRepository(prisma)
 const scheduleRepo = new PrismaShiftScheduleRepository(prisma)
 const holidayRepo = new PrismaHolidayRepository(prisma)
 const workingShiftRepo = new PrismaWorkingShiftRepository(prisma)
+const employeeRepo = new PrismaEmployeeRepository(prisma)
+// Onsite PT: AttendanceService checks active onsite project membership before GPS check-in.
+const projectRepo = new PrismaProjectRepository(prisma)
 
 const service = new AttendanceService(
   attendanceRepo,
@@ -26,6 +30,8 @@ const service = new AttendanceService(
   scheduleRepo,
   holidayRepo,
   workingShiftRepo,
+  employeeRepo,
+  projectRepo,
 )
 const controller = new AttendanceController(service)
 
@@ -33,7 +39,7 @@ attendanceRoutes.use(authenticate)
 
 attendanceRoutes.get(
   "/export",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER),
+  requirePermission("attendance.export"),
   controller.exportReport,
 )
 

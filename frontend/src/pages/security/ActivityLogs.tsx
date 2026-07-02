@@ -119,10 +119,9 @@ export default function ActivityLogs() {
                 onChange={(e) => handleFilterChange("category", e.target.value || undefined)}
               >
                 <option value="">Tất cả danh mục</option>
-                <option value="auth">Xác thực</option>
+                <option value="role">Vai trò</option>
+                <option value="permission">Quyền hạn</option>
                 <option value="employee">Nhân sự</option>
-                <option value="security">Bảo mật</option>
-                <option value="payroll">Lương</option>
               </select>
             </div>
 
@@ -145,12 +144,14 @@ export default function ActivityLogs() {
             <Input
               type="date"
               className="h-9 w-40 text-xs"
+              value={query.fromDate || ""}
               onChange={(e) => handleFilterChange("fromDate", e.target.value || undefined)}
             />
             <span className="text-muted-foreground">—</span>
             <Input
               type="date"
               className="h-9 w-40 text-xs"
+              value={query.toDate || ""}
               onChange={(e) => handleFilterChange("toDate", e.target.value || undefined)}
             />
           </div>

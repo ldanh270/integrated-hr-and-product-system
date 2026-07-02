@@ -13,7 +13,8 @@ export interface Employee {
   fullName: string
   username: string
   email: string
-  role: EmployeeRole
+  role?: EmployeeRole | string | null
+  roles?: string[]
   phone: string | null
   position: string | null
   employeeType: EmployeeType
@@ -24,8 +25,7 @@ export interface Employee {
   startDate: string | null
   endDate: string | null
   avatar: { url: string | null; id: string | null } | null
-  totalLeaves: number
-  usedLeaves: number
+  version?: number
   createdAt: string
   updatedAt: string
 }
@@ -46,6 +46,7 @@ export interface EmployeeListQuery {
   search?: string
   status?: EmployeeStatus
   role?: EmployeeRole
+  roleId?: string
   type?: EmployeeType
   sortBy?: string
   sortOrder?: "asc" | "desc"
@@ -74,7 +75,6 @@ export interface UpdateEmployeeDto {
   email?: string
   username?: string
   password?: string
-  role?: EmployeeRole
   phone?: string | null
   position?: string | null
   employeeType?: EmployeeType

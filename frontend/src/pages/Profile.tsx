@@ -86,6 +86,11 @@ export default function Profile() {
     )
   }
 
+  const roleLabels =
+    profile.roles.length > 0
+      ? profile.roles.map((role) => ROLE_LABELS[role] || role).join(", ")
+      : "Chưa cập nhật"
+
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       {/* Breadcrumbs & Header */}
@@ -392,7 +397,7 @@ export default function Profile() {
                           Vai trò hệ thống
                         </p>
                         <p className="text-sm font-semibold text-foreground mt-0.5 capitalize">
-                          {ROLE_LABELS[profile.role] || profile.role}
+                          {roleLabels}
                         </p>
                       </div>
                     </div>
@@ -485,6 +490,7 @@ export default function Profile() {
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadAvatar.isPending}
                     className="absolute bottom-0 right-0 p-2.5 bg-primary text-primary-foreground rounded-full shadow-md border border-background hover:bg-primary/95 transition-all cursor-pointer disabled:opacity-50"
+                    aria-label="Thay đổi ảnh đại diện"
                     title="Thay đổi ảnh đại diện"
                   >
                     <Camera size={16} />
@@ -569,6 +575,7 @@ export default function Profile() {
                 <Input
                   id="oldPassword"
                   type="password"
+                  autoComplete="current-password"
                   {...registerPassword("oldPassword")}
                   className={
                     passwordErrors.oldPassword ? "border-destructive rounded-full" : "rounded-full"
@@ -588,6 +595,7 @@ export default function Profile() {
                 <Input
                   id="newPassword"
                   type="password"
+                  autoComplete="new-password"
                   {...registerPassword("newPassword")}
                   className={
                     passwordErrors.newPassword ? "border-destructive rounded-full" : "rounded-full"
@@ -607,6 +615,7 @@ export default function Profile() {
                 <Input
                   id="confirmPassword"
                   type="password"
+                  autoComplete="new-password"
                   {...registerPassword("confirmPassword")}
                   className={
                     passwordErrors.confirmPassword

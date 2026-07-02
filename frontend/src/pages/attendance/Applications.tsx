@@ -1,9 +1,18 @@
 "use client"
 
-import { APPLICATION_STATUS, APPLICATION_TYPES } from "@/config/entities/attendance.config"
+import {
+  APPLICATION_FILTER,
+  APPLICATION_STATUS,
+  APPLICATION_TYPES,
+  APPLICATION_VIEW_MODE,
+  LEAVE_TYPE,
+  REGIME_TYPE,
+} from "@/config/entities/attendance.config"
+import { MANAGER_ROLES } from "@/config/entities/employee.config"
 import { useManageApplications } from "@/hooks/application/useManageApplications"
 import { useMyApplications } from "@/hooks/application/useMyApplications"
 import { useSubmitApplication } from "@/hooks/application/useSubmitApplication"
+import { usePermission } from "@/hooks/use-permission"
 import type { IApplication } from "@/lib/api/application.api"
 import { useAuthStore } from "@/store/auth-store"
 
@@ -47,7 +56,7 @@ const APP_TYPE_META: Record<
     hint: string
   }
 > = {
-  leave: {
+  [APPLICATION_TYPES.LEAVE.LABEL]: {
     label: "Nghỉ phép",
     icon: Calendar,
     color: "text-violet-600",
@@ -55,7 +64,7 @@ const APP_TYPE_META: Record<
     border: "border-violet-200",
     hint: "Xin nghỉ phép năm, thai sản, ốm...",
   },
-  overtime: {
+  [APPLICATION_TYPES.OVERTIME.LABEL]: {
     label: "Tăng ca",
     icon: Clock,
     color: "text-amber-600",
@@ -63,7 +72,7 @@ const APP_TYPE_META: Record<
     border: "border-amber-200",
     hint: "Đăng ký tăng ca ngoài ca",
   },
-  work_from_home: {
+  [APPLICATION_TYPES.WORK_FROM_HOME.LABEL]: {
     label: "Làm việc từ xa",
     icon: Laptop,
     color: "text-sky-600",
@@ -71,7 +80,7 @@ const APP_TYPE_META: Record<
     border: "border-sky-200",
     hint: "Làm việc từ xa / tại nhà",
   },
-  shift_swap: {
+  [APPLICATION_TYPES.SHIFT_SWAP.LABEL]: {
     label: "Đổi ca",
     icon: Repeat2,
     color: "text-teal-600",
@@ -123,28 +132,28 @@ const STATUS_META: Record<
     icon: React.FC<{ size?: number }>
   }
 > = {
-  pending: {
+  [APPLICATION_STATUS.PENDING]: {
     label: "Chờ duyệt",
     color: "text-amber-700",
     bg: "bg-amber-50",
     border: "border-amber-200",
     icon: Hourglass,
   },
-  approved: {
+  [APPLICATION_STATUS.APPROVED]: {
     label: "Đã duyệt",
     color: "text-emerald-700",
     bg: "bg-emerald-50",
     border: "border-emerald-200",
     icon: FileCheck2,
   },
-  rejected: {
+  [APPLICATION_STATUS.REJECTED]: {
     label: "Từ chối",
     color: "text-red-700",
     bg: "bg-red-50",
     border: "border-red-200",
     icon: FileX2,
   },
-  cancelled: {
+  [APPLICATION_STATUS.CANCELLED]: {
     label: "Đã hủy",
     color: "text-slate-500",
     bg: "bg-slate-50",
@@ -162,13 +171,13 @@ interface SubmitModalProps {
 
 /** Correct leave type values matching backend LEAVE_TYPE_VALUES enum */
 const LEAVE_TYPE_OPTIONS = [
-  { value: "annual_leave", label: "Nghỉ phép năm" },
-  { value: "sick_leave", label: "Nghỉ ốm" },
-  { value: "maternity_leave", label: "Thai sản" },
-  { value: "bereavement_leave", label: "Nghỉ tang" },
-  { value: "marriage_leave", label: "Nghỉ cưới" },
-  { value: "unpaid_leave", label: "Nghỉ không lương" },
-  { value: "other", label: "Khác" },
+  { value: LEAVE_TYPE.ANNUAL_LEAVE, label: "Nghỉ phép năm" },
+  { value: LEAVE_TYPE.SICK_LEAVE, label: "Nghỉ ốm" },
+  { value: LEAVE_TYPE.MATERNITY_LEAVE, label: "Thai sản" },
+  { value: LEAVE_TYPE.BEREAVEMENT_LEAVE, label: "Nghỉ tang" },
+  { value: LEAVE_TYPE.MARRIAGE_LEAVE, label: "Nghỉ cưới" },
+  { value: LEAVE_TYPE.UNPAID_LEAVE, label: "Nghỉ không lương" },
+  { value: LEAVE_TYPE.OTHER, label: "Khác" },
 ] as const
 
 function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
@@ -182,8 +191,8 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
     reason: "",
     note: "",
     // leave
-    leaveType: "annual_leave" as string,
-    leaveRegimeType: "paid" as "paid" | "unpaid",
+    leaveType: LEAVE_TYPE.ANNUAL_LEAVE as string,
+    leaveRegimeType: REGIME_TYPE.PAID as "paid" | "unpaid",
     // overtime / late_early / shift_swap
     employeeShiftId: "",
     // late_early specific
@@ -194,7 +203,6 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
     swapWithShiftId: "",
     // work_from_home
     location: "",
-
   })
 
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
@@ -211,7 +219,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
     let detail: Record<string, unknown> = {}
 
     switch (selectedType) {
-      case "leave":
+      case APPLICATION_TYPES.LEAVE.LABEL:
         // Backend: { leaveType: LEAVE_TYPE_VALUES, regimeType: REGIME_TYPES }
         detail = {
           leaveType: form.leaveType,
@@ -219,7 +227,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
         }
         break
 
-      case "overtime":
+      case APPLICATION_TYPES.OVERTIME.LABEL:
         // Backend: { employeeShiftId: cuid }
         if (!form.employeeShiftId.trim()) {
           toast.error("Vui lòng nhập ID ca làm việc")
@@ -228,7 +236,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
         detail = { employeeShiftId: form.employeeShiftId.trim() }
         break
 
-      case "late_early":
+      case APPLICATION_TYPES.LATE_EARLY.LABEL:
         // Backend: { employeeShiftId: cuid, durationMinutes: int(1-480), isLate: boolean }
         if (!form.employeeShiftId.trim()) {
           toast.error("Vui lòng nhập ID ca làm việc")
@@ -245,7 +253,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
         }
         break
 
-      case "shift_swap":
+      case APPLICATION_TYPES.SHIFT_SWAP.LABEL:
         // Backend: { employeeShiftId: cuid, swapWithEmployeeId?: cuid, swapWithShiftId?: cuid }
         if (!form.employeeShiftId.trim()) {
           toast.error("Vui lòng nhập ID ca của bạn")
@@ -257,12 +265,10 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
         if (form.swapWithShiftId.trim()) detail.swapWithShiftId = form.swapWithShiftId.trim()
         break
 
-      case "work_from_home":
+      case APPLICATION_TYPES.WORK_FROM_HOME.LABEL:
         // Backend: { location?: string }  ← key is "location" not "workLocation"
         detail = form.location.trim() ? { location: form.location.trim() } : {}
         break
-
-
 
       case APPLICATION_TYPES.RESIGNATION.LABEL:
         detail = {}
@@ -295,7 +301,9 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
             {step === "details" && (
               <button
                 type="button"
-                onClick={() => { setStep("type"); }}
+                onClick={() => {
+                  setStep("type")
+                }}
                 className="p-1.5 rounded-full hover:bg-slate-100 transition-colors text-slate-500"
               >
                 <ArrowLeft size={16} />
@@ -377,7 +385,9 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                     type="date"
                     required
                     value={form.startDate}
-                    onChange={(e) => { set("startDate", e.target.value); }}
+                    onChange={(e) => {
+                      set("startDate", e.target.value)
+                    }}
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
@@ -395,7 +405,9 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                       type="date"
                       value={form.endDate}
                       min={form.startDate}
-                      onChange={(e) => { set("endDate", e.target.value); }}
+                      onChange={(e) => {
+                        set("endDate", e.target.value)
+                      }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -403,14 +415,16 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
               </div>
 
               {/* ── LEAVE ── */}
-              {selectedType === "leave" && (
+              {selectedType === APPLICATION_TYPES.LEAVE.LABEL && (
                 <>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-slate-600">Loại nghỉ phép *</label>
                     <div className="relative">
                       <select
                         value={form.leaveType}
-                        onChange={(e) => { set("leaveType", e.target.value); }}
+                        onChange={(e) => {
+                          set("leaveType", e.target.value)
+                        }}
                         className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white pr-8"
                       >
                         {LEAVE_TYPE_OPTIONS.map((o) => (
@@ -428,11 +442,13 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-slate-600">Chế độ lương *</label>
                     <div className="grid grid-cols-2 gap-2">
-                      {(["paid", "unpaid"] as const).map((rt) => (
+                      {([REGIME_TYPE.PAID, REGIME_TYPE.UNPAID] as const).map((rt) => (
                         <button
                           key={rt}
                           type="button"
-                          onClick={() => { set("leaveRegimeType", rt); }}
+                          onClick={() => {
+                            set("leaveRegimeType", rt)
+                          }}
                           className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
                             form.leaveRegimeType === rt
                               ? "border-primary bg-primary/5 text-primary"
@@ -448,7 +464,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
               )}
 
               {/* ── OVERTIME ── */}
-              {selectedType === "overtime" && (
+              {selectedType === APPLICATION_TYPES.OVERTIME.LABEL && (
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-slate-600">ID Ca làm việc *</label>
                   <input
@@ -456,14 +472,16 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                     required
                     placeholder="Nhập CUID ca làm việc..."
                     value={form.employeeShiftId}
-                    onChange={(e) => { set("employeeShiftId", e.target.value); }}
+                    onChange={(e) => {
+                      set("employeeShiftId", e.target.value)
+                    }}
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
               )}
 
               {/* ── LATE / EARLY ── */}
-              {selectedType === "late_early" && (
+              {selectedType === APPLICATION_TYPES.LATE_EARLY.LABEL && (
                 <>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-slate-600">ID Ca làm việc *</label>
@@ -472,7 +490,9 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                       required
                       placeholder="Nhập CUID ca làm việc..."
                       value={form.employeeShiftId}
-                      onChange={(e) => { set("employeeShiftId", e.target.value); }}
+                      onChange={(e) => {
+                        set("employeeShiftId", e.target.value)
+                      }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -483,7 +503,9 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                         <button
                           key={String(v)}
                           type="button"
-                          onClick={() => { set("isLate", v); }}
+                          onClick={() => {
+                            set("isLate", v)
+                          }}
                           className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
                             form.isLate === v
                               ? "border-primary bg-primary/5 text-primary"
@@ -505,7 +527,9 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                       min={1}
                       max={480}
                       value={form.durationMinutes}
-                      onChange={(e) => { set("durationMinutes", Number(e.target.value)); }}
+                      onChange={(e) => {
+                        set("durationMinutes", Number(e.target.value))
+                      }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -513,7 +537,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
               )}
 
               {/* ── SHIFT SWAP ── */}
-              {selectedType === "shift_swap" && (
+              {selectedType === APPLICATION_TYPES.SHIFT_SWAP.LABEL && (
                 <>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-slate-600">ID Ca của bạn *</label>
@@ -522,7 +546,9 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                       required
                       placeholder="Nhập CUID ca làm việc..."
                       value={form.employeeShiftId}
-                      onChange={(e) => { set("employeeShiftId", e.target.value); }}
+                      onChange={(e) => {
+                        set("employeeShiftId", e.target.value)
+                      }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -534,7 +560,9 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                       type="text"
                       placeholder="CUID nhân viên..."
                       value={form.swapWithEmployeeId}
-                      onChange={(e) => { set("swapWithEmployeeId", e.target.value); }}
+                      onChange={(e) => {
+                        set("swapWithEmployeeId", e.target.value)
+                      }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -546,7 +574,9 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                       type="text"
                       placeholder="CUID ca làm việc..."
                       value={form.swapWithShiftId}
-                      onChange={(e) => { set("swapWithShiftId", e.target.value); }}
+                      onChange={(e) => {
+                        set("swapWithShiftId", e.target.value)
+                      }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -554,7 +584,7 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
               )}
 
               {/* ── WFH ── */}
-              {selectedType === "work_from_home" && (
+              {selectedType === APPLICATION_TYPES.WORK_FROM_HOME.LABEL && (
                 <div className="flex flex-col gap-1.5">
                   {/* Backend field name: "location" */}
                   <label className="text-xs font-semibold text-slate-600">Địa điểm làm việc</label>
@@ -562,13 +592,13 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                     type="text"
                     placeholder="VD: Tại nhà, Quán cà phê..."
                     value={form.location}
-                    onChange={(e) => { set("location", e.target.value); }}
+                    onChange={(e) => {
+                      set("location", e.target.value)
+                    }}
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
               )}
-
-
 
               {/* Reason */}
               <div className="flex flex-col gap-1.5">
@@ -581,7 +611,9 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                   minLength={5}
                   placeholder="Nhập lý do gửi đơn..."
                   value={form.reason}
-                  onChange={(e) => { set("reason", e.target.value); }}
+                  onChange={(e) => {
+                    set("reason", e.target.value)
+                  }}
                   className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
                 />
               </div>
@@ -593,7 +625,9 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
                   type="text"
                   placeholder="Thông tin bổ sung (nếu có)..."
                   value={form.note}
-                  onChange={(e) => { set("note", e.target.value); }}
+                  onChange={(e) => {
+                    set("note", e.target.value)
+                  }}
                   className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
               </div>
@@ -606,7 +640,9 @@ function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
           <div className="border-t border-slate-100 px-5 py-4 flex gap-3 bg-slate-50">
             <button
               type="button"
-              onClick={() => { setStep("type"); }}
+              onClick={() => {
+                setStep("type")
+              }}
               className="flex-1 py-2.5 border border-slate-200 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
             >
               Quay lại
@@ -709,7 +745,9 @@ function ApplicationCard({
     <div className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-all duration-200">
       <div
         className="flex items-center gap-4 p-4 cursor-pointer select-none"
-        onClick={() => { setExpanded((v) => !v); }}
+        onClick={() => {
+          setExpanded((v) => !v)
+        }}
       >
         <div
           className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center border ${typeMeta.bg} ${typeMeta.border} ${typeMeta.color}`}
@@ -771,7 +809,9 @@ function ApplicationCard({
             {(app.approvedBy || app.assignedTo) && (
               <div className="flex flex-col gap-0.5">
                 <span className="text-slate-400 font-medium">Người duyệt</span>
-                <span className="text-slate-700">{(app.approvedBy || app.assignedTo)?.fullName}</span>
+                <span className="text-slate-700">
+                  {(app.approvedBy || app.assignedTo)?.fullName}
+                </span>
               </div>
             )}
           </div>
@@ -858,8 +898,8 @@ function RejectDialog({ app, onCancel, onConfirm, isLoading }: RejectDialogProps
           </div>
           <h3 className="text-base font-bold text-slate-800">Từ chối đơn?</h3>
           <p className="text-sm text-slate-500">
-            Từ chối đơn <strong className={typeMeta.color}>{typeMeta.label}</strong>{" "}
-            của <strong>{app.employee?.fullName}</strong>?
+            Từ chối đơn <strong className={typeMeta.color}>{typeMeta.label}</strong> của{" "}
+            <strong>{app.employee?.fullName}</strong>?
           </p>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -869,7 +909,9 @@ function RejectDialog({ app, onCancel, onConfirm, isLoading }: RejectDialogProps
               rows={3}
               required
               value={reason}
-              onChange={(e) => { setReason(e.target.value); }}
+              onChange={(e) => {
+                setReason(e.target.value)
+              }}
               placeholder="Nhập lý do..."
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
             />
@@ -915,23 +957,23 @@ function ApplicationSkeleton() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const STATUS_TABS = [
-  { value: "all", label: "Tất cả" },
-  { value: "pending", label: "Chờ duyệt" },
-  { value: "approved", label: "Đã duyệt" },
-  { value: "rejected", label: "Từ chối" },
-  { value: "cancelled", label: "Đã hủy" },
+  { value: APPLICATION_FILTER.ALL, label: "Tất cả" },
+  { value: APPLICATION_STATUS.PENDING, label: "Chờ duyệt" },
+  { value: APPLICATION_STATUS.APPROVED, label: "Đã duyệt" },
+  { value: APPLICATION_STATUS.REJECTED, label: "Từ chối" },
+  { value: APPLICATION_STATUS.CANCELLED, label: "Đã hủy" },
 ] as const
 
 export default function Applications() {
   const { user } = useAuthStore()
-  const isManager =
-    user && ["admin", "hr_manager", "general_manager", "team_leader"].includes(user.role)
-  const [activeTab, setActiveTab] = useState<"mine" | "manage">("mine")
+  const { roles } = usePermission()
+  const isManager = !!user && MANAGER_ROLES.some((role) => roles.includes(role))
+  const [activeTab, setActiveTab] = useState<"mine" | "manage">(APPLICATION_VIEW_MODE.MINE)
 
   const myApps = useMyApplications()
   const manageApps = useManageApplications()
 
-  const currentHooks = activeTab === "mine" ? myApps : manageApps
+  const currentHooks = activeTab === APPLICATION_VIEW_MODE.MINE ? myApps : manageApps
   const {
     applications,
     isLoading,
@@ -975,7 +1017,9 @@ export default function Applications() {
           </p>
         </div>
         <button
-          onClick={() => { setShowSubmitModal(true); }}
+          onClick={() => {
+            setShowSubmitModal(true)
+          }}
           className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white rounded-full px-5 py-2.5 text-sm font-bold shadow-sm transition-all active:scale-[0.98]"
         >
           <FilePlus2 size={16} />
@@ -986,9 +1030,11 @@ export default function Applications() {
       {isManager && (
         <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-full overflow-x-auto self-start">
           <button
-            onClick={() => { setActiveTab("mine"); }}
+            onClick={() => {
+              setActiveTab(APPLICATION_VIEW_MODE.MINE)
+            }}
             className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-              activeTab === "mine"
+              activeTab === APPLICATION_VIEW_MODE.MINE
                 ? "bg-white text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
@@ -996,9 +1042,11 @@ export default function Applications() {
             Đơn của tôi
           </button>
           <button
-            onClick={() => { setActiveTab("manage"); }}
+            onClick={() => {
+              setActiveTab(APPLICATION_VIEW_MODE.MANAGE)
+            }}
             className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-              activeTab === "manage"
+              activeTab === APPLICATION_VIEW_MODE.MANAGE
                 ? "bg-white text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
@@ -1092,7 +1140,7 @@ export default function Applications() {
             }}
             className="pl-3 pr-8 py-2 border border-slate-200 rounded-full text-xs font-semibold text-slate-600 bg-white focus:outline-none appearance-none"
           >
-            <option value="all">Tất cả loại đơn</option>
+            <option value={APPLICATION_FILTER.ALL}>Tất cả loại đơn</option>
             {Object.entries(APP_TYPE_META).map(([type, m]) => (
               <option key={type} value={type}>
                 {m.label}
@@ -1127,13 +1175,15 @@ export default function Applications() {
             <div>
               <p className="text-base font-bold text-slate-700">Chưa có đơn nào</p>
               <p className="text-sm text-slate-400 mt-1">
-                {statusFilter !== "all"
+                {statusFilter !== APPLICATION_FILTER.ALL
                   ? `Không có đơn ở trạng thái "${STATUS_TABS.find((t) => t.value === statusFilter)?.label}"`
                   : `Nhấn "Tạo đơn mới" để bắt đầu`}
               </p>
             </div>
             <button
-              onClick={() => { setShowSubmitModal(true); }}
+              onClick={() => {
+                setShowSubmitModal(true)
+              }}
               className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white rounded-full px-5 py-2.5 text-sm font-bold"
             >
               <FilePlus2 size={15} />
@@ -1145,17 +1195,19 @@ export default function Applications() {
             <p className="text-xs text-muted-foreground">
               Hiển thị {applications.length} / {total} đơn
             </p>
-            {applications.flatMap(b => b.applications).map((app) => (
-              <ApplicationCard
-                key={app.id}
-                app={app}
-                mode={activeTab}
-                onCancelRequest={setCancelTarget}
-                onApproveRequest={(app) => manageApps.handleApprove(app.id)}
-                onRejectRequest={setRejectTarget}
-                processingId={manageApps.processingId}
-              />
-            ))}
+            {applications
+              .flatMap((b) => b.applications)
+              .map((app) => (
+                <ApplicationCard
+                  key={app.id}
+                  app={app}
+                  mode={activeTab}
+                  onCancelRequest={setCancelTarget}
+                  onApproveRequest={(app) => manageApps.handleApprove(app.id)}
+                  onRejectRequest={setRejectTarget}
+                  processingId={manageApps.processingId}
+                />
+              ))}
           </>
         )}
       </div>
@@ -1164,7 +1216,9 @@ export default function Applications() {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <button
-            onClick={() => { setPage(page - 1); }}
+            onClick={() => {
+              setPage(page - 1)
+            }}
             disabled={page <= 1}
             className="flex items-center gap-1 px-4 py-2 border border-slate-200 rounded-full text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
           >
@@ -1175,7 +1229,9 @@ export default function Applications() {
             {page} / {totalPages}
           </span>
           <button
-            onClick={() => { setPage(page + 1); }}
+            onClick={() => {
+              setPage(page + 1)
+            }}
             disabled={page >= totalPages}
             className="flex items-center gap-1 px-4 py-2 border border-slate-200 rounded-full text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
           >
@@ -1187,21 +1243,34 @@ export default function Applications() {
 
       {/* Modals */}
       {showSubmitModal && (
-        <SubmitApplicationModal onClose={() => { setShowSubmitModal(false); }} onSuccess={refetch} />
+        <SubmitApplicationModal
+          onClose={() => {
+            setShowSubmitModal(false)
+          }}
+          onSuccess={refetch}
+        />
       )}
       {cancelTarget && (
         <CancelDialog
           app={cancelTarget}
-          onCancel={() => { setCancelTarget(null); }}
-          onConfirm={() => { void handleCancelConfirm(); }}
+          onCancel={() => {
+            setCancelTarget(null)
+          }}
+          onConfirm={() => {
+            void handleCancelConfirm()
+          }}
           isLoading={myApps.cancellingId === cancelTarget.id}
         />
       )}
       {rejectTarget && (
         <RejectDialog
           app={rejectTarget}
-          onCancel={() => { setRejectTarget(null); }}
-          onConfirm={(reason) => { void handleRejectConfirm(reason); }}
+          onCancel={() => {
+            setRejectTarget(null)
+          }}
+          onConfirm={(reason) => {
+            void handleRejectConfirm(reason)
+          }}
           isLoading={manageApps.processingId === rejectTarget.id}
         />
       )}

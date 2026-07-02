@@ -81,6 +81,34 @@ export const CUSTOM_QUERY_TYPE = {
 } as const
 
 /**
+ * Default Kanban statuses created for every new project.
+ * Centralized here so ProjectService and ProjectTaskStatusService
+ * both reference the same source of truth — no inline duplication.
+ */
+export const DEFAULT_PROJECT_TASK_STATUSES = [
+  { name: "To Do",      color: "#6366F1", order: 0, isDefault: true,  isCompleted: false },
+  { name: "In Progress",color: "#3B82F6", order: 1, isDefault: false, isCompleted: false },
+  { name: "In Review",  color: "#F59E0B", order: 2, isDefault: false, isCompleted: false },
+  { name: "Done",       color: "#10B981", order: 3, isDefault: false, isCompleted: true  },
+  { name: "Cancelled",  color: "#EF4444", order: 4, isDefault: false, isCompleted: true  },
+  { name: "Reopened",   color: "#8B5CF6", order: 5, isDefault: false, isCompleted: false },
+] as const
+
+/**
+ * Keyword map for mapping custom status names → legacy TaskStatus enum.
+ * Extend this map when new status keywords are needed (e.g., new locales).
+ * Used by mapStatusNameToEnum in status-mapping.util.ts.
+ */
+export const STATUS_KEYWORD_MAP = {
+  TODO:        ["todo", "to do", "cần làm", "chuẩn bị"],
+  IN_PROGRESS: ["in progress", "in_progress", "đang làm", "đang thực hiện"],
+  IN_REVIEW:   ["review", "đánh giá", "kiểm tra"],
+  DONE:        ["done", "hoàn thành", "đã xong", "đóng", "closed"],
+  CANCELLED:   ["cancel", "hủy"],
+  REOPENED:    ["reopen", "mở lại"],
+} as const
+
+/**
  * Spent time activity types
  */
 export const SPENT_TIME_ACTIVITY = {
@@ -100,7 +128,7 @@ export const SPENT_TIME_ACTIVITIES = [
 ] as const
 
 /**
- * Spent time work time types
+ * Spent time work time types — overtime uses SPENT_TIME_RULES.OVERTIME_MULTIPLIER in PT payroll.
  */
 export const SPENT_TIME_WORK_TIME_TYPE = {
   WORKING_DAY: "working_day",
@@ -110,6 +138,33 @@ export const SPENT_TIME_WORK_TIME_TYPE = {
 export const SPENT_TIME_WORK_TIME_TYPES = [
   SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY,
   SPENT_TIME_WORK_TIME_TYPE.OVERTIME,
+] as const
+
+/** pending → lead review | approved → payroll | rejected → excluded from totals */
+export const SPENT_TIME_STATUS = {
+  PENDING: "pending",
+  APPROVED: "approved",
+  REJECTED: "rejected",
+} as const
+
+export const SPENT_TIME_STATUSES = [
+  SPENT_TIME_STATUS.PENDING,
+  SPENT_TIME_STATUS.APPROVED,
+  SPENT_TIME_STATUS.REJECTED,
+] as const
+
+/**
+ * Project member work mode (remote vs onsite GPS check-in)
+ * remote: Spent Time only | onsite: one GPS check-in per day, then Spent Time
+ */
+export const PROJECT_MEMBER_WORK_MODE = {
+  REMOTE: "remote",
+  ONSITE: "onsite",
+} as const
+
+export const PROJECT_MEMBER_WORK_MODES = [
+  PROJECT_MEMBER_WORK_MODE.REMOTE,
+  PROJECT_MEMBER_WORK_MODE.ONSITE,
 ] as const
 
 /**

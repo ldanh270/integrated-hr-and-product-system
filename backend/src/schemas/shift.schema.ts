@@ -1,10 +1,16 @@
+import { ATTENDANCE_GPS_RULES } from "@/configs/rules/attendance.config.ts"
+
 import { z } from "zod"
 
 const gpsSchema = z.object({
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),
-  radiusMeters: z.number().min(10).optional(),
+  /** Same floor as shift UI — geofence for full-time shifts and onsite PT check-in. */
+  radiusMeters: z.number().min(ATTENDANCE_GPS_RULES.MIN_GEOFENCE_RADIUS_METERS).optional(),
 })
+
+/** null clears GPS on PATCH; omitted leaves existing geofence unchanged. */
+const gpsFieldSchema = z.union([gpsSchema, z.null()]).optional()
 
 // ─── WORKING SHIFT ───────────────────────────────────────────
 export const createWorkingShiftSchema = z
@@ -13,7 +19,7 @@ export const createWorkingShiftSchema = z
     startTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Format must be HH:mm"),
     endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Format must be HH:mm"),
     gracePeriodMinutes: z.number().min(0).optional(),
-    gps: gpsSchema.optional(),
+    gps: gpsFieldSchema,
     isActive: z.boolean().optional(),
   })
   .strict()

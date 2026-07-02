@@ -26,6 +26,7 @@ export interface Task {
   tracker: TaskTracker
   priority: TaskPriority
   status: TaskStatus
+  statusId: string | null
   assigneeId: string | null
   createdById: string
   startDate: Date | null
@@ -76,6 +77,7 @@ export interface CreateTaskDto {
   tracker?: TaskTracker
   priority?: TaskPriority
   status?: TaskStatus
+  statusId?: string | null
   assigneeId?: string | null
   startDate?: Date | string | null
   dueDate?: Date | string | null
@@ -93,6 +95,7 @@ export interface UpdateTaskDto {
   tracker?: TaskTracker
   priority?: TaskPriority
   status?: TaskStatus
+  statusId?: string | null
   assigneeId?: string | null
   startDate?: Date | string | null
   dueDate?: Date | string | null
@@ -115,6 +118,7 @@ export interface TaskListQuery {
   search?: string
   tracker?: TaskTracker
   status?: TaskStatus
+  statusId?: string
   priority?: TaskPriority
   assigneeId?: string
   createdById?: string
@@ -144,20 +148,21 @@ export interface ITaskRepository {
   createTask(data: CreateTaskDto & { createdById: string }): Promise<Task>
   updateTask(id: string, data: UpdateTaskDto): Promise<Task | null>
   deleteTask(id: string): Promise<boolean>
+  updateTasksStatusId(projectId: string, fromStatusId: string, toStatusId: string | null): Promise<void>
+  syncLegacyStatus(statusId: string, legacyStatus: TaskStatus): Promise<void>
 }
 
 /**
  * Service interface implementing Task management business logic
  */
 export interface ITaskService {
-  getTask(id: string, userId: string, userRole: string): Promise<Task | null>
-  listTasks(query: TaskListQuery, userId: string, userRole: string): Promise<PaginatedTasksDto>
-  createTask(data: CreateTaskDto, userId: string, userRole: string): Promise<Task>
+  getTask(id: string, userId: string): Promise<Task | null>
+  listTasks(query: TaskListQuery, userId: string): Promise<PaginatedTasksDto>
+  createTask(data: CreateTaskDto, userId: string): Promise<Task>
   updateTask(
     id: string,
     data: UpdateTaskDto,
     userId: string,
-    userRole: string,
   ): Promise<Task | null>
-  deleteTask(id: string, userId: string, userRole: string): Promise<boolean>
+  deleteTask(id: string, userId: string): Promise<boolean>
 }

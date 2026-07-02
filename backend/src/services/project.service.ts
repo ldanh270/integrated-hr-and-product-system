@@ -1,45 +1,59 @@
+import { EMPLOYEE_TYPE } from "@/configs/entities/employee.config.ts"
+import {
+  DEFAULT_PROJECT_TASK_STATUSES,
+  PROJECT_STATUS,
+  TASK_CREATION_POLICY,
+} from "@/configs/entities/project.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
 import {
   CreateProjectDto,
+  GanttDataDto,
+  IEmployeeRepository,
+  IProjectRepository,
+  IProjectService,
+  IProjectTaskStatusService,
+  PaginatedProjectsDto,
   Project,
   ProjectListQuery,
-  IProjectRepository,
-  IEmployeeRepository,
-  IProjectService,
-  PaginatedProjectsDto,
   UpdateProjectDto,
-  GanttDataDto,
 } from "@/types"
 import { AppError } from "@/utils/error.util.ts"
-import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 
+import { PrismaClient } from "@prisma/client"
+
+/**
+ * Handles project lifecycle, access control, and project-member rules.
+ * Part-time membership settings are validated here before repository writes.
+ */
 export class ProjectService implements IProjectService {
   constructor(
     private repository: IProjectRepository,
-    private employeeRepository: IEmployeeRepository
+    private employeeRepository: IEmployeeRepository,
+    private prisma: PrismaClient,
+    private statusService?: IProjectTaskStatusService,
   ) {}
 
   /**
-   * Checks if user has Admin or General Manager role
+   * Resolves whether the caller can bypass project scoping checks.
    */
-  private isAuthorizedAdminOrGM(userRole: string): boolean {
-    return userRole === "admin" || userRole === "general_manager"
+  private async checkIsAdminOrGM(userId: string): Promise<boolean> {
+    const authContext = await authorizationService.getAuthorizationContext(userId)
+    const roles = authContext.roles
+    return authContext.isDynamicAdmin || roles.has("admin") || roles.has("general_manager")
   }
 
   /**
-   * Retrieves a project with role-based access control
-   * Admins/GMs can view any project
-   * Others can only view if they are the team leader or a member
-   * Throws forbidden error if user lacks access
+   * Returns one project when the caller is allowed to view it.
    */
-  async getProject(id: string, userId: string, userRole: string): Promise<Project | null> {
+  async getProject(id: string, userId: string): Promise<Project | null> {
     const project = await this.repository.findById(id)
     if (!project) {
       throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "ProjectService")
     }
 
-    // Authorization: GM/Admin can view all. TL or Employee can only view if they are the leader or a member of the project
-    if (!this.isAuthorizedAdminOrGM(userRole)) {
+    const isAdminOrGM = await this.checkIsAdminOrGM(userId)
+    if (!isAdminOrGM) {
       const isTL = project.teamLeaderId === userId
       const isMember = await this.repository.isMember(id, userId)
       if (!isTL && !isMember) {
@@ -51,35 +65,26 @@ export class ProjectService implements IProjectService {
   }
 
   /**
-   * Lists projects with role-based filtering
-   * Delegates to repository which applies access control
+   * Lists projects with repository-level filtering based on the caller's visibility scope.
    */
-  async listProjects(
-    query: ProjectListQuery,
-    userId: string,
-    userRole: string
-  ): Promise<PaginatedProjectsDto> {
-    return this.repository.listProjects(query, userId, userRole)
+  async listProjects(query: ProjectListQuery, userId: string): Promise<PaginatedProjectsDto> {
+    const isAdminOrGM = await this.checkIsAdminOrGM(userId)
+    return this.repository.listProjects(query, userId, isAdminOrGM)
   }
 
   /**
-   * Creates a new project
-   * Only Admins and General Managers can create projects
-   * Validates team leader exists if provided
-   * Prevents duplicate project names
-   * Throws error if user lacks permission or data is invalid
+   * Creates a project and optionally seeds its default task-status columns.
    */
-  async createProject(data: CreateProjectDto, userId: string, userRole: string): Promise<Project> {
-    // Only GM and Admin are allowed to create projects
-    if (!this.isAuthorizedAdminOrGM(userRole)) {
+  async createProject(data: CreateProjectDto, userId: string): Promise<Project> {
+    const isAdminOrGM = await this.checkIsAdminOrGM(userId)
+    if (!isAdminOrGM) {
       throw new AppError(
         "Only General Managers or Admins can create projects",
         HttpStatusCode.FORBIDDEN,
-        "ProjectService"
+        "ProjectService",
       )
     }
 
-    // Check if the Team Leader exists
     if (data.teamLeaderId) {
       const leader = await this.employeeRepository.findById(data.teamLeaderId)
       if (!leader) {
@@ -87,13 +92,11 @@ export class ProjectService implements IProjectService {
       }
     }
 
-    // Check for duplicate project name
     const existing = await this.repository.findByName(data.name)
     if (existing) {
       throw new AppError("Project name already exists", HttpStatusCode.CONFLICT, "ProjectService")
     }
 
-    // Validate project dates check constraints
     if (data.startDate && data.expectedEndDate) {
       const start = new Date(data.startDate)
       const end = new Date(data.expectedEndDate)
@@ -101,46 +104,64 @@ export class ProjectService implements IProjectService {
         throw new AppError(
           "Ngày bắt đầu không được lớn hơn ngày kết thúc dự kiến",
           HttpStatusCode.BAD_REQUEST,
-          "ProjectService"
+          "ProjectService",
         )
       }
     }
 
-    return this.repository.createProject({
-      ...data,
-      createdById: userId,
+    return this.prisma.$transaction(async (tx) => {
+      const project = await tx.project.create({
+        data: {
+          name: data.name,
+          description: data.description || null,
+          techStack: data.techStack || [],
+          status: data.status || PROJECT_STATUS.PLANNING,
+          teamLeaderId: data.teamLeaderId || null,
+          createdById: userId,
+          startDate: data.startDate ? new Date(data.startDate) : null,
+          expectedEndDate: data.expectedEndDate ? new Date(data.expectedEndDate) : null,
+          taskCreationPolicy: data.taskCreationPolicy || TASK_CREATION_POLICY.LEADER_ONLY,
+        },
+      })
+
+      if (this.statusService) {
+        for (const item of DEFAULT_PROJECT_TASK_STATUSES) {
+          await tx.projectTaskStatus.create({
+            data: {
+              projectId: project.id,
+              name: item.name,
+              color: item.color,
+              order: item.order,
+              isDefault: item.isDefault,
+              isCompleted: item.isCompleted,
+            },
+          })
+        }
+      }
+
+      return project as unknown as Project
     })
   }
 
   /**
-   * Updates an existing project
-   * Only Admins, GMs, or the project's Team Leader can update
-   * Validates new team leader exists if provided
-   * Prevents duplicate project names during rename
-   * Throws error if user lacks permission or project not found
+   * Updates project metadata after validating ownership, uniqueness, and date constraints.
    */
-  async updateProject(
-    id: string,
-    data: UpdateProjectDto,
-    userId: string,
-    userRole: string
-  ): Promise<Project | null> {
+  async updateProject(id: string, data: UpdateProjectDto, userId: string): Promise<Project | null> {
     const project = await this.repository.findById(id)
     if (!project) {
       throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "ProjectService")
     }
 
-    // Only GM/Admin or the Team Leader of the project can update it
     const isTL = project.teamLeaderId === userId
-    if (!this.isAuthorizedAdminOrGM(userRole) && !isTL) {
+    const isAdminOrGM = await this.checkIsAdminOrGM(userId)
+    if (!isAdminOrGM && !isTL) {
       throw new AppError(
         "Only Admins, GMs, or the Project's Team Leader can update this project",
         HttpStatusCode.FORBIDDEN,
-        "ProjectService"
+        "ProjectService",
       )
     }
 
-    // Check if the new Team Leader exists
     if (data.teamLeaderId) {
       const leader = await this.employeeRepository.findById(data.teamLeaderId)
       if (!leader) {
@@ -148,7 +169,6 @@ export class ProjectService implements IProjectService {
       }
     }
 
-    // Check for duplicate name if project is being renamed
     if (data.name && data.name !== project.name) {
       const existing = await this.repository.findByName(data.name)
       if (existing) {
@@ -156,16 +176,36 @@ export class ProjectService implements IProjectService {
       }
     }
 
-    // Validate project dates check constraints
-    const start = data.startDate !== undefined ? (data.startDate ? new Date(data.startDate) : null) : (project.startDate ? new Date(project.startDate) : null)
-    const end = data.expectedEndDate !== undefined ? (data.expectedEndDate ? new Date(data.expectedEndDate) : null) : (project.expectedEndDate ? new Date(project.expectedEndDate) : null)
-    const actualEnd = data.actualEndDate !== undefined ? (data.actualEndDate ? new Date(data.actualEndDate) : null) : (project.actualEndDate ? new Date(project.actualEndDate) : null)
+    const start =
+      data.startDate !== undefined
+        ? data.startDate
+          ? new Date(data.startDate)
+          : null
+        : project.startDate
+          ? new Date(project.startDate)
+          : null
+    const end =
+      data.expectedEndDate !== undefined
+        ? data.expectedEndDate
+          ? new Date(data.expectedEndDate)
+          : null
+        : project.expectedEndDate
+          ? new Date(project.expectedEndDate)
+          : null
+    const actualEnd =
+      data.actualEndDate !== undefined
+        ? data.actualEndDate
+          ? new Date(data.actualEndDate)
+          : null
+        : project.actualEndDate
+          ? new Date(project.actualEndDate)
+          : null
 
     if (start && end && start > end) {
       throw new AppError(
         "Ngày bắt đầu không được lớn hơn ngày kết thúc dự kiến",
         HttpStatusCode.BAD_REQUEST,
-        "ProjectService"
+        "ProjectService",
       )
     }
 
@@ -173,7 +213,7 @@ export class ProjectService implements IProjectService {
       throw new AppError(
         "Ngày bắt đầu không được lớn hơn ngày kết thúc thực tế",
         HttpStatusCode.BAD_REQUEST,
-        "ProjectService"
+        "ProjectService",
       )
     }
 
@@ -183,15 +223,14 @@ export class ProjectService implements IProjectService {
   /**
    * Deletes a project
    * Only Admins and General Managers can delete projects
-   * Throws error if user lacks permission or project not found
    */
-  async deleteProject(id: string, userId: string, userRole: string): Promise<boolean> {
-    // Only GM/Admin can delete projects
-    if (!this.isAuthorizedAdminOrGM(userRole)) {
+  async deleteProject(id: string, userId: string): Promise<boolean> {
+    const isAdminOrGM = await this.checkIsAdminOrGM(userId)
+    if (!isAdminOrGM) {
       throw new AppError(
         "Only General Managers or Admins can delete projects",
         HttpStatusCode.FORBIDDEN,
-        "ProjectService"
+        "ProjectService",
       )
     }
 
@@ -204,75 +243,76 @@ export class ProjectService implements IProjectService {
   }
 
   /**
-   * Adds an employee as a member to a project
-   * Only Admins, GMs, or the project's Team Leader can add members
-   * Validates employee exists and is not already a member
-   * Throws error if user lacks permission or data is invalid
+   * Adds an employee to a project and enforces part-time hourly-rate requirements.
    */
   async addMember(
     projectId: string,
     employeeId: string,
     userId: string,
-    userRole: string
+    options?: { hourlyRate?: number | null; workMode?: string },
   ): Promise<boolean> {
     const project = await this.repository.findById(projectId)
     if (!project) {
       throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "ProjectService")
     }
 
-    // Only GM/Admin or the project's Team Leader can manage members
     const isTL = project.teamLeaderId === userId
-    if (!this.isAuthorizedAdminOrGM(userRole) && !isTL) {
+    const isAdminOrGM = await this.checkIsAdminOrGM(userId)
+    if (!isAdminOrGM && !isTL) {
       throw new AppError(
         "Only Admins, GMs, or the Project's Team Leader can manage members",
         HttpStatusCode.FORBIDDEN,
-        "ProjectService"
+        "ProjectService",
       )
     }
 
-    // Check if the employee to be added exists
     const employee = await this.employeeRepository.findById(employeeId)
     if (!employee) {
       throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "ProjectService")
     }
 
-    // Check if already a project member
-    const alreadyMember = await this.repository.isMember(projectId, employeeId)
-    if (alreadyMember) {
-      throw new AppError("Employee is already a member of this project", HttpStatusCode.CONFLICT, "ProjectService")
+    if (
+      employee.employeeType === EMPLOYEE_TYPE.PART_TIME &&
+      (options?.hourlyRate == null || options.hourlyRate <= 0)
+    ) {
+      throw new AppError(
+        "Part-time members require an hourly rate",
+        HttpStatusCode.UNPROCESSABLE_ENTITY,
+        "ProjectService",
+      )
     }
 
-    return this.repository.addMember(projectId, employeeId)
+    const alreadyMember = await this.repository.isMember(projectId, employeeId)
+    if (alreadyMember) {
+      throw new AppError(
+        "Employee is already a member of this project",
+        HttpStatusCode.CONFLICT,
+        "ProjectService",
+      )
+    }
+
+    return this.repository.addMember(projectId, employeeId, options)
   }
 
   /**
-   * Removes a member from a project
-   * Only Admins, GMs, or the project's Team Leader can remove members
-   * Validates employee is actually a member before removing
-   * Throws error if user lacks permission or member not found
+   * Removes an existing member from a project after permission and membership checks.
    */
-  async removeMember(
-    projectId: string,
-    employeeId: string,
-    userId: string,
-    userRole: string
-  ): Promise<boolean> {
+  async removeMember(projectId: string, employeeId: string, userId: string): Promise<boolean> {
     const project = await this.repository.findById(projectId)
     if (!project) {
       throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "ProjectService")
     }
 
-    // Only GM/Admin or the project's Team Leader can manage members
     const isTL = project.teamLeaderId === userId
-    if (!this.isAuthorizedAdminOrGM(userRole) && !isTL) {
+    const isAdminOrGM = await this.checkIsAdminOrGM(userId)
+    if (!isAdminOrGM && !isTL) {
       throw new AppError(
         "Only Admins, GMs, or the Project's Team Leader can manage members",
         HttpStatusCode.FORBIDDEN,
-        "ProjectService"
+        "ProjectService",
       )
     }
 
-    // Check if they are actually a member of the project
     const isMember = await this.repository.isMember(projectId, employeeId)
     if (!isMember) {
       throw new AppError("Employee is not a member of this project", HttpStatusCode.NOT_FOUND, "ProjectService")
@@ -282,13 +322,62 @@ export class ProjectService implements IProjectService {
   }
 
   /**
-   * Retrieves all members of a project
-   * User must have access to the project to view its members
-   * Validates project exists and user has permission
+   * Updates per-project member settings such as hourly rate and work mode.
    */
-  async getMembers(projectId: string, userId: string, userRole: string): Promise<any[]> {
-    // Check project existence and access permissions
-    const project = await this.getProject(projectId, userId, userRole)
+  async updateMember(
+    projectId: string,
+    employeeId: string,
+    userId: string,
+    data: { hourlyRate?: number | null; workMode?: string },
+  ): Promise<boolean> {
+    const project = await this.repository.findById(projectId)
+    if (!project) {
+      throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "ProjectService")
+    }
+
+    const isTL = project.teamLeaderId === userId
+    const isAdminOrGM = await this.checkIsAdminOrGM(userId)
+    if (!isAdminOrGM && !isTL) {
+      throw new AppError(
+        "Only Admins, GMs, or the Project's Team Leader can manage members",
+        HttpStatusCode.FORBIDDEN,
+        "ProjectService",
+      )
+    }
+
+    const isMember = await this.repository.isMember(projectId, employeeId)
+    if (!isMember) {
+      throw new AppError("Employee is not a member of this project", HttpStatusCode.NOT_FOUND, "ProjectService")
+    }
+
+    const employee = await this.employeeRepository.findById(employeeId)
+    if (!employee) {
+      throw new AppError("Employee not found", HttpStatusCode.NOT_FOUND, "ProjectService")
+    }
+
+    const existingMember = await this.repository.getMember(projectId, employeeId)
+    const resolvedHourlyRate =
+      data.hourlyRate !== undefined ? data.hourlyRate : (existingMember?.hourlyRate ?? null)
+
+    if (
+      employee.employeeType === EMPLOYEE_TYPE.PART_TIME &&
+      (resolvedHourlyRate == null || resolvedHourlyRate <= 0)
+    ) {
+      throw new AppError(
+        "Part-time members require an hourly rate",
+        HttpStatusCode.UNPROCESSABLE_ENTITY,
+        "ProjectService",
+      )
+    }
+
+    return this.repository.updateMember(projectId, employeeId, data)
+  }
+
+  /**
+   * Returns the active member list for one project when the caller can access that project.
+   */
+  async getMembers(projectId: string, userId: string): Promise<any[]> {
+    const project = await this.getProject(projectId, userId)
     if (!project) {
       throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "ProjectService")
     }
@@ -297,15 +386,12 @@ export class ProjectService implements IProjectService {
   }
 
   /**
-   * Retrieves Gantt Chart data including tasks, members, and approved leave days
-   * Access control: Admins/GMs can view any project
-   * Others can only view if they are the team leader or project member
+   * Loads the aggregated Gantt payload for a project, including tasks and member data.
    */
-  async getGanttData(projectId: string, userId: string, userRole: string): Promise<GanttDataDto> {
-    // Check project existence and access permissions (reuses getProject checks)
-    const project = await this.getProject(projectId, userId, userRole)
+  async getGanttData(projectId: string, userId: string): Promise<GanttDataDto> {
+    const project = await this.getProject(projectId, userId)
     if (!project) {
-      throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
+      throw new AppError("Project not found", HttpStatusCode.NOT_FOUND, "ProjectService")
     }
 
     return this.repository.getGanttData(projectId)

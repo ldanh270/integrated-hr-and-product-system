@@ -354,7 +354,7 @@ export interface IApplicationService {
   getEmployeeApplications(
     employeeId: string,
     query: IListApplicationsQueryDTO,
-    requester?: { empId: string; role: string },
+    requester?: { empId: string },
   ): Promise<{ data: any[]; total: number }>
   /** Approves a pending application. */
   approveApplication(id: string, processorId: string): Promise<any>

@@ -7,9 +7,10 @@ import { FileText } from "lucide-react"
 interface ActivityLogsTableProps {
   logs: ActivityLogItem[]
   onViewDetail: (id: string) => void
+  hideEmployee?: boolean
 }
 
-export function ActivityLogsTable({ logs, onViewDetail }: ActivityLogsTableProps) {
+export function ActivityLogsTable({ logs, onViewDetail, hideEmployee = false }: ActivityLogsTableProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -18,9 +19,11 @@ export function ActivityLogsTable({ logs, onViewDetail }: ActivityLogsTableProps
             <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Hành động
             </th>
-            <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              Nhân viên
-            </th>
+            {!hideEmployee && (
+              <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Nhân viên
+              </th>
+            )}
             <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Danh mục
             </th>
@@ -38,7 +41,7 @@ export function ActivityLogsTable({ logs, onViewDetail }: ActivityLogsTableProps
         <tbody className="divide-y divide-border/40">
           {logs.length === 0 ? (
             <tr>
-              <td colSpan={6} className="px-5 py-24 text-center">
+              <td colSpan={hideEmployee ? 5 : 6} className="px-5 py-24 text-center">
                 <div className="flex flex-col items-center gap-3">
                   <FileText className="h-10 w-10 text-muted-foreground opacity-20" />
                   <p className="text-sm text-muted-foreground">Không tìm thấy bản ghi nhật ký nào.</p>
@@ -63,14 +66,16 @@ export function ActivityLogsTable({ logs, onViewDetail }: ActivityLogsTableProps
                     />
                   </div>
                 </td>
-                <td className="px-5 py-4">
-                  <div className="text-[13px] text-foreground font-medium">
-                    {log.employeeName || <span className="text-muted-foreground italic">{COMMON_TEXTS.SYSTEM}</span>}
-                  </div>
-                  <div className="text-[11px] text-muted-foreground font-mono">
-                    {log.employeeId || COMMON_TEXTS.NOT_AVAILABLE}
-                  </div>
-                </td>
+                {!hideEmployee && (
+                  <td className="px-5 py-4">
+                    <div className="text-[13px] text-foreground font-medium">
+                      {log.employeeName || <span className="text-muted-foreground italic">{COMMON_TEXTS.SYSTEM}</span>}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground font-mono">
+                      {log.employeeId || COMMON_TEXTS.NOT_AVAILABLE}
+                    </div>
+                  </td>
+                )}
                 <td className="px-5 py-4">
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-muted text-muted-foreground border border-border/50">
                     {log.category}

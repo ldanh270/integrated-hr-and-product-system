@@ -210,7 +210,7 @@ export class ApplicationController {
       }
 
       const query = listApplicationsQuerySchema.parse(req.query)
-      const requester = req.user ? { empId: req.user.empId, role: req.user.role } : undefined
+      const requester = req.user ? { empId: req.user.empId } : undefined
       const result = await this.service.getEmployeeApplications(employeeId, query, requester)
       res.status(HttpStatusCode.OK).json({
         data: result.data,

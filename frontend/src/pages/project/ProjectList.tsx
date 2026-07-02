@@ -35,18 +35,20 @@ import { Textarea } from "@/components/ui/textarea"
 import { PROJECT_STATUSES, TASK_CREATION_POLICIES } from "@/config/entities/project.config"
 // Import employee role mappings
 import { ROLE } from "@/config/entities/employee.config"
+import { usePermission } from "@/hooks/use-permission"
 // Import API client wrappers
 import { employeeApi } from "@/lib/api/employee.api"
 import { projectApi } from "@/lib/api/project.api"
 // Import authentication global store
 import { useAuthStore } from "@/store/auth-store"
+import { ROUTES } from "@/config/routes.config"
 // Import React Query utilities for data handling and server mutations
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 // Import Lucide visual icons
 import { FolderKanban, Plus, Search, Users } from "lucide-react"
 import React, { useState } from "react"
 // Import router link navigation
-import { Link } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { extractErrorMessage } from "@/utils/error-helper"
 
 
@@ -54,10 +56,13 @@ import { extractErrorMessage } from "@/utils/error-helper"
 export default function ProjectList() {
   // Initialize query client for cache validation
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   // Retrieve the logged-in user profile details
   const { user } = useAuthStore()
+  const { roles } = usePermission()
   // Determine if the current user possesses administrative or managerial rights
-  const isManager = user?.role === ROLE.ADMIN || user?.role === ROLE.GENERAL_MANAGER
+  const isManager =
+    !!user && [ROLE.ADMIN, ROLE.GENERAL_MANAGER].some((role) => roles.includes(role))
 
   // Initialize state hooks to filter projects list
   const [search, setSearch] = useState("") // Search keyword
@@ -273,9 +278,15 @@ export default function ProjectList() {
                   <TableRow key={proj.id} className="h-16 hover:bg-muted/50 transition-colors">
                     {/* Project Name and Description link details */}
                     <TableCell className="font-semibold">
-                      <Link to={`/project/${proj.id}`} className="text-primary hover:underline font-bold text-sm">
+                      <button
+                        onClick={() => {
+                          sessionStorage.setItem("activeProjectId", proj.id)
+                          navigate(ROUTES.PROJECT.OVERVIEW)
+                        }}
+                        className="text-primary hover:underline font-bold text-sm text-left cursor-pointer"
+                      >
                         {proj.name}
-                      </Link>
+                      </button>
                       {proj.description && (
                         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1 max-w-[280px]">
                           {proj.description}

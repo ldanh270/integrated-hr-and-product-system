@@ -1,15 +1,15 @@
-import { ROLE } from "@/configs/entities/employee.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { PayrollController } from "@/controllers/payroll.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
-import { authorizeRoles } from "@/middlewares/role.middleware.ts"
+import { requireAnyPermission, requirePermission } from "@/middlewares/permission.middleware.ts"
 import { PrismaAttendanceRepository } from "@/repositories/attendance.repository.ts"
 import { PrismaEmployeeSalaryConfigRepository } from "@/repositories/employee-salary-config.repository.ts"
 import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
 import { PrismaPayrollRepository } from "@/repositories/payroll.repository.ts"
 import { PrismaPayslipRepository } from "@/repositories/payslip.repository.ts"
+import { PrismaSpentTimeRepository } from "@/repositories/spent-time.repository.ts"
 import { PayrollService } from "@/services/payroll.service.ts"
 import { AppError } from "@/utils/error.util.ts"
 
@@ -21,6 +21,8 @@ const payrollRepo = new PrismaPayrollRepository(prisma)
 const payslipRepo = new PrismaPayslipRepository(prisma)
 const configRepo = new PrismaEmployeeSalaryConfigRepository(prisma)
 const attendanceRepo = new PrismaAttendanceRepository(prisma)
+// PT payroll lines come from approved Spent Time × project member hourlyRate, not attendance.
+const spentTimeRepo = new PrismaSpentTimeRepository(prisma)
 const employeeRepo = new PrismaEmployeeRepository(prisma)
 const settingsRepo = {
   findGlobal: async () => {
@@ -35,6 +37,7 @@ const service = new PayrollService(
   configRepo,
   attendanceRepo,
   employeeRepo,
+  spentTimeRepo,
   settingsRepo,
   prisma,
 )
@@ -45,13 +48,13 @@ payrollRoutes.use(authenticate)
 // Self / Employee routes
 payrollRoutes.get("/my/payslips", controller.getMyPayslips)
 
-// HR / GM / Admin routes
-payrollRoutes.use(authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER))
+// HR / GM / Admin routes — require payroll.read as baseline
+payrollRoutes.use(requirePermission("payroll.read"))
 
 // Payroll Settings
 payrollRoutes.get(
   "/settings",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER),
+  requirePermission("payroll.update"),
   async (req, res, next) => {
     try {
       const s = await prisma.payrollSettings.findUnique({ where: { id: "GLOBAL" } })
@@ -64,7 +67,7 @@ payrollRoutes.get(
 
 payrollRoutes.put(
   "/settings",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER),
+  requirePermission("payroll.update"),
   async (req, res, next) => {
     try {
       const { triggerDay, triggerHour, triggerMinute } = req.body
@@ -108,26 +111,26 @@ payrollRoutes.get("/:id", controller.getPayroll)
 payrollRoutes.get("/:id/payslips/:empId", controller.getPayslip)
 payrollRoutes.get(
   "/employee/:empId/payslips",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER),
+  requirePermission("payroll.read"),
   controller.getEmployeePayslips,
 )
 
 // Modifying routes for HR / Admin
 payrollRoutes.post(
   "/generate",
-  authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER),
+  requirePermission("payroll.create"),
   controller.generatePayroll,
 )
 
-// Modifying routes for GM
+// Modifying routes for GM / Admin
 payrollRoutes.post(
   "/:id/approve",
-  authorizeRoles(ROLE.ADMIN, ROLE.GENERAL_MANAGER),
+  requirePermission("payroll.approve"),
   controller.approvePayroll,
 )
 payrollRoutes.post(
   "/:id/reject",
-  authorizeRoles(ROLE.ADMIN, ROLE.GENERAL_MANAGER),
+  requirePermission("payroll.approve"),
   controller.rejectPayroll,
 )
 

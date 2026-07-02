@@ -1,27 +1,35 @@
-import { useState, useMemo } from "react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
-import { format, differenceInDays, addDays, eachDayOfInterval } from "date-fns"
-import { projectApi } from "@/lib/api/project.api"
-import { taskApi } from "@/lib/api/task.api"
+import { ROLE } from "@/config/entities/employee.config"
+import {
+  CUSTOM_QUERY_TYPE,
+  TASK_PRIORITY,
+  TASK_STATUS,
+  TASK_TRACKER,
+} from "@/config/entities/project.config"
 import { customQueryApi } from "@/lib/api/custom-query.api"
 import type { CustomQuery } from "@/lib/api/custom-query.api"
-import { ROLE } from "@/config/entities/employee.config"
-import { TASK_STATUS, TASK_PRIORITY, TASK_TRACKER, CUSTOM_QUERY_TYPE } from "@/config/entities/project.config"
+import { projectApi } from "@/lib/api/project.api"
+import { taskApi } from "@/lib/api/task.api"
 import { useAuthStore } from "@/store/auth-store"
-import { extractErrorMessage } from "@/utils/error-helper"
-import type { Project, GanttLeaveDay } from "@/types/project.types"
+import type { Project } from "@/types/project.types"
 import type { Task, UpdateTaskDto } from "@/types/task.types"
+import { extractErrorMessage } from "@/utils/error-helper"
+
+import { useEffect, useMemo, useState } from "react"
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { addDays, differenceInDays, eachDayOfInterval, format } from "date-fns"
+import { toast } from "sonner"
+
 import {
-  FILTER_DEFINITIONS,
-  GANTT_FILTER_KEY,
-  QUICK_QUERY_TYPE,
-  GANTT_FILTER_TYPE,
-  GANTT_FILTER_OPERATOR,
-  PROJECT_QUERY_KEY,
   DEFAULT_MONTHS_RANGE,
   DEFAULT_MONTHS_RANGE_STRING,
   DEFAULT_RECENT_DAYS_RANGE,
+  FILTER_DEFINITIONS,
+  GANTT_FILTER_KEY,
+  GANTT_FILTER_OPERATOR,
+  GANTT_FILTER_TYPE,
+  PROJECT_QUERY_KEY,
+  QUICK_QUERY_TYPE,
 } from "../constants/gantt.constants"
 
 interface UseProjectGanttProps {
@@ -41,6 +49,15 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     return new Date()
   })
 
+  // Timeline view range configuration (timeline end date)
+  const [timelineEnd, setTimelineEnd] = useState<Date>(() => {
+    const start = project.startDate ? new Date(project.startDate) : new Date()
+    return addDays(start, DEFAULT_MONTHS_RANGE * 30 - 1)
+  })
+
+  // Track if we have initialized the timeline dynamically from tasks
+  const [hasInitializedTimeline, setHasInitializedTimeline] = useState(false)
+
   // Selected task state for completion / review modal
   const [selectedTaskForReview, setSelectedTaskForReview] = useState<Task | null>(null)
 
@@ -49,8 +66,6 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   const [showEstTime, setShowEstTime] = useState(true)
   const [showAssignee, setShowAssignee] = useState(true)
   const [showProgress, setShowProgress] = useState(true)
-  const [showLeaves, setShowLeaves] = useState(true)
-  const [showConflicts, setShowConflicts] = useState(true)
 
   // Filter form states
   const [monthsInput, setMonthsInput] = useState(DEFAULT_MONTHS_RANGE_STRING) // default 6 months from project start
@@ -61,26 +76,54 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   // Redmine Filters State
   const [isFiltersExpanded, setIsFiltersExpanded] = useState(true)
   const [activeFilterKeys, setActiveFilterKeys] = useState<string[]>([GANTT_FILTER_KEY.STATUS])
-  const [filterStates, setFilterStates] = useState<Record<string, {
-    enabled: boolean
-    operator: string
-    value: string
-  } | undefined>>({
+  const [filterStates, setFilterStates] = useState<
+    Record<
+      string,
+      | {
+          enabled: boolean
+          operator: string
+          value: string
+        }
+      | undefined
+    >
+  >({
     [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: GANTT_FILTER_OPERATOR.OPEN, value: "" },
-    [GANTT_FILTER_KEY.TRACKER]: { enabled: true, operator: GANTT_FILTER_OPERATOR.IS, value: TASK_TRACKER.TASK },
-    [GANTT_FILTER_KEY.PRIORITY]: { enabled: true, operator: GANTT_FILTER_OPERATOR.IS, value: TASK_PRIORITY.MEDIUM },
+    [GANTT_FILTER_KEY.TRACKER]: {
+      enabled: true,
+      operator: GANTT_FILTER_OPERATOR.IS,
+      value: TASK_TRACKER.TASK,
+    },
+    [GANTT_FILTER_KEY.PRIORITY]: {
+      enabled: true,
+      operator: GANTT_FILTER_OPERATOR.IS,
+      value: TASK_PRIORITY.MEDIUM,
+    },
     [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: true, operator: GANTT_FILTER_OPERATOR.IS, value: "" },
   })
 
   const [appliedFilterKeys, setAppliedFilterKeys] = useState<string[]>([GANTT_FILTER_KEY.STATUS])
-  const [appliedFilterStates, setAppliedFilterStates] = useState<Record<string, {
-    enabled: boolean
-    operator: string
-    value: string
-  } | undefined>>({
+  const [appliedFilterStates, setAppliedFilterStates] = useState<
+    Record<
+      string,
+      | {
+          enabled: boolean
+          operator: string
+          value: string
+        }
+      | undefined
+    >
+  >({
     [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: GANTT_FILTER_OPERATOR.OPEN, value: "" },
-    [GANTT_FILTER_KEY.TRACKER]: { enabled: true, operator: GANTT_FILTER_OPERATOR.IS, value: TASK_TRACKER.TASK },
-    [GANTT_FILTER_KEY.PRIORITY]: { enabled: true, operator: GANTT_FILTER_OPERATOR.IS, value: TASK_PRIORITY.MEDIUM },
+    [GANTT_FILTER_KEY.TRACKER]: {
+      enabled: true,
+      operator: GANTT_FILTER_OPERATOR.IS,
+      value: TASK_TRACKER.TASK,
+    },
+    [GANTT_FILTER_KEY.PRIORITY]: {
+      enabled: true,
+      operator: GANTT_FILTER_OPERATOR.IS,
+      value: TASK_PRIORITY.MEDIUM,
+    },
     [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: true, operator: GANTT_FILTER_OPERATOR.IS, value: "" },
   })
 
@@ -106,11 +149,11 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
 
   // Mutation to save custom query
   const saveQueryMutation = useMutation({
-    mutationFn: async (data: { name: string; queryData: string }) => {
+    mutationFn: async (data: { name: string; projectId?: string | null; queryData: string }) => {
       return customQueryApi.create({
         name: data.name,
         type: CUSTOM_QUERY_TYPE.GANTT,
-        projectId,
+        projectId: data.projectId !== undefined ? data.projectId : projectId,
         queryData: data.queryData,
       })
     },
@@ -146,6 +189,14 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
         setFilterStates(data.filterStates)
         setAppliedFilterKeys(data.activeFilterKeys)
         setAppliedFilterStates(data.filterStates)
+
+        // Also apply view options if saved
+        if (data.options) {
+          if (data.options.showEstTime !== undefined) setShowEstTime(data.options.showEstTime)
+          if (data.options.showAssignee !== undefined) setShowAssignee(data.options.showAssignee)
+          if (data.options.showProgress !== undefined) setShowProgress(data.options.showProgress)
+        }
+
         toast.success(`Đã áp dụng truy vấn: ${savedQuery.name}`)
       } else {
         toast.error("Dữ liệu truy vấn không hợp lệ")
@@ -156,35 +207,27 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   }
 
   // Handle saving new custom query
-  const handleSaveQuery = () => {
-    const name = prompt("Nhập tên truy vấn riêng cần lưu:")
-    if (!name || !name.trim()) return
-
-    const queryDataObj = {
-      activeFilterKeys,
-      filterStates,
-    }
-
-    saveQueryMutation.mutate({
-      name: name.trim(),
-      queryData: JSON.stringify(queryDataObj),
-    })
+  const handleSaveQuery = (data: {
+    name: string
+    projectId?: string | null
+    queryData: string
+  }) => {
+    saveQueryMutation.mutate(data)
   }
 
-  const tasks = ganttData?.tasks || []
-  const leaveDays = ganttData?.leaveDays || []
+  const tasks = useMemo(() => ganttData?.tasks || [], [ganttData?.tasks])
 
   // Find all unique assignees (team leader + project members)
   const assignees = useMemo(() => {
     const list: { id: string; fullName: string }[] = []
-    
+
     // Add team leader
     if (project?.teamLeader) {
       list.push({ id: project.teamLeader.id, fullName: project.teamLeader.fullName })
     } else if (project?.teamLeaderId) {
       list.push({ id: project.teamLeaderId, fullName: "Team Leader" })
     }
-    
+
     // Add members
     const members = ganttData?.members || []
     members.forEach((m) => {
@@ -192,25 +235,73 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
         list.push({ id: m.id, fullName: m.fullName })
       }
     })
-    
+
     return list
   }, [project, ganttData])
 
+  // Sync timeline range dynamically with loaded tasks once
+  useEffect(() => {
+    if (tasks && tasks.length > 0 && !hasInitializedTimeline) {
+      let minStart: Date | null = null
+      let maxEnd: Date | null = null
+
+      for (const t of tasks) {
+        if (t.startDate) {
+          const d = new Date(t.startDate)
+          if (!minStart || d.getTime() < minStart.getTime()) minStart = d
+        }
+
+        const dates: Date[] = []
+        if (t.updatedAt) dates.push(new Date(t.updatedAt))
+        if (t.completedAt) dates.push(new Date(t.completedAt))
+        if (t.dueDate) dates.push(new Date(t.dueDate))
+
+        for (const d of dates) {
+          if (!maxEnd || d.getTime() > maxEnd.getTime()) maxEnd = d
+        }
+      }
+
+      if (minStart) {
+        setTimelineStart(minStart)
+        setMonthInput(minStart.getMonth())
+        setYearInput(minStart.getFullYear())
+      }
+
+      if (minStart && maxEnd) {
+        // Add 2 days buffer at the end for clean design
+        const bufferedEnd = addDays(maxEnd, 2)
+        setTimelineEnd(bufferedEnd)
+
+        const days = differenceInDays(bufferedEnd, minStart) + 1
+        const months = Math.max(1, Math.ceil(days / 30))
+        setMonthsInput(months.toString())
+        setMonthsRange(months)
+      }
+      setHasInitializedTimeline(true)
+    }
+  }, [tasks, hasInitializedTimeline])
+
   const getDefaultOperator = (key: string) => {
-    const def = Reflect.get(FILTER_DEFINITIONS, key) as { label: string; type: string; group: string } | undefined
+    const def = Reflect.get(FILTER_DEFINITIONS, key) as
+      | { label: string; type: string; group: string }
+      | undefined
     if (def === undefined) return GANTT_FILTER_OPERATOR.IS
     if (key === GANTT_FILTER_KEY.STATUS) return GANTT_FILTER_OPERATOR.OPEN
-    if (key === GANTT_FILTER_KEY.TRACKER || key === GANTT_FILTER_KEY.PRIORITY) return GANTT_FILTER_OPERATOR.IS
+    if (key === GANTT_FILTER_KEY.TRACKER || key === GANTT_FILTER_KEY.PRIORITY)
+      return GANTT_FILTER_OPERATOR.IS
     if (def.type === GANTT_FILTER_TYPE.EMPLOYEE) return GANTT_FILTER_OPERATOR.LA
     if (def.type === GANTT_FILTER_TYPE.TEXT) return GANTT_FILTER_OPERATOR.CHUA
-    if (def.type === GANTT_FILTER_TYPE.PROGRESS || def.type === GANTT_FILTER_TYPE.NUMBER) return GANTT_FILTER_OPERATOR.EQUAL
+    if (def.type === GANTT_FILTER_TYPE.PROGRESS || def.type === GANTT_FILTER_TYPE.NUMBER)
+      return GANTT_FILTER_OPERATOR.EQUAL
     if (def.type === GANTT_FILTER_TYPE.DATE) return GANTT_FILTER_OPERATOR.ANY
     if (def.type === GANTT_FILTER_TYPE.RELATION) return GANTT_FILTER_OPERATOR.ANY
     return GANTT_FILTER_OPERATOR.IS
   }
 
   const getDefaultValue = (key: string) => {
-    const def = Reflect.get(FILTER_DEFINITIONS, key) as { label: string; type: string; group: string } | undefined
+    const def = Reflect.get(FILTER_DEFINITIONS, key) as
+      | { label: string; type: string; group: string }
+      | undefined
     if (def === undefined) return ""
     if (key === GANTT_FILTER_KEY.TRACKER) return TASK_TRACKER.TASK
     if (key === GANTT_FILTER_KEY.PRIORITY) return TASK_PRIORITY.MEDIUM
@@ -228,7 +319,9 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [PROJECT_QUERY_KEY.GANTT, projectId] })
-      void queryClient.invalidateQueries({ queryKey: [PROJECT_QUERY_KEY.TASKS, PROJECT_QUERY_KEY.OVERVIEW, projectId] })
+      void queryClient.invalidateQueries({
+        queryKey: [PROJECT_QUERY_KEY.TASKS, PROJECT_QUERY_KEY.OVERVIEW, projectId],
+      })
       toast.success("Đã cập nhật công việc")
     },
     onError: (err) => {
@@ -236,36 +329,49 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     },
   })
 
-  // Timeline days calculation (monthsRange months starting from timelineStart)
+  // Timeline days calculation dynamically based on start and end dates
   const timelineDays = useMemo(() => {
-    const end = addDays(addDays(timelineStart, monthsRange * 30), -1)
-    const daysInterval = eachDayOfInterval({ start: timelineStart, end })
+    const start = timelineStart
+    const end = timelineEnd < timelineStart ? timelineStart : timelineEnd
+    const daysInterval = eachDayOfInterval({ start, end })
     return daysInterval.slice(0, 180) // Cap at 180 days max
-  }, [timelineStart, monthsRange])
+  }, [timelineStart, timelineEnd])
 
   // Month spans grouping for timeline header
   const monthSpans = useMemo(() => {
     if (timelineDays.length === 0) return []
-    const spans: { label: string; colSpan: number }[] = []
-    
+    const spans: { label: string; colSpan: number; startCol: number; endCol: number }[] = []
+
     let currentLabel = format(timelineDays[0], "yyyy-M")
     let currentCount = 0
-    
-    timelineDays.forEach((day: Date) => {
+    let startIndex = 1
+
+    timelineDays.forEach((day, index) => {
       const label = format(day, "yyyy-M")
       if (label === currentLabel) {
         currentCount++
       } else {
-        spans.push({ label: currentLabel, colSpan: currentCount })
+        spans.push({
+          label: currentLabel,
+          colSpan: currentCount,
+          startCol: startIndex,
+          endCol: startIndex + currentCount,
+        })
         currentLabel = label
+        startIndex = index + 1
         currentCount = 1
       }
     })
-    
+
     if (currentCount > 0) {
-      spans.push({ label: currentLabel, colSpan: currentCount })
+      spans.push({
+        label: currentLabel,
+        colSpan: currentCount,
+        startCol: startIndex,
+        endCol: startIndex + currentCount,
+      })
     }
-    
+
     return spans
   }, [timelineDays])
 
@@ -274,16 +380,27 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     return tasks.filter((task: Task) => {
       for (const key of appliedFilterKeys) {
         if (!Object.prototype.hasOwnProperty.call(appliedFilterStates, key)) continue
-        const filter = Reflect.get(appliedFilterStates, key) as { enabled: boolean; operator: string; value: string } | undefined
+        const filter = Reflect.get(appliedFilterStates, key) as
+          | { enabled: boolean; operator: string; value: string }
+          | undefined
         if (!filter?.enabled) continue
 
         if (key === GANTT_FILTER_KEY.STATUS) {
           const statusVal = task.status
           if (filter.operator === GANTT_FILTER_OPERATOR.OPEN) {
-            const isOpen = ([TASK_STATUS.TODO, TASK_STATUS.IN_PROGRESS, TASK_STATUS.IN_REVIEW, TASK_STATUS.REOPENED] as string[]).includes(statusVal)
+            const isOpen = (
+              [
+                TASK_STATUS.TODO,
+                TASK_STATUS.IN_PROGRESS,
+                TASK_STATUS.IN_REVIEW,
+                TASK_STATUS.REOPENED,
+              ] as string[]
+            ).includes(statusVal)
             if (!isOpen) return false
           } else if (filter.operator === GANTT_FILTER_OPERATOR.DONG) {
-            const isClosed = ([TASK_STATUS.DONE, TASK_STATUS.CANCELLED] as string[]).includes(statusVal)
+            const isClosed = ([TASK_STATUS.DONE, TASK_STATUS.CANCELLED] as string[]).includes(
+              statusVal,
+            )
             if (!isClosed) return false
           } else if (filter.operator === GANTT_FILTER_OPERATOR.TAT_CA) {
             // matches all
@@ -292,39 +409,34 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
           } else if (filter.operator === GANTT_FILTER_OPERATOR.KHONG_LA) {
             if (statusVal === filter.value) return false
           }
-        }
-
-        else if (key === GANTT_FILTER_KEY.TRACKER) {
+        } else if (key === GANTT_FILTER_KEY.TRACKER) {
           const val = task.tracker
           if (filter.operator === GANTT_FILTER_OPERATOR.IS && val !== filter.value) return false
           if (filter.operator === GANTT_FILTER_OPERATOR.IS_NOT && val === filter.value) return false
-        }
-
-        else if (key === GANTT_FILTER_KEY.PRIORITY) {
+        } else if (key === GANTT_FILTER_KEY.PRIORITY) {
           const val = task.priority
           if (filter.operator === GANTT_FILTER_OPERATOR.IS && val !== filter.value) return false
           if (filter.operator === GANTT_FILTER_OPERATOR.IS_NOT && val === filter.value) return false
-        }
-
-        else if (key === GANTT_FILTER_KEY.ASSIGNEE) {
+        } else if (key === GANTT_FILTER_KEY.ASSIGNEE) {
           const assigneeVal = task.assigneeId
-          if (filter.operator === GANTT_FILTER_OPERATOR.LA && assigneeVal !== filter.value) return false
-          if (filter.operator === GANTT_FILTER_OPERATOR.KHONG_LA && assigneeVal === filter.value) return false
-          if (filter.operator === GANTT_FILTER_OPERATOR.TOI && assigneeVal !== user?.id) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.LA && assigneeVal !== filter.value)
+            return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.KHONG_LA && assigneeVal === filter.value)
+            return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.TOI && assigneeVal !== user?.id)
+            return false
           if (filter.operator === GANTT_FILTER_OPERATOR.NONE && assigneeVal !== null) return false
         }
 
         // Custom internal filters from sidebar quick links
         else if (key === GANTT_FILTER_KEY.QUICK_REPORTED) {
           if (task.createdById !== filter.value) return false
-        }
-        else if (key === GANTT_FILTER_KEY.QUICK_UPDATED) {
+        } else if (key === GANTT_FILTER_KEY.QUICK_UPDATED) {
           // just filter active tasks updated recently
           const updateDate = new Date(task.updatedAt)
           const diff = differenceInDays(new Date(), updateDate)
           if (diff > DEFAULT_RECENT_DAYS_RANGE) return false // updated more than 7 days ago
-        }
-        else if (key === GANTT_FILTER_KEY.QUICK_WATCHED) {
+        } else if (key === GANTT_FILTER_KEY.QUICK_WATCHED) {
           // not fully implemented watch model, simulate by assignee or creator
           if (task.assigneeId !== filter.value && task.createdById !== filter.value) return false
         }
@@ -334,17 +446,20 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
           const val = task.title.toLowerCase()
           const search = filter.value.toLowerCase()
           if (filter.operator === GANTT_FILTER_OPERATOR.CHUA && !val.includes(search)) return false
-          if (filter.operator === GANTT_FILTER_OPERATOR.KHONG_CHUA && val.includes(search)) return false
-          if (filter.operator === GANTT_FILTER_OPERATOR.BAT_DAU_BANG && !val.startsWith(search)) return false
-          if (filter.operator === GANTT_FILTER_OPERATOR.KET_THUC_BANG && !val.endsWith(search)) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.KHONG_CHUA && val.includes(search))
+            return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.BAT_DAU_BANG && !val.startsWith(search))
+            return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.KET_THUC_BANG && !val.endsWith(search))
+            return false
           if (filter.operator === GANTT_FILTER_OPERATOR.NONE && val.trim() !== "") return false
           if (filter.operator === GANTT_FILTER_OPERATOR.ANY && val.trim() === "") return false
-        }
-        else if (key === GANTT_FILTER_KEY.TXT_DESC) {
+        } else if (key === GANTT_FILTER_KEY.TXT_DESC) {
           const val = (task.description || "").toLowerCase()
           const search = filter.value.toLowerCase()
           if (filter.operator === GANTT_FILTER_OPERATOR.CHUA && !val.includes(search)) return false
-          if (filter.operator === GANTT_FILTER_OPERATOR.KHONG_CHUA && val.includes(search)) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.KHONG_CHUA && val.includes(search))
+            return false
           if (filter.operator === GANTT_FILTER_OPERATOR.NONE && val.trim() !== "") return false
           if (filter.operator === GANTT_FILTER_OPERATOR.ANY && val.trim() === "") return false
         }
@@ -354,7 +469,8 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
           const val = task.progress
           const comp = parseInt(filter.value) || 0
           if (filter.operator === GANTT_FILTER_OPERATOR.EQUAL && val !== comp) return false
-          if (filter.operator === GANTT_FILTER_OPERATOR.GREATER_THAN_EQUAL && val < comp) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.GREATER_THAN_EQUAL && val < comp)
+            return false
           if (filter.operator === GANTT_FILTER_OPERATOR.LESS_THAN_EQUAL && val > comp) return false
         }
 
@@ -363,10 +479,13 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
           const val = task.estimatedTime || 0
           const comp = parseFloat(filter.value) || 0
           if (filter.operator === GANTT_FILTER_OPERATOR.EQUAL && val !== comp) return false
-          if (filter.operator === GANTT_FILTER_OPERATOR.GREATER_THAN_EQUAL && val < comp) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.GREATER_THAN_EQUAL && val < comp)
+            return false
           if (filter.operator === GANTT_FILTER_OPERATOR.LESS_THAN_EQUAL && val > comp) return false
-          if (filter.operator === GANTT_FILTER_OPERATOR.NONE && task.estimatedTime !== null) return false
-          if (filter.operator === GANTT_FILTER_OPERATOR.ANY && task.estimatedTime === null) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.NONE && task.estimatedTime !== null)
+            return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.ANY && task.estimatedTime === null)
+            return false
         }
 
         // Date logic (Start Date & Due Date)
@@ -376,7 +495,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
             if (filter.operator === GANTT_FILTER_OPERATOR.ANY) continue // matches any
             return false
           }
-          
+
           const taskDate = new Date(taskDateStr)
           const today = new Date()
 
@@ -440,86 +559,47 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   // Navigate timeline view
   const shiftTimeline = (days: number) => {
     setTimelineStart((prev) => addDays(prev, days))
+    setTimelineEnd((prev) => addDays(prev, days))
   }
 
   // Reset timeline to project start
   const resetTimelineToProjectStart = () => {
-    if (project.startDate) {
-      setTimelineStart(new Date(project.startDate))
-    } else {
-      setTimelineStart(new Date())
-    }
+    const start = project.startDate ? new Date(project.startDate) : new Date()
+    const duration = differenceInDays(timelineEnd, timelineStart)
+    setTimelineStart(start)
+    setTimelineEnd(addDays(start, duration))
   }
 
   // Check roles/permissions
   const isLeader = project.teamLeaderId === user?.id
   const isAdminOrGM = user?.role === ROLE.ADMIN || user?.role === ROLE.GENERAL_MANAGER
 
-  // Find overlap leave days for a task and its assignee
-  const getLeaveConflict = (task: Task) => {
-    if (!task.assigneeId || !task.startDate || !task.dueDate) return null
+  // Overlap leave days check removed per user request
 
-    const taskStart = new Date(task.startDate)
-    const taskDue = new Date(task.dueDate)
-
-    // Filter approved leaves for this assignee
-    const assigneeLeaves = leaveDays.filter((l: GanttLeaveDay) => l.employeeId === task.assigneeId)
-
-    const conflictingLeaves = assigneeLeaves.filter((leave: GanttLeaveDay) => {
-      const leaveStart = new Date(leave.startDate)
-      const leaveEnd = new Date(leave.endDate)
-
-      // Check interval overlap
-      return (
-        taskStart <= leaveEnd && taskDue >= leaveStart
-      )
-    })
-
-    if (conflictingLeaves.length === 0) return null
-
-    // Format leave dates for tooltips
-    return conflictingLeaves.map((l: GanttLeaveDay) => {
-      const startStr = format(new Date(l.startDate), "dd/MM")
-      const endStr = format(new Date(l.endDate), "dd/MM")
-      return `${startStr} - ${endStr}${l.reason ? ` (${l.reason})` : ""}`
-    }).join(", ")
-  }
-
-  // Helper to check if a member is on leave on a specific day
-  const isEmployeeOnLeaveOnDay = (employeeId: string, day: Date) => {
-    const employeeLeaves = leaveDays.filter((l: GanttLeaveDay) => l.employeeId === employeeId)
-    return employeeLeaves.some((leave: GanttLeaveDay) => {
-      const start = new Date(leave.startDate)
-      const end = new Date(leave.endDate)
-      // Check if day is within [start, end]
-      return day >= start && day <= end
-    })
-  }
-
-  // Helper to render task bar position and duration
+  // Helper to render task bar position and duration (based on startDate to updatedAt)
   const getTaskGridStyle = (task: Task) => {
-    if (!task.startDate || !task.dueDate) return null
+    if (!task.startDate) return null
 
     const taskStart = new Date(task.startDate)
-    const taskDue = new Date(task.dueDate)
+    const taskEnd = task.updatedAt ? new Date(task.updatedAt) : new Date()
 
     // Check if task falls completely out of timeline view
-    const timelineEnd = addDays(timelineStart, 29)
-    if (taskDue < timelineStart || taskStart > timelineEnd) {
+    if (taskEnd < timelineStart || taskStart > timelineEnd) {
       return null
     }
 
     // Calculate grid positions (1-indexed columns, 1 column per day)
     let startCol = differenceInDays(taskStart, timelineStart) + 1
-    let span = differenceInDays(taskDue, taskStart) + 1
+    let span = differenceInDays(taskEnd, taskStart) + 1
 
     // Crop to timeline bounds
     if (startCol < 1) {
       span += startCol - 1
       startCol = 1
     }
-    if (startCol + span > 30) {
-      span = 31 - startCol
+    const maxCols = timelineDays.length
+    if (startCol + span > maxCols + 1) {
+      span = maxCols + 1 - startCol
     }
 
     if (span <= 0) return null
@@ -551,6 +631,8 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
       const newDate = new Date(prev.getFullYear(), prev.getMonth() + months, 1)
       setMonthInput(newDate.getMonth())
       setYearInput(newDate.getFullYear())
+      const duration = differenceInDays(timelineEnd, prev)
+      setTimelineEnd(addDays(newDate, duration))
       return newDate
     })
   }
@@ -559,8 +641,18 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   const getMonthOffsetLabel = (offset: number) => {
     const d = new Date(timelineStart.getFullYear(), timelineStart.getMonth() + offset, 1)
     const months = [
-      "Tháng một", "Tháng hai", "Tháng ba", "Tháng tư", "Tháng năm", "Tháng sáu",
-      "Tháng bảy", "Tháng tám", "Tháng chín", "Tháng mười", "Tháng mười một", "Tháng mười hai"
+      "Tháng một",
+      "Tháng hai",
+      "Tháng ba",
+      "Tháng tư",
+      "Tháng năm",
+      "Tháng sáu",
+      "Tháng bảy",
+      "Tháng tám",
+      "Tháng chín",
+      "Tháng mười",
+      "Tháng mười một",
+      "Tháng mười hai",
     ]
     return months[d.getMonth()]
   }
@@ -579,28 +671,64 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     setMonthsRange(range)
     const newStart = new Date(yearInput, monthInput, 1)
     setTimelineStart(newStart)
-    
+    setTimelineEnd(addDays(newStart, range * 30 - 1))
+
     // Apply filters
     setAppliedFilterKeys([...activeFilterKeys])
     setAppliedFilterStates(JSON.parse(JSON.stringify(filterStates)))
-    
+
     toast.success("Đã áp dụng bộ lọc và dòng thời gian")
   }
 
   // Clear/Reset filters
   const handleClearFilters = () => {
-    setMonthsInput("6")
-    setMonthsRange(6)
-    if (project.startDate) {
-      const pStart = new Date(project.startDate)
-      setTimelineStart(pStart)
-      setMonthInput(pStart.getMonth())
-      setYearInput(pStart.getFullYear())
+    if (tasks && tasks.length > 0) {
+      let minStart: Date | null = null
+      let maxEnd: Date | null = null
+
+      for (const t of tasks) {
+        if (t.startDate) {
+          const d = new Date(t.startDate)
+          if (!minStart || d.getTime() < minStart.getTime()) minStart = d
+        }
+        const dates: Date[] = []
+        if (t.updatedAt) dates.push(new Date(t.updatedAt))
+        if (t.completedAt) dates.push(new Date(t.completedAt))
+        if (t.dueDate) dates.push(new Date(t.dueDate))
+        for (const d of dates) {
+          if (!maxEnd || d.getTime() > maxEnd.getTime()) maxEnd = d
+        }
+      }
+
+      if (minStart) {
+        setTimelineStart(minStart)
+        setMonthInput(minStart.getMonth())
+        setYearInput(minStart.getFullYear())
+      }
+      if (minStart && maxEnd) {
+        const bufferedEnd = addDays(maxEnd, 2)
+        setTimelineEnd(bufferedEnd)
+        const days = differenceInDays(bufferedEnd, minStart) + 1
+        const months = Math.max(1, Math.ceil(days / 30))
+        setMonthsInput(months.toString())
+        setMonthsRange(months)
+      }
     } else {
-      const today = new Date()
-      setTimelineStart(today)
-      setMonthInput(today.getMonth())
-      setYearInput(today.getFullYear())
+      setMonthsInput("6")
+      setMonthsRange(6)
+      if (project.startDate) {
+        const pStart = new Date(project.startDate)
+        setTimelineStart(pStart)
+        setTimelineEnd(addDays(pStart, 6 * 30 - 1))
+        setMonthInput(pStart.getMonth())
+        setYearInput(pStart.getFullYear())
+      } else {
+        const today = new Date()
+        setTimelineStart(today)
+        setTimelineEnd(addDays(today, 6 * 30 - 1))
+        setMonthInput(today.getMonth())
+        setYearInput(today.getFullYear())
+      }
     }
 
     // Reset filters
@@ -614,7 +742,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     setFilterStates(defaultStates)
     setAppliedFilterKeys(["status"])
     setAppliedFilterStates(defaultStates)
-    
+
     toast.info("Đã khôi phục bộ lọc mặc định")
   }
 
@@ -625,7 +753,11 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
       const states = {
         [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: "open", value: "" },
         [GANTT_FILTER_KEY.TRACKER]: { enabled: false, operator: "is", value: TASK_TRACKER.TASK },
-        [GANTT_FILTER_KEY.PRIORITY]: { enabled: false, operator: "is", value: TASK_PRIORITY.MEDIUM },
+        [GANTT_FILTER_KEY.PRIORITY]: {
+          enabled: false,
+          operator: "is",
+          value: TASK_PRIORITY.MEDIUM,
+        },
         [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: true, operator: "tôi", value: "" },
       }
       setFilterStates(states)
@@ -637,14 +769,18 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
       const states = {
         [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: "open", value: "" },
         [GANTT_FILTER_KEY.TRACKER]: { enabled: false, operator: "is", value: TASK_TRACKER.TASK },
-        [GANTT_FILTER_KEY.PRIORITY]: { enabled: false, operator: "is", value: TASK_PRIORITY.MEDIUM },
+        [GANTT_FILTER_KEY.PRIORITY]: {
+          enabled: false,
+          operator: "is",
+          value: TASK_PRIORITY.MEDIUM,
+        },
         [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: false, operator: "is", value: "" },
       }
       setFilterStates(states)
       setAppliedFilterKeys([GANTT_FILTER_KEY.STATUS, GANTT_FILTER_KEY.QUICK_REPORTED])
       setAppliedFilterStates({
         ...states,
-        [GANTT_FILTER_KEY.QUICK_REPORTED]: { enabled: true, operator: "is", value: user?.id || "" }
+        [GANTT_FILTER_KEY.QUICK_REPORTED]: { enabled: true, operator: "is", value: user?.id || "" },
       })
       toast.success("Đã áp dụng: Công việc do tôi tạo")
     } else if (type === QUICK_QUERY_TYPE.UPDATED_ISSUES) {
@@ -652,14 +788,18 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
       const states = {
         [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: "open", value: "" },
         [GANTT_FILTER_KEY.TRACKER]: { enabled: false, operator: "is", value: TASK_TRACKER.TASK },
-        [GANTT_FILTER_KEY.PRIORITY]: { enabled: false, operator: "is", value: TASK_PRIORITY.MEDIUM },
+        [GANTT_FILTER_KEY.PRIORITY]: {
+          enabled: false,
+          operator: "is",
+          value: TASK_PRIORITY.MEDIUM,
+        },
         [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: false, operator: "is", value: "" },
       }
       setFilterStates(states)
       setAppliedFilterKeys([GANTT_FILTER_KEY.STATUS, GANTT_FILTER_KEY.QUICK_UPDATED])
       setAppliedFilterStates({
         ...states,
-        [GANTT_FILTER_KEY.QUICK_UPDATED]: { enabled: true, operator: "is", value: "" }
+        [GANTT_FILTER_KEY.QUICK_UPDATED]: { enabled: true, operator: "is", value: "" },
       })
       toast.success("Đã áp dụng: Công việc được cập nhật gần đây")
     } else if (type === QUICK_QUERY_TYPE.WATCHED_ISSUES) {
@@ -667,14 +807,18 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
       const states = {
         [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: "open", value: "" },
         [GANTT_FILTER_KEY.TRACKER]: { enabled: false, operator: "is", value: TASK_TRACKER.TASK },
-        [GANTT_FILTER_KEY.PRIORITY]: { enabled: false, operator: "is", value: TASK_PRIORITY.MEDIUM },
+        [GANTT_FILTER_KEY.PRIORITY]: {
+          enabled: false,
+          operator: "is",
+          value: TASK_PRIORITY.MEDIUM,
+        },
         [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: false, operator: "is", value: "" },
       }
       setFilterStates(states)
       setAppliedFilterKeys([GANTT_FILTER_KEY.STATUS, GANTT_FILTER_KEY.QUICK_WATCHED])
       setAppliedFilterStates({
         ...states,
-        [GANTT_FILTER_KEY.QUICK_WATCHED]: { enabled: true, operator: "is", value: user?.id || "" }
+        [GANTT_FILTER_KEY.QUICK_WATCHED]: { enabled: true, operator: "is", value: user?.id || "" },
       })
       toast.success("Đã áp dụng: Công việc tôi quan tâm")
     }
@@ -693,10 +837,6 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     setShowAssignee,
     showProgress,
     setShowProgress,
-    showLeaves,
-    setShowLeaves,
-    showConflicts,
-    setShowConflicts,
     monthsInput,
     setMonthsInput,
     monthInput,
@@ -733,8 +873,6 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     resetTimelineToProjectStart,
     isLeader,
     isAdminOrGM,
-    getLeaveConflict,
-    isEmployeeOnLeaveOnDay,
     getTaskGridStyle,
     shiftTaskDates,
     shiftTimelineByMonth,
