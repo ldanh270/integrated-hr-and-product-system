@@ -1,4 +1,4 @@
-import { APPLICATION_STATUS, APPLICATION_TYPE_LABELS, REGIME_TYPE } from "@/config/entities/attendance.config"
+import { APPLICATION_STATUS, APPLICATION_TYPE_LABELS, REGIME_TYPE, LEAVE_TYPE_LABELS } from "@/config/entities/attendance.config"
 import type { IApplication } from "@/lib/api/application.api"
 import { Check, FileText, Home, RefreshCw, X } from "lucide-react"
 import { useAuthStore } from "@/store/auth-store"
@@ -107,7 +107,7 @@ export function ApplicationDetail({
         const leaveDetail = application.detail as Record<string, unknown>
         return (
           <>
-            <td className="px-4 py-4 font-semibold text-foreground">{String(leaveDetail.leaveType || "-")}</td>
+            <td className="px-4 py-4 font-semibold text-foreground">{leaveDetail.leaveType ? (LEAVE_TYPE_LABELS[String(leaveDetail.leaveType)] ?? leaveDetail.leaveType) : "-"}</td>
             <td className="px-4 py-4 text-foreground">{new Date(application.startDate).toLocaleDateString("vi-VN")}</td>
             <td className="px-4 py-4 text-foreground">{new Date(application.endDate).toLocaleDateString("vi-VN")}</td>
             <td className="px-4 py-4 text-foreground">

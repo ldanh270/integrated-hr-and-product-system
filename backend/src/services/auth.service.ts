@@ -47,6 +47,8 @@ async function toAuthEmployee(employee: AuthEmployeeDocument): Promise<AuthRespo
     email: employee.email,
     fullName: employee.fullName,
     role: employee.role,
+    totalLeaves: employee.totalLeaves,
+    usedLeaves: employee.usedLeaves,
     personalEmployeeId: link.personalEmployeeId,
     personalEmployee: link.personalEmployee,
   }

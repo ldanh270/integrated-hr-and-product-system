@@ -2,6 +2,7 @@ import {
   APPLICATION_STATUS,
   APPLICATION_TYPES,
   APPLICATION_TYPE_LABELS,
+  LEAVE_TYPE_LABELS,
 } from "@/config/entities/attendance.config"
 import { useManageApplications } from "@/hooks/application/useManageApplications"
 import { useMyApplications } from "@/hooks/application/useMyApplications"
@@ -26,18 +27,10 @@ const getStatusLabel = (status: string) => {
   }
 }
 
-type ApplicationBatchBase = {
-  id: string
-  applications?: Array<{ status: string }>
-  employee?: { fullName: string }
-  employeeId: string
-  type: string
-  createdAt: string | Date
-  assignedTo?: { fullName: string }
-}
+import type { IApplicationBatch } from "@/lib/api/application-batch.api"
 
 interface ApplicationListProps {
-  mode: "mine" | "manage"
+  mode: "mine" | "manage" | "all"
   onRowClick: (app: IApplication) => void
   hookState: ReturnType<typeof useMyApplications> | ReturnType<typeof useManageApplications>
 }
@@ -55,6 +48,8 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
     setKeyword,
     page,
     setPage,
+    pageSize,
+    setPageSize,
     totalPages,
     total,
     stats,
@@ -73,106 +68,110 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
   return (
     <div className="flex flex-col gap-6 w-full animate-in fade-in duration-300">
       {/* Top Tabs */}
-      <div className="flex items-center gap-6 border-b border-border">
-        {STATUS_TABS.map((tab) => {
-          const isActive = statusFilter === tab.value
-          return (
-            <button
-              key={tab.value}
-              onClick={() => {
-                setStatusFilter(
-                  tab.value as "all" | "pending" | "approved" | "rejected" | "cancelled",
-                )
-                setPage(1)
-              }}
-              className={`relative flex items-center gap-2 py-4 transition-all font-medium text-[13px] ${
-                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tab.label}
-              <span
-                className={`inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full text-[11px] font-bold px-1.5 border ${
-                  isActive
-                    ? "bg-primary border-primary text-primary-foreground"
-                    : "bg-background border-border text-muted-foreground"
+      {mode !== "manage" && (
+        <div className="flex items-center gap-6 border-b border-border">
+          {STATUS_TABS.map((tab) => {
+            const isActive = statusFilter === tab.value
+            return (
+              <button
+                key={tab.value}
+                onClick={() => {
+                  setStatusFilter(
+                    tab.value as "all" | "pending" | "approved" | "rejected" | "cancelled",
+                  )
+                  setPage(1)
+                }}
+                className={`relative flex items-center gap-2 py-4 transition-all font-medium text-[13px] ${
+                  isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {tab.count}
-              </span>
-              {isActive && (
-                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-t-full" />
-              )}
-            </button>
-          )
-        })}
-      </div>
+                {tab.label}
+                <span
+                  className={`inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full text-[11px] font-bold px-1.5 border ${
+                    isActive
+                      ? "bg-primary border-primary text-primary-foreground"
+                      : "bg-background border-border text-muted-foreground"
+                  }`}
+                >
+                  {tab.count}
+                </span>
+                {isActive && (
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-t-full" />
+                )}
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       {/* Filters and Actions */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex flex-1 items-center gap-3 w-full sm:w-auto">
-          {/* Search */}
-          <div className="relative flex-1 sm:max-w-[280px]">
-            <input
-              type="text"
-              value={localKeyword}
-              onChange={(e) => { setLocalKeyword(e.target.value); }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  setKeyword(localKeyword)
-                  setPage(1)
-                }
-              }}
-              placeholder="Tìm kiếm họ và tên, người duyệt, mã đơn, mã nhân sự"
-              className="w-full pl-4 pr-9 py-2 text-[13px] border border-input rounded-md bg-background focus:outline-none focus:border-primary transition-all text-foreground"
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <Filter className="text-muted-foreground" size={14} />
+      {mode !== "manage" && (
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-1 items-center gap-3 w-full sm:w-auto">
+            {/* Search */}
+            <div className="relative flex-1 sm:max-w-[280px]">
+              <input
+                type="text"
+                value={localKeyword}
+                onChange={(e) => { setLocalKeyword(e.target.value); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    setKeyword(localKeyword)
+                    setPage(1)
+                  }
+                }}
+                placeholder="Tìm kiếm họ và tên, người duyệt, mã đơn, mã nhân sự"
+                className="w-full pl-4 pr-9 py-2 text-[13px] border border-input rounded-md bg-background focus:outline-none focus:border-primary transition-all text-foreground"
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <Filter className="text-muted-foreground" size={14} />
+              </div>
             </div>
-          </div>
 
-          <div className="relative min-w-[160px]">
-            <select
-              value={typeFilter}
-              onChange={(e) => {
-                setTypeFilter(e.target.value)
+            <div className="relative min-w-[160px]">
+              <select
+                value={typeFilter}
+                onChange={(e) => {
+                  setTypeFilter(e.target.value)
+                  setPage(1)
+                }}
+                className="w-full appearance-none pl-4 pr-9 py-2 text-[13px] border border-input rounded-md bg-background focus:outline-none focus:border-primary transition-all text-foreground"
+              >
+                <option value="all">Loại đơn</option>
+                {Object.values(APPLICATION_TYPES).map((t) => (
+                  <option key={t.LABEL} value={t.LABEL}>
+                    {t.DESCRIPTION}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <ChevronRight className="text-muted-foreground rotate-90" size={14} />
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setLocalKeyword("")
+                setKeyword("")
+                setTypeFilter("all")
                 setPage(1)
               }}
-              className="w-full appearance-none pl-4 pr-9 py-2 text-[13px] border border-input rounded-md bg-background focus:outline-none focus:border-primary transition-all text-foreground"
+              className="text-[13px] font-medium text-foreground bg-muted hover:bg-muted/80 transition-colors px-4 py-2 rounded-md"
             >
-              <option value="all">Loại đơn</option>
-              {Object.values(APPLICATION_TYPES).map((t) => (
-                <option key={t.LABEL} value={t.LABEL}>
-                  {t.DESCRIPTION}
-                </option>
-              ))}
-            </select>
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <ChevronRight className="text-muted-foreground rotate-90" size={14} />
-            </div>
+              Thiết lập lại
+            </button>
+            <button
+              onClick={() => {
+                setKeyword(localKeyword)
+                setPage(1)
+              }}
+              className="px-6 py-2 bg-primary hover:bg-primary/90 text-white text-[13px] font-medium rounded-md shadow-sm transition-all"
+            >
+              Tìm kiếm
+            </button>
           </div>
-
-          <button
-            onClick={() => {
-              setLocalKeyword("")
-              setKeyword("")
-              setTypeFilter("all")
-              setPage(1)
-            }}
-            className="text-[13px] font-medium text-foreground bg-muted hover:bg-muted/80 transition-colors px-4 py-2 rounded-md"
-          >
-            Thiết lập lại
-          </button>
-          <button
-            onClick={() => {
-              setKeyword(localKeyword)
-              setPage(1)
-            }}
-            className="px-6 py-2 bg-primary hover:bg-primary/90 text-white text-[13px] font-medium rounded-md shadow-sm transition-all"
-          >
-            Tìm kiếm
-          </button>
         </div>
-      </div>
+      )}
 
       {/* Table Area */}
       <div className="bg-background flex flex-col">
@@ -223,7 +222,7 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
                   </td>
                 </tr>
               ) : (
-                applications.map((batch: ApplicationBatchBase) => {
+                applications.map((batch: IApplicationBatch) => {
                   const apps = batch.applications || []
                   let computedStatus: string = APPLICATION_STATUS.PENDING
                   if (apps.length > 0) {
@@ -266,7 +265,18 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
                         </td>
                       )}
                       <td className="px-4 py-4 text-foreground font-medium">
-                        {APPLICATION_TYPE_LABELS[batch.type] || batch.type}
+                        <div className="flex flex-col">
+                          <span>
+                            {batch.type === "leave" && apps[0]?.leaveDetail?.leaveType
+                              ? LEAVE_TYPE_LABELS[apps[0].leaveDetail.leaveType as keyof typeof LEAVE_TYPE_LABELS] || APPLICATION_TYPE_LABELS[batch.type]
+                              : APPLICATION_TYPE_LABELS[batch.type] || batch.type}
+                          </span>
+                          {apps[0]?.reason && (
+                            <span className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1 max-w-[150px]" title={apps[0].reason}>
+                              {apps[0].reason}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-4 text-center">
                         <div className="flex justify-center">
@@ -309,14 +319,18 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
           <div className="flex items-center justify-end px-6 py-4 border-t border-border bg-muted/20 gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <span>Hiển thị</span>
-              <select className="border border-border rounded bg-background px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-primary">
-                <option>10</option>
-                <option>20</option>
-                <option>50</option>
+              <select 
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="border border-border rounded bg-background px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
               </select>
             </div>
             <span>
-              Hiển thị từ {(page - 1) * 10 + 1} – {Math.min(page * 10, total)} trên tổng {total}
+              Hiển thị từ {(page - 1) * pageSize + 1} – {Math.min(page * pageSize, total)} trên tổng {total}
             </span>
             <div className="flex items-center gap-1 ml-2">
               <button

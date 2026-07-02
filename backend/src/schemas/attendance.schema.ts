@@ -6,6 +6,7 @@ import {
   LEAVE_TYPE_VALUES,
   REGIME_TYPES,
   BATCHABLE_APPLICATION_TYPES,
+  WFH_TYPES,
 } from "@/configs/entities/attendance.config.ts"
 import { ATTENDANCE_ERROR_MESSAGES } from "@/constants/attendance.constants.ts"
 
@@ -74,7 +75,9 @@ const baseApplicationFields = {
   endDate: dateString.optional(),
   reason: z.string().min(5).max(500).optional(),
   note: z.string().max(1000).optional(),
-  assignedToId: z.string().cuid("Invalid assignedTo employee ID").optional(),
+  attachmentUrl: z.string().url("URL không hợp lệ").optional(),
+  attachmentId: z.string().optional(),
+  assignedToId: z.string().cuid("ID người duyệt không hợp lệ").optional(),
 }
 
 // ─── TYPE-SPECIFIC APPLICATION SCHEMAS ───────────────────────
@@ -98,22 +101,21 @@ const overtimeApplicationSchema = z
     type: z.literal("overtime"),
     ...baseApplicationFields,
     detail: z.object({
-      employeeShiftId: z.string().cuid("Invalid shift ID"),
+      employeeShiftId: z.string().cuid("ID ca làm việc không hợp lệ"),
+      overtimeHours: z.number().min(0.5).max(24).multipleOf(0.5),
     }),
   })
   .strict()
 
-/** work_from_home: WFH — optional location */
+/** work_from_home: WFH — requires wfhType, optional location */
 const workFromHomeApplicationSchema = z
   .object({
     type: z.literal("work_from_home"),
     ...baseApplicationFields,
-    detail: z
-      .object({
-        location: z.string().max(255).optional(),
-      })
-      .optional()
-      .default({}),
+    detail: z.object({
+      wfhType: z.enum(WFH_TYPES),
+      location: z.string().max(255).optional(),
+    }),
   })
   .strict()
 
@@ -144,6 +146,14 @@ const lateEarlyApplicationSchema = z
   })
   .strict()
 
+const resignationApplicationSchema = z
+  .object({
+    type: z.literal("resignation"),
+    ...baseApplicationFields,
+    detail: z.object({}).optional(),
+  })
+  .strict()
+
 // ─── DISCRIMINATED UNION ─────────────────────────────────────
 
 export const submitApplicationSchema = z.discriminatedUnion("type", [
@@ -152,6 +162,7 @@ export const submitApplicationSchema = z.discriminatedUnion("type", [
   workFromHomeApplicationSchema,
   shiftSwapApplicationSchema,
   lateEarlyApplicationSchema,
+  resignationApplicationSchema,
 ])
 
 export type SubmitApplicationSchemaType = z.infer<typeof submitApplicationSchema>
@@ -168,6 +179,8 @@ const batchItemSchema = z.object({
   endDate: dateString.optional(),
   reason: z.string().min(5).max(500).optional(),
   note: z.string().max(1000).optional(),
+  attachmentUrl: z.string().url("URL không hợp lệ").optional(),
+  attachmentId: z.string().optional(),
   detail: z.record(z.string(), z.unknown()).default({}),
 })
 
@@ -231,6 +244,7 @@ export const listApplicationsQuerySchema = z
     keyword: z.string().optional(),
     startDate: dateString.optional(),
     endDate: dateString.optional(),
+    scope: z.enum(["assigned", "all"]).optional(),
   })
   .strict()
 

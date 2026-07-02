@@ -162,6 +162,9 @@ export const updateEmployeeSchema = z
     employeeType: z.enum(EMPLOYEE_TYPES).optional(),
 
     status: z.enum(EMPLOYEE_STATUSES).optional(),
+    
+    totalLeaves: z.preprocess((val) => (val === "" ? undefined : Number(val)), z.number().min(0, "Tổng số phép không được âm").optional()),
+    usedLeaves: z.preprocess((val) => (val === "" ? undefined : Number(val)), z.number().min(0, "Số phép đã dùng không được âm").optional()),
 
     dateOfBirth: z.preprocess(
       emptyToNull,

@@ -9,6 +9,15 @@ export type IEmployeeShiftStatus = (typeof EMPLOYEE_SHIFT_STATUSES)[number]
 export const HOLIDAY_TYPES = ["national", "company"] as const
 export type IHolidayType = (typeof HOLIDAY_TYPES)[number]
 
+export const WFH_TYPE = {
+  FULL_DAY: "full_day",
+  MORNING: "morning",
+  AFTERNOON: "afternoon",
+} as const
+
+export const WFH_TYPES = [WFH_TYPE.FULL_DAY, WFH_TYPE.MORNING, WFH_TYPE.AFTERNOON] as const
+export type IWfhType = (typeof WFH_TYPES)[number]
+
 export const ATTENDANCE_STATUSES = ["on_time", "late", "early_leave", "absent", "overtime"] as const
 export type IAttendanceStatus = (typeof ATTENDANCE_STATUSES)[number]
 
@@ -87,6 +96,16 @@ export const LEAVE_TYPE_VALUES = [
 export type ILeaveType = (typeof LEAVE_TYPE_VALUES)[number]
 
 // ─── Label Maps ───────────────────────────────────────────────
+
+export const LEAVE_TYPE_LABELS: Record<string, string> = {
+  [LEAVE_TYPE.ANNUAL_LEAVE]: "Nghỉ phép năm",
+  [LEAVE_TYPE.SICK_LEAVE]: "Nghỉ ốm",
+  [LEAVE_TYPE.MATERNITY_LEAVE]: "Nghỉ thai sản",
+  [LEAVE_TYPE.BEREAVEMENT_LEAVE]: "Nghỉ tang chế",
+  [LEAVE_TYPE.MARRIAGE_LEAVE]: "Nghỉ cưới",
+  [LEAVE_TYPE.UNPAID_LEAVE]: "Nghỉ không lương",
+  [LEAVE_TYPE.OTHER]: "Khác",
+}
 
 export const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
   on_time: "Đúng giờ",

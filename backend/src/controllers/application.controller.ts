@@ -50,6 +50,52 @@ export class ApplicationController {
   }
 
   /**
+   * Uploads an attachment file to Cloudinary for applications.
+   * 
+   * @param req - Auth request object
+   * @param res - Response object
+   * @returns A promise that resolves to the response with the uploaded attachment URL and ID
+   */
+  uploadAttachment = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
+    try {
+      const employeeId = req.user?.empId
+      if (!employeeId) throw new AppError("Không có quyền truy cập", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
+
+      if (!req.file) {
+        throw new AppError("Không có tệp nào được tải lên", HttpStatusCode.BAD_REQUEST, ErrorLayer.CONTROLLER, ErrorCode.VALIDATION_ERROR)
+      }
+
+      // Check Cloudinary config inline or assert it
+      const { cloudinary, assertCloudinaryConfigured } = await import("@/configs/system/cloudinary.config.ts")
+      assertCloudinaryConfigured()
+
+      const result = await new Promise<{ url: string; id: string }>((resolve, reject) => {
+        const { Readable } = require("stream")
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: "hrp/applications",
+            resource_type: "auto",
+          },
+          (error: any, result: any) => {
+            if (error || !result) return reject(error ?? new AppError("Tải lên Cloudinary thất bại", HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorLayer.CONTROLLER))
+            resolve({ url: result.secure_url, id: result.public_id })
+          },
+        )
+
+        const readable = new Readable()
+        readable.push(req.file!.buffer)
+        readable.push(null)
+        readable.pipe(uploadStream)
+      })
+
+      res.status(HttpStatusCode.CREATED).json({ data: result, error: null })
+    } catch (error) {
+      if (error instanceof AppError) throw error
+      throw new AppError("Tải lên tệp đính kèm thất bại", HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorLayer.CONTROLLER)
+    }
+  }
+
+  /**
    * Retrieves a specific application by its unique identifier.
    * 
    * @param req - The authenticated request containing the application ID in the parameters.

@@ -1,4 +1,3 @@
-import { APPLICATION_TYPES } from "@/config/entities/attendance.config"
 import { ROLE } from "@/config/entities/employee.config"
 import { PERSONAL_TAB_LABELS } from "@/config/entities/personal.config"
 import { ROUTES } from "@/config/routes.config"
@@ -69,6 +68,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         icon: CircleDollarSign,
       },
       { name: PERSONAL_TAB_LABELS.projects, path: ROUTES.PERSONAL.PROJECTS, icon: Briefcase },
+      { name: "Đơn của tôi", path: ROUTES.PERSONAL.APPLICATIONS, icon: FileText },
     ],
   },
   {
@@ -89,17 +89,12 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     icon: FileText,
     routePrefix: "/application",
     sidebarItems: [
-      { name: "Bạn duyệt", path: ROUTES.APPLICATION.DASHBOARD + "?tab=manage", icon: UserCheck },
+      { name: "Bạn duyệt", path: ROUTES.APPLICATION.MANAGE, icon: UserCheck },
       {
         name: "Đơn thư",
-        path: ROUTES.APPLICATION.DASHBOARD,
+        path: ROUTES.APPLICATION.ALL,
         icon: FilePlus2,
-        subItems: Object.values(APPLICATION_TYPES).map((t) => ({
-          name: t.DESCRIPTION,
-          path: `${ROUTES.APPLICATION.DASHBOARD}?type=${t.LABEL}`,
-        })),
       },
-      { name: "Của bạn", path: ROUTES.APPLICATION.DASHBOARD + "?tab=mine", icon: User },
     ],
   },
   {

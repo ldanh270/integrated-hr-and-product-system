@@ -1,4 +1,4 @@
-import { APPLICATION_TYPES, REGIME_TYPE } from "@/config/entities/attendance.config"
+import { APPLICATION_TYPES, REGIME_TYPE, LEAVE_TYPE_LABELS } from "@/config/entities/attendance.config"
 import type { IApplication } from "@/lib/api/application.api"
 import { formatDate, minutesToTime } from "@/lib/utils"
 import { SubApplicationField } from "./SubApplicationField"
@@ -19,7 +19,11 @@ export function SubApplicationDetailFields({ app }: { app: IApplication }) {
     swapWithShift?: { shift?: { name?: string; startTime?: number; endTime?: number } }
     partnerApprovalStatus?: string
   } | undefined
-  const detail = app.detail as {
+  const detail = (app.detail ||
+    (app as any).leaveDetail ||
+    (app as any).overtimeDetail ||
+    (app as any).lateEarlyDetail ||
+    (app as any).workFromHomeDetail) as {
     employeeShift?: { shift?: { name?: string; startTime?: number; endTime?: number } }
     isLate?: boolean
     durationMinutes?: number
@@ -32,7 +36,7 @@ export function SubApplicationDetailFields({ app }: { app: IApplication }) {
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
       {app.type === APPLICATION_TYPES.LEAVE.LABEL && (
         <>
-          <SubApplicationField label="Kiểu nghỉ" value={String(detail?.leaveType ?? "—")} />
+          <SubApplicationField label="Kiểu nghỉ" value={detail?.leaveType ? (LEAVE_TYPE_LABELS[detail.leaveType] ?? detail.leaveType) : "—"} />
           <SubApplicationField
             label="Chế độ"
             value={detail?.regimeType === REGIME_TYPE.PAID ? "Có lương" : "Không lương"}

@@ -50,6 +50,10 @@ export interface Employee {
   endDate: Date | null
   /** Avatar object containing URL and ID (nullable) */
   avatar: { url: string | null; id: string | null } | null
+  /** Total leave quota for the year */
+  totalLeaves: number
+  /** Number of leaves used */
+  usedLeaves: number
   /** Record creation timestamp */
   createdAt: Date
   /** Record last modification timestamp */
@@ -69,6 +73,8 @@ export interface CreateEmployeeDto {
   position?: string | null
   employeeType?: EmployeeType
   status?: EmployeeStatus
+  totalLeaves?: number
+  usedLeaves?: number
   dateOfBirth?: Date | string | null
   nationalId?: string | null
   address?: string | null
@@ -88,6 +94,8 @@ export interface UpdateEmployeeDto {
   position?: string | null
   employeeType?: EmployeeType
   status?: EmployeeStatus
+  totalLeaves?: number
+  usedLeaves?: number
   dateOfBirth?: Date | string | null
   nationalId?: string | null
   address?: string | null

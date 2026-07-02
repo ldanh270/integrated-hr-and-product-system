@@ -17,6 +17,7 @@ export interface ApplicationFormItemState {
   endDate: string
   reason: string
   note: string
+  attachmentFile: File | null
   // leave
   leaveType: string
   leaveRegimeType: "paid" | "unpaid"
@@ -46,6 +47,7 @@ const createEmptyItem = (): ApplicationFormItemState => ({
   endDate: "",
   reason: "",
   note: "",
+  attachmentFile: null,
   leaveType: LEAVE_TYPE.ANNUAL_LEAVE as string,
   leaveRegimeType: REGIME_TYPE.PAID as "paid" | "unpaid",
   employeeShiftId: "",
@@ -78,7 +80,7 @@ export function useCreateApplicationForm(type: string) {
     employeeApi
       .getApprovers()
       .then(setApprovers)
-      .catch(() => {})
+      .catch((err) => console.error("Failed to fetch approvers:", err))
     employeeApi
       .list({ limit: 1000 })
       .then((res) => { setEmployees(res.data); })
@@ -219,9 +221,8 @@ export function useCreateApplicationForm(type: string) {
       return
     }
 
-    const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000)
-      .toISOString()
-      .split("T")[0]
+    const { default: dayjs } = await import("dayjs")
+    const todayStr = dayjs().format("YYYY-MM-DD")
 
     const hasPastDate = items.some((item) => {
       if (item.startDate < todayStr) return true
@@ -235,29 +236,55 @@ export function useCreateApplicationForm(type: string) {
       return
     }
 
+    const hasInvalidEndDate = items.some((item) => item.endDate && item.startDate && item.endDate < item.startDate)
+    if (hasInvalidEndDate) {
+      toast.error("Ngày kết thúc phải từ ngày bắt đầu trở đi")
+      return
+    }
+
     setIsSubmitting(true)
     try {
       if (items.length === 1) {
         // Single item — use existing single application API (backward compat)
         const item = items[0]
+        let attachmentUrl, attachmentId;
+        if (item.attachmentFile) {
+          const { uploadApplicationAttachment } = await import("@/lib/api/application.api");
+          const result = await uploadApplicationAttachment(item.attachmentFile);
+          attachmentUrl = result.url;
+          attachmentId = result.id;
+        }
+
         const success = await submitApplication({
           type,
           startDate: item.startDate,
           endDate: item.endDate || item.startDate,
           reason: item.reason || undefined,
           note: item.note || undefined,
+          attachmentUrl,
+          attachmentId,
           assignedToId: assignedToId && assignedToId !== "none" ? assignedToId : undefined,
           detail: buildDetail(item),
         })
         if (success) navigate(-1)
       } else {
-        // Multiple items — use batch API
-        const batchItems = items.map((item) => ({
-          startDate: item.startDate,
-          endDate: item.endDate || item.startDate,
-          reason: item.reason || undefined,
-          note: item.note || undefined,
-          detail: buildDetail(item),
+        const { uploadApplicationAttachment } = await import("@/lib/api/application.api");
+        const batchItems = await Promise.all(items.map(async (item) => {
+          let attachmentUrl, attachmentId;
+          if (item.attachmentFile) {
+            const result = await uploadApplicationAttachment(item.attachmentFile);
+            attachmentUrl = result.url;
+            attachmentId = result.id;
+          }
+          return {
+            startDate: item.startDate,
+            endDate: item.endDate || item.startDate,
+            reason: item.reason || undefined,
+            note: item.note || undefined,
+            attachmentUrl,
+            attachmentId,
+            detail: buildDetail(item),
+          }
         }))
 
         await applicationBatchApi.submit({

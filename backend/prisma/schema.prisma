@@ -38,6 +38,12 @@ enum AttendanceStatus {
   overtime
 }
 
+enum WfhType {
+  full_day
+  morning
+  afternoon
+}
+
 enum ShiftStatus {
   scheduled
   holiday_pending
@@ -191,6 +197,11 @@ model Employee {
   position              String?
   employeeType          EmployeeType   @default(full_time)
   status                EmployeeStatus @default(active)
+  
+  // Leave Balances
+  totalLeaves           Int            @default(12)
+  usedLeaves            Int            @default(0)
+
   failedLoginCount      Int            @default(0)
   lockedUntil           DateTime?
   startDate             DateTime?      @db.Date
@@ -411,6 +422,7 @@ model AttendanceRecord {
   overtimeMinutes   Int              @default(0)
   totalWorkMinutes  Int              @default(0)
   note              String?
+  isPaidLeave       Boolean          @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -468,6 +480,8 @@ model Application {
   endDate    DateTime
   reason     String?
   note       String?
+  attachmentUrl String?
+  attachmentId  String?
 
   approvedById String?
   approvedBy   Employee? @relation("ApplicationApprover", fields: [approvedById], references: [id], onDelete: Restrict)
@@ -539,6 +553,8 @@ model ApplicationOvertimeDetail {
   employeeShiftId String
   employeeShift   EmployeeShift @relation("ApplicationOvertimeShift", fields: [employeeShiftId], references: [id], onDelete: Cascade)
 
+  overtimeHours Float @default(0)
+
   @@index([employeeShiftId])
 }
 
@@ -574,6 +590,7 @@ model ApplicationBusinessTripDetail {
 model ApplicationWorkFromHomeDetail {
   applicationId String      @id
   application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  wfhType       WfhType     @default(full_day)
   location      String?
 }
 

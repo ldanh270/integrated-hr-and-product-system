@@ -40,7 +40,7 @@ export function SubApplicationRow({
 }: {
   app: IApplication
   index: number
-  mode: "mine" | "manage"
+  mode: "mine" | "manage" | "all"
   currentUserId: string | undefined
   onApprove: (app: IApplication) => void
   onReject: (app: IApplication) => void

@@ -45,6 +45,8 @@ export interface IBatchItemDTO {
   endDate?: string
   reason?: string
   note?: string
+  attachmentUrl?: string
+  attachmentId?: string
   detail: Record<string, unknown>
 }
 
@@ -64,6 +66,7 @@ export interface IListBatchesQuery {
   keyword?: string
   startDate?: string
   endDate?: string
+  scope?: "assigned" | "all"
 }
 
 // ─── API Client ───────────────────────────────────────────────────────────────

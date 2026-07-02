@@ -51,9 +51,11 @@ export interface ILeaveDetailDTO {
 
 export interface IOvertimeDetailDTO {
   employeeShiftId: string
+  overtimeHours: number
 }
 
 export interface IWorkFromHomeDetailDTO {
+  wfhType: string
   location?: string
 }
 
@@ -92,6 +94,8 @@ interface IBaseApplicationDTO {
   endDate: string | Date
   reason?: string
   note?: string
+  attachmentUrl?: string
+  attachmentId?: string
   assignedToId?: string
 }
 
@@ -122,6 +126,7 @@ export interface IListApplicationsQueryDTO {
   startDate?: string
   endDate?: string
   keyword?: string
+  scope?: string
 }
 
 // ─── BATCH APPLICATION DTOs ───────────────────────────────────
@@ -131,6 +136,8 @@ export interface IBatchItemDTO {
   endDate?: string | Date
   reason?: string
   note?: string
+  attachmentUrl?: string
+  attachmentId?: string
   detail: Record<string, unknown>
 }
 

@@ -148,27 +148,11 @@ export class PayrollService implements IPayrollService {
       // Use pre-fetched applications to prevent N+1
       const approvedApps = appsByEmployeeId[employee.id] || [];
 
-      let paidLeaveDays = 0
       let excusedLateMinutes = 0
       let excusedEarlyMinutes = 0
 
       for (const app of approvedApps) {
-        if (app.type === "leave" && app.leaveDetail) {
-          if ((PAID_LEAVE_TYPES as string[]).includes(app.leaveDetail.leaveType)) {
-            const start = app.startDate > periodStart ? app.startDate : periodStart
-            const end = app.endDate < periodEnd ? app.endDate : periodEnd
-            let days = 0;
-            let current = new Date(start);
-            while (current <= end) {
-              const day = current.getDay();
-              if (day !== 0 && day !== 6) { // Skip Sunday (0) and Saturday (6)
-                days++;
-              }
-              current.setDate(current.getDate() + 1);
-            }
-            paidLeaveDays += Math.max(1, days);
-          }
-        } else if (app.type === "late_early" && app.lateEarlyDetail) {
+        if (app.type === "late_early" && app.lateEarlyDetail) {
           if (app.lateEarlyDetail.isLate) {
             excusedLateMinutes += app.lateEarlyDetail.durationMinutes
           } else {
@@ -177,7 +161,6 @@ export class PayrollService implements IPayrollService {
         }
       }
 
-      attendance.workingDays += paidLeaveDays
       attendance.lateMinutes = Math.max(0, attendance.lateMinutes - excusedLateMinutes)
       attendance.earlyLeaveMinutes = Math.max(0, attendance.earlyLeaveMinutes - excusedEarlyMinutes)
 

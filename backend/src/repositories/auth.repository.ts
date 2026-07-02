@@ -49,6 +49,8 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       lockedUntil: employee.lockedUntil,
       failedLoginCount: employee.failedLoginCount,
       lastLoginAt: (employee as any).lastLoginAt,
+      totalLeaves: employee.totalLeaves,
+      usedLeaves: employee.usedLeaves,
     }
   }
 
@@ -78,6 +80,8 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       lockedUntil: employee.lockedUntil,
       failedLoginCount: employee.failedLoginCount,
       lastLoginAt: (employee as any).lastLoginAt,
+      totalLeaves: employee.totalLeaves,
+      usedLeaves: employee.usedLeaves,
     }
   }
 
@@ -103,6 +107,8 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       lockedUntil: employee.lockedUntil,
       failedLoginCount: employee.failedLoginCount,
       lastLoginAt: (employee as any).lastLoginAt,
+      totalLeaves: employee.totalLeaves,
+      usedLeaves: employee.usedLeaves,
     }
   }
 

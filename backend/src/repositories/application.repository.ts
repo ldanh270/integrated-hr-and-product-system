@@ -1,4 +1,4 @@
-import { APPLICATION_TYPES, PAID_LEAVE_TYPES, EMPLOYEE_SHIFT_STATUS, PARTNER_APPROVAL_STATUS } from "@/configs/entities/attendance.config.ts"
+import { APPLICATION_TYPES, PAID_LEAVE_TYPES, EMPLOYEE_SHIFT_STATUS, PARTNER_APPROVAL_STATUS, WFH_TYPE } from "@/configs/entities/attendance.config.ts"
 import { EMPLOYEE_STATUS, ROLE } from "@/configs/entities/employee.config.ts"
 import {
   IApplicationRepository,
@@ -12,6 +12,13 @@ import { ApplicationStatus, ApplicationType, AttendanceStatus, PrismaClient, Pri
 import { BaseRepository } from "./base.repository.ts"
 
 // Shared include shape — returns all detail relations + employee info
+const APPLICATION_NOTES = {
+  WFH_APPROVED: "WFH có phê duyệt",
+  LATE: "đi muộn",
+  EARLY: "về sớm",
+  LATE_EARLY_APPROVED: (action: string, minutes: number) => `Được duyệt ${action}: ${minutes} phút`,
+}
+
 const APPLICATION_INCLUDE = {
   employee: {
     select: { id: true, fullName: true, email: true, position: true, avatarUrl: true },
@@ -48,6 +55,15 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
   async submit(data: ISubmitApplicationDTO): Promise<any> {
     const { employeeId, type, startDate, endDate, reason, note, assignedToId, detail } = data
 
+    // First create the parent batch
+    const batch = await this.prisma.applicationBatch.create({
+      data: {
+        employeeId,
+        type: type as ApplicationType,
+        assignedToId: assignedToId ?? null,
+      }
+    })
+
     return this.prisma.application.create({
       data: {
         employeeId,
@@ -57,7 +73,10 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
         endDate: new Date(endDate ?? startDate),
         reason,
         note,
+        attachmentUrl: (data as any).attachmentUrl,
+        attachmentId: (data as any).attachmentId,
         assignedToId: assignedToId ?? null,
+        batchId: batch.id,
         ...this._buildDetailCreate(data),
       },
       include: APPLICATION_INCLUDE,
@@ -188,9 +207,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
           }
         } else if (app.type === ApplicationType.overtime && app.overtimeDetail) {
           const detail = app.overtimeDetail
-          const start = new Date(app.startDate).getTime()
-          const end = new Date(app.endDate).getTime()
-          const minutes = Math.max(0, Math.round((end - start) / 60000))
+          const minutes = Math.round((detail.overtimeHours ?? 0) * 60)
 
           if (minutes > 0) {
             const shift = await tx.employeeShift.findUnique({
@@ -200,7 +217,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
               await this._upsertAttendanceRecord(tx, shift, AttendanceStatus.overtime, undefined, minutes)
             }
           }
-        } else if (app.type === ApplicationType.leave || app.type === ApplicationType.work_from_home) {
+        } else if (app.type === ApplicationType.work_from_home) {
           const shifts = await tx.employeeShift.findMany({
             where: {
               employeeId: app.employeeId,
@@ -208,21 +225,21 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
             },
           })
           
-          for (const shift of shifts) {
-            const isLeave = app.type === ApplicationType.leave
-            const newStatus = isLeave ? AttendanceStatus.absent : AttendanceStatus.on_time
-            const leaveTypeStr = app.leaveDetail?.leaveType || ""
-            const newNote = isLeave ? `Nghỉ phép có phê duyệt: ${leaveTypeStr}` : "WFH có phê duyệt"
-            
+          const updatePromises = shifts.map(async (shift) => {
+            const newStatus = AttendanceStatus.on_time
+            const newNote = APPLICATION_NOTES.WFH_APPROVED
             await this._upsertAttendanceRecord(tx, shift, newStatus, newNote)
-          }
+          })
+          
+          await Promise.all(updatePromises)
         } else if (app.type === ApplicationType.late_early && app.lateEarlyDetail) {
           const detail = app.lateEarlyDetail
           const shift = await tx.employeeShift.findUnique({
             where: { id: detail.employeeShiftId },
           })
           if (shift) {
-            const noteText = `Được duyệt ${detail.isLate ? "đi muộn" : "về sớm"}: ${detail.durationMinutes} phút`
+            const action = detail.isLate ? APPLICATION_NOTES.LATE : APPLICATION_NOTES.EARLY
+            const noteText = APPLICATION_NOTES.LATE_EARLY_APPROVED(action, detail.durationMinutes)
             await this._upsertAttendanceRecord(tx, shift, AttendanceStatus.on_time, noteText)
           }
         }
@@ -361,14 +378,20 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
       case APPLICATION_TYPES.OVERTIME.LABEL:
         return {
           overtimeDetail: {
-            create: { employeeShiftId: data.detail.employeeShiftId },
+            create: {
+              employeeShiftId: data.detail.employeeShiftId,
+              overtimeHours: data.detail.overtimeHours ?? 0,
+            },
           },
         }
 
       case APPLICATION_TYPES.WORK_FROM_HOME.LABEL:
         return {
           workFromHomeDetail: {
-            create: { location: data.detail?.location },
+            create: {
+              wfhType: (data.detail?.wfhType ?? WFH_TYPE.FULL_DAY) as any,
+              location: data.detail?.location,
+            },
           },
         }
 
@@ -438,7 +461,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     if (managedBy) {
       const role = managedBy.role
       const empId = managedBy.empId
-      if (role === ROLE.EMPLOYEE) {
+      if (query.scope === "assigned" || role === ROLE.EMPLOYEE) {
         where = {
           AND: [
             where,
@@ -456,42 +479,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
           ]
         }
       } else {
-        // Manager roles: exclude shift swaps that are pending partner approval, UNLESS the manager is the partner
-        // Also exclude applications created by the manager themselves, unless they assigned it to themselves
-        where = {
-          AND: [
-            where,
-            {
-              OR: [
-                { employeeId: { not: empId } },
-                { assignedToId: empId },
-                {
-                  type: APPLICATION_TYPES.SHIFT_SWAP.LABEL,
-                  shiftSwapDetail: {
-                    swapWithEmployeeId: empId
-                  }
-                }
-              ]
-            },
-            {
-              OR: [
-                { type: { not: APPLICATION_TYPES.SHIFT_SWAP.LABEL } },
-                {
-                  type: APPLICATION_TYPES.SHIFT_SWAP.LABEL,
-                  shiftSwapDetail: {
-                    partnerApprovalStatus: { not: PARTNER_APPROVAL_STATUS.PENDING }
-                  }
-                },
-                {
-                  type: APPLICATION_TYPES.SHIFT_SWAP.LABEL,
-                  shiftSwapDetail: {
-                    swapWithEmployeeId: empId
-                  }
-                }
-              ]
-            }
-          ]
-        }
+        return where
       }
     }
 

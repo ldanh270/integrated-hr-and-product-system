@@ -13,7 +13,7 @@ import { prisma } from "@/libs/database.ts"
 import type { NotificationService } from "@/services/notification.service.ts"
 import type { IApplicationRepository, ISubmitApplicationDTO, ILeaveType } from "@/types/attendance.types.ts"
 import { AppError } from "@/utils/error.util.ts"
-import { Application, ApplicationShiftSwapDetail } from "@prisma/client"
+import { Application, ApplicationShiftSwapDetail, AttendanceStatus } from "@prisma/client"
 
 type AppWithDetails = Application & { shiftSwapDetail?: ApplicationShiftSwapDetail | null }
 
@@ -23,19 +23,21 @@ export interface IStrategyDeps {
   notificationService: NotificationService
 }
 
+const STANDARD_WORK_MINUTES = 8 * 60; // 8 hours
+
 const STRATEGY_ERRORS = {
-  LEAVE_OVERLAP: "Leave request overlaps with an existing pending or approved leave",
+  LEAVE_OVERLAP: "Khoảng thời gian nghỉ phép bị trùng lặp với một đơn đã duyệt hoặc đang chờ duyệt khác",
   INSUFFICIENT_BALANCE: (quota: number, used: number, requested: number) =>
-    `Insufficient leave balance. Quota: ${quota} days/year. Used: ${used} days. Requested: ${requested} days.`,
-  SHIFT_NOT_FOUND: (id: string) => `Employee shift '${id}' not found`,
-  SHIFT_NOT_OWNED: "Forbidden: The specified shift does not belong to you",
-  SWAP_SHIFT_NOT_OWNED: "Forbidden: The swap-with shift does not belong to the target employee",
-  EMPLOYEE_NOT_FOUND: (id: string) => `Employee '${id}' not found`,
-  EMPLOYEE_INACTIVE: (id: string) => `Employee '${id}' is not active`,
+    `Không đủ số ngày phép. Tổng phép: ${quota} ngày. Đã dùng: ${used} ngày. Đang yêu cầu: ${requested} ngày.`,
+  SHIFT_NOT_FOUND: (id: string) => `Không tìm thấy ca làm việc '${id}'`,
+  SHIFT_NOT_OWNED: "Từ chối: Ca làm việc này không thuộc về bạn",
+  SWAP_SHIFT_NOT_OWNED: "Từ chối: Ca muốn đổi không thuộc về nhân viên đích",
+  EMPLOYEE_NOT_FOUND: (id: string) => `Không tìm thấy nhân viên '${id}'`,
+  EMPLOYEE_INACTIVE: (id: string) => `Nhân viên '${id}' hiện không hoạt động`,
   OVERTIME_START_MISMATCH: (start: string, shift: string) =>
-    `Overtime startDate (${start}) must match shift date (${shift})`,
+    `Ngày bắt đầu làm thêm (${start}) phải khớp với ngày của ca làm (${shift})`,
   OVERTIME_END_MISMATCH: (end: string, shift: string) =>
-    `Overtime endDate (${end}) must match shift date (${shift})`,
+    `Ngày kết thúc làm thêm (${end}) phải khớp với ngày của ca làm (${shift})`,
   PARTNER_NOT_APPROVED: "Không thể duyệt: Nhân viên được đổi ca chưa đồng ý",
 } as const
 
@@ -44,6 +46,11 @@ const STRATEGY_NOTIFICATIONS = {
   SWAP_REQUEST_MSG: "Bạn nhận được yêu cầu đổi ca làm việc từ một nhân viên. Vui lòng kiểm tra ứng dụng để xác nhận.",
   SWAP_APPROVED_TITLE: "Đổi ca thành công",
   SWAP_APPROVED_MSG: "Đơn đổi ca của bạn đã được quản lý phê duyệt. Lịch làm việc đã được thay đổi.",
+} as const
+
+const LEAVE_NOTES = {
+  UNPAID_EXCEED_LIMIT: "Nghỉ phép không lương (Vượt hạn mức)",
+  PAID_APPROVED: "Nghỉ phép có lương",
 } as const
 
 // ─── Strategy Interface ────────────────────────────────────────
@@ -86,23 +93,100 @@ class LeaveStrategy extends BaseApplicationTypeStrategy {
       )
     }
 
-    // §V4b: check balance for paid leave types
-    if (!PAID_LEAVE_TYPES.includes(leaveType as ILeaveType)) return
-    const quota = LEAVE_BALANCE_DEFAULTS[leaveType as keyof typeof LEAVE_BALANCE_DEFAULTS] ?? 0
-    if (quota === 0) return // unlimited
+    // §V4b: We no longer block on insufficient balance here.
+    // Balance checking and paid/unpaid deduction is handled in onApprove.
+  }
 
-    const year = startDate.getFullYear()
-    const usedDays = await deps.applicationRepo.getUsedLeaveDays(data.employeeId, leaveType as ILeaveType, year)
-    const requestedDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+  async onApprove(app: AppWithDetails, deps: IStrategyDeps): Promise<void> {
+    if (app.type !== APPLICATION_TYPES.LEAVE.LABEL) return
+    const leaveDetail = await prisma.applicationLeaveDetail.findUnique({
+      where: { applicationId: app.id },
+    })
+    if (!leaveDetail || !PAID_LEAVE_TYPES.includes(leaveDetail.leaveType as ILeaveType)) return
 
-    if (usedDays + requestedDays > quota) {
-      throw new AppError(
-        STRATEGY_ERRORS.INSUFFICIENT_BALANCE(quota, usedDays, requestedDays),
-        HttpStatusCode.UNPROCESSABLE_ENTITY,
-        ErrorLayer.SERVICE,
-        "INSUFFICIENT_LEAVE_BALANCE",
-      )
-    }
+    // Find the employee to get current leave balance
+    const employee = await prisma.employee.findUnique({
+      where: { id: app.employeeId },
+      select: { totalLeaves: true, usedLeaves: true },
+    })
+    if (!employee) return
+
+    let currentUsed = employee.usedLeaves
+    const maxLeaves = employee.totalLeaves
+
+    // Find scheduled shifts between startDate and endDate
+    const shifts = await prisma.employeeShift.findMany({
+      where: {
+        employeeId: app.employeeId,
+        assignedDate: { gte: app.startDate, lte: app.endDate },
+      },
+    })
+
+    // For each shift, decide if it's paid or unpaid based on balance
+    const shiftPromises = shifts.map(async (shift) => {
+      let isPaid = false
+      let status: AttendanceStatus = AttendanceStatus.absent // Default if out of balance
+      let note: string = LEAVE_NOTES.UNPAID_EXCEED_LIMIT
+
+      if (currentUsed < maxLeaves) {
+        // Still have balance
+        isPaid = true
+        status = AttendanceStatus.on_time
+        note = LEAVE_NOTES.PAID_APPROVED
+        currentUsed += 1
+      }
+
+      // Upsert AttendanceRecord
+      const attendance = await prisma.attendanceRecord.upsert({
+        where: { employeeShiftId: shift.id },
+        create: {
+          employeeId: app.employeeId,
+          employeeShiftId: shift.id,
+          date: shift.assignedDate,
+          status,
+          isPaidLeave: isPaid,
+          note: note,
+          totalWorkMinutes: isPaid ? STANDARD_WORK_MINUTES : 0,
+        },
+        update: {
+          status,
+          isPaidLeave: isPaid,
+          note: note,
+          totalWorkMinutes: isPaid ? STANDARD_WORK_MINUTES : 0,
+        },
+      })
+
+      // Create RealShift if it's paid (so it shows as worked)
+      if (isPaid) {
+        const STANDARD_SHIFT_START_MINUTES = 8 * 60; // 08:00
+        const STANDARD_SHIFT_END_MINUTES = 17 * 60; // 17:00
+
+        await prisma.realShift.upsert({
+          where: { attendanceRecordId: attendance.id },
+          create: {
+            employeeId: app.employeeId,
+            attendanceRecordId: attendance.id,
+            date: shift.assignedDate,
+            actualStartTime: STANDARD_SHIFT_START_MINUTES,
+            actualEndTime: STANDARD_SHIFT_END_MINUTES,
+            isMatched: true,
+          },
+          update: {
+            actualStartTime: STANDARD_SHIFT_START_MINUTES,
+            actualEndTime: STANDARD_SHIFT_END_MINUTES,
+            isMatched: true,
+          },
+        })
+      }
+    })
+
+    await Promise.all(shiftPromises)
+
+    // Finally, update the employee's usedLeaves
+    await prisma.employee.update({
+      where: { id: app.employeeId },
+      data: { usedLeaves: currentUsed },
+    })
   }
 }
 

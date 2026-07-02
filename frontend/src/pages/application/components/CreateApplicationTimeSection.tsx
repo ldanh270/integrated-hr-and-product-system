@@ -1,13 +1,18 @@
 "use client"
 
-import { LEAVE_TYPE_OPTIONS, REGIME_TYPE_OPTIONS } from "@/components/attendance/attendance-ui.meta"
+import { LEAVE_TYPE_OPTIONS } from "@/components/attendance/attendance-ui.meta"
 import { APPLICATION_TYPES } from "@/config/entities/attendance.config"
 import type { IEmployeeShiftAssignment } from "@/types/attendance.types"
 import type { Employee } from "@/types/employee.types"
 import type { ApplicationFormState } from "../hooks/useCreateApplicationForm"
 import { useShifts } from "@/hooks/attendance/use-shifts"
 
-import { Plus } from "lucide-react"
+
+
+import dayjs from "dayjs"
+
+const MAX_FILE_SIZE_MB = 10;
+const ALLOWED_MIME_TYPES = "image/jpeg, image/png, image/webp, image/gif, application/pdf";
 
 interface Props {
   type: string
@@ -21,7 +26,7 @@ interface Props {
 export function CreateApplicationTimeSection({ type, form, set, myEmployeeShift, partnerEmployeeShift, employees }: Props) {
   const { data: shifts = [] } = useShifts()
 
-  const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split("T")[0]
+  const todayStr = dayjs().format("YYYY-MM-DD")
 
   const formatTime = (minutes: number) => {
     const h = Math.floor(minutes / 60)
@@ -40,23 +45,17 @@ export function CreateApplicationTimeSection({ type, form, set, myEmployeeShift,
       <div className="p-5">
         {type === APPLICATION_TYPES.LEAVE.LABEL ? (
           <>
-            <p className="text-sm text-foreground mb-4">
-              Số phép còn lại: <span className="font-semibold text-red-600">0</span> ngày phép
-            </p>
+
 
             <div className="border border-border rounded-md overflow-hidden">
               <table className="w-full text-sm text-left">
                 <thead className="bg-muted border-b border-border text-muted-foreground">
                   <tr>
-                    <th className="px-4 py-3 font-medium flex items-center gap-2">
-                      <button className="h-4 w-4 rounded-full border border-muted-foreground/70 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary">
-                        <Plus size={10} />
-                      </button>
+                    <th className="px-4 py-3 font-medium text-left w-1/4">
                       Kiểu nghỉ <span className="text-red-500">*</span>
                     </th>
-                    <th className="px-4 py-3 font-medium">Thời gian</th>
-                    <th className="px-4 py-3 font-medium">Dùng phép</th>
-                    <th className="px-4 py-3 font-medium">Lý do</th>
+                    <th className="px-4 py-3 font-medium text-left whitespace-nowrap">Thời gian</th>
+                    <th className="px-4 py-3 font-medium text-left w-full">Lý do</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border bg-background">
@@ -74,37 +73,34 @@ export function CreateApplicationTimeSection({ type, form, set, myEmployeeShift,
                         ))}
                       </select>
                     </td>
-                    <td className="px-4 py-3 flex gap-2 items-center">
-                      <input
-                        type="date"
-                        min={todayStr}
-                        value={form.startDate}
-                        onChange={(e) => { set("startDate", e.target.value); }}
-                        className="w-36 h-8 px-2 text-sm border border-input bg-transparent rounded focus:outline-none focus:ring-1 focus:ring-primary"
-                      />
-                      <span className="text-muted-foreground/70">-</span>
-                      <input
-                        type="date"
-                        min={todayStr}
-                        value={form.endDate}
-                        onChange={(e) => { set("endDate", e.target.value); }}
-                        className="w-36 h-8 px-2 text-sm border border-input bg-transparent rounded focus:outline-none focus:ring-1 focus:ring-primary"
-                      />
-                    </td>
                     <td className="px-4 py-3">
-                      <select
-                        value={form.leaveRegimeType}
-                        onChange={(e) => {
-                          set("leaveRegimeType", e.target.value as "paid" | "unpaid");
-                        }}
-                        className="w-36 h-8 px-2 text-sm border border-input bg-background text-foreground rounded focus:outline-none focus:ring-1 focus:ring-primary"
-                      >
-                        {REGIME_TYPE_OPTIONS.map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="flex gap-2 items-start">
+                        <div className="flex flex-col">
+                          <input
+                            type="date"
+                            min={todayStr}
+                            value={form.startDate}
+                            onChange={(e) => { set("startDate", e.target.value); }}
+                            className={`w-36 h-8 px-2 text-sm border bg-transparent rounded focus:outline-none focus:ring-1 ${form.startDate && form.startDate < todayStr ? 'border-red-500 focus:ring-red-500' : 'border-input focus:ring-primary'}`}
+                          />
+                          {form.startDate && form.startDate < todayStr && <span className="text-[10px] text-red-500 mt-0.5">Không được chọn ngày quá khứ</span>}
+                        </div>
+                        <span className="text-muted-foreground/70 mt-1.5">-</span>
+                        <div className="flex flex-col">
+                          <input
+                            type="date"
+                            min={form.startDate || todayStr}
+                            value={form.endDate}
+                            onChange={(e) => { set("endDate", e.target.value); }}
+                            className={`w-36 h-8 px-2 text-sm border bg-transparent rounded focus:outline-none focus:ring-1 ${(form.endDate && form.endDate < todayStr) || (form.endDate && form.startDate && form.endDate < form.startDate) ? 'border-red-500 focus:ring-red-500' : 'border-input focus:ring-primary'}`}
+                          />
+                          {form.endDate && form.endDate < todayStr ? (
+                            <span className="text-[10px] text-red-500 mt-0.5">Không được chọn ngày quá khứ</span>
+                          ) : form.endDate && form.startDate && form.endDate < form.startDate ? (
+                            <span className="text-[10px] text-red-500 mt-0.5">Phải sau ngày bắt đầu</span>
+                          ) : null}
+                        </div>
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <input
@@ -119,6 +115,26 @@ export function CreateApplicationTimeSection({ type, form, set, myEmployeeShift,
                 </tbody>
               </table>
             </div>
+
+            <div className="mt-4">
+              <label className="text-xs font-medium text-foreground block mb-1.5">
+                Chứng từ đính kèm (Hỗ trợ định dạng: JPEG, PNG, WEBP, GIF, PDF. Tối đa {MAX_FILE_SIZE_MB}MB)
+              </label>
+              <input
+                type="file"
+                accept={ALLOWED_MIME_TYPES}
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null
+                  set("attachmentFile", file as any)
+                }}
+                className="w-full text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary file:mr-4 file:py-1.5 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+              />
+              {form.attachmentFile && (
+                <p className="mt-2 text-xs text-muted-foreground">Đã chọn: {form.attachmentFile.name}</p>
+              )}
+            </div>
+
+
           </>
         ) : (
           <div className="grid grid-cols-2 gap-6">
@@ -141,8 +157,9 @@ export function CreateApplicationTimeSection({ type, form, set, myEmployeeShift,
                 min={todayStr}
                 value={form.startDate}
                 onChange={(e) => { set("startDate", e.target.value); }}
-                className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                className={`w-full h-9 px-3 text-sm border rounded-md bg-background text-foreground focus:outline-none focus:ring-1 ${form.startDate && form.startDate < todayStr ? 'border-red-500 focus:ring-red-500' : 'border-input focus:ring-primary'}`}
               />
+              {form.startDate && form.startDate < todayStr && <p className="text-xs text-red-500 mt-1">Không được chọn ngày trong quá khứ</p>}
             </div>
             {!(
               [
@@ -156,11 +173,16 @@ export function CreateApplicationTimeSection({ type, form, set, myEmployeeShift,
                 <label className="text-xs font-medium text-foreground">Ngày kết thúc</label>
                 <input
                   type="date"
-                  min={todayStr}
+                  min={form.startDate || todayStr}
                   value={form.endDate}
                   onChange={(e) => { set("endDate", e.target.value); }}
-                  className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  className={`w-full h-9 px-3 text-sm border rounded-md bg-background text-foreground focus:outline-none focus:ring-1 ${(form.endDate && form.endDate < todayStr) || (form.endDate && form.startDate && form.endDate < form.startDate) ? 'border-red-500 focus:ring-red-500' : 'border-input focus:ring-primary'}`}
                 />
+                {form.endDate && form.endDate < todayStr ? (
+                  <p className="text-xs text-red-500 mt-1">Không được chọn ngày trong quá khứ</p>
+                ) : form.endDate && form.startDate && form.endDate < form.startDate ? (
+                  <p className="text-xs text-red-500 mt-1">Ngày kết thúc phải từ ngày bắt đầu trở đi</p>
+                ) : null}
               </div>
             )}
 
@@ -278,8 +300,9 @@ export function CreateApplicationTimeSection({ type, form, set, myEmployeeShift,
                     min={todayStr}
                     value={form.swapWithDate}
                     onChange={(e) => { set("swapWithDate", e.target.value); }}
-                    className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    className={`w-full h-9 px-3 text-sm border rounded-md bg-background text-foreground focus:outline-none focus:ring-1 ${form.swapWithDate && form.swapWithDate < todayStr ? 'border-red-500 focus:ring-red-500' : 'border-input focus:ring-primary'}`}
                   />
+                  {form.swapWithDate && form.swapWithDate < todayStr && <p className="text-xs text-red-500 mt-1">Không được chọn ngày trong quá khứ</p>}
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-foreground">
@@ -327,6 +350,7 @@ export function CreateApplicationTimeSection({ type, form, set, myEmployeeShift,
                 className="w-full p-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
+
           </div>
         )}
       </div>

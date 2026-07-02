@@ -24,6 +24,8 @@ interface UseMyApplicationsReturn {
   setKeyword: (v: string) => void
   page: number
   setPage: (v: number) => void
+  pageSize: number
+  setPageSize: (v: number) => void
   totalPages: number
   total: number
   refetch: () => void
@@ -46,6 +48,7 @@ export function useMyApplications(): UseMyApplicationsReturn {
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [keyword, setKeyword] = useState<string>("")
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [cancellingId, setCancellingId] = useState<string | null>(null)
@@ -68,7 +71,7 @@ export function useMyApplications(): UseMyApplicationsReturn {
         // Backend query schema uses "pageSize" (not "limit") with .strict()
         const query: IListBatchesQuery = {
           page,
-          pageSize: 10,
+          pageSize,
         }
 
         if (statusFilter !== "all") query.status = statusFilter
@@ -95,7 +98,7 @@ export function useMyApplications(): UseMyApplicationsReturn {
         }
       }
     },
-    [statusFilter, typeFilter, keyword, page],
+    [statusFilter, typeFilter, keyword, page, pageSize],
   )
 
   const fetchStats = useCallback(async () => {
@@ -181,6 +184,8 @@ export function useMyApplications(): UseMyApplicationsReturn {
     setKeyword,
     page,
     setPage,
+    pageSize,
+    setPageSize: (v) => { setPageSize(v); setPage(1); },
     totalPages,
     total,
     refetch,

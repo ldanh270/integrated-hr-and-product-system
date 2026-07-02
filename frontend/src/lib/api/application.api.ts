@@ -14,6 +14,24 @@ interface ApiResponse<T> {
   }
 }
 
+/**
+ * Uploads an attachment file for an application
+ * 
+ * @param file - The attachment file to upload
+ * @returns Object containing the URL and ID of the uploaded attachment
+ */
+export const uploadApplicationAttachment = async (file: File): Promise<{ url: string; id: string }> => {
+  const formData = new FormData()
+  formData.append("file", file)
+  const response = await apiClient.post<ApiResponse<{ url: string; id: string }>>("/applications/upload-attachment", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  })
+  if (response.data.error) {
+    throw new Error(response.data.error.message || "Failed to upload attachment")
+  }
+  return response.data.data
+}
+
 // ─── Application Detail Shapes ───────────────────────────────────────────────
 
 export interface ILeaveDetail {
@@ -72,6 +90,7 @@ export interface IApplication {
   note?: string
   rejectReason?: string
   detail?: IApplicationDetail & Record<string, unknown>
+  leaveDetail?: ILeaveDetail & Record<string, unknown>
   shiftSwapDetail?: IShiftSwapDetail & Record<string, unknown>
   createdAt: string
   updatedAt: string
@@ -99,6 +118,8 @@ export interface ISubmitApplicationDTO {
   endDate: string
   reason?: string
   note?: string
+  attachmentUrl?: string
+  attachmentId?: string
   assignedToId?: string
   detail: IApplicationDetail & Record<string, unknown>
 }
@@ -114,6 +135,7 @@ export interface IListApplicationsQuery {
   keyword?: string
   startDate?: string
   endDate?: string
+  scope?: "assigned" | "all"
 }
 
 // ─── API Client ───────────────────────────────────────────────────────────────
@@ -138,6 +160,23 @@ export const applicationApi = {
   /** Submit a new application */
   submit: async (dto: ISubmitApplicationDTO): Promise<IApplication> => {
     const response = await apiClient.post<ApiResponse<IApplication>>("/applications", dto)
+    return response.data.data
+  },
+
+  /**
+   * Submits a new application along with file attachments
+   * 
+   * @param dto - The application submission data
+   * @param files - The list of attachment files
+   * @returns The created application object
+   */
+  submitWithFiles: async (dto: ISubmitApplicationDTO, files: File[]): Promise<IApplication> => {
+    const formData = new FormData()
+    formData.append("payload", JSON.stringify(dto))
+    files.forEach((file) => formData.append("attachments", file))
+    const response = await apiClient.post<ApiResponse<IApplication>>("/applications", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    })
     return response.data.data
   },
 

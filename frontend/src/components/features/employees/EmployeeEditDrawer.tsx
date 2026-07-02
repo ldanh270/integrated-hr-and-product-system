@@ -37,6 +37,7 @@ interface Props {
 export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
   const {
     register,
+    watch,
     handleSubmit,
     onSubmitEmployee,
     errors,
@@ -62,6 +63,10 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
   })
 
   const isPending = isEmployeePending || weeklySchedule.isPending
+
+  const totalLeaves = watch("totalLeaves") || 0
+  const usedLeaves = watch("usedLeaves") || 0
+  const remainingLeaves = totalLeaves - usedLeaves
 
   // Avoid rendering if no employee is selected for editing
   if (!employee) return null
@@ -323,6 +328,41 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                     )}
                   </div>
                 </div>
+              </div>
+            </section>
+
+            {/* Leave Balance Section */}
+            <section>
+              <h3 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                Tổng phép
+              </h3>
+              <div className="border border-border rounded-xl bg-card overflow-hidden">
+                <table className="w-full text-sm text-center">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/50">
+                      <th className="py-3 px-4 font-medium text-muted-foreground w-1/3 border-r border-border">Số phép</th>
+                      <th className="py-3 px-4 font-medium text-muted-foreground w-1/3 border-r border-border">Đã dùng</th>
+                      <th className="py-3 px-4 font-medium text-muted-foreground w-1/3">Còn lại</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="py-3 px-4 border-r border-border text-foreground">
+                        {totalLeaves}
+                        <input
+                          type="hidden"
+                          {...register("totalLeaves", { valueAsNumber: true })}
+                        />
+                      </td>
+                      <td className="py-3 px-4 border-r border-border text-foreground">
+                        {usedLeaves}
+                      </td>
+                      <td className="py-3 px-4 text-foreground font-medium">
+                        {remainingLeaves}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </section>
 

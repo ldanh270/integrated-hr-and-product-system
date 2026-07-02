@@ -65,6 +65,8 @@ export interface AuthResponseDto {
     email: string
     fullName: string
     role: EmployeeRole
+    totalLeaves: number
+    usedLeaves: number
     personalEmployeeId: string | null
     personalEmployee: {
       id: string
@@ -185,6 +187,8 @@ export interface AuthEmployeeDocument {
   lockedUntil?: Date | null
   failedLoginCount: number
   lastLoginAt?: Date | null
+  totalLeaves: number
+  usedLeaves: number
 }
 
 /**

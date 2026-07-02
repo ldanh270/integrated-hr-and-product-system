@@ -24,6 +24,8 @@ export interface Employee {
   startDate: string | null
   endDate: string | null
   avatar: { url: string | null; id: string | null } | null
+  totalLeaves: number
+  usedLeaves: number
   createdAt: string
   updatedAt: string
 }
@@ -59,6 +61,8 @@ export interface CreateEmployeeDto {
   position?: string
   employeeType?: EmployeeType
   status?: EmployeeStatus
+  totalLeaves?: number
+  usedLeaves?: number
   dateOfBirth?: string
   nationalId?: string
   address?: string
@@ -75,6 +79,8 @@ export interface UpdateEmployeeDto {
   position?: string | null
   employeeType?: EmployeeType
   status?: EmployeeStatus
+  totalLeaves?: number
+  usedLeaves?: number
   dateOfBirth?: string | null
   nationalId?: string | null
   address?: string | null

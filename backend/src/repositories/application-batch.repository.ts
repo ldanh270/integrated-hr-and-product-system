@@ -77,6 +77,8 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
               endDate: new Date(item.endDate ?? item.startDate),
               reason: item.reason,
               note: item.note,
+              attachmentUrl: item.attachmentUrl,
+              attachmentId: item.attachmentId,
               assignedToId: assignedToId ?? null,
               batchId: batch.id,
               ...this._buildDetailCreate(type, item.detail),
@@ -258,10 +260,8 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
       }
     }
 
-    // Manager role-based filtering: non-employee roles see all batches
-    // Employee role sees only batches assigned to them as approver
     if (managedBy) {
-      if (managedBy.role === ROLE.EMPLOYEE) {
+      if (query.scope === "assigned" || managedBy.role === ROLE.EMPLOYEE) {
         return {
           AND: [
             where,
@@ -283,27 +283,7 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
           ],
         }
       } else {
-        return {
-          AND: [
-            where,
-            {
-              OR: [
-                { employeeId: { not: managedBy.empId } },
-                { assignedToId: managedBy.empId },
-                {
-                  applications: {
-                    some: {
-                      type: APPLICATION_TYPES.SHIFT_SWAP.LABEL,
-                      shiftSwapDetail: {
-                        swapWithEmployeeId: managedBy.empId
-                      }
-                    }
-                  }
-                }
-              ]
-            }
-          ]
-        }
+        return where
       }
     }
 

@@ -20,13 +20,14 @@ import {
 interface BatchApplicationDetailProps {
   batch: IApplicationBatch | null
   isLoading: boolean
-  mode: "mine" | "manage"
+  mode: "mine" | "manage" | "all"
   onBack: () => void
   onApproveSingle?: (app: IApplication) => void
   onRejectSingle?: (app: IApplication) => void
 }
 
-import { SubApplicationRow, formatDate } from "./SubApplicationRow"
+import { SubApplicationRow } from "./SubApplicationRow"
+import { formatDate } from "@/lib/utils"
 
 // ─── BatchApplicationDetail ───────────────────────────────────
 

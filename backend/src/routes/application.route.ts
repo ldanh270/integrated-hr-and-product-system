@@ -24,8 +24,28 @@ applicationRoutes.use(authenticate)
 
 // ─── Employee endpoints ───────────────────────────────────────
 
+import multer from "multer"
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB max
+const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"]
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_FILE_SIZE },
+  fileFilter: (_req, file, cb) => {
+    if (!ALLOWED_MIME.includes(file.mimetype)) {
+      cb(new Error("Chỉ cho phép ảnh (JPEG, PNG, WEBP, GIF) hoặc PDF"))
+    } else {
+      cb(null, true)
+    }
+  },
+})
+
 // Submit a new application (any authenticated employee)
 applicationRoutes.post("/", controller.submit)
+
+// Upload attachment
+applicationRoutes.post("/upload-attachment", upload.single("file"), controller.uploadAttachment as any)
 
 // List own applications (with pagination + filters)
 applicationRoutes.get("/me", controller.listMine)
