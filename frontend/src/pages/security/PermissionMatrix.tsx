@@ -36,7 +36,8 @@ export default function PermissionMatrix() {
     SUBSYSTEMS.forEach((subsystem) => {
       subsystem.sidebarItems.forEach((item) => {
         // Find corresponding route configuration
-        const matchingRoute = privateRoutes.find((r) => r.path === item.path)
+        const menuPathWithoutQuery = item.path.split("?")[0]
+        const matchingRoute = privateRoutes.find((r) => r.path === menuPathWithoutQuery)
         if (matchingRoute) {
           matchedRoutePaths.add(matchingRoute.path)
         }
