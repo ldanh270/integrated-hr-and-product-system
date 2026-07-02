@@ -42,44 +42,40 @@ const privateRoutes: RouteConfig[] = [
     layout: MainLayout,
   },
   {
-    path: ROUTES.ATTENDANCE.BASE,
+    path: ROUTES.ATTENDANCE.DASHBOARD,
     component: lazy(() => import("@/pages/attendance/AttendanceDashboard.tsx")),
     layout: MainLayout,
+    permissions: ["attendance.read"],
   },
   {
     path: ROUTES.ATTENDANCE.SUMMARY,
     component: lazy(() => import("@/pages/attendance/AttendanceSummary.tsx")),
     layout: MainLayout,
+    permissions: ["attendance.read"],
   },
   {
     path: ROUTES.ATTENDANCE.WORK_SCHEDULES,
     component: lazy(() => import("@/pages/attendance/WorkSchedules.tsx")),
     layout: MainLayout,
-  },
-  {
-    path: ROUTES.ATTENDANCE.REAL_SHIFT,
-    component: lazy(() => import("@/pages/attendance/RealShift.tsx")),
-    layout: MainLayout,
-  },
-  {
-    path: ROUTES.ATTENDANCE.APPLICATIONS,
-    component: lazy(() => import("@/pages/attendance/Applications.tsx")),
-    layout: MainLayout,
-  },
-  {
-    path: ROUTES.ATTENDANCE.SHIFTS,
-    component: lazy(() => import("@/pages/attendance/ShiftManagement.tsx")),
-    layout: MainLayout,
+    permissions: ["attendance.update"],
   },
   {
     path: ROUTES.ATTENDANCE.WEEKLY_SCHEDULES,
     component: lazy(() => import("@/pages/attendance/WeeklySchedules.tsx")),
     layout: MainLayout,
+    permissions: ["attendance.update"],
   },
   {
     path: ROUTES.ATTENDANCE.WEEKLY_SCHEDULE_CONFIG,
     component: lazy(() => import("@/pages/attendance/WeeklyScheduleConfig.tsx")),
     layout: MainLayout,
+    permissions: ["attendance.update"],
+  },
+  {
+    path: ROUTES.ATTENDANCE.SHIFTS,
+    component: lazy(() => import("@/pages/attendance/ShiftManagement.tsx")),
+    layout: MainLayout,
+    permissions: ["attendance.update"],
   },
   {
     path: ROUTES.ATTENDANCE.HOLIDAYS,
