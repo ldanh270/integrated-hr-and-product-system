@@ -1,4 +1,4 @@
-import { ROLE } from "@/config/entities/employee.config"
+import { SYSTEM_ROLE } from "@/config/entities/employee.config"
 import {
   CUSTOM_QUERY_TYPE,
   TASK_PRIORITY,
@@ -572,7 +572,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
 
   // Check roles/permissions
   const isLeader = project.teamLeaderId === user?.id
-  const isAdminOrGM = user?.role === ROLE.ADMIN || user?.role === ROLE.GENERAL_MANAGER
+  const isAdminOrGM = user?.role === SYSTEM_ROLE.ADMIN || user?.role === SYSTEM_ROLE.GENERAL_MANAGER
 
   // Overlap leave days check removed per user request
 

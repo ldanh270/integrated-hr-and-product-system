@@ -24,6 +24,8 @@ export interface Employee {
   address: string | null
   startDate: string | null
   endDate: string | null
+  totalLeaves?: number
+  usedLeaves?: number
   avatar: { url: string | null; id: string | null } | null
   version?: number
   createdAt: string

@@ -1,5 +1,5 @@
 import { APPLICATION_TYPES, PARTNER_APPROVAL_STATUS } from "@/configs/entities/attendance.config.ts"
-import { ROLE } from "@/configs/entities/employee.config.ts"
+import { SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
 import {
   IApplicationBatchRepository,
   IListApplicationsQueryDTO,
@@ -261,7 +261,7 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
     }
 
     if (managedBy) {
-      if (query.scope === "assigned" || managedBy.role === ROLE.EMPLOYEE) {
+      if (query.scope === "assigned" || managedBy.role === SYSTEM_ROLE.EMPLOYEE) {
         return {
           AND: [
             where,

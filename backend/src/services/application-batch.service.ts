@@ -2,7 +2,7 @@ import {
   APPLICATION_TYPES,
   BATCHABLE_APPLICATION_TYPES,
 } from "@/configs/entities/attendance.config.ts"
-import { ROLE } from "@/configs/entities/employee.config.ts"
+import { SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
 import { NOTIFICATION_TYPE } from "@/configs/entities/notification.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
@@ -47,10 +47,10 @@ const BATCH_NOTIFICATIONS = {
 } as const
 
 const APPROVER_ROLES = [
-  ROLE.ADMIN,
-  ROLE.GENERAL_MANAGER,
-  ROLE.HR_MANAGER,
-  ROLE.TEAM_LEADER,
+  SYSTEM_ROLE.ADMIN,
+  SYSTEM_ROLE.GENERAL_MANAGER,
+  SYSTEM_ROLE.HR_MANAGER,
+  SYSTEM_ROLE.TEAM_LEADER,
 ] as string[]
 
 export class ApplicationBatchService implements IApplicationBatchService {

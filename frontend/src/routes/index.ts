@@ -87,17 +87,17 @@ const privateRoutes: RouteConfig[] = [
     layout: MainLayout,
   },
   {
-    path: "/application/manage",
+    path: ROUTES.APPLICATION.MANAGE,
     component: lazy(() => import("@/pages/application/ApplicationDashboard.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/application/all",
+    path: ROUTES.APPLICATION.ALL,
     component: lazy(() => import("@/pages/application/ApplicationDashboard.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/personal/applications",
+    path: ROUTES.PERSONAL.APPLICATIONS,
     component: lazy(() => import("@/pages/application/ApplicationDashboard.tsx")),
     layout: MainLayout,
   },

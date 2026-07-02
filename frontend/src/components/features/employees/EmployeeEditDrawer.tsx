@@ -50,7 +50,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
     onSubmitEmployee,
     errors,
     isPending: isEmployeePending,
-  } = useEmployeeEditModal(employee, isOpen)
+  } = useEmployeeEditModal(employee, isOpen, onClose)
 
   const weeklySchedule = useEmployeeWeeklyScheduleSection(employee?.id, isOpen)
   const { data: allRoles } = useRoles()

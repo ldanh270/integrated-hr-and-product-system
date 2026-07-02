@@ -20,7 +20,7 @@ import {
   ATTENDANCE_STATUS_LABELS,
   ATTENDANCE_STATUS_VARIANTS,
 } from "@/config/entities/attendance.config"
-import { ROLE } from "@/config/entities/employee.config"
+import { SYSTEM_ROLE } from "@/config/entities/employee.config"
 import { usePermission } from "@/hooks/use-permission"
 import { ROUTES } from "@/config/routes.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
@@ -48,7 +48,7 @@ import {
 import { Navigate } from "react-router-dom"
 
 function canManageAttendance(roles: string[] = []) {
-  return [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER].some((role) => roles.includes(role))
+  return [SYSTEM_ROLE.ADMIN, SYSTEM_ROLE.HR_MANAGER, SYSTEM_ROLE.GENERAL_MANAGER].some((role) => roles.includes(role))
 }
 
 function toSelectedEmployee(record: IAttendanceRecord): SelectedEmployeeSummary {

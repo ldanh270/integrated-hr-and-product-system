@@ -1,4 +1,4 @@
-import { ROLE } from "@/config/entities/employee.config"
+import { SYSTEM_ROLE } from "@/config/entities/employee.config"
 import { usePermission } from "@/hooks/use-permission"
 import { ROUTES } from "@/config/routes.config"
 
@@ -17,7 +17,7 @@ export const useEmployeeDetails = () => {
 
   const isAdminOrManager =
     roles.length > 0 &&
-    [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER].some((role) => hasRole(role))
+    [SYSTEM_ROLE.ADMIN, SYSTEM_ROLE.HR_MANAGER, SYSTEM_ROLE.GENERAL_MANAGER].some((role) => hasRole(role))
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 

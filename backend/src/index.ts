@@ -115,7 +115,7 @@ connectDB().then(async () => {
     if (staticRefs.total > 0) {
       console.error("FATAL ERROR: SYSTEM_INVARIANT_BROKEN: Legacy static role references found:")
       staticRefs.details.forEach((d) => console.error(`  - ${d}`))
-      console.error("All Legacy ROLE references must be purged under Sprint D2.6.")
+      console.error("All Legacy SYSTEM_ROLE references must be purged under Sprint D2.6.")
       process.exit(1)
     }
   }

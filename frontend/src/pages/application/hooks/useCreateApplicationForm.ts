@@ -1,12 +1,13 @@
 import { APPLICATION_TYPES, LEAVE_TYPE, REGIME_TYPE } from "@/config/entities/attendance.config"
-import { applicationBatchApi } from "@/lib/api/application-batch.api"
 import { useSubmitApplication } from "@/hooks/application/useSubmitApplication"
+import { applicationBatchApi } from "@/lib/api/application-batch.api"
 import { schedulesApi } from "@/lib/api/attendance.api"
 import { type IApprover, employeeApi } from "@/lib/api/employee.api"
 import type { IEmployeeShiftAssignment } from "@/types/attendance.types"
 import type { Employee } from "@/types/employee.types"
 
-import { useEffect, useState, useCallback } from "react"
+import { useCallback, useEffect, useState } from "react"
+
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 
@@ -66,7 +67,7 @@ const createEmptyItem = (): ApplicationFormItemState => ({
 
 export function useCreateApplicationForm(type: string) {
   const navigate = useNavigate()
-  const { isSubmitting: isSingleSubmitting, submitApplication } = useSubmitApplication()
+  const { isSubmitting: isSingleSubmitting } = useSubmitApplication()
 
   const [items, setItems] = useState<ApplicationFormItemState[]>([createEmptyItem()])
   const [assignedToId, setAssignedToId] = useState("")
@@ -80,39 +81,59 @@ export function useCreateApplicationForm(type: string) {
     employeeApi
       .getApprovers()
       .then(setApprovers)
-      .catch((err) => { console.error("Failed to fetch approvers:", err) })
+      .catch((err) => {
+        console.error("Failed to fetch approvers:", err)
+      })
     employeeApi
       .list({ limit: 1000 })
-      .then((res) => { setEmployees(res.data); })
+      .then((res) => {
+        setEmployees(res.data)
+      })
       .catch(() => {})
   }, [])
 
   // Auto-fetch MY EmployeeShift when startDate changes per item
   useEffect(() => {
-    const isShiftType = ([
-      APPLICATION_TYPES.SHIFT_SWAP.LABEL,
-      APPLICATION_TYPES.OVERTIME.LABEL,
-      APPLICATION_TYPES.LATE_EARLY.LABEL,
-    ] as string[]).includes(type)
+    const isShiftType = (
+      [
+        APPLICATION_TYPES.SHIFT_SWAP.LABEL,
+        APPLICATION_TYPES.OVERTIME.LABEL,
+        APPLICATION_TYPES.LATE_EARLY.LABEL,
+      ] as string[]
+    ).includes(type)
     if (!isShiftType) return
 
     items.forEach((item, idx) => {
       if (!item.startDate) {
-        setItems((prev) => prev.map((pItem, i) => i === idx ? { ...pItem, _myEmployeeShift: null, employeeShiftId: "" } : pItem))
+        setItems((prev) =>
+          prev.map((pItem, i) =>
+            i === idx ? { ...pItem, _myEmployeeShift: null, employeeShiftId: "" } : pItem,
+          ),
+        )
         return
       }
 
       schedulesApi
         .getMyShift(item.startDate)
         .then((shift) => {
-          setItems((prev) => prev.map((pItem, i) => i === idx ? {
-            ...pItem,
-            _myEmployeeShift: shift,
-            employeeShiftId: shift?.id ?? "",
-          } : pItem))
+          setItems((prev) =>
+            prev.map((pItem, i) =>
+              i === idx
+                ? {
+                    ...pItem,
+                    _myEmployeeShift: shift,
+                    employeeShiftId: shift?.id ?? "",
+                  }
+                : pItem,
+            ),
+          )
         })
         .catch(() => {
-          setItems((prev) => prev.map((pItem, i) => i === idx ? { ...pItem, _myEmployeeShift: null, employeeShiftId: "" } : pItem))
+          setItems((prev) =>
+            prev.map((pItem, i) =>
+              i === idx ? { ...pItem, _myEmployeeShift: null, employeeShiftId: "" } : pItem,
+            ),
+          )
         })
     })
   }, [items.map((i) => i.startDate).join(","), type])
@@ -123,21 +144,35 @@ export function useCreateApplicationForm(type: string) {
 
     items.forEach((item, idx) => {
       if (!item.swapWithEmployeeId || !item.swapWithDate) {
-        setItems((prev) => prev.map((pItem, i) => i === idx ? { ...pItem, _partnerEmployeeShift: null, swapWithShiftId: "" } : pItem))
+        setItems((prev) =>
+          prev.map((pItem, i) =>
+            i === idx ? { ...pItem, _partnerEmployeeShift: null, swapWithShiftId: "" } : pItem,
+          ),
+        )
         return
       }
 
       schedulesApi
         .getEmployeeShiftByDate(item.swapWithEmployeeId, item.swapWithDate)
         .then((shift) => {
-          setItems((prev) => prev.map((pItem, i) => i === idx ? {
-            ...pItem,
-            _partnerEmployeeShift: shift,
-            swapWithShiftId: shift?.id ?? "",
-          } : pItem))
+          setItems((prev) =>
+            prev.map((pItem, i) =>
+              i === idx
+                ? {
+                    ...pItem,
+                    _partnerEmployeeShift: shift,
+                    swapWithShiftId: shift?.id ?? "",
+                  }
+                : pItem,
+            ),
+          )
         })
         .catch(() => {
-          setItems((prev) => prev.map((pItem, i) => i === idx ? { ...pItem, _partnerEmployeeShift: null, swapWithShiftId: "" } : pItem))
+          setItems((prev) =>
+            prev.map((pItem, i) =>
+              i === idx ? { ...pItem, _partnerEmployeeShift: null, swapWithShiftId: "" } : pItem,
+            ),
+          )
         })
     })
   }, [items.map((i) => `${i.swapWithEmployeeId}|${i.swapWithDate}`).join(","), type])
@@ -146,8 +181,12 @@ export function useCreateApplicationForm(type: string) {
 
   /** Update a single field in a specific item */
   const setItemField = useCallback(
-    <K extends keyof ApplicationFormItemState>(idx: number, key: K, value: ApplicationFormItemState[K]) => {
-      setItems((prev) => prev.map((item, i) => i === idx ? { ...item, [key]: value } : item))
+    <K extends keyof ApplicationFormItemState>(
+      idx: number,
+      key: K,
+      value: ApplicationFormItemState[K],
+    ) => {
+      setItems((prev) => prev.map((item, i) => (i === idx ? { ...item, [key]: value } : item)))
     },
     [],
   )
@@ -200,7 +239,8 @@ export function useCreateApplicationForm(type: string) {
 
       case APPLICATION_TYPES.SHIFT_SWAP.LABEL: {
         const detail: Record<string, unknown> = { employeeShiftId: item.employeeShiftId.trim() }
-        if (item.swapWithEmployeeId.trim()) detail.swapWithEmployeeId = item.swapWithEmployeeId.trim()
+        if (item.swapWithEmployeeId.trim())
+          detail.swapWithEmployeeId = item.swapWithEmployeeId.trim()
         if (item.swapWithShiftId.trim()) detail.swapWithShiftId = item.swapWithShiftId.trim()
         return detail
       }
@@ -227,7 +267,12 @@ export function useCreateApplicationForm(type: string) {
     const hasPastDate = items.some((item) => {
       if (item.startDate < todayStr) return true
       if (item.endDate && item.endDate < todayStr) return true
-      if (type === APPLICATION_TYPES.SHIFT_SWAP.LABEL && item.swapWithDate && item.swapWithDate < todayStr) return true
+      if (
+        type === APPLICATION_TYPES.SHIFT_SWAP.LABEL &&
+        item.swapWithDate &&
+        item.swapWithDate < todayStr
+      )
+        return true
       return false
     })
 
@@ -236,7 +281,9 @@ export function useCreateApplicationForm(type: string) {
       return
     }
 
-    const hasInvalidEndDate = items.some((item) => item.endDate && item.startDate && item.endDate < item.startDate)
+    const hasInvalidEndDate = items.some(
+      (item) => item.endDate && item.startDate && item.endDate < item.startDate,
+    )
     if (hasInvalidEndDate) {
       toast.error("Ngày kết thúc phải từ ngày bắt đầu trở đi")
       return
@@ -244,37 +291,14 @@ export function useCreateApplicationForm(type: string) {
 
     setIsSubmitting(true)
     try {
-      if (items.length === 1) {
-        // Single item — use existing single application API (backward compat)
-        const item = items[0]
-        let attachmentUrl, attachmentId;
-        if (item.attachmentFile) {
-          const { uploadApplicationAttachment } = await import("@/lib/api/application.api");
-          const result = await uploadApplicationAttachment(item.attachmentFile);
-          attachmentUrl = result.url;
-          attachmentId = result.id;
-        }
-
-        const success = await submitApplication({
-          type,
-          startDate: item.startDate,
-          endDate: item.endDate || item.startDate,
-          reason: item.reason || undefined,
-          note: item.note || undefined,
-          attachmentUrl,
-          attachmentId,
-          assignedToId: assignedToId && assignedToId !== "none" ? assignedToId : undefined,
-          detail: buildDetail(item),
-        })
-        if (success) navigate(-1)
-      } else {
-        const { uploadApplicationAttachment } = await import("@/lib/api/application.api");
-        const batchItems = await Promise.all(items.map(async (item) => {
-          let attachmentUrl, attachmentId;
+      const { uploadApplicationAttachment } = await import("@/lib/api/application.api")
+      const batchItems = await Promise.all(
+        items.map(async (item) => {
+          let attachmentUrl, attachmentId
           if (item.attachmentFile) {
-            const result = await uploadApplicationAttachment(item.attachmentFile);
-            attachmentUrl = result.url;
-            attachmentId = result.id;
+            const result = await uploadApplicationAttachment(item.attachmentFile)
+            attachmentUrl = result.url
+            attachmentId = result.id
           }
           return {
             startDate: item.startDate,
@@ -285,16 +309,16 @@ export function useCreateApplicationForm(type: string) {
             attachmentId,
             detail: buildDetail(item),
           }
-        }))
+        }),
+      )
 
-        await applicationBatchApi.submit({
-          type,
-          assignedToId: assignedToId && assignedToId !== "none" ? assignedToId : undefined,
-          items: batchItems,
-        })
-        toast.success("Đã gửi đơn thành công")
-        navigate(-1)
-      }
+      await applicationBatchApi.submit({
+        type,
+        assignedToId: assignedToId && assignedToId !== "none" ? assignedToId : undefined,
+        items: batchItems,
+      })
+      toast.success("Đã gửi đơn thành công")
+      navigate(-1)
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: { message?: string } } } }
       toast.error(error.response?.data?.error?.message || "Lỗi khi gửi đơn")

@@ -1,4 +1,4 @@
-export const ROLE = {
+export const SYSTEM_ROLE = {
   ADMIN: "admin",
   HR_MANAGER: "hr_manager",
   GENERAL_MANAGER: "general_manager",
@@ -36,27 +36,27 @@ export const EMPLOYEE_STATUSES = [
 export type IEmployeeStatus = (typeof EMPLOYEE_STATUSES)[number]
 
 export const EMPLOYEE_ROLES = [
-  ROLE.EMPLOYEE,
-  ROLE.TEAM_LEADER,
-  ROLE.HR_MANAGER,
-  ROLE.GENERAL_MANAGER,
-  ROLE.ADMIN,
+  SYSTEM_ROLE.EMPLOYEE,
+  SYSTEM_ROLE.TEAM_LEADER,
+  SYSTEM_ROLE.HR_MANAGER,
+  SYSTEM_ROLE.GENERAL_MANAGER,
+  SYSTEM_ROLE.ADMIN,
 ] as const
 export type IEmployeeRole = (typeof EMPLOYEE_ROLES)[number]
 
 export const MANAGER_ROLES = [
-  ROLE.ADMIN,
-  ROLE.HR_MANAGER,
-  ROLE.GENERAL_MANAGER,
-  ROLE.TEAM_LEADER,
+  SYSTEM_ROLE.ADMIN,
+  SYSTEM_ROLE.HR_MANAGER,
+  SYSTEM_ROLE.GENERAL_MANAGER,
+  SYSTEM_ROLE.TEAM_LEADER,
 ] as const
 
 export const ROLE_LABELS: Record<string, string> = {
-  [ROLE.ADMIN]: "Quản trị viên",
-  [ROLE.GENERAL_MANAGER]: "Tổng quản lý",
-  [ROLE.HR_MANAGER]: "Quản lý nhân sự",
-  [ROLE.TEAM_LEADER]: "Trưởng nhóm",
-  [ROLE.EMPLOYEE]: "Nhân viên",
+  [SYSTEM_ROLE.ADMIN]: "Quản trị viên",
+  [SYSTEM_ROLE.GENERAL_MANAGER]: "Tổng quản lý",
+  [SYSTEM_ROLE.HR_MANAGER]: "Quản lý nhân sự",
+  [SYSTEM_ROLE.TEAM_LEADER]: "Trưởng nhóm",
+  [SYSTEM_ROLE.EMPLOYEE]: "Nhân viên",
 } as const
 
 export const EMPLOYEE_STATUS_LABELS: Record<string, string> = {

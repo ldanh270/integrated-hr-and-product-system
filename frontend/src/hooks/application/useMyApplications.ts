@@ -1,16 +1,17 @@
-import { APPLICATION_STATUS, type IApplicationFilterStatus } from "@/config/entities/attendance.config"
+import {
+  APPLICATION_STATUS,
+  type IApplicationFilterStatus,
+} from "@/config/entities/attendance.config"
 import {
   type IApplicationBatch,
   type IListBatchesQuery,
   applicationBatchApi,
 } from "@/lib/api/application-batch.api"
-import { applicationApi, type IListApplicationsQuery } from "@/lib/api/application.api"
+import { type IListApplicationsQuery } from "@/lib/api/application.api"
 
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import { toast } from "sonner"
-
-
 
 interface UseMyApplicationsReturn {
   applications: IApplicationBatch[]
@@ -115,7 +116,7 @@ export function useMyApplications(): UseMyApplicationsReturn {
           const query: IListApplicationsQuery = { status: s, page: 1, pageSize: 1 }
           if (typeFilter !== "all") query.type = typeFilter
           if (keyword.trim() !== "") query.keyword = keyword.trim()
-          return applicationApi
+          return applicationBatchApi
             .listMine(query)
             .then((r) => r.meta?.total ?? 0)
             .catch(() => 0)
@@ -185,7 +186,10 @@ export function useMyApplications(): UseMyApplicationsReturn {
     page,
     setPage,
     pageSize,
-    setPageSize: (v) => { setPageSize(v); setPage(1); },
+    setPageSize: (v) => {
+      setPageSize(v)
+      setPage(1)
+    },
     totalPages,
     total,
     refetch,

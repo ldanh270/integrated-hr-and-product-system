@@ -124,7 +124,7 @@ export function useManageApplications(scope: "assigned" | "all" = "assigned"): U
           const query: IListApplicationsQuery = { status: s, page: 1, pageSize: 1, scope }
           if (typeFilter !== "all") query.type = typeFilter
           if (keyword.trim() !== "") query.keyword = keyword.trim()
-          return applicationApi
+          return applicationBatchApi
             .listAll(query)
             .then((r) => r.meta?.total ?? 0)
             .catch(() => 0)

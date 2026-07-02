@@ -260,3 +260,65 @@ export const requireRole = (roleName: string) => {
     }
   }
 }
+
+/**
+ * Requires at least one of the specific roles before allowing request to continue.
+ */
+export const authorizeRoles = (...roles: string[]) => {
+  return async function authorizeRolesMiddleware(
+    req: AuthRequest,
+    _res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      if (!req.user || !req.user.empId) {
+        throw new AppError(
+          AUTH_ERROR_MESSAGES.UNAUTHORIZED,
+          HttpStatusCode.UNAUTHORIZED,
+          ErrorLayer.MIDDLEWARE,
+          ErrorCode.UNAUTHORIZED,
+        )
+      }
+
+      const authContext = await authorizationService.getAuthorizationContext(req.user.empId)
+
+      if (authContext.isDynamicAdmin) {
+        authorizationService.logDecision(
+          req.user.empId,
+          `roles:[${roles.join(",")}]`,
+          true,
+          PERMISSION_DECISION_REASONS.DYNAMIC_ADMIN,
+        )
+        next()
+        return
+      }
+
+      const hasAnyRole = roles.some((role) => authContext.roles.has(role.trim().toLowerCase()))
+      if (hasAnyRole) {
+        authorizationService.logDecision(
+          req.user.empId,
+          `roles:[${roles.join(",")}]`,
+          true,
+          PERMISSION_DECISION_REASONS.ROLE_MATCH,
+        )
+        next()
+        return
+      }
+
+      authorizationService.logDecision(
+        req.user.empId,
+        `roles:[${roles.join(",")}]`,
+        false,
+        PERMISSION_DECISION_REASONS.DENIED,
+      )
+      throw new AppError(
+        `Forbidden: Requires one of roles [${roles.join(",")}]`,
+        HttpStatusCode.FORBIDDEN,
+        ErrorLayer.MIDDLEWARE,
+        ErrorCode.FORBIDDEN,
+      )
+    } catch (error) {
+      next(error)
+    }
+  }
+}
