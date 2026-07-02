@@ -83,7 +83,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         permissions: ["security.read"],
       },
       {
-        name: "Nhật ký",
+        name: "Nhật ký hoạt động",
         path: ROUTES.SECURITY.ACTIVITY_LOGS,
         icon: FileText,
         permissions: ["audit.read"],
