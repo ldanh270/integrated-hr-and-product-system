@@ -95,6 +95,7 @@ type EditFormValues = z.infer<typeof editSchema>
 export function useEmployeeEditModal(
   employee: Employee | null,
   isOpen: boolean,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _onClose: () => void,
 ) {
   const updateMutation = useUpdateEmployee()

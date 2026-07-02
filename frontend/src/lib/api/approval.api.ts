@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { IApplicationStatus } from "@/config/entities/attendance.config.ts"
 import apiClient from "@/lib/api-client"
 

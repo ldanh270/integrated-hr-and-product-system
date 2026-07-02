@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { APPLICATION_TYPES, REGIME_TYPE, LEAVE_TYPE_LABELS } from "@/config/entities/attendance.config"
 import type { IApplication } from "@/lib/api/application.api"
 import { formatDate, minutesToTime } from "@/lib/utils"
@@ -20,10 +21,10 @@ export function SubApplicationDetailFields({ app }: { app: IApplication }) {
     partnerApprovalStatus?: string
   } | undefined
   const detail = (app.detail ||
-    (app as any).leaveDetail ||
-    (app as any).overtimeDetail ||
-    (app as any).lateEarlyDetail ||
-    (app as any).workFromHomeDetail) as {
+    (app as unknown as Record<string, unknown>).leaveDetail ||
+    (app as unknown as Record<string, unknown>).overtimeDetail ||
+    (app as unknown as Record<string, unknown>).lateEarlyDetail ||
+    (app as unknown as Record<string, unknown>).workFromHomeDetail) as {
     employeeShift?: { shift?: { name?: string; startTime?: number; endTime?: number } }
     isLate?: boolean
     durationMinutes?: number

@@ -150,7 +150,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
       } else {
         toast.error("Dữ liệu truy vấn không hợp lệ")
       }
-    } catch (e) {
+    } catch {
       toast.error("Không thể đọc dữ liệu truy vấn đã lưu")
     }
   }

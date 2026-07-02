@@ -76,14 +76,19 @@ export class ApplicationController {
             folder: "hrp/applications",
             resource_type: "auto",
           },
-          (error: any, result: any) => {
-            if (error || !result) return reject(error ?? new AppError("Tải lên Cloudinary thất bại", HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorLayer.CONTROLLER))
+          (error, result) => {
+            if (error || !result) {
+              reject(error instanceof Error ? error : new AppError("Tải lên Cloudinary thất bại", HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorLayer.CONTROLLER))
+              return
+            }
             resolve({ url: result.secure_url, id: result.public_id })
           },
         )
 
         const readable = new Readable()
-        readable.push(req.file!.buffer)
+        if (req.file) {
+          readable.push(req.file.buffer)
+        }
         readable.push(null)
         readable.pipe(uploadStream)
       })

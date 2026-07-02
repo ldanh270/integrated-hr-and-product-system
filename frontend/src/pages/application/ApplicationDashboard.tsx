@@ -48,8 +48,10 @@ export default function ApplicationDashboard() {
   // Sync view state with URL param so browser back button works
   useEffect(() => {
     if (!detailId) {
-      setView("list")
-      setSelectedBatch(null)
+      setTimeout(() => {
+        setView("list")
+        setSelectedBatch(null)
+      }, 0)
     }
   }, [detailId])
 
@@ -61,7 +63,7 @@ export default function ApplicationDashboard() {
 
       if (updatedBatch) {
         if (JSON.stringify(updatedBatch) !== JSON.stringify(selectedBatch)) {
-          setSelectedBatch(updatedBatch)
+          setTimeout(() => setSelectedBatch(updatedBatch), 0)
         }
       } else if (
         !myApps.isLoading &&
@@ -70,11 +72,13 @@ export default function ApplicationDashboard() {
         !manageApps.isRefreshing
       ) {
         // The batch was removed from the list (e.g. fully approved and we are in "pending" view)
-        setView("list")
-        setSearchParams((prev) => {
-          prev.delete("detail")
-          return prev
-        })
+        setTimeout(() => {
+          setView("list")
+          setSearchParams((prev) => {
+            prev.delete("detail")
+            return prev
+          })
+        }, 0)
       }
     }
   }, [
@@ -92,8 +96,10 @@ export default function ApplicationDashboard() {
 
   useEffect(() => {
     if (activeType !== "all") {
-      setView("list")
-      setSelectedBatch(null)
+      setTimeout(() => {
+        setView("list")
+        setSelectedBatch(null)
+      }, 0)
     }
     myApps.setTypeFilter(activeType)
     manageApps.setTypeFilter(activeType)
@@ -171,13 +177,13 @@ export default function ApplicationDashboard() {
         <div className="flex border-b border-border">
           <button
             className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${dashboardTab === "list" ? "border-primary text-primary" : "border-transparent text-slate-500 hover:text-slate-700"}`}
-            onClick={() => setDashboardTab("list")}
+            onClick={() => { setDashboardTab("list") }}
           >
             Danh sách đơn
           </button>
           <button
             className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${dashboardTab === "leaves" ? "border-primary text-primary" : "border-transparent text-slate-500 hover:text-slate-700"}`}
-            onClick={() => setDashboardTab("leaves")}
+            onClick={() => { setDashboardTab("leaves") }}
           >
             Tổng phép
           </button>

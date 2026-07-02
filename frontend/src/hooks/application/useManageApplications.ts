@@ -48,17 +48,19 @@ export function useManageApplications(scope: "assigned" | "all" = "assigned"): U
   const [statusFilter, setStatusFilter] = useState<IApplicationFilterStatus>(scope === "assigned" ? "pending" : "all")
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [keyword, setKeyword] = useState<string>("")
-  
-  // Update default status filter when scope changes
-  useEffect(() => {
-    setStatusFilter(scope === "assigned" ? "pending" : "all")
-    setPage(1)
-  }, [scope])
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [processingId, setProcessingId] = useState<string | null>(null)
+  
+  // Update default status filter when scope changes
+  useEffect(() => {
+    setTimeout(() => {
+      setStatusFilter(scope === "assigned" ? "pending" : "all")
+      setPage(1)
+    }, 0)
+  }, [scope])
   const [stats, setStats] = useState({
     pending: 0,
     approved: 0,

@@ -56,19 +56,23 @@ export default function LogTimeModal({
   useEffect(() => {
     if (open) {
       if (spentTime) {
-        setDate(new Date(spentTime.date).toISOString().split("T")[0])
-        setHours(String(spentTime.hours))
-        setActivity(spentTime.activity)
-        setWorkTimeType(spentTime.workTimeType)
-        setComment(spentTime.comment || "")
+        setTimeout(() => {
+          setDate(new Date(spentTime.date).toISOString().split("T")[0])
+          setHours(String(spentTime.hours))
+          setActivity(spentTime.activity)
+          setWorkTimeType(spentTime.workTimeType)
+          setComment(spentTime.comment || "")
+        }, 0)
       } else {
-        setDate(new Date().toISOString().split("T")[0])
-        setHours("")
-        setActivity(SPENT_TIME_ACTIVITY.DEVELOP)
-        setWorkTimeType(SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY)
-        setComment("")
+        setTimeout(() => {
+          setDate(new Date().toISOString().split("T")[0])
+          setHours("")
+          setActivity(SPENT_TIME_ACTIVITY.DEVELOP)
+          setWorkTimeType(SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY)
+          setComment("")
+        }, 0)
       }
-      setError(null)
+      setTimeout(() => setError(null), 0)
     }
   }, [open, spentTime])
 

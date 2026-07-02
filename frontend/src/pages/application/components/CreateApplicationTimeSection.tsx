@@ -125,7 +125,7 @@ export function CreateApplicationTimeSection({ type, form, set, myEmployeeShift,
                 accept={ALLOWED_MIME_TYPES}
                 onChange={(e) => {
                   const file = e.target.files?.[0] || null
-                  set("attachmentFile", file as any)
+                  set("attachmentFile", file)
                 }}
                 className="w-full text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary file:mr-4 file:py-1.5 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
               />

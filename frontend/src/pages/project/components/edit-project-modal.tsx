@@ -66,22 +66,24 @@ export function EditProjectModal({
 
   useEffect(() => {
     if (isOpen && project) {
-      setEditProjectName(project.name)
-      setEditProjectDesc(project.description || "")
-      setEditProjectStatus(project.status)
-      setEditProjectPolicy(project.taskCreationPolicy)
-      setEditProjectLeader(project.teamLeaderId || SELECT_NONE_VALUE)
-      setEditProjectStart(
-        project.startDate
-          ? new Date(project.startDate).toISOString().split("T")[0]
-          : ""
-      )
-      setEditProjectEnd(
-        project.expectedEndDate
-          ? new Date(project.expectedEndDate).toISOString().split("T")[0]
-          : ""
-      )
-      setEditProjectError(null)
+      setTimeout(() => {
+        setEditProjectName(project.name)
+        setEditProjectDesc(project.description || "")
+        setEditProjectStatus(project.status)
+        setEditProjectPolicy(project.taskCreationPolicy)
+        setEditProjectLeader(project.teamLeaderId || SELECT_NONE_VALUE)
+        setEditProjectStart(
+          project.startDate
+            ? new Date(project.startDate).toISOString().split("T")[0]
+            : ""
+        )
+        setEditProjectEnd(
+          project.expectedEndDate
+            ? new Date(project.expectedEndDate).toISOString().split("T")[0]
+            : ""
+        )
+        setEditProjectError(null)
+      }, 0)
     }
   }, [isOpen, project])
 

@@ -73,8 +73,8 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
         endDate: new Date(endDate ?? startDate),
         reason,
         note,
-        attachmentUrl: (data as any).attachmentUrl,
-        attachmentId: (data as any).attachmentId,
+        attachmentUrl: (data as unknown as Record<string, unknown>).attachmentUrl as string | undefined,
+        attachmentId: (data as unknown as Record<string, unknown>).attachmentId as string | undefined,
         assignedToId: assignedToId ?? null,
         batchId: batch.id,
         ...this._buildDetailCreate(data),
@@ -389,7 +389,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
         return {
           workFromHomeDetail: {
             create: {
-              wfhType: (data.detail?.wfhType ?? WFH_TYPE.FULL_DAY) as any,
+              wfhType: (data.detail?.wfhType ?? WFH_TYPE.FULL_DAY) as never,
               location: data.detail?.location,
             },
           },

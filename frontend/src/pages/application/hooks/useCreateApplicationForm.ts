@@ -80,7 +80,7 @@ export function useCreateApplicationForm(type: string) {
     employeeApi
       .getApprovers()
       .then(setApprovers)
-      .catch((err) => console.error("Failed to fetch approvers:", err))
+      .catch((err) => { console.error("Failed to fetch approvers:", err) })
     employeeApi
       .list({ limit: 1000 })
       .then((res) => { setEmployees(res.data); })

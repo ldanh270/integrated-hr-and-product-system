@@ -45,7 +45,7 @@ const upload = multer({
 applicationRoutes.post("/", controller.submit)
 
 // Upload attachment
-applicationRoutes.post("/upload-attachment", upload.single("file"), controller.uploadAttachment as any)
+applicationRoutes.post("/upload-attachment", upload.single("file"), controller.uploadAttachment as express.RequestHandler)
 
 // List own applications (with pagination + filters)
 applicationRoutes.get("/me", controller.listMine)
