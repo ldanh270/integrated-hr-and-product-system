@@ -25,9 +25,15 @@ enum EmployeeStatus {
 
 enum EmployeeType {
   full_time
-  part_time
+  part_time // legacy — prefer workScheduleType for schedule logic
   contractor
   intern
+}
+
+// Canonical field for PT vs FT hours; decoupled from employment category (EmployeeType).
+enum WorkScheduleType {
+  full_time
+  part_time
 }
 
 enum SpentTimeStatus {
@@ -100,6 +106,14 @@ enum PayrollStatus {
   approved
   rejected
   paid
+}
+
+// Gates editability: draft/submitted editable by employee; approved locked; rejected sent back.
+enum PartTimeAvailabilityStatus {
+  draft
+  submitted
+  approved
+  rejected
 }
 
 enum ComponentType {
@@ -194,8 +208,9 @@ model Employee {
   avatarUrl        String?
   avatarId         String?
   position         String?
-  employeeType     EmployeeType   @default(full_time)
-  status           EmployeeStatus @default(active)
+  employeeType     EmployeeType       @default(full_time)
+  workScheduleType WorkScheduleType   @default(full_time) // PT payroll, availability, attendance branching
+  status           EmployeeStatus     @default(active)
   failedLoginCount Int            @default(0)
   lockedUntil      DateTime?
   startDate        DateTime?      @db.Date
@@ -244,6 +259,8 @@ model Employee {
   spentTimes                 SpentTime[]                  @relation("EmployeeSpentTimes")
   spentTimesApproved         SpentTime[]                  @relation("SpentTimeApprover")
   customQueries              CustomQuery[]
+  partTimeWeeklyAvailabilities       PartTimeWeeklyAvailability[] @relation("PartTimeAvailabilityEmployee")
+  partTimeAvailabilitiesReviewed     PartTimeWeeklyAvailability[] @relation("PartTimeAvailabilityReviewer")
 
   @@index([status, employeeType])
   @@index([role])
@@ -385,7 +402,7 @@ model EmployeeShift {
   swapWithDetails  ApplicationShiftSwapDetail[] @relation("ApplicationSwapWithShift")
   lateEarlyDetails ApplicationLateEarlyDetail[] @relation("ApplicationLateEarlyShift")
 
-  @@unique([employeeId, assignedDate])
+  @@unique([employeeId, assignedDate, shiftId])
   @@index([shiftId, assignedDate])
   @@index([status, assignedDate])
   @@index([scheduleId])
@@ -699,6 +716,56 @@ model WeeklyScheduleSettings {
   updatedAt DateTime @updatedAt
 
   @@index([updatedById])
+}
+
+// Employee-declared free/busy windows per ISO week; admin assigns shifts once status is submitted.
+model PartTimeWeeklyAvailability {
+  id           String                     @id @default(cuid())
+  employeeId   String
+  employee     Employee                   @relation("PartTimeAvailabilityEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  weekStart    DateTime                   @db.Date
+  status       PartTimeAvailabilityStatus @default(submitted)
+  note         String?
+  submittedAt  DateTime?
+  reviewedById String?
+  reviewedBy   Employee?                  @relation("PartTimeAvailabilityReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime?
+  rejectReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  days PartTimeAvailabilityDay[]
+
+  @@unique([employeeId, weekStart])
+  @@index([weekStart])
+  @@index([status])
+  @@index([reviewedById])
+}
+
+// One row per weekday (0=Sun … 6=Sat); isBusyAllDay blocks all shift assignment that day.
+model PartTimeAvailabilityDay {
+  id             String                   @id @default(cuid())
+  availabilityId String
+  availability   PartTimeWeeklyAvailability @relation(fields: [availabilityId], references: [id], onDelete: Cascade)
+  dayOfWeek      Int
+  isBusyAllDay   Boolean                  @default(false)
+
+  slots PartTimeAvailabilitySlot[]
+
+  @@unique([availabilityId, dayOfWeek])
+}
+
+// Free windows as minutes-from-midnight; assigned shifts must fall within these bounds.
+model PartTimeAvailabilitySlot {
+  id        String                 @id @default(cuid())
+  dayId     String
+  day       PartTimeAvailabilityDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  startTime Int
+  endTime   Int
+  sortOrder Int                    @default(0)
+
+  @@index([dayId])
 }
 
 model Payroll {

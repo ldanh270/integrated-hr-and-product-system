@@ -28,3 +28,9 @@ export const SORT_ORDER = {
  * Array of valid sorting directions for schema validation
  */
 export const SORT_ORDER_VALUES = [SORT_ORDER.ASC, SORT_ORDER.DESC] as const
+
+/** Prisma interactive transaction limits for multi-step writes (e.g. availability upsert). */
+export const PRISMA_INTERACTIVE_TRANSACTION_OPTIONS = {
+  maxWait: 15_000,
+  timeout: 15_000,
+} as const
