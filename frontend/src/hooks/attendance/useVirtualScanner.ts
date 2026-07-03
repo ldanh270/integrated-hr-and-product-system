@@ -1,3 +1,4 @@
+import { ATTENDANCE_MESSAGES } from "@/config/messages/attendance.message"
 import { ATTENDANCE_KEY } from "@/hooks/attendance/use-attendance"
 import { attendanceApi, schedulesApi } from "@/lib/api/attendance.api"
 import { useAuthStore } from "@/store/auth-store"
@@ -60,7 +61,10 @@ export function useVirtualScanner(): {
     return buildTodayShiftInfo(scheduleDay?.shift)
   }, [currentTime, schedule])
   const nextAction = resolveNextScanAction(records)
-  const nextActionLabel = nextAction === "check_in" ? "Check-in" : "Check-out"
+  const nextActionLabel =
+    nextAction === "check_in"
+      ? ATTENDANCE_MESSAGES.SCANNER.CHECK_IN_LABEL
+      : ATTENDANCE_MESSAGES.SCANNER.CHECK_OUT_LABEL
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
@@ -69,7 +73,7 @@ export function useVirtualScanner(): {
 
   useEffect(() => {
     if (!("geolocation" in navigator)) {
-      toast.warning("Trình duyệt không hỗ trợ lấy vị trí GPS")
+      toast.warning(ATTENDANCE_MESSAGES.SCANNER.GEO_NOT_SUPPORTED)
       return
     }
 
@@ -82,7 +86,7 @@ export function useVirtualScanner(): {
       (err) => {
         console.warn("GPS mount error:", err.message)
         if (err.code === 1) {
-          toast.warning("Vui lòng cho phép truy cập vị trí để chấm công")
+          toast.warning(ATTENDANCE_MESSAGES.SCANNER.GEO_PERMISSION_DENIED)
         }
       },
       { enableHighAccuracy: true, timeout: GEOLOCATION_TIMEOUT_MS },
@@ -99,10 +103,14 @@ export function useVirtualScanner(): {
       persistScannerLocation(finalLocation)
       await attendanceApi.scan({ location: finalLocation })
       await queryClient.invalidateQueries({ queryKey: ATTENDANCE_KEY })
-      toast.success(`${nextActionLabel} thành công!`)
+      toast.success(
+        nextAction === "check_in"
+          ? ATTENDANCE_MESSAGES.SCANNER.CHECK_IN_SUCCESS
+          : ATTENDANCE_MESSAGES.SCANNER.CHECK_OUT_SUCCESS,
+      )
     } catch (error) {
       console.error("Scan error:", error)
-      toast.error(getScannerApiErrorMessage(error, "Lỗi khi chấm công"))
+      toast.error(getScannerApiErrorMessage(error, ATTENDANCE_MESSAGES.ERRORS.SCAN_FAILED))
     } finally {
       setLocating(false)
       setIsProcessing(false)

@@ -1,3 +1,4 @@
+import { ATTENDANCE_MESSAGES } from "@/config/messages/attendance.message"
 import { ATTENDANCE_TIME_RULES } from "@/config/rules/attendance.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import type { IAttendanceRecord, IWorkingShift } from "@/types/attendance.types"
@@ -59,10 +60,14 @@ export function buildTodayShiftInfo(scheduleShift?: Partial<IWorkingShift>): Tod
     name: scheduleShift.name,
     workWindow: `${minutesToDayTime(scheduleShift.startTime)} - ${minutesToDayTime(scheduleShift.endTime)}`,
     checkInWindow: `${minutesToDayTime(scheduleShift.startTime - gracePeriod)} - ${minutesToDayTime(scheduleShift.startTime + gracePeriod)}`,
-    checkOutWindow: `Từ ${minutesToDayTime(scheduleShift.endTime - gracePeriod)}`,
+    checkOutWindow: `${ATTENDANCE_MESSAGES.SCANNER.CHECK_OUT_FROM} ${minutesToDayTime(scheduleShift.endTime - gracePeriod)}`,
     gpsLabel: hasGps
-      ? `${scheduleShift.gpsRadiusMeters}m quanh ${scheduleShift.gpsLat?.toFixed(5)}, ${scheduleShift.gpsLng?.toFixed(5)}`
-      : "Chưa cấu hình GPS",
+      ? ATTENDANCE_MESSAGES.SCANNER.GPS_RADIUS_LABEL(
+          scheduleShift.gpsRadiusMeters!,
+          scheduleShift.gpsLat!,
+          scheduleShift.gpsLng!,
+        )
+      : ATTENDANCE_MESSAGES.SCANNER.NO_GPS_CONFIGURED,
   }
 }
 

@@ -1,3 +1,4 @@
+import { ATTENDANCE_MESSAGES } from "@/config/messages/attendance.message"
 import { useVirtualScanner } from "@/hooks/attendance/useVirtualScanner"
 
 import { AlertCircle, CheckCircle2, Clock, Fingerprint, Loader2, MapPin } from "lucide-react"
@@ -13,8 +14,7 @@ export function VirtualScanner() {
     todayShift,
     isShiftLoading,
     handleScan,
-  } =
-    useVirtualScanner()
+  } = useVirtualScanner()
 
   return (
     <div className="bg-card text-card-foreground rounded-xl border shadow-sm p-6 flex flex-col items-center max-w-sm mx-auto">
@@ -22,7 +22,7 @@ export function VirtualScanner() {
         <Fingerprint className="w-12 h-12 text-primary" />
       </div>
 
-      <h2 className="text-xl font-bold tracking-tight">Máy Chấm Công Ảo</h2>
+      <h2 className="text-xl font-bold tracking-tight">{ATTENDANCE_MESSAGES.SCANNER.TITLE}</h2>
       <p className="text-muted-foreground text-sm mt-1">{user?.fullName}</p>
 
       <div className="flex items-center gap-2 mt-6 text-3xl font-mono tracking-tighter">
@@ -37,26 +37,28 @@ export function VirtualScanner() {
       <div className="mt-6 w-full space-y-3">
         <div className="rounded-xl border bg-muted/40 p-4 text-left">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-semibold text-foreground">Ca hôm nay</p>
+            <p className="text-sm font-semibold text-foreground">
+              {ATTENDANCE_MESSAGES.SCANNER.TODAY_SHIFT}
+            </p>
             {isShiftLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
           </div>
 
           {todayShift ? (
             <div className="mt-3 space-y-2 text-xs text-muted-foreground">
               <div className="flex items-center justify-between gap-3">
-                <span>Tên ca</span>
+                <span>{ATTENDANCE_MESSAGES.SCANNER.SHIFT_NAME}</span>
                 <span className="font-semibold text-foreground">{todayShift.name}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span>Giờ làm</span>
+                <span>{ATTENDANCE_MESSAGES.SCANNER.WORK_WINDOW}</span>
                 <span className="font-mono text-foreground">{todayShift.workWindow}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span>Check-in đúng giờ</span>
+                <span>{ATTENDANCE_MESSAGES.SCANNER.CHECK_IN_WINDOW}</span>
                 <span className="font-mono text-foreground">{todayShift.checkInWindow}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span>Check-out</span>
+                <span>{ATTENDANCE_MESSAGES.SCANNER.CHECK_OUT_WINDOW}</span>
                 <span className="font-mono text-foreground">{todayShift.checkOutWindow}</span>
               </div>
               <div className="flex items-start gap-2 pt-2">
@@ -66,25 +68,25 @@ export function VirtualScanner() {
             </div>
           ) : (
             <p className="mt-3 text-xs text-muted-foreground">
-              Chưa có ca làm việc được phân cho hôm nay.
+              {ATTENDANCE_MESSAGES.SCANNER.NO_SHIFT_TODAY}
             </p>
           )}
         </div>
 
         {locating ? (
-          <div className="flex items-center justify-center gap-2 text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/30 py-2 rounded-lg border border-amber-100 dark:border-amber-900/50 font-medium">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span>Đang lấy vị trí GPS...</span>
+          <div className="flex items-center justify-center gap-2 rounded-lg border border-warning/20 bg-warning/10 py-2 text-sm font-medium text-warning">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>{ATTENDANCE_MESSAGES.SCANNER.GEO_LOCATING}</span>
           </div>
         ) : location ? (
-          <div className="flex items-center justify-center gap-2 text-sm text-green-600 bg-green-50 dark:bg-green-950/30 py-2 rounded-lg border border-green-100 dark:border-green-900/50 font-medium">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>📍 Đã lấy vị trí: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}</span>
+          <div className="flex items-center justify-center gap-2 rounded-lg border border-success/20 bg-success/10 py-2 text-sm font-medium text-success">
+            <CheckCircle2 className="h-4 w-4" />
+            <span>{ATTENDANCE_MESSAGES.SCANNER.GEO_READY(location.lat, location.lng)}</span>
           </div>
         ) : (
-          <div className="flex items-center justify-center gap-2 text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 py-2 rounded-lg border border-amber-100 dark:border-amber-900/50">
-            <AlertCircle className="w-3.5 h-3.5" />
-            <span>⚠️ Chưa có vị trí GPS</span>
+          <div className="flex items-center justify-center gap-2 rounded-lg border border-warning/20 bg-warning/10 px-2 py-2 text-xs text-warning">
+            <AlertCircle className="h-3.5 w-3.5" />
+            <span>{ATTENDANCE_MESSAGES.SCANNER.GEO_MISSING}</span>
           </div>
         )}
 
@@ -99,18 +101,19 @@ export function VirtualScanner() {
             ) : (
               <Fingerprint className="w-5 h-5" />
             )}
-            <span>{isProcessing ? `Đang ${nextActionLabel}...` : nextActionLabel}</span>
+            <span>
+              {isProcessing
+                ? ATTENDANCE_MESSAGES.SCANNER.PROCESSING(nextActionLabel)
+                : nextActionLabel}
+            </span>
           </button>
         </div>
       </div>
 
       {!location && !locating && (
-        <div className="mt-4 flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
-          <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
-          <p>
-            Yêu cầu quyền truy cập vị trí (Location Permission) từ trình duyệt để đảm bảo chấm công
-            đúng địa điểm.
-          </p>
+        <div className="mt-4 flex items-start gap-2 rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
+          <AlertCircle className="h-4 w-4 shrink-0 text-warning" />
+          <p>{ATTENDANCE_MESSAGES.SCANNER.GEO_PERMISSION_HINT}</p>
         </div>
       )}
     </div>
