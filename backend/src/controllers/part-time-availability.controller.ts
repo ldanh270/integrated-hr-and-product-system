@@ -1,0 +1,151 @@
+import { PART_TIME_AVAILABILITY_QUERY_PARAMS } from "@/configs/entities/part-time-availability.config.ts"
+import { ErrorCode } from "@/configs/system/error-code.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { ROLE } from "@/configs/entities/employee.config.ts"
+import { AuthRequest } from "@/middlewares/auth.middleware.ts"
+import {
+  assignPartTimeShiftsSchema,
+  rejectPartTimeAvailabilitySchema,
+  upsertPartTimeAvailabilitySchema,
+  weekStartQuerySchema,
+} from "@/schemas/part-time-availability.schema.ts"
+import { ApiResponse } from "@/types"
+import {
+  IPartTimeAvailabilityService,
+  IPartTimeWeeklyAvailability,
+} from "@/types/part-time-availability.types.ts"
+import { PartTimeAvailabilityService } from "@/services/part-time-availability.service.ts"
+import { resolvePersonalEmployeeId } from "@/utils/attendance/resolve-personal-employee-id.ts"
+
+import { Request, Response } from "express"
+import { z } from "zod"
+
+/**
+ * Part-time weekly availability: employees declare free/busy windows; admins assign shifts from submissions.
+ * Approval workflow is optional — assign is allowed once status is submitted (or legacy approved).
+ */
+export class PartTimeAvailabilityController {
+  constructor(private service: IPartTimeAvailabilityService) {}
+
+  /** Employee self-service: map auth account to HR employee record before week lookup. */
+  getMine = async (req: AuthRequest, res: Response<ApiResponse<IPartTimeWeeklyAvailability | null>>) => {
+    const { weekStart } = weekStartQuerySchema.parse(req.query)
+    const employeeId = await resolvePersonalEmployeeId(req.user?.empId || "")
+    const availability = await this.service.getMine(employeeId, weekStart)
+    res.status(HttpStatusCode.OK).json({ data: availability, error: null })
+  }
+
+  /** Employee submits weekly availability; service forces submitted status, PT-only, future weeks, and slot rules. */
+  upsertMine = async (req: AuthRequest, res: Response<ApiResponse<IPartTimeWeeklyAvailability>>) => {
+    try {
+      const payload = upsertPartTimeAvailabilitySchema.parse(req.body)
+      const availability = await this.service.upsertMine(req.user?.empId || "", {
+        weekStart: payload.weekStart,
+        note: payload.note,
+        status: payload.status,
+        days: PartTimeAvailabilityService.mapPayloadDays(payload.days),
+      })
+      res.status(HttpStatusCode.OK).json({ data: availability, error: null })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: {
+            message: "Validation error",
+            code: ErrorCode.VALIDATION_ERROR,
+            meta: error.issues,
+          },
+        })
+      }
+      throw error
+    }
+  }
+
+  /** Admin roster: all PT availability submissions for a given weekStart. */
+  listForWeek = async (req: Request, res: Response<ApiResponse<IPartTimeWeeklyAvailability[]>>) => {
+    const { weekStart } = weekStartQuerySchema.parse(req.query)
+    const items = await this.service.listForWeek(weekStart)
+    res.status(HttpStatusCode.OK).json({ data: items, error: null })
+  }
+
+  /** Admin drill-down: one employee's availability for shift assignment UI. */
+  getByEmployee = async (
+    req: Request,
+    res: Response<ApiResponse<IPartTimeWeeklyAvailability | null>>,
+  ) => {
+    const { weekStart } = weekStartQuerySchema.parse(req.query)
+    const availability = await this.service.getByEmployee(String(req.params.employeeId), weekStart)
+    res.status(HttpStatusCode.OK).json({ data: availability, error: null })
+  }
+
+  /** Optional review step: marks availability approved. Does not gate assign — assign only requires submitted (or legacy approved). */
+  approve = async (req: AuthRequest, res: Response<ApiResponse<IPartTimeWeeklyAvailability>>) => {
+    const availability = await this.service.approve({
+      availabilityId: String(req.params.id),
+      reviewedById: req.user?.empId || "system",
+    })
+    res.status(HttpStatusCode.OK).json({ data: availability, error: null })
+  }
+
+  /** Sends submission back to employee; rejectReason is mandatory for audit trail. */
+  reject = async (req: AuthRequest, res: Response<ApiResponse<IPartTimeWeeklyAvailability>>) => {
+    try {
+      const payload = rejectPartTimeAvailabilitySchema.parse(req.body)
+      const availability = await this.service.reject({
+        availabilityId: String(req.params.id),
+        reviewedById: req.user?.empId || "system",
+        rejectReason: payload.rejectReason,
+      })
+      res.status(HttpStatusCode.OK).json({ data: availability, error: null })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: {
+            message: "Validation error",
+            code: ErrorCode.VALIDATION_ERROR,
+            meta: error.issues,
+          },
+        })
+      }
+      throw error
+    }
+  }
+
+  /** Creates EmployeeShift overrides from submitted free slots; createdById tracks assigning admin. */
+  assignShifts = async (
+    req: AuthRequest,
+    res: Response<ApiResponse<{ assigned: number; skipped: number }>>,
+  ) => {
+    try {
+      const payload = assignPartTimeShiftsSchema.parse(req.body)
+      const result = await this.service.assignShifts({
+        availabilityId: String(req.params.id),
+        assignments: payload.assignments,
+        createdById: req.user?.empId || "system",
+      })
+      res.status(HttpStatusCode.OK).json({ data: result, error: null })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: {
+            message: "Validation error",
+            code: ErrorCode.VALIDATION_ERROR,
+            meta: error.issues,
+          },
+        })
+      }
+      throw error
+    }
+  }
+}
+
+/** Roles allowed to review availability and assign PT shifts (not regular employees). */
+export const partTimeAvailabilityAdminRoles = [
+  ROLE.ADMIN,
+  ROLE.HR_MANAGER,
+  ROLE.GENERAL_MANAGER,
+] as const
+
+export { PART_TIME_AVAILABILITY_QUERY_PARAMS }

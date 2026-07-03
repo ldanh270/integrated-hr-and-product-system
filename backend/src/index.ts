@@ -26,6 +26,7 @@ import shiftRoutes from "@/routes/shift.route.ts"
 import spentTimeRoutes from "@/routes/spent-time.route.ts"
 import taskRoutes from "@/routes/task.route.ts"
 import weeklyScheduleTemplateRoutes from "@/routes/weekly-schedule-template.route.ts"
+import partTimeAvailabilityRoutes from "@/routes/part-time-availability.route.ts"
 
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
@@ -76,6 +77,8 @@ app.use("/api/applications", applicationRoutes)
 app.use("/api/shift-change-requests", shiftChangeRequestRoutes)
 app.use("/api/holidays", holidayRoutes)
 app.use("/api/weekly-schedule-templates", weeklyScheduleTemplateRoutes)
+// PT weekly availability — separate from full-time shift templates; employee declares, admin assigns.
+app.use("/api/part-time-availabilities", partTimeAvailabilityRoutes)
 app.use("/api/approvals", approvalRoutes)
 
 // Payroll routes

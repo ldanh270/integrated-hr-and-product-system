@@ -1,0 +1,99 @@
+import { DAY_OF_WEEK_VALUES } from "@/configs/entities/attendance.config.ts"
+import {
+  PART_TIME_AVAILABILITY_RULES,
+  PART_TIME_AVAILABILITY_STATUS,
+  type IPartTimeAvailabilityStatus,
+} from "@/configs/entities/part-time-availability.config.ts"
+import { PART_TIME_AVAILABILITY_MESSAGES } from "@/configs/messages/part-time-availability.message.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import type { IUpsertPartTimeAvailabilityDTO } from "@/types/part-time-availability.types.ts"
+import { AppError } from "@/utils/error.util.ts"
+
+export const PART_TIME_AVAILABILITY_LAYERS = {
+  SERVICE: "PartTimeAvailabilityService",
+} as const
+
+export function normalizeAvailabilityDays(
+  days: IUpsertPartTimeAvailabilityDTO["days"],
+): IUpsertPartTimeAvailabilityDTO["days"] {
+  // Ensure all 7 weekdays exist; missing days default to a standard 08:00–17:00 window.
+  const byDay = new Map(days.map((day) => [day.dayOfWeek, day]))
+
+  return DAY_OF_WEEK_VALUES.map((dayOfWeek) => {
+    const existing = byDay.get(dayOfWeek)
+    return (
+      existing ?? {
+        dayOfWeek,
+        isBusyAllDay: false,
+        slots: [{ startTime: 8 * 60, endTime: 17 * 60 }],
+      }
+    )
+  })
+}
+
+export function validateAvailabilityDays(days: IUpsertPartTimeAvailabilityDTO["days"]): void {
+  for (const day of days) {
+    if (day.isBusyAllDay && day.slots.length > 0) {
+      throw new AppError(
+        PART_TIME_AVAILABILITY_MESSAGES.BUSY_WITH_SLOTS,
+        HttpStatusCode.BAD_REQUEST,
+        PART_TIME_AVAILABILITY_LAYERS.SERVICE,
+      )
+    }
+
+    if (day.slots.length > PART_TIME_AVAILABILITY_RULES.MAX_SLOTS_PER_DAY) {
+      throw new AppError(
+        PART_TIME_AVAILABILITY_MESSAGES.MAX_SLOTS,
+        HttpStatusCode.BAD_REQUEST,
+        PART_TIME_AVAILABILITY_LAYERS.SERVICE,
+      )
+    }
+
+    const sorted = [...day.slots].sort((a, b) => a.startTime - b.startTime)
+
+    for (const slot of sorted) {
+      if (slot.startTime >= slot.endTime) {
+        throw new AppError(
+          PART_TIME_AVAILABILITY_MESSAGES.SLOT_INVALID_RANGE,
+          HttpStatusCode.BAD_REQUEST,
+          PART_TIME_AVAILABILITY_LAYERS.SERVICE,
+        )
+      }
+    }
+
+    for (let index = 1; index < sorted.length; index++) {
+      if (sorted[index].startTime < sorted[index - 1].endTime) {
+        throw new AppError(
+          PART_TIME_AVAILABILITY_MESSAGES.SLOT_OVERLAP,
+          HttpStatusCode.BAD_REQUEST,
+          PART_TIME_AVAILABILITY_LAYERS.SERVICE,
+        )
+      }
+    }
+  }
+}
+
+/** Approve/reject only valid from submitted — not draft or already reviewed. */
+export function assertSubmittedForReview(status: IPartTimeAvailabilityStatus): void {
+  if (status !== PART_TIME_AVAILABILITY_STATUS.SUBMITTED) {
+    throw new AppError(
+      PART_TIME_AVAILABILITY_MESSAGES.NOT_SUBMITTED,
+      HttpStatusCode.UNPROCESSABLE_ENTITY,
+      PART_TIME_AVAILABILITY_LAYERS.SERVICE,
+    )
+  }
+}
+
+/** Assign allowed on submitted (primary) or approved (legacy rows); approval is not required. */
+export function assertSubmittedForAssign(status: IPartTimeAvailabilityStatus): void {
+  if (
+    status !== PART_TIME_AVAILABILITY_STATUS.SUBMITTED &&
+    status !== PART_TIME_AVAILABILITY_STATUS.APPROVED
+  ) {
+    throw new AppError(
+      PART_TIME_AVAILABILITY_MESSAGES.NOT_SUBMITTED_FOR_ASSIGN,
+      HttpStatusCode.UNPROCESSABLE_ENTITY,
+      PART_TIME_AVAILABILITY_LAYERS.SERVICE,
+    )
+  }
+}
