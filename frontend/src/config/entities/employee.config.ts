@@ -91,6 +91,12 @@ export const WORK_SCHEDULE_TYPE_LABELS: Record<IWorkScheduleType, string> = {
   part_time: "Bán thời gian",
 } as const
 
+export function getWorkScheduleTypeLabel(type: IWorkScheduleType): string {
+  return type === WORK_SCHEDULE_TYPE.FULL_TIME
+    ? WORK_SCHEDULE_TYPE_LABELS.full_time
+    : WORK_SCHEDULE_TYPE_LABELS.part_time
+}
+
 /** Tab id for filtering employees by part-time work schedule. */
 export const EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME = "schedule_part_time" as const
 

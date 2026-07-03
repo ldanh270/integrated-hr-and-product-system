@@ -1,6 +1,7 @@
 import {
   PART_TIME_PAYROLL_VARIABLE,
   PART_TIME_PAYROLL_VARIABLE_DEFAULTS,
+  type IPartTimePayrollVariableCode,
 } from "@/configs/entities/part-time-payroll.config.ts"
 
 export interface ResolvedPartTimePayrollVariables {
@@ -11,11 +12,12 @@ export interface ResolvedPartTimePayrollVariables {
 
 function readNumeric(
   context: Record<string, number>,
-  code: string,
+  code: IPartTimePayrollVariableCode,
   fallback: number,
 ): number {
-  const value = context[code]
-  return value !== undefined && !Number.isNaN(value) ? value : fallback
+  const contextValues = new Map<string, number>(Object.entries(context))
+  const value = contextValues.get(code)
+  return typeof value === "number" && !Number.isNaN(value) ? value : fallback
 }
 
 /** Reads PT SalaryVariable codes from payroll context; zero default rate means "must set on project". */

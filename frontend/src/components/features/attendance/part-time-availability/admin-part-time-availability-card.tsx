@@ -41,7 +41,9 @@ export function AdminPartTimeAvailabilityCard({
               type="button"
               className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
               // Name opens assign drawer — primary entry for per-day shift scheduling.
-              onClick={() => setDrawerOpen(true)}
+              onClick={() => {
+                setDrawerOpen(true)
+              }}
             >
               {employeeName}
             </button>
@@ -75,7 +77,9 @@ export function AdminPartTimeAvailabilityCard({
           <button
             type="button"
             className="rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            onClick={() => setDrawerOpen(true)}
+            onClick={() => {
+              setDrawerOpen(true)
+            }}
             aria-label={`Xếp ca cho ${employeeName}`}
           >
             <ChevronRight className="h-4 w-4" />
@@ -88,7 +92,9 @@ export function AdminPartTimeAvailabilityCard({
         weekStart={weekStart}
         weekStartKey={weekStartKey}
         isOpen={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        onClose={() => {
+          setDrawerOpen(false)
+        }}
       />
     </>
   )

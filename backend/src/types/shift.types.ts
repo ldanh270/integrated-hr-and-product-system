@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client"
+import type { EmployeeShift, Prisma } from "@prisma/client"
 
 import type { IShiftScheduleWithDays, IShiftScheduleWithTemplate } from "@/types/shift-schedule.types.ts"
 
@@ -154,11 +154,14 @@ export interface IShiftScheduleRepository {
  */
 export interface IEmployeeShiftRepository {
   /** Overrides a shift for a specific date. */
-  overrideShift(data: IOverrideEmployeeShiftDTO): Promise<any>
-  createOverrideShift(data: IOverrideEmployeeShiftDTO): Promise<any>
+  overrideShift(data: IOverrideEmployeeShiftDTO): Promise<EmployeeShift>
+  createOverrideShift(data: IOverrideEmployeeShiftDTO): Promise<EmployeeShift>
   deleteOverridesForEmployeeDates(employeeId: string, dates: Date[]): Promise<void>
   /** Gets shift for employee on date. */
-  getShiftForEmployeeDate(employeeId: string, date: string | Date): Promise<any | null>
+  getShiftForEmployeeDate(
+    employeeId: string,
+    date: string | Date,
+  ): Promise<IEmployeeShiftWithShift | null>
   /** Lists shifts for multiple employees within a date range. */
   listByEmployeesAndDateRange(
     employeeIds: string[],

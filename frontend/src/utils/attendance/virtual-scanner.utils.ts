@@ -51,10 +51,10 @@ export function buildTodayShiftInfo(scheduleShift?: Partial<IWorkingShift>): Tod
   }
 
   const gracePeriod = scheduleShift.gracePeriodMinutes ?? ATTENDANCE_TIME_RULES.DEFAULT_WINDOW_MINUTES
-  const hasGps =
-    scheduleShift.gpsLat != null &&
-    scheduleShift.gpsLng != null &&
-    scheduleShift.gpsRadiusMeters != null
+  const radius = scheduleShift.gpsRadiusMeters
+  const lat = scheduleShift.gpsLat
+  const lng = scheduleShift.gpsLng
+  const hasGps = radius != null && lat != null && lng != null
 
   return {
     name: scheduleShift.name,
@@ -62,11 +62,7 @@ export function buildTodayShiftInfo(scheduleShift?: Partial<IWorkingShift>): Tod
     checkInWindow: `${minutesToDayTime(scheduleShift.startTime - gracePeriod)} - ${minutesToDayTime(scheduleShift.startTime + gracePeriod)}`,
     checkOutWindow: `${ATTENDANCE_MESSAGES.SCANNER.CHECK_OUT_FROM} ${minutesToDayTime(scheduleShift.endTime - gracePeriod)}`,
     gpsLabel: hasGps
-      ? ATTENDANCE_MESSAGES.SCANNER.GPS_RADIUS_LABEL(
-          scheduleShift.gpsRadiusMeters!,
-          scheduleShift.gpsLat!,
-          scheduleShift.gpsLng!,
-        )
+      ? ATTENDANCE_MESSAGES.SCANNER.GPS_RADIUS_LABEL(radius, lat, lng)
       : ATTENDANCE_MESSAGES.SCANNER.NO_GPS_CONFIGURED,
   }
 }

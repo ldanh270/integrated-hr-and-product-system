@@ -52,7 +52,9 @@ export function AdminPartTimeAvailabilityView() {
               variant="outline"
               size="icon"
               className="h-8 w-8 rounded-full"
-              onClick={() => shiftWeek(-1)}
+              onClick={() => {
+                shiftWeek(-1)
+              }}
               aria-label="Tuần trước"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -69,7 +71,9 @@ export function AdminPartTimeAvailabilityView() {
               variant="outline"
               size="icon"
               className="h-8 w-8 rounded-full"
-              onClick={() => shiftWeek(1)}
+              onClick={() => {
+                shiftWeek(1)
+              }}
               aria-label="Tuần sau"
             >
               <ChevronRight className="h-4 w-4" />

@@ -10,7 +10,7 @@ import {
   EMPLOYMENT_CATEGORY_TYPES,
   ROLE_LABELS,
   WORK_SCHEDULE_TYPES,
-  WORK_SCHEDULE_TYPE_LABELS,
+  getWorkScheduleTypeLabel,
 } from "@/config/entities/employee.config"
 import { useEmployeeCreateModal } from "@/hooks/employees/useEmployeeCreateModal"
 
@@ -318,7 +318,7 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                   >
                     {WORK_SCHEDULE_TYPES.map((typeKey) => (
                       <option key={typeKey} value={typeKey}>
-                        {WORK_SCHEDULE_TYPE_LABELS[typeKey]}
+                        {getWorkScheduleTypeLabel(typeKey)}
                       </option>
                     ))}
                   </select>

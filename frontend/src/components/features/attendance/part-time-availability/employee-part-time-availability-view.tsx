@@ -148,7 +148,9 @@ export function EmployeePartTimeAvailabilityView() {
                 size="icon"
                 className="h-8 w-8 rounded-full"
                 disabled={!canGoToPreviousWeek}
-                onClick={() => shiftWeek(-1)}
+                onClick={() => {
+                  shiftWeek(-1)
+                }}
                 aria-label="Tuần trước"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -166,7 +168,9 @@ export function EmployeePartTimeAvailabilityView() {
                 variant="outline"
                 size="icon"
                 className="h-8 w-8 rounded-full"
-                onClick={() => shiftWeek(1)}
+                onClick={() => {
+                  shiftWeek(1)
+                }}
                 aria-label="Tuần sau"
               >
                 <ChevronRight className="h-4 w-4" />
@@ -211,7 +215,9 @@ export function EmployeePartTimeAvailabilityView() {
             "min-h-24 rounded-xl border-border/70 bg-secondary/20 px-4 py-3 text-sm",
             "focus-visible:ring-primary",
           )}
-          onChange={(event) => setNote(event.target.value)}
+          onChange={(event) => {
+            setNote(event.target.value)
+          }}
         />
       </PageCard>
     </div>

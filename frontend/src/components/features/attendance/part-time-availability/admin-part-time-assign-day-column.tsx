@@ -148,7 +148,9 @@ export function AdminPartTimeAssignDayColumn({
             <button
               type="button"
               disabled={disabled}
-              onClick={() => setScheduled(true)}
+              onClick={() => {
+                setScheduled(true)
+              }}
               className={cn(
                 "rounded-full py-1 text-[10px] font-semibold transition-colors",
                 assignment.isScheduled
@@ -161,7 +163,9 @@ export function AdminPartTimeAssignDayColumn({
             <button
               type="button"
               disabled={disabled}
-              onClick={() => setScheduled(false)}
+              onClick={() => {
+                setScheduled(false)
+              }}
               className={cn(
                 "rounded-full py-1 text-[10px] font-semibold transition-colors",
                 !assignment.isScheduled
@@ -218,7 +222,9 @@ export function AdminPartTimeAssignDayColumn({
                             className="h-5 w-5 rounded-full hover:text-destructive hover:bg-destructive/10 transition-colors"
                             disabled={disabled}
                             // First slot minus switches day to "Off" instead of removing the only row.
-                            onClick={() => setScheduled(false)}
+                            onClick={() => {
+                setScheduled(false)
+              }}
                             aria-label="Không làm ngày này"
                           >
                             <Minus className="h-3 w-3" />
@@ -230,7 +236,9 @@ export function AdminPartTimeAssignDayColumn({
                             size="icon"
                             className="h-5 w-5 rounded-full hover:text-destructive hover:bg-destructive/10 transition-colors"
                             disabled={disabled}
-                            onClick={() => removeSlot(index)}
+                            onClick={() => {
+                              removeSlot(index)
+                            }}
                             aria-label="Xóa khung giờ"
                           >
                             <Minus className="h-3 w-3" />
@@ -249,7 +257,9 @@ export function AdminPartTimeAssignDayColumn({
                             onChange={(event) =>
                               updateSlot(index, { startTime: event.target.value || null })
                             }
-                            onBlur={() => notifySlotValidation(assignment.slots[index] ?? slot)}
+                            onBlur={() => {
+                              notifySlotValidation(slot)
+                            }}
                           />
                         </label>
                         <label className="flex items-center gap-1.5">
@@ -262,7 +272,9 @@ export function AdminPartTimeAssignDayColumn({
                             onChange={(event) =>
                               updateSlot(index, { endTime: event.target.value || null })
                             }
-                            onBlur={() => notifySlotValidation(assignment.slots[index] ?? slot)}
+                            onBlur={() => {
+                              notifySlotValidation(slot)
+                            }}
                           />
                         </label>
                       </div>

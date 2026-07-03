@@ -157,7 +157,9 @@ export function AvailabilityDayColumn({
 
           disabled={disabled}
 
-          onClick={() => setAvailabilityMode(false)}
+          onClick={() => {
+            setAvailabilityMode(false)
+          }}
 
           className={cn(
 
@@ -183,7 +185,9 @@ export function AvailabilityDayColumn({
 
           disabled={disabled}
 
-          onClick={() => setAvailabilityMode(true)}
+          onClick={() => {
+            setAvailabilityMode(true)
+          }}
 
           className={cn(
 
@@ -225,7 +229,9 @@ export function AvailabilityDayColumn({
                     size="icon"
                     className="h-5 w-5 rounded-full hover:text-destructive hover:bg-destructive/10 transition-colors"
                     disabled={disabled}
-                    onClick={() => removeSlot(index)}
+                    onClick={() => {
+                      removeSlot(index)
+                    }}
                     aria-label="Xóa khung giờ"
                   >
                     <Minus className="h-3 w-3" />
@@ -241,7 +247,9 @@ export function AvailabilityDayColumn({
                     value={slot.startTime}
                     disabled={disabled}
                     className="availability-time-input flex h-8 w-full rounded-full border border-input/60 bg-background px-3 py-1 text-xs font-mono focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50 [color-scheme:light] dark:[color-scheme:dark]"
-                    onChange={(event) => updateSlot(index, { startTime: event.target.value })}
+                    onChange={(event) => {
+                      updateSlot(index, { startTime: event.target.value })
+                    }}
                   />
                 </label>
                 <label className="flex items-center gap-1.5">
@@ -251,7 +259,9 @@ export function AvailabilityDayColumn({
                     value={slot.endTime}
                     disabled={disabled}
                     className="availability-time-input flex h-8 w-full rounded-full border border-input/60 bg-background px-3 py-1 text-xs font-mono focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50 [color-scheme:light] dark:[color-scheme:dark]"
-                    onChange={(event) => updateSlot(index, { endTime: event.target.value })}
+                    onChange={(event) => {
+                      updateSlot(index, { endTime: event.target.value })
+                    }}
                   />
                 </label>
               </div>
