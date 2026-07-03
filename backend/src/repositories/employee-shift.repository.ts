@@ -19,24 +19,63 @@ export class PrismaEmployeeShiftRepository
     super(prisma)
   }
 
+  /** Append-only override row — supports multiple shifts per day for part-time assign. */
+  async createOverrideShift(data: IOverrideEmployeeShiftDTO): Promise<any> {
+    const { employeeId, assignedDate, shiftId, createdById } = data
+    const date = new Date(assignedDate)
+    date.setHours(0, 0, 0, 0)
+    const actorId = createdById ?? employeeId
+
+    return this.prisma.employeeShift.create({
+      data: {
+        employeeId,
+        assignedDate: date,
+        shiftId,
+        isOverride: true,
+        status: ShiftStatus.scheduled,
+        createdById: actorId,
+      },
+    })
+  }
+
+  /** Remove prior admin-assigned overrides for the week without touching template/schedule shifts. */
+  async deleteOverridesForEmployeeDates(employeeId: string, dates: Date[]): Promise<void> {
+    if (dates.length === 0) return
+
+    const normalizedDates = dates.map((date) => {
+      const next = new Date(date)
+      next.setHours(0, 0, 0, 0)
+      return next
+    })
+
+    await this.prisma.employeeShift.deleteMany({
+      where: {
+        employeeId,
+        assignedDate: { in: normalizedDates },
+        isOverride: true,
+      },
+    })
+  }
+
   /**
    * Overrides an employee's shift for a specific date.
    * @param data - The override data.
    * @returns The updated or created employee shift.
    */
   async overrideShift(data: IOverrideEmployeeShiftDTO): Promise<any> {
-    const { employeeId, assignedDate, shiftId } = data
+    const { employeeId, assignedDate, shiftId, createdById } = data
     const date = new Date(assignedDate)
     date.setHours(0, 0, 0, 0)
+    const actorId = createdById ?? employeeId
 
-    // Using composite unique key or searching first to upsert
-    const existing = await this.prisma.employeeShift.findUnique({
+    // Multi-slot schema: no longer unique on [employeeId, assignedDate] alone.
+    const existing = await this.prisma.employeeShift.findFirst({
       where: {
-        employeeId_assignedDate: {
-          employeeId,
-          assignedDate: date,
-        },
+        employeeId,
+        assignedDate: date,
+        isOverride: true,
       },
+      orderBy: { createdAt: "asc" },
     })
 
     if (existing) {
@@ -59,7 +98,7 @@ export class PrismaEmployeeShiftRepository
           shiftId,
           isOverride: true,
           status: ShiftStatus.scheduled,
-          createdById: employeeId, // fallback
+          createdById: actorId, // fallback
         },
       })
     }
@@ -75,14 +114,14 @@ export class PrismaEmployeeShiftRepository
     const targetDate = new Date(date)
     targetDate.setHours(0, 0, 0, 0)
 
-    return this.prisma.employeeShift.findUnique({
+    // Multiple shifts per day (PT assign) — prefer admin override, earliest start first.
+    return this.prisma.employeeShift.findFirst({
       where: {
-        employeeId_assignedDate: {
-          employeeId,
-          assignedDate: targetDate,
-        },
+        employeeId,
+        assignedDate: targetDate,
       },
       include: { shift: true },
+      orderBy: [{ isOverride: "desc" }, { createdAt: "asc" }],
     })
   }
 
@@ -114,13 +153,13 @@ export class PrismaEmployeeShiftRepository
     const targetDate = new Date(date)
     targetDate.setHours(0, 0, 0, 0)
 
-    const existing = await this.prisma.employeeShift.findUnique({
+    const existing = await this.prisma.employeeShift.findFirst({
       where: {
-        employeeId_assignedDate: {
-          employeeId,
-          assignedDate: targetDate,
-        },
+        employeeId,
+        assignedDate: targetDate,
+        isOverride: false,
       },
+      orderBy: { createdAt: "asc" },
     })
 
     if (existing) {
@@ -156,13 +195,13 @@ export class PrismaEmployeeShiftRepository
     const targetDate = new Date(date)
     targetDate.setHours(0, 0, 0, 0)
 
-    const existing = await this.prisma.employeeShift.findUnique({
+    const existing = await this.prisma.employeeShift.findFirst({
       where: {
-        employeeId_assignedDate: {
-          employeeId,
-          assignedDate: targetDate,
-        },
+        employeeId,
+        assignedDate: targetDate,
+        isOverride: false,
       },
+      orderBy: { createdAt: "asc" },
     })
 
     if (existing?.isOverride) return "skipped"

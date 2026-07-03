@@ -11,6 +11,7 @@ export interface PersonalEmployeeLink {
 }
 
 export async function resolvePersonalEmployeeId(accountId: string): Promise<string> {
+  // Auth account may be a phantom profile linked to the real HR employee row.
   const account = await prisma.employee.findFirst({
     where: { id: accountId, deletedAt: null },
     select: { personalEmployeeId: true },
