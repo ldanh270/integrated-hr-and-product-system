@@ -86,8 +86,8 @@ export class PayrollService implements IPayrollService {
       where: { isActive: true },
     })
     const variablesContext: Record<string, number> = {}
-    globalVariables.forEach((v: any) => {
-      variablesContext[v.code] = Number(v.value)
+    globalVariables.forEach((variable) => {
+      variablesContext[variable.code] = Number(variable.value)
     })
     let totalAmount = new Prisma.Decimal(0)
 
@@ -104,14 +104,13 @@ export class PayrollService implements IPayrollService {
     });
 
     // Group by employeeId in memory
-    const appsByEmployeeId: Record<string, Prisma.ApplicationGetPayload<{ include: { leaveDetail: true, lateEarlyDetail: true } }>[] | undefined> = {};
-    allApprovedApps.forEach(app => {
-      if (!appsByEmployeeId[app.employeeId]) appsByEmployeeId[app.employeeId] = [];
-      const employeeApps = appsByEmployeeId[app.employeeId];
-      if (employeeApps) {
-        employeeApps.push(app);
-      }
-    });
+    type ApprovedApplication = (typeof allApprovedApps)[number]
+    const appsByEmployeeId = new Map<string, ApprovedApplication[]>()
+    allApprovedApps.forEach((app) => {
+      const existing = appsByEmployeeId.get(app.employeeId) ?? []
+      existing.push(app)
+      appsByEmployeeId.set(app.employeeId, existing)
+    })
 
     for (const employee of employees) {
       const config = await this.salaryConfigRepo.findActiveByEmployee(employee.id, periodStart)
@@ -167,7 +166,7 @@ export class PayrollService implements IPayrollService {
       })
 
       // Use pre-fetched applications to prevent N+1
-      const approvedApps = appsByEmployeeId[employee.id] || [];
+      const approvedApps = appsByEmployeeId.get(employee.id) ?? []
 
       let paidLeaveDays = 0
       let excusedLateMinutes = 0

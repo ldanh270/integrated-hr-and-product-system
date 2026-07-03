@@ -14,10 +14,11 @@ import { Input } from "@/components/ui/input"
 import {
   EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME,
   EMPLOYEE_STATUS,
-  EMPLOYEE_STATUS_LABELS,
   EMPLOYEE_TYPES,
-  EMPLOYEE_TYPE_LABELS,
-  WORK_SCHEDULE_TYPE_LABELS,
+  getEmployeeStatusLabel,
+  getEmployeeStatusVariant,
+  getEmployeeTypeLabel,
+  getWorkScheduleTypeLabel,
 } from "@/config/entities/employee.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useEmployeeMaster } from "@/hooks/employees/useEmployeeMaster"
@@ -64,26 +65,15 @@ interface TabDefinition {
  */
 const TAB_DEFINITIONS: TabDefinition[] = [
   { id: "all", label: "Tất cả" },
-  { id: EMPLOYEE_TYPES[0], label: EMPLOYEE_TYPE_LABELS[EMPLOYEE_TYPES[0]] },
-  // Part-time list tab uses workScheduleType filter, not employeeType.
+  { id: EMPLOYEE_TYPES[0], label: getEmployeeTypeLabel(EMPLOYEE_TYPES[0]) },
   {
     id: EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME,
-    label: WORK_SCHEDULE_TYPE_LABELS.part_time,
+    label: getWorkScheduleTypeLabel("part_time"),
   },
-  { id: EMPLOYEE_TYPES[3], label: EMPLOYEE_TYPE_LABELS[EMPLOYEE_TYPES[3]] },
-  { id: EMPLOYEE_TYPES[2], label: EMPLOYEE_TYPE_LABELS[EMPLOYEE_TYPES[2]] },
+  { id: EMPLOYEE_TYPES[3], label: getEmployeeTypeLabel(EMPLOYEE_TYPES[3]) },
+  { id: EMPLOYEE_TYPES[2], label: getEmployeeTypeLabel(EMPLOYEE_TYPES[2]) },
   { id: EMPLOYEE_STATUS.TERMINATED, label: "Đã nghỉ việc", separator: true },
 ]
-
-/**
- * Variant styles mapping for StatusPill badge component.
- */
-const STATUS_VARIANT_MAP = {
-  [EMPLOYEE_STATUS.ACTIVE]: "success",
-  [EMPLOYEE_STATUS.INACTIVE]: "neutral",
-  [EMPLOYEE_STATUS.ON_LEAVE]: "warning",
-  [EMPLOYEE_STATUS.TERMINATED]: "danger",
-} as const
 
 /**
  * Maximum number of page buttons to display in pagination bar.
@@ -120,9 +110,11 @@ export default function EmployeeList() {
   } = useEmployeeMaster()
 
   // Derived pagination calculations
+  const currentPage = query.page ?? 1
+  const pageSize = query.limit ?? SYSTEM_CONFIG.PAGINATION.SMALL_LIMIT
   const totalPages = data?.meta.totalPages ?? 0
-  const pageStart = (query.page! - 1) * query.limit! + (data?.data.length ? 1 : 0)
-  const pageEnd = (query.page! - 1) * query.limit! + (data?.data.length || 0)
+  const pageStart = (currentPage - 1) * pageSize + (data?.data.length ? 1 : 0)
+  const pageEnd = (currentPage - 1) * pageSize + (data?.data.length || 0)
 
   // Calculate which page numbers to display in pagination bar (capped at MAX_VISIBLE_PAGES)
   const visiblePages = useMemo(
@@ -145,7 +137,9 @@ export default function EmployeeList() {
         {isAdminOrManager && (
           <Button
             size="sm"
-            onClick={() => setIsCreateModalOpen(true)}
+            onClick={() => {
+              setIsCreateModalOpen(true)
+            }}
             className="gap-1.5 h-8 px-3 text-xs"
           >
             <Plus size={13} strokeWidth={2.5} />
@@ -164,7 +158,9 @@ export default function EmployeeList() {
             <div key={tab.id} className="flex items-end shrink-0">
               {tab.separator && <div className="w-px h-3.5 bg-border self-center mx-3 shrink-0" />}
               <button
-                onClick={() => handleTabChange(tab.id)}
+                onClick={() => {
+                  handleTabChange(tab.id)
+                }}
                 className={[
                   "relative py-3 px-3 text-[13px] font-medium transition-colors duration-150 whitespace-nowrap",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 rounded-t-sm",
@@ -274,7 +270,9 @@ export default function EmployeeList() {
                         </div>
                         <div>
                           <button
-                            onClick={() => setViewingEmployeeId(employee.id)}
+                            onClick={() => {
+                              setViewingEmployeeId(employee.id)
+                            }}
                             className="text-[13px] font-medium text-foreground leading-tight hover:text-primary hover:underline focus-visible:outline-none focus-visible:text-primary text-left transition-colors"
                           >
                             {employee.fullName}
@@ -308,20 +306,19 @@ export default function EmployeeList() {
                     {/* Hợp đồng */}
                     <td className="px-5 py-3 text-[13px] text-foreground">
                       <div>
-                        {EMPLOYEE_TYPE_LABELS[employee.employeeType] || employee.employeeType}
+                        {getEmployeeTypeLabel(employee.employeeType)}
                       </div>
                       {/* Secondary line: schedule model (full-time shift vs part-time availability). */}
                       <div className="text-[11px] text-muted-foreground">
-                        {WORK_SCHEDULE_TYPE_LABELS[employee.workScheduleType] ||
-                          employee.workScheduleType}
+                        {getWorkScheduleTypeLabel(employee.workScheduleType)}
                       </div>
                     </td>
 
                     {/* Trạng thái */}
                     <td className="px-5 py-3">
                       <StatusPill
-                        label={EMPLOYEE_STATUS_LABELS[employee.status] || employee.status}
-                        variant={STATUS_VARIANT_MAP[employee.status] ?? "neutral"}
+                        label={getEmployeeStatusLabel(employee.status)}
+                        variant={getEmployeeStatusVariant(employee.status)}
                       />
                     </td>
 
@@ -342,7 +339,9 @@ export default function EmployeeList() {
                               {employee.status !== EMPLOYEE_STATUS.TERMINATED && (
                                 <>
                                   <DropdownMenuItem
-                                    onClick={() => setEditEmployee(employee)}
+                                    onClick={() => {
+                                      setEditEmployee(employee)
+                                    }}
                                     className="cursor-pointer gap-2"
                                   >
                                     <Edit size={13} className="text-blue-500" />
@@ -351,7 +350,9 @@ export default function EmployeeList() {
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem
                                     variant="destructive"
-                                    onClick={() => handleDelete(employee.id)}
+                                    onClick={() => {
+                                      handleDelete(employee.id)
+                                    }}
                                     className="cursor-pointer gap-2"
                                   >
                                     <Trash2 size={13} />
@@ -362,7 +363,9 @@ export default function EmployeeList() {
 
                               {employee.status === EMPLOYEE_STATUS.TERMINATED && (
                                 <DropdownMenuItem
-                                  onClick={() => handleReinstate(employee.id)}
+                                  onClick={() => {
+                                    handleReinstate(employee.id)
+                                  }}
                                   className="cursor-pointer gap-2 text-emerald-600 focus:text-emerald-700 focus:bg-emerald-50 dark:text-emerald-400 dark:focus:text-emerald-300 dark:focus:bg-emerald-950/30"
                                 >
                                   <RotateCcw size={13} />
@@ -394,9 +397,9 @@ export default function EmployeeList() {
               size="sm"
               className="h-7 px-2 text-xs"
               disabled={query.page === 1}
-              onClick={() =>
+              onClick={() => {
                 setQuery((prev) => ({ ...prev, page: Math.max(1, (prev.page || 1) - 1) }))
-              }
+              }}
             >
               ←
             </Button>
@@ -404,7 +407,9 @@ export default function EmployeeList() {
             {visiblePages.map((p) => (
               <button
                 key={p}
-                onClick={() => setQuery((prev) => ({ ...prev, page: p }))}
+                onClick={() => {
+                  setQuery((prev) => ({ ...prev, page: p }))
+                }}
                 className={[
                   "w-7 h-7 rounded-md text-xs flex items-center justify-center transition-colors",
                   query.page === p
@@ -421,7 +426,9 @@ export default function EmployeeList() {
               size="sm"
               className="h-7 px-2 text-xs"
               disabled={!data || query.page === totalPages || totalPages === 0}
-              onClick={() => setQuery((prev) => ({ ...prev, page: (prev.page || 1) + 1 }))}
+              onClick={() => {
+                setQuery((prev) => ({ ...prev, page: (prev.page || 1) + 1 }))
+              }}
             >
               →
             </Button>
@@ -430,19 +437,28 @@ export default function EmployeeList() {
       </PageCard>
 
       {/* Creation Modal */}
-      <EmployeeCreateModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
+      <EmployeeCreateModal
+        isOpen={isCreateModalOpen}
+        onClose={() => {
+          setIsCreateModalOpen(false)
+        }}
+      />
 
       {/* Editing Drawer */}
       <EmployeeEditDrawer
         isOpen={!!editEmployee}
-        onClose={() => setEditEmployee(null)}
+        onClose={() => {
+          setEditEmployee(null)
+        }}
         employee={editEmployee}
       />
 
       {/* Detail Drawer */}
       <EmployeeDetailsDrawer
         employeeId={viewingEmployeeId}
-        onClose={() => setViewingEmployeeId(null)}
+        onClose={() => {
+          setViewingEmployeeId(null)
+        }}
         onEdit={(emp) => setEditEmployee(emp)}
       />
     </div>

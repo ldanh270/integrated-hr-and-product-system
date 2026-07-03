@@ -128,8 +128,9 @@ export class ProfileService implements IProfileService {
     // Check if Cloudinary is configured
     try {
       assertCloudinaryConfigured()
-    } catch (err: any) {
-      throw new AppError(err.message, HttpStatusCode.BAD_REQUEST, LAYER_NAME)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Cloudinary is not configured"
+      throw new AppError(message, HttpStatusCode.BAD_REQUEST, LAYER_NAME)
     }
 
     // Fetch current profile to get old avatar id for cleanup

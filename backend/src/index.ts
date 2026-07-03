@@ -106,7 +106,8 @@ app.use(globalErrorHandler)
 /**
  * Must connect to database successfully before start server
  */
-connectDB().then(async () => {
+void connectDB()
+  .then(async () => {
   // Check static role references
   const skipAssert = process.env.SKIP_ADMIN_ASSERT === "true" || process.env.NODE_ENV === "test"
   if (!skipAssert) {
@@ -128,4 +129,8 @@ connectDB().then(async () => {
     initWeeklyScheduleCron()
   })
 })
+  .catch((error) => {
+    console.error("Failed to start server:", error)
+    process.exit(1)
+  })
 

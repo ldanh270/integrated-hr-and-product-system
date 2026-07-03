@@ -26,7 +26,7 @@ import { formatDateParam } from "@/utils/attendance/format-date-param"
 import { getWeekDates } from "@/utils/attendance/get-week-dates"
 import { getWeekRangeLabel } from "@/utils/attendance/get-week-range-label"
 import { AlertCircle, ChevronLeft, ChevronRight, Info, Save, Send } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { toast } from "sonner"
 
 export function EmployeePartTimeAvailabilityView() {
@@ -44,17 +44,20 @@ export function EmployeePartTimeAvailabilityView() {
 
   const [days, setDays] = useState<IPartTimeAvailabilityDayForm[]>(() => buildEmptyAvailabilityDays())
   const [note, setNote] = useState("")
+  const formResetKey = `${weekStartKey}-${availability?.id ?? "new"}`
+  const [loadedFormKey, setLoadedFormKey] = useState(formResetKey)
+
+  if (loadedFormKey !== formResetKey) {
+    setLoadedFormKey(formResetKey)
+    setDays(mapAvailabilityToForm(availability))
+    setNote(availability?.note ?? "")
+  }
 
   const isUpdate = Boolean(availability)
   const submitLabel = isUpdate
     ? PART_TIME_AVAILABILITY_ACTION_LABELS.UPDATE
     : PART_TIME_AVAILABILITY_ACTION_LABELS.SUBMIT
   const SubmitIcon = isUpdate ? Save : Send
-
-  useEffect(() => {
-    setDays(mapAvailabilityToForm(availability))
-    setNote(availability?.note ?? "")
-  }, [availability])
 
   const canGoToPreviousWeek = weekStart.getTime() > earliestWeekStart.getTime()
 

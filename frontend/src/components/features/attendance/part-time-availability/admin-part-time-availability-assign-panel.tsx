@@ -15,7 +15,7 @@ import {
 } from "@/utils/attendance/part-time-availability.util"
 import { getWeekDates } from "@/utils/attendance/get-week-dates"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { toast } from "sonner"
 
 import { AdminPartTimeAssignDayColumn } from "./admin-part-time-assign-day-column"
@@ -43,11 +43,13 @@ export function AdminPartTimeAvailabilityAssignPanel({
   const [assignments, setAssignments] = useState<IPartTimeAssignmentDayForm[]>(() =>
     buildDefaultPartTimeAssignments(availability),
   )
+  const assignmentResetKey = availability.id
+  const [loadedAssignmentKey, setLoadedAssignmentKey] = useState(assignmentResetKey)
 
-  useEffect(() => {
-    // Reset form when switching employees or after employee updates availability.
+  if (loadedAssignmentKey !== assignmentResetKey) {
+    setLoadedAssignmentKey(assignmentResetKey)
     setAssignments(buildDefaultPartTimeAssignments(availability))
-  }, [availability])
+  }
 
   const dayMap = useMemo(
     () => new Map(availability.days.map((day) => [day.dayOfWeek, day])),

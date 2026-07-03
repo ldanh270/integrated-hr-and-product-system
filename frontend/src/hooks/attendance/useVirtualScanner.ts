@@ -67,7 +67,9 @@ export function useVirtualScanner(): {
       : ATTENDANCE_MESSAGES.SCANNER.CHECK_OUT_LABEL
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000)
+    const timer = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
     return () => clearInterval(timer)
   }, [])
 

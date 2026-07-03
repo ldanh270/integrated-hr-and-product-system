@@ -6,11 +6,11 @@ import {
   EMPLOYEE_ROLES,
   EMPLOYEE_STATUSES,
   EMPLOYEE_STATUS_LABELS,
-  EMPLOYEE_TYPE_LABELS,
   EMPLOYMENT_CATEGORY_TYPES,
+  getEmployeeTypeLabel,
+  getWorkScheduleTypeLabel,
   ROLE_LABELS,
   WORK_SCHEDULE_TYPES,
-  getWorkScheduleTypeLabel,
 } from "@/config/entities/employee.config"
 import { useEmployeeCreateModal } from "@/hooks/employees/useEmployeeCreateModal"
 
@@ -297,7 +297,7 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                     {EMPLOYMENT_CATEGORY_TYPES.map((typeKey) => (
                       // Contract category only; part-time schedule is workScheduleType below.
                       <option key={typeKey} value={typeKey}>
-                        {EMPLOYEE_TYPE_LABELS[typeKey]}
+                        {getEmployeeTypeLabel(typeKey)}
                       </option>
                     ))}
                   </select>

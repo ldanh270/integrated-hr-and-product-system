@@ -12,7 +12,7 @@ import { z } from "zod"
  * Zod validation schema for creating a new Employee.
  * Enforces field validations, data types, and value constraints.
  */
-const emptyToNull = (val: any) => (val === "" ? null : val)
+const emptyToNull = (val: unknown) => (val === "" ? null : val)
 
 export const createEmployeeSchema = z
   .object({

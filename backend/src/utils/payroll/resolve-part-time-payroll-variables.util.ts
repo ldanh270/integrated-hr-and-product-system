@@ -1,12 +1,15 @@
-import {
-  PART_TIME_PAYROLL_VARIABLE,
-  PART_TIME_PAYROLL_VARIABLE_DEFAULTS,
-} from "@/configs/entities/part-time-payroll.config.ts"
+import { PART_TIME_PAYROLL_VARIABLE_DEFAULTS } from "@/configs/entities/part-time-payroll.config.ts"
 
 export interface ResolvedPartTimePayrollVariables {
   overtimeMultiplier: number
   workingDayMultiplier: number
   defaultHourlyRate: number | null
+}
+
+interface PartTimePayrollContext {
+  partTimeOvertimeMultiplier?: number
+  partTimeWorkingDayMultiplier?: number
+  partTimeDefaultHourlyRate?: number
 }
 
 function pickContextNumber(raw: unknown, fallback: number): number {
@@ -17,16 +20,17 @@ function pickContextNumber(raw: unknown, fallback: number): number {
 export function resolvePartTimePayrollVariables(
   context: Record<string, number>,
 ): ResolvedPartTimePayrollVariables {
+  const ptContext = context as PartTimePayrollContext
   const overtimeMultiplier = pickContextNumber(
-    context[PART_TIME_PAYROLL_VARIABLE.OVERTIME_MULTIPLIER],
+    ptContext.partTimeOvertimeMultiplier,
     PART_TIME_PAYROLL_VARIABLE_DEFAULTS.OVERTIME_MULTIPLIER,
   )
   const workingDayMultiplier = pickContextNumber(
-    context[PART_TIME_PAYROLL_VARIABLE.WORKING_DAY_MULTIPLIER],
+    ptContext.partTimeWorkingDayMultiplier,
     PART_TIME_PAYROLL_VARIABLE_DEFAULTS.WORKING_DAY_MULTIPLIER,
   )
   const defaultHourlyRate = pickContextNumber(
-    context[PART_TIME_PAYROLL_VARIABLE.DEFAULT_HOURLY_RATE],
+    ptContext.partTimeDefaultHourlyRate,
     PART_TIME_PAYROLL_VARIABLE_DEFAULTS.DEFAULT_HOURLY_RATE,
   )
 

@@ -8,8 +8,8 @@ import {
   EMPLOYEE_STATUS,
   EMPLOYEE_STATUS_LABELS,
   EMPLOYEE_TYPE_LABELS,
+  getWorkScheduleTypeLabel,
   ROLE_LABELS,
-  WORK_SCHEDULE_TYPE_LABELS,
 } from "@/config/entities/employee.config"
 import { useProfileMaster } from "@/hooks/profile/useProfileMaster"
 
@@ -431,8 +431,7 @@ export default function Profile() {
                           Hình thức làm việc
                         </p>
                         <p className="text-sm font-semibold text-foreground mt-0.5">
-                          {WORK_SCHEDULE_TYPE_LABELS[profile.workScheduleType] ||
-                            profile.workScheduleType}
+                          {getWorkScheduleTypeLabel(profile.workScheduleType)}
                         </p>
                       </div>
                     </div>

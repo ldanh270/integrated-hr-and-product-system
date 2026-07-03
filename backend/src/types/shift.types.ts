@@ -1,4 +1,4 @@
-import type { EmployeeShift, Prisma } from "@prisma/client"
+import type { EmployeeShift, Prisma, WorkingShift } from "@prisma/client"
 
 import type { IShiftScheduleWithDays, IShiftScheduleWithTemplate } from "@/types/shift-schedule.types.ts"
 
@@ -58,13 +58,13 @@ export interface ISubmitShiftChangeRequestDTO {
  */
 export interface IShiftChangeRequestRepository {
   /** Submits a new shift change request. */
-  submit(data: ISubmitShiftChangeRequestDTO): Promise<any>
+  submit(data: ISubmitShiftChangeRequestDTO): Promise<unknown>
   /** Finds requests by employee ID. */
-  findByEmployee(employeeId: string): Promise<any[]>
+  findByEmployee(employeeId: string): Promise<unknown[]>
   /** Finds a request by ID. */
-  findById(id: string): Promise<any | null>
+  findById(id: string): Promise<unknown | null>
   /** Lists all pending requests. */
-  listPending(): Promise<any[]>
+  listPending(): Promise<unknown[]>
 }
 
 /**
@@ -72,9 +72,9 @@ export interface IShiftChangeRequestRepository {
  */
 export interface IShiftChangeRequestService {
   /** Submits a request. */
-  submitRequest(data: ISubmitShiftChangeRequestDTO): Promise<any>
+  submitRequest(data: ISubmitShiftChangeRequestDTO): Promise<unknown>
   /** Gets requests for the current employee. */
-  getMyRequests(employeeId: string): Promise<any[]>
+  getMyRequests(employeeId: string): Promise<unknown[]>
 }
 
 // ─── EMPLOYEE SHIFT (Daily Record Override) ───────────────────
@@ -124,13 +124,13 @@ export interface IGenerateShiftsResult {
  */
 export interface IWorkingShiftRepository {
   /** Creates a shift. */
-  create(data: ICreateWorkingShiftDTO): Promise<any>
+  create(data: ICreateWorkingShiftDTO): Promise<WorkingShift>
   /** Updates a shift. */
-  update(id: string, data: IUpdateWorkingShiftDTO): Promise<any | null>
+  update(id: string, data: IUpdateWorkingShiftDTO): Promise<WorkingShift | null>
   /** Finds shift by ID. */
-  findById(id: string): Promise<any | null>
+  findById(id: string): Promise<WorkingShift | null>
   /** Lists all shifts. */
-  listAll(): Promise<any[]>
+  listAll(): Promise<WorkingShift[]>
   /** Deletes a shift. */
   delete(id: string): Promise<void>
 }
@@ -191,15 +191,15 @@ export interface IEmployeeShiftRepository {
  */
 export interface IShiftService {
   /** Creates a shift. */
-  createShift(data: ICreateWorkingShiftDTO): Promise<any>
+  createShift(data: ICreateWorkingShiftDTO): Promise<WorkingShift>
   /** Updates a shift. */
-  updateShift(id: string, data: IUpdateWorkingShiftDTO): Promise<any | null>
+  updateShift(id: string, data: IUpdateWorkingShiftDTO): Promise<WorkingShift | null>
   /** Deletes a shift. */
   deleteShift(id: string): Promise<void>
   /** Gets shift by ID. */
-  getShift(id: string): Promise<any | null>
+  getShift(id: string): Promise<WorkingShift | null>
   /** Lists all shifts. */
-  listShifts(): Promise<any[]>
+  listShifts(): Promise<WorkingShift[]>
 }
 
 /**

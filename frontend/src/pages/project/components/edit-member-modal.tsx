@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import {
@@ -50,18 +50,18 @@ export function EditMemberModal({
   const [hourlyRate, setHourlyRate] = useState("")
   const [workMode, setWorkMode] = useState<string>(PROJECT_MEMBER_WORK_MODE.REMOTE)
   const [memberError, setMemberError] = useState<string | null>(null)
+  const memberResetKey = member ? `${member.employeeId}-${isOpen}` : ""
+  const [loadedMemberKey, setLoadedMemberKey] = useState(memberResetKey)
 
-  const employee = allEmployees.find((e) => e.id === member?.employeeId)
-  // PT members require hourlyRate on ProjectMember for payroll.
+  if (member && isOpen && loadedMemberKey !== memberResetKey) {
+    setLoadedMemberKey(memberResetKey)
+    setHourlyRate(member.hourlyRate != null ? String(member.hourlyRate) : "")
+    setWorkMode(member.workMode || PROJECT_MEMBER_WORK_MODE.REMOTE)
+    setMemberError(null)
+  }
+
+  const employee = allEmployees.find((entry) => entry.id === member?.employeeId)
   const isPartTime = employee ? isPartTimeWorkSchedule(employee) : false
-
-  useEffect(() => {
-    if (member && isOpen) {
-      setHourlyRate(member.hourlyRate != null ? String(member.hourlyRate) : "")
-      setWorkMode(member.workMode || PROJECT_MEMBER_WORK_MODE.REMOTE)
-      setMemberError(null)
-    }
-  }, [member, isOpen])
 
   // Rate/mode changes apply on next payroll run; workMode flips GPS requirement immediately.
   const updateMemberMutation = useMutation({

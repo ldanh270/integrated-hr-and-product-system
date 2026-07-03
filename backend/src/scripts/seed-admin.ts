@@ -92,4 +92,4 @@ async function seedAdminAccounts() {
   }
 }
 
-seedAdminAccounts()
+void seedAdminAccounts()

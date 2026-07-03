@@ -11,7 +11,7 @@ import {
   checkOutSchema,
 } from "@/schemas/attendance.schema.ts"
 import { ApiResponse } from "@/types"
-import { IAttendanceService } from "@/types/attendance.types.ts"
+import { IAttendanceRecordDTO, IAttendanceService } from "@/types/attendance.types.ts"
 import { resolvePersonalEmployeeId } from "@/utils/attendance/resolve-personal-employee-id.ts"
 import { authorizationService } from "@/services/authorization.service.ts"
 
@@ -33,7 +33,7 @@ export class AttendanceController {
    * @param req - The authenticated request.
    * @param res - The API response.
    */
-  checkIn = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  checkIn = async (req: AuthRequest, res: Response<ApiResponse<IAttendanceRecordDTO>>) => {
     try {
       const accountId = req.user?.empId
       if (!accountId) {
@@ -70,7 +70,7 @@ export class AttendanceController {
    * @param req - The authenticated request.
    * @param res - The API response.
    */
-  checkOut = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  checkOut = async (req: AuthRequest, res: Response<ApiResponse<IAttendanceRecordDTO>>) => {
     try {
       const accountId = req.user?.empId
       if (!accountId) {
@@ -108,7 +108,7 @@ export class AttendanceController {
    * @param req - The authenticated request.
    * @param res - The API response.
    */
-  scan = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  scan = async (req: AuthRequest, res: Response<ApiResponse<IAttendanceRecordDTO>>) => {
     try {
       const accountId = req.user?.empId
       if (!accountId) {
@@ -146,7 +146,7 @@ export class AttendanceController {
    * @param req - The authenticated request.
    * @param res - The API response with an array of records.
    */
-  queryRecords = async (req: AuthRequest, res: Response<ApiResponse<any[]>>) => {
+  queryRecords = async (req: AuthRequest, res: Response<ApiResponse<IAttendanceRecordDTO[]>>) => {
     try {
       const query = attendanceRecordQuerySchema.parse(req.query)
       const userId = req.user?.empId

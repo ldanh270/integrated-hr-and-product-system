@@ -97,6 +97,47 @@ export function getWorkScheduleTypeLabel(type: IWorkScheduleType): string {
     : WORK_SCHEDULE_TYPE_LABELS.part_time
 }
 
+export function getEmployeeTypeLabel(type: IEmployeeType): string {
+  switch (type) {
+    case EMPLOYEE_TYPE.FULL_TIME:
+      return EMPLOYEE_TYPE_LABELS.full_time
+    case EMPLOYEE_TYPE.PART_TIME:
+      return EMPLOYEE_TYPE_LABELS.part_time
+    case EMPLOYEE_TYPE.CONTRACTOR:
+      return EMPLOYEE_TYPE_LABELS.contractor
+    case EMPLOYEE_TYPE.INTERN:
+      return EMPLOYEE_TYPE_LABELS.intern
+  }
+}
+
+export function getEmployeeStatusLabel(status: IEmployeeStatus): string {
+  switch (status) {
+    case EMPLOYEE_STATUS.ACTIVE:
+      return EMPLOYEE_STATUS_LABELS[EMPLOYEE_STATUS.ACTIVE]
+    case EMPLOYEE_STATUS.INACTIVE:
+      return EMPLOYEE_STATUS_LABELS[EMPLOYEE_STATUS.INACTIVE]
+    case EMPLOYEE_STATUS.ON_LEAVE:
+      return EMPLOYEE_STATUS_LABELS[EMPLOYEE_STATUS.ON_LEAVE]
+    case EMPLOYEE_STATUS.TERMINATED:
+      return EMPLOYEE_STATUS_LABELS[EMPLOYEE_STATUS.TERMINATED]
+  }
+}
+
+export function getEmployeeStatusVariant(
+  status: IEmployeeStatus,
+): "success" | "danger" | "warning" | "neutral" {
+  switch (status) {
+    case EMPLOYEE_STATUS.ACTIVE:
+      return EMPLOYEE_STATUS_VARIANTS[EMPLOYEE_STATUS.ACTIVE]
+    case EMPLOYEE_STATUS.INACTIVE:
+      return EMPLOYEE_STATUS_VARIANTS[EMPLOYEE_STATUS.INACTIVE]
+    case EMPLOYEE_STATUS.ON_LEAVE:
+      return EMPLOYEE_STATUS_VARIANTS[EMPLOYEE_STATUS.ON_LEAVE]
+    case EMPLOYEE_STATUS.TERMINATED:
+      return EMPLOYEE_STATUS_VARIANTS[EMPLOYEE_STATUS.TERMINATED]
+  }
+}
+
 /** Tab id for filtering employees by part-time work schedule. */
 export const EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME = "schedule_part_time" as const
 

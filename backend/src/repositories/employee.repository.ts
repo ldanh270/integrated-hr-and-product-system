@@ -13,7 +13,7 @@ import {
 } from "@/types"
 import { AppError } from "@/utils/error.util.ts"
 
-import { Prisma, PrismaClient, Employee as PrismaEmployee } from "@prisma/client"
+import { Prisma, PrismaClient, AppRole as PrismaAppRole, Employee as PrismaEmployee } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
@@ -21,6 +21,44 @@ type EmployeeRoleSummary = {
   role: {
     id: string
     name: string
+  }
+}
+
+function buildEmployeeOrderBy(
+  sortBy: string,
+  sortOrder: string,
+): Prisma.EmployeeOrderByWithRelationInput {
+  const direction = sortOrder === SORT_ORDER.ASC ? SORT_ORDER.ASC : SORT_ORDER.DESC
+
+  switch (sortBy) {
+    case "id":
+      return { id: direction }
+    case "fullName":
+      return { fullName: direction }
+    case "username":
+      return { username: direction }
+    case "email":
+      return { email: direction }
+    case "phone":
+      return { phone: direction }
+    case "dateOfBirth":
+      return { dateOfBirth: direction }
+    case "position":
+      return { position: direction }
+    case "employeeType":
+      return { employeeType: direction }
+    case "workScheduleType":
+      return { workScheduleType: direction }
+    case "status":
+      return { status: direction }
+    case "startDate":
+      return { startDate: direction }
+    case "endDate":
+      return { endDate: direction }
+    case "updatedAt":
+      return { updatedAt: direction }
+    default:
+      return { createdAt: direction }
   }
 }
 
@@ -99,7 +137,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     } = query
 
     const skip = (page - 1) * limit
-    const where: Prisma.EmployeeWhereInput = { deletedAt: null } as any
+    const where: Prisma.EmployeeWhereInput = { deletedAt: null }
 
     // Apply role filter if provided
     if (roleId) {
@@ -131,9 +169,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     if (workSchedule) where.workScheduleType = workSchedule // part-time tab filter
 
     // Define ordering criteria dynamically
-    const orderBy: Prisma.EmployeeOrderByWithRelationInput = {
-      [sortBy]: sortOrder === SORT_ORDER.ASC ? SORT_ORDER.ASC : SORT_ORDER.DESC,
-    }
+    const orderBy = buildEmployeeOrderBy(sortBy, sortOrder)
 
     // Perform concurrent data fetching and count query
     const [data, total] = await Promise.all([
@@ -183,7 +219,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
    */
   async findById(id: string): Promise<Employee | null> {
     const employee = await this.prisma.employee.findFirst({
-      where: { id, deletedAt: null } as any,
+      where: { id, deletedAt: null },
       include: {
         employeeRoles: {
           where: {
@@ -377,7 +413,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
    */
   async deleteEmployee(id: string): Promise<boolean> {
     const record = await this.prisma.employee.findFirst({
-      where: { id, deletedAt: null } as any,
+      where: { id, deletedAt: null },
     })
     if (!record) return false
 
@@ -399,7 +435,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
   /**
    * Maps a Prisma role record to the application AppRole type.
    */
-  private mapRoleToDomain(role: any): AppRole {
+  private mapRoleToDomain(role: PrismaAppRole): AppRole {
     return {
       id: role.id,
       name: role.name,

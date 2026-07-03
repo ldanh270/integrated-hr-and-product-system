@@ -5,7 +5,7 @@ import type {
   UpdateProfileDto,
 } from "@/types/profile.types.ts"
 
-import { PrismaClient, Employee as PrismaEmployee } from "@prisma/client"
+import { Prisma, PrismaClient, Employee as PrismaEmployee } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
@@ -87,7 +87,7 @@ export class PrismaProfileRepository extends BaseRepository implements IProfileR
     empId: string,
     data: UpdateProfileDto,
   ): Promise<ProfileEmployeeDocument | null> {
-    const updateFields: any = {}
+    const updateFields: Prisma.EmployeeUpdateInput = {}
 
     if (data.fullName !== undefined) updateFields.fullName = data.fullName
     if (data.phone !== undefined) updateFields.phone = data.phone

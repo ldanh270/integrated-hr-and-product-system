@@ -1,4 +1,4 @@
-import { EMPLOYEE_TYPES, EMPLOYEE_TYPE, SYSTEM_ROLE, WORK_SCHEDULE_TYPE } from "@/configs/entities/employee.config.ts"
+import { EMPLOYEE_STATUS, EMPLOYEE_TYPES, EMPLOYEE_TYPE, SYSTEM_ROLE, WORK_SCHEDULE_TYPE } from "@/configs/entities/employee.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
 import { getSeedPassword } from "@/scripts/seeders/seed-password.util.ts"
@@ -109,10 +109,10 @@ export class EmployeesSeeder implements ISeeder {
         phone: faker.phone.number({ style: "national" }),
         address: faker.location.streetAddress(),
         position: isTeamLeader ? "Team Leader" : faker.person.jobTitle(),
-        employeeType: type as any,
+        employeeType: type,
         dateOfBirth: faker.date.birthdate({ min: 22, max: 55, mode: "age" }),
         startDate: faker.date.past({ years: 3 }),
-        status: "active" as any,
+        status: EMPLOYEE_STATUS.ACTIVE,
       }
     })
 

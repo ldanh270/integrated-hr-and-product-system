@@ -6,11 +6,11 @@ import { Label } from "@/components/ui/label"
 import {
   EMPLOYEE_STATUSES,
   EMPLOYEE_STATUS_LABELS,
-  EMPLOYEE_TYPE_LABELS,
   EMPLOYMENT_CATEGORY_TYPES,
+  getEmployeeTypeLabel,
+  getWorkScheduleTypeLabel,
   ROLE_LABELS,
   WORK_SCHEDULE_TYPES,
-  WORK_SCHEDULE_TYPE_LABELS,
 } from "@/config/entities/employee.config"
 import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util"
 import { useEmployeeEditModal } from "@/hooks/employees/useEmployeeEditModal"
@@ -22,7 +22,7 @@ import {
   useUpdateEmployeeRoles,
 } from "@/hooks/security/queries/use-security-query"
 import type { Role } from "@/types/security.types"
-import { startTransition, useEffect, useState } from "react"
+import { useState } from "react"
 import { RefreshCw } from "lucide-react"
 
 import { toast } from "sonner"
@@ -59,19 +59,13 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
   const updateEmployeeRoles = useUpdateEmployeeRoles()
 
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([])
+  const roleSeedKey = employeeRoles?.map((role) => role.id).join(",") ?? ""
+  const [loadedRoleSeedKey, setLoadedRoleSeedKey] = useState(roleSeedKey)
 
-  useEffect(() => {
-    if (employeeRoles) {
-      startTransition(() => {
-        setSelectedRoleIds(employeeRoles.map((role) => role.id))
-      })
-      return
-    }
-
-    startTransition(() => {
-      setSelectedRoleIds([])
-    })
-  }, [employeeRoles])
+  if (loadedRoleSeedKey !== roleSeedKey) {
+    setLoadedRoleSeedKey(roleSeedKey)
+    setSelectedRoleIds(employeeRoles?.map((role) => role.id) ?? [])
+  }
 
   const onSubmit = handleSubmit(async (data) => {
     if (!employee) return
@@ -339,7 +333,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                     >
                       {EMPLOYMENT_CATEGORY_TYPES.map((typeKey) => (
                         <option key={typeKey} value={typeKey}>
-                          {EMPLOYEE_TYPE_LABELS[typeKey]}
+                          {getEmployeeTypeLabel(typeKey)}
                         </option>
                       ))}
                     </select>
@@ -357,7 +351,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                     >
                       {WORK_SCHEDULE_TYPES.map((typeKey) => (
                         <option key={typeKey} value={typeKey}>
-                          {WORK_SCHEDULE_TYPE_LABELS[typeKey]}
+                          {getWorkScheduleTypeLabel(typeKey)}
                         </option>
                       ))}
                     </select>
