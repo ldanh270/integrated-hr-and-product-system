@@ -2,6 +2,7 @@ import {
   EMPLOYEE_ROLES,
   EMPLOYEE_STATUSES,
   EMPLOYEE_TYPES,
+  WORK_SCHEDULE_TYPES,
 } from "@/configs/entities/employee.config.ts"
 import { SORT_ORDER_VALUES } from "@/configs/system/db.config.ts"
 
@@ -57,6 +58,9 @@ export const createEmployeeSchema = z
     role: z.enum(EMPLOYEE_ROLES).optional(),
 
     employeeType: z.enum(EMPLOYEE_TYPES).optional(),
+
+    // Separate from employeeType — a contractor can still work part-time hours.
+    workScheduleType: z.enum(WORK_SCHEDULE_TYPES).optional(),
 
     phone: z.preprocess(
       emptyToNull,
@@ -161,6 +165,9 @@ export const updateEmployeeSchema = z
 
     employeeType: z.enum(EMPLOYEE_TYPES).optional(),
 
+    // Separate from employeeType — a contractor can still work part-time hours.
+    workScheduleType: z.enum(WORK_SCHEDULE_TYPES).optional(),
+
     status: z.enum(EMPLOYEE_STATUSES).optional(),
 
     dateOfBirth: z.preprocess(
@@ -247,6 +254,7 @@ export const listEmployeesQuerySchema = z.object({
   status: z.enum(EMPLOYEE_STATUSES).optional(),
   role: z.enum(EMPLOYEE_ROLES).optional(),
   type: z.enum(EMPLOYEE_TYPES).optional(),
+  workSchedule: z.enum(WORK_SCHEDULE_TYPES).optional(),
   sortBy: z
     .enum([
       "id",
@@ -258,6 +266,7 @@ export const listEmployeesQuerySchema = z.object({
       "dateOfBirth",
       "position",
       "employeeType",
+      "workScheduleType",
       "status",
       "startDate",
       "endDate",

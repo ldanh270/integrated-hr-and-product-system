@@ -1,4 +1,4 @@
-import { IEmployeeStatus, IEmployeeType, ROLE } from "@/configs/entities/employee.config.ts"
+import { IEmployeeStatus, IEmployeeType, IWorkScheduleType, ROLE } from "@/configs/entities/employee.config.ts"
 import { SORT_ORDER } from "@/configs/system/db.config.ts"
 
 /**
@@ -10,6 +10,11 @@ export type EmployeeStatus = IEmployeeStatus
  * Type representing valid Employee Type values.
  */
 export type EmployeeType = IEmployeeType
+
+/**
+ * Type representing full-time vs part-time work schedule.
+ */
+export type WorkScheduleType = IWorkScheduleType
 
 /**
  * Type representing valid Employee Role values.
@@ -34,8 +39,10 @@ export interface Employee {
   phone: string | null
   /** Job position / title (nullable) */
   position: string | null
-  /** Type of employment (e.g. full-time, part-time) */
+  /** Type of employment (e.g. official, intern, contractor) */
   employeeType: EmployeeType
+  /** Hours-based schedule — drives PT availability, Spent Time payroll, and GPS rules (not employeeType). */
+  workScheduleType: WorkScheduleType
   /** Active status of the employee */
   status: EmployeeStatus
   /** Date of birth (nullable) */
@@ -68,6 +75,7 @@ export interface CreateEmployeeDto {
   phone?: string | null
   position?: string | null
   employeeType?: EmployeeType
+  workScheduleType?: WorkScheduleType
   status?: EmployeeStatus
   dateOfBirth?: Date | string | null
   nationalId?: string | null
@@ -87,6 +95,7 @@ export interface UpdateEmployeeDto {
   phone?: string | null
   position?: string | null
   employeeType?: EmployeeType
+  workScheduleType?: WorkScheduleType
   status?: EmployeeStatus
   dateOfBirth?: Date | string | null
   nationalId?: string | null
@@ -109,8 +118,10 @@ export interface EmployeeListQuery {
   status?: EmployeeStatus
   /** Role filter */
   role?: EmployeeRole
-  /** Employee type filter */
+  /** Employee type filter (employment category) */
   type?: EmployeeType
+  /** Work schedule filter (full-time / part-time hours) */
+  workSchedule?: WorkScheduleType
   /** Column/property to sort by */
   sortBy?: string
   /** Sort order direction */

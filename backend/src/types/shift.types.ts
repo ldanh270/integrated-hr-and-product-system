@@ -82,6 +82,8 @@ export interface IOverrideEmployeeShiftDTO {
   employeeId: string
   shiftId: string
   assignedDate: string | Date
+  /** Audit who assigned — set when admin materializes PT availability into shifts. */
+  createdById?: string
 }
 
 export type ShiftGenerateItemStatus = "pending" | "existing" | "override" | "no_schedule"
@@ -153,6 +155,8 @@ export interface IShiftScheduleRepository {
 export interface IEmployeeShiftRepository {
   /** Overrides a shift for a specific date. */
   overrideShift(data: IOverrideEmployeeShiftDTO): Promise<any>
+  createOverrideShift(data: IOverrideEmployeeShiftDTO): Promise<any>
+  deleteOverridesForEmployeeDates(employeeId: string, dates: Date[]): Promise<void>
   /** Gets shift for employee on date. */
   getShiftForEmployeeDate(employeeId: string, date: string | Date): Promise<any | null>
   /** Lists shifts for multiple employees within a date range. */
