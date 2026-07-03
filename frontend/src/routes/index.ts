@@ -58,6 +58,13 @@ const privateRoutes: RouteConfig[] = [
     layout: MainLayout,
   },
   {
+    path: ROUTES.ATTENDANCE.PART_TIME_AVAILABILITY,
+    component: lazy(() => import("@/pages/attendance/PartTimeAvailability.tsx")),
+    layout: MainLayout,
+    // Shift assignment is restricted to HR/management roles.
+    roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
+  },
+  {
     path: "/attendance/real-shift",
     component: lazy(() => import("@/pages/attendance/RealShift.tsx")),
     layout: MainLayout,
@@ -189,6 +196,12 @@ const privateRoutes: RouteConfig[] = [
     path: ROUTES.PERSONAL.SCHEDULE,
     component: lazy(() => import("@/pages/attendance/MySchedule.tsx")),
     layout: MainLayout,
+  },
+  {
+    path: ROUTES.PERSONAL.AVAILABILITY,
+    component: lazy(() => import("@/pages/personal/MyPartTimeAvailability.tsx")),
+    layout: MainLayout,
+    // Page-level guard redirects full-time employees to schedule view.
   },
   {
     path: ROUTES.PERSONAL.PAYSLIPS,

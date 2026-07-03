@@ -1,5 +1,5 @@
 import { APPLICATION_TYPES } from "@/config/entities/attendance.config"
-import { ROLE } from "@/config/entities/employee.config"
+import { ROLE, WORK_SCHEDULE_TYPE, type IEmployeeType, type IWorkScheduleType } from "@/config/entities/employee.config"
 import { PERSONAL_TAB_LABELS } from "@/config/entities/personal.config"
 import { ROUTES } from "@/config/routes.config"
 
@@ -8,6 +8,7 @@ import {
   Briefcase,
   CalendarClock,
   CalendarDays,
+  CalendarRange,
   ChartNoAxesColumn,
   CircleDollarSign,
   FilePlus2,
@@ -41,6 +42,8 @@ export interface NavItem {
   path: string
   icon: LucideIcon
   roles?: string[]
+  employeeTypes?: IEmployeeType[]
+  workScheduleTypes?: IWorkScheduleType[]
   subItems?: { name: string; path: string; icon?: LucideIcon }[]
 }
 
@@ -63,6 +66,13 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     routePrefix: "/personal",
     sidebarItems: [
       { name: PERSONAL_TAB_LABELS.schedule, path: ROUTES.PERSONAL.SCHEDULE, icon: CalendarClock },
+      {
+        name: PERSONAL_TAB_LABELS.availability,
+        path: ROUTES.PERSONAL.AVAILABILITY,
+        icon: CalendarRange,
+        // Only part-time schedule employees submit weekly free-time windows.
+        workScheduleTypes: [WORK_SCHEDULE_TYPE.PART_TIME],
+      },
       {
         name: PERSONAL_TAB_LABELS.payslips,
         path: ROUTES.PERSONAL.PAYSLIPS,
@@ -126,6 +136,13 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         name: "Lịch làm việc",
         path: ROUTES.ATTENDANCE.WORK_SCHEDULES,
         icon: CalendarDays,
+        roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
+      },
+      {
+        name: "Xếp ca part-time",
+        path: ROUTES.ATTENDANCE.PART_TIME_AVAILABILITY,
+        icon: CalendarRange,
+        // Admin assigns shifts from employee-submitted availability.
         roles: [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER],
       },
       { name: "Đơn từ", path: ROUTES.ATTENDANCE.APPLICATIONS, icon: FileText },

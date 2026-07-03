@@ -16,15 +16,28 @@ export const EMPLOYEE_STATUS = {
 export const EMPLOYEE_TYPES = ["full_time", "part_time", "contractor", "intern"] as const
 export type IEmployeeType = (typeof EMPLOYEE_TYPES)[number]
 
+export const WORK_SCHEDULE_TYPES = ["full_time", "part_time"] as const
+export type IWorkScheduleType = (typeof WORK_SCHEDULE_TYPES)[number]
+
+/** Employment category options in HR forms (excludes legacy part_time). */
+export const EMPLOYMENT_CATEGORY_TYPES = ["full_time", "contractor", "intern"] as const
+export type IEmploymentCategoryType = (typeof EMPLOYMENT_CATEGORY_TYPES)[number]
+
 /**
  * Contract type keys — values must match backend/Prisma EmployeeType exactly.
- * PART_TIME: Spent Time workflow; weekly schedule UI hidden in EmployeeEditDrawer.
+ * PART_TIME (legacy): use workScheduleType for schedule-based logic.
  */
 export const EMPLOYEE_TYPE = {
   FULL_TIME: "full_time",
   PART_TIME: "part_time",
   CONTRACTOR: "contractor",
   INTERN: "intern",
+} as const
+
+export const WORK_SCHEDULE_TYPE = {
+  FULL_TIME: "full_time",
+  /** Drives PT availability nav and shift-assignment flows (not legacy employeeType). */
+  PART_TIME: "part_time",
 } as const
 
 export const EMPLOYEE_STATUSES = [
@@ -65,6 +78,14 @@ export const EMPLOYEE_TYPE_LABELS: Record<string, string> = {
   contractor: "Hợp đồng",
   intern: "Thực tập",
 } as const
+
+export const WORK_SCHEDULE_TYPE_LABELS: Record<IWorkScheduleType, string> = {
+  full_time: "Toàn thời gian",
+  part_time: "Bán thời gian",
+} as const
+
+/** Tab id for filtering employees by part-time work schedule. */
+export const EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME = "schedule_part_time" as const
 
 export const EMPLOYEE_STATUS_VARIANTS: Record<string, "success" | "danger" | "warning" | "neutral"> = {
   [EMPLOYEE_STATUS.ACTIVE]: "success",

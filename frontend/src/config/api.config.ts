@@ -53,6 +53,16 @@ export const API_ENDPOINTS = {
     BASE: "/weekly-schedule-templates",
     APPLY: (id: string) => `/weekly-schedule-templates/${id}/apply`,
   },
+  /** Part-time weekly availability — employee submit + admin assign-shifts. */
+  PART_TIME_AVAILABILITIES: {
+    BASE: "/part-time-availabilities",
+    MINE: "/part-time-availabilities/mine",
+    EMPLOYEE: (employeeId: string) => `/part-time-availabilities/employee/${employeeId}`,
+    APPROVE: (id: string) => `/part-time-availabilities/${id}/approve`,
+    REJECT: (id: string) => `/part-time-availabilities/${id}/reject`,
+    /** Admin creates EmployeeShift rows from submitted availability. */
+    ASSIGN_SHIFTS: (id: string) => `/part-time-availabilities/${id}/assign-shifts`,
+  },
   SECURITY: {
     DASHBOARD: "/security/dashboard",
     LOCKED_ACCOUNTS: "/security/locked-accounts",

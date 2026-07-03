@@ -2,10 +2,12 @@ import type {
   IEmployeeRole,
   IEmployeeStatus,
   IEmployeeType,
+  IWorkScheduleType,
 } from "@/config/entities/employee.config"
 
 export type EmployeeStatus = IEmployeeStatus
 export type EmployeeType = IEmployeeType
+export type WorkScheduleType = IWorkScheduleType // full_time | part_time — drives scheduling & payroll
 export type EmployeeRole = IEmployeeRole
 
 export interface Employee {
@@ -17,6 +19,7 @@ export interface Employee {
   phone: string | null
   position: string | null
   employeeType: EmployeeType
+  workScheduleType: WorkScheduleType // separates contract category from PT schedule model
   status: EmployeeStatus
   dateOfBirth: string | null // ISO string
   nationalId: string | null
@@ -45,6 +48,7 @@ export interface EmployeeListQuery {
   status?: EmployeeStatus
   role?: EmployeeRole
   type?: EmployeeType
+  workSchedule?: WorkScheduleType // list filter for part-time tab
   sortBy?: string
   sortOrder?: "asc" | "desc"
 }
@@ -58,6 +62,7 @@ export interface CreateEmployeeDto {
   phone?: string
   position?: string
   employeeType?: EmployeeType
+  workScheduleType?: WorkScheduleType
   status?: EmployeeStatus
   dateOfBirth?: string
   nationalId?: string
@@ -74,6 +79,7 @@ export interface UpdateEmployeeDto {
   phone?: string | null
   position?: string | null
   employeeType?: EmployeeType
+  workScheduleType?: WorkScheduleType
   status?: EmployeeStatus
   dateOfBirth?: string | null
   nationalId?: string | null
