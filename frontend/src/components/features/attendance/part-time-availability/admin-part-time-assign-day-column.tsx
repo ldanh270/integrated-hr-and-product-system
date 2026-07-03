@@ -223,8 +223,8 @@ export function AdminPartTimeAssignDayColumn({
                             disabled={disabled}
                             // First slot minus switches day to "Off" instead of removing the only row.
                             onClick={() => {
-                setScheduled(false)
-              }}
+                              setScheduled(false)
+                            }}
                             aria-label="Không làm ngày này"
                           >
                             <Minus className="h-3 w-3" />
@@ -254,9 +254,9 @@ export function AdminPartTimeAssignDayColumn({
                             value={slot.startTime ?? ""}
                             disabled={disabled}
                             className="availability-time-input flex h-8 w-full rounded-full border border-input/60 bg-background px-3 py-1 text-xs font-mono focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50 [color-scheme:light] dark:[color-scheme:dark]"
-                            onChange={(event) =>
+                            onChange={(event) => {
                               updateSlot(index, { startTime: event.target.value || null })
-                            }
+                            }}
                             onBlur={() => {
                               notifySlotValidation(slot)
                             }}
@@ -269,9 +269,9 @@ export function AdminPartTimeAssignDayColumn({
                             value={slot.endTime ?? ""}
                             disabled={disabled}
                             className="availability-time-input flex h-8 w-full rounded-full border border-input/60 bg-background px-3 py-1 text-xs font-mono focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50 [color-scheme:light] dark:[color-scheme:dark]"
-                            onChange={(event) =>
+                            onChange={(event) => {
                               updateSlot(index, { endTime: event.target.value || null })
-                            }
+                            }}
                             onBlur={() => {
                               notifySlotValidation(slot)
                             }}

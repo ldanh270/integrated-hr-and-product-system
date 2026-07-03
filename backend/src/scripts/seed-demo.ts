@@ -96,11 +96,15 @@ async function main() {
   console.log("\nDemo seed complete:", summary)
 }
 
-main()
-  .catch((error) => {
+async function runDemoSeed() {
+  try {
+    await main()
+  } catch (error) {
     console.error("Demo seed failed:", error)
     process.exit(1)
-  })
-  .finally(() => {
-    void prisma.$disconnect()
-  })
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+void runDemoSeed()

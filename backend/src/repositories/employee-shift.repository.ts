@@ -152,7 +152,7 @@ export class PrismaEmployeeShiftRepository
     date: string | Date,
     shiftId: string,
     createdById: string,
-  ): Promise<any> {
+  ): Promise<IEmployeeShiftWithShift> {
     const targetDate = new Date(date)
     targetDate.setHours(0, 0, 0, 0)
 
@@ -173,6 +173,7 @@ export class PrismaEmployeeShiftRepository
           isOverride: false,
           status: ShiftStatus.scheduled,
         },
+        include: { shift: true },
       })
     }
 
@@ -185,6 +186,7 @@ export class PrismaEmployeeShiftRepository
         status: ShiftStatus.scheduled,
         createdById,
       },
+      include: { shift: true },
     })
   }
 

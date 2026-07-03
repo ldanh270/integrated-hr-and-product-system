@@ -138,7 +138,9 @@ export function AdminPartTimeAvailabilityAssignPanel({
           type="button"
           className="rounded-full"
           disabled={!canAssign || assignMutation.isPending || hasValidationErrors}
-          onClick={() => void handleAssign()}
+          onClick={() => {
+            void handleAssign()
+          }}
         >
           {assignMutation.isPending && (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

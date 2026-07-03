@@ -61,18 +61,16 @@ export function validateAvailabilityDays(days: IUpsertPartTimeAvailabilityDTO["d
       }
     }
 
-    for (let index = 1; index < sorted.length; index++) {
-      const current = sorted.at(index)
-      const previous = sorted.at(index - 1)
-      if (!current || !previous) continue
-
-      if (current.startTime < previous.endTime) {
+    let previous: (typeof sorted)[number] | undefined
+    for (const current of sorted) {
+      if (previous && current.startTime < previous.endTime) {
         throw new AppError(
           PART_TIME_AVAILABILITY_MESSAGES.SLOT_OVERLAP,
           HttpStatusCode.BAD_REQUEST,
           PART_TIME_AVAILABILITY_LAYERS.SERVICE,
         )
       }
+      previous = current
     }
   }
 }

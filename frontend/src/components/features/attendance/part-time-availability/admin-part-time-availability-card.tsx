@@ -1,8 +1,8 @@
 import { StatusPill } from "@/components/common/status-pill"
 import { WORK_WEEK_DISPLAY_DAY_ORDER } from "@/config/entities/attendance.config"
 import {
-  PART_TIME_AVAILABILITY_STATUS_LABELS,
-  PART_TIME_AVAILABILITY_STATUS_VARIANTS,
+  getPartTimeAvailabilityStatusLabel,
+  getPartTimeAvailabilityStatusVariant,
 } from "@/config/entities/part-time-availability.config"
 import type { IPartTimeWeeklyAvailability } from "@/types/part-time-availability.types"
 import { formatAvailabilityDaySummary } from "@/utils/attendance/part-time-availability.util"
@@ -71,8 +71,8 @@ export function AdminPartTimeAvailabilityCard({
 
         <div className="flex shrink-0 flex-col items-end gap-2">
           <StatusPill
-            label={PART_TIME_AVAILABILITY_STATUS_LABELS[availability.status]}
-            variant={PART_TIME_AVAILABILITY_STATUS_VARIANTS[availability.status]}
+            label={getPartTimeAvailabilityStatusLabel(availability.status)}
+            variant={getPartTimeAvailabilityStatusVariant(availability.status)}
           />
           <button
             type="button"

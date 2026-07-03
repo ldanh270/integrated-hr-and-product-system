@@ -182,7 +182,7 @@ export interface IEmployeeShiftRepository {
     date: string | Date,
     shiftId: string,
     createdById: string,
-  ): Promise<any>
+  ): Promise<IEmployeeShiftWithShift>
 }
 
 // ─── SERVICE INTERFACES ───────────────────────────────────────

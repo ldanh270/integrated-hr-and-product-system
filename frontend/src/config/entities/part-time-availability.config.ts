@@ -39,6 +39,34 @@ export const PART_TIME_AVAILABILITY_STATUS_VARIANTS: Record<
   rejected: "danger",
 }
 
+export function getPartTimeAvailabilityStatusLabel(status: IPartTimeAvailabilityStatus): string {
+  switch (status) {
+    case PART_TIME_AVAILABILITY_STATUS.DRAFT:
+      return PART_TIME_AVAILABILITY_STATUS_LABELS.draft
+    case PART_TIME_AVAILABILITY_STATUS.SUBMITTED:
+      return PART_TIME_AVAILABILITY_STATUS_LABELS.submitted
+    case PART_TIME_AVAILABILITY_STATUS.APPROVED:
+      return PART_TIME_AVAILABILITY_STATUS_LABELS.approved
+    case PART_TIME_AVAILABILITY_STATUS.REJECTED:
+      return PART_TIME_AVAILABILITY_STATUS_LABELS.rejected
+  }
+}
+
+export function getPartTimeAvailabilityStatusVariant(
+  status: IPartTimeAvailabilityStatus,
+): "success" | "warning" | "danger" | "info" | "neutral" {
+  switch (status) {
+    case PART_TIME_AVAILABILITY_STATUS.DRAFT:
+      return PART_TIME_AVAILABILITY_STATUS_VARIANTS.draft
+    case PART_TIME_AVAILABILITY_STATUS.SUBMITTED:
+      return PART_TIME_AVAILABILITY_STATUS_VARIANTS.submitted
+    case PART_TIME_AVAILABILITY_STATUS.APPROVED:
+      return PART_TIME_AVAILABILITY_STATUS_VARIANTS.approved
+    case PART_TIME_AVAILABILITY_STATUS.REJECTED:
+      return PART_TIME_AVAILABILITY_STATUS_VARIANTS.rejected
+  }
+}
+
 export const PART_TIME_AVAILABILITY_ACTION_LABELS = {
   SUBMIT: "Gửi lịch rảnh",
   UPDATE: "Cập nhật lịch rảnh",

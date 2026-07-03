@@ -1,7 +1,6 @@
 import {
   PART_TIME_PAYROLL_VARIABLE,
   PART_TIME_PAYROLL_VARIABLE_DEFAULTS,
-  type IPartTimePayrollVariableCode,
 } from "@/configs/entities/part-time-payroll.config.ts"
 
 export interface ResolvedPartTimePayrollVariables {
@@ -10,37 +9,30 @@ export interface ResolvedPartTimePayrollVariables {
   defaultHourlyRate: number | null
 }
 
-function readNumeric(
-  context: Record<string, number>,
-  code: IPartTimePayrollVariableCode,
-  fallback: number,
-): number {
-  const contextValues = new Map<string, number>(Object.entries(context))
-  const value = contextValues.get(code)
-  return typeof value === "number" && !Number.isNaN(value) ? value : fallback
+function pickContextNumber(raw: unknown, fallback: number): number {
+  return typeof raw === "number" && !Number.isNaN(raw) ? raw : fallback
 }
 
 /** Reads PT SalaryVariable codes from payroll context; zero default rate means "must set on project". */
 export function resolvePartTimePayrollVariables(
   context: Record<string, number>,
 ): ResolvedPartTimePayrollVariables {
-  const defaultHourlyRate = readNumeric(
-    context,
-    PART_TIME_PAYROLL_VARIABLE.DEFAULT_HOURLY_RATE,
+  const overtimeMultiplier = pickContextNumber(
+    context[PART_TIME_PAYROLL_VARIABLE.OVERTIME_MULTIPLIER],
+    PART_TIME_PAYROLL_VARIABLE_DEFAULTS.OVERTIME_MULTIPLIER,
+  )
+  const workingDayMultiplier = pickContextNumber(
+    context[PART_TIME_PAYROLL_VARIABLE.WORKING_DAY_MULTIPLIER],
+    PART_TIME_PAYROLL_VARIABLE_DEFAULTS.WORKING_DAY_MULTIPLIER,
+  )
+  const defaultHourlyRate = pickContextNumber(
+    context[PART_TIME_PAYROLL_VARIABLE.DEFAULT_HOURLY_RATE],
     PART_TIME_PAYROLL_VARIABLE_DEFAULTS.DEFAULT_HOURLY_RATE,
   )
 
   return {
-    overtimeMultiplier: readNumeric(
-      context,
-      PART_TIME_PAYROLL_VARIABLE.OVERTIME_MULTIPLIER,
-      PART_TIME_PAYROLL_VARIABLE_DEFAULTS.OVERTIME_MULTIPLIER,
-    ),
-    workingDayMultiplier: readNumeric(
-      context,
-      PART_TIME_PAYROLL_VARIABLE.WORKING_DAY_MULTIPLIER,
-      PART_TIME_PAYROLL_VARIABLE_DEFAULTS.WORKING_DAY_MULTIPLIER,
-    ),
+    overtimeMultiplier,
+    workingDayMultiplier,
     // Treat 0 as unset — forces project-level hourlyRate when admin leaves default at 0.
     defaultHourlyRate: defaultHourlyRate > 0 ? defaultHourlyRate : null,
   }

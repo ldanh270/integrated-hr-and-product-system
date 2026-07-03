@@ -7,8 +7,8 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   PART_TIME_AVAILABILITY_ACTION_LABELS,
   PART_TIME_AVAILABILITY_STATUS,
-  PART_TIME_AVAILABILITY_STATUS_LABELS,
-  PART_TIME_AVAILABILITY_STATUS_VARIANTS,
+  getPartTimeAvailabilityStatusLabel,
+  getPartTimeAvailabilityStatusVariant,
 } from "@/config/entities/part-time-availability.config"
 import {
   useMyPartTimeAvailability,
@@ -107,7 +107,9 @@ export function EmployeePartTimeAvailabilityView() {
             size="lg"
             className="rounded-full px-6"
             disabled={upsertMutation.isPending}
-            onClick={() => void handleSubmit()}
+            onClick={() => {
+              void handleSubmit()
+            }}
           >
             <SubmitIcon className="mr-2 h-4 w-4" />
             {submitLabel}
@@ -186,8 +188,8 @@ export function EmployeePartTimeAvailabilityView() {
           </p>
           {availability ? (
             <StatusPill
-              label={PART_TIME_AVAILABILITY_STATUS_LABELS[availability.status]}
-              variant={PART_TIME_AVAILABILITY_STATUS_VARIANTS[availability.status]}
+              label={getPartTimeAvailabilityStatusLabel(availability.status)}
+              variant={getPartTimeAvailabilityStatusVariant(availability.status)}
             />
           ) : (
             <span className="text-xs font-medium text-muted-foreground">Chưa gửi</span>
