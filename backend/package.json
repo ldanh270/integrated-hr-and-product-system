@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "seed": "bun run src/scripts/seed-all.ts",
     "seed:admin": "bun run src/scripts/seed-admin.ts",
+    "seed:demo": "bun run src/scripts/seed-demo.ts",
     "clear": "bun run src/scripts/clear-db.ts"
   },
   "type": "module",

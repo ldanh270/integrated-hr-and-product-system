@@ -35,6 +35,7 @@ export class PrismaProfileRepository extends BaseRepository implements IProfileR
       position: employee.position,
       role: employee.role,
       employeeType: employee.employeeType,
+      workScheduleType: employee.workScheduleType, // PT vs full-time scheduling model
       status: employee.status,
       startDate: employee.startDate,
       avatarUrl: employee.avatarUrl,

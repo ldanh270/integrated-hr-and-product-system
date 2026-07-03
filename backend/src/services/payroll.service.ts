@@ -1,12 +1,12 @@
 import { ATTENDANCE_STATUS, EMPLOYEE_SHIFT_STATUS, PAID_LEAVE_TYPES } from "@/configs/entities/attendance.config.ts"
-import { EMPLOYEE_STATUS, EMPLOYEE_TYPE } from "@/configs/entities/employee.config.ts"
+import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
+import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util.ts"
 import { SPENT_TIME_WORK_TIME_TYPE } from "@/configs/entities/project.config.ts"
 import {
   PAYROLL_STATUS,
   SALARY_COMPONENT_TYPES,
   generateDefaultPayrollName,
 } from "@/configs/entities/payroll.config.ts"
-import { SPENT_TIME_OT_MULTIPLIERS } from "@/configs/rules/project.config.ts"
 import { PAYROLL_MESSAGES } from "@/configs/messages/payroll.message"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
@@ -22,6 +22,7 @@ import {
 } from "@/types/payroll.types.ts"
 import { ISpentTimeRepository } from "@/types/spent-time.types.ts"
 import { AppError } from "@/utils/error.util.ts"
+import { resolvePartTimePayrollVariables } from "@/utils/payroll/resolve-part-time-payroll-variables.util.ts"
 
 import { Application, ApplicationType, ComponentType, Payroll, PayrollStatus, Prisma, PrismaClient } from "@prisma/client"
 import * as math from "mathjs"
@@ -120,13 +121,14 @@ export class PayrollService implements IPayrollService {
       }
 
       // PT payroll branch: skip attendance workingDays — salary from approved SpentTime only.
-      if (employee.employeeType === EMPLOYEE_TYPE.PART_TIME) {
+      if (isPartTimeWorkSchedule(employee)) {
         const ptResult = await this.buildPartTimePayslip(
           payroll.id,
           employee.id,
           config.id,
           periodStart,
           periodEnd,
+          variablesContext,
         )
         if (ptResult) {
           totalAmount = totalAmount.add(ptResult.netSalary)
@@ -276,7 +278,9 @@ export class PayrollService implements IPayrollService {
     salaryConfigId: string,
     periodStart: Date,
     periodEnd: Date,
+    variablesContext: Record<string, number>,
   ): Promise<{ netSalary: Prisma.Decimal } | null> {
+    const ptVariables = resolvePartTimePayrollVariables(variablesContext)
     const rows = await this.spentTimeRepo.listApprovedForPayroll(employeeId, periodStart, periodEnd)
     if (rows.length === 0) {
       console.warn(`[PayrollService] No approved spent time for PT employee ${employeeId}`)
@@ -288,11 +292,20 @@ export class PayrollService implements IPayrollService {
     const details: { componentId: string; name: string; type: ComponentType; value: number }[] = []
 
     for (const row of rows) {
+      // Overtime vs regular Spent Time lines use different SalaryVariable multipliers.
       const multiplier =
-        SPENT_TIME_OT_MULTIPLIERS[row.workTimeType] ??
-        SPENT_TIME_OT_MULTIPLIERS[SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY]
-      // gross = hours × project member rate × OT factor (see SPENT_TIME_RULES).
-      const linePay = row.hours * row.hourlyRate * multiplier
+        row.workTimeType === SPENT_TIME_WORK_TIME_TYPE.OVERTIME
+          ? ptVariables.overtimeMultiplier
+          : ptVariables.workingDayMultiplier
+      const hourlyRate = row.hourlyRate ?? ptVariables.defaultHourlyRate
+      if (!hourlyRate || hourlyRate <= 0) {
+        console.warn(
+          `[PayrollService] Skip PT line ${row.id}: missing hourlyRate and no partTimeDefaultHourlyRate`,
+        )
+        continue
+      }
+      // gross = hours × rate (project or default variable) × multiplier from SalaryVariable
+      const linePay = row.hours * hourlyRate * multiplier
       totalHours += row.hours
       grossPay += linePay
       details.push({
@@ -301,6 +314,11 @@ export class PayrollService implements IPayrollService {
         type: SALARY_COMPONENT_TYPES[0] as ComponentType,
         value: Number(linePay.toFixed(2)),
       })
+    }
+
+    if (totalHours === 0) {
+      console.warn(`[PayrollService] No billable PT hours for employee ${employeeId}`)
+      return null
     }
 
     const netSalary = new Prisma.Decimal(Number(grossPay.toFixed(2)))

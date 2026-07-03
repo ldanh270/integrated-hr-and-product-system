@@ -36,6 +36,7 @@ function toProfileDto(emp: ProfileEmployeeDocument): ProfileDto {
     position: emp.position ?? null,
     role: emp.role,
     employeeType: emp.employeeType,
+    workScheduleType: emp.workScheduleType, // drives PT nav/features on profile
     status: emp.status,
     startDate: emp.startDate ? emp.startDate.toISOString().split("T")[0] : null,
     avatar: {

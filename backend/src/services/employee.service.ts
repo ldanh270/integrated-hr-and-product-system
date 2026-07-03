@@ -1,4 +1,10 @@
-import { EMPLOYEE_STATUS, ROLE } from "@/configs/entities/employee.config.ts"
+import {
+  EMPLOYEE_STATUS,
+  EMPLOYEE_TYPE,
+  ROLE,
+  WORK_SCHEDULE_TYPE,
+} from "@/configs/entities/employee.config.ts"
+import type { EmployeeType, WorkScheduleType } from "@/types/employee.types.ts"
 import { ACTIVITY_ACTION, ACTIVITY_CATEGORY } from "@/configs/auth/auth.config.ts"
 import { DB_ERROR_CODES } from "@/configs/system/db.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
@@ -17,6 +23,24 @@ import {
 import { IAuthRepository } from "@/types/auth.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
+
+type ScheduleFields = {
+  employeeType?: EmployeeType
+  workScheduleType?: WorkScheduleType
+}
+
+/** Legacy employeeType=part_time maps to workScheduleType; category defaults to full_time. */
+function normalizeScheduleFields<T extends ScheduleFields>(data: T): T {
+  if (data.employeeType !== EMPLOYEE_TYPE.PART_TIME) {
+    return data
+  }
+
+  return {
+    ...data,
+    employeeType: EMPLOYEE_TYPE.FULL_TIME,
+    workScheduleType: WORK_SCHEDULE_TYPE.PART_TIME,
+  }
+}
 
 /**
  * Service for managing employee-related operations.
@@ -76,8 +100,9 @@ export class EmployeeService implements IEmployeeService {
     const { password, ...repoData } = data
 
     try {
+      // Coerce legacy employeeType=part_time into workScheduleType before persisting.
       return await this.repository.createEmployee({
-        ...repoData,
+        ...normalizeScheduleFields(repoData),
         passwordHash,
       })
     } catch (error: unknown) {
@@ -118,8 +143,9 @@ export class EmployeeService implements IEmployeeService {
     // Remove password from data
     const { password, ...updateData } = data
 
+    // Same normalization on update so old API clients sending employeeType=part_time still work.
     const updated = await this.repository.updateEmployee(id, {
-      ...updateData,
+      ...normalizeScheduleFields(updateData),
       passwordHash,
     })
 

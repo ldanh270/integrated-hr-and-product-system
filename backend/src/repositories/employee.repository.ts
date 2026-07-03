@@ -44,6 +44,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       phone: employee.phone,
       position: employee.position,
       employeeType: employee.employeeType,
+      workScheduleType: employee.workScheduleType,
       status: employee.status,
       dateOfBirth: employee.dateOfBirth,
       nationalId: employee.nationalId,
@@ -73,6 +74,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       status,
       role,
       type: employeeType,
+      workSchedule,
       sortBy = "createdAt",
       sortOrder = SORT_ORDER.DESC,
     } = query
@@ -99,6 +101,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     // Apply optional field filters
     if (role) where.role = role
     if (employeeType) where.employeeType = employeeType
+    if (workSchedule) where.workScheduleType = workSchedule // part-time tab filter
 
     // Define ordering criteria dynamically
     const orderBy: Prisma.EmployeeOrderByWithRelationInput = {
@@ -157,6 +160,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
         phone: data.phone,
         position: data.position,
         employeeType: data.employeeType,
+        workScheduleType: data.workScheduleType,
         status: data.status,
         dateOfBirth:
           data.dateOfBirth !== undefined
@@ -196,6 +200,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       phone: data.phone,
       position: data.position,
       employeeType: data.employeeType,
+      workScheduleType: data.workScheduleType,
       status: data.status,
       dateOfBirth:
         data.dateOfBirth !== undefined

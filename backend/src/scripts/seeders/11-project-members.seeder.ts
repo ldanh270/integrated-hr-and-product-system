@@ -1,7 +1,7 @@
 import {
   PROJECT_MEMBER_WORK_MODE,
 } from "@/configs/entities/project.config.ts"
-import { EMPLOYEE_TYPE } from "@/configs/entities/employee.config.ts"
+import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util.ts"
 import { prisma } from "@/libs/database.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
 import { ISeeder } from "@/scripts/seeders/seeder.interface.ts"
@@ -25,9 +25,14 @@ export class ProjectMembersSeeder implements ISeeder {
 
     const employeeDetails = await prisma.employee.findMany({
       where: { id: { in: employees.map((e) => e.id) } },
-      select: { id: true, employeeType: true, username: true },
+      select: { id: true, employeeType: true, workScheduleType: true, username: true },
     })
-    const employeeTypeById = new Map(employeeDetails.map((e) => [e.id, e.employeeType]))
+    const employeeScheduleById = new Map(
+      employeeDetails.map((e) => [
+        e.id,
+        { employeeType: e.employeeType, workScheduleType: e.workScheduleType },
+      ]),
+    )
 
     const partTimeUser = employeeDetails.find((e) => e.username === "part_time")
     const membersToCreate = []
@@ -43,8 +48,9 @@ export class ProjectMembersSeeder implements ISeeder {
       }
 
       for (const emp of selectedEmployees) {
-        const employeeType = employeeTypeById.get(emp.id)
-        const isPartTime = employeeType === EMPLOYEE_TYPE.PART_TIME
+        const scheduleFields = employeeScheduleById.get(emp.id)
+        // PT members get onsite work mode; detected via workScheduleType, not employeeType.
+        const isPartTime = scheduleFields ? isPartTimeWorkSchedule(scheduleFields) : false
 
         membersToCreate.push({
           projectId,

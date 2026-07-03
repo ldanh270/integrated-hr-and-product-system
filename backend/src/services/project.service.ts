@@ -1,4 +1,4 @@
-import { EMPLOYEE_TYPE } from "@/configs/entities/employee.config.ts"
+import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { PrismaClient } from "@prisma/client"
 import {
@@ -271,10 +271,10 @@ export class ProjectService implements IProjectService {
     }
 
     if (
-      employee.employeeType === EMPLOYEE_TYPE.PART_TIME &&
+      isPartTimeWorkSchedule(employee) &&
       (options?.hourlyRate == null || options.hourlyRate <= 0)
     ) {
-      // Rate is required on ProjectMember — payroll reads it per project, not base salary alone.
+      // PT payroll reads hourlyRate per project, not base salary alone.
       throw new AppError(
         "Part-time members require an hourly rate",
         HttpStatusCode.UNPROCESSABLE_ENTITY,
@@ -367,9 +367,10 @@ export class ProjectService implements IProjectService {
       data.hourlyRate !== undefined ? data.hourlyRate : (existingMember?.hourlyRate ?? null)
 
     if (
-      employee.employeeType === EMPLOYEE_TYPE.PART_TIME &&
+      isPartTimeWorkSchedule(employee) &&
       (resolvedHourlyRate == null || resolvedHourlyRate <= 0)
     ) {
+      // PT members must keep a positive hourlyRate when updating project membership.
       throw new AppError(
         "Part-time members require an hourly rate",
         HttpStatusCode.UNPROCESSABLE_ENTITY,

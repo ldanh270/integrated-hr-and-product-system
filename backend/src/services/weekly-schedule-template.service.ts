@@ -1,4 +1,4 @@
-import { EMPLOYEE_TYPE } from "@/configs/entities/employee.config.ts"
+import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util.ts"
 import { WEEKLY_SCHEDULE_MESSAGES } from "@/configs/messages/weekly-schedule.message.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { IEmployeeShiftRepository, IShiftScheduleRepository } from "@/types/shift.types.ts"
@@ -90,7 +90,7 @@ export class WeeklyScheduleTemplateService implements IWeeklyScheduleTemplateSer
     for (const employeeId of data.employeeIds) {
       const employee = await this.employeeRepo.findById(employeeId)
       // PT uses per-project Spent Time, not company weekly shift templates.
-      if (employee?.employeeType === EMPLOYEE_TYPE.PART_TIME) {
+      if (employee && isPartTimeWorkSchedule(employee)) {
         throw new AppError(
           WEEKLY_SCHEDULE_MESSAGES.PART_TIME_NOT_APPLICABLE,
           HttpStatusCode.UNPROCESSABLE_ENTITY,

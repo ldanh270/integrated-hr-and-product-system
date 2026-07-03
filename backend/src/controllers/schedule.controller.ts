@@ -1,9 +1,7 @@
 import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
-import {
-  ATTENDANCE_ERROR_CODES,
-  ATTENDANCE_ERROR_MESSAGES,
-} from "@/constants/attendance.constants.ts"
+import { ATTENDANCE_ERROR_CODES } from "@/constants/attendance.constants.ts"
+import { ATTENDANCE_ERROR_MESSAGES } from "@/configs/messages/attendance.message.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import { assignShiftScheduleSchema, generateShiftsSchema, overrideEmployeeShiftSchema } from "@/schemas/shift.schema.ts"
 import { ApiResponse } from "@/types"
