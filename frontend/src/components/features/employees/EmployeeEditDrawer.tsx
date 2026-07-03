@@ -7,11 +7,13 @@ import {
   EMPLOYEE_ROLES,
   EMPLOYEE_STATUSES,
   EMPLOYEE_STATUS_LABELS,
-  EMPLOYEE_TYPES,
-  EMPLOYEE_TYPE,
   EMPLOYEE_TYPE_LABELS,
+  EMPLOYMENT_CATEGORY_TYPES,
   ROLE_LABELS,
+  WORK_SCHEDULE_TYPES,
+  WORK_SCHEDULE_TYPE_LABELS,
 } from "@/config/entities/employee.config"
+import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util"
 import { useEmployeeEditModal } from "@/hooks/employees/useEmployeeEditModal"
 import { useEmployeeWeeklyScheduleSection } from "@/hooks/employees/use-employee-weekly-schedule-section"
 import type { Employee } from "@/types/employee.types"
@@ -277,16 +279,34 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
 
                   <div className="space-y-1.5">
                     <Label htmlFor="employeeType" className="text-[12px] text-muted-foreground">
-                      Loại hợp đồng
+                      Loại nhân sự
                     </Label>
                     <select
                       id="employeeType"
                       {...register("employeeType")}
                       className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     >
-                      {EMPLOYEE_TYPES.map((typeKey) => (
+                      {EMPLOYMENT_CATEGORY_TYPES.map((typeKey) => (
                         <option key={typeKey} value={typeKey}>
                           {EMPLOYEE_TYPE_LABELS[typeKey]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Editable schedule type; PT employees skip weekly shift templates below. */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="workScheduleType" className="text-[12px] text-muted-foreground">
+                      Hình thức làm việc
+                    </Label>
+                    <select
+                      id="workScheduleType"
+                      {...register("workScheduleType")}
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      {WORK_SCHEDULE_TYPES.map((typeKey) => (
+                        <option key={typeKey} value={typeKey}>
+                          {WORK_SCHEDULE_TYPE_LABELS[typeKey]}
                         </option>
                       ))}
                     </select>
@@ -330,7 +350,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
             <EmployeeWeeklyScheduleSection
               section={weeklySchedule}
               // PT uses project Spent Time, not company weekly shift templates.
-              hidden={employee.employeeType === EMPLOYEE_TYPE.PART_TIME}
+              hidden={employee ? isPartTimeWorkSchedule(employee) : false}
             />
           </form>
         </div>

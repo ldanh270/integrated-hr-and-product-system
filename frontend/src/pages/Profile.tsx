@@ -9,6 +9,7 @@ import {
   EMPLOYEE_STATUS_LABELS,
   EMPLOYEE_TYPE_LABELS,
   ROLE_LABELS,
+  WORK_SCHEDULE_TYPE_LABELS,
 } from "@/config/entities/employee.config"
 import { useProfileMaster } from "@/hooks/profile/useProfileMaster"
 
@@ -405,10 +406,28 @@ export default function Profile() {
                       />
                       <div>
                         <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-                          Loại hợp đồng
+                          Loại nhân sự
                         </p>
                         <p className="text-sm font-semibold text-foreground mt-0.5">
                           {EMPLOYEE_TYPE_LABELS[profile.employeeType] || profile.employeeType}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* workScheduleType: whether employee uses shift templates or PT availability. */}
+                    <div className="flex items-center gap-3 py-1 border-b border-border/20 md:border-none">
+                      <IconBox
+                        icon={Briefcase}
+                        colorClass="bg-orange-500/10 text-orange-600 dark:text-orange-500"
+                        size="sm"
+                      />
+                      <div>
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+                          Hình thức làm việc
+                        </p>
+                        <p className="text-sm font-semibold text-foreground mt-0.5">
+                          {WORK_SCHEDULE_TYPE_LABELS[profile.workScheduleType] ||
+                            profile.workScheduleType}
                         </p>
                       </div>
                     </div>

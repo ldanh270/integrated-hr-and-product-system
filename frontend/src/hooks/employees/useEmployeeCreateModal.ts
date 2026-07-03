@@ -1,8 +1,10 @@
 import {
   EMPLOYEE_ROLES,
   EMPLOYEE_STATUSES,
-  EMPLOYEE_TYPES,
+  EMPLOYMENT_CATEGORY_TYPES,
   ROLE,
+  WORK_SCHEDULE_TYPES,
+  WORK_SCHEDULE_TYPE,
 } from "@/config/entities/employee.config"
 import type { CreateEmployeeDto } from "@/types/employee.types"
 
@@ -37,7 +39,8 @@ const createSchema = z.object({
     ),
 
   role: z.enum(EMPLOYEE_ROLES),
-  employeeType: z.enum(EMPLOYEE_TYPES),
+  employeeType: z.enum(EMPLOYMENT_CATEGORY_TYPES),
+  workScheduleType: z.enum(WORK_SCHEDULE_TYPES), // full_time | part_time schedule model
   status: z.enum(EMPLOYEE_STATUSES).optional(),
 
   phone: z
@@ -87,7 +90,8 @@ export function useEmployeeCreateModal(onClose: () => void) {
     mode: "onBlur", // Thêm mode onBlur để validate khi user rời khỏi trường nhập
     defaultValues: {
       role: ROLE.EMPLOYEE,
-      employeeType: EMPLOYEE_TYPES[0],
+      employeeType: EMPLOYMENT_CATEGORY_TYPES[0],
+      workScheduleType: WORK_SCHEDULE_TYPE.FULL_TIME, // default new hires to company shift model
       status: EMPLOYEE_STATUSES[0],
     },
   })

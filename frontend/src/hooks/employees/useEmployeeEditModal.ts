@@ -2,6 +2,9 @@ import {
   EMPLOYEE_ROLES,
   EMPLOYEE_STATUSES,
   EMPLOYEE_TYPES,
+  EMPLOYEE_TYPE,
+  WORK_SCHEDULE_TYPES,
+  WORK_SCHEDULE_TYPE,
 } from "@/config/entities/employee.config"
 import type { Employee, UpdateEmployeeDto } from "@/types/employee.types"
 
@@ -53,6 +56,7 @@ const editSchema = z.object({
   position: z.string().max(100, "Chức danh quá dài").optional(),
 
   employeeType: z.enum(EMPLOYEE_TYPES).optional(),
+  workScheduleType: z.enum(WORK_SCHEDULE_TYPES).optional(), // replaces legacy employeeType=part_time
   status: z.enum(EMPLOYEE_STATUSES).optional(),
 
   dateOfBirth: z
@@ -121,7 +125,16 @@ export function useEmployeeEditModal(
         password: "",
         phone: employee.phone || undefined,
         position: employee.position || undefined,
-        employeeType: employee.employeeType,
+        // Backfill: old records stored PT on employeeType; map to workScheduleType instead.
+        employeeType:
+          employee.employeeType === EMPLOYEE_TYPE.PART_TIME
+            ? EMPLOYEE_TYPE.FULL_TIME
+            : employee.employeeType,
+        workScheduleType:
+          employee.workScheduleType ??
+          (employee.employeeType === EMPLOYEE_TYPE.PART_TIME
+            ? WORK_SCHEDULE_TYPE.PART_TIME
+            : WORK_SCHEDULE_TYPE.FULL_TIME),
         status: employee.status,
         dateOfBirth: formatDateForInput(employee.dateOfBirth),
         nationalId: employee.nationalId || undefined,

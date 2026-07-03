@@ -6,6 +6,7 @@ import {
   EMPLOYEE_STATUS_LABELS,
   EMPLOYEE_TYPE_LABELS,
   ROLE_LABELS,
+  WORK_SCHEDULE_TYPE_LABELS,
 } from "@/config/entities/employee.config"
 import { useEmployee } from "@/hooks/employees/queries/useEmployeeQuery"
 
@@ -156,13 +157,24 @@ export function EmployeeDetailsDrawer({ employeeId, onClose }: EmployeeDetailsDr
                     {ROLE_LABELS[employee.role] || employee.role}
                   </div>
                 </div>
-                <div className="border border-border rounded-xl p-4 bg-card sm:col-span-2">
+                <div className="border border-border rounded-xl p-4 bg-card">
                   <div className="flex items-center gap-2.5 text-muted-foreground mb-1.5">
                     <Building size={14} />
-                    <span className="text-[12px] font-medium">Loại hợp đồng</span>
+                    <span className="text-[12px] font-medium">Loại nhân sự</span>
                   </div>
                   <div className="text-[14px] text-foreground font-medium pl-6">
                     {EMPLOYEE_TYPE_LABELS[employee.employeeType] || employee.employeeType}
+                  </div>
+                </div>
+                {/* workScheduleType drives PT availability/payroll; not the same as employeeType. */}
+                <div className="border border-border rounded-xl p-4 bg-card">
+                  <div className="flex items-center gap-2.5 text-muted-foreground mb-1.5">
+                    <Building size={14} />
+                    <span className="text-[12px] font-medium">Hình thức làm việc</span>
+                  </div>
+                  <div className="text-[14px] text-foreground font-medium pl-6">
+                    {WORK_SCHEDULE_TYPE_LABELS[employee.workScheduleType] ||
+                      employee.workScheduleType}
                   </div>
                 </div>
               </div>

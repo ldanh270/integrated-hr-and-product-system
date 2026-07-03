@@ -6,9 +6,11 @@ import {
   EMPLOYEE_ROLES,
   EMPLOYEE_STATUSES,
   EMPLOYEE_STATUS_LABELS,
-  EMPLOYEE_TYPES,
   EMPLOYEE_TYPE_LABELS,
+  EMPLOYMENT_CATEGORY_TYPES,
   ROLE_LABELS,
+  WORK_SCHEDULE_TYPES,
+  WORK_SCHEDULE_TYPE_LABELS,
 } from "@/config/entities/employee.config"
 import { useEmployeeCreateModal } from "@/hooks/employees/useEmployeeCreateModal"
 
@@ -285,16 +287,38 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                     htmlFor="employeeType"
                     className="text-[12px] text-muted-foreground font-medium"
                   >
-                    Loại hợp đồng
+                    Loại nhân sự
                   </Label>
                   <select
                     id="employeeType"
                     {...register("employeeType")}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
-                    {EMPLOYEE_TYPES.map((typeKey) => (
+                    {EMPLOYMENT_CATEGORY_TYPES.map((typeKey) => (
+                      // Contract category only; part-time schedule is workScheduleType below.
                       <option key={typeKey} value={typeKey}>
                         {EMPLOYEE_TYPE_LABELS[typeKey]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Part-time schedule is separate from employment category (contract type). */}
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="workScheduleType"
+                    className="text-[12px] text-muted-foreground font-medium"
+                  >
+                    Hình thức làm việc
+                  </Label>
+                  <select
+                    id="workScheduleType"
+                    {...register("workScheduleType")}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    {WORK_SCHEDULE_TYPES.map((typeKey) => (
+                      <option key={typeKey} value={typeKey}>
+                        {WORK_SCHEDULE_TYPE_LABELS[typeKey]}
                       </option>
                     ))}
                   </select>

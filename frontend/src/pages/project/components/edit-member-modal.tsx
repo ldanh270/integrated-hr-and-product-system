@@ -18,12 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { PROJECT_MESSAGES } from "@/config/messages/project.message"
 import {
   PROJECT_MEMBER_WORK_MODE,
   PROJECT_MEMBER_WORK_MODES,
   getProjectMemberWorkModeLabel,
 } from "@/config/entities/project.config"
-import { EMPLOYEE_TYPE } from "@/config/entities/employee.config"
+import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util"
 import { projectApi } from "@/lib/api/project.api"
 import { extractErrorMessage } from "@/utils/error-helper"
 import type { Employee } from "@/types/employee.types"
@@ -51,7 +52,8 @@ export function EditMemberModal({
   const [memberError, setMemberError] = useState<string | null>(null)
 
   const employee = allEmployees.find((e) => e.id === member?.employeeId)
-  const isPartTime = employee?.employeeType === EMPLOYEE_TYPE.PART_TIME
+  // PT members require hourlyRate on ProjectMember for payroll.
+  const isPartTime = employee ? isPartTimeWorkSchedule(employee) : false
 
   useEffect(() => {
     if (member && isOpen) {
@@ -66,7 +68,7 @@ export function EditMemberModal({
     mutationFn: async () => {
       if (!member) throw new Error("Không tìm thấy thành viên")
       if (isPartTime && (!hourlyRate || Number(hourlyRate) <= 0)) {
-        throw new Error("Nhân viên part-time cần mức lương theo giờ")
+        throw new Error(PROJECT_MESSAGES.PART_TIME_HOURLY_RATE_REQUIRED)
       }
 
       return projectApi.updateMember(projectId, member.employeeId, {

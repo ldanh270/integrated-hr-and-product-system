@@ -1,5 +1,10 @@
 import { useConfirm } from "@/components/common"
-import { EMPLOYEE_STATUS, ROLE } from "@/config/entities/employee.config"
+import {
+  EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME,
+  EMPLOYEE_STATUS,
+  ROLE,
+  WORK_SCHEDULE_TYPE,
+} from "@/config/entities/employee.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useAuthStore } from "@/store/auth-store"
 import type {
@@ -7,6 +12,7 @@ import type {
   EmployeeListQuery,
   EmployeeStatus,
   EmployeeType,
+  WorkScheduleType,
 } from "@/types/employee.types"
 
 import { useState } from "react"
@@ -33,7 +39,7 @@ export const useEmployeeMaster = () => {
 
   // The active filter tab (all, full-time, part-time, intern, contractor, terminated)
   const [activeTab, setActiveTab] = useState<
-    "all" | EmployeeType | typeof EMPLOYEE_STATUS.TERMINATED
+    "all" | EmployeeType | typeof EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME | typeof EMPLOYEE_STATUS.TERMINATED
   >("all")
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [editEmployee, setEditEmployee] = useState<Employee | null>(null)
@@ -64,19 +70,34 @@ export const useEmployeeMaster = () => {
    * Adjusts the query filters accordingly.
    * @param tab Selected tab identifier.
    */
-  const handleTabChange = (tab: "all" | EmployeeType | typeof EMPLOYEE_STATUS.TERMINATED) => {
+  const handleTabChange = (
+    tab: "all" | EmployeeType | typeof EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME | typeof EMPLOYEE_STATUS.TERMINATED,
+  ) => {
     setActiveTab(tab)
     if (tab === "all") {
       const newQuery = { ...query, page: 1 }
       delete newQuery.type
+      delete newQuery.workSchedule
       delete newQuery.status
       setQuery(newQuery)
     } else if (tab === EMPLOYEE_STATUS.TERMINATED) {
       const newQuery = { ...query, page: 1, status: EMPLOYEE_STATUS.TERMINATED as EmployeeStatus }
       delete newQuery.type
+      delete newQuery.workSchedule
+      setQuery(newQuery)
+    } else if (tab === EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME) {
+      // Part-time tab filters by workScheduleType, not legacy employeeType=part_time.
+      const newQuery = {
+        ...query,
+        page: 1,
+        workSchedule: WORK_SCHEDULE_TYPE.PART_TIME as WorkScheduleType,
+      }
+      delete newQuery.type
+      delete newQuery.status
       setQuery(newQuery)
     } else {
       const newQuery = { ...query, page: 1, type: tab }
+      delete newQuery.workSchedule
       delete newQuery.status
       setQuery(newQuery)
     }

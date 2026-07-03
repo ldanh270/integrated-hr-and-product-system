@@ -12,10 +12,12 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import {
+  EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME,
   EMPLOYEE_STATUS,
   EMPLOYEE_STATUS_LABELS,
   EMPLOYEE_TYPES,
   EMPLOYEE_TYPE_LABELS,
+  WORK_SCHEDULE_TYPE_LABELS,
 } from "@/config/entities/employee.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useEmployeeMaster } from "@/hooks/employees/useEmployeeMaster"
@@ -40,7 +42,11 @@ import {
 /**
  * Valid identifiers for active filter tabs on the dashboard page.
  */
-type ActiveTab = "all" | EmployeeType | typeof EMPLOYEE_STATUS.TERMINATED
+type ActiveTab =
+  | "all"
+  | EmployeeType
+  | typeof EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME
+  | typeof EMPLOYEE_STATUS.TERMINATED
 
 /**
  * Tab definition model representing dashboard filter criteria.
@@ -59,7 +65,11 @@ interface TabDefinition {
 const TAB_DEFINITIONS: TabDefinition[] = [
   { id: "all", label: "Tất cả" },
   { id: EMPLOYEE_TYPES[0], label: EMPLOYEE_TYPE_LABELS[EMPLOYEE_TYPES[0]] },
-  { id: EMPLOYEE_TYPES[1], label: EMPLOYEE_TYPE_LABELS[EMPLOYEE_TYPES[1]] },
+  // Part-time list tab uses workScheduleType filter, not employeeType.
+  {
+    id: EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME,
+    label: WORK_SCHEDULE_TYPE_LABELS.part_time,
+  },
   { id: EMPLOYEE_TYPES[3], label: EMPLOYEE_TYPE_LABELS[EMPLOYEE_TYPES[3]] },
   { id: EMPLOYEE_TYPES[2], label: EMPLOYEE_TYPE_LABELS[EMPLOYEE_TYPES[2]] },
   { id: EMPLOYEE_STATUS.TERMINATED, label: "Đã nghỉ việc", separator: true },
@@ -297,7 +307,14 @@ export default function EmployeeList() {
 
                     {/* Hợp đồng */}
                     <td className="px-5 py-3 text-[13px] text-foreground">
-                      {EMPLOYEE_TYPE_LABELS[employee.employeeType] || employee.employeeType}
+                      <div>
+                        {EMPLOYEE_TYPE_LABELS[employee.employeeType] || employee.employeeType}
+                      </div>
+                      {/* Secondary line: schedule model (full-time shift vs part-time availability). */}
+                      <div className="text-[11px] text-muted-foreground">
+                        {WORK_SCHEDULE_TYPE_LABELS[employee.workScheduleType] ||
+                          employee.workScheduleType}
+                      </div>
                     </td>
 
                     {/* Trạng thái */}

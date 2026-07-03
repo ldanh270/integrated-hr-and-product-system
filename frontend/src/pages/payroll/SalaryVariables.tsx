@@ -24,7 +24,12 @@ import { useState } from "react"
 
 import { Loader2, Pencil, Plus, Trash2 } from "lucide-react"
 
-const SYSTEM_VARIABLES = [
+type VariableRow = Omit<ISalaryVariable, "value"> & {
+  value: number | string
+  isSystem?: boolean
+}
+
+const SYSTEM_VARIABLES: VariableRow[] = [
   {
     id: "sys_baseSalary",
     code: "baseSalary",
@@ -93,10 +98,31 @@ const SYSTEM_VARIABLES = [
   },
 ]
 
-type VariableRow = Omit<ISalaryVariable, "value"> & {
-  value: number | string
-  isSystem?: boolean
-}
+// Read-only rows shown in UI; editable PT multipliers live in DB (partTime* codes).
+const PART_TIME_SYSTEM_VARIABLES: VariableRow[] = [
+  {
+    id: "sys_pt_spentTimeHours",
+    code: "spentTimeHours",
+    name: "Giờ Spent Time (PT)",
+    value: "Từ Spent Time đã duyệt",
+    description: SALARY_VARIABLE_DESCRIPTIONS.PT_SPENT_TIME_HOURS,
+    isActive: true,
+    isSystem: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "sys_pt_hourlyRate",
+    code: "hourlyRate",
+    name: "Đơn giá/giờ dự án (PT)",
+    value: "ProjectMember.hourlyRate",
+    description: SALARY_VARIABLE_DESCRIPTIONS.PT_HOURLY_RATE,
+    isActive: true,
+    isSystem: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+]
 
 export default function SalaryVariablesPage() {
   const confirm = useConfirm()
@@ -110,7 +136,11 @@ export default function SalaryVariablesPage() {
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
 
-  const combinedVariables = [...SYSTEM_VARIABLES, ...(variables || [])] as VariableRow[]
+  const combinedVariables = [
+    ...SYSTEM_VARIABLES,
+    ...PART_TIME_SYSTEM_VARIABLES,
+    ...(variables || []),
+  ] as VariableRow[]
 
   const filteredVariables = combinedVariables.filter((v) => {
     const s = searchTerm.toLowerCase()
@@ -164,7 +194,7 @@ export default function SalaryVariablesPage() {
     <div className="container px-3 sm:px-6 py-4 sm:py-6">
       <PageHeader
         title="Biến hệ thống"
-        description="Quản lý các biến số dùng chung cho công thức tính lương."
+        description="Biến dùng cho công thức full-time và biến chỉnh sửa cho lương part-time (hệ số OT, đơn giá/giờ mặc định)."
         actions={
           <Button className="gap-2 rounded-full" onClick={handleOpenCreate}>
             <Plus size={16} /> Thêm biến mới

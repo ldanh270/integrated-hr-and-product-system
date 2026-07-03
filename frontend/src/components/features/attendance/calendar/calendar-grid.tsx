@@ -124,28 +124,29 @@ export function CalendarGrid({
   const compactSegments = [weekDays.slice(0, 4), weekDays.slice(4)]
 
   return (
-    <div className="relative">
+    <div className="relative space-y-3">
       {isLoading ? (
         <div className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-background/60 backdrop-blur-xs">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : isEmpty ? (
-        <div className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-card">
-          <EmptyState
-            message={
-              activeTab === "planned"
-                ? "Bạn chưa được phân ca làm việc trong tuần này"
-                : "Chưa có dữ liệu thời gian thực trong tuần này"
-            }
-          />
-        </div>
       ) : null}
 
-      <div className="hidden xl:block">
+      {isEmpty && !isLoading ? (
+        <EmptyState
+          className="py-4"
+          message={
+            activeTab === "planned"
+              ? "Bạn chưa được phân ca làm việc trong tuần này"
+              : "Chưa có dữ liệu thời gian thực trong tuần này"
+          }
+        />
+      ) : null}
+
+      <div className={cn("hidden xl:block", isEmpty && !isLoading && "opacity-60")}>
         <CalendarGridSegment weekDays={weekDays} {...segmentProps} />
       </div>
 
-      <div className="space-y-4 xl:hidden">
+      <div className={cn("space-y-4 xl:hidden", isEmpty && !isLoading && "opacity-60")}>
         {compactSegments.map((segmentDays, index) => (
           <CalendarGridSegment
             key={index}
