@@ -2,11 +2,11 @@ import { AppDrawer, StatusPill } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
-  EMPLOYEE_STATUS,
-  EMPLOYEE_STATUS_LABELS,
+  getEmployeeStatusLabel,
+  getEmployeeStatusVariant,
   getEmployeeTypeLabel,
+  getRoleLabel,
   getWorkScheduleTypeLabel,
-  ROLE_LABELS,
 } from "@/config/entities/employee.config"
 import { useEmployee } from "@/hooks/employees/queries/useEmployeeQuery"
 
@@ -25,16 +25,6 @@ interface EmployeeDetailsDrawerProps {
   /** Optional callback to open the edit dialog/drawer for this employee */
   onEdit?: (employee: Employee) => void
 }
-
-/**
- * Variant styles mapping for StatusPill badge component.
- */
-const STATUS_VARIANT_MAP = {
-  [EMPLOYEE_STATUS.ACTIVE]: "success",
-  [EMPLOYEE_STATUS.INACTIVE]: "neutral",
-  [EMPLOYEE_STATUS.ON_LEAVE]: "warning",
-  [EMPLOYEE_STATUS.TERMINATED]: "danger",
-} as const
 
 /**
  * EmployeeDetailsDrawer Component.
@@ -123,8 +113,8 @@ export function EmployeeDetailsDrawer({ employeeId, onClose }: EmployeeDetailsDr
                 </div>
                 <div className="pt-2">
                   <StatusPill
-                    label={EMPLOYEE_STATUS_LABELS[employee.status] || employee.status}
-                    variant={STATUS_VARIANT_MAP[employee.status] ?? "neutral"}
+                    label={getEmployeeStatusLabel(employee.status)}
+                    variant={getEmployeeStatusVariant(employee.status)}
                   />
                 </div>
               </div>
@@ -154,7 +144,7 @@ export function EmployeeDetailsDrawer({ employeeId, onClose }: EmployeeDetailsDr
                     <span className="text-[12px] font-medium">Phân quyền hệ thống</span>
                   </div>
                   <div className="text-[14px] text-foreground font-medium pl-6 capitalize">
-                    {employee.role ? (ROLE_LABELS[employee.role] || employee.role) : "—"}
+                    {employee.role ? getRoleLabel(employee.role) : "—"}
                   </div>
                 </div>
                 <div className="border border-border rounded-xl p-4 bg-card">

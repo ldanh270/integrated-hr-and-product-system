@@ -5,6 +5,7 @@ import {
   IWorkScheduleType,
 } from "@/configs/entities/employee.config.ts"
 import { SORT_ORDER } from "@/configs/system/db.config.ts"
+import { Prisma } from "@prisma/client"
 import { AppRole } from "./role.types.ts"
 
 /**
@@ -177,7 +178,7 @@ export interface IEmployeeRepository {
   /** Bulk replace employee roles under optimistic concurrency control */
   updateRoles(employeeId: string, roleIds: string[], version: number, actorId?: string): Promise<void>
   /** Count active admin users in the system */
-  countActiveAdmins(tx?: any): Promise<number>
+  countActiveAdmins(tx?: Prisma.TransactionClient): Promise<number>
 }
 
 /**
@@ -224,7 +225,7 @@ export interface IAuthorizationService {
   invalidateRoleCache(roleId: string): Promise<void>
   invalidatePermissionCache(permissionId: string): Promise<void>
   incrementMetric(metric: string): void
-  getMetrics(): any
+  getMetrics(): Record<string, number>
   logDecision(employeeId: string, permission: string, allowed: boolean, source: string): void
   getGlobalVersion(): Promise<number>
 }

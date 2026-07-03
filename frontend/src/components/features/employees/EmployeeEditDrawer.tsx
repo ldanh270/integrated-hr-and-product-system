@@ -8,8 +8,8 @@ import {
   EMPLOYEE_STATUS_LABELS,
   EMPLOYMENT_CATEGORY_TYPES,
   getEmployeeTypeLabel,
+  getRoleLabel,
   getWorkScheduleTypeLabel,
-  ROLE_LABELS,
   WORK_SCHEDULE_TYPES,
 } from "@/config/entities/employee.config"
 import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util"
@@ -22,7 +22,7 @@ import {
   useUpdateEmployeeRoles,
 } from "@/hooks/security/queries/use-security-query"
 import type { Role } from "@/types/security.types"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { RefreshCw } from "lucide-react"
 
 import { toast } from "sonner"
@@ -37,6 +37,63 @@ interface Props {
   onClose: () => void
   /** The Employee object to edit, or null if none is selected */
   employee: Employee | null
+}
+
+interface EmployeeEditRoleCheckboxesProps {
+  allRoles: Role[] | undefined
+  initialRoleIds: string[]
+  isLoadingRoles: boolean
+  onSelectionChange: (roleIds: string[]) => void
+}
+
+function EmployeeEditRoleCheckboxes({
+  allRoles,
+  initialRoleIds,
+  isLoadingRoles,
+  onSelectionChange,
+}: EmployeeEditRoleCheckboxesProps) {
+  const [selectedRoleIds, setSelectedRoleIds] = useState(initialRoleIds)
+
+  useEffect(() => {
+    onSelectionChange(selectedRoleIds)
+  }, [onSelectionChange, selectedRoleIds])
+
+  if (isLoadingRoles) {
+    return (
+      <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-2">
+        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+        Đang tải vai trò...
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-2 pt-1">
+      {allRoles?.map((role) => {
+        const isChecked = selectedRoleIds.includes(role.id)
+        return (
+          <label
+            key={role.id}
+            className="flex items-center gap-2 text-xs text-foreground cursor-pointer select-none"
+          >
+            <input
+              type="checkbox"
+              checked={isChecked}
+              onChange={(event) => {
+                setSelectedRoleIds((previous) =>
+                  event.target.checked
+                    ? [...previous, role.id]
+                    : previous.filter((id) => id !== role.id),
+                )
+              }}
+              className="h-3.5 w-3.5 rounded border-border text-primary"
+            />
+            <span>{getRoleLabel(role.name)}</span>
+          </label>
+        )
+      })}
+    </div>
+  )
 }
 
 /**
@@ -58,13 +115,11 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
   const { data: employeeRoles, isLoading: isLoadingRoles } = useEmployeeRoles(employee?.id || "")
   const updateEmployeeRoles = useUpdateEmployeeRoles()
 
-  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([])
+  const selectedRoleIdsRef = useRef<string[]>([])
   const roleSeedKey = employeeRoles?.map((role) => role.id).join(",") ?? ""
-  const [loadedRoleSeedKey, setLoadedRoleSeedKey] = useState(roleSeedKey)
 
-  if (loadedRoleSeedKey !== roleSeedKey) {
-    setLoadedRoleSeedKey(roleSeedKey)
-    setSelectedRoleIds(employeeRoles?.map((role) => role.id) ?? [])
+  const handleRoleSelectionChange = (roleIds: string[]) => {
+    selectedRoleIdsRef.current = roleIds
   }
 
   const onSubmit = handleSubmit(async (data) => {
@@ -73,7 +128,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
       await onSubmitEmployee(data)
       await updateEmployeeRoles.mutateAsync({
         employeeId: employee.id,
-        roleIds: selectedRoleIds,
+        roleIds: selectedRoleIdsRef.current,
         version: employee.version || 1,
       })
       const scheduleApplied = await weeklySchedule.applyIfNeeded()
@@ -165,38 +220,13 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                     <Label className="text-[12px] text-muted-foreground">
                       Vai trò (Dynamic RBAC)
                     </Label>
-                    {isLoadingRoles ? (
-                      <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-2">
-                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                        Đang tải vai trò...
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 gap-2 pt-1">
-                        {allRoles?.data?.map((role: Role) => {
-                          const isChecked = selectedRoleIds.includes(role.id)
-                          return (
-                            <label
-                              key={role.id}
-                              className="flex items-center gap-2 text-xs text-foreground cursor-pointer select-none"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedRoleIds((prev) => [...prev, role.id])
-                                  } else {
-                                    setSelectedRoleIds((prev) => prev.filter((id) => id !== role.id))
-                                  }
-                                }}
-                                className="h-3.5 w-3.5 rounded border-border text-primary"
-                              />
-                              <span>{ROLE_LABELS[role.name] || role.name}</span>
-                            </label>
-                          )
-                        })}
-                      </div>
-                    )}
+                    <EmployeeEditRoleCheckboxes
+                      key={roleSeedKey}
+                      allRoles={allRoles?.data}
+                      initialRoleIds={employeeRoles?.map((role) => role.id) ?? []}
+                      isLoadingRoles={isLoadingRoles}
+                      onSelectionChange={handleRoleSelectionChange}
+                    />
                   </div>
                 </div>
               </div>

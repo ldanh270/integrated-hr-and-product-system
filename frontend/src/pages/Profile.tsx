@@ -505,7 +505,9 @@ export default function Profile() {
 
                 {isEditing && (
                   <button
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => {
+                      fileInputRef.current?.click()
+                    }}
                     disabled={uploadAvatar.isPending}
                     className="absolute bottom-0 right-0 p-2.5 bg-primary text-primary-foreground rounded-full shadow-md border border-background hover:bg-primary/95 transition-all cursor-pointer disabled:opacity-50"
                     aria-label="Thay đổi ảnh đại diện"

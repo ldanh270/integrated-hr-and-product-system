@@ -287,7 +287,9 @@ export default function SalaryVariablesPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 rounded-full"
-                            onClick={() => handleOpenEdit(variable as ISalaryVariable)}
+                            onClick={() => {
+                              handleOpenEdit(variable as ISalaryVariable)
+                            }}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -295,7 +297,9 @@ export default function SalaryVariablesPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 rounded-full text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => handleDelete(variable.id)}
+                            onClick={() => {
+                              void handleDelete(variable.id)
+                            }}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

@@ -138,6 +138,23 @@ export function getEmployeeStatusVariant(
   }
 }
 
+export function getRoleLabel(role: string): string {
+  switch (role) {
+    case ROLE.ADMIN:
+      return ROLE_LABELS[ROLE.ADMIN]
+    case ROLE.GENERAL_MANAGER:
+      return ROLE_LABELS[ROLE.GENERAL_MANAGER]
+    case ROLE.HR_MANAGER:
+      return ROLE_LABELS[ROLE.HR_MANAGER]
+    case ROLE.TEAM_LEADER:
+      return ROLE_LABELS[ROLE.TEAM_LEADER]
+    case ROLE.EMPLOYEE:
+      return ROLE_LABELS[ROLE.EMPLOYEE]
+    default:
+      return role
+  }
+}
+
 /** Tab id for filtering employees by part-time work schedule. */
 export const EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME = "schedule_part_time" as const
 

@@ -14,17 +14,18 @@ import { IAttendanceRepository } from "@/types/attendance.types.ts"
 import { IEmployeeRepository } from "@/types/employee.types.ts"
 import {
   IEmployeeSalaryConfigRepository,
-  IFormulaContext,
   IPayrollRepository,
   IPayrollService,
   IPayslipRepository,
+  IMyPayslipSummary,
+  PayrollWithPayslips,
   PayslipWithDetails,
 } from "@/types/payroll.types.ts"
 import { ISpentTimeRepository } from "@/types/spent-time.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { resolvePartTimePayrollVariables } from "@/utils/payroll/resolve-part-time-payroll-variables.util.ts"
 
-import { Application, ApplicationType, ComponentType, Payroll, PayrollStatus, Prisma, PrismaClient } from "@prisma/client"
+import { Application, ApplicationType, ComponentType, Payroll, PayrollStatus, Payslip, Prisma, PrismaClient } from "@prisma/client"
 import * as math from "mathjs"
 
 // Need an interface for SettingsRepository
@@ -85,10 +86,9 @@ export class PayrollService implements IPayrollService {
     const globalVariables = await this.prisma.salaryVariable.findMany({
       where: { isActive: true },
     })
-    const variablesContext: Record<string, number> = {}
-    globalVariables.forEach((variable) => {
-      variablesContext[variable.code] = Number(variable.value)
-    })
+    const variablesContext: Record<string, number> = Object.fromEntries(
+      globalVariables.map((variable) => [variable.code, Number(variable.value)]),
+    )
     let totalAmount = new Prisma.Decimal(0)
 
     // Fetch all approved applications for the period ONCE (N+1 fix)
@@ -202,9 +202,9 @@ export class PayrollService implements IPayrollService {
       attendance.earlyLeaveMinutes = Math.max(0, attendance.earlyLeaveMinutes - excusedEarlyMinutes)
 
       // Build context
-      const context: IFormulaContext | any = {
+      const context: Record<string, unknown> = {
         baseSalary: Number(config.baseSalary),
-        workingDays: 22, // Should ideally be standard working days for the month. Currently hardcoded to 22 or fetched from config
+        workingDays: 22,
         actualWorkingDays: attendance.workingDays,
         absentDays: attendance.absentDays,
         overtimeMinutes: attendance.overtimeMinutes,
@@ -370,7 +370,7 @@ export class PayrollService implements IPayrollService {
    * @returns Returns the result of type Promise<any>
    * @throws AppError if a business logic error occurs or data is not found
    */
-  async getPayrollById(id: string): Promise<any> {
+  async getPayrollById(id: string): Promise<PayrollWithPayslips> {
     const payroll = await this.payrollRepo.findById(id)
     if (!payroll)
       throw new AppError(
@@ -454,14 +454,20 @@ export class PayrollService implements IPayrollService {
    * @param employeeId - The employeeId parameter
    * @returns Returns the result of type Promise<any[]>
    */
-  async getMyPayslips(employeeId: string): Promise<any[]> {
-    const rawPayslips = await this.payslipRepo.findByEmployee(employeeId)
-    // Map included payroll info to the top level for the frontend
-    return rawPayslips.map((p: any) => ({
-      ...p,
-      periodMonth: p.payroll?.periodMonth,
-      periodYear: p.payroll?.periodYear,
-      status: p.payroll?.status,
+  async getMyPayslips(employeeId: string): Promise<IMyPayslipSummary[]> {
+    type PayslipWithPayrollRelation = Payslip & {
+      payroll?: Pick<Payroll, "periodMonth" | "periodYear" | "status"> | null
+    }
+
+    const rawPayslips = (await this.payslipRepo.findByEmployee(
+      employeeId,
+    )) as PayslipWithPayrollRelation[]
+
+    return rawPayslips.map((payslip) => ({
+      ...payslip,
+      periodMonth: payslip.payroll?.periodMonth,
+      periodYear: payslip.payroll?.periodYear,
+      status: payslip.payroll?.status,
     }))
   }
 }

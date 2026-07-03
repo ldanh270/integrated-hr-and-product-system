@@ -7,7 +7,7 @@ import {
 } from "@/config/entities/employee.config"
 import type { Employee, UpdateEmployeeDto } from "@/types/employee.types"
 
-import { useEffect } from "react"
+import { useMemo } from "react"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -52,7 +52,7 @@ const editSchema = z.object({
   position: z.string().max(100, "Chức danh quá dài").optional(),
 
   employeeType: z.enum(EMPLOYEE_TYPES).optional(),
-  workScheduleType: z.enum(WORK_SCHEDULE_TYPES).optional(), // replaces legacy employeeType=part_time
+  workScheduleType: z.enum(WORK_SCHEDULE_TYPES).optional(),
   status: z.enum(EMPLOYEE_STATUSES).optional(),
 
   dateOfBirth: z
@@ -82,62 +82,64 @@ const editSchema = z.object({
   endDate: z
     .string()
     .refine((val) => !val || val === "" || !isNaN(Date.parse(val)), {
-      message: "Ngày kết thúc không hợp lệ",
+      message: "Ngày kết thúc làm việc không hợp lệ",
     })
     .optional(),
 })
 
 type EditFormValues = z.infer<typeof editSchema>
 
+function formatDateForInput(date: string | Date | null | undefined) {
+  if (!date) return undefined
+  if (typeof date === "string") return date.split("T")[0]
+  return date.toISOString().split("T")[0]
+}
+
+function buildEditFormValues(employee: Employee): EditFormValues {
+  return {
+    fullName: employee.fullName,
+    email: employee.email,
+    username: employee.username,
+    password: "",
+    phone: employee.phone || undefined,
+    position: employee.position || undefined,
+    employeeType:
+      employee.employeeType === EMPLOYEE_TYPE.PART_TIME
+        ? EMPLOYEE_TYPE.FULL_TIME
+        : employee.employeeType,
+    workScheduleType:
+      employee.workScheduleType ??
+      (employee.employeeType === EMPLOYEE_TYPE.PART_TIME
+        ? WORK_SCHEDULE_TYPE.PART_TIME
+        : WORK_SCHEDULE_TYPE.FULL_TIME),
+    status: employee.status,
+    dateOfBirth: formatDateForInput(employee.dateOfBirth),
+    nationalId: employee.nationalId || undefined,
+    address: employee.address || undefined,
+    startDate: formatDateForInput(employee.startDate),
+    endDate: formatDateForInput(employee.endDate),
+  }
+}
+
 export function useEmployeeEditModal(
   employee: Employee | null,
   isOpen: boolean,
 ) {
   const updateMutation = useUpdateEmployee()
+  const formValues = useMemo(
+    () => (employee && isOpen ? buildEditFormValues(employee) : undefined),
+    [employee, isOpen],
+  )
+
   const {
     register,
     handleSubmit,
     formState: { errors },
-    reset,
   } = useForm<EditFormValues>({
     resolver: zodResolver(editSchema),
     mode: "onBlur",
+    values: formValues,
   })
-
-  useEffect(() => {
-    if (employee && isOpen) {
-      const formatDateForInput = (date: string | Date | null) => {
-        if (!date) return undefined
-        if (typeof date === "string") return date.split("T")[0]
-        return date.toISOString().split("T")[0]
-      }
-
-      reset({
-        fullName: employee.fullName,
-        email: employee.email,
-        username: employee.username,
-        password: "",
-        phone: employee.phone || undefined,
-        position: employee.position || undefined,
-        // Backfill: old records stored PT on employeeType; map to workScheduleType instead.
-        employeeType:
-          employee.employeeType === EMPLOYEE_TYPE.PART_TIME
-            ? EMPLOYEE_TYPE.FULL_TIME
-            : employee.employeeType,
-        workScheduleType:
-          employee.workScheduleType ??
-          (employee.employeeType === EMPLOYEE_TYPE.PART_TIME
-            ? WORK_SCHEDULE_TYPE.PART_TIME
-            : WORK_SCHEDULE_TYPE.FULL_TIME),
-        status: employee.status,
-        dateOfBirth: formatDateForInput(employee.dateOfBirth),
-        nationalId: employee.nationalId || undefined,
-        address: employee.address || undefined,
-        startDate: formatDateForInput(employee.startDate),
-        endDate: formatDateForInput(employee.endDate),
-      })
-    }
-  }, [employee, isOpen, reset])
 
   const onSubmitEmployee = async (data: EditFormValues) => {
     if (!employee) return

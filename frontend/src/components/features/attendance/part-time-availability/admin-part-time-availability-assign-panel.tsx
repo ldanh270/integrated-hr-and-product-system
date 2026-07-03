@@ -29,31 +29,23 @@ interface AdminPartTimeAvailabilityAssignPanelProps {
   onAssigned?: () => void
 }
 
-export function AdminPartTimeAvailabilityAssignPanel({
+interface AssignPanelFormProps extends AdminPartTimeAvailabilityAssignPanelProps {
+  canAssign: boolean
+  weekDates: ReturnType<typeof getWeekDates>
+  dayMap: Map<number, IPartTimeWeeklyAvailability["days"][number]>
+}
+
+function AdminPartTimeAvailabilityAssignPanelForm({
   availability,
-  weekStart,
   weekStartKey,
   onAssigned,
-}: AdminPartTimeAvailabilityAssignPanelProps) {
+  canAssign,
+  weekDates,
+  dayMap,
+}: AssignPanelFormProps) {
   const assignMutation = useAssignPartTimeShifts(weekStartKey)
-  const weekDates = getWeekDates(weekStart)
-  // Assign UI enabled when status is submitted or legacy approved — not draft/rejected.
-  const canAssign = isPartTimeAvailabilityAssignable(availability.status)
-
   const [assignments, setAssignments] = useState<IPartTimeAssignmentDayForm[]>(() =>
     buildDefaultPartTimeAssignments(availability),
-  )
-  const assignmentResetKey = availability.id
-  const [loadedAssignmentKey, setLoadedAssignmentKey] = useState(assignmentResetKey)
-
-  if (loadedAssignmentKey !== assignmentResetKey) {
-    setLoadedAssignmentKey(assignmentResetKey)
-    setAssignments(buildDefaultPartTimeAssignments(availability))
-  }
-
-  const dayMap = useMemo(
-    () => new Map(availability.days.map((day) => [day.dayOfWeek, day])),
-    [availability.days],
   )
 
   const validationIssues = useMemo(
@@ -64,7 +56,6 @@ export function AdminPartTimeAvailabilityAssignPanel({
   const hasValidationErrors = validationIssues.length > 0
 
   const handleAssign = async () => {
-    // Block save when shift times fall outside employee's declared free windows.
     if (hasValidationErrors) {
       toast.error(validationIssues[0] ?? PART_TIME_AVAILABILITY_ASSIGN_VALIDATION.CHECK_ASSIGNMENTS)
       return
@@ -83,24 +74,7 @@ export function AdminPartTimeAvailabilityAssignPanel({
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="border-b border-border/60 px-6 pb-5 pt-14 flex items-start gap-4">
-        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg uppercase shrink-0">
-          {(availability.employee?.fullName ?? availability.employeeId).substring(0, 2)}
-        </div>
-        <div className="space-y-1 flex-1">
-          <p className="text-lg font-bold text-foreground">
-            {availability.employee?.fullName ?? availability.employeeId}
-          </p>
-          <p className="text-sm text-muted-foreground">{availability.employee?.email}</p>
-          {availability.note ? (
-            <div className="mt-2.5 rounded-lg border border-warning/20 bg-warning/10 px-3 py-2 text-xs text-warning">
-              <span className="font-semibold">Ghi chú:</span> {availability.note}
-            </div>
-          ) : null}
-        </div>
-      </div>
-
+    <>
       <div className="flex-1 overflow-y-auto px-6 py-5">
         <div className="overflow-x-auto">
           <div className="min-w-[77rem] grid grid-cols-7 gap-3 pb-2">
@@ -150,6 +124,53 @@ export function AdminPartTimeAvailabilityAssignPanel({
           Xếp ca tuần này
         </Button>
       </div>
+    </>
+  )
+}
+
+export function AdminPartTimeAvailabilityAssignPanel({
+  availability,
+  weekStart,
+  weekStartKey,
+  onAssigned,
+}: AdminPartTimeAvailabilityAssignPanelProps) {
+  const weekDates = getWeekDates(weekStart)
+  const canAssign = isPartTimeAvailabilityAssignable(availability.status)
+
+  const dayMap = useMemo(
+    () => new Map(availability.days.map((day) => [day.dayOfWeek, day])),
+    [availability.days],
+  )
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="border-b border-border/60 px-6 pb-5 pt-14 flex items-start gap-4">
+        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg uppercase shrink-0">
+          {(availability.employee?.fullName ?? availability.employeeId).substring(0, 2)}
+        </div>
+        <div className="space-y-1 flex-1">
+          <p className="text-lg font-bold text-foreground">
+            {availability.employee?.fullName ?? availability.employeeId}
+          </p>
+          <p className="text-sm text-muted-foreground">{availability.employee?.email}</p>
+          {availability.note ? (
+            <div className="mt-2.5 rounded-lg border border-warning/20 bg-warning/10 px-3 py-2 text-xs text-warning">
+              <span className="font-semibold">Ghi chú:</span> {availability.note}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      <AdminPartTimeAvailabilityAssignPanelForm
+        key={availability.id}
+        availability={availability}
+        weekStart={weekStart}
+        weekStartKey={weekStartKey}
+        onAssigned={onAssigned}
+        canAssign={canAssign}
+        weekDates={weekDates}
+        dayMap={dayMap}
+      />
     </div>
   )
 }

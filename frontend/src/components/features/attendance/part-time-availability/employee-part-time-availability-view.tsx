@@ -15,9 +15,11 @@ import {
   useUpsertMyPartTimeAvailability,
 } from "@/hooks/attendance/use-part-time-availability"
 import { cn } from "@/lib/utils"
-import type { IPartTimeAvailabilityDayForm } from "@/types/part-time-availability.types"
+import type {
+  IPartTimeAvailabilityDayForm,
+  IPartTimeWeeklyAvailability,
+} from "@/types/part-time-availability.types"
 import {
-  buildEmptyAvailabilityDays,
   clampToEarliestRequestableWeek,
   getEarliestRequestableWeekStart,
   mapAvailabilityToForm,
@@ -29,48 +31,40 @@ import { AlertCircle, ChevronLeft, ChevronRight, Info, Save, Send } from "lucide
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 
-export function EmployeePartTimeAvailabilityView() {
-  // Employees declare availability from the upcoming week onward only.
-  const earliestWeekStart = useMemo(() => getEarliestRequestableWeekStart(), [])
-  const earliestWeekStartKey = formatDateParam(earliestWeekStart)
+interface EmployeePartTimeAvailabilityFormProps {
+  availability: IPartTimeWeeklyAvailability | null | undefined
+  weekStart: Date
+  weekStartKey: string
+  weekRangeLabel: string
+  earliestWeekStart: Date
+  earliestWeekStartKey: string
+  canGoToPreviousWeek: boolean
+  onWeekStartChange: (nextWeekStart: Date) => void
+  onShiftWeek: (offset: number) => void
+}
 
-  const [weekStart, setWeekStart] = useState(() => getEarliestRequestableWeekStart())
-  const weekStartKey = formatDateParam(weekStart)
-  const weekDays = useMemo(() => getWeekDates(weekStart), [weekStart])
-  const weekRangeLabel = useMemo(() => getWeekRangeLabel(weekDays), [weekDays])
-
-  const { data: availability, isLoading } = useMyPartTimeAvailability(weekStartKey)
+function EmployeePartTimeAvailabilityForm({
+  availability,
+  weekStart,
+  weekStartKey,
+  weekRangeLabel,
+  earliestWeekStart,
+  earliestWeekStartKey,
+  canGoToPreviousWeek,
+  onWeekStartChange,
+  onShiftWeek,
+}: EmployeePartTimeAvailabilityFormProps) {
   const upsertMutation = useUpsertMyPartTimeAvailability(weekStartKey)
-
-  const [days, setDays] = useState<IPartTimeAvailabilityDayForm[]>(() => buildEmptyAvailabilityDays())
-  const [note, setNote] = useState("")
-  const formResetKey = `${weekStartKey}-${availability?.id ?? "new"}`
-  const [loadedFormKey, setLoadedFormKey] = useState(formResetKey)
-
-  if (loadedFormKey !== formResetKey) {
-    setLoadedFormKey(formResetKey)
-    setDays(mapAvailabilityToForm(availability))
-    setNote(availability?.note ?? "")
-  }
+  const [days, setDays] = useState<IPartTimeAvailabilityDayForm[]>(() =>
+    mapAvailabilityToForm(availability),
+  )
+  const [note, setNote] = useState(() => availability?.note ?? "")
 
   const isUpdate = Boolean(availability)
   const submitLabel = isUpdate
     ? PART_TIME_AVAILABILITY_ACTION_LABELS.UPDATE
     : PART_TIME_AVAILABILITY_ACTION_LABELS.SUBMIT
   const SubmitIcon = isUpdate ? Save : Send
-
-  const canGoToPreviousWeek = weekStart.getTime() > earliestWeekStart.getTime()
-
-  const handleWeekStartChange = (nextWeekStart: Date) => {
-    // Prevent navigating to weeks before the earliest requestable date.
-    setWeekStart(clampToEarliestRequestableWeek(nextWeekStart))
-  }
-
-  const shiftWeek = (offset: number) => {
-    const next = new Date(weekStart)
-    next.setDate(next.getDate() + offset * 7)
-    handleWeekStartChange(next)
-  }
 
   const handleDayChange = (dayOfWeek: number, day: IPartTimeAvailabilityDayForm) => {
     setDays((current) => current.map((entry) => (entry.dayOfWeek === dayOfWeek ? day : entry)))
@@ -81,7 +75,6 @@ export function EmployeePartTimeAvailabilityView() {
       await upsertMutation.mutateAsync({
         weekStart: weekStartKey,
         note: note.trim() || null,
-        // Every save from this screen is a submission, not a silent draft.
         status: PART_TIME_AVAILABILITY_STATUS.SUBMITTED,
         days,
       })
@@ -93,10 +86,6 @@ export function EmployeePartTimeAvailabilityView() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không thể lưu lịch rảnh")
     }
-  }
-
-  if (isLoading) {
-    return <Skeleton className="h-40 w-full rounded-xl" />
   }
 
   return (
@@ -154,7 +143,7 @@ export function EmployeePartTimeAvailabilityView() {
                 className="h-8 w-8 rounded-full"
                 disabled={!canGoToPreviousWeek}
                 onClick={() => {
-                  shiftWeek(-1)
+                  onShiftWeek(-1)
                 }}
                 aria-label="Tuần trước"
               >
@@ -166,7 +155,7 @@ export function EmployeePartTimeAvailabilityView() {
                 minWeekStartIso={earliestWeekStartKey}
                 defaultWeekStart={earliestWeekStart}
                 defaultWeekLabel="Tuần kế tiếp"
-                onWeekStartChange={handleWeekStartChange}
+                onWeekStartChange={onWeekStartChange}
               />
               <Button
                 type="button"
@@ -174,7 +163,7 @@ export function EmployeePartTimeAvailabilityView() {
                 size="icon"
                 className="h-8 w-8 rounded-full"
                 onClick={() => {
-                  shiftWeek(1)
+                  onShiftWeek(1)
                 }}
                 aria-label="Tuần sau"
               >
@@ -199,15 +188,11 @@ export function EmployeePartTimeAvailabilityView() {
           )}
         </div>
 
-        {isLoading ? (
-          <Skeleton className="h-80 w-full rounded-xl" />
-        ) : (
-          <AvailabilityWeekGrid
-            weekStart={weekStart}
-            days={days}
-            onDayChange={handleDayChange}
-          />
-        )}
+        <AvailabilityWeekGrid
+          weekStart={weekStart}
+          days={days}
+          onDayChange={handleDayChange}
+        />
       </PageCard>
 
       <PageCard padding="lg" className="space-y-3">
@@ -226,5 +211,48 @@ export function EmployeePartTimeAvailabilityView() {
         />
       </PageCard>
     </div>
+  )
+}
+
+export function EmployeePartTimeAvailabilityView() {
+  const earliestWeekStart = useMemo(() => getEarliestRequestableWeekStart(), [])
+  const earliestWeekStartKey = formatDateParam(earliestWeekStart)
+
+  const [weekStart, setWeekStart] = useState(() => getEarliestRequestableWeekStart())
+  const weekStartKey = formatDateParam(weekStart)
+  const weekDays = useMemo(() => getWeekDates(weekStart), [weekStart])
+  const weekRangeLabel = useMemo(() => getWeekRangeLabel(weekDays), [weekDays])
+
+  const { data: availability, isLoading } = useMyPartTimeAvailability(weekStartKey)
+
+  const canGoToPreviousWeek = weekStart.getTime() > earliestWeekStart.getTime()
+
+  const handleWeekStartChange = (nextWeekStart: Date) => {
+    setWeekStart(clampToEarliestRequestableWeek(nextWeekStart))
+  }
+
+  const shiftWeek = (offset: number) => {
+    const next = new Date(weekStart)
+    next.setDate(next.getDate() + offset * 7)
+    handleWeekStartChange(next)
+  }
+
+  if (isLoading) {
+    return <Skeleton className="h-40 w-full rounded-xl" />
+  }
+
+  return (
+    <EmployeePartTimeAvailabilityForm
+      key={`${weekStartKey}-${availability?.id ?? "new"}`}
+      availability={availability}
+      weekStart={weekStart}
+      weekStartKey={weekStartKey}
+      weekRangeLabel={weekRangeLabel}
+      earliestWeekStart={earliestWeekStart}
+      earliestWeekStartKey={earliestWeekStartKey}
+      canGoToPreviousWeek={canGoToPreviousWeek}
+      onWeekStartChange={handleWeekStartChange}
+      onShiftWeek={shiftWeek}
+    />
   )
 }

@@ -5,11 +5,11 @@ import { Label } from "@/components/ui/label"
 import {
   EMPLOYEE_ROLES,
   EMPLOYEE_STATUSES,
-  EMPLOYEE_STATUS_LABELS,
   EMPLOYMENT_CATEGORY_TYPES,
+  getEmployeeStatusLabel,
   getEmployeeTypeLabel,
+  getRoleLabel,
   getWorkScheduleTypeLabel,
-  ROLE_LABELS,
   WORK_SCHEDULE_TYPES,
 } from "@/config/entities/employee.config"
 import { useEmployeeCreateModal } from "@/hooks/employees/useEmployeeCreateModal"
@@ -129,7 +129,7 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                   >
                     {EMPLOYEE_ROLES.map((roleKey) => (
                       <option key={roleKey} value={roleKey}>
-                        {ROLE_LABELS[roleKey]}
+                        {getRoleLabel(roleKey)}
                       </option>
                     ))}
                   </select>
@@ -276,7 +276,7 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                   >
                     {EMPLOYEE_STATUSES.map((statusKey) => (
                       <option key={statusKey} value={statusKey}>
-                        {EMPLOYEE_STATUS_LABELS[statusKey]}
+                        {getEmployeeStatusLabel(statusKey)}
                       </option>
                     ))}
                   </select>
