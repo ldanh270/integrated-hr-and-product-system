@@ -1,14 +1,14 @@
-import { HttpStatusCode } from "@/configs/system/http.config.ts"
-import { ROLE } from "@/configs/entities/employee.config.ts"
 import { DEFAULT_PROJECT_TASK_STATUSES } from "@/configs/entities/project.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
 import {
-  ProjectTaskStatus,
   CreateProjectTaskStatusDto,
-  UpdateProjectTaskStatusDto,
-  IProjectTaskStatusRepository,
   IProjectRepository,
-  ITaskRepository,
+  IProjectTaskStatusRepository,
   IProjectTaskStatusService,
+  ITaskRepository,
+  ProjectTaskStatus,
+  UpdateProjectTaskStatusDto,
 } from "@/types"
 import { AppError } from "@/utils/error.util.ts"
 import { mapStatusNameToEnum } from "@/utils/status-mapping.util.ts"
@@ -16,29 +16,34 @@ import { mapStatusNameToEnum } from "@/utils/status-mapping.util.ts"
 const LAYER_NAME = "ProjectTaskStatusService"
 
 /**
- * Service layer implementing business logic for managing project task custom statuses.
- * Handles access control checks, validations, and legacy enum synchronization.
+ * Manages project-specific task status columns and keeps legacy task status values in sync.
+ * Read access is granted to project members, while write access is limited to TL/Admin/GM.
  */
 export class ProjectTaskStatusService implements IProjectTaskStatusService {
   constructor(
     private repository: IProjectTaskStatusRepository,
     private projectRepository: IProjectRepository,
-    private taskRepository: ITaskRepository
+    private taskRepository: ITaskRepository,
   ) {}
 
   /**
-   * Helper checking if the user role corresponds to an Admin or General Manager.
+   * Resolves whether the given user should bypass project-level restrictions.
    */
-  private isAuthorizedAdminOrGM(userRole: string): boolean {
-    return userRole === ROLE.ADMIN || userRole === ROLE.GENERAL_MANAGER
+  private async isAuthorizedAdminOrGM(userId: string): Promise<boolean> {
+    const authContext = await authorizationService.getAuthorizationContext(userId)
+    return authContext.isDynamicAdmin || authContext.roles.has("admin") || authContext.roles.has("general_manager")
   }
 
   /**
-   * Validates if a user has access to view or modify project status columns.
-   * Admins/GMs bypass all checks. Team leaders can write/modify. Members can only read.
+   * Validates read/write access for project task-status operations.
+   * Write operations require team-leader or manager privileges.
    */
-  private async checkProjectAccess(projectId: string, userId: string, userRole: string, writeAccess = false): Promise<void> {
-    if (this.isAuthorizedAdminOrGM(userRole)) {
+  private async checkProjectAccess(
+    projectId: string,
+    userId: string,
+    writeAccess = false,
+  ): Promise<void> {
+    if (await this.isAuthorizedAdminOrGM(userId)) {
       return
     }
 
@@ -50,42 +55,46 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
     const isTL = project.teamLeaderId === userId
     if (writeAccess) {
       if (!isTL) {
-        throw new AppError("Access denied. Only Team Leaders or Managers can modify project statuses.", HttpStatusCode.FORBIDDEN, LAYER_NAME)
+        throw new AppError(
+          "Access denied. Only Team Leaders or Managers can modify project statuses.",
+          HttpStatusCode.FORBIDDEN,
+          LAYER_NAME,
+        )
       }
-    } else {
-      const isMember = await this.projectRepository.isMember(projectId, userId)
-      if (!isTL && !isMember) {
-        throw new AppError("Access denied to this project's statuses.", HttpStatusCode.FORBIDDEN, LAYER_NAME)
-      }
+      return
+    }
+
+    const isMember = await this.projectRepository.isMember(projectId, userId)
+    if (!isTL && !isMember) {
+      throw new AppError("Access denied to this project's statuses.", HttpStatusCode.FORBIDDEN, LAYER_NAME)
     }
   }
 
   /**
-   * Retrieves detail of a single custom status by ID after verifying user access.
+   * Returns one custom status after confirming the caller can access the project.
    */
-  async getStatus(id: string, userId: string, userRole: string): Promise<ProjectTaskStatus | null> {
+  async getStatus(id: string, userId: string): Promise<ProjectTaskStatus | null> {
     const status = await this.repository.findById(id)
     if (!status) {
       throw new AppError("Status not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
-    await this.checkProjectAccess(status.projectId, userId, userRole)
+    await this.checkProjectAccess(status.projectId, userId)
     return status
   }
 
   /**
-   * Lists all custom statuses for a project after verifying user membership/access.
+   * Lists all custom statuses configured for a project.
    */
-  async listStatuses(projectId: string, userId: string, userRole: string): Promise<ProjectTaskStatus[]> {
-    await this.checkProjectAccess(projectId, userId, userRole)
+  async listStatuses(projectId: string, userId: string): Promise<ProjectTaskStatus[]> {
+    await this.checkProjectAccess(projectId, userId)
     return this.repository.listByProjectId(projectId)
   }
 
   /**
-   * Creates a new custom status column in a project.
-   * Prevents duplicate status names, assigns incremental ordering, and updates default columns.
+   * Creates a new status column and ensures default/order rules remain valid.
    */
-  async createStatus(data: CreateProjectTaskStatusDto, userId: string, userRole: string): Promise<ProjectTaskStatus> {
-    await this.checkProjectAccess(data.projectId, userId, userRole, true)
+  async createStatus(data: CreateProjectTaskStatusDto, userId: string): Promise<ProjectTaskStatus> {
+    await this.checkProjectAccess(data.projectId, userId, true)
 
     const existing = await this.repository.findByProjectAndName(data.projectId, data.name)
     if (existing) {
@@ -110,16 +119,18 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
   }
 
   /**
-   * Updates property attributes of a custom status.
-   * Automatically clears default status of other columns if current status becomes default.
-   * Re-syncs the legacy status enum of associated tasks if the status name or isCompleted flag changes.
+   * Updates one custom status and propagates status-name/completion changes to legacy task fields.
    */
-  async updateStatus(id: string, data: UpdateProjectTaskStatusDto, userId: string, userRole: string): Promise<ProjectTaskStatus | null> {
+  async updateStatus(
+    id: string,
+    data: UpdateProjectTaskStatusDto,
+    userId: string,
+  ): Promise<ProjectTaskStatus | null> {
     const status = await this.repository.findById(id)
     if (!status) {
       throw new AppError("Status not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
-    await this.checkProjectAccess(status.projectId, userId, userRole, true)
+    await this.checkProjectAccess(status.projectId, userId, true)
 
     if (data.name && data.name !== status.name) {
       const existing = await this.repository.findByProjectAndName(status.projectId, data.name)
@@ -131,7 +142,11 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
     if (data.isDefault) {
       await this.repository.clearDefaultStatus(status.projectId)
     } else if (data.isDefault === false && status.isDefault) {
-      throw new AppError("Cannot unset default status. Please set another status as default instead.", HttpStatusCode.BAD_REQUEST, LAYER_NAME)
+      throw new AppError(
+        "Cannot unset default status. Please set another status as default instead.",
+        HttpStatusCode.BAD_REQUEST,
+        LAYER_NAME,
+      )
     }
 
     const updated = await this.repository.update(id, data)
@@ -145,19 +160,22 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
   }
 
   /**
-   * Deletes a custom status column from a project.
-   * Safeguards default status column, and prevents deleting the last remaining status.
-   * Reassigns all tasks under this status to a fallback status column (or null if none specified).
+   * Deletes a status column after moving attached tasks to a fallback column when provided.
+   * The default status and the last remaining status cannot be removed.
    */
-  async deleteStatus(id: string, fallbackStatusId: string | undefined, userId: string, userRole: string): Promise<boolean> {
+  async deleteStatus(id: string, fallbackStatusId: string | undefined, userId: string): Promise<boolean> {
     const status = await this.repository.findById(id)
     if (!status) {
       throw new AppError("Status not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
-    await this.checkProjectAccess(status.projectId, userId, userRole, true)
+    await this.checkProjectAccess(status.projectId, userId, true)
 
     if (status.isDefault) {
-      throw new AppError("Cannot delete the default status. Please set another status as default first.", HttpStatusCode.BAD_REQUEST, LAYER_NAME)
+      throw new AppError(
+        "Cannot delete the default status. Please set another status as default first.",
+        HttpStatusCode.BAD_REQUEST,
+        LAYER_NAME,
+      )
     }
 
     const list = await this.repository.listByProjectId(status.projectId)
@@ -167,11 +185,19 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
 
     if (fallbackStatusId) {
       if (fallbackStatusId === id) {
-        throw new AppError("Fallback status cannot be the same as the status being deleted.", HttpStatusCode.BAD_REQUEST, LAYER_NAME)
+        throw new AppError(
+          "Fallback status cannot be the same as the status being deleted.",
+          HttpStatusCode.BAD_REQUEST,
+          LAYER_NAME,
+        )
       }
       const fallback = await this.repository.findById(fallbackStatusId)
       if (!fallback || fallback.projectId !== status.projectId) {
-        throw new AppError("Fallback status not found or belongs to another project.", HttpStatusCode.BAD_REQUEST, LAYER_NAME)
+        throw new AppError(
+          "Fallback status not found or belongs to another project.",
+          HttpStatusCode.BAD_REQUEST,
+          LAYER_NAME,
+        )
       }
       await this.taskRepository.updateTasksStatusId(status.projectId, id, fallbackStatusId)
       const legacyEnum = mapStatusNameToEnum(fallback.name, fallback.isCompleted)
@@ -184,7 +210,7 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
   }
 
   /**
-   * Utility to auto-generate default status columns (To Do, In Progress, etc.) when a new project is created.
+   * Seeds the standard default status columns for a newly created project.
    */
   async createDefaultStatuses(projectId: string): Promise<ProjectTaskStatus[]> {
     const created: ProjectTaskStatus[] = []

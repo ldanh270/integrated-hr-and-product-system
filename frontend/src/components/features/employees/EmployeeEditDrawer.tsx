@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  EMPLOYEE_ROLES,
   EMPLOYEE_STATUSES,
   EMPLOYEE_STATUS_LABELS,
   EMPLOYEE_TYPE_LABELS,
@@ -17,6 +16,14 @@ import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-sched
 import { useEmployeeEditModal } from "@/hooks/employees/useEmployeeEditModal"
 import { useEmployeeWeeklyScheduleSection } from "@/hooks/employees/use-employee-weekly-schedule-section"
 import type { Employee } from "@/types/employee.types"
+import {
+  useRoles,
+  useEmployeeRoles,
+  useUpdateEmployeeRoles,
+} from "@/hooks/security/queries/use-security-query"
+import type { Role } from "@/types/security.types"
+import { startTransition, useEffect, useState } from "react"
+import { RefreshCw } from "lucide-react"
 
 import { toast } from "sonner"
 
@@ -44,19 +51,42 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
     onSubmitEmployee,
     errors,
     isPending: isEmployeePending,
-  } = useEmployeeEditModal(employee, isOpen, onClose)
+  } = useEmployeeEditModal(employee, isOpen)
 
   const weeklySchedule = useEmployeeWeeklyScheduleSection(employee?.id, isOpen)
+  const { data: allRoles } = useRoles()
+  const { data: employeeRoles, isLoading: isLoadingRoles } = useEmployeeRoles(employee?.id || "")
+  const updateEmployeeRoles = useUpdateEmployeeRoles()
+
+  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([])
+
+  useEffect(() => {
+    if (employeeRoles) {
+      startTransition(() => {
+        setSelectedRoleIds(employeeRoles.map((role) => role.id))
+      })
+      return
+    }
+
+    startTransition(() => {
+      setSelectedRoleIds([])
+    })
+  }, [employeeRoles])
 
   const onSubmit = handleSubmit(async (data) => {
     if (!employee) return
     try {
       await onSubmitEmployee(data)
+      await updateEmployeeRoles.mutateAsync({
+        employeeId: employee.id,
+        roleIds: selectedRoleIds,
+        version: employee.version || 1,
+      })
       const scheduleApplied = await weeklySchedule.applyIfNeeded()
       toast.success(
         scheduleApplied
-          ? "Đã cập nhật thông tin nhân sự và lịch tuần"
-          : "Đã cập nhật thông tin nhân sự",
+          ? "Đã cập nhật thông tin nhân sự, vai trò và lịch tuần"
+          : "Đã cập nhật thông tin nhân sự và vai trò",
       )
       onClose()
     } catch (error) {
@@ -64,7 +94,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
     }
   })
 
-  const isPending = isEmployeePending || weeklySchedule.isPending
+  const isPending = isEmployeePending || weeklySchedule.isPending || updateEmployeeRoles.isPending
 
   // Avoid rendering if no employee is selected for editing
   if (!employee) return null
@@ -138,20 +168,41 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="role" className="text-[12px] text-muted-foreground">
-                      Phân quyền
+                    <Label className="text-[12px] text-muted-foreground">
+                      Vai trò (Dynamic RBAC)
                     </Label>
-                    <select
-                      id="role"
-                      {...register("role")}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    >
-                      {EMPLOYEE_ROLES.map((roleKey) => (
-                        <option key={roleKey} value={roleKey}>
-                          {ROLE_LABELS[roleKey]}
-                        </option>
-                      ))}
-                    </select>
+                    {isLoadingRoles ? (
+                      <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-2">
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                        Đang tải vai trò...
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-2 pt-1">
+                        {allRoles?.data?.map((role: Role) => {
+                          const isChecked = selectedRoleIds.includes(role.id)
+                          return (
+                            <label
+                              key={role.id}
+                              className="flex items-center gap-2 text-xs text-foreground cursor-pointer select-none"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedRoleIds((prev) => [...prev, role.id])
+                                  } else {
+                                    setSelectedRoleIds((prev) => prev.filter((id) => id !== role.id))
+                                  }
+                                }}
+                                className="h-3.5 w-3.5 rounded border-border text-primary"
+                              />
+                              <span>{ROLE_LABELS[role.name] || role.name}</span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

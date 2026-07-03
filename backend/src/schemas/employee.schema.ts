@@ -1,6 +1,6 @@
 import {
-  EMPLOYEE_ROLES,
   EMPLOYEE_STATUSES,
+  SYSTEM_ROLE_NAMES,
   EMPLOYEE_TYPES,
   WORK_SCHEDULE_TYPES,
 } from "@/configs/entities/employee.config.ts"
@@ -55,7 +55,8 @@ export const createEmployeeSchema = z
         "Password must contain at least one uppercase, one lowercase, one number and one special character",
       ),
 
-    role: z.enum(EMPLOYEE_ROLES).optional(),
+
+    role: z.enum(SYSTEM_ROLE_NAMES).optional(),
 
     employeeType: z.enum(EMPLOYEE_TYPES).optional(),
 
@@ -150,7 +151,6 @@ export const updateEmployeeSchema = z
       )
       .optional(),
 
-    role: z.enum(EMPLOYEE_ROLES).optional(),
 
     phone: z
       .string()
@@ -252,15 +252,14 @@ export const listEmployeesQuerySchema = z.object({
     .optional(),
   search: z.string().optional(),
   status: z.enum(EMPLOYEE_STATUSES).optional(),
-  role: z.enum(EMPLOYEE_ROLES).optional(),
   type: z.enum(EMPLOYEE_TYPES).optional(),
   workSchedule: z.enum(WORK_SCHEDULE_TYPES).optional(),
+  roleId: z.string().optional(),
   sortBy: z
     .enum([
       "id",
       "fullName",
       "username",
-      "role",
       "email",
       "phone",
       "dateOfBirth",

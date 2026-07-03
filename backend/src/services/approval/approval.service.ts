@@ -1,50 +1,54 @@
 import { APPLICATION_STATUS } from "@/configs/entities/attendance.config.ts"
-import { ROLE } from "@/configs/entities/employee.config.ts"
+import { PASSWORD_RESET_STATUS } from "@/configs/auth/auth.config.ts"
+import { SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
+import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
+import { APPROVAL_CATEGORY } from "@/configs/rules/approval.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { PrismaApplicationRepository } from "@/repositories/application.repository.ts"
 import { ApprovalStrategyFactory } from "@/services/approval/approval.strategy.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
 import { IApprovalItem, IApprovalService, IProcessApprovalDTO } from "@/types/approval.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
-
-import {
-  ApplicationStatus,
-  ApplicationType,
-  PasswordResetStatus,
-  ProjectStatus,
-} from "@prisma/client"
 
 /**
  * Service for managing approval workflows across different categories (applications, password resets, etc.).
  */
 export class ApprovalService implements IApprovalService {
   constructor(private appRepo: PrismaApplicationRepository) {}
+
   /**
    * Fetches all pending requests of all types that the current processor is authorized to approve.
    *
    * @param processorId - The ID of the employee processing the approvals.
-   * @param role - The role of the processor.
    * @returns A sorted list of pending approval items.
    */
-  async getPendingApprovals(processorId: string, role: string): Promise<IApprovalItem[]> {
+  async getPendingApprovals(processorId: string): Promise<IApprovalItem[]> {
     const list: IApprovalItem[] = []
-    const strategy = ApprovalStrategyFactory.getStrategy(role)
+    const strategy = await ApprovalStrategyFactory.getStrategyForEmployee(processorId)
+    const authContext = await authorizationService.getAuthorizationContext(processorId)
+
+    const roles = authContext.roles
+    const isGlobalApprover =
+      authContext.isDynamicAdmin ||
+      roles.has(SYSTEM_ROLE.ADMIN) ||
+      roles.has(SYSTEM_ROLE.GENERAL_MANAGER) ||
+      roles.has(SYSTEM_ROLE.HR_MANAGER)
+    const isTeamLeader = roles.has(SYSTEM_ROLE.TEAM_LEADER)
+    const canHandleApplications = isGlobalApprover || isTeamLeader
+    const canHandlePasswordReset =
+      authContext.isDynamicAdmin || roles.has(SYSTEM_ROLE.ADMIN) || roles.has(SYSTEM_ROLE.GENERAL_MANAGER)
 
     // Fetch Applications (Leaves, OT, etc.)
-    if (
-      role === ROLE.ADMIN ||
-      role === ROLE.GENERAL_MANAGER ||
-      role === ROLE.HR_MANAGER ||
-      role === ROLE.TEAM_LEADER
-    ) {
+    if (canHandleApplications) {
       let employeeIdFilter: string[] | undefined = undefined
 
-      if (role === ROLE.TEAM_LEADER) {
+      if (isTeamLeader && !isGlobalApprover) {
         // Find members of active projects led by this TL
         const ledProjects = await prisma.project.findMany({
-          where: { teamLeaderId: processorId, status: ProjectStatus.active },
+          where: { teamLeaderId: processorId, status: PROJECT_STATUS.ACTIVE },
           include: { members: { where: { removedAt: null } } },
         })
         employeeIdFilter = ledProjects.flatMap((p) => p.members.map((m) => m.employeeId))
@@ -52,10 +56,9 @@ export class ApprovalService implements IApprovalService {
 
       const apps = await prisma.application.findMany({
         where: {
-          status: ApplicationStatus.pending,
+          status: APPLICATION_STATUS.PENDING,
           ...(employeeIdFilter ? { employeeId: { in: employeeIdFilter } } : {}),
-          // If not admin/GM/HR, only show apps assigned to this processor or unassigned apps
-          ...(role === ROLE.TEAM_LEADER
+          ...(isTeamLeader && !isGlobalApprover
             ? {
                 OR: [{ assignedToId: processorId }, { assignedToId: null }],
               }
@@ -83,17 +86,19 @@ export class ApprovalService implements IApprovalService {
       })
 
       for (const app of apps) {
-        // If application has a specific assignedTo, only that person or global admins/GM/HR can approve
+        // If application has a specific assignedTo, only that person or global approvers can approve
         const isAssignedToSelf = app.assignedToId === processorId || app.assignedToId === null
-        const isGlobalApprover =
-          role === ROLE.ADMIN || role === ROLE.GENERAL_MANAGER || role === ROLE.HR_MANAGER
         if (!isGlobalApprover && !isAssignedToSelf) continue
 
-        const canApprove = await strategy.canApprove("application", app.employeeId, processorId)
+        const canApprove = await strategy.canApprove(
+          APPROVAL_CATEGORY.APPLICATION,
+          app.employeeId,
+          processorId,
+        )
         if (canApprove) {
           list.push({
             id: app.id,
-            category: "application",
+            category: APPROVAL_CATEGORY.APPLICATION,
             employeeId: app.employeeId,
             employeeName: app.employee?.fullName || "N/A",
             createdAt: app.createdAt,
@@ -120,19 +125,23 @@ export class ApprovalService implements IApprovalService {
     }
 
     // Fetch Password Reset Requests (admin and general_manager only)
-    if (role === ROLE.ADMIN || role === ROLE.GENERAL_MANAGER) {
+    if (canHandlePasswordReset) {
       const resetRequests = await prisma.passwordResetRequest.findMany({
-        where: { status: PasswordResetStatus.pending },
+        where: { status: PASSWORD_RESET_STATUS.PENDING },
         include: { employee: { select: { fullName: true } } },
         orderBy: { createdAt: "desc" },
       })
 
       for (const req of resetRequests) {
-        const canApprove = await strategy.canApprove("password_reset", req.employeeId, processorId)
+        const canApprove = await strategy.canApprove(
+          APPROVAL_CATEGORY.PASSWORD_RESET,
+          req.employeeId,
+          processorId,
+        )
         if (canApprove) {
           list.push({
             id: req.id,
-            category: "password_reset",
+            category: APPROVAL_CATEGORY.PASSWORD_RESET,
             employeeId: req.employeeId,
             employeeName: req.employee?.fullName || "N/A",
             createdAt: req.createdAt,
@@ -157,11 +166,11 @@ export class ApprovalService implements IApprovalService {
    * @throws {AppError} If the request or processor is not found, or if the processor is not authorized.
    */
   async processApproval(dto: IProcessApprovalDTO): Promise<any> {
-    const processorEmployee = await prisma.employee.findUnique({
+    const processorExists = await prisma.employee.findUnique({
       where: { id: dto.processorId },
-      select: { role: true },
+      select: { id: true },
     })
-    if (!processorEmployee) {
+    if (!processorExists) {
       throw new AppError(
         "Processor employee not found",
         HttpStatusCode.NOT_FOUND,
@@ -169,16 +178,16 @@ export class ApprovalService implements IApprovalService {
       )
     }
 
-    const strategy = ApprovalStrategyFactory.getStrategy(processorEmployee.role)
+    const strategy = await ApprovalStrategyFactory.getStrategyForEmployee(dto.processorId)
     let applicantId = ""
 
-    if (dto.category === "application") {
+    if (dto.category === APPROVAL_CATEGORY.APPLICATION) {
       const app = await prisma.application.findUnique({ where: { id: dto.id } })
       if (!app)
         throw new AppError("Application not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
       applicantId = app.employeeId
 
-      if (app.status !== ApplicationStatus.pending) {
+      if (app.status !== APPLICATION_STATUS.PENDING) {
         throw new AppError(
           "Request has already been processed",
           HttpStatusCode.BAD_REQUEST,
@@ -201,21 +210,21 @@ export class ApprovalService implements IApprovalService {
           throw new AppError(
             "Failed to approve application",
             HttpStatusCode.INTERNAL_SERVER_ERROR,
-            "Service",
+            ErrorLayer.SERVICE,
           )
         return result
       } else {
         return prisma.application.update({
           where: { id: dto.id },
           data: {
-            status: ApplicationStatus.rejected,
+            status: APPLICATION_STATUS.REJECTED,
             approvedById: dto.processorId,
             approvedAt: new Date(),
             rejectReason: dto.rejectReason,
           },
         })
       }
-    } else if (dto.category === "password_reset") {
+    } else if (dto.category === APPROVAL_CATEGORY.PASSWORD_RESET) {
       const req = await prisma.passwordResetRequest.findUnique({ where: { id: dto.id } })
       if (!req)
         throw new AppError(
@@ -225,7 +234,7 @@ export class ApprovalService implements IApprovalService {
         )
       applicantId = req.employeeId
 
-      if (req.status !== PasswordResetStatus.pending) {
+      if (req.status !== PASSWORD_RESET_STATUS.PENDING) {
         throw new AppError(
           "Request has already been processed",
           HttpStatusCode.BAD_REQUEST,
@@ -248,7 +257,7 @@ export class ApprovalService implements IApprovalService {
       const updatedReq = await prisma.passwordResetRequest.update({
         where: { id: dto.id },
         data: {
-          status: isApproved ? PasswordResetStatus.approved : PasswordResetStatus.rejected,
+          status: isApproved ? PASSWORD_RESET_STATUS.APPROVED : PASSWORD_RESET_STATUS.REJECTED,
           approvedById: dto.processorId,
           ...(dto.rejectReason && !isApproved ? { note: dto.rejectReason } : {}),
         },

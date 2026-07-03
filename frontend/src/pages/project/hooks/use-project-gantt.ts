@@ -165,7 +165,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
       } else {
         toast.error("Dữ liệu truy vấn không hợp lệ")
       }
-    } catch (e) {
+    } catch {
       toast.error("Không thể đọc dữ liệu truy vấn đã lưu")
     }
   }
@@ -175,7 +175,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     saveQueryMutation.mutate(data)
   }
 
-  const tasks = ganttData?.tasks || []
+  const tasks = useMemo(() => ganttData?.tasks || [], [ganttData?.tasks])
 
   // Find all unique assignees (team leader + project members)
   const assignees = useMemo(() => {

@@ -31,7 +31,7 @@ export class ProjectTaskStatusController {
       }
 
       const { projectId } = req.params as { projectId: string }
-      const result = await this.service.listStatuses(projectId, req.user.empId, req.user.role)
+      const result = await this.service.listStatuses(projectId, req.user.empId)
       res.status(HttpStatusCode.OK).json({ data: result, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -62,7 +62,7 @@ export class ProjectTaskStatusController {
       }
 
       const { id } = req.params as { id: string }
-      const result = await this.service.getStatus(id, req.user.empId, req.user.role)
+      const result = await this.service.getStatus(id, req.user.empId)
       if (!result) {
         return res.status(HttpStatusCode.NOT_FOUND).json({
           data: null,
@@ -94,7 +94,7 @@ export class ProjectTaskStatusController {
         projectId,
       })
 
-      const result = await this.service.createStatus(payload, req.user.empId, req.user.role)
+      const result = await this.service.createStatus(payload, req.user.empId)
       res.status(HttpStatusCode.CREATED).json({ data: result, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -127,7 +127,7 @@ export class ProjectTaskStatusController {
       const { id } = req.params as { id: string }
       const payload = updateProjectTaskStatusSchema.parse(req.body)
 
-      const result = await this.service.updateStatus(id, payload, req.user.empId, req.user.role)
+      const result = await this.service.updateStatus(id, payload, req.user.empId)
       res.status(HttpStatusCode.OK).json({ data: result, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -160,7 +160,7 @@ export class ProjectTaskStatusController {
       const { id } = req.params as { id: string }
       const { fallbackStatusId } = deleteProjectTaskStatusSchema.parse(req.query)
 
-      const result = await this.service.deleteStatus(id, fallbackStatusId, req.user.empId, req.user.role)
+      const result = await this.service.deleteStatus(id, fallbackStatusId, req.user.empId)
       res.status(HttpStatusCode.OK).json({ data: { success: result }, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {

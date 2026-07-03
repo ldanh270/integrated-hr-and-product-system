@@ -1,5 +1,4 @@
 import {
-  EMPLOYEE_ROLES,
   EMPLOYEE_STATUSES,
   EMPLOYEE_TYPES,
   EMPLOYEE_TYPE,
@@ -42,9 +41,6 @@ const editSchema = z.object({
     )
     .or(z.literal(""))
     .optional(),
-
-  role: z.enum(EMPLOYEE_ROLES).optional(),
-
   phone: z
     .string()
     .refine(
@@ -96,7 +92,6 @@ type EditFormValues = z.infer<typeof editSchema>
 export function useEmployeeEditModal(
   employee: Employee | null,
   isOpen: boolean,
-  _onClose: () => void,
 ) {
   const updateMutation = useUpdateEmployee()
   const {
@@ -121,7 +116,6 @@ export function useEmployeeEditModal(
         fullName: employee.fullName,
         email: employee.email,
         username: employee.username,
-        role: employee.role,
         password: "",
         phone: employee.phone || undefined,
         position: employee.position || undefined,

@@ -152,6 +152,14 @@ A task is not complete until the `QA-Review-Agent` verifies the following:
 - **Token-only rule:** Colors must come from HEX variables/design tokens mapped to semantic utilities (`bg-background`, `text-foreground`, `border-border`, `bg-primary`, etc.).
 - **The Pill Rule:** Buttons/Inputs/Badges MUST use `rounded-full`. Containers MUST use `rounded-xl`. Inner sub-containers (table wrappers, inner card sections) use `rounded-lg`.
 - **shadcn alignment:** Any new UI must consume the same token system as shadcn defined in the spec.
+- **Navigation law (ZERO EXCEPTIONS):** NEVER use `window.location.href` for in-app navigation. Always use `routerNavigate` from `@/lib/router-navigator`. Hard reload destroys the React tree → toasts, modals, and providers are unmounted before rendering.
+  ```ts
+  // ✅ DO
+  import { routerNavigate } from "@/lib/router-navigator"
+  routerNavigate(ROUTES.AUTH.LOGIN, { replace: true })
+  // ❌ NEVER
+  window.location.href = "/login"
+  ```
 
 ### Enum Naming Law (zero exceptions, no PR merges if violated)
 

@@ -110,7 +110,7 @@ export interface IProjectRepository {
   listProjects(
     query: ProjectListQuery,
     userId: string,
-    userRole: string,
+    isAdminOrGM: boolean,
   ): Promise<PaginatedProjectsDto>
   createProject(data: CreateProjectDto & { createdById: string }): Promise<Project>
   updateProject(id: string, data: UpdateProjectDto): Promise<Project | null>
@@ -163,40 +163,35 @@ export interface GanttDataDto {
  * Service interface implementing Project management business logic
  */
 export interface IProjectService {
-  getProject(id: string, userId: string, userRole: string): Promise<Project | null>
+  getProject(id: string, userId: string): Promise<Project | null>
   listProjects(
     query: ProjectListQuery,
     userId: string,
-    userRole: string,
   ): Promise<PaginatedProjectsDto>
-  createProject(data: CreateProjectDto, userId: string, userRole: string): Promise<Project>
+  createProject(data: CreateProjectDto, userId: string): Promise<Project>
   updateProject(
     id: string,
     data: UpdateProjectDto,
     userId: string,
-    userRole: string,
   ): Promise<Project | null>
-  deleteProject(id: string, userId: string, userRole: string): Promise<boolean>
+  deleteProject(id: string, userId: string): Promise<boolean>
   addMember(
     projectId: string,
     employeeId: string,
     userId: string,
-    userRole: string,
     options?: { hourlyRate?: number | null; workMode?: string },
   ): Promise<boolean>
   removeMember(
     projectId: string,
     employeeId: string,
     userId: string,
-    userRole: string,
   ): Promise<boolean>
-  getMembers(projectId: string, userId: string, userRole: string): Promise<any[]>
-  getGanttData(projectId: string, userId: string, userRole: string): Promise<GanttDataDto>
+  getMembers(projectId: string, userId: string): Promise<any[]>
+  getGanttData(projectId: string, userId: string): Promise<GanttDataDto>
   updateMember(
     projectId: string,
     employeeId: string,
     userId: string,
-    userRole: string,
     data: { hourlyRate?: number | null; workMode?: string },
   ): Promise<boolean>
 }

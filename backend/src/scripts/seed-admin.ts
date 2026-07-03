@@ -1,10 +1,9 @@
-import { EmployeeType, Role, WorkScheduleType } from "@prisma/client"
-
-import { EMPLOYEE_TYPE, ROLE, WORK_SCHEDULE_TYPE } from "../configs/entities/employee.config.ts"
+import { EMPLOYEE_TYPE, SYSTEM_ROLE, WORK_SCHEDULE_TYPE } from "../configs/entities/employee.config.ts"
 import { prisma } from "../libs/database.ts"
+import { getSeedPassword } from "./seeders/seed-password.util.ts"
 import { HashUtil } from "../utils/hash.util.ts"
 
-const PASSWORD = "Admin123@"
+const PASSWORD = getSeedPassword("SEED_CORE_ACCOUNTS_PASSWORD")
 
 async function seedAdminAccounts() {
   console.log("Seeding admin and role accounts...")
@@ -13,15 +12,15 @@ async function seedAdminAccounts() {
     const passwordHash = await HashUtil.hash(PASSWORD)
 
     const rolesToSeed = [
-      ROLE.ADMIN,
-      ROLE.HR_MANAGER,
-      ROLE.GENERAL_MANAGER,
-      ROLE.TEAM_LEADER,
-      ROLE.EMPLOYEE,
+      SYSTEM_ROLE.ADMIN,
+      SYSTEM_ROLE.HR_MANAGER,
+      SYSTEM_ROLE.GENERAL_MANAGER,
+      SYSTEM_ROLE.TEAM_LEADER,
+      SYSTEM_ROLE.EMPLOYEE,
     ]
 
     for (const role of rolesToSeed) {
-      const username = role === ROLE.ADMIN ? "admin" : role
+      const username = role === SYSTEM_ROLE.ADMIN ? SYSTEM_ROLE.ADMIN : role
       const fullName = role
         .split("_")
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -32,16 +31,15 @@ async function seedAdminAccounts() {
       })
 
       let phoneSuffix = "0"
-      if (role === ROLE.ADMIN) phoneSuffix = "1"
-      else if (role === ROLE.HR_MANAGER) phoneSuffix = "2"
-      else if (role === ROLE.GENERAL_MANAGER) phoneSuffix = "3"
-      else if (role === ROLE.TEAM_LEADER) phoneSuffix = "4"
-      else if (role === ROLE.EMPLOYEE) phoneSuffix = "5"
+      if (role === SYSTEM_ROLE.ADMIN) phoneSuffix = "1"
+      else if (role === SYSTEM_ROLE.HR_MANAGER) phoneSuffix = "2"
+      else if (role === SYSTEM_ROLE.GENERAL_MANAGER) phoneSuffix = "3"
+      else if (role === SYSTEM_ROLE.TEAM_LEADER) phoneSuffix = "4"
+      else if (role === SYSTEM_ROLE.EMPLOYEE) phoneSuffix = "5"
 
       const data = {
         username,
         passwordHash,
-        role: role as any,
         fullName: `${fullName} User`,
         email: `${username}@example.com`,
         phone: `012345678${phoneSuffix}`,
@@ -68,9 +66,8 @@ async function seedAdminAccounts() {
     const partTimeData = {
       username: partTimeUsername,
       passwordHash,
-      role: ROLE.EMPLOYEE as Role,
-      employeeType: EMPLOYEE_TYPE.FULL_TIME as EmployeeType,
-      workScheduleType: WORK_SCHEDULE_TYPE.PART_TIME as WorkScheduleType,
+      employeeType: EMPLOYEE_TYPE.FULL_TIME,
+      workScheduleType: WORK_SCHEDULE_TYPE.PART_TIME,
       fullName: "Part Time User",
       email: "part_time@example.com",
       phone: "0123456786",

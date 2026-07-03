@@ -1,6 +1,8 @@
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { SORT_ORDER } from "@/configs/system/db.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
+  AppRole,
   CreateEmployeeDto,
   Employee,
   EmployeeListQuery,
@@ -9,10 +11,22 @@ import {
   PaginatedEmployeesDto,
   UpdateEmployeeDto,
 } from "@/types"
+import { AppError } from "@/utils/error.util.ts"
 
 import { Prisma, PrismaClient, Employee as PrismaEmployee } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
+
+type EmployeeRoleSummary = {
+  role: {
+    id: string
+    name: string
+  }
+}
+
+type EmployeeWithRoles = PrismaEmployee & {
+  employeeRoles?: EmployeeRoleSummary[]
+}
 
 /**
  * Repository implementation for managing Employee data in PostgreSQL using Prisma.
@@ -34,13 +48,14 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
    * @returns The mapped Employee domain object.
    * @protected
    */
-  protected mapToDomain(employee: PrismaEmployee): Employee {
+  protected mapToDomain(employee: EmployeeWithRoles): Employee {
+    const roles = employee.employeeRoles?.map((employeeRole) => employeeRole.role.name) ?? []
+
     return {
       id: employee.id,
       fullName: employee.fullName,
       username: employee.username,
       email: employee.email,
-      role: employee.role,
       phone: employee.phone,
       position: employee.position,
       employeeType: employee.employeeType,
@@ -51,12 +66,16 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       address: employee.address,
       startDate: employee.startDate,
       endDate: employee.endDate,
+      role: roles[0] ?? null,
+      roles,
       avatar:
         employee.avatarUrl || employee.avatarId
           ? { url: employee.avatarUrl, id: employee.avatarId }
           : null,
       createdAt: employee.createdAt,
       updatedAt: employee.updatedAt,
+      version: employee.version,
+      authorizationVersion: employee.authorizationVersion,
     }
   }
 
@@ -72,15 +91,24 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       limit = 50,
       search,
       status,
-      role,
       type: employeeType,
       workSchedule,
+      roleId,
       sortBy = "createdAt",
       sortOrder = SORT_ORDER.DESC,
     } = query
 
     const skip = (page - 1) * limit
     const where: Prisma.EmployeeWhereInput = { deletedAt: null } as any
+
+    // Apply role filter if provided
+    if (roleId) {
+      where.employeeRoles = {
+        some: {
+          roleId,
+        },
+      }
+    }
 
     // Apply text search on full name, email, or username (case-insensitive)
     if (search) {
@@ -99,7 +127,6 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     }
 
     // Apply optional field filters
-    if (role) where.role = role
     if (employeeType) where.employeeType = employeeType
     if (workSchedule) where.workScheduleType = workSchedule // part-time tab filter
 
@@ -113,6 +140,24 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       this.prisma.employee.findMany({
         where,
         orderBy,
+        include: {
+          employeeRoles: {
+            where: {
+              role: {
+                deletedAt: null,
+                isActive: true,
+              },
+            },
+            select: {
+              role: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
         skip: Number(skip),
         take: Number(limit),
       }),
@@ -139,6 +184,24 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
   async findById(id: string): Promise<Employee | null> {
     const employee = await this.prisma.employee.findFirst({
       where: { id, deletedAt: null } as any,
+      include: {
+        employeeRoles: {
+          where: {
+            role: {
+              deletedAt: null,
+              isActive: true,
+            },
+          },
+          select: {
+            role: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
     })
     if (!employee) return null
     return this.mapToDomain(employee)
@@ -156,7 +219,6 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
         email: data.email,
         username: data.username,
         passwordHash: data.passwordHash,
-        role: data.role,
         phone: data.phone,
         position: data.position,
         employeeType: data.employeeType,
@@ -176,6 +238,31 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
               ? null
               : new Date(data.startDate)
             : undefined,
+        employeeRoles: data.roleId
+          ? {
+              create: {
+                roleId: data.roleId,
+              },
+            }
+          : undefined,
+      },
+      include: {
+        employeeRoles: {
+          where: {
+            role: {
+              deletedAt: null,
+              isActive: true,
+            },
+          },
+          select: {
+            role: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
     })
     return this.mapToDomain(employee)
@@ -196,7 +283,6 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       email: data.email,
       username: data.username,
       passwordHash: data.passwordHash,
-      role: data.role,
       phone: data.phone,
       position: data.position,
       employeeType: data.employeeType,
@@ -227,6 +313,24 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     const employee = await this.prisma.employee.update({
       where: { id },
       data: updateData,
+      include: {
+        employeeRoles: {
+          where: {
+            role: {
+              deletedAt: null,
+              isActive: true,
+            },
+          },
+          select: {
+            role: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
     })
     return this.mapToDomain(employee)
   }
@@ -241,6 +345,24 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     const employee = await this.prisma.employee.update({
       where: { id },
       data: { status },
+      include: {
+        employeeRoles: {
+          where: {
+            role: {
+              deletedAt: null,
+              isActive: true,
+            },
+          },
+          select: {
+            role: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
     })
     return this.mapToDomain(employee)
   }
@@ -272,5 +394,200 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       },
     })
     return true
+  }
+
+  /**
+   * Maps a Prisma role record to the application AppRole type.
+   */
+  private mapRoleToDomain(role: any): AppRole {
+    return {
+      id: role.id,
+      name: role.name,
+      description: role.description,
+      isSystem: role.isSystem,
+      isActive: role.isActive,
+      isAdministrative: role.isAdministrative,
+      createdAt: role.createdAt,
+      updatedAt: role.updatedAt,
+      createdBy: role.createdBy,
+      updatedBy: role.updatedBy,
+      deletedAt: role.deletedAt,
+    }
+  }
+
+  /**
+   * Retrieves all active roles assigned to a specific employee.
+   */
+  async findRolesByEmployeeId(employeeId: string): Promise<AppRole[]> {
+    const employeeRoles = await this.prisma.employeeRole.findMany({
+      where: {
+        employeeId,
+        role: {
+          deletedAt: null,
+        },
+      },
+      include: {
+        role: true,
+      },
+    })
+    return employeeRoles.map((er) => this.mapRoleToDomain(er.role))
+  }
+
+  /**
+   * Assigns a role to an employee if assignment does not already exist.
+   */
+  async assignRole(
+    employeeId: string,
+    roleId: string,
+    actorId?: string,
+  ): Promise<{ success: boolean; created: boolean }> {
+    const existing = await this.prisma.employeeRole.findUnique({
+      where: {
+        employeeId_roleId: {
+          employeeId,
+          roleId,
+        },
+      },
+    })
+    if (existing) {
+      return { success: true, created: false }
+    }
+    await this.prisma.employeeRole.create({
+      data: {
+        employeeId,
+        roleId,
+        assignedBy: actorId,
+      },
+    })
+    return { success: true, created: true }
+  }
+
+  /**
+   * Revokes an existing role assignment from an employee.
+   */
+  async revokeRole(employeeId: string, roleId: string): Promise<boolean> {
+    const existing = await this.prisma.employeeRole.findUnique({
+      where: {
+        employeeId_roleId: {
+          employeeId,
+          roleId,
+        },
+      },
+    })
+    if (!existing) {
+      return false
+    }
+    await this.prisma.employeeRole.delete({
+      where: {
+        employeeId_roleId: {
+          employeeId,
+          roleId,
+        },
+      },
+    })
+    return true
+  }
+
+  /**
+   * Replaces all role assignments for an employee using optimistic concurrency.
+   */
+  async updateRoles(
+    employeeId: string,
+    roleIds: string[],
+    version: number,
+    actorId?: string,
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      // Acquire AdminStateLock row for update
+      await tx.$executeRaw`
+        INSERT INTO admin_state_lock (id) VALUES (1) ON CONFLICT (id) DO NOTHING
+      `
+      await tx.$executeRaw`
+        SELECT id FROM admin_state_lock WHERE id = 1 FOR UPDATE
+      `
+
+      // Verify employee matching version concurrency
+      const emp = await tx.employee.findFirst({
+        where: { id: employeeId, version, deletedAt: null },
+      })
+      if (!emp) {
+        throw new AppError(
+          "CONCURRENT_MODIFICATION",
+          HttpStatusCode.CONFLICT,
+          "EmployeeRepository",
+          "CONCURRENT_MODIFICATION",
+        )
+      }
+
+      // Mutate mappings: Delete existing and insert new
+      await tx.employeeRole.deleteMany({
+        where: { employeeId },
+      })
+
+      if (roleIds.length > 0) {
+        await tx.employeeRole.createMany({
+          data: roleIds.map((roleId) => ({
+            employeeId,
+            roleId,
+            assignedBy: actorId,
+          })),
+        })
+      }
+
+      // Increment employee version
+      await tx.employee.update({
+        where: { id: employeeId },
+        data: {
+          version: { increment: 1 },
+        },
+      })
+
+      // Count active administrators
+      const adminCount = await tx.employee.count({
+        where: {
+          status: "active",
+          deletedAt: null,
+          employeeRoles: {
+            some: {
+              role: {
+                isAdministrative: true,
+                isActive: true,
+                deletedAt: null,
+              },
+            },
+          },
+        },
+      })
+
+      if (adminCount === 0) {
+        throw new AppError(
+          "CANNOT_REMOVE_LAST_ADMIN",
+          HttpStatusCode.CONFLICT,
+          "EmployeeRepository",
+        )
+      }
+    })
+  }
+
+  /**
+   * Counts all active employees holding an active administrative role.
+   */
+  async countActiveAdmins(tx?: Prisma.TransactionClient): Promise<number> {
+    const client = tx || this.prisma
+    return client.employee.count({
+      where: {
+        status: "active",
+        deletedAt: null,
+        employeeRoles: {
+          some: {
+            role: {
+              isAdministrative: true,
+              isActive: true,
+              deletedAt: null,
+            },
+          },
+        },
+      },
+    })
   }
 }

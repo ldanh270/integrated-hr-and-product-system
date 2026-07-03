@@ -1,7 +1,6 @@
 import { PART_TIME_AVAILABILITY_QUERY_PARAMS } from "@/configs/entities/part-time-availability.config.ts"
 import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
-import { ROLE } from "@/configs/entities/employee.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import {
   assignPartTimeShiftsSchema,
@@ -140,12 +139,5 @@ export class PartTimeAvailabilityController {
     }
   }
 }
-
-/** Roles allowed to review availability and assign PT shifts (not regular employees). */
-export const partTimeAvailabilityAdminRoles = [
-  ROLE.ADMIN,
-  ROLE.HR_MANAGER,
-  ROLE.GENERAL_MANAGER,
-] as const
 
 export { PART_TIME_AVAILABILITY_QUERY_PARAMS }

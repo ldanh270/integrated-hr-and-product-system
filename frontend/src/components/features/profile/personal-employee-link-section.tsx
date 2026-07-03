@@ -99,8 +99,8 @@ function PersonalEmployeeLinkForm({
 }
 
 export function PersonalEmployeeLinkSection({ profile }: PersonalEmployeeLinkSectionProps) {
-  const canManageLink = MANAGEMENT_ROLES.includes(
-    profile.role as (typeof MANAGEMENT_ROLES)[number],
+  const canManageLink = profile.roles.some((role) =>
+    MANAGEMENT_ROLES.includes(role as (typeof MANAGEMENT_ROLES)[number]),
   )
   const { data: employeeData, isLoading: isEmployeesLoading } = useEmployees({
     page: 1,

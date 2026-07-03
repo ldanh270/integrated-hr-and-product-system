@@ -1,4 +1,4 @@
-import type { EmployeeRole, EmployeeStatus, EmployeeType, WorkScheduleType } from "./employee.types.ts"
+import type { EmployeeStatus, EmployeeType, WorkScheduleType } from "./employee.types.ts"
 
 // ─── DTOs ───────────────────────────────────────────────────────────────────
 
@@ -15,7 +15,7 @@ export interface ProfileDto {
   nationalId: string | null
   address: string | null
   position: string | null
-  role: EmployeeRole
+  roles: string[]
   employeeType: EmployeeType
   workScheduleType: WorkScheduleType // full_time | part_time scheduling model
   status: EmployeeStatus
@@ -63,7 +63,6 @@ export interface ProfileEmployeeDocument {
   nationalId: string | null
   address: string | null
   position: string | null
-  role: EmployeeRole
   employeeType: EmployeeType
   workScheduleType: WorkScheduleType // full_time | part_time scheduling model
   status: EmployeeStatus

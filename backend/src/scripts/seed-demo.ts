@@ -9,7 +9,7 @@ async function hydrateContext(context: SeedContext): Promise<SeedContext> {
   }
 
   const employees = await prisma.employee.findMany({
-    select: { id: true, role: true, username: true },
+    select: { id: true, position: true, username: true },
   })
   const schedules = await prisma.shiftSchedule.findMany()
   const employeeShifts = await prisma.employeeShift.findMany({ select: { id: true } })

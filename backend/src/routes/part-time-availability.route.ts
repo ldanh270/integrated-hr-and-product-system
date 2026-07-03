@@ -1,10 +1,9 @@
 import {
   PartTimeAvailabilityController,
-  partTimeAvailabilityAdminRoles,
 } from "@/controllers/part-time-availability.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
-import { authorizeRoles } from "@/middlewares/role.middleware.ts"
+import { requirePermission } from "@/middlewares/permission.middleware.ts"
 import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
 import { PrismaEmployeeShiftRepository } from "@/repositories/employee-shift.repository.ts"
 import { PrismaPartTimeAvailabilityRepository } from "@/repositories/part-time-availability.repository.ts"
@@ -37,17 +36,17 @@ partTimeAvailabilityRoutes.put("/mine", controller.upsertMine)
 // Admin-only: roster for a week, per-employee drill-down, assign shifts from submitted availability.
 partTimeAvailabilityRoutes.get(
   "/",
-  authorizeRoles(...partTimeAvailabilityAdminRoles),
+  requirePermission("attendance.update"),
   controller.listForWeek,
 )
 partTimeAvailabilityRoutes.get(
   "/employee/:employeeId",
-  authorizeRoles(...partTimeAvailabilityAdminRoles),
+  requirePermission("attendance.update"),
   controller.getByEmployee,
 )
 partTimeAvailabilityRoutes.post(
   "/:id/assign-shifts",
-  authorizeRoles(...partTimeAvailabilityAdminRoles),
+  requirePermission("attendance.update"),
   controller.assignShifts,
 )
 

@@ -218,6 +218,22 @@ Primitive      → atomic (Button, Input, Icon) — zero business logic
 - Memoize only after profiling. Premature `memo` is noise.
 - Co-locate: test + story + component in same folder.
 
+### Navigation outside React (MANDATORY)
+
+**NEVER use `window.location.href` for in-app routing.** Hard reload destroys the React tree — all mounted providers (`<Toaster>`, `<ConfirmProvider>`, etc.) are unmounted instantly, so any pending toast or modal is lost.
+
+```ts
+// ✅ ALWAYS — safe from Axios interceptors, Zustand, utils, anywhere
+import { routerNavigate } from "@/lib/router-navigator"
+routerNavigate(ROUTES.AUTH.LOGIN, { replace: true })
+
+// ❌ NEVER — kills Toaster/Sonner before toast can render
+window.location.href = "/login"
+```
+
+**Implementation:** `frontend/src/lib/router-navigator.ts` — singleton navigate ref.
+Injected once via `<NavigatorInjector />` in `App.tsx` (inside `<Router>`).
+
 ---
 
 ## 8 · API Design Rules

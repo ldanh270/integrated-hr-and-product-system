@@ -1,3 +1,5 @@
+import "dotenv/config"
+
 /** Database connection string from environment */
 export const CONNECTION_STRING = process.env.DATABASE_URL
 

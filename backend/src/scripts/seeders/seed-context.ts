@@ -1,6 +1,6 @@
 export interface SeedContext {
   adminId: string
-  employees: Array<{ id: string; role: string; username: string }>
+  employees: Array<{ id: string; position: string | null; username: string }>
   workingShiftIds: string[]
   shiftScheduleMap: Record<string, string> // employeeId → scheduleId
   employeeShiftIds: string[]

@@ -23,32 +23,31 @@ export class SalaryConfigsSeeder implements ISeeder {
     const templateId = payslipTemplateIds[0] // Use standard template
     const salaryConfigMap: Record<string, string> = {}
 
-    const configs = await Promise.all(
-      employees.map(async (emp) => {
-        // Base salary based on role
-        let baseSalary = 10000000 // default 10M
-        if (emp.role === "admin" || emp.role === "general_manager") baseSalary = 40000000
-        else if (emp.role === "hr_manager") baseSalary = 30000000
-        else if (emp.role === "team_leader") baseSalary = 25000000
+    const configs = []
+    for (const emp of employees) {
+      // Base salary based on role
+      let baseSalary = 10000000 // default 10M
+      if (emp.username === "admin" || emp.username === "general_manager") baseSalary = 40000000
+      else if (emp.username === "hr_manager") baseSalary = 30000000
+      else if (emp.position === "Team Leader" || emp.username === "team_leader") baseSalary = 25000000
 
-        // Add some randomness
-        baseSalary += faker.number.int({ min: 0, max: 10 }) * 1000000
+      // Add some randomness
+      baseSalary += faker.number.int({ min: 0, max: 10 }) * 1000000
 
-        const config = await prisma.employeeSalaryConfig.create({
-          data: {
-            employeeId: emp.id,
-            templateId,
-            baseSalary,
-            effectiveFrom: new Date(2025, 0, 1),
-            note: "Seeded initial config",
-            createdById: adminId,
-          },
-        })
+      const config = await prisma.employeeSalaryConfig.create({
+        data: {
+          employeeId: emp.id,
+          templateId,
+          baseSalary,
+          effectiveFrom: new Date(2025, 0, 1),
+          note: "Seeded initial config",
+          createdById: adminId,
+        },
+      })
 
-        salaryConfigMap[emp.id] = config.id
-        return config
-      }),
-    )
+      salaryConfigMap[emp.id] = config.id
+      configs.push(config)
+    }
 
     console.log(`  Seeded ${configs.length} salary configs.`)
 
@@ -61,7 +60,7 @@ registry.register(new SalaryConfigsSeeder())
 if (import.meta.main) {
   const seeder = new SalaryConfigsSeeder()
   const admin = await prisma.employee.findFirst({ where: { username: "admin" } })
-  const emps = await prisma.employee.findMany({ select: { id: true, role: true, username: true } })
+  const emps = await prisma.employee.findMany({ select: { id: true, position: true, username: true } })
   const templates = await prisma.payslipTemplate.findMany()
 
   const ctx = createEmptyContext()

@@ -13,7 +13,14 @@ export function filterNavItems(
   const scheduleFields = { employeeType, workScheduleType }
 
   return items.filter((item) => {
-    if (item.roles && (!user || !item.roles.includes(user.role))) {
+    if (
+      item.permissions &&
+      (!user || !item.permissions.every((permission) => user.permissions?.includes(permission)))
+    ) {
+      return false
+    }
+
+    if (item.roles?.length && (!user?.role || !item.roles.includes(user.role))) {
       return false
     }
 

@@ -67,7 +67,23 @@ export const API_ENDPOINTS = {
     DASHBOARD: "/security/dashboard",
     LOCKED_ACCOUNTS: "/security/locked-accounts",
     UNLOCK: (employeeId: string) => `/security/unlock/${employeeId}`,
-    ACTIVITY_LOGS: "/auth/activity-logs",
-    ACTIVITY_LOG_DETAIL: (id: string) => `/auth/activity-logs/${id}`,
+    ACTIVITY_LOGS: "/audit",
+    MY_ACTIVITY_LOGS: "/auth/me/activity-logs",
+    MY_ACTIVITY_LOG_DETAIL: (id: string) => `/auth/me/activity-logs/${id}`,
+    ACTIVITY_LOG_DETAIL: (id: string) => `/audit/${id}`,
+  },
+  ROLES: {
+    BASE: "/roles",
+    DETAIL: (id: string) => `/roles/${id}`,
+    PERMISSIONS: (id: string) => `/roles/${id}/permissions`,
+    PERMISSION_DETAIL: (id: string, permissionId: string) => `/roles/${id}/permissions/${permissionId}`,
+  },
+  PERMISSIONS: {
+    BASE: "/permissions",
+    DETAIL: (id: string) => `/permissions/${id}`,
+  },
+  EMPLOYEES: {
+    ROLES: (id: string) => `/employees/${id}/roles`,
+    ROLE_DETAIL: (id: string, roleId: string) => `/employees/${id}/roles/${roleId}`,
   },
 } as const

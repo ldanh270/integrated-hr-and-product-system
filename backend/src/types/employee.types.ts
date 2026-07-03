@@ -1,5 +1,11 @@
-import { IEmployeeStatus, IEmployeeType, IWorkScheduleType, ROLE } from "@/configs/entities/employee.config.ts"
+import {
+  IEmployeeStatus,
+  IEmployeeType,
+  ISystemRole,
+  IWorkScheduleType,
+} from "@/configs/entities/employee.config.ts"
 import { SORT_ORDER } from "@/configs/system/db.config.ts"
+import { AppRole } from "./role.types.ts"
 
 /**
  * Type representing valid Employee Status values.
@@ -16,10 +22,6 @@ export type EmployeeType = IEmployeeType
  */
 export type WorkScheduleType = IWorkScheduleType
 
-/**
- * Type representing valid Employee Role values.
- */
-export type EmployeeRole = (typeof ROLE)[keyof typeof ROLE]
 
 /**
  * Domain interface representing an Employee object.
@@ -33,8 +35,6 @@ export interface Employee {
   username: string
   /** Email address of the employee */
   email: string
-  /** Application role (e.g. employee, admin) */
-  role: EmployeeRole
   /** Contact phone number (nullable) */
   phone: string | null
   /** Job position / title (nullable) */
@@ -55,12 +55,20 @@ export interface Employee {
   startDate: Date | null
   /** Employment termination date (nullable) */
   endDate: Date | null
+  /** Legacy compatibility primary role name derived from dynamic assignments */
+  role?: string | null
+  /** Active dynamic role names assigned to the employee */
+  roles?: string[]
   /** Avatar object containing URL and ID (nullable) */
   avatar: { url: string | null; id: string | null } | null
   /** Record creation timestamp */
   createdAt: Date
   /** Record last modification timestamp */
   updatedAt: Date
+  /** Version number for optimistic locking */
+  version: number
+  /** Version number for authorization caching */
+  authorizationVersion: number
 }
 
 /**
@@ -70,8 +78,9 @@ export interface CreateEmployeeDto {
   fullName: string
   email: string
   username: string
+  role?: ISystemRole
+  roleId?: string
   passwordHash?: string
-  role?: EmployeeRole
   phone?: string | null
   position?: string | null
   employeeType?: EmployeeType
@@ -91,7 +100,6 @@ export interface UpdateEmployeeDto {
   email?: string
   username?: string
   password?: string
-  role?: EmployeeRole
   phone?: string | null
   position?: string | null
   employeeType?: EmployeeType
@@ -116,12 +124,12 @@ export interface EmployeeListQuery {
   search?: string
   /** Status filter */
   status?: EmployeeStatus
-  /** Role filter */
-  role?: EmployeeRole
   /** Employee type filter (employment category) */
   type?: EmployeeType
   /** Work schedule filter (full-time / part-time hours) */
   workSchedule?: WorkScheduleType
+  /** Role ID filter */
+  roleId?: string
   /** Column/property to sort by */
   sortBy?: string
   /** Sort order direction */
@@ -160,6 +168,16 @@ export interface IEmployeeRepository {
   updateStatus(id: string, status: EmployeeStatus): Promise<Employee | null>
   /** Soft delete employee */
   deleteEmployee(id: string): Promise<boolean>
+  /** Find roles assigned to an employee */
+  findRolesByEmployeeId(employeeId: string): Promise<AppRole[]>
+  /** Assign a role to an employee (Idempotent) */
+  assignRole(employeeId: string, roleId: string, actorId?: string): Promise<{ success: boolean; created: boolean }>
+  /** Revoke a role from an employee (Idempotent) */
+  revokeRole(employeeId: string, roleId: string): Promise<boolean>
+  /** Bulk replace employee roles under optimistic concurrency control */
+  updateRoles(employeeId: string, roleIds: string[], version: number, actorId?: string): Promise<void>
+  /** Count active admin users in the system */
+  countActiveAdmins(tx?: any): Promise<number>
 }
 
 /**
@@ -177,7 +195,37 @@ export interface IEmployeeService {
   /** Update employee status */
   updateStatus(id: string, status: EmployeeStatus, actorId?: string, ipAddress?: string): Promise<Employee | null>
   /** Remove employee record (soft delete) */
-  deleteEmployee(id: string): Promise<boolean>
+  deleteEmployee(id: string, actorId?: string): Promise<boolean>
   /** Retrieve list of approver-eligible employees for dropdown */
-  listApprovers(): Promise<{ id: string; fullName: string; role: string; position: string | null }[]>
+  listApprovers(): Promise<{ id: string; fullName: string; position: string | null; role: string }[]>
+  /** Find roles assigned to an employee */
+  getEmployeeRoles(employeeId: string): Promise<AppRole[]>
+  /** Assign a role to an employee */
+  assignRole(employeeId: string, roleId: string, actorId?: string): Promise<{ success: boolean; created: boolean }>
+  /** Revoke a role from an employee */
+  revokeRole(employeeId: string, roleId: string, actorId?: string): Promise<boolean>
+  /** Bulk replace employee roles with optimistic lock and self-demotion verification */
+  updateRoles(employeeId: string, roleIds: string[], version: number, actorId?: string): Promise<void>
 }
+
+export interface AuthorizationContext {
+  isDynamicAdmin: boolean
+  roles: Set<string>
+  permissions: Set<string>
+}
+
+export interface IAuthorizationService {
+  getAuthorizationContext(
+    employeeId: string,
+    options?: { skipCache?: boolean }
+  ): Promise<AuthorizationContext>
+  invalidateUserCache(employeeId: string): Promise<void>
+  invalidateGlobalVersion(): Promise<void>
+  invalidateRoleCache(roleId: string): Promise<void>
+  invalidatePermissionCache(permissionId: string): Promise<void>
+  incrementMetric(metric: string): void
+  getMetrics(): any
+  logDecision(employeeId: string, permission: string, allowed: boolean, source: string): void
+  getGlobalVersion(): Promise<number>
+}
+

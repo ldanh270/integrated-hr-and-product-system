@@ -20,7 +20,7 @@ export interface ProfileDto {
   nationalId: string | null
   address: string | null
   position: string | null
-  role: EmployeeRole
+  roles: EmployeeRole[]
   employeeType: EmployeeType
   workScheduleType: WorkScheduleType // exposed on profile for PT vs full-time UX
   status: EmployeeStatus

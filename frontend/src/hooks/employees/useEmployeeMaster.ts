@@ -6,6 +6,7 @@ import {
   WORK_SCHEDULE_TYPE,
 } from "@/config/entities/employee.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
+import { usePermission } from "@/hooks/use-permission"
 import { useAuthStore } from "@/store/auth-store"
 import type {
   Employee,
@@ -46,10 +47,10 @@ export const useEmployeeMaster = () => {
   const [viewingEmployeeId, setViewingEmployeeId] = useState<string | null>(null)
   // Auth context to check permission roles
   const user = useAuthStore((state) => state.user)
+  const { hasRole } = usePermission()
   const isAdminOrManager =
-    user?.role === ROLE.ADMIN ||
-    user?.role === ROLE.HR_MANAGER ||
-    user?.role === ROLE.GENERAL_MANAGER
+    !!user &&
+    [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER].some((role) => hasRole(role))
   const navigate = useNavigate()
 
   // Queries and mutations from React Query hooks
