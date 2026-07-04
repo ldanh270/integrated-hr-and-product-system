@@ -1,4 +1,4 @@
-import { EMPLOYEE_TYPES, SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
+import { EMPLOYEE_TYPES, ROLE } from "@/configs/entities/employee.config.ts"
 import { EMPLOYEE_TYPE } from "@/configs/entities/employee.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
@@ -18,17 +18,17 @@ export class EmployeesSeeder implements ISeeder {
 
     // Ensure all 5 core role accounts exist (especially since seed-all clears the DB)
     const rolesToSeed = [
-      SYSTEM_ROLE.ADMIN,
-      SYSTEM_ROLE.HR_MANAGER,
-      SYSTEM_ROLE.GENERAL_MANAGER,
-      SYSTEM_ROLE.TEAM_LEADER,
-      SYSTEM_ROLE.EMPLOYEE,
+      ROLE.ADMIN,
+      ROLE.HR_MANAGER,
+      ROLE.GENERAL_MANAGER,
+      ROLE.TEAM_LEADER,
+      ROLE.EMPLOYEE,
     ]
     let adminId = ""
     const passwordHashCore = await HashUtil.hash(getSeedPassword("SEED_CORE_ACCOUNTS_PASSWORD"))
 
     for (const role of rolesToSeed) {
-      const username = role === SYSTEM_ROLE.ADMIN ? SYSTEM_ROLE.ADMIN : role
+      const username = role === ROLE.ADMIN ? ROLE.ADMIN : role
       const fullName = role
         .split("_")
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -38,11 +38,11 @@ export class EmployeesSeeder implements ISeeder {
 
       if (!existing) {
         let phoneSuffix = "0"
-        if (role === SYSTEM_ROLE.ADMIN) phoneSuffix = "1"
-        else if (role === SYSTEM_ROLE.HR_MANAGER) phoneSuffix = "2"
-        else if (role === SYSTEM_ROLE.GENERAL_MANAGER) phoneSuffix = "3"
-        else if (role === SYSTEM_ROLE.TEAM_LEADER) phoneSuffix = "4"
-        else if (role === SYSTEM_ROLE.EMPLOYEE) phoneSuffix = "5"
+        if (role === ROLE.ADMIN) phoneSuffix = "1"
+        else if (role === ROLE.HR_MANAGER) phoneSuffix = "2"
+        else if (role === ROLE.GENERAL_MANAGER) phoneSuffix = "3"
+        else if (role === ROLE.TEAM_LEADER) phoneSuffix = "4"
+        else if (role === ROLE.EMPLOYEE) phoneSuffix = "5"
 
         existing = await prisma.employee.create({
           data: {
@@ -59,7 +59,7 @@ export class EmployeesSeeder implements ISeeder {
         console.log(`  [!] Core account missing, created default account: ${username}`)
       }
 
-      if (role === SYSTEM_ROLE.ADMIN) {
+      if (role === ROLE.ADMIN) {
         adminId = existing.id
       }
     }
