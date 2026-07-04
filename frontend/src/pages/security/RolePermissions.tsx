@@ -8,7 +8,7 @@ import {
   useUpdateRolePermissions,
   usePermissions,
 } from "@/hooks/security/queries/use-security-query"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import type { Role, Permission } from "@/types/security.types"
 import {
   Shield,
@@ -40,23 +40,42 @@ export default function RolePermissions() {
     setSelectedRole(null)
   }
 
-  // Toggle permission mapping handler
-  const handleTogglePermission = async (permissionId: string, isChecked: boolean) => {
-    if (!selectedRole || !rolePermissions) return
-    const currentPermissionIds = rolePermissions.map((rp: Permission) => rp.id)
-    let newPermissionIds: string[]
-    if (isChecked) {
-      newPermissionIds = currentPermissionIds.filter((id) => id !== permissionId)
-    } else {
-      newPermissionIds = [...currentPermissionIds, permissionId]
-    }
+  const [selectedPermissionIds, setSelectedPermissionIds] = useState<string[]>([])
 
+  // Sync state when rolePermissions loads
+  useEffect(() => {
+    if (rolePermissions) {
+      setSelectedPermissionIds(rolePermissions.map((rp) => rp.id))
+    }
+  }, [rolePermissions])
+
+  // Track if there are unsaved changes
+  const hasChanges = useMemo(() => {
+    if (!rolePermissions) return false
+    const initialIds = rolePermissions.map((rp: Permission) => rp.id).sort()
+    const currentIds = [...selectedPermissionIds].sort()
+    return JSON.stringify(initialIds) !== JSON.stringify(currentIds)
+  }, [rolePermissions, selectedPermissionIds])
+
+  // Toggle permission mapping handler locally
+  const handleTogglePermission = (permissionId: string, isChecked: boolean) => {
+    if (isChecked) {
+      setSelectedPermissionIds((prev) => prev.filter((id) => id !== permissionId))
+    } else {
+      setSelectedPermissionIds((prev) => [...prev, permissionId])
+    }
+  }
+
+  // Batch save permissions
+  const handleSavePermissions = async () => {
+    if (!selectedRole) return
     try {
       await updateRolePermissionsMutation.mutateAsync({
         roleId: selectedRole.id,
-        permissionIds: newPermissionIds,
+        permissionIds: selectedPermissionIds,
       })
       toast.success("Cập nhật quyền thành công")
+      handleCloseDrawer()
     } catch {
       toast.error("Không thể cập nhật quyền")
     }
@@ -194,9 +213,7 @@ export default function RolePermissions() {
                       </h3>
                       <div className="space-y-2.5">
                         {perms.map((p) => {
-                          const isChecked = rolePermissions?.some(
-                            (rp: Permission) => rp.id === p.id || rp.code === p.code
-                          )
+                          const isChecked = selectedPermissionIds.includes(p.id)
                           return (
                             <div
                               key={p.id}
@@ -223,6 +240,26 @@ export default function RolePermissions() {
                   ))}
                 </div>
               )}
+            </div>
+
+            <div className="border-t border-border/60 pt-4 mt-6 flex items-center justify-end gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCloseDrawer}
+                disabled={updateRolePermissionsMutation.isPending}
+                className="h-9 text-xs"
+              >
+                Hủy
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSavePermissions}
+                disabled={updateRolePermissionsMutation.isPending || !hasChanges || (selectedRole?.isSystem && selectedRole?.name === "admin")}
+                className="h-9 text-xs"
+              >
+                {updateRolePermissionsMutation.isPending ? "Đang lưu..." : "Lưu thay đổi"}
+              </Button>
             </div>
           </div>
         </div>
