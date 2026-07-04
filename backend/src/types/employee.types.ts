@@ -61,6 +61,8 @@ export interface Employee {
   version: number
   /** Version number for authorization caching */
   authorizationVersion: number
+  /** Temporary account lock expiration timestamp */
+  lockedUntil?: Date | null
 }
 
 /**
@@ -113,7 +115,7 @@ export interface EmployeeListQuery {
   /** Partial search string for names/emails */
   search?: string
   /** Status filter */
-  status?: EmployeeStatus
+  status?: EmployeeStatus | "locked"
   /** Employee type filter */
   type?: EmployeeType
   /** Role ID filter */

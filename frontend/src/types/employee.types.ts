@@ -27,6 +27,7 @@ export interface Employee {
   version?: number
   createdAt: string
   updatedAt: string
+  lockedUntil?: string | null
 }
 
 export interface PaginatedEmployees {
@@ -43,7 +44,7 @@ export interface EmployeeListQuery {
   page?: number
   limit?: number
   search?: string
-  status?: EmployeeStatus
+  status?: EmployeeStatus | "locked"
   role?: EmployeeRole
   roleId?: string
   type?: EmployeeType
