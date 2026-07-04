@@ -1,6 +1,4 @@
-// Import layout cards, headers, and status display pills
 import { PageCard, PageHeader, StatusPill } from "@/components/common"
-// Import custom UI components
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,9 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-// Import Skeleton screen placeholders
 import { Skeleton } from "@/components/ui/skeleton"
-// Import custom UI tables
 import {
   Table,
   TableBody,
@@ -31,38 +27,27 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
-// Import project domain configs (statuses and creation policy list)
 import { PROJECT_STATUSES, TASK_CREATION_POLICIES } from "@/config/entities/project.config"
-// Import employee role mappings
-import { ROLE } from "@/config/entities/employee.config"
+import { ROUTES } from "@/config/routes.config"
 import { usePermission } from "@/hooks/use-permission"
-// Import API client wrappers
 import { employeeApi } from "@/lib/api/employee.api"
 import { projectApi } from "@/lib/api/project.api"
-// Import authentication global store
-import { useAuthStore } from "@/store/auth-store"
-import { ROUTES } from "@/config/routes.config"
-// Import React Query utilities for data handling and server mutations
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-// Import Lucide visual icons
-import { FolderKanban, Plus, Search, Users } from "lucide-react"
-import React, { useState } from "react"
-// Import router link navigation
-import { useNavigate } from "react-router-dom"
 import { extractErrorMessage } from "@/utils/error-helper"
 
+import React, { useState } from "react"
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { FolderKanban, Plus, Search, Users } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 // Main React component to render the global list of projects
 export default function ProjectList() {
   // Initialize query client for cache validation
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  // Retrieve the logged-in user profile details
-  const { user } = useAuthStore()
-  const { roles } = usePermission()
+  const { hasPermission } = usePermission()
   // Determine if the current user possesses administrative or managerial rights
-  const isManager =
-    !!user && [ROLE.ADMIN, ROLE.GENERAL_MANAGER].some((role) => roles.includes(role))
+  const isManager = hasPermission("project.create")
 
   // Initialize state hooks to filter projects list
   const [search, setSearch] = useState("") // Search keyword
@@ -195,11 +180,16 @@ export default function ProjectList() {
     <div className="container p-8 space-y-6">
       {/* Top Header section layout */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <PageHeader title="Danh sách dự án" description="Quản lý các dự án đang phát triển trong công ty" />
+        <PageHeader
+          title="Danh sách dự án"
+          description="Quản lý các dự án đang phát triển trong công ty"
+        />
         {/* Render create project button if user has appropriate access rights */}
         {isManager && (
           <Button
-            onClick={() => { setIsOpenCreateModal(true); }}
+            onClick={() => {
+              setIsOpenCreateModal(true)
+            }}
             className="rounded-full bg-primary text-primary-foreground hover:bg-primary/95 flex items-center gap-1.5 h-11 px-5 text-sm"
           >
             <Plus className="size-4" />
@@ -216,20 +206,26 @@ export default function ProjectList() {
           <Input
             placeholder="Tìm theo tên, mô tả, công nghệ..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); }}
+            onChange={(e) => {
+              setSearch(e.target.value)
+            }}
             className="pl-11 h-10 text-sm border-border rounded-full"
           />
         </div>
 
         {/* Status selection dropdown */}
         <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-          <Label className="text-xs font-semibold text-muted-foreground whitespace-nowrap">Trạng thái:</Label>
+          <Label className="text-xs font-semibold text-muted-foreground whitespace-nowrap">
+            Trạng thái:
+          </Label>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-40 h-10 border-border rounded-full px-4 bg-background">
               <SelectValue placeholder="Tất cả" />
             </SelectTrigger>
             <SelectContent position="popper" className="rounded-xl border-border bg-popover">
-              <SelectItem value="all" className="rounded-lg">Tất cả</SelectItem>
+              <SelectItem value="all" className="rounded-lg">
+                Tất cả
+              </SelectItem>
               {PROJECT_STATUSES.map((st) => (
                 <SelectItem key={st} value={st} className="rounded-lg">
                   {formatStatus(st)}
@@ -257,7 +253,9 @@ export default function ProjectList() {
               <FolderKanban className="size-8" />
             </div>
             <h3 className="text-base font-bold text-foreground">Không tìm thấy dự án nào</h3>
-            <p className="text-sm text-muted-foreground mt-1">Vui lòng điều chỉnh bộ lọc hoặc tạo dự án mới.</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Vui lòng điều chỉnh bộ lọc hoặc tạo dự án mới.
+            </p>
           </div>
         ) : (
           // Projects grid listing table representation
@@ -310,14 +308,21 @@ export default function ProjectList() {
                     </TableCell>
                     {/* Status badges */}
                     <TableCell>
-                      <StatusPill label={formatStatus(proj.status)} variant={getStatusVariant(proj.status)} />
+                      <StatusPill
+                        label={formatStatus(proj.status)}
+                        variant={getStatusVariant(proj.status)}
+                      />
                     </TableCell>
                     {/* Tech stacks layout badges */}
                     <TableCell>
                       <div className="flex flex-wrap gap-1 max-w-[200px]">
                         {proj.techStack.length > 0 ? (
                           proj.techStack.map((tech) => (
-                            <Badge key={tech} variant="secondary" className="rounded-full px-2 py-0.5 text-[10px] font-medium">
+                            <Badge
+                              key={tech}
+                              variant="secondary"
+                              className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                            >
                               {tech}
                             </Badge>
                           ))
@@ -331,7 +336,9 @@ export default function ProjectList() {
                       {proj.startDate ? new Date(proj.startDate).toLocaleDateString("vi-VN") : "-"}
                     </TableCell>
                     <TableCell className="text-xs font-medium text-muted-foreground">
-                      {proj.expectedEndDate ? new Date(proj.expectedEndDate).toLocaleDateString("vi-VN") : "-"}
+                      {proj.expectedEndDate
+                        ? new Date(proj.expectedEndDate).toLocaleDateString("vi-VN")
+                        : "-"}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -369,7 +376,9 @@ export default function ProjectList() {
                 id="projName"
                 placeholder="Nhập tên dự án..."
                 value={newProjectName}
-                onChange={(e) => { setNewProjectName(e.target.value); }}
+                onChange={(e) => {
+                  setNewProjectName(e.target.value)
+                }}
                 className="h-10 text-sm border-border rounded-full px-4"
                 required
               />
@@ -384,7 +393,9 @@ export default function ProjectList() {
                 id="projDesc"
                 placeholder="Nhập mô tả tóm tắt dự án..."
                 value={newProjectDesc}
-                onChange={(e) => { setNewProjectDesc(e.target.value); }}
+                onChange={(e) => {
+                  setNewProjectDesc(e.target.value)
+                }}
                 className="min-h-[80px] rounded-xl border-border p-3 text-sm focus-visible:ring-1 focus-visible:ring-ring"
               />
             </div>
@@ -399,7 +410,9 @@ export default function ProjectList() {
                   id="projStart"
                   type="date"
                   value={newProjectStart}
-                  onChange={(e) => { setNewProjectStart(e.target.value); }}
+                  onChange={(e) => {
+                    setNewProjectStart(e.target.value)
+                  }}
                   className="h-10 text-sm border-border rounded-full px-4"
                 />
               </div>
@@ -412,7 +425,9 @@ export default function ProjectList() {
                   id="projEnd"
                   type="date"
                   value={newProjectEnd}
-                  onChange={(e) => { setNewProjectEnd(e.target.value); }}
+                  onChange={(e) => {
+                    setNewProjectEnd(e.target.value)
+                  }}
                   className="h-10 text-sm border-border rounded-full px-4"
                 />
               </div>
@@ -425,11 +440,16 @@ export default function ProjectList() {
                   Trưởng nhóm (Team Leader)
                 </Label>
                 <Select value={newProjectLeader} onValueChange={setNewProjectLeader}>
-                  <SelectTrigger id="projLeader" className="w-full h-10 border-border rounded-full px-4 bg-background">
+                  <SelectTrigger
+                    id="projLeader"
+                    className="w-full h-10 border-border rounded-full px-4 bg-background"
+                  >
                     <SelectValue placeholder="Chọn Trưởng nhóm" />
                   </SelectTrigger>
                   <SelectContent position="popper" className="rounded-xl border-border bg-popover">
-                    <SelectItem value="none" className="rounded-lg">Không phân công</SelectItem>
+                    <SelectItem value="none" className="rounded-lg">
+                      Không phân công
+                    </SelectItem>
                     {employees.map((emp) => (
                       <SelectItem key={emp.id} value={emp.id} className="rounded-lg">
                         {emp.fullName}
@@ -444,7 +464,10 @@ export default function ProjectList() {
                   Quyền tạo công việc
                 </Label>
                 <Select value={newProjectPolicy} onValueChange={setNewProjectPolicy}>
-                  <SelectTrigger id="projPolicy" className="w-full h-10 border-border rounded-full px-4 bg-background">
+                  <SelectTrigger
+                    id="projPolicy"
+                    className="w-full h-10 border-border rounded-full px-4 bg-background"
+                  >
                     <SelectValue placeholder="Chọn quyền" />
                   </SelectTrigger>
                   <SelectContent position="popper" className="rounded-xl border-border bg-popover">
@@ -467,7 +490,9 @@ export default function ProjectList() {
                 id="projTech"
                 placeholder="Ví dụ: React, Node.js, TypeScript (Ngăn cách bằng dấu phẩy)"
                 value={newProjectTech}
-                onChange={(e) => { setNewProjectTech(e.target.value); }}
+                onChange={(e) => {
+                  setNewProjectTech(e.target.value)
+                }}
                 className="h-10 text-sm border-border rounded-full px-4"
               />
             </div>
@@ -477,7 +502,9 @@ export default function ProjectList() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => { setIsOpenCreateModal(false); }}
+                onClick={() => {
+                  setIsOpenCreateModal(false)
+                }}
                 className="h-10 rounded-full px-5 text-sm"
                 disabled={createMutation.isPending}
               >
@@ -497,4 +524,3 @@ export default function ProjectList() {
     </div>
   )
 }
-

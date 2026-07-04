@@ -28,11 +28,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { HOLIDAY_TYPES, type IHolidayType } from "@/config/entities/attendance.config"
-import { ROLE } from "@/config/entities/employee.config"
 import { usePermission } from "@/hooks/use-permission"
 import { holidaysApi } from "@/lib/api/attendance.api"
 import { formatDate } from "@/lib/utils"
-import { useAuthStore } from "@/store/auth-store"
 import type { IHoliday, IHolidayPayload } from "@/types/attendance.types"
 import { getHolidayTypeLabel } from "@/utils/attendance/get-holiday-type-label"
 
@@ -53,9 +51,8 @@ function toDateInputValue(date: string) {
 }
 
 export default function Holidays() {
-  const user = useAuthStore((state) => state.user)
-  const { roles } = usePermission()
-  const isAdmin = !!user && [ROLE.ADMIN, ROLE.HR_MANAGER].some((role) => roles.includes(role))
+  const { hasPermission } = usePermission()
+  const isAdmin = hasPermission("attendance.update")
   const [year, setYear] = useState(new Date().getFullYear())
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingHoliday, setEditingHoliday] = useState<IHoliday | null>(null)

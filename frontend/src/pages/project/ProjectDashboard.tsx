@@ -37,7 +37,7 @@ import type { Task } from "@/types/task.types"
 export default function ProjectDashboard() {
   // Retrieve current user session information
   const { user } = useAuthStore()
-  const { roles } = usePermission()
+  const { hasAnyPermission } = usePermission()
   // Initialize navigation
   const navigate = useNavigate()
   // Initialize react-query client to manage caching
@@ -472,7 +472,7 @@ export default function ProjectDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {projects.map((proj) => {
               const isLeader = proj.teamLeaderId === user?.id
-              const isAdminOrGM = ["admin", "general_manager"].some((role) => roles.includes(role))
+              const isAdminOrGM = hasAnyPermission(["project.update", "project.task.approve"])
               const canCreateInProj = isAdminOrGM || isLeader || proj.taskCreationPolicy === "all_members"
 
               // Map member role to badges

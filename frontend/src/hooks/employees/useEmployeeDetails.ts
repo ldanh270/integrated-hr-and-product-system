@@ -1,4 +1,3 @@
-import { ROLE } from "@/config/entities/employee.config"
 import { usePermission } from "@/hooks/use-permission"
 import { ROUTES } from "@/config/routes.config"
 
@@ -13,11 +12,12 @@ export const useEmployeeDetails = () => {
   const navigate = useNavigate()
 
   const { data: employee, isLoading, error } = useEmployee(id!)
-  const { hasRole, roles } = usePermission()
-
-  const isAdminOrManager =
-    roles.length > 0 &&
-    [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER].some((role) => hasRole(role))
+  const { hasAnyPermission } = usePermission()
+  const isAdminOrManager = hasAnyPermission([
+    "employee.create",
+    "employee.update",
+    "employee.delete",
+  ])
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 

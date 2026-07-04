@@ -1,8 +1,7 @@
 import { useConfirm } from "@/components/common"
-import { EMPLOYEE_STATUS, ROLE } from "@/config/entities/employee.config"
+import { EMPLOYEE_STATUS } from "@/config/entities/employee.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import { usePermission } from "@/hooks/use-permission"
-import { useAuthStore } from "@/store/auth-store"
 import type {
   Employee,
   EmployeeListQuery,
@@ -40,11 +39,12 @@ export const useEmployeeMaster = () => {
   const [editEmployee, setEditEmployee] = useState<Employee | null>(null)
   const [viewingEmployeeId, setViewingEmployeeId] = useState<string | null>(null)
   // Auth context to check permission roles
-  const user = useAuthStore((state) => state.user)
-  const { hasRole } = usePermission()
-  const isAdminOrManager =
-    !!user &&
-    [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER].some((role) => hasRole(role))
+  const { hasAnyPermission } = usePermission()
+  const isAdminOrManager = hasAnyPermission([
+    "employee.create",
+    "employee.update",
+    "employee.delete",
+  ])
   const navigate = useNavigate()
 
   // Queries and mutations from React Query hooks
