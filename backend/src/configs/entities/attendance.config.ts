@@ -80,6 +80,18 @@ export const APPLICATION_STATUSES = [
 ] as const
 export type IApplicationStatus = (typeof APPLICATION_STATUSES)[number]
 
+export const APPLICATION_SCOPE = {
+  ASSIGNED: "assigned",
+  ALL: "all",
+} as const
+
+export const APPLICATION_SCOPES = [
+  APPLICATION_SCOPE.ASSIGNED,
+  APPLICATION_SCOPE.ALL,
+] as const
+export type IApplicationScope = (typeof APPLICATION_SCOPES)[number]
+
+
 export const PARTNER_APPROVAL_STATUS = {
   PENDING: "pending",
   APPROVED: "approved",

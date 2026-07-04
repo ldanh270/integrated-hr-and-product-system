@@ -6,6 +6,7 @@ import {
   LEAVE_TYPE_VALUES,
   REGIME_TYPES,
   BATCHABLE_APPLICATION_TYPES,
+  APPLICATION_SCOPES,
 } from "@/configs/entities/attendance.config.ts"
 import { ATTENDANCE_ERROR_MESSAGES } from "@/constants/attendance.constants.ts"
 
@@ -245,7 +246,7 @@ export const listApplicationsQuerySchema = z
     keyword: z.string().optional(),
     startDate: dateString.optional(),
     endDate: dateString.optional(),
-    scope: z.enum(["assigned", "all"]).optional(),
+    scope: z.enum(APPLICATION_SCOPES).optional(),
   })
   .strict()
 
