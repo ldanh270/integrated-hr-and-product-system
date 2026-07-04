@@ -139,7 +139,7 @@ const privateRoutes: RouteConfig[] = [
     layout: MainLayout,
   },
   {
-    path: ROUTES.SECURITY.DASHBOARD,
+    path: ROUTES.HRM.DASHBOARD,
     component: lazy(() => import("@/pages/security/SecurityDashboard.tsx")),
     layout: MainLayout,
     permissions: ["security.read"],
@@ -157,13 +157,7 @@ const privateRoutes: RouteConfig[] = [
     permissions: ["role.read"],
   },
   {
-    path: ROUTES.SECURITY.USERS,
-    component: lazy(() => import("@/pages/security/UsersManagement.tsx")),
-    layout: MainLayout,
-    permissions: ["security.read"],
-  },
-  {
-    path: ROUTES.SECURITY.ACTIVITY_LOGS,
+    path: ROUTES.HRM.ACTIVITY_LOGS,
     component: lazy(() => import("@/pages/security/ActivityLogs.tsx")),
     layout: MainLayout,
     permissions: ["audit.read"],

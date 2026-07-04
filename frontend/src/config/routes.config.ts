@@ -8,8 +8,10 @@ export const ROUTES = {
     BASE: "/hrm",
     PROFILE: "/hrm/profile",
     EMPLOYEES: "/hrm/employees",
-    ACTIVITY_LOGS: "/hrm/activity-logs",
+    MY_ACTIVITY_LOGS: "/hrm/my-activity-logs",
     LOGIN_HISTORY: "/hrm/login-history",
+    DASHBOARD: "/hrm/dashboard",
+    ACTIVITY_LOGS: "/hrm/activity-logs",
   },
   APPLICATION: {
     BASE: "/application",
@@ -46,12 +48,6 @@ export const ROUTES = {
   RECRUITMENT: {
     BASE: "/recruitment",
     DASHBOARD: "/recruitment/dashboard",
-  },
-  SECURITY: {
-    BASE: "/security",
-    DASHBOARD: "/security/dashboard",
-    USERS: "/security/users",
-    ACTIVITY_LOGS: "/security/activity-logs",
   },
   SETTINGS: {
     BASE: "/settings",
