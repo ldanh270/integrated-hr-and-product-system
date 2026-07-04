@@ -20,7 +20,10 @@ export class ProjectsSeeder implements ISeeder {
     }
 
     // Find some team leaders
-    const teamLeaders = employees.filter((e) => e.role === "team_leader" || e.role === "admin")
+    let teamLeaders = employees.filter((e) => e.position === "Team Leader" || e.username === "admin" || e.username === "team_leader")
+    if (teamLeaders.length === 0) {
+      teamLeaders = employees
+    }
 
     const projectsData = [
       {
@@ -61,7 +64,7 @@ export class ProjectsSeeder implements ISeeder {
           create: data,
         }),
       ),
-      { timeout: 30000 },
+      { timeout: 120000 },
     )
 
     console.log(`  Seeded ${createdProjects.length} projects.`)
@@ -77,7 +80,7 @@ registry.register(new ProjectsSeeder())
 if (import.meta.main) {
   const seeder = new ProjectsSeeder()
   const admin = await prisma.employee.findFirst({ where: { username: "admin" } })
-  const emps = await prisma.employee.findMany({ select: { id: true, role: true, username: true } })
+  const emps = await prisma.employee.findMany({ select: { id: true, position: true, username: true } })
   const ctx = createEmptyContext()
   if (admin) ctx.adminId = admin.id
   ctx.employees = emps

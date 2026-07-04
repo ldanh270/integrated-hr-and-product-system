@@ -1,3 +1,7 @@
+import {
+  PROJECT_MEMBER_WORK_MODE,
+} from "@/configs/entities/project.config.ts"
+import { EMPLOYEE_TYPE } from "@/configs/entities/employee.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
 import { ISeeder } from "@/scripts/seeders/seeder.interface.ts"
@@ -19,24 +23,44 @@ export class ProjectMembersSeeder implements ISeeder {
       throw new Error("Missing required context (employees or projects).")
     }
 
+    const employeeDetails = await prisma.employee.findMany({
+      where: { id: { in: employees.map((e) => e.id) } },
+      select: { id: true, employeeType: true, username: true },
+    })
+    const employeeTypeById = new Map(employeeDetails.map((e) => [e.id, e.employeeType]))
+
+    const partTimeUser = employeeDetails.find((e) => e.username === "part_time")
     const membersToCreate = []
 
-    for (const projectId of projectIds) {
-      // Assign 3-6 random employees to each project
+    for (const [projectIndex, projectId] of projectIds.entries()) {
       const numMembers = faker.number.int({ min: 3, max: 6 })
       const shuffledEmployees = [...employees].sort(() => 0.5 - Math.random())
       const selectedEmployees = shuffledEmployees.slice(0, numMembers)
 
+      if (projectIndex === 0 && partTimeUser && !selectedEmployees.some((e) => e.id === partTimeUser.id)) {
+        // Ensure demo PT user is on first project for spent-time / payroll samples.
+        selectedEmployees[0] = { id: partTimeUser.id, position: null, username: "part_time" }
+      }
+
       for (const emp of selectedEmployees) {
+        const employeeType = employeeTypeById.get(emp.id)
+        const isPartTime = employeeType === EMPLOYEE_TYPE.PART_TIME
+
         membersToCreate.push({
           projectId,
           employeeId: emp.id,
           joinedAt: faker.date.past({ years: 1 }),
+          hourlyRate: isPartTime ? faker.number.int({ min: 40000, max: 80000 }) : null,
+          workMode: isPartTime
+            ? faker.helpers.arrayElement([
+                PROJECT_MEMBER_WORK_MODE.REMOTE,
+                PROJECT_MEMBER_WORK_MODE.ONSITE,
+              ])
+            : PROJECT_MEMBER_WORK_MODE.REMOTE,
         })
       }
     }
 
-    // Upsert using raw query or individual transactions since there's no single field unique constraint other than composite primary key
     const result = await prisma.projectMember.createMany({
       data: membersToCreate,
       skipDuplicates: true,
@@ -52,7 +76,7 @@ registry.register(new ProjectMembersSeeder())
 
 if (import.meta.main) {
   const seeder = new ProjectMembersSeeder()
-  const emps = await prisma.employee.findMany({ select: { id: true, role: true, username: true } })
+  const emps = await prisma.employee.findMany({ select: { id: true, position: true, username: true } })
   const projects = await prisma.project.findMany()
 
   const ctx = createEmptyContext()

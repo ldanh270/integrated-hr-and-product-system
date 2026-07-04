@@ -46,7 +46,7 @@ export class ApplicationsSeeder implements ISeeder {
 
     const createdApps = await prisma.$transaction(
       applicationsToCreate.map((data) => prisma.application.create({ data })),
-      { timeout: 30000 },
+      { timeout: 120000 },
     )
 
     console.log(`  Seeded ${createdApps.length} applications.`)
@@ -60,7 +60,7 @@ registry.register(new ApplicationsSeeder())
 if (import.meta.main) {
   const seeder = new ApplicationsSeeder()
   const admin = await prisma.employee.findFirst({ where: { username: "admin" } })
-  const emps = await prisma.employee.findMany({ select: { id: true, role: true, username: true } })
+  const emps = await prisma.employee.findMany({ select: { id: true, position: true, username: true } })
   const ctx = createEmptyContext()
   if (admin) ctx.adminId = admin.id
   ctx.employees = emps

@@ -13,13 +13,16 @@ import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
 
 import { Readable } from "stream"
-import { EMPLOYEE_STATUS, ROLE } from "@/configs/entities/employee.config.ts"
+import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
 const LAYER_NAME = "ProfileService"
 /**
  * Maps a Mongoose employee document to a clean ProfileDto
  * Centralizes the field-picking logic so controllers stay thin
  */
-function toProfileDto(emp: ProfileEmployeeDocument): ProfileDto {
+async function toProfileDto(emp: ProfileEmployeeDocument): Promise<ProfileDto> {
+  const authContext = await authorizationService.getAuthorizationContext(emp.id)
+  const roles = Array.from(authContext.roles)
   const linked = emp.personalEmployee
   const isLinkedActive =
     linked && linked.deletedAt == null && linked.status === EMPLOYEE_STATUS.ACTIVE
@@ -34,7 +37,7 @@ function toProfileDto(emp: ProfileEmployeeDocument): ProfileDto {
     nationalId: emp.nationalId ?? null,
     address: emp.address ?? null,
     position: emp.position ?? null,
-    role: emp.role,
+    roles,
     employeeType: emp.employeeType,
     status: emp.status,
     startDate: emp.startDate ? emp.startDate.toISOString().split("T")[0] : null,
@@ -100,7 +103,7 @@ export class ProfileService implements IProfileService {
       throw new AppError("Profile not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
-    return toProfileDto(employee)
+    return await toProfileDto(employee)
   }
 
   /**
@@ -113,7 +116,7 @@ export class ProfileService implements IProfileService {
       throw new AppError("Profile not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
-    return toProfileDto(updated)
+    return await toProfileDto(updated)
   }
 
   /**
@@ -157,7 +160,7 @@ export class ProfileService implements IProfileService {
       )
     }
 
-    return toProfileDto(updated)
+    return await toProfileDto(updated)
   }
 
   /**
@@ -194,8 +197,11 @@ export class ProfileService implements IProfileService {
       throw new AppError("Profile not found", HttpStatusCode.NOT_FOUND, LAYER_NAME)
     }
 
-    const managementRoles = [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER] as const
-    if (!managementRoles.includes(account.role as (typeof managementRoles)[number])) {
+    const authContext = await authorizationService.getAuthorizationContext(empId)
+    const roles = authContext.roles
+    const isManager = authContext.isDynamicAdmin || roles.has("admin") || roles.has("hr_manager") || roles.has("general_manager")
+
+    if (!isManager) {
       throw new AppError(
         "Chỉ tài khoản quản trị mới được liên kết hồ sơ chấm công",
         HttpStatusCode.FORBIDDEN,
@@ -228,6 +234,6 @@ export class ProfileService implements IProfileService {
       )
     }
 
-    return toProfileDto(updated)
+    return await toProfileDto(updated)
   }
 }

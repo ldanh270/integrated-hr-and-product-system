@@ -16,9 +16,9 @@ interface UseProjectKanbanProps {
     email: string;
   } | null
   user: {
-    id: string;
-    role: string;
-    fullName: string;
+    id: string
+    role?: string
+    fullName: string
   } | null
 }
 

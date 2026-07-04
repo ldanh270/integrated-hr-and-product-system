@@ -44,3 +44,27 @@ export interface LockedAccountItem {
   failedLoginCount: number
   lockedUntil: string | null
 }
+
+export interface Permission {
+  id: string
+  name: string
+  code: string
+  module: string
+  description: string | null
+  isSystem: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Role {
+  id: string
+  name: string
+  description: string | null
+  isSystem: boolean
+  isActive: boolean
+  isAdministrative: boolean
+  createdAt: string
+  updatedAt: string
+  permissionsCount?: number
+  employeesCount?: number
+}

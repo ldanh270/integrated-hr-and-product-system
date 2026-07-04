@@ -21,6 +21,7 @@ import {
   ATTENDANCE_STATUS_VARIANTS,
 } from "@/config/entities/attendance.config"
 import { ROLE } from "@/config/entities/employee.config"
+import { usePermission } from "@/hooks/use-permission"
 import { ROUTES } from "@/config/routes.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useAttendanceRecords } from "@/hooks/attendance/use-attendance"
@@ -46,8 +47,8 @@ import {
 } from "lucide-react"
 import { Navigate } from "react-router-dom"
 
-function canManageAttendance(role?: string) {
-  return role === ROLE.ADMIN || role === ROLE.HR_MANAGER || role === ROLE.GENERAL_MANAGER
+function canManageAttendance(roles: string[] = []) {
+  return [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER].some((role) => roles.includes(role))
 }
 
 function toSelectedEmployee(record: IAttendanceRecord): SelectedEmployeeSummary {
@@ -64,8 +65,9 @@ function toSelectedEmployee(record: IAttendanceRecord): SelectedEmployeeSummary 
  */
 export default function AttendanceDashboard() {
   const user = useAuthStore((state) => state.user)
+  const { roles } = usePermission()
 
-  if (user && !canManageAttendance(user.role)) {
+  if (user && !canManageAttendance(roles)) {
     return <Navigate to={ROUTES.ATTENDANCE.MY_SCHEDULE} replace />
   }
 

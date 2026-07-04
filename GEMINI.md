@@ -108,6 +108,26 @@ Route (concrete wiring only)
   - Always use semantic token utilities (`bg-background`, `text-foreground`, `border-border`, `bg-primary`, etc.).
   - Keep all color definitions centralized in global theme variables (light as default, dark mode via `.dark` token overrides).
 
+#### Navigation outside React (Mandatory Pattern)
+
+**NEVER use `window.location.href` for in-app navigation.** It causes a full page reload which destroys the React tree, unmounting `<Toaster>` and other providers before they can render feedback to the user.
+
+Use the `router-navigator` singleton instead:
+
+```ts
+// ✅ DO — works anywhere (Axios interceptors, Zustand actions, utils)
+import { routerNavigate } from "@/lib/router-navigator"
+routerNavigate(ROUTES.AUTH.LOGIN, { replace: true })
+
+// ❌ DON'T — destroys React tree, kills toasts/modals mid-flight
+window.location.href = "/login"
+```
+
+**How it works:**
+1. `frontend/src/lib/router-navigator.ts` — singleton that stores the React Router `navigate` fn.
+2. `NavigatorInjector` component in `App.tsx` calls `useNavigate()` and registers it via `setNavigate()`.
+3. `routerNavigate(path, options)` calls the stored fn. Falls back to `window.location.href` only if called before the router mounts (rare bootstrap edge-case).
+
 ### Enum Naming Convention (Critical)
 
 | Layer          | Key format    | Value format         |

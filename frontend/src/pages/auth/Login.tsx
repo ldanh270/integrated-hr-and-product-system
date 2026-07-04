@@ -162,21 +162,6 @@ export default function Login() {
               )}
             </div>
 
-            {/* Remember Password Checkbox */}
-            <div className="flex items-center gap-3 px-1">
-              <input
-                id="remember"
-                type="checkbox"
-                className="h-4 w-4 rounded border-border text-primary focus:ring-primary focus:ring-offset-background"
-              />
-              <Label
-                htmlFor="remember"
-                className="text-sm font-medium text-muted-foreground select-none cursor-pointer"
-              >
-                Remember Password
-              </Label>
-            </div>
-
             {/* Submit Button */}
             <Button
               type="submit"
@@ -220,8 +205,7 @@ export default function Login() {
             <div>
               <h3 className="text-lg font-bold text-foreground">Quên Mật Khẩu</h3>
               <p className="text-xs text-muted-foreground mt-1">
-                Vui lòng nhập email của bạn. Hệ thống sẽ gửi liên kết đặt lại
-                mật khẩu về email này.
+                Vui lòng nhập email của bạn. Hệ thống sẽ gửi liên kết đặt lại mật khẩu về email này.
               </p>
             </div>
 

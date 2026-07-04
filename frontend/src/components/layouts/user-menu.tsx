@@ -16,7 +16,7 @@ import { Link, useNavigate } from "react-router-dom"
 
 const USER_MENU_ITEMS = [
   { icon: UserIcon, label: "Hồ sơ cá nhân", to: ROUTES.HRM.PROFILE },
-  { icon: History, label: "Lịch sử đăng nhập", to: "#" },
+  { icon: History, label: "Lịch sử đăng nhập", to: ROUTES.HRM.LOGIN_HISTORY },
   { icon: MessageSquare, label: "Đóng góp ý kiến", to: "#" },
 ]
 

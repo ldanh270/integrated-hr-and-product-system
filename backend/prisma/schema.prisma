@@ -8,13 +8,6 @@ datasource db {
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
-enum Role {
-  admin
-  hr_manager
-  general_manager
-  team_leader
-  employee
-}
 
 enum EmployeeStatus {
   active
@@ -28,6 +21,17 @@ enum EmployeeType {
   part_time
   contractor
   intern
+}
+
+enum SpentTimeStatus {
+  pending
+  approved
+  rejected
+}
+
+enum ProjectMemberWorkMode {
+  remote
+  onsite
 }
 
 enum AttendanceStatus {
@@ -257,7 +261,6 @@ model Employee {
   fullName         String
   username         String
   passwordHash     String
-  role             Role           @default(employee)
   email            String
   phone            String?
   dateOfBirth      DateTime?
@@ -280,8 +283,12 @@ model Employee {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime? // For soft deletes
+  version   Int       @default(1)
+  authorizationVersion Int @default(1)
 
   // Relations
+  auditLogsActed   AuthorizationAuditLog[] @relation("AuditLogActor")
+  auditLogsTargeted AuthorizationAuditLog[] @relation("AuditLogTarget")
   attendanceRecords          AttendanceRecord[]
   realShifts                 RealShift[]
   employeeShifts             EmployeeShift[]              @relation("EmployeeShiftEmployee")
@@ -314,6 +321,8 @@ model Employee {
   passwordResetRequestsApprd PasswordResetRequest[]       @relation("PasswordResetRequestApprover")
   refreshTokens              RefreshToken[]
   spentTimes                 SpentTime[]                  @relation("EmployeeSpentTimes")
+  employeeRoles              EmployeeRole[]
+  spentTimesApproved         SpentTime[]                  @relation("SpentTimeApprover")
   customQueries              CustomQuery[]
 
   candidateId String?    @unique
@@ -329,8 +338,8 @@ model Employee {
   jobApplicationsRescinded JobApplication[]       @relation("ApplicationRescinder")
 
   @@index([status, employeeType])
-  @@index([role])
   @@index([deletedAt])
+  @@index([status, deletedAt])
 }
 
 // ── Attendance ──
@@ -879,12 +888,17 @@ model Project {
   @@index([createdById])
 }
 
+/// PT per-project contract: rate for payroll, workMode for attendance (remote vs onsite GPS).
 model ProjectMember {
   projectId  String
-  project    Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project    Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
   employeeId String
-  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  joinedAt   DateTime  @default(now())
+  employee   Employee              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  /// Hourly rate for approved Spent Time on this project (PT employees).
+  hourlyRate Decimal?              @db.Decimal(12, 2)
+  /// remote = Spent Time only; onsite = one GPS check-in per day, then Spent Time.
+  workMode   ProjectMemberWorkMode @default(remote)
+  joinedAt   DateTime              @default(now())
   removedAt  DateTime?
 
   @@id([projectId, employeeId])
@@ -983,24 +997,138 @@ model RefreshToken {
   @@index([expiresAt])
 }
 
+/// PT time log on a task — pending until lead approves; approved rows feed payroll.
 model SpentTime {
-  id           String   @id @default(cuid())
-  taskId       String
-  task         Task     @relation("TaskSpentTimes", fields: [taskId], references: [id], onDelete: Cascade)
-  employeeId   String
-  employee     Employee @relation("EmployeeSpentTimes", fields: [employeeId], references: [id], onDelete: Restrict)
-  date         DateTime @db.Date
-  hours        Float
-  comment      String?
-  activity     String
-  workTimeType String   @default("working_day")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String          @id @default(cuid())
+  taskId          String
+  task            Task            @relation("TaskSpentTimes", fields: [taskId], references: [id], onDelete: Cascade)
+  employeeId      String
+  employee        Employee        @relation("EmployeeSpentTimes", fields: [employeeId], references: [id], onDelete: Restrict)
+  date            DateTime        @db.Date
+  hours           Float
+  comment         String?
+  activity        String
+  /// working_day vs overtime — OT uses multiplier in payroll calculation.
+  workTimeType    String          @default("working_day")
+  status          SpentTimeStatus @default(pending)
+  approvedById    String?
+  approvedBy      Employee?       @relation("SpentTimeApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   @@index([taskId])
   @@index([employeeId])
+  @@index([status, date])
 }
 
+// ── Dynamic RBAC ──
+
+model AppRole {
+  id               String    @id @default(cuid())
+  name             String    @unique
+  description      String?
+  isSystem         Boolean   @default(false)
+  isActive         Boolean   @default(true)
+  isAdministrative Boolean   @default(false)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  deletedAt   DateTime?
+
+  permissions RolePermission[]
+  employees   EmployeeRole[]
+
+  @@map("roles")
+  @@index([name])
+  @@index([isActive])
+  @@index([deletedAt])
+  @@index([isAdministrative, isActive, deletedAt])
+}
+
+model AdminStateLock {
+  id Int @id @default(1)
+
+  @@map("admin_state_lock")
+}
+
+model Permission {
+  id          String    @id @default(cuid())
+  name        String
+  code        String    @unique // Convention: module.action
+  module      String
+  description String?
+  isActive    Boolean   @default(true)
+  isSystem    Boolean   @default(false)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  deletedAt   DateTime?
+
+  roles       RolePermission[]
+
+  @@map("permissions")
+  @@index([module])
+  @@index([deletedAt])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  assignedAt   DateTime @default(now())
+  assignedBy   String?
+
+  role         AppRole    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model EmployeeRole {
+  employeeId String
+  roleId     String
+  assignedAt DateTime @default(now())
+  assignedBy String?
+
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  role       AppRole  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([employeeId, roleId])
+  @@index([roleId])
+  @@map("employee_roles")
+}
+
+model AuthorizationAuditLog {
+  id                 String   @id @default(uuid())
+  actorId            String?
+  targetEmployeeId   String?
+  targetRoleId       String?
+  targetPermissionId String?
+
+  action             String
+  oldValue           Json?
+  newValue           Json?
+  metadata           Json?
+
+  createdAt          DateTime @default(now())
+
+  actor              Employee? @relation("AuditLogActor", fields: [actorId], references: [id], onDelete: SetNull)
+  targetEmployee     Employee? @relation("AuditLogTarget", fields: [targetEmployeeId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([targetEmployeeId])
+  @@index([targetRoleId])
+  @@index([createdAt])
+  @@index([action])
+  @@map("authorization_audit_logs")
+}
 // ── CustomQuery ──
 model CustomQuery {
   id          String   @id @default(cuid())

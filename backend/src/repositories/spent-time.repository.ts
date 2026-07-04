@@ -6,6 +6,8 @@ import {
   UpdateSpentTimeDto,
   SpentTimeActivity,
   SpentTimeWorkTimeType,
+  SpentTimeStatus,
+  ApprovedSpentTimePayrollRow,
 } from "@/types"
 import {
   Employee as PrismaEmployee,
@@ -14,7 +16,10 @@ import {
   SpentTime as PrismaSpentTime,
   Task as PrismaTask,
 } from "@prisma/client"
-import { SPENT_TIME_WORK_TIME_TYPE } from "@/configs/entities/project.config.ts"
+import {
+  SPENT_TIME_STATUS,
+  SPENT_TIME_WORK_TIME_TYPE,
+} from "@/configs/entities/project.config.ts"
 import { SORT_ORDER } from "@/configs/system/db.config.ts"
 import { BaseRepository } from "./base.repository.ts"
 
@@ -26,16 +31,16 @@ type PrismaSpentTimeWithRelations = PrismaSpentTime & {
     } | null
   }) | null
   employee?: PrismaEmployee | null
+  approvedBy?: Pick<PrismaEmployee, "id" | "fullName"> | null
 }
 
+/** Persists PT Spent Time rows — create starts pending; approve/reject feed payroll queries. */
 export class PrismaSpentTimeRepository extends BaseRepository implements ISpentTimeRepository {
   constructor(prisma: PrismaClient) {
     super(prisma)
   }
 
-  /**
-   * Maps Prisma SpentTime record to the domain model
-   */
+  /** Maps Prisma row + relations to domain — includes task/project for approval UI and estimate cap. */
   protected mapToDomain(spentTime: PrismaSpentTimeWithRelations): SpentTime {
     return {
       id: spentTime.id,
@@ -46,6 +51,10 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
       comment: spentTime.comment,
       activity: spentTime.activity as SpentTimeActivity,
       workTimeType: spentTime.workTimeType as SpentTimeWorkTimeType,
+      status: spentTime.status as SpentTimeStatus,
+      approvedById: spentTime.approvedById,
+      approvedAt: spentTime.approvedAt,
+      rejectionReason: spentTime.rejectionReason,
       createdAt: spentTime.createdAt,
       updatedAt: spentTime.updatedAt,
       task: spentTime.task
@@ -53,6 +62,7 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
             id: spentTime.task.id,
             title: spentTime.task.title,
             projectId: spentTime.task.projectId,
+            estimatedTime: spentTime.task.estimatedTime,
             project: spentTime.task.project
               ? {
                   id: spentTime.task.project.id,
@@ -68,88 +78,73 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
             email: spentTime.employee.email,
           }
         : undefined,
+      approvedBy: spentTime.approvedBy
+        ? {
+            id: spentTime.approvedBy.id,
+            fullName: spentTime.approvedBy.fullName,
+          }
+        : null,
     }
   }
 
-  /**
-   * Finds a spent time log by its ID
-   */
+  /** Prisma include graph for list/detail — task, employee, approver for PT approval screens. */
+  private spentTimeInclude = {
+    task: {
+      include: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    },
+    employee: true,
+    approvedBy: {
+      select: {
+        id: true,
+        fullName: true,
+      },
+    },
+  } as const
+
+  /** Loads one Spent Time log by id with task/employee/approver relations. */
   async findById(id: string): Promise<SpentTime | null> {
     const record = await this.prisma.spentTime.findUnique({
       where: { id },
-      include: {
-        task: {
-          include: {
-            project: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-        employee: true,
-      },
+      include: this.spentTimeInclude,
     })
     return record ? this.mapToDomain(record) : null
   }
 
-  /**
-   * Lists spent time logs based on filters
-   */
+  /** Lists Spent Time logs by filters — projectId/status power the lead approval queue. */
   async list(query: SpentTimeQuery): Promise<SpentTime[]> {
     const where: Prisma.SpentTimeWhereInput = {}
 
-    if (query.taskId) {
-      where.taskId = query.taskId
-    }
-
-    if (query.employeeId) {
-      where.employeeId = query.employeeId
-    }
+    if (query.taskId) where.taskId = query.taskId
+    if (query.employeeId) where.employeeId = query.employeeId
+    if (query.status) where.status = query.status
 
     if (query.projectId) {
-      where.task = {
-        projectId: query.projectId,
-      }
+      where.task = { projectId: query.projectId }
     }
 
     if (query.startDate || query.endDate) {
       where.date = {}
-      if (query.startDate) {
-        where.date.gte = new Date(query.startDate)
-      }
-      if (query.endDate) {
-        where.date.lte = new Date(query.endDate)
-      }
+      if (query.startDate) where.date.gte = new Date(query.startDate)
+      if (query.endDate) where.date.lte = new Date(query.endDate)
     }
 
     const records = await this.prisma.spentTime.findMany({
       where,
-      include: {
-        task: {
-          include: {
-            project: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-        employee: true,
-      },
-      orderBy: {
-        date: SORT_ORDER.DESC,
-      },
+      include: this.spentTimeInclude,
+      orderBy: { date: SORT_ORDER.DESC },
     })
 
     return records.map((record) => this.mapToDomain(record))
   }
 
-  /**
-   * Creates a new spent time log
-   */
+  /** Creates a PT spent time log — always persisted as pending until lead approves for payroll. */
   async create(data: CreateSpentTimeDto): Promise<SpentTime> {
     if (!data.employeeId) {
       throw new Error("Employee ID is required to create a spent time log")
@@ -164,72 +159,126 @@ export class PrismaSpentTimeRepository extends BaseRepository implements ISpentT
         comment: data.comment,
         activity: data.activity,
         workTimeType: data.workTimeType || SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY,
+        // Every new log awaits lead approval before it counts toward payroll.
+        status: SPENT_TIME_STATUS.PENDING,
       },
-      include: {
-        task: {
-          include: {
-            project: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-        employee: true,
-      },
+      include: this.spentTimeInclude,
     })
     return this.mapToDomain(record)
   }
 
-  /**
-   * Updates an existing spent time log
-   */
+  /** Updates log fields only — status changes go through approve/reject methods. */
   async update(id: string, data: UpdateSpentTimeDto): Promise<SpentTime | null> {
     const updateData: Prisma.SpentTimeUpdateInput = {}
-    if (data.date) {
-      updateData.date = typeof data.date === "string" ? new Date(data.date) : data.date
-    }
-    if (data.hours !== undefined) {
-      updateData.hours = data.hours
-    }
-    if (data.comment !== undefined) {
-      updateData.comment = data.comment
-    }
-    if (data.activity) {
-      updateData.activity = data.activity
-    }
-    if (data.workTimeType) {
-      updateData.workTimeType = data.workTimeType
-    }
+    if (data.date) updateData.date = typeof data.date === "string" ? new Date(data.date) : data.date
+    if (data.hours !== undefined) updateData.hours = data.hours
+    if (data.comment !== undefined) updateData.comment = data.comment
+    if (data.activity) updateData.activity = data.activity
+    if (data.workTimeType) updateData.workTimeType = data.workTimeType
 
     const record = await this.prisma.spentTime.update({
       where: { id },
       data: updateData,
-      include: {
-        task: {
-          include: {
-            project: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-        employee: true,
-      },
+      include: this.spentTimeInclude,
     })
     return this.mapToDomain(record)
   }
 
-  /**
-   * Deletes a spent time log
-   */
+  /** Hard-deletes a row — service restricts delete to pending logs only. */
   async delete(id: string): Promise<boolean> {
-    await this.prisma.spentTime.delete({
-      where: { id },
-    })
+    await this.prisma.spentTime.delete({ where: { id } })
     return true
+  }
+
+  /** Sums task hours for estimate cap — rejected logs are excluded from the total. */
+  async sumTaskHours(taskId: string, excludeId?: string): Promise<number> {
+    const result = await this.prisma.spentTime.aggregate({
+      where: {
+        taskId,
+        // Rejected hours must not count toward estimate cap or spent totals.
+        status: { not: SPENT_TIME_STATUS.REJECTED },
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+      _sum: { hours: true },
+    })
+    return result._sum.hours ?? 0
+  }
+
+  /** Marks log approved — only approved rows are queried by listApprovedForPayroll. */
+  async approve(id: string, approverId: string): Promise<SpentTime | null> {
+    const record = await this.prisma.spentTime.update({
+      where: { id },
+      data: {
+        status: SPENT_TIME_STATUS.APPROVED,
+        approvedById: approverId,
+        approvedAt: new Date(),
+        rejectionReason: null,
+      },
+      include: this.spentTimeInclude,
+    })
+    return this.mapToDomain(record)
+  }
+
+  /** Rejected logs stay visible for audit but are excluded from payroll and sumTaskHours. */
+  async reject(id: string, approverId: string, reason: string): Promise<SpentTime | null> {
+    const record = await this.prisma.spentTime.update({
+      where: { id },
+      data: {
+        status: SPENT_TIME_STATUS.REJECTED,
+        approvedById: approverId,
+        approvedAt: new Date(),
+        rejectionReason: reason,
+      },
+      include: this.spentTimeInclude,
+    })
+    return this.mapToDomain(record)
+  }
+
+  /** Approved PT hours in pay period — joined with project member hourlyRate. */
+  async listApprovedForPayroll(
+    employeeId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<ApprovedSpentTimePayrollRow[]> {
+    // Joins task → project → member hourlyRate for PT payslip lines.
+    const records = await this.prisma.spentTime.findMany({
+      where: {
+        employeeId,
+        status: SPENT_TIME_STATUS.APPROVED,
+        date: { gte: startDate, lte: endDate },
+      },
+      include: {
+        task: {
+          select: {
+            projectId: true,
+            project: {
+              select: {
+                members: {
+                  where: { employeeId, removedAt: null },
+                  select: { hourlyRate: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+
+    return records.flatMap((record) => {
+      const member = record.task.project.members[0]
+      // No hourlyRate on membership → skip line; PayrollService cannot compute PT pay.
+      if (!member?.hourlyRate) return []
+
+      return [
+        {
+          id: record.id,
+          employeeId: record.employeeId,
+          projectId: record.task.projectId,
+          hours: record.hours,
+          workTimeType: record.workTimeType as SpentTimeWorkTimeType,
+          hourlyRate: Number(member.hourlyRate),
+        },
+      ]
+    })
   }
 }

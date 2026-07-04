@@ -34,6 +34,8 @@ projectRoutes.delete("/:id", controller.delete)
 // Project Members
 projectRoutes.get("/:id/members", controller.getMembers)
 projectRoutes.post("/:id/members", controller.addMember)
+// PT member rate/mode — payroll and attendance rules depend on these fields.
+projectRoutes.patch("/:id/members/:employeeId", controller.updateMember)
 projectRoutes.delete("/:id/members/:employeeId", controller.removeMember)
 
 // Gantt Chart Data

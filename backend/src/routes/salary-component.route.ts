@@ -1,8 +1,7 @@
-import { ROLE } from "@/configs/entities/employee.config.ts"
 import { SalaryComponentController } from "@/controllers/salary-component.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
-import { authorizeRoles } from "@/middlewares/role.middleware.ts"
+import { requirePermission } from "@/middlewares/permission.middleware.ts"
 import { PrismaSalaryComponentRepository } from "@/repositories/salary-component.repository.ts"
 import { SalaryComponentService } from "@/services/salary-component.service.ts"
 
@@ -15,12 +14,12 @@ const service = new SalaryComponentService(repo)
 const controller = new SalaryComponentController(service)
 
 salaryComponentRoutes.use(authenticate)
-salaryComponentRoutes.use(authorizeRoles(ROLE.ADMIN, ROLE.HR_MANAGER))
+salaryComponentRoutes.use(requirePermission("payroll.read"))
 
 salaryComponentRoutes.get("/", controller.listComponents)
-salaryComponentRoutes.post("/", controller.createComponent)
-salaryComponentRoutes.put("/:id", controller.updateComponent)
-salaryComponentRoutes.delete("/:id", controller.deleteComponent)
-salaryComponentRoutes.post("/validate", controller.validateFormula)
+salaryComponentRoutes.post("/", requirePermission("payroll.create"), controller.createComponent)
+salaryComponentRoutes.put("/:id", requirePermission("payroll.update"), controller.updateComponent)
+salaryComponentRoutes.delete("/:id", requirePermission("payroll.delete"), controller.deleteComponent)
+salaryComponentRoutes.post("/validate", requirePermission("payroll.create"), controller.validateFormula)
 
 export default salaryComponentRoutes

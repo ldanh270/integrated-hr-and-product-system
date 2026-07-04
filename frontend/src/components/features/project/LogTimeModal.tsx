@@ -1,3 +1,8 @@
+/**
+ * Modal for PT (and project members) to log task hours.
+ * Creates pending SpentTime rows — lead must approve before payroll includes them.
+ * workTimeType=overtime applies OT multiplier; backend blocks edits after approval.
+ */
 import {
   SPENT_TIME_ACTIVITIES,
   SPENT_TIME_WORK_TIME_TYPES,
@@ -25,7 +30,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { taskApi } from "@/lib/api/task.api"
 import type { SpentTime, SpentTimeActivity, SpentTimeWorkTimeType } from "@/types/spent-time.types"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import React, { useState, useEffect } from "react"
+import React, { startTransition, useState, useEffect } from "react"
 
 interface LogTimeModalProps {
   open: boolean
@@ -33,6 +38,8 @@ interface LogTimeModalProps {
   taskId: string
   taskTitle: string
   spentTime?: SpentTime
+  estimatedTime?: number | null
+  loggedHours?: number
   onSuccess?: () => void
 }
 
@@ -42,6 +49,8 @@ export default function LogTimeModal({
   taskId,
   taskTitle,
   spentTime,
+  estimatedTime,
+  loggedHours = 0,
   onSuccess,
 }: LogTimeModalProps) {
   const queryClient = useQueryClient()
@@ -55,20 +64,22 @@ export default function LogTimeModal({
   // Sync state with spentTime when editing
   useEffect(() => {
     if (open) {
-      if (spentTime) {
-        setDate(new Date(spentTime.date).toISOString().split("T")[0])
-        setHours(String(spentTime.hours))
-        setActivity(spentTime.activity)
-        setWorkTimeType(spentTime.workTimeType)
-        setComment(spentTime.comment || "")
-      } else {
-        setDate(new Date().toISOString().split("T")[0])
-        setHours("")
-        setActivity(SPENT_TIME_ACTIVITY.DEVELOP)
-        setWorkTimeType(SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY)
-        setComment("")
-      }
-      setError(null)
+      startTransition(() => {
+        if (spentTime) {
+          setDate(new Date(spentTime.date).toISOString().split("T")[0])
+          setHours(String(spentTime.hours))
+          setActivity(spentTime.activity)
+          setWorkTimeType(spentTime.workTimeType)
+          setComment(spentTime.comment || "")
+        } else {
+          setDate(new Date().toISOString().split("T")[0])
+          setHours("")
+          setActivity(SPENT_TIME_ACTIVITY.DEVELOP)
+          setWorkTimeType(SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY)
+          setComment("")
+        }
+        setError(null)
+      })
     }
   }, [open, spentTime])
 
@@ -143,6 +154,13 @@ export default function LogTimeModal({
     return val
   }
 
+  const parsedHours = parseFloat(hours)
+  // Client-side estimate warning; server enforces hard cap via SPENT_TIME_RULES.
+  const remainingEstimate =
+    estimatedTime != null && !Number.isNaN(parsedHours)
+      ? estimatedTime - loggedHours + (spentTime?.hours ?? 0) - parsedHours
+      : null
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] rounded-xl bg-background border-border p-6 shadow-lg">
@@ -162,6 +180,12 @@ export default function LogTimeModal({
           {error && (
             <div className="rounded-full bg-destructive/10 px-4 py-2 text-xs text-destructive font-medium border border-destructive/20">
               {error}
+            </div>
+          )}
+
+          {remainingEstimate != null && remainingEstimate < 0 && (
+            <div className="rounded-xl bg-amber-500/10 px-4 py-2 text-xs text-amber-700 dark:text-amber-400 font-medium border border-amber-500/20">
+              Cảnh báo: vượt ước tính {Math.abs(remainingEstimate).toFixed(1)} giờ (ước tính: {estimatedTime}h)
             </div>
           )}
 

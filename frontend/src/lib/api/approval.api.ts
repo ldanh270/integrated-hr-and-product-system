@@ -13,13 +13,13 @@ export interface IApprovalDetails {
   note?: string
   assignedToId?: string | null
   assignedTo?: { id: string; fullName: string } | null
-  shiftSwapDetail?: any
-  overtimeDetail?: any
-  lateEarlyDetail?: any
-  businessTripDetail?: any
-  workFromHomeDetail?: any
-  regimeDetail?: any
-  leaveDetail?: any
+  shiftSwapDetail?: Record<string, unknown> | null
+  overtimeDetail?: Record<string, unknown> | null
+  lateEarlyDetail?: Record<string, unknown> | null
+  businessTripDetail?: Record<string, unknown> | null
+  workFromHomeDetail?: Record<string, unknown> | null
+  regimeDetail?: Record<string, unknown> | null
+  leaveDetail?: Record<string, unknown> | null
 }
 
 export interface IApprovalItem {

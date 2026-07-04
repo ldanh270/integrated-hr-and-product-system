@@ -98,6 +98,12 @@ export class AuthController {
   refresh = async (req: Request, res: Response) => {
     try {
       const rawRefreshToken = req.cookies["refresh_token"]
+
+      // DEBUG — xóa sau khi fix xong
+      console.log("[REFRESH DEBUG] cookies received:", Object.keys(req.cookies))
+      console.log("[REFRESH DEBUG] refresh_token present:", !!rawRefreshToken)
+      console.log("[REFRESH DEBUG] refresh_token value (first 20 chars):", rawRefreshToken?.slice(0, 20))
+
       if (!rawRefreshToken) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           status: RESPONSE_STATUS.ERROR,
@@ -116,6 +122,7 @@ export class AuthController {
         data: authData,
       })
     } catch (error: any) {
+      console.log("[REFRESH DEBUG] error:", error.message)
       res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
         status: RESPONSE_STATUS.ERROR,
         message: error.message || "Refresh failed",
@@ -267,6 +274,75 @@ export class AuthController {
         status: RESPONSE_STATUS.ERROR,
         message: error.message || "Action failed",
         errors: error instanceof z.ZodError ? error.issues : undefined,
+      })
+    }
+  }
+
+  /**
+   * Lists activity logs for the authenticated user (Personal History)
+   */
+  listMyActivityLogs = async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          status: RESPONSE_STATUS.ERROR,
+          message: "Unauthorized",
+        })
+      }
+
+      // Validate request query using shared activity log schema
+      const validatedQuery = activityLogQuerySchema.parse(req.query)
+
+      // Delegate to service with empId from token
+      const result = await this.service.getMyActivityLogs(req.user.empId, validatedQuery)
+
+      res.status(HttpStatusCode.OK).json({
+        status: RESPONSE_STATUS.SUCCESS,
+        data: result,
+      })
+    } catch (error: any) {
+      const statusCode =
+        error instanceof z.ZodError
+          ? HttpStatusCode.BAD_REQUEST
+          : error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR
+
+      res.status(statusCode).json({
+        status: RESPONSE_STATUS.ERROR,
+        message: error.message || "Failed to fetch personal activity logs",
+        errors: error instanceof z.ZodError ? error.issues : undefined,
+      })
+    }
+  }
+
+  getMyActivityLogDetail = async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(HttpStatusCode.UNAUTHORIZED).json({
+          status: RESPONSE_STATUS.ERROR,
+          message: AUTH_ERROR_MESSAGES.UNAUTHORIZED,
+        })
+      }
+
+      const result = await this.service.getMyActivityLogDetail(
+        req.user.empId,
+        String(req.params.id),
+      )
+
+      if (!result) {
+        return res.status(HttpStatusCode.NOT_FOUND).json({
+          status: RESPONSE_STATUS.ERROR,
+          message: "Activity log not found",
+        })
+      }
+
+      res.status(HttpStatusCode.OK).json({
+        status: RESPONSE_STATUS.SUCCESS,
+        data: result,
+      })
+    } catch (error: any) {
+      res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
+        status: RESPONSE_STATUS.ERROR,
+        message: error.message || "Failed to fetch personal activity log detail",
       })
     }
   }

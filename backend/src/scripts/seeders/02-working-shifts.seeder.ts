@@ -53,7 +53,7 @@ export class WorkingShiftsSeeder implements ISeeder {
 
     const createdShifts = await prisma.$transaction(
       shiftsToCreate.map((data) => prisma.workingShift.create({ data })),
-      { timeout: 30000 },
+      { timeout: 120000 },
     )
 
     console.log(`  Seeded ${createdShifts.length} working shifts.`)

@@ -1,7 +1,8 @@
-import { ROLE } from "@/configs/entities/employee.config.ts"
 import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
+import { SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
 import { APPROVAL_CONFIG, RequestCategory } from "@/configs/rules/approval.config.ts"
 import { prisma } from "@/libs/database.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
 
 export interface IApprovalStrategy {
   canApprove(category: RequestCategory, applicantId: string, processorId: string): Promise<boolean>
@@ -32,7 +33,7 @@ export class HRApprovalStrategy implements IApprovalStrategy {
   ): Promise<boolean> {
     if (applicantId === processorId) return false
     const allowedRoles = APPROVAL_CONFIG[category]?.roles || []
-    return allowedRoles.includes(ROLE.HR_MANAGER as any)
+    return (allowedRoles as readonly string[]).includes(SYSTEM_ROLE.HR_MANAGER)
   }
 }
 
@@ -48,7 +49,7 @@ export class TeamLeaderApprovalStrategy implements IApprovalStrategy {
     if (applicantId === processorId) return false
 
     const allowedRoles = APPROVAL_CONFIG[category]?.roles || []
-    if (!allowedRoles.includes(ROLE.TEAM_LEADER as any)) return false
+    if (!(allowedRoles as readonly string[]).includes(SYSTEM_ROLE.TEAM_LEADER)) return false
 
     // Verify if applicant is an active member in any active project led by the TL
     const activeProject = await prisma.project.findFirst({
@@ -82,20 +83,29 @@ export class DefaultApprovalStrategy implements IApprovalStrategy {
 }
 
 /**
- * Factory class to resolve the correct strategy based on the processor's role
+ * Factory class to resolve the correct strategy based on the processor's primary dynamic role.
+ * Role names are lower_snake_case AppRole.name values from the database.
  */
 export class ApprovalStrategyFactory {
-  static getStrategy(role: string): IApprovalStrategy {
-    switch (role) {
-      case ROLE.ADMIN:
-      case ROLE.GENERAL_MANAGER:
-        return new AdminGMApprovalStrategy()
-      case ROLE.HR_MANAGER:
-        return new HRApprovalStrategy()
-      case ROLE.TEAM_LEADER:
-        return new TeamLeaderApprovalStrategy()
-      default:
-        return new DefaultApprovalStrategy()
+  static async getStrategyForEmployee(processorId: string): Promise<IApprovalStrategy> {
+    const authContext = await authorizationService.getAuthorizationContext(processorId)
+
+    // Admin bypass
+    if (authContext.isDynamicAdmin) {
+      return new AdminGMApprovalStrategy()
     }
+
+    const roles = authContext.roles
+
+    if (roles.has(SYSTEM_ROLE.ADMIN) || roles.has(SYSTEM_ROLE.GENERAL_MANAGER)) {
+      return new AdminGMApprovalStrategy()
+    }
+    if (roles.has(SYSTEM_ROLE.HR_MANAGER)) {
+      return new HRApprovalStrategy()
+    }
+    if (roles.has(SYSTEM_ROLE.TEAM_LEADER)) {
+      return new TeamLeaderApprovalStrategy()
+    }
+    return new DefaultApprovalStrategy()
   }
 }
