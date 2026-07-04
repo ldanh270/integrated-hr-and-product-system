@@ -33,7 +33,7 @@ export default function Sidebar({ className, isMobile, onNavClick }: SidebarProp
   const { isCollapsed } = useSidebarStore()
 
   const navItems: NavItem[] = (activeSubsystemConfig?.sidebarItems || []).filter(
-    (item: NavItem) => !item.permissions || (user && item.permissions.every((p: string) => user.permissions.includes(p))),
+    (item: NavItem) => !item.permissions || (user && item.permissions.every((p: string) => (user.permissions || []).includes(p))),
   )
 
   // Mobile mode effectively ignores 'isCollapsed' for layout purposes since it's a drawer

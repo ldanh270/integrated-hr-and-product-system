@@ -52,7 +52,7 @@ const ProtectedRoute = ({
   }
 
   if (requiredPermissions && user) {
-    const hasPermission = requiredPermissions.every((p) => user.permissions.includes(p))
+    const hasPermission = requiredPermissions.every((p) => (user.permissions || []).includes(p))
     if (!hasPermission) {
       return <Navigate to={ROUTES.HRM.DASHBOARD} replace />
     }

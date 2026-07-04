@@ -56,6 +56,7 @@ export const ROUTES = {
   },
   PROJECT: {
     LIST: "/project/list",
+    POSITIONS: "/project/positions",
     DASHBOARD: "/project/dashboard",
     OVERVIEW: "/project/overview",
     ISSUES: "/project/issues",
