@@ -33,6 +33,7 @@ export class PrismaProfileRepository extends BaseRepository implements IProfileR
       nationalId: employee.nationalId,
       address: employee.address,
       position: employee.position,
+      positionId: employee.positionId,
       employeeType: employee.employeeType,
       status: employee.status,
       startDate: employee.startDate,

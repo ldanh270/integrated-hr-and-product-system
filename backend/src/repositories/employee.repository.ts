@@ -58,6 +58,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       email: employee.email,
       phone: employee.phone,
       position: employee.position,
+      positionId: employee.positionId,
       employeeType: employee.employeeType,
       status: employee.status,
       dateOfBirth: employee.dateOfBirth,
@@ -218,6 +219,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
         passwordHash: data.passwordHash,
         phone: data.phone,
         position: data.position,
+        positionId: data.positionId,
         employeeType: data.employeeType,
         status: data.status,
         dateOfBirth:
@@ -274,13 +276,14 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     id: string,
     data: Omit<UpdateEmployeeDto, "password"> & { passwordHash?: string },
   ): Promise<Employee | null> {
-    const updateData: Prisma.EmployeeUpdateInput = {
+    const updateData: any = {
       fullName: data.fullName,
       email: data.email,
       username: data.username,
       passwordHash: data.passwordHash,
       phone: data.phone,
       position: data.position,
+      positionId: data.positionId,
       employeeType: data.employeeType,
       status: data.status,
       dateOfBirth:
