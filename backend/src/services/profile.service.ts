@@ -198,8 +198,7 @@ export class ProfileService implements IProfileService {
     }
 
     const authContext = await authorizationService.getAuthorizationContext(empId)
-    const roles = authContext.roles
-    const isManager = authContext.isDynamicAdmin || roles.has("admin") || roles.has("hr_manager") || roles.has("general_manager")
+    const isManager = authContext.isDynamicAdmin || authContext.permissions.has("employee.update")
 
     if (!isManager) {
       throw new AppError(
