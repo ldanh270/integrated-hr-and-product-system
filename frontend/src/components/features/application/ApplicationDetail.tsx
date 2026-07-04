@@ -1,4 +1,12 @@
-import { APPLICATION_STATUS, APPLICATION_TYPE_LABELS, REGIME_TYPE, LEAVE_TYPE_LABELS } from "@/config/entities/attendance.config"
+import {
+  APPLICATION_STATUS,
+  APPLICATION_TYPES,
+  APPLICATION_TYPE_LABELS,
+  REGIME_TYPE,
+  LEAVE_TYPE_LABELS,
+  APPLICATION_VIEW_MODE,
+  type IApplicationViewMode,
+} from "@/config/entities/attendance.config"
 import type { IApplication } from "@/lib/api/application.api"
 import { Check, FileText, Home, RefreshCw, X } from "lucide-react"
 import { useAuthStore } from "@/store/auth-store"
@@ -9,7 +17,7 @@ import { toast } from "sonner"
 interface ApplicationDetailProps {
   application: IApplication | null
   isLoading: boolean
-  mode: "mine" | "manage"
+  mode: IApplicationViewMode
   onBack: () => void
   onApprove?: (app: IApplication) => void
   onReject?: (app: IApplication) => void
@@ -61,7 +69,7 @@ export function ApplicationDetail({
   // Render detail fields dynamically based on application type
   const renderDetailTable = () => {
     switch (application.type) {
-      case "leave":
+      case APPLICATION_TYPES.LEAVE.LABEL:
         return (
           <>
             <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Kiểu nghỉ</th>
@@ -71,9 +79,9 @@ export function ApplicationDetail({
             <th className="px-4 py-3 font-medium text-muted-foreground text-left w-full">Lý do</th>
           </>
         )
-      case "overtime":
-      case "late_early":
-      case "work_from_home":
+      case APPLICATION_TYPES.OVERTIME.LABEL:
+      case APPLICATION_TYPES.LATE_EARLY.LABEL:
+      case APPLICATION_TYPES.WORK_FROM_HOME.LABEL:
         return (
           <>
             <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Từ ngày</th>
@@ -81,7 +89,7 @@ export function ApplicationDetail({
             <th className="px-4 py-3 font-medium text-muted-foreground text-left w-full">Chi tiết / Lý do</th>
           </>
         )
-      case "shift_swap":
+      case APPLICATION_TYPES.SHIFT_SWAP.LABEL:
         return (
           <>
             <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Ngày</th>
@@ -174,7 +182,7 @@ export function ApplicationDetail({
             <Home size={18} />
           </button>
           {/* Actions for Manager */}
-          {mode === "manage" && isPending && !isPartner && (
+          {mode === APPLICATION_VIEW_MODE.MANAGE && isPending && !isPartner && (
             <div className="flex items-center gap-3 ml-4 border-l border-border pl-4">
               <button
                 onClick={() => onApprove?.(application)}

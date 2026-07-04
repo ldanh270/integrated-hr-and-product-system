@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { APPLICATION_TYPES, REGIME_TYPE, LEAVE_TYPE_LABELS } from "@/config/entities/attendance.config"
+import { APPLICATION_TYPES, REGIME_TYPE, LEAVE_TYPE_LABELS, PARTNER_APPROVAL_STATUS } from "@/config/entities/attendance.config"
 import type { IApplication } from "@/lib/api/application.api"
 import { formatDate, minutesToTime } from "@/lib/utils"
 import { SubApplicationField } from "./SubApplicationField"
@@ -64,9 +64,9 @@ export function SubApplicationDetailFields({ app }: { app: IApplication }) {
           <SubApplicationField
             label="Phản hồi đối tác"
             value={
-              swapDetail?.partnerApprovalStatus === "approved"
+              swapDetail?.partnerApprovalStatus === PARTNER_APPROVAL_STATUS.APPROVED
                 ? "Đã đồng ý"
-                : swapDetail?.partnerApprovalStatus === "rejected"
+                : swapDetail?.partnerApprovalStatus === PARTNER_APPROVAL_STATUS.REJECTED
                   ? "Đã từ chối"
                   : "Đang chờ"
             }

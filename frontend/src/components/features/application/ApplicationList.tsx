@@ -3,6 +3,8 @@ import {
   APPLICATION_TYPES,
   APPLICATION_TYPE_LABELS,
   LEAVE_TYPE_LABELS,
+  APPLICATION_STATUS_INFO,
+  type IApplicationViewMode,
 } from "@/config/entities/attendance.config"
 import { useManageApplications } from "@/hooks/application/useManageApplications"
 import { useMyApplications } from "@/hooks/application/useMyApplications"
@@ -11,26 +13,10 @@ import type { IApplication } from "@/lib/api/application.api"
 import { useState } from "react"
 
 import { ChevronLeft, ChevronRight, FileText, Filter, RefreshCw } from "lucide-react"
-
-const getStatusLabel = (status: string) => {
-  switch (status) {
-    case APPLICATION_STATUS.PENDING:
-      return { label: "Chờ duyệt", colorClass: "text-amber-600 border-amber-600 font-medium" }
-    case APPLICATION_STATUS.APPROVED:
-      return { label: "Đã duyệt", colorClass: "text-emerald-600 border-emerald-600 font-medium" }
-    case APPLICATION_STATUS.REJECTED:
-      return { label: "Không duyệt", colorClass: "text-red-600 border-red-600 font-medium" }
-    case APPLICATION_STATUS.CANCELLED:
-      return { label: "Đã hủy", colorClass: "text-slate-500 border-slate-500 font-medium" }
-    default:
-      return undefined
-  }
-}
-
 import type { IApplicationBatch } from "@/lib/api/application-batch.api"
 
 interface ApplicationListProps {
-  mode: "mine" | "manage" | "all"
+  mode: IApplicationViewMode | "all"
   onRowClick: (app: IApplication) => void
   hookState: ReturnType<typeof useMyApplications> | ReturnType<typeof useManageApplications>
 }
@@ -60,9 +46,9 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
 
   const STATUS_TABS = [
     { value: "all", label: "Tất cả", count: stats.total },
-    { value: "pending", label: "Chờ duyệt", count: stats.pending },
-    { value: "approved", label: "Đã duyệt", count: stats.approved },
-    { value: "rejected", label: "Không duyệt", count: stats.rejected },
+    { value: APPLICATION_STATUS.PENDING, label: "Chờ duyệt", count: stats.pending },
+    { value: APPLICATION_STATUS.APPROVED, label: "Đã duyệt", count: stats.approved },
+    { value: APPLICATION_STATUS.REJECTED, label: "Không duyệt", count: stats.rejected },
   ] as const
 
   return (
@@ -282,11 +268,11 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
                         <div className="flex justify-center">
                           <span
                             className={`inline-flex items-center justify-center px-4 py-1.5 text-[11px] font-bold border rounded-full bg-transparent whitespace-nowrap ${
-                              getStatusLabel(computedStatus)?.colorClass ||
+                              APPLICATION_STATUS_INFO[computedStatus]?.colorClass ||
                               "text-muted-foreground border-border"
                             }`}
                           >
-                            {getStatusLabel(computedStatus)?.label || computedStatus}
+                            {APPLICATION_STATUS_INFO[computedStatus]?.label || computedStatus}
                           </span>
                         </div>
                       </td>
