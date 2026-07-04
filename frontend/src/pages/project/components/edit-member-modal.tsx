@@ -28,6 +28,7 @@ import { projectApi } from "@/lib/api/project.api"
 import { extractErrorMessage } from "@/utils/error-helper"
 import type { Employee } from "@/types/employee.types"
 import type { ProjectMember } from "@/types/project.types"
+import { useProjectRoles } from "../hooks/use-project-role"
 
 /** Edit hourlyRate / workMode — workMode change toggles GPS requirement for onsite PT. */
 interface EditMemberModalProps {
@@ -48,7 +49,10 @@ export function EditMemberModal({
   const queryClient = useQueryClient()
   const [hourlyRate, setHourlyRate] = useState("")
   const [workMode, setWorkMode] = useState<string>(PROJECT_MEMBER_WORK_MODE.REMOTE)
+  const [roleId, setRoleId] = useState("")
   const [memberError, setMemberError] = useState<string | null>(null)
+
+  const { data: roles = [] } = useProjectRoles(projectId)
 
   const employee = allEmployees.find((e) => e.id === member?.employeeId)
   const isPartTime = employee?.employeeType === EMPLOYEE_TYPE.PART_TIME
@@ -57,6 +61,7 @@ export function EditMemberModal({
     if (member && isOpen) {
       setHourlyRate(member.hourlyRate != null ? String(member.hourlyRate) : "")
       setWorkMode(member.workMode || PROJECT_MEMBER_WORK_MODE.REMOTE)
+      setRoleId(member.roleId || "")
       setMemberError(null)
     }
   }, [member, isOpen])
@@ -72,6 +77,7 @@ export function EditMemberModal({
       return projectApi.updateMember(projectId, member.employeeId, {
         hourlyRate: hourlyRate ? Number(hourlyRate) : null,
         workMode,
+        roleId: roleId || null,
       })
     },
     onSuccess: () => {
@@ -156,6 +162,24 @@ export function EditMemberModal({
                 {PROJECT_MEMBER_WORK_MODES.map((mode) => (
                   <SelectItem key={mode} value={mode} className="rounded-lg">
                     {getProjectMemberWorkModeLabel(mode)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="editRole" className="text-xs font-semibold text-muted-foreground">
+              Vai trò trong dự án
+            </Label>
+            <Select value={roleId} onValueChange={setRoleId}>
+              <SelectTrigger id="editRole" className="w-full h-10 border-border rounded-full px-4 bg-background">
+                <SelectValue placeholder="Chọn vai trò" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-border bg-popover">
+                {roles.map((r) => (
+                  <SelectItem key={r.id} value={r.id} className="rounded-lg">
+                    {r.name}
                   </SelectItem>
                 ))}
               </SelectContent>

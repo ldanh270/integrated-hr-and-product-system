@@ -41,16 +41,26 @@ import { employeeApi } from "@/lib/api/employee.api"
 import { projectApi } from "@/lib/api/project.api"
 // Import authentication global store
 import { useAuthStore } from "@/store/auth-store"
-import { ROUTES } from "@/config/routes.config"
 // Import React Query utilities for data handling and server mutations
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 // Import Lucide visual icons
-import { FolderKanban, Plus, Search, Users } from "lucide-react"
+import { FolderKanban, Plus, Search, Users, ChevronDown, CheckSquare, Square } from "lucide-react"
 import React, { useState } from "react"
 // Import router link navigation
 import { useNavigate } from "react-router-dom"
 import { extractErrorMessage } from "@/utils/error-helper"
 
+
+const TRACKER_LIST = [
+  { key: "feature", label: "Feature (Tính năng)" },
+  { key: "bug", label: "Bug (Lỗi)" },
+  { key: "support", label: "Support (Hỗ trợ)" },
+  { key: "task", label: "Task (Công việc)" },
+  { key: "meeting", label: "Meeting (Họp)" },
+  { key: "test", label: "Test (Kiểm thử)" },
+  { key: "subtask", label: "Subtask (Việc con)" },
+  { key: "management", label: "Management (Quản lý)" },
+]
 
 // Main React component to render the global list of projects
 export default function ProjectList() {
@@ -77,7 +87,9 @@ export default function ProjectList() {
   const [newProjectPolicy, setNewProjectPolicy] = useState("all_members") // Who is authorized to create tasks
   const [newProjectStart, setNewProjectStart] = useState("") // Planned start date
   const [newProjectEnd, setNewProjectEnd] = useState("") // Planned expected end date
+  const [newProjectTrackers, setNewProjectTrackers] = useState<string[]>([])
   const [createError, setCreateError] = useState<string | null>(null) // Submission error warning banner
+  const [isCreateDropdownOpen, setIsCreateDropdownOpen] = useState(false)
 
   // Query to fetch the list of all active projects from the server
   const { data: projectsData, isLoading } = useQuery({
@@ -138,6 +150,7 @@ export default function ProjectList() {
         startDate: newProjectStart || null,
         expectedEndDate: newProjectEnd || null,
         teamLeaderId: newProjectLeader === "none" ? null : newProjectLeader,
+        allowedTaskTrackers: newProjectTrackers,
       })
     },
     // On success, invalidate projects cache, close dialog, and clear out form state variables
@@ -152,6 +165,7 @@ export default function ProjectList() {
       setNewProjectPolicy("all_members")
       setNewProjectStart("")
       setNewProjectEnd("")
+      setNewProjectTrackers([])
       setCreateError(null)
     },
     // Display error messages from the server on failure
@@ -281,7 +295,7 @@ export default function ProjectList() {
                       <button
                         onClick={() => {
                           sessionStorage.setItem("activeProjectId", proj.id)
-                          navigate(ROUTES.PROJECT.OVERVIEW)
+                          navigate(`/project/${proj.id}/overview`)
                         }}
                         className="text-primary hover:underline font-bold text-sm text-left cursor-pointer"
                       >
@@ -415,6 +429,96 @@ export default function ProjectList() {
                   onChange={(e) => { setNewProjectEnd(e.target.value); }}
                   className="h-10 text-sm border-border rounded-full px-4"
                 />
+              </div>
+            </div>
+
+            {/* Allowed Task Trackers (Các loại yêu cầu) */}
+            <div className="space-y-1.5 relative">
+              <Label className="text-xs font-semibold text-muted-foreground">
+                Các loại yêu cầu được phép hoạt động
+              </Label>
+              <p className="text-[10px] text-muted-foreground mt-0.5 mb-2">
+                Chỉ chọn các loại yêu cầu được phép tạo trong dự án này (để trống nếu cho phép tất cả).
+              </p>
+
+              {isCreateDropdownOpen && (
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setIsCreateDropdownOpen(false)}
+                />
+              )}
+
+              <div className="relative w-full">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateDropdownOpen(!isCreateDropdownOpen)}
+                  className="w-full h-10 border border-border rounded-full px-4 bg-background flex items-center justify-between text-xs font-semibold cursor-pointer hover:bg-muted/30 text-foreground"
+                >
+                  <span className="truncate">
+                    {newProjectTrackers.length === 0
+                      ? "Cho phép tất cả"
+                      : newProjectTrackers
+                          .map((k) => TRACKER_LIST.find((t) => t.key === k)?.label || k)
+                          .join(", ")}
+                  </span>
+                  <ChevronDown className="size-4 shrink-0 text-muted-foreground ml-1" />
+                </button>
+
+                {isCreateDropdownOpen && (
+                  <div className="absolute left-0 mt-1 w-full bg-popover border border-border rounded-xl p-3 shadow-lg z-50 space-y-2">
+                    <div className="flex items-center justify-between border-b border-border pb-1.5 mb-1.5">
+                      <span className="text-[10px] font-bold text-muted-foreground">Chọn loại công việc</span>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewProjectTrackers(TRACKER_LIST.map((t) => t.key))
+                          }}
+                          className="text-[9px] font-extrabold text-primary hover:underline cursor-pointer"
+                        >
+                          Tất cả
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewProjectTrackers([])
+                          }}
+                          className="text-[9px] font-extrabold text-muted-foreground hover:text-red-500 hover:underline cursor-pointer"
+                        >
+                          Xóa tất cả
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5 max-h-60 overflow-y-auto">
+                      {TRACKER_LIST.map((tracker) => {
+                        const isChecked = newProjectTrackers.includes(tracker.key)
+                        return (
+                          <button
+                            type="button"
+                            key={tracker.key}
+                            onClick={() => {
+                              setNewProjectTrackers((prev) =>
+                                prev.includes(tracker.key)
+                                  ? prev.filter((k) => k !== tracker.key)
+                                  : [...prev, tracker.key]
+                              )
+                            }}
+                            className={`flex items-center gap-2 p-2 rounded-lg text-left transition-all duration-200 cursor-pointer ${
+                              isChecked ? "bg-primary/5 text-primary" : "hover:bg-muted/40 text-foreground"
+                            }`}
+                          >
+                            {isChecked ? (
+                              <CheckSquare className="size-3.5 shrink-0 text-primary fill-primary/10" />
+                            ) : (
+                              <Square className="size-3.5 shrink-0 text-muted-foreground" />
+                            )}
+                            <span className="text-xs font-semibold leading-tight line-clamp-1">{tracker.label}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

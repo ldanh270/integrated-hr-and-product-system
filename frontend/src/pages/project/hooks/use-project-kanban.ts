@@ -18,6 +18,7 @@ interface UseProjectKanbanProps {
   user: {
     id: string
     role?: string
+    roles?: string[]
     fullName: string
   } | null
 }
@@ -29,7 +30,11 @@ export function useProjectKanban({
 }: UseProjectKanbanProps) {
   const queryClient = useQueryClient()
   const isLeader = teamLeader?.id === user?.id
-  const isAdminOrGM = user?.role === ROLE.ADMIN || user?.role === ROLE.GENERAL_MANAGER
+  const isAdminOrGM =
+    user?.role === ROLE.ADMIN ||
+    user?.role === ROLE.GENERAL_MANAGER ||
+    user?.roles?.includes(ROLE.ADMIN) ||
+    user?.roles?.includes(ROLE.GENERAL_MANAGER)
   const canManageStatuses = isAdminOrGM || isLeader
 
   // Modal States

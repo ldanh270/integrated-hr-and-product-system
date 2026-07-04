@@ -50,7 +50,7 @@ export const projectApi = {
   /** hourlyRate + workMode set PT payroll rate and onsite vs remote attendance rules. */
   addMember: async (
     projectId: string,
-    data: { employeeId: string; hourlyRate?: number | null; workMode?: string },
+    data: { employeeId: string; hourlyRate?: number | null; workMode?: string; roleId?: string | null },
   ): Promise<void> => {
     await apiClient.post<ApiResponse<null>>(`/projects/${projectId}/members`, data)
   },
@@ -59,7 +59,7 @@ export const projectApi = {
   updateMember: async (
     projectId: string,
     employeeId: string,
-    data: { hourlyRate?: number | null; workMode?: string },
+    data: { hourlyRate?: number | null; workMode?: string; roleId?: string | null },
   ): Promise<void> => {
     // hourlyRate + workMode drive PT payroll and attendance rules per project.
     await apiClient.patch<ApiResponse<null>>(`/projects/${projectId}/members/${employeeId}`, data)

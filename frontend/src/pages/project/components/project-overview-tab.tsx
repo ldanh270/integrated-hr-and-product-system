@@ -182,7 +182,7 @@ export function ProjectOverviewTab({
                           {member.employee?.fullName || "Chưa rõ"}
                         </div>
                         <div className="text-[10px] text-muted-foreground mt-0.5">
-                          {member.employee?.email || ""}
+                          {member.employee?.email || ""}{member.role?.name ? ` · ${member.role.name}` : ""}
                         </div>
                         {(member.hourlyRate != null || member.workMode) && (
                           <div className="text-[10px] text-muted-foreground mt-0.5">
