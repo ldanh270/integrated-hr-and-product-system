@@ -64,11 +64,16 @@ export default function RolesManagement() {
     isError: isErrorUsers,
     refetch: refetchUsers,
     isPlaceholderData,
-  } = useEmployees({
-    roleId: selectedRole?.id || undefined,
-    page: drawerPage,
-    limit: 8,
-  })
+  } = useEmployees(
+    {
+      roleId: selectedRole?.id || undefined,
+      page: drawerPage,
+      limit: 8,
+    },
+    {
+      enabled: !!selectedRole?.id,
+    }
+  )
 
   const handleOpenRoleDetail = (role: Role) => {
     setSelectedRole(role)

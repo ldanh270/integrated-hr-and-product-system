@@ -16,11 +16,12 @@ export const employeeKeys = {
   detail: (id: string) => [...employeeKeys.details(), id] as const,
 }
 
-export function useEmployees(query: EmployeeListQuery) {
+export function useEmployees(query: EmployeeListQuery, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: employeeKeys.list(query),
     queryFn: () => employeeApi.list(query),
     placeholderData: (previousData) => previousData,
+    ...options,
   })
 }
 
