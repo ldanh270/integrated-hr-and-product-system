@@ -1,4 +1,3 @@
-
 export const EMPLOYEE_STATUS = {
   ACTIVE: "active",
   INACTIVE: "inactive",
@@ -28,7 +27,7 @@ export const EMPLOYEE_STATUSES = [
 ] as const
 export type IEmployeeStatus = (typeof EMPLOYEE_STATUSES)[number]
 
-export const SYSTEM_ROLE = {
+export const ROLE = {
   ADMIN: "admin",
   GENERAL_MANAGER: "general_manager",
   HR_MANAGER: "hr_manager",
@@ -36,14 +35,13 @@ export const SYSTEM_ROLE = {
   EMPLOYEE: "employee",
 } as const
 
-export const SYSTEM_ROLE_NAMES = [
-  SYSTEM_ROLE.EMPLOYEE,
-  SYSTEM_ROLE.TEAM_LEADER,
-  SYSTEM_ROLE.HR_MANAGER,
-  SYSTEM_ROLE.GENERAL_MANAGER,
-  SYSTEM_ROLE.ADMIN,
+export const EMPLOYEE_ROLES = [
+  ROLE.EMPLOYEE,
+  ROLE.TEAM_LEADER,
+  ROLE.HR_MANAGER,
+  ROLE.GENERAL_MANAGER,
+  ROLE.ADMIN,
 ] as const
-export type ISystemRole = (typeof SYSTEM_ROLE_NAMES)[number]
-
+export type IEmployeeRole = (typeof EMPLOYEE_ROLES)[number]
 
 export const GM_SCOPES = ["all", "department", "region"] as const
