@@ -29,6 +29,7 @@ import spentTimeRoutes from "@/routes/spent-time.route.ts"
 import taskRoutes from "@/routes/task.route.ts"
 import weeklyScheduleTemplateRoutes from "@/routes/weekly-schedule-template.route.ts"
 import auditRoutes from "@/routes/audit.route.ts"
+import positionRoutes from "@/routes/position.route.ts"
 import { countStaticRoleReferences, bootstrapAdmin } from "@/utils/startup-assertion.util.ts"
 
 import cookieParser from "cookie-parser"
@@ -94,6 +95,7 @@ app.use("/api/projects", projectRoutes)
 app.use("/api/tasks", taskRoutes)
 app.use("/api/permissions", permissionRoutes)
 app.use("/api/roles", roleRoutes)
+app.use("/api/positions", positionRoutes)
 app.use("/api", auditRoutes)
 app.use("/api/spent-times", spentTimeRoutes)
 app.use("/api/custom-queries", customQueryRoutes)

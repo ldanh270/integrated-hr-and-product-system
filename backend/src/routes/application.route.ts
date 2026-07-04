@@ -7,10 +7,19 @@ import { ApplicationService } from "@/services/application.service.ts"
 
 import express from "express"
 
+import { PrismaPositionRepository } from "@/repositories/position.repository.ts"
+import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
+import { PrismaProjectRepository } from "@/repositories/project.repository.ts"
+import { PositionService } from "@/services/position.service.ts"
+
 const applicationRoutes = express.Router()
 
 const repository = new PrismaApplicationRepository(prisma)
-const service = new ApplicationService(repository)
+const employeeRepository = new PrismaEmployeeRepository(prisma)
+const projectRepository = new PrismaProjectRepository(prisma)
+const positionRepository = new PrismaPositionRepository(prisma)
+const positionService = new PositionService(positionRepository, employeeRepository, projectRepository, prisma)
+const service = new ApplicationService(repository, positionService)
 const controller = new ApplicationController(service)
 
 // All routes require authentication
