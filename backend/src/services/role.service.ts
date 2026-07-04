@@ -148,7 +148,7 @@ export class RoleService implements IRoleService {
         isDefault: data.isDefault,
       })
       if (updated) {
-        await authorizationService.invalidateGlobalVersion()
+        await authorizationService.invalidateRoleCache(id)
         await auditService.log({
           actorId: data.actorId,
           targetRoleId: id,
@@ -217,9 +217,10 @@ export class RoleService implements IRoleService {
     }
 
     try {
+      // Invalidate cache for employees having this role before deleting the mappings
+      await authorizationService.invalidateRoleCache(id)
       const deleted = await this.repository.deleteRole(id, actorId)
       if (deleted) {
-        await authorizationService.invalidateGlobalVersion()
         await auditService.log({
           actorId: actorId,
           targetRoleId: id,
