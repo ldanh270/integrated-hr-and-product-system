@@ -7,6 +7,9 @@ import { useNavigate, useParams } from "react-router-dom"
 
 import { useEmployee } from "./queries/useEmployeeQuery"
 
+/**
+ * Custom hook to manage employeedetails.
+ */
 export const useEmployeeDetails = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()

@@ -178,6 +178,9 @@ const LEAVE_TYPE_OPTIONS = [
   { value: LEAVE_TYPE.OTHER, label: "Khác" },
 ] as const
 
+/**
+ * SubmitApplicationModal Component.
+ */
 function SubmitApplicationModal({ onClose, onSuccess }: SubmitModalProps) {
   const { isSubmitting, submitApplication } = useSubmitApplication()
 
@@ -679,6 +682,9 @@ interface CancelDialogProps {
   isLoading: boolean
 }
 
+/**
+ * CancelDialog Component.
+ */
 function CancelDialog({ app, onCancel, onConfirm, isLoading }: CancelDialogProps) {
   const typeMeta = APP_TYPE_META[app.type]
   return (
@@ -725,6 +731,9 @@ interface ApplicationCardProps {
   processingId?: string | null
 }
 
+/**
+ * ApplicationCard Component.
+ */
 function ApplicationCard({
   app,
   mode,
@@ -872,6 +881,9 @@ interface RejectDialogProps {
   isLoading: boolean
 }
 
+/**
+ * RejectDialog Component.
+ */
 function RejectDialog({ app, onCancel, onConfirm, isLoading }: RejectDialogProps) {
   const [reason, setReason] = useState("")
   const typeMeta = APP_TYPE_META[app.type]
@@ -936,6 +948,9 @@ function RejectDialog({ app, onCancel, onConfirm, isLoading }: RejectDialogProps
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
+/**
+ * ApplicationSkeleton Component.
+ */
 function ApplicationSkeleton() {
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-4 animate-pulse">
@@ -960,6 +975,9 @@ const STATUS_TABS = [
   { value: APPLICATION_STATUS.CANCELLED, label: "Đã hủy" },
 ] as const
 
+/**
+ * Applications Component.
+ */
 export default function Applications() {
   const { hasPermission } = usePermission()
   const isManager = hasPermission("application.approve")

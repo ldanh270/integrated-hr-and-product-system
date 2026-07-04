@@ -44,6 +44,9 @@ import {
   UserCheck,
   Users,
 } from "lucide-react"
+/**
+ * Helper function for toSelectedEmployee.
+ */
 function toSelectedEmployee(record: IAttendanceRecord): SelectedEmployeeSummary {
   return {
     id: record.employeeId,
@@ -52,6 +55,9 @@ function toSelectedEmployee(record: IAttendanceRecord): SelectedEmployeeSummary 
   }
 }
 
+/**
+ * AttendanceDashboard Component.
+ */
 export default function AttendanceDashboard() {
   const { hasPermission } = usePermission()
 
@@ -62,6 +68,9 @@ export default function AttendanceDashboard() {
   return <AdminAttendanceDashboard />
 }
 
+/**
+ * AdminAttendanceDashboard Component.
+ */
 function AdminAttendanceDashboard() {
   // startDate, endDate: Filter range for attendance records (default: current month)
   const [startDate, setStartDate] = useState(() => getCurrentMonthRange().startDate)

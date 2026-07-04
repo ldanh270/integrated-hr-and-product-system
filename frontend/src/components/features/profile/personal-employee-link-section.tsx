@@ -33,6 +33,9 @@ interface PersonalEmployeeLinkFormProps {
   initialEmployeeId: string
 }
 
+/**
+ * PersonalEmployeeLinkForm Component.
+ */
 function PersonalEmployeeLinkForm({
   profile,
   employees,
@@ -98,6 +101,9 @@ function PersonalEmployeeLinkForm({
   )
 }
 
+/**
+ * PersonalEmployeeLinkSection Component.
+ */
 export function PersonalEmployeeLinkSection({ profile }: PersonalEmployeeLinkSectionProps) {
   const { hasPermission } = usePermission()
   const canManageLink = hasPermission("employee.update")

@@ -27,6 +27,9 @@ interface MatrixRow {
   statusDetail: string
 }
 
+/**
+ * PermissionMatrix Component.
+ */
 export default function PermissionMatrix() {
   const matrixData = useMemo(() => {
     const rows: MatrixRow[] = []

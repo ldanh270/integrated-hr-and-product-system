@@ -57,6 +57,9 @@ import {
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { toast } from "sonner"
 
+/**
+ * Helper function for cleanHtml.
+ */
 const cleanHtml = (html: string) => {
   if (!html) return null
   let insideTag = false
@@ -75,6 +78,9 @@ const cleanHtml = (html: string) => {
 }
 
 // Main component to render task detailed specifications
+/**
+ * TaskDetail Component.
+ */
 export default function TaskDetail() {
   // Initialize query client, route navigation, and auth store
   const queryClient = useQueryClient()

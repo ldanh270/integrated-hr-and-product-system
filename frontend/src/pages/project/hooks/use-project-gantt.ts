@@ -37,6 +37,9 @@ interface UseProjectGanttProps {
   project: Project
 }
 
+/**
+ * Custom hook to manage projectgantt.
+ */
 export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   const queryClient = useQueryClient()
   const { user } = useAuthStore()

@@ -1,20 +1,21 @@
+import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { assertCloudinaryConfigured, cloudinary } from "@/configs/system/cloudinary.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
 import type {
   IProfileRepository,
   IProfileService,
   ProfileDto,
   ProfileEmployeeDocument,
   ProfileEmployeeDocumentWithPassword,
-  UpdateProfileDto,
   UpdatePersonalEmployeeLinkDto,
+  UpdateProfileDto,
 } from "@/types/profile.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
 
 import { Readable } from "stream"
-import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
-import { authorizationService } from "@/services/authorization.service.ts"
+
 const LAYER_NAME = "ProfileService"
 /**
  * Maps a Mongoose employee document to a clean ProfileDto
@@ -153,11 +154,7 @@ export class ProfileService implements IProfileService {
     const updated = await this.repo.updateAvatar(empId, { url, id })
 
     if (!updated) {
-      throw new AppError(
-        "Failed to save avatar",
-        HttpStatusCode.INTERNAL_SERVER_ERROR,
-        LAYER_NAME,
-      )
+      throw new AppError("Failed to save avatar", HttpStatusCode.INTERNAL_SERVER_ERROR, LAYER_NAME)
     }
 
     return await toProfileDto(updated)
@@ -188,6 +185,9 @@ export class ProfileService implements IProfileService {
     await this.repo.updatePassword(empId, await HashUtil.hash(newPass))
   }
 
+  /**
+   * Performs operations for updatePersonalEmployeeLink.
+   */
   async updatePersonalEmployeeLink(
     empId: string,
     data: UpdatePersonalEmployeeLinkDto,

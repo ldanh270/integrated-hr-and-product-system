@@ -75,6 +75,9 @@ const createSchema = z.object({
 
 type CreateFormValues = z.infer<typeof createSchema>
 
+/**
+ * Custom hook to manage employeecreatemodal.
+ */
 export function useEmployeeCreateModal(onClose: () => void) {
   const createMutation = useCreateEmployee()
   const { data: rolesData, isLoading: isLoadingRoles } = useRoles()

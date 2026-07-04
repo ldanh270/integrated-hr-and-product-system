@@ -46,10 +46,16 @@ const DEFAULT_FORM: IHolidayPayload = {
   type: "national",
 }
 
+/**
+ * Helper function for toDateInputValue.
+ */
 function toDateInputValue(date: string) {
   return new Date(date).toISOString().slice(0, 10)
 }
 
+/**
+ * Holidays Component.
+ */
 export default function Holidays() {
   const { hasPermission } = usePermission()
   const isAdmin = hasPermission("attendance.update")

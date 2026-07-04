@@ -11,6 +11,9 @@ export interface IApprovalStrategy {
  * Admin & General Manager: Approve all types of requests for everyone (except self).
  */
 export class AdminGMApprovalStrategy implements IApprovalStrategy {
+  /**
+   * Performs operations for canApprove.
+   */
   async canApprove(
     category: RequestCategory,
     applicantId: string,
@@ -25,6 +28,9 @@ export class AdminGMApprovalStrategy implements IApprovalStrategy {
  * HR Manager: Approve Application & Recruitment Proposals for everyone (except self).
  */
 export class HRApprovalStrategy implements IApprovalStrategy {
+  /**
+   * Performs operations for canApprove.
+   */
   async canApprove(
     category: RequestCategory,
     applicantId: string,
@@ -39,6 +45,9 @@ export class HRApprovalStrategy implements IApprovalStrategy {
  * Team Leader: Approve Application only, for members active in their projects.
  */
 export class TeamLeaderApprovalStrategy implements IApprovalStrategy {
+  /**
+   * Performs operations for canApprove.
+   */
   async canApprove(
     category: RequestCategory,
     applicantId: string,
@@ -70,6 +79,9 @@ export class TeamLeaderApprovalStrategy implements IApprovalStrategy {
  * Default fallback strategy (e.g. for regular employee trying to approve)
  */
 export class DefaultApprovalStrategy implements IApprovalStrategy {
+  /**
+   * Performs operations for canApprove.
+   */
   async canApprove(
     category: RequestCategory,
     applicantId: string,
@@ -83,6 +95,9 @@ export class DefaultApprovalStrategy implements IApprovalStrategy {
  * Factory class to resolve the correct strategy based on the processor's permissions.
  */
 export class ApprovalStrategyFactory {
+  /**
+   * Performs operations for getStrategyForEmployee.
+   */
   static async getStrategyForEmployee(processorId: string): Promise<IApprovalStrategy> {
     const authContext = await authorizationService.getAuthorizationContext(processorId)
 

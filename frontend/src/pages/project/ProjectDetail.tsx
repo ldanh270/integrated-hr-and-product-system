@@ -51,6 +51,9 @@ const PROJECT_TABS = {
 
 type ProjectTab = typeof PROJECT_TABS[keyof typeof PROJECT_TABS]
 
+/**
+ * ProjectDetail Component.
+ */
 export default function ProjectDetail() {
   const { tab } = useParams<{ tab?: string }>()
   const queryClient = useQueryClient()

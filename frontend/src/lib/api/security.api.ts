@@ -44,6 +44,9 @@ interface PaginatedLogs {
   }
 }
 
+/**
+ * Helper function for mapAuditToActivity.
+ */
 function mapAuditToActivity(log: BackendAuditLog): ActivityLogItem {
   let category: string = SECURITY_ACTIVITY_CATEGORY.SECURITY
   const action = log.action || ""

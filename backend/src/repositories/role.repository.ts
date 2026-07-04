@@ -4,9 +4,9 @@ import {
   CreateRoleDto,
   IRoleRepository,
   PaginatedRolesDto,
+  Permission,
   RoleListQuery,
   UpdateRoleDto,
-  Permission,
 } from "@/types"
 
 import { Prisma, AppRole as PrismaAppRole, PrismaClient } from "@prisma/client"
@@ -412,6 +412,9 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
     })
   }
 
+  /**
+   * Performs operations for mapPermissionToDomain.
+   */
   private mapPermissionToDomain(permission: any): Permission {
     return {
       id: permission.id,
@@ -429,6 +432,9 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
     }
   }
 
+  /**
+   * Performs operations for findPermissionsByRoleId.
+   */
   async findPermissionsByRoleId(roleId: string): Promise<Permission[]> {
     const rolePermissions = await this.prisma.rolePermission.findMany({
       where: {
@@ -444,6 +450,9 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
     return rolePermissions.map((rp) => this.mapPermissionToDomain(rp.permission))
   }
 
+  /**
+   * Performs operations for assignPermission.
+   */
   async assignPermission(
     roleId: string,
     permissionId: string,
@@ -470,6 +479,9 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
     return { success: true, created: true }
   }
 
+  /**
+   * Performs operations for revokePermission.
+   */
   async revokePermission(roleId: string, permissionId: string): Promise<boolean> {
     const existing = await this.prisma.rolePermission.findUnique({
       where: {
@@ -493,6 +505,9 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
     return true
   }
 
+  /**
+   * Performs operations for updatePermissions.
+   */
   async updatePermissions(
     roleId: string,
     permissionIds: string[],
@@ -500,10 +515,7 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
   ): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       // Exclusive lock on the role record to serialize concurrent updates
-      await tx.$queryRawUnsafe(
-        'SELECT id FROM "roles" WHERE id = $1 FOR UPDATE',
-        roleId
-      )
+      await tx.$queryRawUnsafe('SELECT id FROM "roles" WHERE id = $1 FOR UPDATE', roleId)
 
       await tx.rolePermission.deleteMany({
         where: { roleId },

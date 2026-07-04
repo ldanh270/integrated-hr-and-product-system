@@ -22,6 +22,9 @@ interface UseProjectKanbanProps {
   } | null
 }
 
+/**
+ * Custom hook to manage projectkanban.
+ */
 export function useProjectKanban({
   projectId,
   teamLeader,

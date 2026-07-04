@@ -34,6 +34,9 @@ import { usePermission } from "@/hooks/use-permission"
 import type { Task } from "@/types/task.types"
 
 // Main component to render the employee project portal ("My Page")
+/**
+ * ProjectDashboard Component.
+ */
 export default function ProjectDashboard() {
   // Retrieve current user session information
   const { user } = useAuthStore()

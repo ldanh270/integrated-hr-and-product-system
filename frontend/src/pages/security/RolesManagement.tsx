@@ -37,6 +37,11 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
+/**
+ * RolesManagement Component.
+ * Provides features to view, create, edit, and delete system roles.
+ * Displays employee assignments inside a drawer and updates role properties lazily.
+ */
 export default function RolesManagement() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null)
   const [drawerPage, setDrawerPage] = useState(1)

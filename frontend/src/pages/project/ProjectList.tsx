@@ -41,6 +41,9 @@ import { FolderKanban, Plus, Search, Users } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 // Main React component to render the global list of projects
+/**
+ * ProjectList Component.
+ */
 export default function ProjectList() {
   // Initialize query client for cache validation
   const queryClient = useQueryClient()
