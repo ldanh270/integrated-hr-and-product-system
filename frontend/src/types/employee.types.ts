@@ -1,12 +1,11 @@
 import type {
-  IEmployeeRole,
   IEmployeeStatus,
   IEmployeeType,
 } from "@/config/entities/employee.config"
 
 export type EmployeeStatus = IEmployeeStatus
 export type EmployeeType = IEmployeeType
-export type EmployeeRole = IEmployeeRole
+export type EmployeeRole = string
 
 export interface Employee {
   id: string
