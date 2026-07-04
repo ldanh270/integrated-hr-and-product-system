@@ -64,23 +64,28 @@ async function shouldSkipSeeder(name: string): Promise<boolean> {
   }
 }
 
-async function main() {
+async function main(): Promise<void> {
   console.log("Seeding demo data (without clearing database)...")
 
   let context = await hydrateContext(createEmptyContext())
   const seeders = registry.getSorted()
 
   for (const seeder of seeders) {
-    if (await shouldSkipSeeder(seeder.name)) {
-      console.log(`[skip] ${seeder.name} — already has data`)
-      context = await hydrateContext(context)
-      continue
-    }
+    try {
+      if (await shouldSkipSeeder(seeder.name)) {
+        console.log(`[skip] ${seeder.name} — already has data`)
+        context = await hydrateContext(context)
+        continue
+      }
 
-    console.log(`\n[→] Running: ${seeder.name}`)
-    const result = await seeder.run(context)
-    context = await hydrateContext({ ...context, ...result })
-    console.log(`[✓] Done: ${seeder.name}`)
+      console.log(`\n[→] Running: ${seeder.name}`)
+      const result = await seeder.run(context)
+      context = await hydrateContext({ ...context, ...result })
+      console.log(`[✓] Done: ${seeder.name}`)
+    } catch (error) {
+      console.error(`[✗] Seeder ${seeder.name} failed:`, error)
+      throw error
+    }
   }
 
   const summary = {
@@ -96,15 +101,15 @@ async function main() {
   console.log("\nDemo seed complete:", summary)
 }
 
-async function runDemoSeed() {
+async function runDemoSeed(): Promise<void> {
   try {
     await main()
-  } catch (error) {
-    console.error("Demo seed failed:", error)
-    process.exit(1)
   } finally {
     await prisma.$disconnect()
   }
 }
 
-void runDemoSeed()
+runDemoSeed().catch((error: unknown) => {
+  console.error("Demo seed failed:", error)
+  process.exit(1)
+})

@@ -12,25 +12,34 @@ interface PartTimePayrollContext {
   partTimeDefaultHourlyRate?: number
 }
 
-function pickContextNumber(raw: unknown, fallback: number): number {
-  return typeof raw === "number" && !Number.isNaN(raw) ? raw : fallback
+function sanitizeOptionalNumber(value: number | undefined, fallback: number): number {
+  if (value === undefined || Number.isNaN(value)) {
+    return fallback
+  }
+
+  return value
 }
 
 /** Reads PT SalaryVariable codes from payroll context; zero default rate means "must set on project". */
 export function resolvePartTimePayrollVariables(
   context: Record<string, number>,
 ): ResolvedPartTimePayrollVariables {
-  const ptContext = context as PartTimePayrollContext
-  const overtimeMultiplier = pickContextNumber(
-    ptContext.partTimeOvertimeMultiplier,
+  const {
+    partTimeOvertimeMultiplier,
+    partTimeWorkingDayMultiplier,
+    partTimeDefaultHourlyRate,
+  } = context as PartTimePayrollContext
+
+  const overtimeMultiplier = sanitizeOptionalNumber(
+    partTimeOvertimeMultiplier,
     PART_TIME_PAYROLL_VARIABLE_DEFAULTS.OVERTIME_MULTIPLIER,
   )
-  const workingDayMultiplier = pickContextNumber(
-    ptContext.partTimeWorkingDayMultiplier,
+  const workingDayMultiplier = sanitizeOptionalNumber(
+    partTimeWorkingDayMultiplier,
     PART_TIME_PAYROLL_VARIABLE_DEFAULTS.WORKING_DAY_MULTIPLIER,
   )
-  const defaultHourlyRate = pickContextNumber(
-    ptContext.partTimeDefaultHourlyRate,
+  const defaultHourlyRate = sanitizeOptionalNumber(
+    partTimeDefaultHourlyRate,
     PART_TIME_PAYROLL_VARIABLE_DEFAULTS.DEFAULT_HOURLY_RATE,
   )
 
