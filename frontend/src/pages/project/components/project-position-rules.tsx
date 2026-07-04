@@ -8,7 +8,7 @@ import { PageCard, useConfirm } from "@/components/common"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Save, RefreshCw, CheckSquare, Square, Plus, Edit2, Trash2, ChevronDown, UserPlus, X } from "lucide-react"
+import { Save, RefreshCw, CheckSquare, Square, Plus, Edit2, Trash2, ChevronDown, X } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -101,19 +101,20 @@ export function ProjectPositionRules({ projectId }: ProjectPositionRulesProps) {
   // State to track open dropdown for each role
   const [openDropdown, setOpenDropdown] = useState<{ roleId: string; type: "tracker" | null }>({ roleId: "", type: null })
 
-  const getRoleMembers = (role: any) => {
+  const getRoleMembers = (role: any): any[] => {
     const assignedMembers = members.filter((m) => m.roleId === role.id)
-    if (role.code === "leader" && project?.teamLeader) {
+    const teamLeader = project?.teamLeader
+    if (role.code === "leader" && teamLeader) {
       const isAlreadyIncluded = assignedMembers.some(
-        (m) => m.employeeId === project.teamLeader.id
+        (m) => m.employeeId === teamLeader.id
       )
       if (!isAlreadyIncluded) {
         const leaderMember = {
-          id: `leader_${project.teamLeader.id}`,
-          employeeId: project.teamLeader.id,
+          id: `leader_${teamLeader.id}`,
+          employeeId: teamLeader.id,
           employee: {
-            fullName: project.teamLeader.fullName,
-            email: project.teamLeader.email,
+            fullName: teamLeader.fullName,
+            email: teamLeader.email,
           },
           isTeamLeaderField: true,
         }

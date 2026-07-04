@@ -53,16 +53,6 @@ const PROJECT_STATUS_LABELS = new Map<string, string>([
   ["cancelled", "Đã hủy"],
 ])
 
-const TRACKER_LIST = [
-  { key: "feature", label: "Feature (Tính năng)" },
-  { key: "bug", label: "Bug (Lỗi)" },
-  { key: "support", label: "Support (Hỗ trợ)" },
-  { key: "task", label: "Task (Công việc)" },
-  { key: "meeting", label: "Meeting (Họp)" },
-  { key: "test", label: "Test (Kiểm thử)" },
-  { key: "subtask", label: "Subtask (Việc con)" },
-  { key: "management", label: "Management (Quản lý)" },
-]
 
 export function EditProjectModal({
   isOpen,

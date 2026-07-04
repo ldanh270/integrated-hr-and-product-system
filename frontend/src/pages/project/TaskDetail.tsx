@@ -33,7 +33,6 @@ import {
   SPENT_TIME_STATUS,
   TASK_PRIORITIES,
   TASK_STATUS,
-  TASK_TRACKERS,
   getSpentTimeStatusLabel,
 } from "@/config/entities/project.config"
 import {
@@ -225,12 +224,13 @@ export default function TaskDetail() {
       return projectAllowed
     }
 
-    if (currentMember?.role?.code === "viewer") {
+    const role = currentMember?.role
+    if (role?.code === "viewer") {
       return []
     }
 
-    if (currentMember?.role) {
-      return projectAllowed.filter(tr => currentMember.role.allowedTaskTrackers.includes(tr))
+    if (role) {
+      return projectAllowed.filter(tr => role.allowedTaskTrackers.includes(tr))
     }
 
     return projectAllowed

@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 // Import entity configurations for task tracker, status, and priorities
-import { TASK_PRIORITIES, TASK_TRACKERS } from "@/config/entities/project.config"
+import { TASK_PRIORITIES } from "@/config/entities/project.config"
 // Import API utilities for projects, tasks, and task categories
 import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
@@ -191,12 +191,13 @@ export default function NewTask() {
       return projectAllowed
     }
 
-    if (currentMember?.role?.code === "viewer") {
+    const role = currentMember?.role
+    if (role?.code === "viewer") {
       return []
     }
 
-    if (currentMember?.role) {
-      return projectAllowed.filter(tr => currentMember.role.allowedTaskTrackers.includes(tr))
+    if (role) {
+      return projectAllowed.filter(tr => role.allowedTaskTrackers.includes(tr))
     }
 
     return projectAllowed

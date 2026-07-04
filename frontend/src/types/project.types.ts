@@ -83,7 +83,7 @@ export interface ProjectMember {
   /** remote = log only | onsite = one GPS check-in/day before logging hours. */
   workMode: string
   roleId: string | null
-  role: { id: string; name: string; code: string } | null
+  role: { id: string; name: string; code: string; allowedTaskTrackers: string[] } | null
   createdAt: string
   employee: {
     id: string
