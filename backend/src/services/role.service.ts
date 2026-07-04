@@ -73,13 +73,14 @@ export class RoleService implements IRoleService {
       name: trimmedName,
       description: data.description,
       createdBy: data.actorId,
+      isDefault: data.isDefault,
     })
 
     await auditService.log({
       actorId: data.actorId,
       targetRoleId: role.id,
       action: "ROLE_CREATED",
-      newValue: { name: role.name, description: role.description },
+      newValue: { name: role.name, description: role.description, isDefault: role.isDefault },
     })
 
     return role
@@ -96,9 +97,17 @@ export class RoleService implements IRoleService {
     const current = await this.getRole(id)
     if (!current) return null
 
-    // Enforce system role protection rules
-    if (current.isSystem) {
-      throw new AppError("Cannot update system roles.", HttpStatusCode.FORBIDDEN, "RoleService", "SYSTEM_ROLE_PROTECTED")
+    // Enforce Admin role protection rules
+    if (current.name.toLowerCase() === "admin") {
+      const isNameChanged = data.name !== undefined && data.name.trim().toLowerCase() !== current.name.toLowerCase()
+      if (isNameChanged) {
+        throw new AppError(
+          "Cannot rename the Admin role.",
+          HttpStatusCode.FORBIDDEN,
+          "RoleService",
+          "SYSTEM_ROLE_PROTECTED"
+        )
+      }
     }
 
     // If deactivating a role, check if it's an Admin role and if it leaves 0 active admin users
@@ -136,6 +145,7 @@ export class RoleService implements IRoleService {
         description: data.description,
         isActive: data.isActive,
         updatedBy: data.actorId,
+        isDefault: data.isDefault,
       })
       if (updated) {
         await authorizationService.invalidateGlobalVersion()
@@ -143,18 +153,34 @@ export class RoleService implements IRoleService {
           actorId: data.actorId,
           targetRoleId: id,
           action: "ROLE_UPDATED",
-          oldValue: { name: current.name, description: current.description, isActive: current.isActive },
-          newValue: { name: updated.name, description: updated.description, isActive: updated.isActive },
+          oldValue: { name: current.name, description: current.description, isActive: current.isActive, isDefault: current.isDefault },
+          newValue: { name: updated.name, description: updated.description, isActive: updated.isActive, isDefault: updated.isDefault },
         })
       }
       return updated
     } catch (error) {
-      if (error instanceof Error && error.message === "CANNOT_REMOVE_LAST_ADMIN") {
-        throw new AppError(
-          "Cannot deactivate the last active Admin role assignment in the system.",
-          HttpStatusCode.CONFLICT,
-          "RoleService",
-        )
+      if (error instanceof Error) {
+        if (error.message === "CANNOT_REMOVE_LAST_ADMIN") {
+          throw new AppError(
+            "Cannot deactivate the last active Admin role assignment in the system.",
+            HttpStatusCode.CONFLICT,
+            "RoleService",
+          )
+        }
+        if (error.message === "CANNOT_DEACTIVATE_DEFAULT_ROLE") {
+          throw new AppError(
+            "Cannot deactivate the default role. Assign another role as default first.",
+            HttpStatusCode.CONFLICT,
+            "RoleService",
+          )
+        }
+        if (error.message === "CANNOT_DISABLE_ONLY_DEFAULT_ROLE") {
+          throw new AppError(
+            "Cannot disable the only default role. Assign another role as default first.",
+            HttpStatusCode.CONFLICT,
+            "RoleService",
+          )
+        }
       }
       throw error
     }
@@ -172,9 +198,9 @@ export class RoleService implements IRoleService {
     const current = await this.getRole(id)
     if (!current) return false
 
-    // Block deleting system roles (additional check for safety)
-    if (current.isSystem) {
-      throw new AppError("Cannot delete system roles.", HttpStatusCode.FORBIDDEN, "RoleService", "SYSTEM_ROLE_PROTECTED")
+    // Block deleting the Admin role for safety
+    if (current.name.toLowerCase() === "admin") {
+      throw new AppError("Cannot delete the Admin role.", HttpStatusCode.FORBIDDEN, "RoleService", "SYSTEM_ROLE_PROTECTED")
     }
 
     // Block deleting the last active Admin role assignment in the system
@@ -206,6 +232,13 @@ export class RoleService implements IRoleService {
         if (error.message === "CANNOT_REMOVE_LAST_ADMIN") {
           throw new AppError(
             "Cannot delete the last admin role assignment in the system.",
+            HttpStatusCode.CONFLICT,
+            "RoleService",
+          )
+        }
+        if (error.message === "CANNOT_DELETE_DEFAULT_ROLE") {
+          throw new AppError(
+            "Cannot delete the default role. Assign another role as default first.",
             HttpStatusCode.CONFLICT,
             "RoleService",
           )
