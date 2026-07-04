@@ -5,10 +5,9 @@ import { InterviewController } from "../controllers/interview.controller";
 import { InterviewService } from "../services/interview.service";
 import { InterviewRoundRepository, InterviewScorecardRepository } from "../repositories/interview.repository";
 import { JobRequisitionRepository } from "../repositories/job-requisition.repository";
-import { CreateInterviewRoundSchema, SubmitScorecardSchema } from "../schemas/recruitment/interview.schema";
+import { CreateInterviewRoundSchema, SubmitScorecardSchema, UpdateInterviewRoundSchema } from "../schemas/recruitment/interview.schema";
 import { internalLimiter } from "../middlewares/rate-limit.middleware";
-import { authorizeRoles } from "../middlewares/role.middleware";
-import { ROLE } from "@/configs/entities/employee.config";
+import { requireAnyPermission } from "../middlewares/permission.middleware";
 
 const router = Router();
 
@@ -30,7 +29,7 @@ router.use(authenticate);
 // Rounds
 router.post(
   "/rounds",
-  authorizeRoles(ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER, ROLE.ADMIN),
+  requireAnyPermission(["manage_recruitment", "manage_system"]),
   validate(CreateInterviewRoundSchema),
   controller.scheduleRound
 );
@@ -38,6 +37,19 @@ router.post(
 router.get(
   "/rounds/:id",
   controller.getRoundById
+);
+
+router.put(
+  "/rounds/:id",
+  requireAnyPermission(["manage_recruitment", "manage_system"]),
+  validate(UpdateInterviewRoundSchema),
+  controller.updateRound
+);
+
+router.delete(
+  "/rounds/:id",
+  requireAnyPermission(["manage_recruitment", "manage_system"]),
+  controller.deleteRound
 );
 
 // Scorecards

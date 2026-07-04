@@ -1,7 +1,7 @@
 import { REQUISITION_STATUS, JOB_APPLICATION_STATUS } from "@/configs/entities/recruitment.config";
 import { JobRequisition, RequisitionStatus, Prisma } from "@prisma/client";
 import { prisma } from "../libs/database";
-import { CreateJobRequisitionDTO, IJobRequisitionRepository, JobRequisitionFilters } from "../types/recruitment/job-requisition.types";
+import { CreateJobRequisitionDTO, IJobRequisitionRepository, JobRequisitionFilters, UpdateJobRequisitionDTO } from "../types/recruitment/job-requisition.types";
 
 export class JobRequisitionRepository implements IJobRequisitionRepository {
   /**
@@ -88,6 +88,30 @@ export class JobRequisitionRepository implements IJobRequisitionRepository {
     return prisma.jobRequisition.update({
       where: { id },
       data: updateData,
+    });
+  }
+
+  /**
+   * Updates an existing job requisition.
+   * @param id - The ID of the requisition
+   * @param data - The data to update
+   * @returns The updated job requisition
+   */
+  async update(id: string, data: UpdateJobRequisitionDTO): Promise<JobRequisition> {
+    return prisma.jobRequisition.update({
+      where: { id },
+      data,
+    });
+  }
+
+  /**
+   * Deletes a job requisition.
+   * @param id - The ID of the requisition
+   * @returns The deleted job requisition
+   */
+  async delete(id: string): Promise<JobRequisition> {
+    return prisma.jobRequisition.delete({
+      where: { id },
     });
   }
 

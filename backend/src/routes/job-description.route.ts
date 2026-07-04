@@ -27,4 +27,7 @@ router.get("/", controller.getByRequisitionId);
 // Create or update by requisitionId
 router.put("/", validate(CreateJobDescriptionSchema), controller.createOrUpdate);
 
+// Delete by requisitionId
+router.delete("/", controller.deleteDescription);
+
 export default router;

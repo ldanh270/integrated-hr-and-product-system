@@ -1,9 +1,8 @@
 import { HttpStatusCode } from "@/configs/system/http.config";
 import { ErrorLayer } from "@/configs/system/error-code.config";
-import { JobRequisition, RequisitionStatus, Role } from "@prisma/client";
-import { ROLE } from "@/configs/entities/employee.config";
+import { JobRequisition, Prisma } from "@prisma/client";
 import { AppError } from "../utils/error.util";
-import { CreateJobRequisitionDTO, IJobRequisitionRepository, IJobRequisitionService, JobRequisitionFilters } from "../types/recruitment/job-requisition.types";
+import { CreateJobRequisitionDTO, IJobRequisitionRepository, IJobRequisitionService, JobRequisitionFilters, UpdateJobRequisitionDTO } from "../types/recruitment/job-requisition.types";
 import { prisma } from "../libs/database";
 import { REQUISITION_STATUS } from "@/configs/entities/recruitment.config";
 
@@ -48,6 +47,55 @@ export class JobRequisitionService implements IJobRequisitionService {
   }
 
   /**
+   * Updates an existing job requisition if it has not been approved yet.
+   * @param employeeId - The ID of the employee making the update
+   * @param id - The ID of the requisition
+   * @param data - The update data
+   * @returns The updated job requisition
+   * @throws AppError if not found, already approved, or closed/rejected
+   */
+  async updateRequisition(employeeId: string, id: string, data: Partial<CreateJobRequisitionDTO>): Promise<JobRequisition> {
+    const req = await this.jobRequisitionRepository.findById(id);
+    if (!req) {
+      throw new AppError("Job Requisition not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE);
+    }
+
+    if (req.approvedById) {
+      throw new AppError("Cannot update a requisition that has already been approved", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
+    }
+
+    if (req.status !== REQUISITION_STATUS.OPEN) {
+      throw new AppError("Cannot update a closed or rejected requisition", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
+    }
+
+    return this.jobRequisitionRepository.update(id, data);
+  }
+
+  /**
+   * Deletes a job requisition if it has not been approved yet.
+   * @param employeeId - The ID of the employee deleting the requisition
+   * @param id - The ID of the requisition
+   * @returns The deleted job requisition
+   * @throws AppError if not found, already approved, or closed/rejected
+   */
+  async deleteRequisition(employeeId: string, id: string): Promise<JobRequisition> {
+    const req = await this.jobRequisitionRepository.findById(id);
+    if (!req) {
+      throw new AppError("Job Requisition not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE);
+    }
+
+    if (req.approvedById) {
+      throw new AppError("Cannot delete a requisition that has already been approved", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
+    }
+
+    if (req.status !== REQUISITION_STATUS.OPEN) {
+      throw new AppError("Cannot delete a closed or rejected requisition", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
+    }
+
+    return this.jobRequisitionRepository.delete(id);
+  }
+
+  /**
    * Verifies if the given employee is a General Manager.
    * Throws an error if the employee does not have the required role.
    * @param employeeId - The ID of the employee to check
@@ -55,10 +103,10 @@ export class JobRequisitionService implements IJobRequisitionService {
   private async verifyGeneralManager(employeeId: string): Promise<void> {
     const employee = await prisma.employee.findUnique({
       where: { id: employeeId },
-      select: { role: true }
+      select: { id: true }
     });
 
-    if (!employee || employee.role !== ROLE.GENERAL_MANAGER) {
+    if (!employee) {
       throw new AppError("Only General Manager can approve or reject job requisitions", HttpStatusCode.FORBIDDEN, ErrorLayer.SERVICE);
     }
   }

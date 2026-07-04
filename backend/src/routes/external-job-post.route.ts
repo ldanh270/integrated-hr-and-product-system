@@ -7,8 +7,7 @@ import { ExternalJobPostRepository } from "../repositories/external-job-post.rep
 import { JobRequisitionRepository } from "../repositories/job-requisition.repository";
 import { CreateExternalJobPostSchema, UpdateExternalJobPostStatusSchema } from "../schemas/recruitment/external-job-post.schema";
 import { internalLimiter } from "../middlewares/rate-limit.middleware";
-import { authorizeRoles } from "../middlewares/role.middleware";
-import { ROLE } from "@/configs/entities/employee.config";
+import { requireAnyPermission } from "../middlewares/permission.middleware";
 
 const router = Router({ mergeParams: true }); // Will be mounted under /requisitions/:requisitionId/external-posts
 
@@ -31,7 +30,7 @@ router.get(
 // Create new post
 router.post(
   "/",
-  authorizeRoles(ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER, ROLE.ADMIN),
+  requireAnyPermission(["manage_recruitment", "manage_system"]),
   validate(CreateExternalJobPostSchema),
   controller.create
 );
@@ -39,7 +38,7 @@ router.post(
 // Update status
 router.patch(
   "/:id/status",
-  authorizeRoles(ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER, ROLE.ADMIN),
+  requireAnyPermission(["manage_recruitment", "manage_system"]),
   validate(UpdateExternalJobPostStatusSchema),
   controller.updateStatus
 );

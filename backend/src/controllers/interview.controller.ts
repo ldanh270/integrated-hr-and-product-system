@@ -24,6 +24,32 @@ export class InterviewController {
   };
 
   /**
+   * Updates an interview round.
+   * @param req - The Express AuthRequest object, containing the round ID in params and update data in body.
+   * @param res - The Express Response object.
+   */
+  public updateRound = async (req: AuthRequest, res: Response) => {
+    const id = req.params.id as string;
+    // Validation is handled by Zod middleware
+    const data = req.body;
+    
+    const result = await this.interviewService.updateRound(id, data);
+    res.status(HttpStatusCode.OK).json({ data: result, error: null });
+  };
+
+  /**
+   * Deletes an interview round.
+   * @param req - The Express AuthRequest object, containing the round ID in params.
+   * @param res - The Express Response object.
+   */
+  public deleteRound = async (req: AuthRequest, res: Response) => {
+    const id = req.params.id as string;
+    
+    await this.interviewService.deleteRound(id);
+    res.status(HttpStatusCode.OK).json({ data: { message: "Interview round deleted successfully" }, error: null });
+  };
+
+  /**
    * Retrieves a specific interview round by ID.
    * @param req - The Express AuthRequest object.
    * @param res - The Express Response object.

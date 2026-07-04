@@ -2,7 +2,7 @@ import { HttpStatusCode } from "@/configs/system/http.config";
 import { ErrorLayer } from "@/configs/system/error-code.config";
 import { InterviewRound, InterviewScorecard, InterviewRoundCandidate } from "@prisma/client";
 import { AppError } from "../utils/error.util";
-import { CreateInterviewRoundDTO, SubmitScorecardDTO, IInterviewRoundRepository, IInterviewScorecardRepository, IInterviewService } from "../types/recruitment/interview.types";
+import { CreateInterviewRoundDTO, IInterviewRoundRepository, IInterviewScorecardRepository, IInterviewService, SubmitScorecardDTO, UpdateInterviewRoundDTO } from "../types/recruitment/interview.types";
 import { IJobRequisitionRepository } from "../types/recruitment/job-requisition.types";
 import { INTERVIEW_STATUS, INTERVIEW_RESULT, JOB_APPLICATION_STATUS } from "@/configs/entities/recruitment.config";
 import { prisma } from "../libs/database";
@@ -56,6 +56,34 @@ export class InterviewService implements IInterviewService {
 
       return round;
     });
+  }
+
+  /**
+   * Updates an interview round.
+   * @param id - The ID of the interview round to update
+   * @param data - The update payload
+   * @returns The updated interview round
+   * @throws AppError if the round is not found
+   */
+  async updateRound(id: string, data: UpdateInterviewRoundDTO): Promise<InterviewRound> {
+    const round = await this.interviewRoundRepository.findById(id);
+    if (!round) {
+      throw new AppError("Interview Round not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE);
+    }
+    return this.interviewRoundRepository.update(id, data);
+  }
+
+  /**
+   * Deletes an interview round.
+   * @param id - The ID of the interview round to delete
+   * @throws AppError if the round is not found
+   */
+  async deleteRound(id: string): Promise<void> {
+    const round = await this.interviewRoundRepository.findById(id);
+    if (!round) {
+      throw new AppError("Interview Round not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE);
+    }
+    await this.interviewRoundRepository.delete(id);
   }
 
   /**

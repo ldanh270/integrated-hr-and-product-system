@@ -4,7 +4,9 @@ export const EMPLOYEE_STATUS = {
   INACTIVE: "inactive",
   ON_LEAVE: "on_leave",
   TERMINATED: "terminated",
-} as const
+} as const;
+
+export const DEFAULT_POSITION = "New Hire";
 
 export const EMPLOYEE_TYPES = ["full_time", "part_time", "contractor", "intern"] as const
 export type IEmployeeType = (typeof EMPLOYEE_TYPES)[number]

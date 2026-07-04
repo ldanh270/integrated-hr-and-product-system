@@ -4,6 +4,8 @@ export interface IInterviewRoundRepository {
   create(data: CreateInterviewRoundDTO): Promise<InterviewRound>;
   findById(id: string): Promise<InterviewRound | null>;
   findByRequisitionId(requisitionId: string): Promise<InterviewRound[]>;
+  update(id: string, data: UpdateInterviewRoundDTO): Promise<InterviewRound>;
+  delete(id: string): Promise<void>;
   updateStatus(id: string, status: InterviewStatus): Promise<InterviewRound>;
   addInterviewer(roundId: string, employeeId: string): Promise<InterviewRoundMember>;
   addCandidate(roundId: string, applicationId: string): Promise<InterviewRoundCandidate>;
@@ -19,6 +21,8 @@ export interface IInterviewScorecardRepository {
 
 export interface IInterviewService {
   scheduleRound(requisitionId: string, data: CreateInterviewRoundDTO, interviewerIds: string[], applicationIds: string[]): Promise<InterviewRound>;
+  updateRound(id: string, data: UpdateInterviewRoundDTO): Promise<InterviewRound>;
+  deleteRound(id: string): Promise<void>;
   getRoundById(id: string): Promise<InterviewRound | null>;
   submitScorecard(interviewerId: string, data: SubmitScorecardDTO): Promise<InterviewScorecard>;
   addCandidateToRound(roundId: string, applicationId: string): Promise<InterviewRoundCandidate>;
@@ -31,6 +35,14 @@ export type CreateInterviewRoundDTO = {
   leadInterviewerId: string;
   format?: InterviewFormat;
   scheduledAt?: Date;
+};
+
+export type UpdateInterviewRoundDTO = {
+  title?: string;
+  format?: InterviewFormat;
+  status?: InterviewStatus;
+  scheduledAt?: Date;
+  leadInterviewerId?: string;
 };
 
 export type SubmitScorecardDTO = {

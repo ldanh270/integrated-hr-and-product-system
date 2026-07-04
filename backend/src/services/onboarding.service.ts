@@ -1,9 +1,10 @@
 import { HttpStatusCode } from "@/configs/system/http.config";
 import { ErrorLayer } from "@/configs/system/error-code.config";
-import { Employee, JobApplicationStatus, Role } from "@prisma/client";
+import { Employee } from "@prisma/client";
 import { randomInt, randomBytes } from "crypto";
 import { AppError } from "../utils/error.util";
 import { prisma } from "../libs/database";
+import { DEFAULT_POSITION } from "@/configs/entities/employee.config";
 import { HashUtil } from "../utils/hash.util";
 import { emailService } from "./email.service";
 import { ConvertToEmployeeDTO, IOnboardingService } from "../types/recruitment/onboarding.types";
@@ -94,8 +95,7 @@ export class OnboardingService implements IOnboardingService {
           phone: app.candidate?.phone || "",
           username,
           passwordHash,
-          role: Role.employee,
-          position: data.position || "New Hire",
+          position: data.position || DEFAULT_POSITION,
           // departmentId: data.departmentId, // uncomment if department relation is added
         }
       });

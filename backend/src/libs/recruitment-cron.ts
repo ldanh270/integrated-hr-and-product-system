@@ -1,7 +1,6 @@
 import cron from "node-cron";
 import { prisma } from "./database";
 import { OFFER_STATUS, JOB_APPLICATION_STATUS } from "@/configs/entities/recruitment.config";
-import { Role } from "@prisma/client";
 import { HashUtil } from "../utils/hash.util";
 
 /**
@@ -74,16 +73,15 @@ export const initRecruitmentCron = () => {
             }
 
             await tx.employee.create({
-              data: {
-                fullName: candidate.fullName,
-                email: candidate.email,
-                phone: candidate.phone,
-                username,
-                passwordHash: hashedPassword,
-                role: Role.employee,
-                position: offer.position,
-                startDate: offer.startDate,
-                // Add any other mappings if needed
+                data: {
+                  email: candidate.email,
+                  fullName: candidate.fullName,
+                  phone: candidate.phone,
+                  username,
+                  passwordHash: hashedPassword,
+                  position: offer.position,
+                  startDate: offer.startDate,
+                  // Add any other mappings if needed
               },
             });
 

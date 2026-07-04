@@ -127,7 +127,7 @@ app.use(globalErrorHandler)
 /**
  * Must connect to database successfully before start server
  */
-connectDB().then(() => {
+connectDB().then(async () => {
   // Initialize cron scheduler
   const scheduler = new SchedulerService()
   scheduler.init()

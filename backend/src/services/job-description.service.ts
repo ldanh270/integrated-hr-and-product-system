@@ -41,4 +41,18 @@ export class JobDescriptionService implements IJobDescriptionService {
   async getDescriptionByRequisitionId(requisitionId: string): Promise<JobDescription | null> {
     return this.jobDescriptionRepository.findByRequisitionId(requisitionId);
   }
+
+  /**
+   * Deletes a job description by its requisition ID.
+   * @param requisitionId - The ID of the requisition
+   * @throws AppError if the job description is not found
+   */
+  async deleteDescription(requisitionId: string): Promise<void> {
+    const existing = await this.jobDescriptionRepository.findByRequisitionId(requisitionId);
+    if (!existing) {
+      throw new AppError("Job Description not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE);
+    }
+    
+    await this.jobDescriptionRepository.deleteByRequisitionId(requisitionId);
+  }
 }

@@ -1,6 +1,6 @@
 import { InterviewRound, InterviewScorecard, InterviewStatus, InterviewRoundMember, InterviewRoundCandidate, Prisma } from "@prisma/client";
 import { prisma } from "../libs/database";
-import { CreateInterviewRoundDTO, SubmitScorecardDTO, IInterviewRoundRepository, IInterviewScorecardRepository } from "../types/recruitment/interview.types";
+import { CreateInterviewRoundDTO, SubmitScorecardDTO, IInterviewRoundRepository, IInterviewScorecardRepository, UpdateInterviewRoundDTO } from "../types/recruitment/interview.types";
 
 export class InterviewRoundRepository implements IInterviewRoundRepository {
   /**
@@ -44,6 +44,29 @@ export class InterviewRoundRepository implements IInterviewRoundRepository {
         interviewers: { include: { employee: true } },
         candidates: { include: { application: true } },
       },
+    });
+  }
+
+  /**
+   * Updates an interview round.
+   * @param id - The ID of the round
+   * @param data - The update data
+   * @returns The updated interview round
+   */
+  async update(id: string, data: UpdateInterviewRoundDTO): Promise<InterviewRound> {
+    return prisma.interviewRound.update({
+      where: { id },
+      data,
+    });
+  }
+
+  /**
+   * Deletes an interview round.
+   * @param id - The ID of the round
+   */
+  async delete(id: string): Promise<void> {
+    await prisma.interviewRound.delete({
+      where: { id },
     });
   }
 

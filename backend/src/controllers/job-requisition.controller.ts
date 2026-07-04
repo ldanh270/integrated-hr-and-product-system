@@ -25,6 +25,33 @@ export class JobRequisitionController {
   };
 
   /**
+   * Updates an existing job requisition before it is approved.
+   * @param req - The Express AuthRequest object.
+   * @param res - The Express Response object.
+   */
+  public update = async (req: AuthRequest, res: Response) => {
+    const hmId = req.user!.empId;
+    const id = req.params.id as string;
+    const data = req.body;
+    
+    const result = await this.jobRequisitionService.updateRequisition(hmId, id, data);
+    res.status(HttpStatusCode.OK).json({ data: result, error: null });
+  };
+
+  /**
+   * Deletes a job requisition before it is approved.
+   * @param req - The Express AuthRequest object.
+   * @param res - The Express Response object.
+   */
+  public delete = async (req: AuthRequest, res: Response) => {
+    const hmId = req.user!.empId;
+    const id = req.params.id as string;
+    
+    const result = await this.jobRequisitionService.deleteRequisition(hmId, id);
+    res.status(HttpStatusCode.OK).json({ data: result, error: null });
+  };
+
+  /**
    * Retrieves a job requisition by its ID.
    * @param req - The Express AuthRequest object, containing the requisition ID in the params.
    * @param res - The Express Response object.

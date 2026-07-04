@@ -40,4 +40,16 @@ export class JobDescriptionController {
     
     res.status(HttpStatusCode.OK).json({ data: result, error: null });
   };
+
+  /**
+   * Deletes a job description by its requisition ID.
+   * @param req - The Express AuthRequest object, containing the requisition ID in params.
+   * @param res - The Express Response object.
+   */
+  public deleteDescription = async (req: AuthRequest, res: Response) => {
+    const requisitionId = req.params.requisitionId as string;
+    await this.jobDescriptionService.deleteDescription(requisitionId);
+    
+    res.status(HttpStatusCode.OK).json({ data: { message: "Job description deleted successfully" }, error: null });
+  };
 }

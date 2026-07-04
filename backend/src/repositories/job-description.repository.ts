@@ -32,4 +32,14 @@ export class JobDescriptionRepository implements IJobDescriptionRepository {
       where: { requisitionId },
     });
   }
+
+  /**
+   * Deletes a job description by its requisition ID.
+   * @param requisitionId - The ID of the requisition
+   */
+  async deleteByRequisitionId(requisitionId: string): Promise<void> {
+    await prisma.jobDescription.delete({
+      where: { requisitionId },
+    });
+  }
 }
