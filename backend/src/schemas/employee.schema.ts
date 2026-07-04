@@ -1,6 +1,6 @@
 import {
+  EMPLOYEE_ROLES,
   EMPLOYEE_STATUSES,
-  SYSTEM_ROLE_NAMES,
   EMPLOYEE_TYPES,
 } from "@/configs/entities/employee.config.ts"
 import { SORT_ORDER_VALUES } from "@/configs/system/db.config.ts"
@@ -54,8 +54,7 @@ export const createEmployeeSchema = z
         "Password must contain at least one uppercase, one lowercase, one number and one special character",
       ),
 
-
-    role: z.enum(SYSTEM_ROLE_NAMES).optional(),
+    role: z.enum(EMPLOYEE_ROLES).optional(),
 
     employeeType: z.enum(EMPLOYEE_TYPES).optional(),
 
@@ -146,7 +145,6 @@ export const updateEmployeeSchema = z
         "Password must contain at least one uppercase, one lowercase, one number and one special character",
       )
       .optional(),
-
 
     phone: z
       .string()
