@@ -47,6 +47,7 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
       isSystem: role.isSystem,
       isActive: role.isActive,
       isAdministrative: role.isAdministrative,
+      isDefault: role.isDefault,
       createdAt: role.createdAt,
       updatedAt: role.updatedAt,
       createdBy: role.createdBy,
@@ -205,15 +206,24 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
    * @returns The newly created AppRole domain object.
    */
   async createRole(data: CreateRoleDto): Promise<AppRole> {
-    const role = await this.prisma.appRole.create({
-      data: {
-        name: data.name,
-        description: data.description || null,
-        createdBy: data.createdBy || null,
-        isAdministrative: data.isAdministrative || false,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      if (data.isDefault) {
+        await tx.appRole.updateMany({
+          where: { deletedAt: null },
+          data: { isDefault: false },
+        })
+      }
+      const role = await tx.appRole.create({
+        data: {
+          name: data.name,
+          description: data.description || null,
+          createdBy: data.createdBy || null,
+          isAdministrative: data.isAdministrative || false,
+          isDefault: data.isDefault || false,
+        },
+      })
+      return this.mapToDomain(role)
     })
-    return this.mapToDomain(role)
   }
 
   /**
@@ -224,7 +234,20 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
    */
   async updateRole(id: string, data: UpdateRoleDto): Promise<AppRole | null> {
     return this.prisma.$transaction(async (tx) => {
-      // If deactivating the role, enforce locks and check active admin count retention
+      const record = await tx.appRole.findFirst({
+        where: { id, deletedAt: null },
+      })
+
+      if (!record) return null
+
+      // If deactivating the role or disabling default role, enforce locks & checks
+      if (data.isActive === false && record.isDefault) {
+        throw new Error("CANNOT_DEACTIVATE_DEFAULT_ROLE")
+      }
+      if (data.isDefault === false && record.isDefault) {
+        throw new Error("CANNOT_DISABLE_ONLY_DEFAULT_ROLE")
+      }
+
       if (data.isActive === false) {
         // Locking is based on the case-normalized role name "admin" because the unique constraint on the name field is case-sensitive, allowing different cases like "Admin" and "admin" to coexist. Normalized lock LOWER(TRIM(name)) = 'admin' ensures deactivating/deleting any of these active roles named "Admin" (case-insensitively) will acquire a lock on ALL of them, preventing race conditions.
         await tx.$executeRaw`
@@ -234,15 +257,19 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
           FOR UPDATE
         `
 
-        const record = await tx.appRole.findFirst({
-          where: { id, deletedAt: null },
-        })
-        if (record && record.name.trim().toLowerCase() === "admin") {
+        if (record.name.trim().toLowerCase() === "admin") {
           const remainingAdminUsers = await this.countRemainingAdminUsers(id, tx)
           if (remainingAdminUsers === 0) {
             throw new Error("CANNOT_REMOVE_LAST_ADMIN")
           }
         }
+      }
+
+      if (data.isDefault === true) {
+        await tx.appRole.updateMany({
+          where: { id: { not: id }, deletedAt: null },
+          data: { isDefault: false },
+        })
       }
 
       const role = await tx.appRole.update({
@@ -253,6 +280,7 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
           isActive: data.isActive,
           updatedBy: data.updatedBy,
           isAdministrative: data.isAdministrative,
+          isDefault: data.isDefault,
         },
       })
       return this.mapToDomain(role)
@@ -292,6 +320,11 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
         if (remainingAdminUsers === 0) {
           throw new Error("CANNOT_REMOVE_LAST_ADMIN")
         }
+      }
+
+      // Verify deleting this role doesn't remove the default role
+      if (record.isDefault) {
+        throw new Error("CANNOT_DELETE_DEFAULT_ROLE")
       }
 
       // Check employee assignments
