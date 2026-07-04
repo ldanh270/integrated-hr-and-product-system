@@ -17,6 +17,8 @@ export interface Employee {
   roles?: string[]
   phone: string | null
   position: string | null
+  positionId?: string | null
+  positionRel?: any
   employeeType: EmployeeType
   status: EmployeeStatus
   dateOfBirth: string | null // ISO string
@@ -60,6 +62,7 @@ export interface CreateEmployeeDto {
   role?: EmployeeRole
   phone?: string
   position?: string
+  positionId?: string
   employeeType?: EmployeeType
   status?: EmployeeStatus
   dateOfBirth?: string
@@ -75,6 +78,7 @@ export interface UpdateEmployeeDto {
   password?: string
   phone?: string | null
   position?: string | null
+  positionId?: string | null
   employeeType?: EmployeeType
   status?: EmployeeStatus
   dateOfBirth?: string | null

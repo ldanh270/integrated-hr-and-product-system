@@ -47,6 +47,7 @@ const editSchema = z.object({
     .optional(),
 
   position: z.string().max(100, "Chức danh quá dài").optional(),
+  positionId: z.string().optional(),
 
   employeeType: z.enum(EMPLOYEE_TYPES).optional(),
   status: z.enum(EMPLOYEE_STATUSES).optional(),
@@ -115,6 +116,7 @@ export function useEmployeeEditModal(
         password: "",
         phone: employee.phone || undefined,
         position: employee.position || undefined,
+        positionId: employee.positionId || undefined,
         employeeType: employee.employeeType,
         status: employee.status,
         dateOfBirth: formatDateForInput(employee.dateOfBirth),
@@ -133,6 +135,7 @@ export function useEmployeeEditModal(
       password: data.password === "" ? undefined : data.password,
       phone: data.phone === "" ? null : data.phone,
       position: data.position === "" ? null : data.position,
+      positionId: data.positionId === "" ? null : data.positionId,
       dateOfBirth: data.dateOfBirth === "" ? null : data.dateOfBirth,
       nationalId: data.nationalId === "" ? null : data.nationalId,
       address: data.address === "" ? null : data.address,
