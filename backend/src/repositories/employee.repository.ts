@@ -75,6 +75,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       updatedAt: employee.updatedAt,
       version: employee.version,
       authorizationVersion: employee.authorizationVersion,
+      lockedUntil: employee.lockedUntil,
     }
   }
 
@@ -118,8 +119,14 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     }
 
     // Apply status filter, default to excluding terminated employees
-    if (status) {
-      where.status = status
+    if (status === "locked") {
+      const now = new Date()
+      where.OR = [
+        { lockedUntil: { gt: now } },
+        { failedLoginCount: { gte: 5 } },
+      ]
+    } else if (status) {
+      where.status = status as EmployeeStatus
     } else {
       where.status = { not: EMPLOYEE_STATUS.TERMINATED }
     }
