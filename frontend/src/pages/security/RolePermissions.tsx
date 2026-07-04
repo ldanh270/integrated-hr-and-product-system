@@ -8,7 +8,7 @@ import {
   useUpdateRolePermissions,
   usePermissions,
 } from "@/hooks/security/queries/use-security-query"
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo } from "react"
 import type { Role, Permission } from "@/types/security.types"
 import {
   Shield,
@@ -21,6 +21,12 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
+/**
+ * RolePermissions Component.
+ * Renders a list of system roles and allows configuring their permissions.
+ * Includes a sidebar drawer with custom checkboxes, using a local state buffer 
+ * to speed up interaction and save all permission changes in a single batch request.
+ */
 export default function RolePermissions() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null)
 
@@ -30,7 +36,6 @@ export default function RolePermissions() {
 
   // Fetch permissions of the selected role
   const { data: rolePermissions, isLoading: isLoadingRolePerms } = useRolePermissions(selectedRole?.id || "")
-  const updateRolePermissionsMutation = useUpdateRolePermissions()
 
   const handleOpenRoleDetail = (role: Role) => {
     setSelectedRole(role)
@@ -39,59 +44,6 @@ export default function RolePermissions() {
   const handleCloseDrawer = () => {
     setSelectedRole(null)
   }
-
-  const [selectedPermissionIds, setSelectedPermissionIds] = useState<string[]>([])
-
-  // Sync state when rolePermissions loads
-  useEffect(() => {
-    if (rolePermissions) {
-      setSelectedPermissionIds(rolePermissions.map((rp) => rp.id))
-    }
-  }, [rolePermissions])
-
-  // Track if there are unsaved changes
-  const hasChanges = useMemo(() => {
-    if (!rolePermissions) return false
-    const initialIds = rolePermissions.map((rp: Permission) => rp.id).sort()
-    const currentIds = [...selectedPermissionIds].sort()
-    return JSON.stringify(initialIds) !== JSON.stringify(currentIds)
-  }, [rolePermissions, selectedPermissionIds])
-
-  // Toggle permission mapping handler locally
-  const handleTogglePermission = (permissionId: string, isChecked: boolean) => {
-    if (isChecked) {
-      setSelectedPermissionIds((prev) => prev.filter((id) => id !== permissionId))
-    } else {
-      setSelectedPermissionIds((prev) => [...prev, permissionId])
-    }
-  }
-
-  // Batch save permissions
-  const handleSavePermissions = async () => {
-    if (!selectedRole) return
-    try {
-      await updateRolePermissionsMutation.mutateAsync({
-        roleId: selectedRole.id,
-        permissionIds: selectedPermissionIds,
-      })
-      toast.success("Cập nhật quyền thành công")
-      handleCloseDrawer()
-    } catch {
-      toast.error("Không thể cập nhật quyền")
-    }
-  }
-
-  // Group all permissions by module
-  const groupedPermissions = useMemo(() => {
-    if (!allPermissions?.data) return {}
-    const groups: Record<string, Permission[]> = {}
-    allPermissions.data.forEach((p: Permission) => {
-      const mod = p.module || "other"
-      if (!groups[mod]) groups[mod] = []
-      groups[mod].push(p)
-    })
-    return groups
-  }, [allPermissions])
 
   return (
     <div className="container max-w-7xl px-6 py-8">
@@ -183,87 +135,176 @@ export default function RolePermissions() {
 
       {/* AppDrawer for Role Permissions */}
       <AppDrawer isOpen={!!selectedRole} onClose={handleCloseDrawer} widthClassName="w-full sm:max-w-[32rem]">
-        <div className="p-6 h-full flex flex-col justify-between">
-          <div className="flex-1 flex flex-col min-h-0">
-            {/* Header */}
-            <div className="mb-6 pt-6">
-              <div className="flex items-center gap-2 mb-1">
-                <FolderLock className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-bold text-foreground">
-                  Cấu hình quyền: {selectedRole ? ROLE_LABELS[selectedRole.name] || selectedRole.name : ""}
-                </h2>
-              </div>
-              <p className="text-xs text-muted-foreground leading-normal">
-                {selectedRole?.description || "Không có mô tả."}
-              </p>
+        {selectedRole && (
+          isLoadingRolePerms ? (
+            <div className="p-6 py-12 flex flex-col items-center justify-center">
+              <RefreshCw className="h-7 w-7 animate-spin text-muted-foreground" />
+              <p className="text-xs text-muted-foreground mt-3">Đang tải cấu hình quyền...</p>
             </div>
+          ) : (
+            <RolePermissionsDrawerContent
+              key={selectedRole.id}
+              selectedRole={selectedRole}
+              onClose={handleCloseDrawer}
+              rolePermissions={rolePermissions || []}
+              allPermissions={allPermissions?.data || []}
+            />
+          )
+        )}
+      </AppDrawer>
+    </div>
+  )
+}
 
-            <div className="flex-1 overflow-y-auto min-h-0 focus-visible:outline-none pr-1">
-              {isLoadingRolePerms ? (
-                <div className="py-12 flex flex-col items-center justify-center">
-                  <RefreshCw className="h-7 w-7 animate-spin text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground mt-3">Đang tải cấu hình quyền...</p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {Object.entries(groupedPermissions).map(([moduleName, perms]) => (
-                    <div key={moduleName} className="space-y-2">
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1 font-mono">
-                        {moduleName}
-                      </h3>
-                      <div className="space-y-2.5">
-                        {perms.map((p) => {
-                          const isChecked = selectedPermissionIds.includes(p.id)
-                          return (
-                            <div
-                              key={p.id}
-                              className="flex items-center justify-between p-2.5 rounded-lg border border-border/40 bg-muted/5"
-                            >
-                              <div className="flex flex-col pr-4">
-                                <span className="text-xs font-bold text-foreground leading-snug">
-                                  {p.name}
-                                </span>
-                                <span className="text-[10px] text-muted-foreground mt-0.5">
-                                  {p.description || p.code}
-                                </span>
-                              </div>
-                              <Switch
-                                checked={!!isChecked}
-                                disabled={selectedRole?.isSystem && selectedRole?.name === "admin"} // Disable changing admin permissions
-                                onCheckedChange={() => handleTogglePermission(p.id, !!isChecked)}
-                              />
-                            </div>
-                          )
-                        })}
+interface RolePermissionsDrawerContentProps {
+  selectedRole: Role
+  onClose: () => void
+  rolePermissions: Permission[]
+  allPermissions: Permission[]
+}
+
+/**
+ * Subcomponent to render the drawer contents and manage local buffered permission changes.
+ * Mounted with a unique 'key' prop to naturally reset state when switching roles.
+ */
+function RolePermissionsDrawerContent({
+  selectedRole,
+  onClose,
+  rolePermissions,
+  allPermissions,
+}: RolePermissionsDrawerContentProps) {
+  // Initialize state directly from props since key changing forces remount
+  const [selectedPermissionIds, setSelectedPermissionIds] = useState<string[]>(() =>
+    rolePermissions.map((rp) => rp.id)
+  )
+  const [prevRolePermissions, setPrevRolePermissions] = useState<Permission[]>(rolePermissions)
+
+  // Sync state if background fetch loads newer rolePermissions
+  if (rolePermissions !== prevRolePermissions) {
+    setPrevRolePermissions(rolePermissions)
+    setSelectedPermissionIds(rolePermissions.map((rp) => rp.id))
+  }
+
+  const updateRolePermissionsMutation = useUpdateRolePermissions()
+
+  // Track if there are unsaved changes
+  const hasChanges = useMemo(() => {
+    const initialIds = rolePermissions.map((rp) => rp.id).sort()
+    const currentIds = [...selectedPermissionIds].sort()
+    return JSON.stringify(initialIds) !== JSON.stringify(currentIds)
+  }, [rolePermissions, selectedPermissionIds])
+
+  // Toggle permission mapping handler locally
+  const handleTogglePermission = (permissionId: string, isChecked: boolean) => {
+    if (isChecked) {
+      setSelectedPermissionIds((prev) => prev.filter((id) => id !== permissionId))
+    } else {
+      setSelectedPermissionIds((prev) => [...prev, permissionId])
+    }
+  }
+
+  // Batch save permissions
+  const handleSavePermissions = async () => {
+    try {
+      await updateRolePermissionsMutation.mutateAsync({
+        roleId: selectedRole.id,
+        permissionIds: selectedPermissionIds,
+      })
+      toast.success("Cập nhật quyền thành công")
+      onClose()
+    } catch {
+      toast.error("Không thể cập nhật quyền")
+    }
+  }
+
+  // Group all permissions by module
+  const groupedPermissions = useMemo(() => {
+    const groups: Record<string, Permission[]> = {}
+    allPermissions.forEach((p) => {
+      const mod = p.module || "other"
+      if (!groups[mod]) groups[mod] = []
+      groups[mod].push(p)
+    })
+    return groups
+  }, [allPermissions])
+
+  return (
+    <div className="p-6 h-full flex flex-col justify-between">
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* Header */}
+        <div className="mb-6 pt-6">
+          <div className="flex items-center gap-2 mb-1">
+            <FolderLock className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-bold text-foreground">
+              Cấu hình quyền: {ROLE_LABELS[selectedRole.name] || selectedRole.name}
+            </h2>
+          </div>
+          <p className="text-xs text-muted-foreground leading-normal">
+            {selectedRole.description || "Không có mô tả."}
+          </p>
+        </div>
+
+        <div className="flex-1 overflow-y-auto min-h-0 focus-visible:outline-none pr-1">
+          <div className="space-y-6">
+            {Object.entries(groupedPermissions).map(([moduleName, perms]) => (
+              <div key={moduleName} className="space-y-2">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1 font-mono">
+                  {moduleName}
+                </h3>
+                <div className="space-y-2.5">
+                  {perms.map((p) => {
+                    const isChecked = selectedPermissionIds.includes(p.id)
+                    return (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between p-2.5 rounded-lg border border-border/40 bg-muted/5"
+                      >
+                        <div className="flex flex-col pr-4">
+                          <span className="text-xs font-bold text-foreground leading-snug">
+                            {p.name}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground mt-0.5">
+                            {p.description || p.code}
+                          </span>
+                        </div>
+                        <Switch
+                          checked={!!isChecked}
+                          disabled={selectedRole.isSystem && selectedRole.name === "admin"} // Disable changing admin permissions
+                          onCheckedChange={() => handleTogglePermission(p.id, !!isChecked)}
+                        />
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
-              )}
-            </div>
-
-            <div className="border-t border-border/60 pt-4 mt-6 flex items-center justify-end gap-2 shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCloseDrawer}
-                disabled={updateRolePermissionsMutation.isPending}
-                className="h-9 text-xs"
-              >
-                Hủy
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleSavePermissions}
-                disabled={updateRolePermissionsMutation.isPending || !hasChanges || (selectedRole?.isSystem && selectedRole?.name === "admin")}
-                className="h-9 text-xs"
-              >
-                {updateRolePermissionsMutation.isPending ? "Đang lưu..." : "Lưu thay đổi"}
-              </Button>
-            </div>
+              </div>
+            ))}
           </div>
         </div>
-      </AppDrawer>
+
+        <div className="border-t border-border/60 pt-4 mt-6 flex items-center justify-end gap-2 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onClose}
+            disabled={updateRolePermissionsMutation.isPending}
+            className="h-9 text-xs"
+          >
+            Hủy
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleSavePermissions}
+            disabled={
+              updateRolePermissionsMutation.isPending ||
+              !hasChanges ||
+              (selectedRole.isSystem && selectedRole.name === "admin")
+            }
+            className="h-9 text-xs"
+          >
+            {updateRolePermissionsMutation.isPending ? "Đang lưu..." : "Lưu thay đổi"}
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }
