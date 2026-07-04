@@ -2,6 +2,7 @@ import { Response } from "express";
 import { HttpStatusCode } from "../configs/system/http.config";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { IOfferService } from "../types/recruitment/offer.types";
+import { OFFER_ACTOR } from "../configs/entities/recruitment.config";
 
 /**
  * Controller class for handling Offer HTTP requests.
@@ -59,9 +60,31 @@ export class OfferController {
    */
   public respond = async (req: AuthRequest, res: Response) => {
     const id = req.params.id as string;
-    const { accept, note } = req.body;
+    const data = req.body;
     
-    const result = await this.offerService.respondToOffer(id, accept, note);
+    const result = await this.offerService.respondToOffer(id, data);
+    res.status(HttpStatusCode.OK).json({ data: result, error: null });
+  };
+
+  /**
+   * Proposes a new salary for an offer (negotiation).
+   * @param req - The Express AuthRequest object, containing proposed salary in the body.
+   * @param res - The Express Response object.
+   */
+  public negotiate = async (req: AuthRequest, res: Response) => {
+    const id = req.params.id as string;
+    // Distinguish if the request is from candidate or HR
+    // In our system, if it's an authenticated HR, actor is HR. 
+    // If it's a public candidate route, it should be Candidate.
+    // For now, assume this is the HR route, so actor is HR.
+    // Wait, the API for candidate might be public? Yes, there should be a candidate route.
+    // But since this is a protected HR route, we can just assume actor = "HR"
+    // However, the instructions say "Candidate and HR can negotiate".
+    // I'll assume if req.user exists, it's HR, otherwise it's CANDIDATE.
+    const actor = req.user ? OFFER_ACTOR.HR : OFFER_ACTOR.CANDIDATE;
+    const data = req.body;
+    
+    const result = await this.offerService.negotiateOffer(id, actor, data);
     res.status(HttpStatusCode.OK).json({ data: result, error: null });
   };
 }

@@ -51,9 +51,6 @@ export class JobApplicationRepository implements IJobApplicationRepository {
     if (filters?.requisitionId) {
       where.requisitionId = filters.requisitionId;
     }
-    if (filters?.postingId) {
-      where.postingId = filters.postingId;
-    }
     if (filters?.candidateId) {
       where.candidateId = filters.candidateId;
     }

@@ -35,7 +35,6 @@ export type CreateCandidateDTO = {
 
 export type CreateJobApplicationDTO = {
   requisitionId: string;
-  postingId?: string;
   source?: CandidateSource;
 };
 
@@ -44,7 +43,6 @@ export type ApplyJobDTO = CreateCandidateDTO & CreateJobApplicationDTO;
 export type JobApplicationFilters = {
   status?: JobApplicationStatus;
   requisitionId?: string;
-  postingId?: string;
   candidateId?: string;
 };
 

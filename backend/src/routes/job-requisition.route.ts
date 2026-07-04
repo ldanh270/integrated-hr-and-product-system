@@ -5,7 +5,7 @@ import { validate } from "../middlewares/validate.middleware";
 import { JobRequisitionRepository } from "../repositories/job-requisition.repository";
 import { JobRequisitionService } from "../services/job-requisition.service";
 import { JobRequisitionController } from "../controllers/job-requisition.controller";
-import { CreateJobRequisitionSchema, RejectJobRequisitionSchema } from "../schemas/recruitment/job-requisition.schema";
+import { CreateJobRequisitionSchema, RejectJobRequisitionSchema, ApproveJobRequisitionSchema } from "../schemas/recruitment/job-requisition.schema";
 import { internalLimiter } from "../middlewares/rate-limit.middleware";
 
 const router = Router();
@@ -27,7 +27,7 @@ router.post("/", validate(CreateJobRequisitionSchema), controller.create);
 router.get("/:id", controller.getById);
 
 // GM actions
-router.post("/:id/approve", controller.approve);
+router.post("/:id/approve", validate(ApproveJobRequisitionSchema), controller.approve);
 router.post("/:id/reject", validate(RejectJobRequisitionSchema), controller.reject);
 
 // Close (HM/HR action)

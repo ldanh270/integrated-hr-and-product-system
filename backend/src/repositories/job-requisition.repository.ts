@@ -1,4 +1,4 @@
-import { REQUISITION_STATUS } from "@/configs/entities/recruitment.config";
+import { REQUISITION_STATUS, JOB_APPLICATION_STATUS } from "@/configs/entities/recruitment.config";
 import { JobRequisition, RequisitionStatus, Prisma } from "@prisma/client";
 import { prisma } from "../libs/database";
 import { CreateJobRequisitionDTO, IJobRequisitionRepository, JobRequisitionFilters } from "../types/recruitment/job-requisition.types";
@@ -59,23 +59,26 @@ export class JobRequisitionRepository implements IJobRequisitionRepository {
    * Updates the status of a job requisition.
    * @param id - The ID of the requisition.
    * @param status - The new requisition status.
-   * @param meta - Optional metadata such as approver ID or rejection reason.
+   * @param meta - Optional metadata such as approver ID or note.
    * @returns The updated job requisition.
    */
   async updateStatus(
     id: string, 
     status: RequisitionStatus, 
-    meta?: { approvedById?: string; rejectReason?: string }
+    meta?: { approvedById?: string; note?: string }
   ): Promise<JobRequisition> {
     const updateData: Prisma.JobRequisitionUpdateInput = { status };
-    
+
     if (meta?.approvedById && status === REQUISITION_STATUS.OPEN) {
       updateData.approvedBy = { connect: { id: meta.approvedById } };
       updateData.approvedAt = new Date();
+      if (meta.note) {
+        updateData.note = meta.note;
+      }
     }
-    
-    if (meta?.rejectReason && status === REQUISITION_STATUS.REJECTED) {
-      updateData.rejectReason = meta.rejectReason;
+
+    if (meta?.note && status === REQUISITION_STATUS.REJECTED) {
+      updateData.note = meta.note;
       if (meta.approvedById) {
          updateData.approvedBy = { connect: { id: meta.approvedById } };
          updateData.approvedAt = new Date();
@@ -97,7 +100,7 @@ export class JobRequisitionRepository implements IJobRequisitionRepository {
     return prisma.jobApplication.count({
       where: {
         requisitionId,
-        status: "hired"
+        status: JOB_APPLICATION_STATUS.HIRED
       },
     });
   }

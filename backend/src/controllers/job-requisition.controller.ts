@@ -61,8 +61,9 @@ export class JobRequisitionController {
   public approve = async (req: AuthRequest, res: Response) => {
     const gmId = req.user?.empId as string;
     const id = req.params.id as string;
+    const { note } = req.body || {};
     
-    const result = await this.jobRequisitionService.approveRequisition(gmId, id);
+    const result = await this.jobRequisitionService.approveRequisition(gmId, id, note);
     res.status(HttpStatusCode.OK).json({ data: result, error: null });
   };
 
@@ -74,9 +75,9 @@ export class JobRequisitionController {
   public reject = async (req: AuthRequest, res: Response) => {
     const gmId = req.user?.empId as string;
     const id = req.params.id as string;
-    const { reason } = req.body;
+    const { note } = req.body;
     
-    const result = await this.jobRequisitionService.rejectRequisition(gmId, id, reason);
+    const result = await this.jobRequisitionService.rejectRequisition(gmId, id, note);
     res.status(HttpStatusCode.OK).json({ data: result, error: null });
   };
 

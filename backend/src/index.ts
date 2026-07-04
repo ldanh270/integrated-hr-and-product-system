@@ -3,6 +3,7 @@ import { ENVIRONMENT, ENV_ENVIRONMENT, PORT, RATE_LIMIT } from "@/configs/system
 import { connectDB } from "@/libs/database.ts"
 import { initCronJobs } from "@/libs/payroll-cron.ts"
 import { initWeeklyScheduleCron } from "@/libs/weekly-schedule-cron.ts"
+import { initRecruitmentCron } from "@/libs/recruitment-cron.ts"
 import { cors } from "@/middlewares/cors.middleware.ts"
 import { globalErrorHandler } from "@/middlewares/error.middleware.ts"
 import applicationRoutes from "@/routes/application.route.ts"
@@ -27,11 +28,12 @@ import taskRoutes from "@/routes/task.route.ts"
 import spentTimeRoutes from "@/routes/spent-time.route.ts"
 import weeklyScheduleTemplateRoutes from "@/routes/weekly-schedule-template.route.ts"
 import jobRequisitionRoutes from "@/routes/job-requisition.route.ts"
-import jobPostingRoutes from "@/routes/job-posting.route.ts"
+import jobDescriptionRoutes from "@/routes/job-description.route.ts"
+import externalJobPostRoutes from "@/routes/external-job-post.route.ts"
+import publicApplicationRoutes from "@/routes/public-application.route.ts"
 import jobApplicationRoutes from "@/routes/job-application.route.ts"
 import interviewRoutes from "@/routes/interview.route.ts"
 import offerRoutes from "@/routes/offer.route.ts"
-import backgroundCheckRoutes from "@/routes/background-check.route.ts"
 import onboardingRoutes from "@/routes/onboarding.route.ts"
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
@@ -87,6 +89,8 @@ app.get("/", async (req, res) =>
   res.status(HttpStatusCode.OK).json({ message: "Connect to server successfully" }),
 )
 
+app.use("/api/public/job-applications", publicApplicationRoutes)
+
 app.use("/api/auth", authRoutes)
 app.use("/api/security", securityRoutes)
 app.use("/api/employees", employeeRoutes)
@@ -117,11 +121,11 @@ app.use("/api/custom-queries", customQueryRoutes)
 
 // Recruitment routes
 app.use("/api/job-requisitions", jobRequisitionRoutes)
-app.use("/api/job-postings", jobPostingRoutes)
+app.use("/api/job-requisitions/:requisitionId/description", jobDescriptionRoutes)
+app.use("/api/job-requisitions/:requisitionId/external-posts", externalJobPostRoutes)
 app.use("/api/job-applications", jobApplicationRoutes)
 app.use("/api/interviews", interviewRoutes)
 app.use("/api/offers", offerRoutes)
-app.use("/api/background-checks", backgroundCheckRoutes)
 app.use("/api/onboarding", onboardingRoutes)
 // 404 handler
 app.use((req, res) => {
@@ -146,5 +150,6 @@ connectDB().then(() => {
     console.log(`[server]: Server is running at http://localhost:${PORT}`)
     initCronJobs()
     initWeeklyScheduleCron()
+    initRecruitmentCron()
   })
 })

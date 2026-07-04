@@ -1,6 +1,6 @@
 import { Offer, OfferStatus, Prisma } from "@prisma/client";
 import { prisma } from "../libs/database";
-import { CreateOfferDTO, IOfferRepository } from "../types/recruitment/offer.types";
+import { CreateOfferDTO, IOfferRepository, OfferWithHistory } from "../types/recruitment/offer.types";
 import { OFFER_STATUS } from "@/configs/entities/recruitment.config";
 
 
@@ -23,11 +23,14 @@ export class OfferRepository implements IOfferRepository {
    * @param id - The ID of the offer.
    * @returns The offer with its application, or null.
    */
-  async findById(id: string): Promise<Offer | null> {
+  async findById(id: string): Promise<OfferWithHistory | null> {
     return prisma.offer.findUnique({
       where: { id },
       include: {
         application: true,
+        history: {
+          orderBy: { createdAt: "asc" }
+        }
       }
     });
   }
@@ -49,10 +52,15 @@ export class OfferRepository implements IOfferRepository {
    * @param applicationId - The ID of the application.
    * @returns The latest offer, or null.
    */
-  async getLatestOffer(applicationId: string): Promise<Offer | null> {
+  async getLatestOffer(applicationId: string): Promise<OfferWithHistory | null> {
     return prisma.offer.findFirst({
       where: { applicationId },
       orderBy: { version: "desc" },
+      include: {
+        history: {
+          orderBy: { createdAt: "asc" }
+        }
+      }
     });
   }
 
@@ -60,10 +68,9 @@ export class OfferRepository implements IOfferRepository {
    * Updates the status of an offer.
    * @param id - The ID of the offer.
    * @param status - The new offer status.
-   * @param note - An optional note (e.g. for decline reason).
    * @returns The updated offer.
    */
-  async updateStatus(id: string, status: OfferStatus, note?: string): Promise<Offer> {
+  async updateStatus(id: string, status: OfferStatus): Promise<Offer> {
     const updateData: Prisma.OfferUpdateInput = { status };
     
     if (status === OFFER_STATUS.SENT) {
@@ -71,14 +78,42 @@ export class OfferRepository implements IOfferRepository {
     } else if (status === OFFER_STATUS.ACCEPTED || status === OFFER_STATUS.DECLINED) {
       updateData.respondedAt = new Date();
     }
-    
-    if (note) {
-      updateData.declineReason = note;
-    }
 
     return prisma.offer.update({
       where: { id },
       data: updateData,
+    });
+  }
+
+  /**
+   * Updates the salary of an offer.
+   * @param id - The ID of the offer.
+   * @param salary - The new salary.
+   * @returns The updated offer.
+   */
+  async updateOfferSalary(id: string, salary: number): Promise<Offer> {
+    return prisma.offer.update({
+      where: { id },
+      data: { salary },
+    });
+  }
+
+  /**
+   * Adds a negotiation history to an offer.
+   * @param offerId - The ID of the offer.
+   * @param actor - The actor who proposed the salary (CANDIDATE or HR).
+   * @param salary - The proposed salary.
+   * @param note - An optional note.
+   * @returns The created history record.
+   */
+  async addHistory(offerId: string, actor: string, salary: number, note?: string) {
+    return prisma.offerHistory.create({
+      data: {
+        offerId,
+        actor,
+        salary,
+        note,
+      },
     });
   }
 }

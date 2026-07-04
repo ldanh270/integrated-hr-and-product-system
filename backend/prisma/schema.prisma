@@ -202,6 +202,8 @@ enum CandidateSource {
   linkedin
   referral
   facebook
+  twitter
+  google_form
   recruitment_agency
   other
 }
@@ -230,35 +232,10 @@ enum OfferStatus {
   draft
   pending_approval
   sent
+  negotiating
   accepted
   declined
   rescinded
-}
-
-enum BgcItemStatus {
-  pending
-  passed
-  needs_clarification
-  failed
-}
-
-enum BgcOverallStatus {
-  in_progress
-  passed
-  conditional
-  rescinded
-}
-
-enum JobFamily {
-  engineering
-  product
-  design
-  marketing
-  sales
-  hr
-  finance
-  operations
-  other
 }
 
 enum JobLevel {
@@ -344,13 +321,11 @@ model Employee {
 
   jobRequisitionsRequested JobRequisition[]       @relation("JobRequisitionRequester")
   jobRequisitionsApproved  JobRequisition[]       @relation("JobRequisitionApprover")
-  jobPostingsCreated       JobPosting[]           @relation("JobPostingCreator")
   interviewRoundsLead      InterviewRound[]       @relation("InterviewRoundLead")
   interviewRounds          InterviewRoundMember[]
   interviewScorecards      InterviewScorecard[]
   offersCreated            Offer[]                @relation("OfferCreator")
   offersApproved           Offer[]                @relation("OfferApprover")
-  bgcItemsChecked          BackgroundCheckItem[]  @relation("BgcItemChecker")
   jobApplicationsRescinded JobApplication[]       @relation("ApplicationRescinder")
 
   @@index([status, employeeType])
@@ -1071,10 +1046,9 @@ model JobRequisition {
   budgetMin       Decimal?          @db.Decimal(15, 2)
   budgetMax       Decimal?          @db.Decimal(15, 2)
   status          RequisitionStatus @default(open)
-  jobFamily       JobFamily         @default(other)
   level           JobLevel          @default(junior)
   targetStartDate DateTime?         @db.Date
-  rejectReason    String?
+  note            String?
 
   requestedById String
   requestedBy   Employee  @relation("JobRequisitionRequester", fields: [requestedById], references: [id], onDelete: Restrict)
@@ -1085,50 +1059,40 @@ model JobRequisition {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  jobPostings     JobPosting[]
+  jobDescription  JobDescription?
+  externalJobPosts ExternalJobPost[]
   jobApplications JobApplication[]
+  interviewRounds InterviewRound[]
 
   @@index([status])
   @@index([requestedById])
   @@index([approvedById])
 }
 
-model JobPosting {
+model JobDescription {
   id            String         @id @default(cuid())
-  requisitionId String
-  requisition   JobRequisition @relation(fields: [requisitionId], references: [id], onDelete: Restrict)
-  title         String
+  requisitionId String         @unique
+  requisition   JobRequisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
   description   String
-  requirements  String
-  benefits      String?
-  salaryMin     Decimal?       @db.Decimal(15, 2)
-  salaryMax     Decimal?       @db.Decimal(15, 2)
-  status        PostingStatus  @default(draft)
-
-  createdById String
-  createdBy   Employee  @relation("JobPostingCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  closedAt    DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  channels        JobPostingChannel[]
-  jobApplications JobApplication[]
-
-  @@index([status])
   @@index([requisitionId])
-  @@index([createdById])
 }
 
-model JobPostingChannel {
-  id        String          @id @default(cuid())
-  postingId String
-  posting   JobPosting      @relation(fields: [postingId], references: [id], onDelete: Cascade)
-  source    CandidateSource
-  url       String?
-  isActive  Boolean         @default(true)
+model ExternalJobPost {
+  id            String          @id @default(cuid())
+  requisitionId String
+  requisition   JobRequisition  @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  source        CandidateSource
+  postUrl       String?
+  isActive      Boolean         @default(true)
 
-  @@index([postingId])
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([requisitionId])
 }
 
 model Candidate {
@@ -1151,8 +1115,6 @@ model JobApplication {
   id            String               @id @default(cuid())
   candidateId   String
   candidate     Candidate            @relation(fields: [candidateId], references: [id], onDelete: Restrict)
-  postingId     String?
-  posting       JobPosting?          @relation(fields: [postingId], references: [id], onDelete: Restrict)
   requisitionId String
   requisition   JobRequisition       @relation(fields: [requisitionId], references: [id], onDelete: Restrict)
   source        CandidateSource      @default(other)
@@ -1171,26 +1133,23 @@ model JobApplication {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  interviewRounds InterviewRound[]
+  interviewRoundCandidates InterviewRoundCandidate[]
   offers          Offer[]
-  backgroundCheck BackgroundCheck?
+  scores          InterviewScorecard[]
 
   @@index([status, kanbanOrder])
   @@index([candidateId])
   @@index([requisitionId])
-  @@index([postingId])
 }
 
 model InterviewRound {
   id            String          @id @default(cuid())
-  applicationId String
-  application   JobApplication  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  requisitionId String
+  requisition   JobRequisition  @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
   roundNumber   Int
   title         String
   format        InterviewFormat @default(in_person)
   status        InterviewStatus @default(scheduled)
-  result        InterviewResult @default(pending)
-  overallNote   String?
 
   scheduledAt DateTime?
   completedAt DateTime?
@@ -1202,10 +1161,21 @@ model InterviewRound {
   updatedAt DateTime @updatedAt
 
   interviewers InterviewRoundMember[]
+  candidates   InterviewRoundCandidate[]
   scorecards   InterviewScorecard[]
 
-  @@unique([applicationId, roundNumber])
-  @@index([applicationId, status])
+  @@unique([requisitionId, roundNumber])
+  @@index([requisitionId, status])
+}
+
+model InterviewRoundCandidate {
+  roundId       String
+  round         InterviewRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  applicationId String
+  application   JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@id([roundId, applicationId])
+  @@index([applicationId])
 }
 
 model InterviewRoundMember {
@@ -1222,6 +1192,8 @@ model InterviewScorecard {
   id            String         @id @default(cuid())
   roundId       String
   round         InterviewRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  applicationId String
+  application   JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   interviewerId String
   interviewer   Employee       @relation(fields: [interviewerId], references: [id], onDelete: Restrict)
 
@@ -1232,8 +1204,9 @@ model InterviewScorecard {
   submittedAt DateTime?
   createdAt   DateTime  @default(now())
 
-  @@unique([roundId, interviewerId])
+  @@unique([roundId, applicationId, interviewerId])
   @@index([roundId])
+  @@index([applicationId])
 }
 
 model Offer {
@@ -1261,43 +1234,22 @@ model Offer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  history       OfferHistory[]
+
   @@unique([applicationId, version])
   @@index([applicationId, status])
 }
 
-model BackgroundCheck {
-  id                String           @id @default(cuid())
-  applicationId     String           @unique
-  application       JobApplication   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  overallStatus     BgcOverallStatus @default(in_progress)
-  isConditionalHire Boolean          @default(false)
-  completedAt       DateTime?
+model OfferHistory {
+  id        String   @id @default(cuid())
+  offerId   String
+  offer     Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  actor     String   // "HR" or "CANDIDATE"
+  salary    Decimal  @db.Decimal(15, 2)
+  note      String?
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
-  items BackgroundCheckItem[]
-
-  @@index([overallStatus])
-}
-
-model BackgroundCheckItem {
-  id                String          @id @default(cuid())
-  bgcId             String
-  bgc               BackgroundCheck @relation(fields: [bgcId], references: [id], onDelete: Cascade)
-  category          String // e.g., 'basic', 'legal', 'professional'
-  label             String
-  description       String?
-  status            BgcItemStatus   @default(pending)
-  clarificationNote String?
-
-  checkedById String?
-  checkedBy   Employee? @relation("BgcItemChecker", fields: [checkedById], references: [id], onDelete: SetNull)
-  checkedAt   DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([bgcId, status])
+  @@index([offerId])
 }
 

@@ -2,11 +2,11 @@ import { HttpStatusCode } from "@/configs/system/http.config";
 import { ErrorLayer } from "@/configs/system/error-code.config";
 import { Offer, OfferStatus, JobApplicationStatus } from "@prisma/client";
 import { AppError } from "../utils/error.util";
-import { CreateOfferDTO, IOfferRepository, IOfferService } from "../types/recruitment/offer.types";
+import { CreateOfferDTO, IOfferRepository, IOfferService, OfferNegotiationDTO, OfferResponseDTO, OfferWithHistory } from "../types/recruitment/offer.types";
 import { IJobApplicationRepository } from "../types/recruitment/job-application.types";
 import { OFFER_RESPONSE_DAYS, OFFER_MAX_VERSIONS } from "../configs/entities/recruitment.config";
 import { emailService } from "./email.service";
-import { JOB_APPLICATION_STATUS, OFFER_STATUS } from "@/configs/entities/recruitment.config";
+import { JOB_APPLICATION_STATUS, OFFER_STATUS, OFFER_ACTOR } from "@/configs/entities/recruitment.config";
 
 
 /**
@@ -39,8 +39,8 @@ export class OfferService implements IOfferService {
     
     let nextVersion = 1;
     if (latestOffer) {
-      if (latestOffer.status !== OFFER_STATUS.DECLINED) {
-        throw new AppError("Cannot create a new offer unless the previous one was declined or expired", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
+      if (latestOffer.status !== OFFER_STATUS.DECLINED && latestOffer.status !== OFFER_STATUS.RESCINDED) {
+        throw new AppError("Cannot create a new offer unless the previous one was declined, rescinded or expired", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
       }
       nextVersion = latestOffer.version + 1;
       
@@ -102,19 +102,18 @@ export class OfferService implements IOfferService {
   /**
    * Records a candidate's response to an offer.
    * @param id - The ID of the offer.
-   * @param accept - Boolean indicating if the candidate accepted the offer.
-   * @param note - Optional note provided by the candidate.
+   * @param data - Response data (accept and note).
    * @returns The updated offer.
    * @throws AppError if the offer is not found, not sent, or expired.
    */
-  async respondToOffer(id: string, accept: boolean, note?: string): Promise<Offer> {
+  async respondToOffer(id: string, data: OfferResponseDTO): Promise<Offer> {
     const offer = await this.offerRepository.findById(id);
     if (!offer) {
       throw new AppError("Offer not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE);
     }
 
-    if (offer.status !== OFFER_STATUS.SENT) {
-      throw new AppError("Can only respond to sent offers", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
+    if (offer.status !== OFFER_STATUS.SENT && offer.status !== OFFER_STATUS.NEGOTIATING) {
+      throw new AppError("Can only respond to sent or negotiating offers", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
     }
 
     if (offer.responseDeadline && new Date() > offer.responseDeadline) {
@@ -122,27 +121,57 @@ export class OfferService implements IOfferService {
       throw new AppError("This offer has expired", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
     }
 
-    const newStatus = accept ? OFFER_STATUS.ACCEPTED : OFFER_STATUS.DECLINED;
-    const updatedOffer = await this.offerRepository.updateStatus(id, newStatus, note);
+    const newStatus = data.accept ? OFFER_STATUS.ACCEPTED : OFFER_STATUS.DECLINED;
+    const updatedOffer = await this.offerRepository.updateStatus(id, newStatus);
+    
+    if (data.note) {
+      await this.offerRepository.addHistory(id, OFFER_ACTOR.CANDIDATE, offer.salary.toNumber(), data.note);
+    }
 
     // Update application status
-    if (accept) {
+    if (data.accept) {
       await this.applicationRepository.updateStatus(offer.applicationId, JOB_APPLICATION_STATUS.OFFER_ACCEPTED);
-    } else {
-      // Revert to interview_passed or leave as offering so HR can decide next step
-      // Wait, if they reject, we can leave it as offering so HR can issue another version
     }
 
     return updatedOffer;
   }
 
+  /**
+   * Proposes a new salary (negotiation).
+   * @param id - The ID of the offer.
+   * @param actor - The actor proposing (CANDIDATE or HR).
+   * @param data - The negotiation details.
+   * @returns The updated offer.
+   */
+  async negotiateOffer(id: string, actor: string, data: OfferNegotiationDTO): Promise<OfferWithHistory> {
+    const offer = await this.offerRepository.findById(id);
+    if (!offer) {
+      throw new AppError("Offer not found", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE);
+    }
+
+    if (offer.status !== OFFER_STATUS.SENT && offer.status !== OFFER_STATUS.NEGOTIATING) {
+      throw new AppError("Can only negotiate offers that are sent or in negotiation", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
+    }
+
+    // Update salary on offer
+    await this.offerRepository.updateOfferSalary(id, data.proposedSalary);
+    
+    // Change status to negotiating
+    await this.offerRepository.updateStatus(id, OFFER_STATUS.NEGOTIATING);
+
+    // Append history
+    await this.offerRepository.addHistory(id, actor, data.proposedSalary, data.note);
+
+    const updatedOffer = await this.offerRepository.findById(id);
+    return updatedOffer!;
+  }
 
   /**
    * Retrieves an offer by its ID.
    * @param id - The ID of the offer.
    * @returns The offer record if found, null otherwise.
    */
-  async getOfferById(id: string): Promise<Offer | null> {
+  async getOfferById(id: string): Promise<OfferWithHistory | null> {
     return this.offerRepository.findById(id);
   }
 }

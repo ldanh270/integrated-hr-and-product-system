@@ -30,6 +30,8 @@ export const CANDIDATE_SOURCE_VALUES = [
   "linkedin",
   "referral",
   "facebook",
+  "twitter",
+  "google_form",
   "recruitment_agency",
   "other"
 ] as const;
@@ -42,25 +44,10 @@ export const OFFER_STATUS_VALUES = [
   "draft",
   "pending_approval",
   "sent",
+  "negotiating",
   "accepted",
   "declined",
   "rescinded"
-] as const;
-
-export const BGC_ITEM_STATUS_VALUES = ["pending", "passed", "needs_clarification", "failed"] as const;
-
-export const BGC_OVERALL_STATUS_VALUES = ["in_progress", "passed", "conditional", "rescinded"] as const;
-
-export const JOB_FAMILY_VALUES = [
-  "engineering",
-  "product",
-  "design",
-  "marketing",
-  "sales",
-  "hr",
-  "finance",
-  "operations",
-  "other"
 ] as const;
 
 export const JOB_LEVEL_VALUES = [
@@ -111,6 +98,8 @@ export const CANDIDATE_SOURCE = {
   LINKEDIN: "linkedin",
   REFERRAL: "referral",
   FACEBOOK: "facebook",
+  TWITTER: "twitter",
+  GOOGLE_FORM: "google_form",
   RECRUITMENT_AGENCY: "recruitment_agency",
   OTHER: "other"
 } as const;
@@ -139,36 +128,13 @@ export const OFFER_STATUS = {
   DRAFT: "draft",
   PENDING_APPROVAL: "pending_approval",
   SENT: "sent",
+  NEGOTIATING: "negotiating",
   ACCEPTED: "accepted",
   DECLINED: "declined",
   RESCINDED: "rescinded"
 } as const;
 
-export const BGC_ITEM_STATUS = {
-  PENDING: "pending",
-  PASSED: "passed",
-  NEEDS_CLARIFICATION: "needs_clarification",
-  FAILED: "failed"
-} as const;
 
-export const BGC_OVERALL_STATUS = {
-  IN_PROGRESS: "in_progress",
-  PASSED: "passed",
-  CONDITIONAL: "conditional",
-  RESCINDED: "rescinded"
-} as const;
-
-export const JOB_FAMILY = {
-  ENGINEERING: "engineering",
-  PRODUCT: "product",
-  DESIGN: "design",
-  MARKETING: "marketing",
-  SALES: "sales",
-  HR: "hr",
-  FINANCE: "finance",
-  OPERATIONS: "operations",
-  OTHER: "other"
-} as const;
 
 export const JOB_LEVEL = {
   INTERN: "intern",
@@ -179,4 +145,9 @@ export const JOB_LEVEL = {
   LEAD: "lead",
   MANAGER: "manager",
   DIRECTOR: "director"
+} as const;
+
+export const OFFER_ACTOR = {
+  HR: "hr",
+  CANDIDATE: "candidate"
 } as const;

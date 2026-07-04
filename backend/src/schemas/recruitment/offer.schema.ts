@@ -8,7 +8,12 @@ export const CreateOfferSchema = z.object({
   benefits: z.string().optional(),
 });
 
-export const RespondOfferSchema = z.object({
+export const RespondToOfferSchema = z.object({
   accept: z.boolean(),
+  note: z.string().optional(),
+});
+
+export const NegotiateOfferSchema = z.object({
+  proposedSalary: z.number().positive("Proposed salary must be positive"),
   note: z.string().optional(),
 });

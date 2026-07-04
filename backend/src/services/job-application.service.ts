@@ -71,7 +71,6 @@ export class JobApplicationService implements IJobApplicationService {
     return this.applicationRepository.create({
       candidateId: candidate.id,
       requisitionId: data.requisitionId,
-      postingId: data.postingId,
       source: data.source
     });
   }

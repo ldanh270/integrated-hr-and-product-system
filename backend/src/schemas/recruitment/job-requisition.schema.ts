@@ -1,7 +1,6 @@
 import { z } from "zod";
-import { JOB_FAMILY_VALUES, JOB_LEVEL_VALUES } from "../../configs/entities/recruitment.config";
+import { JOB_LEVEL_VALUES } from "../../configs/entities/recruitment.config";
 import { JOB_LEVEL } from "@/configs/entities/recruitment.config";
-
 
 export const CreateJobRequisitionSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -9,7 +8,6 @@ export const CreateJobRequisitionSchema = z.object({
   headcountNeeded: z.number().int().positive("Headcount must be positive"),
   budgetMin: z.number().positive().optional(),
   budgetMax: z.number().positive().optional(),
-  jobFamily: z.enum(JOB_FAMILY_VALUES).optional(),
   level: z.enum(JOB_LEVEL_VALUES).optional(),
   targetStartDate: z.string().datetime().optional().transform(val => val ? new Date(val) : undefined),
 }).refine(data => {
@@ -23,5 +21,9 @@ export const CreateJobRequisitionSchema = z.object({
 });
 
 export const RejectJobRequisitionSchema = z.object({
-  reason: z.string().min(1, "Reject reason is required"),
+  note: z.string().min(1, "Reject note is required"),
+});
+
+export const ApproveJobRequisitionSchema = z.object({
+  note: z.string().optional(),
 });

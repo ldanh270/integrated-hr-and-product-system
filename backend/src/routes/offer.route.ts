@@ -6,7 +6,7 @@ import { OfferRepository } from "../repositories/offer.repository";
 import { JobApplicationRepository } from "../repositories/job-application.repository";
 import { OfferService } from "../services/offer.service";
 import { OfferController } from "../controllers/offer.controller";
-import { CreateOfferSchema, RespondOfferSchema } from "../schemas/recruitment/offer.schema";
+import { CreateOfferSchema, RespondToOfferSchema, NegotiateOfferSchema } from "../schemas/recruitment/offer.schema";
 import { internalLimiter } from "../middlewares/rate-limit.middleware";
 
 const router = Router();
@@ -25,6 +25,7 @@ router.post("/", validate(CreateOfferSchema), controller.create);
 router.get("/:id", controller.getById);
 
 router.post("/:id/send", controller.send);
-router.post("/:id/respond", validate(RespondOfferSchema), controller.respond);
+router.post("/:id/respond", validate(RespondToOfferSchema), controller.respond);
+router.post("/:id/negotiate", validate(NegotiateOfferSchema), controller.negotiate);
 
 export default router;

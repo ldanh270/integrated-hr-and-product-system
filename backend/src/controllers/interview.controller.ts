@@ -12,23 +12,23 @@ export class InterviewController {
 
   /**
    * Schedules a new interview round.
-   * @param req - The Express AuthRequest object, containing the lead interviewer ID from the token and interview details in the body.
+   * @param req - The Express AuthRequest object.
    * @param res - The Express Response object.
    */
-  public schedule = async (req: AuthRequest, res: Response) => {
-    const leadInterviewerId = req.user?.empId as string;
-    const { interviewerIds, ...data } = req.body;
+  public scheduleRound = async (req: AuthRequest, res: Response) => {
+    const data = req.body;
+    const { requisitionId, interviewerIds, applicationIds, ...roundData } = data;
     
-    const result = await this.interviewService.scheduleRound(leadInterviewerId, data, interviewerIds);
+    const result = await this.interviewService.scheduleRound(requisitionId, roundData, interviewerIds, applicationIds);
     res.status(HttpStatusCode.CREATED).json({ data: result, error: null });
   };
 
   /**
-   * Retrieves an interview round by its ID.
-   * @param req - The Express AuthRequest object, containing the interview round ID in the params.
+   * Retrieves a specific interview round by ID.
+   * @param req - The Express AuthRequest object.
    * @param res - The Express Response object.
    */
-  public getById = async (req: AuthRequest, res: Response) => {
+  public getRoundById = async (req: AuthRequest, res: Response) => {
     const id = req.params.id as string;
     const result = await this.interviewService.getRoundById(id);
     
@@ -41,8 +41,8 @@ export class InterviewController {
   };
 
   /**
-   * Submits a scorecard for an interview round.
-   * @param req - The Express AuthRequest object, containing the interviewer ID from the token and scorecard data in the body.
+   * Submits or updates an interview scorecard.
+   * @param req - The Express AuthRequest object.
    * @param res - The Express Response object.
    */
   public submitScorecard = async (req: AuthRequest, res: Response) => {
@@ -50,6 +50,6 @@ export class InterviewController {
     const data = req.body;
     
     const result = await this.interviewService.submitScorecard(interviewerId, data);
-    res.status(HttpStatusCode.CREATED).json({ data: result, error: null });
+    res.status(HttpStatusCode.OK).json({ data: result, error: null });
   };
 }

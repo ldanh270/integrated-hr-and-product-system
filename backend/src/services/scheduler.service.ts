@@ -5,7 +5,6 @@ import { JobApplicationStatus } from "@prisma/client";
 import { OnboardingService } from "./onboarding.service";
 import { JobApplicationRepository } from "../repositories/job-application.repository";
 import { OfferRepository } from "../repositories/offer.repository";
-import { BgcOverallStatus } from "@prisma/client";
 import { JOB_APPLICATION_STATUS } from "@/configs/entities/recruitment.config";
 
 

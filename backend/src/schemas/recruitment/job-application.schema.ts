@@ -11,7 +11,6 @@ export const ApplyJobSchema = z.object({
   linkedinUrl: z.string().url("Invalid URL").optional(),
   
   requisitionId: z.string().cuid("Invalid requisition ID"),
-  postingId: z.string().cuid("Invalid posting ID").optional(),
   source: z.enum(CANDIDATE_SOURCE_VALUES).optional(),
 });
 

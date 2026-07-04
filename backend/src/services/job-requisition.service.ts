@@ -66,12 +66,13 @@ export class JobRequisitionService implements IJobRequisitionService {
   /**
    * Approves a job requisition, changing its status to OPEN.
    * Only accessible by a General Manager.
-   * @param gmId - The ID of the General Manager approving the requisition
-   * @param id - The ID of the job requisition to approve
+   * @param gmId - The ID of the General Manager
+   * @param id - The ID of the job requisition
+   * @param note - Optional note from the GM
    * @returns The updated job requisition
    * @throws AppError if requisition not found or if the user is not a GM
    */
-  async approveRequisition(gmId: string, id: string): Promise<JobRequisition> {
+  async approveRequisition(gmId: string, id: string, note?: string): Promise<JobRequisition> {
     await this.verifyGeneralManager(gmId);
     
     const req = await this.jobRequisitionRepository.findById(id);
@@ -83,7 +84,10 @@ export class JobRequisitionService implements IJobRequisitionService {
       throw new AppError("Cannot approve a closed or rejected requisition", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE);
     }
 
-    return this.jobRequisitionRepository.updateStatus(id, REQUISITION_STATUS.OPEN, { approvedById: gmId });
+    return this.jobRequisitionRepository.updateStatus(id, REQUISITION_STATUS.OPEN, { 
+      approvedById: gmId,
+      note: note 
+    });
   }
 
 
@@ -92,11 +96,11 @@ export class JobRequisitionService implements IJobRequisitionService {
    * Only accessible by a General Manager.
    * @param gmId - The ID of the General Manager rejecting the requisition
    * @param id - The ID of the job requisition to reject
-   * @param reason - The reason for rejecting the requisition
+   * @param note - The note for rejecting the requisition
    * @returns The updated job requisition
    * @throws AppError if requisition not found, already closed, or if user is not a GM
    */
-  async rejectRequisition(gmId: string, id: string, reason: string): Promise<JobRequisition> {
+  async rejectRequisition(gmId: string, id: string, note: string): Promise<JobRequisition> {
     await this.verifyGeneralManager(gmId);
 
     const req = await this.jobRequisitionRepository.findById(id);
@@ -110,7 +114,7 @@ export class JobRequisitionService implements IJobRequisitionService {
 
     return this.jobRequisitionRepository.updateStatus(id, REQUISITION_STATUS.REJECTED, { 
       approvedById: gmId, 
-      rejectReason: reason 
+      note: note 
     });
   }
 
