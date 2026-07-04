@@ -55,7 +55,6 @@ export interface IOvertimeDetailDTO {
 }
 
 export interface IWorkFromHomeDetailDTO {
-  wfhType: string
   location?: string
 }
 

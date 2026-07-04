@@ -41,11 +41,6 @@ enum AttendanceStatus {
   overtime
 }
 
-enum WfhType {
-  full_day
-  morning
-  afternoon
-}
 
 enum ShiftStatus {
   scheduled
@@ -598,7 +593,6 @@ model ApplicationBusinessTripDetail {
 model ApplicationWorkFromHomeDetail {
   applicationId String      @id
   application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  wfhType       WfhType     @default(full_day)
   location      String?
 }
 

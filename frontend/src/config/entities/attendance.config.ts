@@ -9,14 +9,7 @@ export type IEmployeeShiftStatus = (typeof EMPLOYEE_SHIFT_STATUSES)[number]
 export const HOLIDAY_TYPES = ["national", "company"] as const
 export type IHolidayType = (typeof HOLIDAY_TYPES)[number]
 
-export const WFH_TYPE = {
-  FULL_DAY: "full_day",
-  MORNING: "morning",
-  AFTERNOON: "afternoon",
-} as const
 
-export const WFH_TYPES = [WFH_TYPE.FULL_DAY, WFH_TYPE.MORNING, WFH_TYPE.AFTERNOON] as const
-export type IWfhType = (typeof WFH_TYPES)[number]
 
 export const ATTENDANCE_STATUSES = ["on_time", "late", "early_leave", "absent", "overtime"] as const
 export type IAttendanceStatus = (typeof ATTENDANCE_STATUSES)[number]

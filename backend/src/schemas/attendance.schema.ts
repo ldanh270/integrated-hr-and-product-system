@@ -6,7 +6,6 @@ import {
   LEAVE_TYPE_VALUES,
   REGIME_TYPES,
   BATCHABLE_APPLICATION_TYPES,
-  WFH_TYPES,
 } from "@/configs/entities/attendance.config.ts"
 import { ATTENDANCE_ERROR_MESSAGES } from "@/constants/attendance.constants.ts"
 
@@ -107,15 +106,17 @@ const overtimeApplicationSchema = z
   })
   .strict()
 
-/** work_from_home: WFH — requires wfhType, optional location */
+/** work_from_home: WFH — optional location */
 const workFromHomeApplicationSchema = z
   .object({
     type: z.literal("work_from_home"),
     ...baseApplicationFields,
-    detail: z.object({
-      wfhType: z.enum(WFH_TYPES),
-      location: z.string().max(255).optional(),
-    }),
+    detail: z
+      .object({
+        location: z.string().max(255).optional(),
+      })
+      .optional()
+      .default({}),
   })
   .strict()
 

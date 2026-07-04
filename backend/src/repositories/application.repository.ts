@@ -1,4 +1,9 @@
-import { APPLICATION_TYPES, PAID_LEAVE_TYPES, EMPLOYEE_SHIFT_STATUS, PARTNER_APPROVAL_STATUS, WFH_TYPE } from "@/configs/entities/attendance.config.ts"
+import {
+  APPLICATION_TYPES,
+  EMPLOYEE_SHIFT_STATUS,
+  PAID_LEAVE_TYPES,
+  PARTNER_APPROVAL_STATUS,
+} from "@/configs/entities/attendance.config.ts"
 import { EMPLOYEE_STATUS, SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
 import {
   IApplicationRepository,
@@ -7,7 +12,16 @@ import {
   ISubmitApplicationDTO,
 } from "@/types/attendance.types.ts"
 
-import { ApplicationStatus, ApplicationType, AttendanceStatus, PrismaClient, Prisma, EmployeeShift, PartnerApprovalStatus, ApplicationShiftSwapDetail } from "@prisma/client"
+import {
+  ApplicationShiftSwapDetail,
+  ApplicationStatus,
+  ApplicationType,
+  AttendanceStatus,
+  EmployeeShift,
+  PartnerApprovalStatus,
+  Prisma,
+  PrismaClient,
+} from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
@@ -61,7 +75,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
         employeeId,
         type: type as ApplicationType,
         assignedToId: assignedToId ?? null,
-      }
+      },
     })
 
     return this.prisma.application.create({
@@ -73,8 +87,12 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
         endDate: new Date(endDate ?? startDate),
         reason,
         note,
-        attachmentUrl: (data as unknown as Record<string, unknown>).attachmentUrl as string | undefined,
-        attachmentId: (data as unknown as Record<string, unknown>).attachmentId as string | undefined,
+        attachmentUrl: (data as unknown as Record<string, unknown>).attachmentUrl as
+          | string
+          | undefined,
+        attachmentId: (data as unknown as Record<string, unknown>).attachmentId as
+          | string
+          | undefined,
         assignedToId: assignedToId ?? null,
         batchId: batch.id,
         ...this._buildDetailCreate(data),
@@ -119,7 +137,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    */
   async findAll(
     query: IListApplicationsQueryDTO,
-    managedBy?: { empId: string; role: string }
+    managedBy?: { empId: string; role: string },
   ): Promise<{ data: any[]; total: number }> {
     const where = this._buildWhere(query, managedBy)
     return this._paginate(where, query)
@@ -166,83 +184,89 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
             include: APPLICATION_INCLUDE,
           })
 
-        if (!app) return null
+          if (!app) return null
 
-        // 2. Execute side-effects
-        if (app.type === ApplicationType.shift_swap && app.shiftSwapDetail) {
-          const detail = app.shiftSwapDetail
-          if (detail.swapWithShiftId && detail.swapWithEmployeeId) {
-            // Swapping two existing employee shifts
-            const shift1 = await tx.employeeShift.findUnique({
-              where: { id: detail.employeeShiftId },
-            })
-            const shift2 = await tx.employeeShift.findUnique({
-              where: { id: detail.swapWithShiftId },
-            })
+          // 2. Execute side-effects
+          if (app.type === ApplicationType.shift_swap && app.shiftSwapDetail) {
+            const detail = app.shiftSwapDetail
+            if (detail.swapWithShiftId && detail.swapWithEmployeeId) {
+              // Swapping two existing employee shifts
+              const shift1 = await tx.employeeShift.findUnique({
+                where: { id: detail.employeeShiftId },
+              })
+              const shift2 = await tx.employeeShift.findUnique({
+                where: { id: detail.swapWithShiftId },
+              })
 
-            if (shift1 && shift2) {
-              const tempDate = new Date(Date.now() + 1000000 + (Date.now() % 100000))
-              // Step 1: Move shift1 to a temp date to avoid unique constraint violations [employeeId, assignedDate]
+              if (shift1 && shift2) {
+                const tempDate = new Date(Date.now() + 1000000 + (Date.now() % 100000))
+                // Step 1: Move shift1 to a temp date to avoid unique constraint violations [employeeId, assignedDate]
+                await tx.employeeShift.update({
+                  where: { id: shift1.id },
+                  data: { assignedDate: tempDate },
+                })
+                // Step 2: Update shift2 with shift1's original shiftId and date
+                await tx.employeeShift.update({
+                  where: { id: shift2.id },
+                  data: { shiftId: shift1.shiftId, assignedDate: shift1.assignedDate },
+                })
+                // Step 3: Update shift1 with shift2's original shiftId and date
+                await tx.employeeShift.update({
+                  where: { id: shift1.id },
+                  data: { shiftId: shift2.shiftId, assignedDate: shift2.assignedDate },
+                })
+              }
+            } else if (detail.workingShiftId) {
+              // Swapping to a different working shift on the same day
               await tx.employeeShift.update({
-                where: { id: shift1.id },
-                data: { assignedDate: tempDate },
-              })
-              // Step 2: Update shift2 with shift1's original shiftId and date
-              await tx.employeeShift.update({
-                where: { id: shift2.id },
-                data: { shiftId: shift1.shiftId, assignedDate: shift1.assignedDate },
-              })
-              // Step 3: Update shift1 with shift2's original shiftId and date
-              await tx.employeeShift.update({
-                where: { id: shift1.id },
-                data: { shiftId: shift2.shiftId, assignedDate: shift2.assignedDate },
+                where: { id: detail.employeeShiftId },
+                data: { shiftId: detail.workingShiftId },
               })
             }
-          } else if (detail.workingShiftId) {
-            // Swapping to a different working shift on the same day
-            await tx.employeeShift.update({
-              where: { id: detail.employeeShiftId },
-              data: { shiftId: detail.workingShiftId },
-            })
-          }
-        } else if (app.type === ApplicationType.overtime && app.overtimeDetail) {
-          const detail = app.overtimeDetail
-          const minutes = Math.round((detail.overtimeHours ?? 0) * 60)
+          } else if (app.type === ApplicationType.overtime && app.overtimeDetail) {
+            const detail = app.overtimeDetail
+            const minutes = Math.round((detail.overtimeHours ?? 0) * 60)
 
-          if (minutes > 0) {
+            if (minutes > 0) {
+              const shift = await tx.employeeShift.findUnique({
+                where: { id: detail.employeeShiftId },
+              })
+              if (shift) {
+                await this._upsertAttendanceRecord(
+                  tx,
+                  shift,
+                  AttendanceStatus.overtime,
+                  undefined,
+                  minutes,
+                )
+              }
+            }
+          } else if (app.type === ApplicationType.work_from_home) {
+            const shifts = await tx.employeeShift.findMany({
+              where: {
+                employeeId: app.employeeId,
+                assignedDate: { gte: app.startDate, lte: app.endDate },
+              },
+            })
+
+            const updatePromises = shifts.map(async (shift) => {
+              const newStatus = AttendanceStatus.on_time
+              const newNote = APPLICATION_NOTES.WFH_APPROVED
+              await this._upsertAttendanceRecord(tx, shift, newStatus, newNote)
+            })
+
+            await Promise.all(updatePromises)
+          } else if (app.type === ApplicationType.late_early && app.lateEarlyDetail) {
+            const detail = app.lateEarlyDetail
             const shift = await tx.employeeShift.findUnique({
               where: { id: detail.employeeShiftId },
             })
             if (shift) {
-              await this._upsertAttendanceRecord(tx, shift, AttendanceStatus.overtime, undefined, minutes)
+              const action = detail.isLate ? APPLICATION_NOTES.LATE : APPLICATION_NOTES.EARLY
+              const noteText = APPLICATION_NOTES.LATE_EARLY_APPROVED(action, detail.durationMinutes)
+              await this._upsertAttendanceRecord(tx, shift, AttendanceStatus.on_time, noteText)
             }
           }
-        } else if (app.type === ApplicationType.work_from_home) {
-          const shifts = await tx.employeeShift.findMany({
-            where: {
-              employeeId: app.employeeId,
-              assignedDate: { gte: app.startDate, lte: app.endDate },
-            },
-          })
-          
-          const updatePromises = shifts.map(async (shift) => {
-            const newStatus = AttendanceStatus.on_time
-            const newNote = APPLICATION_NOTES.WFH_APPROVED
-            await this._upsertAttendanceRecord(tx, shift, newStatus, newNote)
-          })
-          
-          await Promise.all(updatePromises)
-        } else if (app.type === ApplicationType.late_early && app.lateEarlyDetail) {
-          const detail = app.lateEarlyDetail
-          const shift = await tx.employeeShift.findUnique({
-            where: { id: detail.employeeShiftId },
-          })
-          if (shift) {
-            const action = detail.isLate ? APPLICATION_NOTES.LATE : APPLICATION_NOTES.EARLY
-            const noteText = APPLICATION_NOTES.LATE_EARLY_APPROVED(action, detail.durationMinutes)
-            await this._upsertAttendanceRecord(tx, shift, AttendanceStatus.on_time, noteText)
-          }
-        }
 
           // 3. Update application status
           return await tx.application.update({
@@ -256,7 +280,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
             include: APPLICATION_INCLUDE,
           })
         },
-        { timeout: 15000, maxWait: 15000 }
+        { timeout: 15000, maxWait: 15000 },
       )
     } catch (err) {
       console.error("[ApplicationRepository.approve] Failed:", err)
@@ -389,7 +413,6 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
         return {
           workFromHomeDetail: {
             create: {
-              wfhType: (data.detail?.wfhType ?? WFH_TYPE.FULL_DAY) as never,
               location: data.detail?.location,
             },
           },
@@ -434,7 +457,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    */
   private _buildWhere(
     query: IListApplicationsQueryDTO & { employeeId?: string; keyword?: string },
-    managedBy?: { empId: string; role: string }
+    managedBy?: { empId: string; role: string },
   ) {
     let where: Record<string, unknown> = {}
 
@@ -454,7 +477,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
         { id: { contains: kw, mode: "insensitive" } },
         { employee: { fullName: { contains: kw, mode: "insensitive" } } },
         { employee: { id: { contains: kw, mode: "insensitive" } } },
-        { approvedBy: { fullName: { contains: kw, mode: "insensitive" } } }
+        { approvedBy: { fullName: { contains: kw, mode: "insensitive" } } },
       ]
     }
 
@@ -471,12 +494,12 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
                 {
                   type: APPLICATION_TYPES.SHIFT_SWAP.LABEL,
                   shiftSwapDetail: {
-                    swapWithEmployeeId: empId
-                  }
-                }
-              ]
-            }
-          ]
+                    swapWithEmployeeId: empId,
+                  },
+                },
+              ],
+            },
+          ],
         }
       } else {
         return where
@@ -523,7 +546,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     shift: EmployeeShift,
     status: AttendanceStatus,
     note?: string,
-    overtimeMinutes?: number
+    overtimeMinutes?: number,
   ) {
     return tx.attendanceRecord.upsert({
       where: { employeeShiftId: shift.id },
@@ -539,14 +562,17 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
         status,
         ...(note && { note }),
         ...(overtimeMinutes && { overtimeMinutes: { increment: overtimeMinutes } }),
-      }
+      },
     })
   }
 
-  async updateShiftSwapPartnerApproval(applicationId: string, status: PartnerApprovalStatus): Promise<ApplicationShiftSwapDetail> {
+  async updateShiftSwapPartnerApproval(
+    applicationId: string,
+    status: PartnerApprovalStatus,
+  ): Promise<ApplicationShiftSwapDetail> {
     return this.prisma.applicationShiftSwapDetail.update({
       where: { applicationId },
-      data: { partnerApprovalStatus: status }
+      data: { partnerApprovalStatus: status },
     })
   }
 }
