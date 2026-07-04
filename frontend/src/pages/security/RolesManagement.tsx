@@ -48,6 +48,7 @@ export default function RolesManagement() {
   
   const [roleName, setRoleName] = useState("")
   const [roleDesc, setRoleDesc] = useState("")
+  const [isDefault, setIsDefault] = useState(false)
 
   // Queries
   const { data: rolesData, isLoading: isLoadingRoles, isError: isErrorRoles, refetch: refetchRoles } = useRoles()
@@ -82,6 +83,7 @@ export default function RolesManagement() {
   const handleOpenCreate = () => {
     setRoleName("")
     setRoleDesc("")
+    setIsDefault(false)
     setIsCreateOpen(true)
   }
 
@@ -95,6 +97,7 @@ export default function RolesManagement() {
       await createRoleMutation.mutateAsync({
         name: roleName.trim().toLowerCase().replace(/\s+/g, "_"),
         description: roleDesc.trim(),
+        isDefault,
       })
       toast.success("Tạo vai trò mới thành công")
       setIsCreateOpen(false)
@@ -108,6 +111,7 @@ export default function RolesManagement() {
     setEditingRole(role)
     setRoleName(role.name)
     setRoleDesc(role.description || "")
+    setIsDefault(role.isDefault)
     setIsEditOpen(true)
   }
 
@@ -124,13 +128,14 @@ export default function RolesManagement() {
         data: {
           name: roleName.trim().toLowerCase().replace(/\s+/g, "_"),
           description: roleDesc.trim(),
+          isDefault,
         },
       })
       toast.success("Cập nhật vai trò thành công")
       setIsEditOpen(false)
       // Update selected role state if currently open in drawer
       if (selectedRole?.id === editingRole.id) {
-        setSelectedRole({ ...selectedRole, name: roleName, description: roleDesc })
+        setSelectedRole({ ...selectedRole, name: roleName, description: roleDesc, isDefault })
       }
     } catch {
       toast.error("Không thể cập nhật vai trò")
@@ -220,15 +225,22 @@ export default function RolesManagement() {
                         {role.name}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between flex-wrap gap-1">
                       <h3 className="text-sm font-bold text-foreground mb-1">
                         {ROLE_LABELS[role.name] || role.name}
                       </h3>
-                      {isSystem && (
-                        <span className="text-[9px] font-semibold text-blue-600 bg-blue-50 px-1.5 py-px rounded">
-                          Hệ thống
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {role.isDefault && (
+                          <span className="text-[9px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-px rounded">
+                            Mặc định
+                          </span>
+                        )}
+                        {isSystem && (
+                          <span className="text-[9px] font-semibold text-blue-600 bg-blue-50 px-1.5 py-px rounded">
+                            Hệ thống
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <p className="text-xs text-muted-foreground line-clamp-3 mb-4 mt-1">
                       {role.description || "Chưa có mô tả cho vai trò này."}
@@ -242,18 +254,17 @@ export default function RolesManagement() {
                       </span>
                       <span className="text-lg font-extrabold text-foreground">{count}</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      {!isSystem && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-primary"
-                            onClick={() => handleOpenEdit(role)}
-                            aria-label={`Chỉnh sửa vai trò ${ROLE_LABELS[role.name] || role.name}`}
-                          >
-                            <Edit2 size={13} />
-                          </Button>
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          onClick={() => handleOpenEdit(role)}
+                          aria-label={`Chỉnh sửa vai trò ${ROLE_LABELS[role.name] || role.name}`}
+                        >
+                          <Edit2 size={13} />
+                        </Button>
+                        {role.name !== "admin" && !role.isDefault && (
                           <Button
                             variant="ghost"
                             size="icon"
@@ -263,21 +274,20 @@ export default function RolesManagement() {
                           >
                             <Trash2 size={13} />
                           </Button>
-                        </>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="gap-1.5 h-8 px-2.5 text-xs text-primary hover:text-primary hover:bg-primary/5"
-                        onClick={() => handleOpenRoleDetail(role)}
-                      >
-                        Xem chi tiết
-                        <ArrowRight size={13} />
-                      </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1.5 h-8 px-2.5 text-xs text-primary hover:text-primary hover:bg-primary/5"
+                          onClick={() => handleOpenRoleDetail(role)}
+                        >
+                          Xem chi tiết
+                          <ArrowRight size={13} />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </PageCard>
+                </PageCard>
             )
           })}
         </div>
@@ -425,6 +435,18 @@ export default function RolesManagement() {
                   className="text-xs min-h-[80px]"
                 />
               </div>
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="create-is-default"
+                  checked={isDefault}
+                  onChange={(e) => setIsDefault(e.target.checked)}
+                  className="size-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                />
+                <Label htmlFor="create-is-default" className="text-xs font-medium text-foreground cursor-pointer select-none">
+                  Đặt làm vai trò mặc định cho nhân sự mới
+                </Label>
+              </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)} className="h-9 text-xs">
@@ -457,6 +479,7 @@ export default function RolesManagement() {
                   onChange={(e) => setRoleName(e.target.value)}
                   className="h-9 text-xs"
                   required
+                  disabled={editingRole?.name === "admin"}
                 />
               </div>
               <div className="grid gap-2">
@@ -467,6 +490,18 @@ export default function RolesManagement() {
                   onChange={(e) => setRoleDesc(e.target.value)}
                   className="text-xs min-h-[80px]"
                 />
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="edit-is-default"
+                  checked={isDefault}
+                  onChange={(e) => setIsDefault(e.target.checked)}
+                  className="size-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                />
+                <Label htmlFor="edit-is-default" className="text-xs font-medium text-foreground cursor-pointer select-none">
+                  Đặt làm vai trò mặc định cho nhân sự mới
+                </Label>
               </div>
             </div>
             <DialogFooter>
