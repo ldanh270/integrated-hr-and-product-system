@@ -242,7 +242,7 @@ export const listEmployeesQuerySchema = z.object({
     .refine((val) => val >= 1, { message: "Limit must be at least 1" })
     .optional(),
   search: z.string().optional(),
-  status: z.enum(EMPLOYEE_STATUSES).optional(),
+  status: z.enum([...EMPLOYEE_STATUSES, "locked"] as const).optional(),
   type: z.enum(EMPLOYEE_TYPES).optional(),
   roleId: z.string().optional(),
   sortBy: z
