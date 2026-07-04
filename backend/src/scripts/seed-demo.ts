@@ -34,34 +34,36 @@ async function hydrateContext(context: SeedContext): Promise<SeedContext> {
   }
 }
 
-async function shouldSkipSeeder(name: string): Promise<boolean> {
-  try {
-    switch (name) {
-      case "WorkingShifts":
-        return (await prisma.workingShift.count()) > 0
-      case "HolidayCalendars":
-        return (await prisma.holidayCalendar.count()) > 0
-      case "ShiftSchedules":
-        return (await prisma.shiftSchedule.count()) >= (await prisma.employee.count())
-      case "EmployeeShifts":
-        return (await prisma.employeeShift.count()) > 0
-      case "AttendanceRecords":
-        return (await prisma.attendanceRecord.count()) > 0
-      case "Projects":
-        return (await prisma.project.count()) > 0
-      case "Applications":
-        return (await prisma.application.count()) > 0
-      case "Tasks":
-        return (await prisma.task.count()) > 0
-      case "SpentTimes":
-        return (await prisma.spentTime.count()) > 0
-      default:
-        return false
-    }
-  } catch (error) {
+async function shouldSkipSeederInternal(name: string): Promise<boolean> {
+  switch (name) {
+    case "WorkingShifts":
+      return (await prisma.workingShift.count()) > 0
+    case "HolidayCalendars":
+      return (await prisma.holidayCalendar.count()) > 0
+    case "ShiftSchedules":
+      return (await prisma.shiftSchedule.count()) >= (await prisma.employee.count())
+    case "EmployeeShifts":
+      return (await prisma.employeeShift.count()) > 0
+    case "AttendanceRecords":
+      return (await prisma.attendanceRecord.count()) > 0
+    case "Projects":
+      return (await prisma.project.count()) > 0
+    case "Applications":
+      return (await prisma.application.count()) > 0
+    case "Tasks":
+      return (await prisma.task.count()) > 0
+    case "SpentTimes":
+      return (await prisma.spentTime.count()) > 0
+    default:
+      return false
+  }
+}
+
+function shouldSkipSeeder(name: string): Promise<boolean> {
+  return shouldSkipSeederInternal(name).catch((error: unknown) => {
     console.error(`Failed to evaluate skip state for ${name}:`, error)
     return false
-  }
+  })
 }
 
 async function main(): Promise<void> {

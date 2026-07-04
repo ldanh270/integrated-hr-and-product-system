@@ -1,6 +1,11 @@
-import { IEmployeeShiftRepository, IEmployeeShiftWithShift, IOverrideEmployeeShiftDTO } from "@/types/shift.types.ts"
+import {
+  IEmployeeShiftRepository,
+  IEmployeeShiftOverrideRecord,
+  IEmployeeShiftWithShift,
+  IOverrideEmployeeShiftDTO,
+} from "@/types/shift.types.ts"
 
-import { EmployeeShift, PrismaClient, ShiftStatus } from "@prisma/client"
+import { PrismaClient, ShiftStatus } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
@@ -20,7 +25,7 @@ export class PrismaEmployeeShiftRepository
   }
 
   /** Append-only override row — supports multiple shifts per day for part-time assign. */
-  async createOverrideShift(data: IOverrideEmployeeShiftDTO): Promise<EmployeeShift> {
+  async createOverrideShift(data: IOverrideEmployeeShiftDTO): Promise<IEmployeeShiftOverrideRecord> {
     const { employeeId, assignedDate, shiftId, createdById } = data
     const date = new Date(assignedDate)
     date.setHours(0, 0, 0, 0)
@@ -62,7 +67,7 @@ export class PrismaEmployeeShiftRepository
    * @param data - The override data.
    * @returns The updated or created employee shift.
    */
-  async overrideShift(data: IOverrideEmployeeShiftDTO): Promise<EmployeeShift> {
+  async overrideShift(data: IOverrideEmployeeShiftDTO): Promise<IEmployeeShiftOverrideRecord> {
     const { employeeId, assignedDate, shiftId, createdById } = data
     const date = new Date(assignedDate)
     date.setHours(0, 0, 0, 0)

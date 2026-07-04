@@ -12,8 +12,12 @@ interface PartTimePayrollContext {
   partTimeDefaultHourlyRate?: number
 }
 
-function sanitizeOptionalNumber(value: number | undefined, fallback: number): number {
-  if (value === undefined || Number.isNaN(value)) {
+function readOptionalNumber(value: number | undefined, fallback: number): number {
+  if (typeof value !== "number") {
+    return fallback
+  }
+
+  if (Number.isNaN(value)) {
     return fallback
   }
 
@@ -30,15 +34,15 @@ export function resolvePartTimePayrollVariables(
     partTimeDefaultHourlyRate,
   } = context as PartTimePayrollContext
 
-  const overtimeMultiplier = sanitizeOptionalNumber(
+  const overtimeMultiplier = readOptionalNumber(
     partTimeOvertimeMultiplier,
     PART_TIME_PAYROLL_VARIABLE_DEFAULTS.OVERTIME_MULTIPLIER,
   )
-  const workingDayMultiplier = sanitizeOptionalNumber(
+  const workingDayMultiplier = readOptionalNumber(
     partTimeWorkingDayMultiplier,
     PART_TIME_PAYROLL_VARIABLE_DEFAULTS.WORKING_DAY_MULTIPLIER,
   )
-  const defaultHourlyRate = sanitizeOptionalNumber(
+  const defaultHourlyRate = readOptionalNumber(
     partTimeDefaultHourlyRate,
     PART_TIME_PAYROLL_VARIABLE_DEFAULTS.DEFAULT_HOURLY_RATE,
   )
@@ -46,7 +50,6 @@ export function resolvePartTimePayrollVariables(
   return {
     overtimeMultiplier,
     workingDayMultiplier,
-    // Treat 0 as unset — forces project-level hourlyRate when admin leaves default at 0.
     defaultHourlyRate: defaultHourlyRate > 0 ? defaultHourlyRate : null,
   }
 }

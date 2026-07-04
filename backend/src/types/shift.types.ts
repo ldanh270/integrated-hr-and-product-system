@@ -1,4 +1,5 @@
-import type { EmployeeShift, Prisma, WorkingShift } from "@prisma/client"
+import type { IEmployeeShiftStatus } from "@/configs/entities/attendance.config.ts"
+import type { Prisma, WorkingShift } from "@prisma/client"
 
 import type { IShiftScheduleWithDays, IShiftScheduleWithTemplate } from "@/types/shift-schedule.types.ts"
 
@@ -86,6 +87,20 @@ export interface IOverrideEmployeeShiftDTO {
   createdById?: string
 }
 
+/** Explicit row shape for override create/update — avoids unresolved Prisma types in Codacy. */
+export interface IEmployeeShiftOverrideRecord {
+  id: string
+  employeeId: string
+  shiftId: string
+  assignedDate: Date
+  scheduleId: string | null
+  status: IEmployeeShiftStatus
+  isOverride: boolean
+  createdById: string
+  createdAt: Date
+  updatedAt: Date
+}
+
 export type ShiftGenerateItemStatus = "pending" | "existing" | "override" | "no_schedule"
 
 export interface IGenerateShiftsDTO {
@@ -154,8 +169,8 @@ export interface IShiftScheduleRepository {
  */
 export interface IEmployeeShiftRepository {
   /** Overrides a shift for a specific date. */
-  overrideShift(data: IOverrideEmployeeShiftDTO): Promise<EmployeeShift>
-  createOverrideShift(data: IOverrideEmployeeShiftDTO): Promise<EmployeeShift>
+  overrideShift(data: IOverrideEmployeeShiftDTO): Promise<IEmployeeShiftOverrideRecord>
+  createOverrideShift(data: IOverrideEmployeeShiftDTO): Promise<IEmployeeShiftOverrideRecord>
   deleteOverridesForEmployeeDates(employeeId: string, dates: Date[]): Promise<void>
   /** Gets shift for employee on date. */
   getShiftForEmployeeDate(

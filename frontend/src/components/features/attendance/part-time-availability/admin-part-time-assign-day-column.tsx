@@ -102,6 +102,14 @@ export function AdminPartTimeAssignDayColumn({
     })
   }
 
+  const handleWorkDayClick = () => {
+    setScheduled(true)
+  }
+
+  const handleOffDayClick = () => {
+    setScheduled(false)
+  }
+
   return (
     <div
       className={cn(
@@ -148,9 +156,7 @@ export function AdminPartTimeAssignDayColumn({
             <button
               type="button"
               disabled={disabled}
-              onClick={() => {
-                setScheduled(true)
-              }}
+              onClick={handleWorkDayClick}
               className={cn(
                 "rounded-full py-1 text-[10px] font-semibold transition-colors",
                 assignment.isScheduled
@@ -163,9 +169,7 @@ export function AdminPartTimeAssignDayColumn({
             <button
               type="button"
               disabled={disabled}
-              onClick={() => {
-                setScheduled(false)
-              }}
+              onClick={handleOffDayClick}
               className={cn(
                 "rounded-full py-1 text-[10px] font-semibold transition-colors",
                 !assignment.isScheduled
@@ -222,9 +226,7 @@ export function AdminPartTimeAssignDayColumn({
                             className="h-5 w-5 rounded-full hover:text-destructive hover:bg-destructive/10 transition-colors"
                             disabled={disabled}
                             // First slot minus switches day to "Off" instead of removing the only row.
-                            onClick={() => {
-                              setScheduled(false)
-                            }}
+                            onClick={handleOffDayClick}
                             aria-label="Không làm ngày này"
                           >
                             <Minus className="h-3 w-3" />
@@ -236,7 +238,7 @@ export function AdminPartTimeAssignDayColumn({
                             size="icon"
                             className="h-5 w-5 rounded-full hover:text-destructive hover:bg-destructive/10 transition-colors"
                             disabled={disabled}
-                            onClick={() => {
+                            onClick={function handleRemoveSlotClick() {
                               removeSlot(index)
                             }}
                             aria-label="Xóa khung giờ"
@@ -254,10 +256,10 @@ export function AdminPartTimeAssignDayColumn({
                             value={slot.startTime ?? ""}
                             disabled={disabled}
                             className="availability-time-input flex h-8 w-full rounded-full border border-input/60 bg-background px-3 py-1 text-xs font-mono focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50 [color-scheme:light] dark:[color-scheme:dark]"
-                            onChange={(event) => {
+                            onChange={function handleStartTimeChange(event) {
                               updateSlot(index, { startTime: event.target.value || null })
                             }}
-                            onBlur={() => {
+                            onBlur={function handleStartTimeBlur() {
                               notifySlotValidation(slot)
                             }}
                           />
@@ -269,10 +271,10 @@ export function AdminPartTimeAssignDayColumn({
                             value={slot.endTime ?? ""}
                             disabled={disabled}
                             className="availability-time-input flex h-8 w-full rounded-full border border-input/60 bg-background px-3 py-1 text-xs font-mono focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50 [color-scheme:light] dark:[color-scheme:dark]"
-                            onChange={(event) => {
+                            onChange={function handleEndTimeChange(event) {
                               updateSlot(index, { endTime: event.target.value || null })
                             }}
-                            onBlur={() => {
+                            onBlur={function handleEndTimeBlur() {
                               notifySlotValidation(slot)
                             }}
                           />
