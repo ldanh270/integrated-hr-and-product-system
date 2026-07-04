@@ -29,6 +29,8 @@ export interface Employee {
   phone: string | null
   /** Job position / title (nullable) */
   position: string | null
+  positionId?: string | null
+  positionRel?: any
   /** Type of employment (e.g. full-time, part-time) */
   employeeType: EmployeeType
   /** Active status of the employee */
@@ -71,6 +73,7 @@ export interface CreateEmployeeDto {
   passwordHash?: string
   phone?: string | null
   position?: string | null
+  positionId?: string | null
   employeeType?: EmployeeType
   status?: EmployeeStatus
   dateOfBirth?: Date | string | null
@@ -89,6 +92,7 @@ export interface UpdateEmployeeDto {
   password?: string
   phone?: string | null
   position?: string | null
+  positionId?: string | null
   employeeType?: EmployeeType
   status?: EmployeeStatus
   dateOfBirth?: Date | string | null
