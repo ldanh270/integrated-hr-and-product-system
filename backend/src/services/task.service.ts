@@ -1,4 +1,3 @@
-import { SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
 import { TASK_CREATION_POLICY, TASK_STATUS } from "@/configs/entities/project.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
@@ -31,15 +30,9 @@ export class TaskService implements ITaskService {
     private statusRepository?: IProjectTaskStatusRepository,
   ) {}
 
-  /**
-   * Resolves whether the caller has global admin or general-manager privileges.
-   * @param userId The authenticated user ID
-   */
   private async isAuthorizedAdminOrGM(userId: string): Promise<boolean> {
     const authContext = await authorizationService.getAuthorizationContext(userId)
-    if (authContext.isDynamicAdmin) return true
-    const roles = authContext.roles
-    return roles.has(SYSTEM_ROLE.ADMIN) || roles.has(SYSTEM_ROLE.GENERAL_MANAGER)
+    return authContext.permissions.has("project.update")
   }
 
   /**
