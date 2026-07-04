@@ -402,6 +402,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       isSystem: role.isSystem,
       isActive: role.isActive,
       isAdministrative: role.isAdministrative,
+      isDefault: role.isDefault,
       createdAt: role.createdAt,
       updatedAt: role.updatedAt,
       createdBy: role.createdBy,
