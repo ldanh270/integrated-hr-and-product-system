@@ -89,9 +89,20 @@ export class EmployeeService implements IEmployeeService {
     // Remove password from data before passing to repo
     const { password, role, ...repoData } = data
 
+    let positionName = data.position
+    if (repoData.positionId) {
+      const posRecord = await prisma.position.findUnique({
+        where: { id: repoData.positionId }
+      })
+      if (posRecord) {
+        positionName = posRecord.name
+      }
+    }
+
     try {
       return await this.repository.createEmployee({
         ...repoData,
+        position: positionName,
         passwordHash,
         roleId: initialRole.id,
       })
@@ -133,8 +144,23 @@ export class EmployeeService implements IEmployeeService {
     // Remove password from data
     const { password, ...updateData } = data
 
+    let positionName = updateData.position
+    if (updateData.positionId !== undefined) {
+      if (updateData.positionId === null) {
+        positionName = null
+      } else {
+        const posRecord = await prisma.position.findUnique({
+          where: { id: updateData.positionId }
+        })
+        if (posRecord) {
+          positionName = posRecord.name
+        }
+      }
+    }
+
     const updated = await this.repository.updateEmployee(id, {
       ...updateData,
+      position: positionName,
       passwordHash,
     })
 
