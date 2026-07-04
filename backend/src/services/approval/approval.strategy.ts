@@ -1,6 +1,5 @@
 import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
-import { SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
-import { APPROVAL_CONFIG, RequestCategory } from "@/configs/rules/approval.config.ts"
+import { RequestCategory } from "@/configs/rules/approval.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { authorizationService } from "@/services/authorization.service.ts"
 
@@ -32,8 +31,7 @@ export class HRApprovalStrategy implements IApprovalStrategy {
     processorId: string,
   ): Promise<boolean> {
     if (applicantId === processorId) return false
-    const allowedRoles = APPROVAL_CONFIG[category]?.roles || []
-    return (allowedRoles as readonly string[]).includes(SYSTEM_ROLE.HR_MANAGER)
+    return category !== "password_reset"
   }
 }
 
@@ -48,8 +46,7 @@ export class TeamLeaderApprovalStrategy implements IApprovalStrategy {
   ): Promise<boolean> {
     if (applicantId === processorId) return false
 
-    const allowedRoles = APPROVAL_CONFIG[category]?.roles || []
-    if (!(allowedRoles as readonly string[]).includes(SYSTEM_ROLE.TEAM_LEADER)) return false
+    if (category !== "application") return false
 
     // Verify if applicant is an active member in any active project led by the TL
     const activeProject = await prisma.project.findFirst({
@@ -83,27 +80,19 @@ export class DefaultApprovalStrategy implements IApprovalStrategy {
 }
 
 /**
- * Factory class to resolve the correct strategy based on the processor's primary dynamic role.
- * Role names are lower_snake_case AppRole.name values from the database.
+ * Factory class to resolve the correct strategy based on the processor's permissions.
  */
 export class ApprovalStrategyFactory {
   static async getStrategyForEmployee(processorId: string): Promise<IApprovalStrategy> {
     const authContext = await authorizationService.getAuthorizationContext(processorId)
 
-    // Admin bypass
-    if (authContext.isDynamicAdmin) {
+    if (authContext.isDynamicAdmin || authContext.permissions.has("security.update")) {
       return new AdminGMApprovalStrategy()
     }
-
-    const roles = authContext.roles
-
-    if (roles.has(SYSTEM_ROLE.ADMIN) || roles.has(SYSTEM_ROLE.GENERAL_MANAGER)) {
-      return new AdminGMApprovalStrategy()
-    }
-    if (roles.has(SYSTEM_ROLE.HR_MANAGER)) {
+    if (authContext.permissions.has("employee.update")) {
       return new HRApprovalStrategy()
     }
-    if (roles.has(SYSTEM_ROLE.TEAM_LEADER)) {
+    if (authContext.permissions.has("application.approve")) {
       return new TeamLeaderApprovalStrategy()
     }
     return new DefaultApprovalStrategy()
