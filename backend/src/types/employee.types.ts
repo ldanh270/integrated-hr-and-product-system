@@ -1,5 +1,10 @@
-import { IEmployeeStatus, IEmployeeType, ISystemRole } from "@/configs/entities/employee.config.ts"
+import {
+  IEmployeeRole,
+  IEmployeeStatus,
+  IEmployeeType,
+} from "@/configs/entities/employee.config.ts"
 import { SORT_ORDER } from "@/configs/system/db.config.ts"
+
 import { AppRole } from "./role.types.ts"
 
 /**
@@ -11,7 +16,6 @@ export type EmployeeStatus = IEmployeeStatus
  * Type representing valid Employee Type values.
  */
 export type EmployeeType = IEmployeeType
-
 
 /**
  * Domain interface representing an Employee object.
@@ -66,7 +70,7 @@ export interface CreateEmployeeDto {
   fullName: string
   email: string
   username: string
-  role?: ISystemRole
+  role?: IEmployeeRole
   roleId?: string
   passwordHash?: string
   phone?: string | null
@@ -155,11 +159,20 @@ export interface IEmployeeRepository {
   /** Find roles assigned to an employee */
   findRolesByEmployeeId(employeeId: string): Promise<AppRole[]>
   /** Assign a role to an employee (Idempotent) */
-  assignRole(employeeId: string, roleId: string, actorId?: string): Promise<{ success: boolean; created: boolean }>
+  assignRole(
+    employeeId: string,
+    roleId: string,
+    actorId?: string,
+  ): Promise<{ success: boolean; created: boolean }>
   /** Revoke a role from an employee (Idempotent) */
   revokeRole(employeeId: string, roleId: string): Promise<boolean>
   /** Bulk replace employee roles under optimistic concurrency control */
-  updateRoles(employeeId: string, roleIds: string[], version: number, actorId?: string): Promise<void>
+  updateRoles(
+    employeeId: string,
+    roleIds: string[],
+    version: number,
+    actorId?: string,
+  ): Promise<void>
   /** Count active admin users in the system */
   countActiveAdmins(tx?: any): Promise<number>
 }
@@ -175,21 +188,42 @@ export interface IEmployeeService {
   /** Register a new employee */
   createEmployee(data: CreateEmployeeDto & { password?: string }): Promise<Employee>
   /** Update existing employee info */
-  updateEmployee(id: string, data: UpdateEmployeeDto, actorId?: string, ipAddress?: string): Promise<Employee | null>
+  updateEmployee(
+    id: string,
+    data: UpdateEmployeeDto,
+    actorId?: string,
+    ipAddress?: string,
+  ): Promise<Employee | null>
   /** Update employee status */
-  updateStatus(id: string, status: EmployeeStatus, actorId?: string, ipAddress?: string): Promise<Employee | null>
+  updateStatus(
+    id: string,
+    status: EmployeeStatus,
+    actorId?: string,
+    ipAddress?: string,
+  ): Promise<Employee | null>
   /** Remove employee record (soft delete) */
   deleteEmployee(id: string, actorId?: string): Promise<boolean>
   /** Retrieve list of approver-eligible employees for dropdown */
-  listApprovers(): Promise<{ id: string; fullName: string; position: string | null; role: string }[]>
+  listApprovers(): Promise<
+    { id: string; fullName: string; position: string | null; role: string }[]
+  >
   /** Find roles assigned to an employee */
   getEmployeeRoles(employeeId: string): Promise<AppRole[]>
   /** Assign a role to an employee */
-  assignRole(employeeId: string, roleId: string, actorId?: string): Promise<{ success: boolean; created: boolean }>
+  assignRole(
+    employeeId: string,
+    roleId: string,
+    actorId?: string,
+  ): Promise<{ success: boolean; created: boolean }>
   /** Revoke a role from an employee */
   revokeRole(employeeId: string, roleId: string, actorId?: string): Promise<boolean>
   /** Bulk replace employee roles with optimistic lock and self-demotion verification */
-  updateRoles(employeeId: string, roleIds: string[], version: number, actorId?: string): Promise<void>
+  updateRoles(
+    employeeId: string,
+    roleIds: string[],
+    version: number,
+    actorId?: string,
+  ): Promise<void>
 }
 
 export interface AuthorizationContext {
@@ -201,7 +235,7 @@ export interface AuthorizationContext {
 export interface IAuthorizationService {
   getAuthorizationContext(
     employeeId: string,
-    options?: { skipCache?: boolean }
+    options?: { skipCache?: boolean },
   ): Promise<AuthorizationContext>
   invalidateUserCache(employeeId: string): Promise<void>
   invalidateGlobalVersion(): Promise<void>
@@ -212,4 +246,3 @@ export interface IAuthorizationService {
   logDecision(employeeId: string, permission: string, allowed: boolean, source: string): void
   getGlobalVersion(): Promise<number>
 }
-
