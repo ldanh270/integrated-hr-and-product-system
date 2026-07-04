@@ -1,11 +1,23 @@
-import { APPLICATION_STATUS, APPLICATION_TYPE_LABELS, REGIME_TYPE } from "@/config/entities/attendance.config"
+import {
+  APPLICATION_STATUS,
+  APPLICATION_TYPES,
+  APPLICATION_TYPE_LABELS,
+  REGIME_TYPE,
+  LEAVE_TYPE_LABELS,
+  APPLICATION_VIEW_MODE,
+  type IApplicationViewMode,
+} from "@/config/entities/attendance.config"
 import type { IApplication } from "@/lib/api/application.api"
 import { Check, FileText, Home, RefreshCw, X } from "lucide-react"
+import { useAuthStore } from "@/store/auth-store"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import apiClient from "@/lib/api-client"
+import { toast } from "sonner"
 
 interface ApplicationDetailProps {
   application: IApplication | null
   isLoading: boolean
-  mode: "mine" | "manage"
+  mode: IApplicationViewMode
   onBack: () => void
   onApprove?: (app: IApplication) => void
   onReject?: (app: IApplication) => void
@@ -19,6 +31,24 @@ export function ApplicationDetail({
   onApprove,
   onReject,
 }: ApplicationDetailProps) {
+  const { user } = useAuthStore()
+  const queryClient = useQueryClient()
+
+  const partnerApproveMutation = useMutation({
+    mutationFn: async ({ id, isApproved }: { id: string; isApproved: boolean }) => {
+      const res = await apiClient.patch(`/applications/${id}/partner-approve`, { isApproved })
+      return res.data
+    },
+    onSuccess: () => {
+      toast.success("Đã phản hồi yêu cầu đổi ca")
+      void queryClient.invalidateQueries({ queryKey: ["applications"] })
+      onBack()
+    },
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { error?: { message?: string } } } }
+      toast.error(error.response?.data?.error?.message || "Lỗi khi xử lý")
+    }
+  })
   if (isLoading || !application) {
     return (
       <div className="flex flex-col items-center justify-center h-[600px] w-full text-muted-foreground animate-in fade-in">
@@ -31,10 +61,15 @@ export function ApplicationDetail({
   const isPending = application.status === APPLICATION_STATUS.PENDING
   const typeLabel = APPLICATION_TYPE_LABELS[application.type] || application.type
 
+  const isShiftSwap = application.type === "shift_swap"
+  const swapDetail = isShiftSwap ? ((application.shiftSwapDetail || application.detail) as Record<string, string | null | undefined>) : null
+  const isPartner = isShiftSwap && (swapDetail?.swapWithEmployeeId === user?.personalEmployeeId || swapDetail?.swapWithEmployeeId === user?.id)
+  const isPartnerPending = isPartner && swapDetail?.partnerApprovalStatus === "pending"
+
   // Render detail fields dynamically based on application type
   const renderDetailTable = () => {
     switch (application.type) {
-      case "leave":
+      case APPLICATION_TYPES.LEAVE.LABEL:
         return (
           <>
             <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Kiểu nghỉ</th>
@@ -44,10 +79,25 @@ export function ApplicationDetail({
             <th className="px-4 py-3 font-medium text-muted-foreground text-left w-full">Lý do</th>
           </>
         )
-      case "overtime":
-      case "late_early":
-      case "shift_swap":
-      case "work_from_home":
+      case APPLICATION_TYPES.OVERTIME.LABEL:
+      case APPLICATION_TYPES.LATE_EARLY.LABEL:
+      case APPLICATION_TYPES.WORK_FROM_HOME.LABEL:
+        return (
+          <>
+            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Từ ngày</th>
+            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Đến ngày</th>
+            <th className="px-4 py-3 font-medium text-muted-foreground text-left w-full">Chi tiết / Lý do</th>
+          </>
+        )
+      case APPLICATION_TYPES.SHIFT_SWAP.LABEL:
+        return (
+          <>
+            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Ngày</th>
+            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Ca hiện tại</th>
+            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Người/Ca muốn đổi</th>
+            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Phản hồi của đối tác</th>
+          </>
+        )
       default:
         return (
           <>
@@ -65,13 +115,36 @@ export function ApplicationDetail({
         const leaveDetail = application.detail as Record<string, unknown>
         return (
           <>
-            <td className="px-4 py-4 font-semibold text-foreground">{String(leaveDetail.leaveType || "-")}</td>
+            <td className="px-4 py-4 font-semibold text-foreground">{leaveDetail.leaveType ? (LEAVE_TYPE_LABELS[String(leaveDetail.leaveType)] ?? leaveDetail.leaveType) : "-"}</td>
             <td className="px-4 py-4 text-foreground">{new Date(application.startDate).toLocaleDateString("vi-VN")}</td>
             <td className="px-4 py-4 text-foreground">{new Date(application.endDate).toLocaleDateString("vi-VN")}</td>
             <td className="px-4 py-4 text-foreground">
               {leaveDetail.regimeType === REGIME_TYPE.PAID ? "Có lương" : "Không lương"}
             </td>
             <td className="px-4 py-4 text-foreground">{application.reason || "-"}</td>
+          </>
+        )
+      }
+      case "shift_swap": {
+        const rowSwapDetail = (application.shiftSwapDetail || application.detail) as Record<string, string | null | undefined>
+        let partnerStatusLabel = "-"
+        let partnerStatusColor = "text-slate-600"
+        if (rowSwapDetail.partnerApprovalStatus === "pending") {
+          partnerStatusLabel = "Đang chờ"
+          partnerStatusColor = "text-amber-600 font-medium"
+        } else if (rowSwapDetail.partnerApprovalStatus === "approved") {
+          partnerStatusLabel = "Đã đồng ý"
+          partnerStatusColor = "text-emerald-600 font-medium"
+        } else if (rowSwapDetail.partnerApprovalStatus === "rejected") {
+          partnerStatusLabel = "Đã từ chối"
+          partnerStatusColor = "text-red-600 font-medium"
+        }
+        return (
+          <>
+            <td className="px-4 py-4 text-foreground">{new Date(application.startDate).toLocaleDateString("vi-VN")}</td>
+            <td className="px-4 py-4 text-foreground">{rowSwapDetail.employeeShiftId || "-"}</td>
+            <td className="px-4 py-4 text-foreground">{rowSwapDetail.swapWithEmployeeId ? `NV: ${rowSwapDetail.swapWithEmployeeId}` : `Ca: ${rowSwapDetail.swapWithShiftId || "-"}`}</td>
+            <td className={`px-4 py-4 ${partnerStatusColor}`}>{partnerStatusLabel}</td>
           </>
         )
       }
@@ -109,7 +182,7 @@ export function ApplicationDetail({
             <Home size={18} />
           </button>
           {/* Actions for Manager */}
-          {mode === "manage" && isPending && (
+          {mode === APPLICATION_VIEW_MODE.MANAGE && isPending && !isPartner && (
             <div className="flex items-center gap-3 ml-4 border-l border-border pl-4">
               <button
                 onClick={() => onApprove?.(application)}
@@ -128,6 +201,32 @@ export function ApplicationDetail({
                   <X size={12} strokeWidth={3} />
                 </div>
                 Không duyệt
+              </button>
+            </div>
+          )}
+
+          {/* Actions for Partner (Shift Swap) */}
+          {isPartnerPending && (
+            <div className="flex items-center gap-3 ml-4 border-l border-border pl-4">
+              <button
+                onClick={() => { partnerApproveMutation.mutate({ id: application.id, isApproved: true }) }}
+                disabled={partnerApproveMutation.isPending}
+                className="flex items-center gap-2 text-sm font-semibold text-emerald-600 hover:bg-emerald-50 px-3 py-1.5 rounded-full border border-transparent hover:border-emerald-200 transition-all disabled:opacity-50"
+              >
+                <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                  <Check size={12} strokeWidth={3} />
+                </div>
+                Đồng ý đổi ca
+              </button>
+              <button
+                onClick={() => { partnerApproveMutation.mutate({ id: application.id, isApproved: false }) }}
+                disabled={partnerApproveMutation.isPending}
+                className="flex items-center gap-2 text-sm font-semibold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-full border border-transparent hover:border-red-200 transition-all disabled:opacity-50"
+              >
+                <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+                  <X size={12} strokeWidth={3} />
+                </div>
+                Từ chối đổi
               </button>
             </div>
           )}
@@ -161,7 +260,7 @@ export function ApplicationDetail({
             <div className="flex flex-col gap-1.5">
               <span className="text-xs text-muted-foreground font-medium">Người duyệt</span>
               <span className="text-sm font-semibold text-primary">
-                {application.processor ? application.processor.fullName : "Chưa phân công"}
+                {application.approvedBy ? application.approvedBy.fullName : (application.assignedTo ? application.assignedTo.fullName : "Chưa phân công")}
               </span>
             </div>
             <div className="flex flex-col gap-1.5">

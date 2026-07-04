@@ -1,5 +1,5 @@
 import { useConfirm } from "@/components/common"
-import { EMPLOYEE_STATUS, ROLE } from "@/config/entities/employee.config"
+import { EMPLOYEE_STATUS, SYSTEM_ROLE } from "@/config/entities/employee.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import { usePermission } from "@/hooks/use-permission"
 import { useAuthStore } from "@/store/auth-store"
@@ -44,7 +44,7 @@ export const useEmployeeMaster = () => {
   const { hasRole } = usePermission()
   const isAdminOrManager =
     !!user &&
-    [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER].some((role) => hasRole(role))
+    [SYSTEM_ROLE.ADMIN, SYSTEM_ROLE.HR_MANAGER, SYSTEM_ROLE.GENERAL_MANAGER].some((role) => hasRole(role))
   const navigate = useNavigate()
 
   // Queries and mutations from React Query hooks

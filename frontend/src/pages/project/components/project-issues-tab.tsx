@@ -461,7 +461,7 @@ export function ProjectIssuesTab({
 
   // Reset page number back to 1 when filters are updated
   useEffect(() => {
-    setCurrentPage(1)
+    setTimeout(() => setCurrentPage(1), 0)
   }, [
     issueSearch,
     trackerFilter,

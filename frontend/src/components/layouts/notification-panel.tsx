@@ -3,59 +3,97 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useState } from "react"
-
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Bell } from "lucide-react"
+import apiClient from "@/lib/api-client"
+import dayjs from "dayjs"
+import "dayjs/locale/vi"
+import relativeTime from "dayjs/plugin/relativeTime"
+
+dayjs.extend(relativeTime)
+dayjs.locale("vi")
 
 interface Notification {
   id: string
   title: string
-  desc: string
-  time: string
-  read: boolean
+  message: string
+  type: string
+  isRead: boolean
+  createdAt: string
 }
-
-// Mock data
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: "1",
-    title: "Đơn nghỉ phép được duyệt",
-    desc: "Trưởng phòng đã duyệt đơn nghỉ phép của bạn.",
-    time: "5 phút trước",
-    read: false,
-  },
-  {
-    id: "2",
-    title: "Nhắc nhở chấm công",
-    desc: "Bạn chưa chấm công vào lúc 08:00 hôm nay.",
-    time: "2 giờ trước",
-    read: false,
-  },
-  {
-    id: "3",
-    title: "Cập nhật chính sách",
-    desc: "Công ty vừa cập nhật chính sách phúc lợi mới.",
-    time: "Hôm qua",
-    read: true,
-  },
-]
 
 /**
  * NotificationPanel — Displays notification bell with dropdown list.
  */
 export default function NotificationPanel() {
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS)
   const [open, setOpen] = useState(false)
+  const queryClient = useQueryClient()
 
-  const unreadCount = notifications.filter((n) => !n.read).length
+  // Fetch notifications
+  const { data: notifications = [] } = useQuery<Notification[]>({
+    queryKey: ["notifications"],
+    queryFn: async () => {
+      const res = await apiClient.get("/notifications")
+      return res.data.data || []
+    },
+    // Refetch when popover opens, or let React Query handle it with default staleTime
+    refetchInterval: 60000, // optionally poll every minute
+  })
+
+  // Mark one as read
+  const markAsReadMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.patch(`/notifications/${id}/read`)
+    },
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["notifications"] })
+      const previous = queryClient.getQueryData<Notification[]>(["notifications"])
+      if (previous) {
+        queryClient.setQueryData<Notification[]>(
+          ["notifications"],
+          previous.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+        )
+      }
+      return { previous }
+    },
+    onError: (_err, _newTodo, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["notifications"], context.previous)
+      }
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ["notifications"] })
+    },
+  })
+
+  // Mark all as read
+  const markAllAsReadMutation = useMutation({
+    mutationFn: async () => {
+      await apiClient.patch("/notifications/read-all")
+    },
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["notifications"] })
+      const previous = queryClient.getQueryData<Notification[]>(["notifications"])
+      if (previous) {
+        queryClient.setQueryData<Notification[]>(
+          ["notifications"],
+          previous.map((n) => ({ ...n, isRead: true }))
+        )
+      }
+      return { previous }
+    },
+    onError: (_err, _newTodo, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["notifications"], context.previous)
+      }
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ["notifications"] })
+    },
+  })
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length
   const displayCount = unreadCount > 9 ? "9+" : unreadCount
-
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-  }
-
-  const markAsRead = (id: string) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
-  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -84,8 +122,9 @@ export default function NotificationPanel() {
           <h4 className="font-semibold text-foreground">Thông báo</h4>
           {unreadCount > 0 && (
             <button
-              onClick={markAllAsRead}
+              onClick={() => { markAllAsReadMutation.mutate() }}
               className="text-xs font-medium text-primary hover:underline"
+              disabled={markAllAsReadMutation.isPending}
             >
               Đánh dấu tất cả đã đọc
             </button>
@@ -99,24 +138,26 @@ export default function NotificationPanel() {
                 <div
                   key={n.id}
                   onClick={() => {
-                    markAsRead(n.id)
+                    if (!n.isRead) markAsReadMutation.mutate(n.id)
                   }}
                   className={`flex cursor-pointer flex-col gap-1 border-b border-border/50 px-4 py-3 transition-colors hover:bg-secondary/50 last:border-0 ${
-                    !n.read ? "bg-primary/5" : ""
+                    !n.isRead ? "bg-primary/5" : ""
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span
-                      className={`text-sm font-medium line-clamp-1 ${!n.read ? "text-foreground" : "text-muted-foreground"}`}
+                      className={`text-sm font-medium line-clamp-1 ${!n.isRead ? "text-foreground" : "text-muted-foreground"}`}
                     >
                       {n.title}
                     </span>
-                    {!n.read && (
+                    {!n.isRead && (
                       <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                     )}
                   </div>
-                  <span className="text-xs text-muted-foreground line-clamp-2">{n.desc}</span>
-                  <span className="text-[10px] text-muted-foreground/80 mt-1">{n.time}</span>
+                  <span className="text-xs text-muted-foreground line-clamp-2">{n.message}</span>
+                  <span className="text-[10px] text-muted-foreground/80 mt-1">
+                    {dayjs(n.createdAt).fromNow()}
+                  </span>
                 </div>
               ))}
             </div>

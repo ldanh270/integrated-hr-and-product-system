@@ -34,7 +34,7 @@ export const ACTIVITY_ACTION_VARIANTS: Record<string, "success" | "danger" | "wa
  */
 export const SECURITY_ACTIVITY_CATEGORY = {
   SECURITY: "security",
-  ROLE: "role",
+  SYSTEM_ROLE: "role",
   PERMISSION: "permission",
   EMPLOYEE: "employee",
 } as const
@@ -43,7 +43,7 @@ export const SECURITY_ACTIVITY_CATEGORY = {
  * Action-name prefixes used to classify audit log records by domain.
  */
 export const SECURITY_AUDIT_ACTION_PREFIX = {
-  ROLE: "ROLE_",
+  SYSTEM_ROLE: "ROLE_",
   PERMISSION: "PERMISSION_",
   EMPLOYEE: "EMPLOYEE_",
 } as const

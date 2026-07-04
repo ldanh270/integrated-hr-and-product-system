@@ -24,6 +24,7 @@ export interface AuthRequest extends Request {
   user?: {
     empId: string
     username: string
+    role: string
   }
 }
 
@@ -72,8 +73,9 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   }
 
   // Verify that the user still exists in the database and is active
+  let employee;
   try {
-    const employee = await employeeRepository.findById(decoded.empId)
+    employee = await employeeRepository.findById(decoded.empId)
     if (!employee || employee.status !== EMPLOYEE_STATUS.ACTIVE) {
       console.error("Auth Middleware: Employee not found or inactive", {
         empId: decoded.empId,
@@ -104,6 +106,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   req.user = {
     empId: decoded.empId,
     username: decoded.username,
+    role: employee!.role || "",
   }
 
   next()

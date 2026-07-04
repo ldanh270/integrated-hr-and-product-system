@@ -42,7 +42,7 @@ export const APP_TYPE_META: Record<
     hint: "Đăng ký tăng ca ngoài ca",
   },
   [APPLICATION_TYPES.WORK_FROM_HOME.LABEL]: {
-    label: "WFH",
+    label: "Làm việc từ xa",
     icon: Laptop,
     color: "text-sky-600",
     bg: "bg-sky-50",

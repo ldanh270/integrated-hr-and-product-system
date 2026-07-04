@@ -4,7 +4,7 @@ import { projectTaskStatusApi } from "@/lib/api/project-task-status.api"
 import { taskApi } from "@/lib/api/task.api"
 import { extractErrorMessage } from "@/utils/error-helper"
 import { toast } from "sonner"
-import { ROLE } from "@/config/entities/employee.config"
+import { SYSTEM_ROLE } from "@/config/entities/employee.config"
 import type { Task } from "@/types/task.types"
 import type { ProjectTaskStatus, CreateProjectTaskStatusDto, UpdateProjectTaskStatusDto } from "@/types/project-task-status.types"
 
@@ -29,7 +29,7 @@ export function useProjectKanban({
 }: UseProjectKanbanProps) {
   const queryClient = useQueryClient()
   const isLeader = teamLeader?.id === user?.id
-  const isAdminOrGM = user?.role === ROLE.ADMIN || user?.role === ROLE.GENERAL_MANAGER
+  const isAdminOrGM = user?.role === SYSTEM_ROLE.ADMIN || user?.role === SYSTEM_ROLE.GENERAL_MANAGER
   const canManageStatuses = isAdminOrGM || isLeader
 
   // Modal States

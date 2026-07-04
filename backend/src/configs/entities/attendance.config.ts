@@ -16,6 +16,8 @@ export type IEmployeeShiftStatus = (typeof EMPLOYEE_SHIFT_STATUSES)[number]
 export const HOLIDAY_TYPES = ["national", "company"] as const
 export type IHolidayType = (typeof HOLIDAY_TYPES)[number]
 
+
+
 export const ATTENDANCE_STATUS = {
   ON_TIME: "on_time",
   LATE: "late",
@@ -36,12 +38,23 @@ export type IAttendanceStatus = (typeof ATTENDANCE_STATUSES)[number]
 export const APPLICATION_TYPES = {
   LEAVE: { LABEL: "leave", DESCRIPTION: "Xin nghỉ phép" },
   OVERTIME: { LABEL: "overtime", DESCRIPTION: "Làm thêm giờ (OT)" },
-  WORK_FROM_HOME: { LABEL: "work_from_home", DESCRIPTION: "Làm việc từ xa (WFH)" },
+  WORK_FROM_HOME: { LABEL: "work_from_home", DESCRIPTION: "Làm việc từ xa" },
   SHIFT_SWAP: { LABEL: "shift_swap", DESCRIPTION: "Đổi ca làm việc" },
   LATE_EARLY: { LABEL: "late_early", DESCRIPTION: "Đi muộn/về sớm" },
   RESIGNATION: { LABEL: "resignation", DESCRIPTION: "Thôi việc" },
 } as const
 export type IApplicationType = (typeof APPLICATION_TYPES)[keyof typeof APPLICATION_TYPES]["LABEL"]
+
+// Types that support batch (multi-item) submission — excludes resignation
+export const BATCHABLE_APPLICATION_TYPES = [
+  APPLICATION_TYPES.LEAVE.LABEL,
+  APPLICATION_TYPES.OVERTIME.LABEL,
+  APPLICATION_TYPES.WORK_FROM_HOME.LABEL,
+  APPLICATION_TYPES.SHIFT_SWAP.LABEL,
+  APPLICATION_TYPES.LATE_EARLY.LABEL,
+  APPLICATION_TYPES.RESIGNATION.LABEL,
+] as const
+export type IBatchableApplicationType = (typeof BATCHABLE_APPLICATION_TYPES)[number]
 
 export const APPLICATION_TYPE_VALUES = [
   APPLICATION_TYPES.LEAVE.LABEL,
@@ -66,6 +79,26 @@ export const APPLICATION_STATUSES = [
   APPLICATION_STATUS.CANCELLED,
 ] as const
 export type IApplicationStatus = (typeof APPLICATION_STATUSES)[number]
+
+export const APPLICATION_SCOPE = {
+  ASSIGNED: "assigned",
+  ALL: "all",
+} as const
+
+export const APPLICATION_SCOPES = [
+  APPLICATION_SCOPE.ASSIGNED,
+  APPLICATION_SCOPE.ALL,
+] as const
+export type IApplicationScope = (typeof APPLICATION_SCOPES)[number]
+
+
+export const PARTNER_APPROVAL_STATUS = {
+  PENDING: "pending",
+  APPROVED: "approved",
+  REJECTED: "rejected",
+} as const
+
+export type IPartnerApprovalStatus = (typeof PARTNER_APPROVAL_STATUS)[keyof typeof PARTNER_APPROVAL_STATUS]
 
 export const REGIME_TYPE = {
   PAID: "paid",

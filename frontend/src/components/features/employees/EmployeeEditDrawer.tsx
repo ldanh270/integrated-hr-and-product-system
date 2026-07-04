@@ -1,5 +1,5 @@
-import { EmployeeWeeklyScheduleSection } from "@/components/features/employees/employee-weekly-schedule-section"
 import { AppDrawer } from "@/components/common"
+import { EmployeeWeeklyScheduleSection } from "@/components/features/employees/employee-weekly-schedule-section"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -7,22 +7,22 @@ import {
   EMPLOYEE_STATUSES,
   EMPLOYEE_STATUS_LABELS,
   EMPLOYEE_TYPES,
-  EMPLOYEE_TYPE,
   EMPLOYEE_TYPE_LABELS,
   ROLE_LABELS,
 } from "@/config/entities/employee.config"
-import { useEmployeeEditModal } from "@/hooks/employees/useEmployeeEditModal"
 import { useEmployeeWeeklyScheduleSection } from "@/hooks/employees/use-employee-weekly-schedule-section"
-import type { Employee } from "@/types/employee.types"
+import { useEmployeeEditModal } from "@/hooks/employees/useEmployeeEditModal"
 import {
-  useRoles,
   useEmployeeRoles,
+  useRoles,
   useUpdateEmployeeRoles,
 } from "@/hooks/security/queries/use-security-query"
+import type { Employee } from "@/types/employee.types"
 import type { Role } from "@/types/security.types"
-import { startTransition, useEffect, useState } from "react"
-import { RefreshCw } from "lucide-react"
 
+import { startTransition, useEffect, useState } from "react"
+
+import { RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 
 /**
@@ -45,11 +45,12 @@ interface Props {
 export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
   const {
     register,
+    watch,
     handleSubmit,
     onSubmitEmployee,
     errors,
     isPending: isEmployeePending,
-  } = useEmployeeEditModal(employee, isOpen)
+  } = useEmployeeEditModal(employee, isOpen, onClose)
 
   const weeklySchedule = useEmployeeWeeklyScheduleSection(employee?.id, isOpen)
   const { data: allRoles } = useRoles()
@@ -93,6 +94,10 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
   })
 
   const isPending = isEmployeePending || weeklySchedule.isPending || updateEmployeeRoles.isPending
+
+  const totalLeaves = watch("totalLeaves") || 0
+  const usedLeaves = watch("usedLeaves") || 0
+  const remainingLeaves = totalLeaves - usedLeaves
 
   // Avoid rendering if no employee is selected for editing
   if (!employee) return null
@@ -190,7 +195,9 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                                   if (e.target.checked) {
                                     setSelectedRoleIds((prev) => [...prev, role.id])
                                   } else {
-                                    setSelectedRoleIds((prev) => prev.filter((id) => id !== role.id))
+                                    setSelectedRoleIds((prev) =>
+                                      prev.filter((id) => id !== role.id),
+                                    )
                                   }
                                 }}
                                 className="h-3.5 w-3.5 rounded border-border text-primary"
@@ -378,11 +385,44 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
               </div>
             </section>
 
-            <EmployeeWeeklyScheduleSection
-              section={weeklySchedule}
-              // PT uses project Spent Time, not company weekly shift templates.
-              hidden={employee.employeeType === EMPLOYEE_TYPE.PART_TIME}
-            />
+            {/* Leave Balance Section */}
+            <section>
+              <h3 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                Tổng phép
+              </h3>
+              <div className="border border-border rounded-xl bg-card overflow-hidden">
+                <table className="w-full text-sm text-center">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/50">
+                      <th className="py-3 px-4 font-medium text-muted-foreground w-1/3 border-r border-border">
+                        Số phép
+                      </th>
+                      <th className="py-3 px-4 font-medium text-muted-foreground w-1/3 border-r border-border">
+                        Đã dùng
+                      </th>
+                      <th className="py-3 px-4 font-medium text-muted-foreground w-1/3">Còn lại</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="py-3 px-4 border-r border-border text-foreground">
+                        {totalLeaves}
+                        <input
+                          type="hidden"
+                          {...register("totalLeaves", { valueAsNumber: true })}
+                        />
+                      </td>
+                      <td className="py-3 px-4 border-r border-border text-foreground">
+                        {usedLeaves}
+                      </td>
+                      <td className="py-3 px-4 text-foreground font-medium">{remainingLeaves}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <EmployeeWeeklyScheduleSection section={weeklySchedule} />
           </form>
         </div>
 

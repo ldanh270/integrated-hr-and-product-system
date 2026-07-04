@@ -26,7 +26,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { RichTextEditor } from "@/components/ui/rich-text-editor"
 // Import employee role specifications
-import { ROLE } from "@/config/entities/employee.config"
+import { SYSTEM_ROLE } from "@/config/entities/employee.config"
 import { usePermission } from "@/hooks/use-permission"
 // Import task property categories lists
 import {
@@ -205,7 +205,7 @@ export default function TaskDetail() {
   const isAssignee = task?.assigneeId === user?.id
   const isLeader = project?.teamLeaderId === user?.id
   const isAdminOrGM =
-    !!user && [ROLE.ADMIN, ROLE.GENERAL_MANAGER].some((role) => roles.includes(role))
+    !!user && [SYSTEM_ROLE.ADMIN, SYSTEM_ROLE.GENERAL_MANAGER].some((role) => roles.includes(role))
 
   // Who can edit this task: Admin/GM, TL, Creator, Assignee
   const canEditTask = isAdminOrGM || isLeader || isCreator || isAssignee

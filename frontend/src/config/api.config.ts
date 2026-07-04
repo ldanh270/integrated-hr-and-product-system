@@ -30,6 +30,7 @@ export const API_ENDPOINTS = {
   SCHEDULES: {
     MY: "/schedules/my",
     MY_ALL: "/schedules/my/all",
+    MY_SHIFT: "/schedules/my/shift",
     ASSIGN: "/schedules/assign",
     OVERRIDE: "/schedules/override",
     GENERATE_PREVIEW: "/schedules/generate/preview",
@@ -37,6 +38,7 @@ export const API_ENDPOINTS = {
     SETTINGS: "/schedules/settings",
     EMPLOYEE: (employeeId: string) => `/schedules/employee/${employeeId}`,
     EMPLOYEE_ALL: (employeeId: string) => `/schedules/employee/${employeeId}/all`,
+    EMPLOYEE_SHIFT: (employeeId: string) => `/schedules/employee/${employeeId}/shift`,
   },
   SHIFT_CHANGE_REQUESTS: {
     BASE: "/shift-change-requests",

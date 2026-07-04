@@ -47,8 +47,8 @@ interface PaginatedLogs {
 function mapAuditToActivity(log: BackendAuditLog): ActivityLogItem {
   let category: string = SECURITY_ACTIVITY_CATEGORY.SECURITY
   const action = log.action || ""
-  if (action.startsWith(SECURITY_AUDIT_ACTION_PREFIX.ROLE)) {
-    category = SECURITY_ACTIVITY_CATEGORY.ROLE
+  if (action.startsWith(SECURITY_AUDIT_ACTION_PREFIX.SYSTEM_ROLE)) {
+    category = SECURITY_ACTIVITY_CATEGORY.SYSTEM_ROLE
   } else if (action.startsWith(SECURITY_AUDIT_ACTION_PREFIX.PERMISSION)) {
     category = SECURITY_ACTIVITY_CATEGORY.PERMISSION
   } else if (action.startsWith(SECURITY_AUDIT_ACTION_PREFIX.EMPLOYEE)) {

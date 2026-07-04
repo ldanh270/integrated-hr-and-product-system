@@ -586,7 +586,7 @@ export class AuthService implements IAuthService {
       this.repo.countActivityLogsToday(ACTIVITY_CATEGORY.AUTH, ACTIVITY_ACTION.FAILED_LOGIN),
       this.repo.countActivityLogsToday(ACTIVITY_CATEGORY.AUTH, ACTIVITY_ACTION.LOGIN),
       this.repo.getRecentLogsByCategory(ACTIVITY_CATEGORY.SECURITY, 5),
-      this.repo.getRecentLogsByCategory(ACTIVITY_CATEGORY.ROLE, 5),
+      this.repo.getRecentLogsByCategory(ACTIVITY_CATEGORY.SYSTEM_ROLE, 5),
     ])
 
     return {

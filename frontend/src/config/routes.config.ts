@@ -11,6 +11,8 @@ export const ROUTES = {
     LOGIN_HISTORY: "/profile/login-history",
   },
   APPLICATION: {
+    MANAGE: "/application/manage",
+    ALL: "/application/all",
     BASE: "/application",
     DASHBOARD: "/application/dashboard",
     CREATE: "/application/create",
@@ -76,5 +78,6 @@ export const ROUTES = {
     SCHEDULE: "/personal/schedule",
     PAYSLIPS: "/personal/payslips",
     PROJECTS: "/personal/projects",
+    APPLICATIONS: "/personal/applications",
   },
 } as const

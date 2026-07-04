@@ -63,6 +63,8 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       dateOfBirth: employee.dateOfBirth,
       nationalId: employee.nationalId,
       address: employee.address,
+      totalLeaves: employee.totalLeaves,
+      usedLeaves: employee.usedLeaves,
       startDate: employee.startDate,
       endDate: employee.endDate,
       role: roles[0] ?? null,

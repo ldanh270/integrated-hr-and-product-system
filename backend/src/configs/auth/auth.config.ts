@@ -44,7 +44,7 @@ export const PASSWORD_RESET_STATUSES = [
 
 export const ACTIVITY_CATEGORY = {
   AUTH: "auth",
-  ROLE: "role",
+  SYSTEM_ROLE: "role",
   SECURITY: "security",
 } as const
 
