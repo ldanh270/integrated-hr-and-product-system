@@ -245,6 +245,10 @@ model Employee {
   @@index([status, employeeType])
   @@index([deletedAt])
   @@index([status, deletedAt])
+  @@index([lockedUntil])
+  @@index([failedLoginCount])
+  @@index([email])
+  @@index([username])
 }
 
 // ── Attendance ──
@@ -982,6 +986,8 @@ model Permission {
   @@map("permissions")
   @@index([module])
   @@index([deletedAt])
+  @@index([isActive])
+  @@index([module, isActive, deletedAt])
 }
 
 model RolePermission {
