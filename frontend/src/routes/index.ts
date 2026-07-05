@@ -1,13 +1,17 @@
 import { ROUTES } from "@/config/routes.config.ts"
 
-import { lazy, type ComponentType } from "react"
+import { type ComponentType, lazy } from "react"
 
 const MainLayout = lazy(() => import("@/layouts/MainLayout.tsx"))
 
 const publicRoutes = [
-  { path: "/login", component: lazy(() => import("@/pages/auth/Login.tsx")), layout: null },
   {
-    path: "/reset-password",
+    path: ROUTES.AUTH.LOGIN,
+    component: lazy(() => import("@/pages/auth/Login.tsx")),
+    layout: null,
+  },
+  {
+    path: ROUTES.AUTH.RESET_PASSWORD,
     component: lazy(() => import("@/pages/auth/ResetPassword.tsx")),
     layout: null,
   },
@@ -23,139 +27,124 @@ export interface RouteConfig {
 
 const privateRoutes: RouteConfig[] = [
   {
-    path: "/hrm/dashboard",
-    component: lazy(() => import("@/pages/Dashboard.tsx")),
-    layout: MainLayout,
-  },
-  {
-    path: "/hrm/employees",
+    path: ROUTES.HRM.EMPLOYEES,
     component: lazy(() => import("@/pages/EmployeeList.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/hrm/profile",
+    path: ROUTES.HRM.PROFILE,
     component: lazy(() => import("@/pages/Profile.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/profile/login-history",
+    path: ROUTES.HRM.LOGIN_HISTORY,
     component: lazy(() => import("@/pages/security/LoginHistory.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/attendance",
+    path: ROUTES.ATTENDANCE.BASE,
     component: lazy(() => import("@/pages/attendance/AttendanceDashboard.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/attendance/summary",
+    path: ROUTES.ATTENDANCE.SUMMARY,
     component: lazy(() => import("@/pages/attendance/AttendanceSummary.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/attendance/work-schedules",
+    path: ROUTES.ATTENDANCE.WORK_SCHEDULES,
     component: lazy(() => import("@/pages/attendance/WorkSchedules.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/attendance/real-shift",
+    path: ROUTES.ATTENDANCE.REAL_SHIFT,
     component: lazy(() => import("@/pages/attendance/RealShift.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/attendance/applications",
-    component: lazy(() => import("@/pages/attendance/Applications.tsx")),
-    layout: MainLayout,
-  },
-  {
-    path: "/attendance/shifts",
+    path: ROUTES.ATTENDANCE.SHIFTS,
     component: lazy(() => import("@/pages/attendance/ShiftManagement.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/attendance/weekly-schedules",
+    path: ROUTES.ATTENDANCE.WEEKLY_SCHEDULES,
     component: lazy(() => import("@/pages/attendance/WeeklySchedules.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/attendance/weekly-schedule-config",
+    path: ROUTES.ATTENDANCE.WEEKLY_SCHEDULE_CONFIG,
     component: lazy(() => import("@/pages/attendance/WeeklyScheduleConfig.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/attendance/holidays",
+    path: ROUTES.ATTENDANCE.HOLIDAYS,
     component: lazy(() => import("@/pages/attendance/Holidays.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/application/dashboard",
+    path: ROUTES.APPLICATION.DASHBOARD,
     component: lazy(() => import("@/pages/application/ApplicationDashboard.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/application/create",
+    path: ROUTES.APPLICATION.CREATE,
     component: lazy(() => import("@/pages/application/CreateApplicationPage.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/payroll/salary-components",
+    path: ROUTES.PAYROLL.SALARY_COMPONENTS,
     component: lazy(() => import("@/pages/payroll/SalaryComponents.tsx")),
     layout: MainLayout,
     permissions: ["payroll.read"],
   },
   {
-    path: "/payroll/salary-variables",
+    path: ROUTES.PAYROLL.SALARY_VARIABLES,
     component: lazy(() => import("@/pages/payroll/SalaryVariables.tsx")),
     layout: MainLayout,
     permissions: ["payroll.read"],
   },
   {
-    path: "/payroll/cycle",
+    path: ROUTES.PAYROLL.CYCLE,
     component: lazy(() => import("@/pages/payroll/PayrollCycle.tsx")),
     layout: MainLayout,
     permissions: ["payroll.read"],
   },
   {
-    path: "/payroll/employee-salary",
+    path: ROUTES.PAYROLL.EMPLOYEE_SALARY,
     component: lazy(() => import("@/pages/payroll/EmployeeSalary.tsx")),
     layout: MainLayout,
     permissions: ["payroll.read"],
   },
   {
-    path: "/payroll/list",
+    path: ROUTES.PAYROLL.LIST,
     component: lazy(() => import("@/pages/payroll/PayrollManagement.tsx")),
     layout: MainLayout,
     permissions: ["payroll.read"],
   },
   {
-    path: "/payroll/payslip-templates",
+    path: ROUTES.PAYROLL.PAYSLIP_TEMPLATES,
     component: lazy(() => import("@/pages/payroll/PayslipTemplates.tsx")),
     layout: MainLayout,
     permissions: ["payroll.read"],
   },
   {
-    path: "/asset/dashboard",
+    path: ROUTES.ASSET.DASHBOARD,
     component: lazy(() => import("@/pages/asset/AssetDashboard.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/recruitment/dashboard",
+    path: ROUTES.RECRUITMENT.DASHBOARD,
     component: lazy(() => import("@/pages/recruitment/RecruitmentDashboard.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/training/dashboard",
-    component: lazy(() => import("@/pages/training/TrainingDashboard.tsx")),
-    layout: MainLayout,
-  },
-  {
-    path: "/security/dashboard",
+    path: ROUTES.SECURITY.DASHBOARD,
     component: lazy(() => import("@/pages/security/SecurityDashboard.tsx")),
     layout: MainLayout,
     permissions: ["security.read"],
   },
   {
-    path: "/settings/roles",
+    path: ROUTES.SETTINGS.ROLES,
     component: lazy(() => import("@/pages/security/RolesManagement.tsx")),
     layout: MainLayout,
     permissions: ["role.read"],
@@ -167,31 +156,31 @@ const privateRoutes: RouteConfig[] = [
     permissions: ["role.read"],
   },
   {
-    path: "/settings/role-permissions",
+    path: ROUTES.SETTINGS.ROLE_PERMISSIONS,
     component: lazy(() => import("@/pages/security/RolePermissions.tsx")),
     layout: MainLayout,
     permissions: ["role.read"],
   },
   {
-    path: "/security/users",
+    path: ROUTES.SECURITY.USERS,
     component: lazy(() => import("@/pages/security/UsersManagement.tsx")),
     layout: MainLayout,
     permissions: ["security.read"],
   },
   {
-    path: "/security/activity-logs",
+    path: ROUTES.SECURITY.ACTIVITY_LOGS,
     component: lazy(() => import("@/pages/security/ActivityLogs.tsx")),
     layout: MainLayout,
     permissions: ["audit.read"],
   },
   {
-    path: "/settings/permissions",
+    path: ROUTES.SETTINGS.PERMISSIONS,
     component: lazy(() => import("@/pages/security/PermissionMatrix.tsx")),
     layout: MainLayout,
     permissions: ["role.read"],
   },
   {
-    path: "/settings/dashboard",
+    path: ROUTES.SETTINGS.DASHBOARD,
     component: lazy(() => import("@/pages/settings/SettingsDashboard.tsx")),
     layout: MainLayout,
   },
@@ -211,7 +200,7 @@ const privateRoutes: RouteConfig[] = [
     layout: MainLayout,
   },
   {
-    path: "/project/list",
+    path: ROUTES.PROJECT.LIST,
     component: lazy(() => import("@/pages/project/ProjectList.tsx")),
     layout: MainLayout,
   },
@@ -226,22 +215,22 @@ const privateRoutes: RouteConfig[] = [
     layout: MainLayout,
   },
   {
-    path: "/project/:id/task/new",
+    path: ROUTES.PROJECT.TASK_NEW_WITH_ID,
     component: lazy(() => import("@/pages/project/NewTask.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/project/task/new",
+    path: ROUTES.PROJECT.TASK_NEW,
     component: lazy(() => import("@/pages/project/NewTask.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/project/task",
+    path: ROUTES.PROJECT.TASK_DETAIL,
     component: lazy(() => import("@/pages/project/TaskDetail.tsx")),
     layout: MainLayout,
   },
   {
-    path: "/project/task/:id",
+    path: ROUTES.PROJECT.TASK_DETAIL_WITH_ID,
     component: lazy(() => import("@/pages/project/TaskDetail.tsx")),
     layout: MainLayout,
   },

@@ -3,7 +3,6 @@ import { PERSONAL_TAB_LABELS } from "@/config/entities/personal.config"
 import { ROUTES } from "@/config/routes.config"
 
 import {
-  BookOpen,
   Briefcase,
   CalendarClock,
   CalendarDays,
@@ -58,7 +57,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     name: "Cá nhân",
     description: "Các màn hình cá nhân dành cho nhân viên",
     icon: User,
-    routePrefix: "/personal",
+    routePrefix: ROUTES.PERSONAL.BASE,
     sidebarItems: [
       { name: PERSONAL_TAB_LABELS.schedule, path: ROUTES.PERSONAL.SCHEDULE, icon: CalendarClock },
       {
@@ -74,12 +73,21 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     name: "Nhân sự",
     description: "Quản lý hồ sơ, hợp đồng, bảo hiểm, công việc...",
     icon: Users,
-    routePrefix: "/hrm",
+    routePrefix: ROUTES.HRM.BASE,
     sidebarItems: [
-      { name: "Tổng quan", path: ROUTES.HRM.DASHBOARD, icon: Users },
       { name: "Hồ sơ", path: ROUTES.HRM.EMPLOYEES, icon: Users },
-      { name: "Người dùng", path: ROUTES.SECURITY.USERS, icon: Users, permissions: ["security.read"] },
-      { name: "Nhật ký", path: ROUTES.SECURITY.ACTIVITY_LOGS, icon: FileText, permissions: ["audit.read"] },
+      {
+        name: "Người dùng",
+        path: ROUTES.SECURITY.USERS,
+        icon: Users,
+        permissions: ["security.read"],
+      },
+      {
+        name: "Nhật ký",
+        path: ROUTES.SECURITY.ACTIVITY_LOGS,
+        icon: FileText,
+        permissions: ["audit.read"],
+      },
       {
         name: "Tổng quan bảo mật",
         path: ROUTES.SECURITY.DASHBOARD,
@@ -93,7 +101,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     name: "Đơn từ",
     description: "Tạo đơn từ và duyệt đơn trực tuyến",
     icon: FileText,
-    routePrefix: "/application",
+    routePrefix: ROUTES.APPLICATION.BASE,
     sidebarItems: [
       { name: "Bạn duyệt", path: ROUTES.APPLICATION.DASHBOARD + "?tab=manage", icon: UserCheck },
       {
@@ -113,28 +121,20 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     name: "Chấm công",
     description: "Quản lý phân ca, chấm công và nghỉ phép",
     icon: CalendarClock,
-    routePrefix: "/attendance",
+    routePrefix: ROUTES.ATTENDANCE.BASE,
     sidebarItems: [
-      {
-        name: "Tổng quan",
-        path: ROUTES.ATTENDANCE.DASHBOARD,
-        icon: CalendarClock,
-        permissions: ["attendance.read"],
-      },
       {
         name: "Tổng hợp",
         path: ROUTES.ATTENDANCE.SUMMARY,
         icon: ChartNoAxesColumn,
         permissions: ["attendance.read"],
       },
-      { name: "Lịch của tôi", path: ROUTES.ATTENDANCE.MY_SCHEDULE, icon: CalendarClock },
       {
         name: "Lịch làm việc",
         path: ROUTES.ATTENDANCE.WORK_SCHEDULES,
         icon: CalendarDays,
         permissions: ["attendance.update"],
       },
-      { name: "Đơn từ", path: ROUTES.ATTENDANCE.APPLICATIONS, icon: FileText },
       {
         name: "Lịch hàng tuần",
         path: ROUTES.ATTENDANCE.WEEKLY_SCHEDULES,
@@ -161,7 +161,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     name: "Bảng lương",
     description: "Tự động tính và chi trả bảng lương",
     icon: CircleDollarSign,
-    routePrefix: "/payroll",
+    routePrefix: ROUTES.PAYROLL.BASE,
     sidebarItems: [
       {
         name: "Kỳ lương",
@@ -206,7 +206,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     name: "Tài sản",
     description: "Quản lý tài sản và thông tin bàn giao",
     icon: Package,
-    routePrefix: "/asset",
+    routePrefix: ROUTES.ASSET.BASE,
     sidebarItems: [{ name: "Tổng quan", path: ROUTES.ASSET.DASHBOARD, icon: Package }],
   },
   {
@@ -214,33 +214,35 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     name: "Tuyển dụng",
     description: "Quản lý hồ sơ ứng viên và lịch phỏng vấn",
     icon: Briefcase,
-    routePrefix: "/recruitment",
+    routePrefix: ROUTES.RECRUITMENT.BASE,
     sidebarItems: [{ name: "Tổng quan", path: ROUTES.RECRUITMENT.DASHBOARD, icon: Briefcase }],
-  },
-  {
-    id: "training",
-    name: "Đào tạo",
-    description: "Quản lý các khóa đào tạo nội bộ",
-    icon: BookOpen,
-    routePrefix: "/training",
-    sidebarItems: [{ name: "Tổng quan", path: ROUTES.TRAINING.DASHBOARD, icon: BookOpen }],
   },
   {
     id: "settings",
     name: "Cài đặt",
     description: "Cài đặt hệ thống",
     icon: Settings,
-    routePrefix: "/settings",
+    routePrefix: ROUTES.SETTINGS.BASE,
     sidebarItems: [
       { name: "Tổng quan", path: ROUTES.SETTINGS.DASHBOARD, icon: Settings },
-      { name: "Vai trò", path: ROUTES.SETTINGS.ROLES, icon: ShieldCheck, permissions: ["role.read"] },
+      {
+        name: "Vai trò",
+        path: ROUTES.SETTINGS.ROLES,
+        icon: ShieldCheck,
+        permissions: ["role.read"],
+      },
       {
         name: "Cấu hình quyền",
         path: ROUTES.SETTINGS.ROLE_PERMISSIONS,
         icon: ShieldCheck,
         permissions: ["role.read"],
       },
-      { name: "Phân quyền", path: ROUTES.SETTINGS.PERMISSIONS, icon: ShieldCheck, permissions: ["role.read"] },
+      {
+        name: "Phân quyền",
+        path: ROUTES.SETTINGS.PERMISSIONS,
+        icon: ShieldCheck,
+        permissions: ["role.read"],
+      },
     ],
   },
   {
@@ -248,9 +250,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     name: "Dự án",
     description: "Quản lý dự án, tiến độ công việc và báo cáo",
     icon: Briefcase,
-    routePrefix: "/project",
-    sidebarItems: [
-      { name: "Danh sách dự án", path: ROUTES.PROJECT.LIST, icon: Briefcase },
-    ],
+    routePrefix: ROUTES.PROJECT.BASE,
+    sidebarItems: [{ name: "Danh sách dự án", path: ROUTES.PROJECT.LIST, icon: Briefcase }],
   },
 ]

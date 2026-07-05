@@ -5,14 +5,15 @@
   "description": "",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "bun --watch src/index.ts",
-    "build": "bunx prisma generate",
-    "postinstall": "bunx prisma generate",
+    "dev": "tsx watch src/index.ts",
+    "build": "prisma generate",
+    "postinstall": "prisma generate",
     "typecheck": "tsc --noEmit",
-    "seed": "bun run src/scripts/seed-all.ts",
-    "seed:admin": "bun run src/scripts/seed-admin.ts",
-    "clear": "bun run src/scripts/clear-db.ts",
-    "repair:admin": "bun run src/scripts/repair-admin.ts"
+    "seed": "tsx src/scripts/seed-all.ts",
+    "seed:admin": "tsx src/scripts/seed-admin.ts",
+    "clear": "tsx src/scripts/clear-db.ts",
+    "repair:admin": "tsx src/scripts/repair-admin.ts",
+    "hash-password": "tsx src/scripts/hash-password.ts"
   },
   "type": "module",
   "author": "ldanh270",
@@ -49,6 +50,7 @@
     "@types/node-cron": "^3.0.11",
     "@types/swagger-ui-express": "^4.1.8",
     "@types/yamljs": "^0.2.34",
+    "tsx": "^4.19.0",
     "typescript": "^6.0.3"
   }
 }
