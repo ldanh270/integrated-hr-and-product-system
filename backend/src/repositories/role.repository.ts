@@ -1,4 +1,5 @@
 import { SORT_ORDER } from "@/configs/system/db.config.ts"
+import { ROLE_ERROR_CODES } from "@/constants/permission.constants.ts"
 import {
   AppRole,
   CreateRoleDto,
@@ -242,10 +243,10 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
 
       // If deactivating the role or disabling default role, enforce locks & checks
       if (data.isActive === false && record.isDefault) {
-        throw new Error("CANNOT_DEACTIVATE_DEFAULT_ROLE")
+        throw new Error(ROLE_ERROR_CODES.CANNOT_DEACTIVATE_DEFAULT_ROLE)
       }
       if (data.isDefault === false && record.isDefault) {
-        throw new Error("CANNOT_DISABLE_ONLY_DEFAULT_ROLE")
+        throw new Error(ROLE_ERROR_CODES.CANNOT_DISABLE_ONLY_DEFAULT_ROLE)
       }
 
       if (data.isActive === false) {
@@ -260,7 +261,7 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
         if (record.name.trim().toLowerCase() === "admin") {
           const remainingAdminUsers = await this.countRemainingAdminUsers(id, tx)
           if (remainingAdminUsers === 0) {
-            throw new Error("CANNOT_REMOVE_LAST_ADMIN")
+            throw new Error(ROLE_ERROR_CODES.CANNOT_REMOVE_LAST_ADMIN)
           }
         }
       }
@@ -311,20 +312,20 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
 
       // Verify system role protection
       if (record.isSystem) {
-        throw new Error("ROLE_SYSTEM_PROTECTED")
+        throw new Error(ROLE_ERROR_CODES.ROLE_SYSTEM_PROTECTED)
       }
 
       // Verify deleting this role doesn't leave the system with 0 active admins
       if (record.name.trim().toLowerCase() === "admin") {
         const remainingAdminUsers = await this.countRemainingAdminUsers(id, tx)
         if (remainingAdminUsers === 0) {
-          throw new Error("CANNOT_REMOVE_LAST_ADMIN")
+          throw new Error(ROLE_ERROR_CODES.CANNOT_REMOVE_LAST_ADMIN)
         }
       }
 
       // Verify deleting this role doesn't remove the default role
       if (record.isDefault) {
-        throw new Error("CANNOT_DELETE_DEFAULT_ROLE")
+        throw new Error(ROLE_ERROR_CODES.CANNOT_DELETE_DEFAULT_ROLE)
       }
 
       // Check employee assignments
@@ -332,7 +333,7 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
         where: { roleId: id },
       })
       if (employeesCount > 0) {
-        throw new Error("ROLE_ASSIGNED_EMPLOYEE")
+        throw new Error(ROLE_ERROR_CODES.ROLE_ASSIGNED_EMPLOYEE)
       }
 
       // Check permission assignments
@@ -340,7 +341,7 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
         where: { roleId: id },
       })
       if (permissionsCount > 0) {
-        throw new Error("ROLE_ASSIGNED_PERMISSION")
+        throw new Error(ROLE_ERROR_CODES.ROLE_ASSIGNED_PERMISSION)
       }
 
       const timestamp = Date.now()
