@@ -136,18 +136,11 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     routePrefix: ROUTES.ATTENDANCE.BASE,
     sidebarItems: [
       {
-        name: "Tổng quan",
-        path: ROUTES.ATTENDANCE.DASHBOARD,
-        icon: CalendarClock,
-        permissions: ["attendance.read"],
-      },
-      {
         name: "Tổng hợp",
         path: ROUTES.ATTENDANCE.SUMMARY,
         icon: ChartNoAxesColumn,
         permissions: ["attendance.read"],
       },
-      { name: "Lịch của tôi", path: ROUTES.ATTENDANCE.MY_SCHEDULE, icon: CalendarClock },
       {
         name: "Lịch làm việc",
         path: ROUTES.ATTENDANCE.WORK_SCHEDULES,
@@ -160,7 +153,6 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         icon: CalendarRange,
         permissions: ["attendance.update"],
       },
-      { name: "Đơn từ", path: ROUTES.ATTENDANCE.APPLICATIONS, icon: FileText },
       {
         name: "Lịch hàng tuần",
         path: ROUTES.ATTENDANCE.WEEKLY_SCHEDULES,

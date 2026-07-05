@@ -68,11 +68,6 @@ const privateRoutes: RouteConfig[] = [
     layout: MainLayout,
   },
   {
-    path: ROUTES.ATTENDANCE.APPLICATIONS,
-    component: lazy(() => import("@/pages/attendance/Applications.tsx")),
-    layout: MainLayout,
-  },
-  {
     path: ROUTES.ATTENDANCE.SHIFTS,
     component: lazy(() => import("@/pages/attendance/ShiftManagement.tsx")),
     layout: MainLayout,
