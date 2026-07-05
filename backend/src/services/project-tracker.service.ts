@@ -22,7 +22,7 @@ export class ProjectTrackerService implements IProjectTrackerService {
     const to   = "aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuuyyyyyd";
     
     for (let i = 0, l = from.length; i < l; i++) {
-      slug = slug.replace(new RegExp(from[i], "g"), to[i]);
+      slug = slug.split(from[i]).join(to[i]);
     }
     
     return slug
