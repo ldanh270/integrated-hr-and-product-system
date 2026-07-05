@@ -68,7 +68,7 @@ export default function LoginHistory() {
       {/* Detail Drawer */}
       <ActivityLogDetailDrawer
         logId={viewingLogId}
-        onClose={() => setViewingLogId(null)}
+        onClose={() => { setViewingLogId(null); }}
         scope="me"
       />
     </div>

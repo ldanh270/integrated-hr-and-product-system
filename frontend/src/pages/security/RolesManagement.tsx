@@ -190,7 +190,7 @@ export default function RolesManagement() {
           <p className="text-sm text-muted-foreground mt-2">
             Không thể tải thông tin vai trò. Vui lòng thử lại sau.
           </p>
-          <Button variant="outline" className="mt-4" onClick={() => refetchRoles()}>
+          <Button variant="outline" className="mt-4" onClick={() => { refetchRoles(); }}>
             Thử lại
           </Button>
         </div>
@@ -249,7 +249,7 @@ export default function RolesManagement() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-primary"
-                            onClick={() => handleOpenEdit(role)}
+                            onClick={() => { handleOpenEdit(role); }}
                             aria-label={`Chỉnh sửa vai trò ${ROLE_LABELS[role.name] || role.name}`}
                           >
                             <Edit2 size={13} />
@@ -258,7 +258,7 @@ export default function RolesManagement() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => handleDeleteRole(role.id)}
+                            onClick={() => { handleDeleteRole(role.id); }}
                             aria-label={`Xóa vai trò ${ROLE_LABELS[role.name] || role.name}`}
                           >
                             <Trash2 size={13} />
@@ -269,7 +269,7 @@ export default function RolesManagement() {
                         variant="ghost"
                         size="sm"
                         className="gap-1.5 h-8 px-2.5 text-xs text-primary hover:text-primary hover:bg-primary/5"
-                        onClick={() => handleOpenRoleDetail(role)}
+                        onClick={() => { handleOpenRoleDetail(role); }}
                       >
                         Xem chi tiết
                         <ArrowRight size={13} />
@@ -311,7 +311,7 @@ export default function RolesManagement() {
                   <AlertTriangle className="h-8 w-8 text-rose-500 mx-auto mb-2" />
                   <h4 className="text-sm font-bold text-rose-600 dark:text-rose-400">Không thể tải dữ liệu</h4>
                   <p className="text-xs text-muted-foreground mt-1">Đã có lỗi xảy ra khi truy xuất thông tin.</p>
-                  <Button variant="outline" size="sm" className="mt-3 h-8 text-xs" onClick={() => refetchUsers()}>
+                  <Button variant="outline" size="sm" className="mt-3 h-8 text-xs" onClick={() => { refetchUsers(); }}>
                     Thử lại
                   </Button>
                 </div>
@@ -410,7 +410,7 @@ export default function RolesManagement() {
                   id="create-name"
                   placeholder="e.g. hr_assistant, project_viewer"
                   value={roleName}
-                  onChange={(e) => setRoleName(e.target.value)}
+                  onChange={(e) => { setRoleName(e.target.value); }}
                   className="h-9 text-xs"
                   required
                 />
@@ -421,13 +421,13 @@ export default function RolesManagement() {
                   id="create-desc"
                   placeholder="Nhập mô tả chi tiết chức năng của vai trò này..."
                   value={roleDesc}
-                  onChange={(e) => setRoleDesc(e.target.value)}
+                  onChange={(e) => { setRoleDesc(e.target.value); }}
                   className="text-xs min-h-[80px]"
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)} className="h-9 text-xs">
+              <Button type="button" variant="outline" onClick={() => { setIsCreateOpen(false); }} className="h-9 text-xs">
                 Hủy
               </Button>
               <Button type="submit" disabled={createRoleMutation.isPending} className="h-9 text-xs">
@@ -454,7 +454,7 @@ export default function RolesManagement() {
                 <Input
                   id="edit-name"
                   value={roleName}
-                  onChange={(e) => setRoleName(e.target.value)}
+                  onChange={(e) => { setRoleName(e.target.value); }}
                   className="h-9 text-xs"
                   required
                 />
@@ -464,13 +464,13 @@ export default function RolesManagement() {
                 <Textarea
                   id="edit-desc"
                   value={roleDesc}
-                  onChange={(e) => setRoleDesc(e.target.value)}
+                  onChange={(e) => { setRoleDesc(e.target.value); }}
                   className="text-xs min-h-[80px]"
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)} className="h-9 text-xs">
+              <Button type="button" variant="outline" onClick={() => { setIsEditOpen(false); }} className="h-9 text-xs">
                 Hủy
               </Button>
               <Button type="submit" disabled={updateRoleMutation.isPending} className="h-9 text-xs">

@@ -330,14 +330,14 @@ function AdminAttendanceDashboard() {
               <Input
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => { setStartDate(e.target.value); }}
                 className="w-40 h-9 text-sm"
               />
               <span className="text-muted-foreground text-sm">–</span>
               <Input
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) => { setEndDate(e.target.value); }}
                 className="w-40 h-9 text-sm"
               />
             </div>
