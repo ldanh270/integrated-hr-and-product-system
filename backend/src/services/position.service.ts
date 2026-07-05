@@ -110,7 +110,7 @@ export class PositionService implements IPositionService {
     // Admin or GM bypass rules
     const roles = await this.employeeRepo.findRolesByEmployeeId(employeeId)
     const roleNames = roles.map(r => r.name)
-    const isAdminOrGM = roleNames.some(role => [SYSTEM_ROLE.ADMIN, SYSTEM_ROLE.GENERAL_MANAGER].includes(role))
+    const isAdminOrGM = roleNames.some(role => role === SYSTEM_ROLE.ADMIN || role === SYSTEM_ROLE.GENERAL_MANAGER)
     
     // Query project member relation
     const member = await this.prisma.projectMember.findUnique({
