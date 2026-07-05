@@ -34,25 +34,29 @@ async function hydrateContext(context: SeedContext): Promise<SeedContext> {
   }
 }
 
-const SEEDER_SKIP_CHECKS: Record<string, () => Promise<boolean>> = {
-  WorkingShifts: async () => (await prisma.workingShift.count()) > 0,
-  HolidayCalendars: async () => (await prisma.holidayCalendar.count()) > 0,
-  ShiftSchedules: async () =>
-    (await prisma.shiftSchedule.count()) >= (await prisma.employee.count()),
-  EmployeeShifts: async () => (await prisma.employeeShift.count()) > 0,
-  AttendanceRecords: async () => (await prisma.attendanceRecord.count()) > 0,
-  Projects: async () => (await prisma.project.count()) > 0,
-  Applications: async () => (await prisma.application.count()) > 0,
-  Tasks: async () => (await prisma.task.count()) > 0,
-  SpentTimes: async () => (await prisma.spentTime.count()) > 0,
-}
-
 async function shouldSkipSeederInternal(name: string): Promise<boolean> {
-  const check = SEEDER_SKIP_CHECKS[name]
-  if (!check) {
-    return false
+  switch (name) {
+    case "WorkingShifts":
+      return (await prisma.workingShift.count()) > 0
+    case "HolidayCalendars":
+      return (await prisma.holidayCalendar.count()) > 0
+    case "ShiftSchedules":
+      return (await prisma.shiftSchedule.count()) >= (await prisma.employee.count())
+    case "EmployeeShifts":
+      return (await prisma.employeeShift.count()) > 0
+    case "AttendanceRecords":
+      return (await prisma.attendanceRecord.count()) > 0
+    case "Projects":
+      return (await prisma.project.count()) > 0
+    case "Applications":
+      return (await prisma.application.count()) > 0
+    case "Tasks":
+      return (await prisma.task.count()) > 0
+    case "SpentTimes":
+      return (await prisma.spentTime.count()) > 0
+    default:
+      return false
   }
-  return check()
 }
 
 function shouldSkipSeeder(name: string): Promise<boolean> {
