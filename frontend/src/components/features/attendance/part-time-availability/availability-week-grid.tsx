@@ -150,9 +150,7 @@ function AvailabilityWeekSegment({
 
                 disabled={disabled}
 
-                onChange={(next) => {
-                  onDayChange(weekDay.dayOfWeek, next)
-                }}
+                onChange={(next) => { onDayChange(weekDay.dayOfWeek, next); }}
 
               />
 

@@ -1,4 +1,7 @@
-import { PART_TIME_PAYROLL_VARIABLE_DEFAULTS } from "@/configs/entities/part-time-payroll.config.ts"
+import {
+  PART_TIME_PAYROLL_VARIABLE,
+  PART_TIME_PAYROLL_VARIABLE_DEFAULTS,
+} from "@/configs/entities/part-time-payroll.config.ts"
 
 export interface ResolvedPartTimePayrollVariables {
   overtimeMultiplier: number
@@ -6,7 +9,7 @@ export interface ResolvedPartTimePayrollVariables {
   defaultHourlyRate: number | null
 }
 
-interface PartTimePayrollContext {
+export interface PartTimePayrollContext {
   partTimeOvertimeMultiplier?: number
   partTimeWorkingDayMultiplier?: number
   partTimeDefaultHourlyRate?: number
@@ -24,15 +27,26 @@ function readOptionalNumber(value: number | undefined, fallback: number): number
   return value
 }
 
+/** Maps SalaryVariable rows to typed PT payroll inputs (avoids dynamic Record indexing). */
+export function pickPartTimePayrollContext(
+  variables: Record<string, number>,
+): PartTimePayrollContext {
+  return {
+    partTimeOvertimeMultiplier: variables[PART_TIME_PAYROLL_VARIABLE.OVERTIME_MULTIPLIER],
+    partTimeWorkingDayMultiplier: variables[PART_TIME_PAYROLL_VARIABLE.WORKING_DAY_MULTIPLIER],
+    partTimeDefaultHourlyRate: variables[PART_TIME_PAYROLL_VARIABLE.DEFAULT_HOURLY_RATE],
+  }
+}
+
 /** Reads PT SalaryVariable codes from payroll context; zero default rate means "must set on project". */
 export function resolvePartTimePayrollVariables(
-  context: Record<string, number>,
+  context: PartTimePayrollContext,
 ): ResolvedPartTimePayrollVariables {
   const {
     partTimeOvertimeMultiplier,
     partTimeWorkingDayMultiplier,
     partTimeDefaultHourlyRate,
-  } = context as PartTimePayrollContext
+  } = context
 
   const overtimeMultiplier = readOptionalNumber(
     partTimeOvertimeMultiplier,

@@ -142,9 +142,8 @@ function EmployeePartTimeAvailabilityForm({
                 size="icon"
                 className="h-8 w-8 rounded-full"
                 disabled={!canGoToPreviousWeek}
-                onClick={() => {
-                  onShiftWeek(-1)
-                }}
+                onClick={() => { onShiftWeek(-1); }}
+                
                 aria-label="Tuần trước"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -162,9 +161,8 @@ function EmployeePartTimeAvailabilityForm({
                 variant="outline"
                 size="icon"
                 className="h-8 w-8 rounded-full"
-                onClick={() => {
-                  onShiftWeek(1)
-                }}
+                onClick={() => { onShiftWeek(1); }}
+                
                 aria-label="Tuần sau"
               >
                 <ChevronRight className="h-4 w-4" />

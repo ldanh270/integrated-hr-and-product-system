@@ -54,17 +54,26 @@ export function buildTodayShiftInfo(scheduleShift?: Partial<IWorkingShift>): Tod
   const radius = scheduleShift.gpsRadiusMeters
   const lat = scheduleShift.gpsLat
   const lng = scheduleShift.gpsLng
-  const hasGps = radius != null && lat != null && lng != null
 
   return {
     name: scheduleShift.name,
     workWindow: `${minutesToDayTime(scheduleShift.startTime)} - ${minutesToDayTime(scheduleShift.endTime)}`,
     checkInWindow: `${minutesToDayTime(scheduleShift.startTime - gracePeriod)} - ${minutesToDayTime(scheduleShift.startTime + gracePeriod)}`,
     checkOutWindow: `${ATTENDANCE_MESSAGES.SCANNER.CHECK_OUT_FROM} ${minutesToDayTime(scheduleShift.endTime - gracePeriod)}`,
-    gpsLabel: hasGps
-      ? ATTENDANCE_MESSAGES.SCANNER.GPS_RADIUS_LABEL(radius, lat, lng)
-      : ATTENDANCE_MESSAGES.SCANNER.NO_GPS_CONFIGURED,
+    gpsLabel: buildScannerGpsLabel(radius, lat, lng),
   }
+}
+
+function buildScannerGpsLabel(
+  radius: number | null | undefined,
+  lat: number | null | undefined,
+  lng: number | null | undefined,
+): string {
+  if (radius == null || lat == null || lng == null) {
+    return ATTENDANCE_MESSAGES.SCANNER.NO_GPS_CONFIGURED
+  }
+
+  return ATTENDANCE_MESSAGES.SCANNER.GPS_RADIUS_LABEL(radius, lat, lng)
 }
 
 export function resolveNextScanAction(records?: IAttendanceRecord[]): ScanAction {

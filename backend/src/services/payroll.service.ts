@@ -23,7 +23,10 @@ import {
 } from "@/types/payroll.types.ts"
 import { ISpentTimeRepository } from "@/types/spent-time.types.ts"
 import { AppError } from "@/utils/error.util.ts"
-import { resolvePartTimePayrollVariables } from "@/utils/payroll/resolve-part-time-payroll-variables.util.ts"
+import {
+  pickPartTimePayrollContext,
+  resolvePartTimePayrollVariables,
+} from "@/utils/payroll/resolve-part-time-payroll-variables.util.ts"
 
 import { Application, ApplicationType, ComponentType, Payroll, PayrollStatus, Payslip, Prisma, PrismaClient } from "@prisma/client"
 import * as math from "mathjs"
@@ -279,7 +282,7 @@ export class PayrollService implements IPayrollService {
     periodEnd: Date,
     variablesContext: Record<string, number>,
   ): Promise<{ netSalary: Prisma.Decimal } | null> {
-    const ptVariables = resolvePartTimePayrollVariables(variablesContext)
+    const ptVariables = resolvePartTimePayrollVariables(pickPartTimePayrollContext(variablesContext))
     const rows = await this.spentTimeRepo.listApprovedForPayroll(employeeId, periodStart, periodEnd)
     if (rows.length === 0) {
       console.warn(`[PayrollService] No approved spent time for PT employee ${employeeId}`)
