@@ -16,6 +16,16 @@ export const ErrorCode = {
   INTERNAL_ERROR: "INTERNAL_ERROR",
 } as const
 
+export const ErrorMessage = {
+  VALIDATION_ERROR: "Validation error",
+  UNAUTHORIZED: "Unauthorized",
+  FORBIDDEN: "Forbidden",
+  NOT_FOUND: "Not found",
+  CONFLICT: "Conflict",
+  INTERNAL_SERVER_ERROR: "Internal server error",
+  BAD_REQUEST: "Bad request",
+} as const
+
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode]
 
 export const ErrorLayer = {
