@@ -9,6 +9,7 @@ import {
 import { AppError } from "@/utils/error.util.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
+import { PROJECT_ROLE } from "@/configs/entities/project.config.ts"
 
 export class ProjectRoleService implements IProjectRoleService {
   constructor(
@@ -44,10 +45,10 @@ export class ProjectRoleService implements IProjectRoleService {
     if (list.length === 0) {
       // Auto-seed default roles for this project
       const defaults = [
-        { name: "Trưởng nhóm", code: "leader", allowedTaskTrackers: ["feature", "bug", "support", "task", "meeting", "test", "subtask", "management"] },
-        { name: "Lập trình viên", code: "developer", allowedTaskTrackers: ["feature", "bug", "support", "task", "meeting", "test", "subtask", "management"] },
-        { name: "Kiểm thử viên", code: "tester", allowedTaskTrackers: ["bug", "test"] },
-        { name: "Người xem", code: "viewer", allowedTaskTrackers: [] },
+        { name: "Trưởng nhóm", code: PROJECT_ROLE.LEADER, allowedTaskTrackers: ["feature", "bug", "support", "task", "meeting", "test", "subtask", "management"] },
+        { name: "Lập trình viên", code: PROJECT_ROLE.DEVELOPER, allowedTaskTrackers: ["feature", "bug", "support", "task", "meeting", "test", "subtask", "management"] },
+        { name: "Kiểm thử viên", code: PROJECT_ROLE.TESTER, allowedTaskTrackers: ["bug", "test"] },
+        { name: "Người xem", code: PROJECT_ROLE.VIEWER, allowedTaskTrackers: [] },
       ]
 
       await this.repository.createMany(projectId, defaults)
@@ -106,7 +107,7 @@ export class ProjectRoleService implements IProjectRoleService {
     }
 
     // Check if leader role code is trying to be deleted (protect the system from deleting leader)
-    if (role.code === "leader") {
+    if (role.code === PROJECT_ROLE.LEADER) {
       throw new AppError("Không thể xóa vai trò Trưởng nhóm mặc định", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE)
     }
 

@@ -7,6 +7,8 @@ import { AppError } from "@/utils/error.util.ts"
 import { IEmployeeRepository } from "@/types/employee.types.ts"
 import { IProjectRepository } from "@/types/project.types.ts"
 import { PrismaClient } from "@prisma/client"
+import { SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
+import { PROJECT_ROLE } from "@/configs/entities/project.config.ts"
 
 export class PositionService implements IPositionService {
   constructor(
@@ -108,7 +110,7 @@ export class PositionService implements IPositionService {
     // Admin or GM bypass rules
     const roles = await this.employeeRepo.findRolesByEmployeeId(employeeId)
     const roleNames = roles.map(r => r.name)
-    const isAdminOrGM = roleNames.some(role => ["admin", "general_manager"].includes(role))
+    const isAdminOrGM = roleNames.some(role => [SYSTEM_ROLE.ADMIN, SYSTEM_ROLE.GENERAL_MANAGER].includes(role))
     
     // Query project member relation
     const member = await this.prisma.projectMember.findUnique({
@@ -120,14 +122,14 @@ export class PositionService implements IPositionService {
       },
     })
 
-    const isLeader = project.teamLeaderId === employeeId || (member?.role && member.role.code === "leader")
+    const isLeader = project.teamLeaderId === employeeId || (member?.role && member.role.code === PROJECT_ROLE.LEADER)
 
     if (isAdminOrGM || isLeader) {
       return
     }
 
     // Block viewers
-    if (member?.role && member.role.code === "viewer") {
+    if (member?.role && member.role.code === PROJECT_ROLE.VIEWER) {
       throw new AppError(
         "Vai trò 'Người xem' không được phép tạo công việc trong dự án này",
         HttpStatusCode.FORBIDDEN,

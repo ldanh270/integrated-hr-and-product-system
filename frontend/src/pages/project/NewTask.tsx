@@ -12,7 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 // Import entity configurations for task tracker, status, and priorities
-import { TASK_PRIORITIES } from "@/config/entities/project.config"
+import { TASK_PRIORITIES, PROJECT_ROLE } from "@/config/entities/project.config"
+import { ROLE } from "@/config/entities/employee.config"
 // Import API utilities for projects, tasks, and task categories
 import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
@@ -179,20 +180,20 @@ export default function NewTask() {
       ? project.allowedTaskTrackers
       : activeTrackers
 
-    const isAdminOrGM = user?.roles?.some(role => ["admin", "general_manager"].includes(role)) ||
-                        profile?.roles?.some(role => ["admin", "general_manager"].includes(role))
+    const isAdminOrGM = user?.roles?.some(role => role === ROLE.ADMIN || role === ROLE.GENERAL_MANAGER) ||
+                        profile?.roles?.some(role => role === ROLE.ADMIN || role === ROLE.GENERAL_MANAGER)
 
     const currentMember = members?.find((m) => m.employeeId === profile?.personalEmployeeId)
     const isLeader = project?.teamLeaderId === user?.personalEmployeeId ||
                      project?.teamLeaderId === profile?.personalEmployeeId ||
-                     currentMember?.role?.code === "leader"
+                     currentMember?.role?.code === PROJECT_ROLE.LEADER
 
     if (isAdminOrGM || isLeader) {
       return projectAllowed
     }
 
     const role = currentMember?.role
-    if (role?.code === "viewer") {
+    if (role?.code === PROJECT_ROLE.VIEWER) {
       return []
     }
 

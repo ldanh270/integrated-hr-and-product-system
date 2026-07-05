@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 import { projectApi } from "@/lib/api/project.api"
+import { PROJECT_ROLE, PROJECT_ROLES } from "@/config/entities/project.config"
 
 const SELECT_NONE_VALUE = "none"
 
@@ -104,7 +105,7 @@ export function ProjectPositionRules({ projectId }: ProjectPositionRulesProps) {
   const getRoleMembers = (role: any): any[] => {
     const assignedMembers = members.filter((m) => m.roleId === role.id)
     const teamLeader = project?.teamLeader
-    if (role.code === "leader" && teamLeader) {
+    if (role.code === PROJECT_ROLE.LEADER && teamLeader) {
       const isAlreadyIncluded = assignedMembers.some(
         (m) => m.employeeId === teamLeader.id
       )
@@ -187,7 +188,7 @@ export function ProjectPositionRules({ projectId }: ProjectPositionRulesProps) {
    * Blocks deleting system-defined 'leader' role.
    */
   const handleRoleDelete = async (id: string, code: string) => {
-    if (code === "leader") {
+    if (code === PROJECT_ROLE.LEADER) {
       toast.error("Không thể xóa vai trò Trưởng nhóm mặc định")
       return
     }
@@ -343,7 +344,7 @@ export function ProjectPositionRules({ projectId }: ProjectPositionRulesProps) {
           <div className="space-y-4">
             {roles.map((role, idx) => {
               const allowed = localRules[role.id] || []
-              const isDefaultRole = ["leader", "developer", "tester", "viewer"].includes(role.code)
+              const isDefaultRole = (PROJECT_ROLES as readonly string[]).includes(role.code)
 
               return (
                 <div key={role.id} className="border border-border/50 rounded-xl p-4 bg-secondary/15 flex flex-col md:flex-row md:items-center justify-between gap-4">
