@@ -72,6 +72,12 @@ const privateRoutes: RouteConfig[] = [
     permissions: ["attendance.update"],
   },
   {
+    path: ROUTES.ATTENDANCE.REAL_SHIFT,
+    component: lazy(() => import("@/pages/attendance/RealShift.tsx")),
+    layout: MainLayout,
+    permissions: ["attendance.read"],
+  },
+  {
     path: ROUTES.ATTENDANCE.SHIFTS,
     component: lazy(() => import("@/pages/attendance/ShiftManagement.tsx")),
     layout: MainLayout,
