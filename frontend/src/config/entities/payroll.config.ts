@@ -1,4 +1,4 @@
-import { type IEmployeeRole, ROLE } from "@/config/entities/employee.config"
+import { type IEmployeeRole, SYSTEM_ROLE } from "@/config/entities/employee.config"
 
 export const PAYROLL_STATUS = {
   DRAFT: "draft",
@@ -65,12 +65,12 @@ export type FormulaValidationStatus =
 
 // Role groups for use-role-guard
 export const PAYROLL_MANAGER_ROLES: readonly IEmployeeRole[] = [
-  ROLE.ADMIN,
-  ROLE.HR_MANAGER,
-  ROLE.GENERAL_MANAGER,
+  SYSTEM_ROLE.ADMIN,
+  SYSTEM_ROLE.HR_MANAGER,
+  SYSTEM_ROLE.GENERAL_MANAGER,
 ]
-export const PAYROLL_EDITOR_ROLES: readonly IEmployeeRole[] = [ROLE.ADMIN, ROLE.HR_MANAGER]
-export const PAYROLL_APPROVER_ROLES: readonly IEmployeeRole[] = [ROLE.ADMIN, ROLE.GENERAL_MANAGER]
+export const PAYROLL_EDITOR_ROLES: readonly IEmployeeRole[] = [SYSTEM_ROLE.ADMIN, SYSTEM_ROLE.HR_MANAGER]
+export const PAYROLL_APPROVER_ROLES: readonly IEmployeeRole[] = [SYSTEM_ROLE.ADMIN, SYSTEM_ROLE.GENERAL_MANAGER]
 
 export const PAYROLL_SETTINGS_FIELDS = ["triggerDay", "triggerHour", "triggerMinute"] as const
 

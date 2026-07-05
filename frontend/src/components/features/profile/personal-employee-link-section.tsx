@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { PERSONAL_EMPLOYEE_LINK_SELF } from "@/config/entities/attendance.config"
-import { EMPLOYEE_STATUS, ROLE } from "@/config/entities/employee.config"
+import { EMPLOYEE_STATUS, SYSTEM_ROLE } from "@/config/entities/employee.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useEmployees } from "@/hooks/employees/queries/useEmployeeQuery"
 import { useUpdatePersonalEmployeeLink } from "@/hooks/use-profile"
@@ -20,7 +20,7 @@ import { useState } from "react"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
-const MANAGEMENT_ROLES = [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER] as const
+const MANAGEMENT_ROLES = [SYSTEM_ROLE.ADMIN, SYSTEM_ROLE.HR_MANAGER, SYSTEM_ROLE.GENERAL_MANAGER] as const
 
 interface PersonalEmployeeLinkSectionProps {
   profile: ProfileDto

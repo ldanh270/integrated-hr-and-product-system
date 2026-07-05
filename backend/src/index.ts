@@ -7,6 +7,7 @@ import { initRecruitmentCron } from "@/libs/recruitment-cron.ts"
 import { cors } from "@/middlewares/cors.middleware.ts"
 import { globalErrorHandler } from "@/middlewares/error.middleware.ts"
 import applicationRoutes from "@/routes/application.route.ts"
+import applicationBatchRoutes from "@/routes/application-batch.route.ts"
 import approvalRoutes from "@/routes/approval.route.ts"
 import attendanceRoutes from "@/routes/attendance.route.ts"
 import authRoutes from "@/routes/auth.route.ts"
@@ -14,6 +15,7 @@ import customQueryRoutes from "@/routes/custom-query.route.ts"
 import employeeSalaryConfigRoutes from "@/routes/employee-salary-config.route.ts"
 import employeeRoutes from "@/routes/employee.route.ts"
 import holidayRoutes from "@/routes/holiday.route.ts"
+import notificationRoutes from "@/routes/notification.route.ts"
 import payrollRoutes from "@/routes/payroll.route.ts"
 import payslipTemplateRoutes from "@/routes/payslip-template.route.ts"
 import permissionRoutes from "@/routes/permission.route.ts"
@@ -84,6 +86,7 @@ app.use("/api/shifts", shiftRoutes)
 app.use("/api/schedules", scheduleRoutes)
 app.use("/api/attendance", attendanceRoutes)
 app.use("/api/applications", applicationRoutes)
+app.use("/api/application-batches", applicationBatchRoutes)
 app.use("/api/shift-change-requests", shiftChangeRequestRoutes)
 app.use("/api/holidays", holidayRoutes)
 app.use("/api/weekly-schedule-templates", weeklyScheduleTemplateRoutes)
@@ -99,6 +102,7 @@ app.use("/api/payrolls", payrollRoutes)
 // Private routes
 app.use("/api/projects", projectRoutes)
 app.use("/api/tasks", taskRoutes)
+app.use("/api/notifications", notificationRoutes)
 app.use("/api/permissions", permissionRoutes)
 app.use("/api/roles", roleRoutes)
 app.use("/api", auditRoutes)
@@ -139,7 +143,7 @@ connectDB().then(async () => {
     if (staticRefs.total > 0) {
       console.error("FATAL ERROR: SYSTEM_INVARIANT_BROKEN: Legacy static role references found:")
       staticRefs.details.forEach((d) => console.error(`  - ${d}`))
-      console.error("All Legacy ROLE references must be purged under Sprint D2.6.")
+      console.error("All Legacy SYSTEM_ROLE references must be purged under Sprint D2.6.")
       process.exit(1)
     }
   }

@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ROLE } from "@/config/entities/employee.config"
+import { SYSTEM_ROLE } from "@/config/entities/employee.config"
 import { SPENT_TIME_STATUS, getSpentTimeStatusLabel } from "@/config/entities/project.config"
 import {
   SPENT_TIME_FILTER,
@@ -52,7 +52,7 @@ export function ProjectSpentTimeTab({
   const [statusFilter, setStatusFilter] = useState<SpentTimeFilterValue>(SPENT_TIME_FILTER.ALL)
 
   const canApprove =
-    isLeader || userRole === ROLE.ADMIN || userRole === ROLE.GENERAL_MANAGER
+    isLeader || userRole === SYSTEM_ROLE.ADMIN || userRole === SYSTEM_ROLE.GENERAL_MANAGER
 
   const filteredLogs = useMemo(() => {
     const list = spentTimes ?? []

@@ -2,7 +2,7 @@ import {
   EMPLOYEE_ROLES,
   EMPLOYEE_STATUSES,
   EMPLOYEE_TYPES,
-  ROLE,
+  SYSTEM_ROLE,
 } from "@/config/entities/employee.config"
 import type { CreateEmployeeDto } from "@/types/employee.types"
 
@@ -86,7 +86,7 @@ export function useEmployeeCreateModal(onClose: () => void) {
     resolver: zodResolver(createSchema),
     mode: "onBlur", // Thêm mode onBlur để validate khi user rời khỏi trường nhập
     defaultValues: {
-      role: ROLE.EMPLOYEE,
+      role: SYSTEM_ROLE.EMPLOYEE,
       employeeType: EMPLOYEE_TYPES[0],
       status: EMPLOYEE_STATUSES[0],
     },

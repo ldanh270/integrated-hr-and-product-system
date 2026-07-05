@@ -1,28 +1,32 @@
-import { APPLICATION_STATUS } from "@/config/entities/attendance.config"
 import {
-  type IApplication,
-  type IListApplicationsQuery,
-  applicationApi,
-} from "@/lib/api/application.api"
+  APPLICATION_STATUS,
+  type IApplicationFilterStatus,
+} from "@/config/entities/attendance.config"
+import {
+  type IApplicationBatch,
+  type IListBatchesQuery,
+  applicationBatchApi,
+} from "@/lib/api/application-batch.api"
+import { type IListApplicationsQuery } from "@/lib/api/application.api"
 
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import { toast } from "sonner"
 
-export type StatusFilter = "all" | "pending" | "approved" | "rejected" | "cancelled"
-
 interface UseMyApplicationsReturn {
-  applications: IApplication[]
+  applications: IApplicationBatch[]
   isLoading: boolean
   isRefreshing: boolean
-  statusFilter: StatusFilter
-  setStatusFilter: (v: StatusFilter) => void
+  statusFilter: IApplicationFilterStatus
+  setStatusFilter: (v: IApplicationFilterStatus) => void
   typeFilter: string
   setTypeFilter: (v: string) => void
   keyword: string
   setKeyword: (v: string) => void
   page: number
   setPage: (v: number) => void
+  pageSize: number
+  setPageSize: (v: number) => void
   totalPages: number
   total: number
   refetch: () => void
@@ -38,13 +42,14 @@ interface UseMyApplicationsReturn {
 }
 
 export function useMyApplications(): UseMyApplicationsReturn {
-  const [applications, setApplications] = useState<IApplication[]>([])
+  const [applications, setApplications] = useState<IApplicationBatch[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
+  const [statusFilter, setStatusFilter] = useState<IApplicationFilterStatus>("all")
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [keyword, setKeyword] = useState<string>("")
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [cancellingId, setCancellingId] = useState<string | null>(null)
@@ -65,16 +70,16 @@ export function useMyApplications(): UseMyApplicationsReturn {
 
       try {
         // Backend query schema uses "pageSize" (not "limit") with .strict()
-        const query: IListApplicationsQuery = {
+        const query: IListBatchesQuery = {
           page,
-          pageSize: 10,
+          pageSize,
         }
 
         if (statusFilter !== "all") query.status = statusFilter
         if (typeFilter !== "all") query.type = typeFilter
         if (keyword.trim() !== "") query.keyword = keyword.trim()
 
-        const { data, meta } = await applicationApi.listMine(query)
+        const { data, meta } = await applicationBatchApi.listMine(query)
 
         if (!activeRef.current) return
 
@@ -94,7 +99,7 @@ export function useMyApplications(): UseMyApplicationsReturn {
         }
       }
     },
-    [statusFilter, typeFilter, keyword, page],
+    [statusFilter, typeFilter, keyword, page, pageSize],
   )
 
   const fetchStats = useCallback(async () => {
@@ -111,7 +116,7 @@ export function useMyApplications(): UseMyApplicationsReturn {
           const query: IListApplicationsQuery = { status: s, page: 1, pageSize: 1 }
           if (typeFilter !== "all") query.type = typeFilter
           if (keyword.trim() !== "") query.keyword = keyword.trim()
-          return applicationApi
+          return applicationBatchApi
             .listMine(query)
             .then((r) => r.meta?.total ?? 0)
             .catch(() => 0)
@@ -125,7 +130,7 @@ export function useMyApplications(): UseMyApplicationsReturn {
         approved: counts[1],
         rejected: counts[2],
         cancelled: counts[3],
-        total: counts.reduce((a, b) => a + b, 0),
+        total: counts.reduce((a: number, b: number) => a + b, 0),
       })
     } catch (error) {
       console.error("Failed to fetch application stats", error)
@@ -151,19 +156,22 @@ export function useMyApplications(): UseMyApplicationsReturn {
     fetchStats()
   }, [fetchApplications, fetchStats])
 
-  const handleCancel = async (id: string) => {
-    setCancellingId(id)
-    try {
-      await applicationApi.cancel(id)
-      toast.success("Đã hủy đơn thành công")
-      refetch()
-    } catch (error) {
-      const err = error as { response?: { data?: { error?: { message?: string } } } }
-      toast.error(err.response?.data?.error?.message ?? "Lỗi khi hủy đơn")
-    } finally {
-      setCancellingId(null)
-    }
-  }
+  const handleCancel = useCallback(
+    async (id: string) => {
+      setCancellingId(id)
+      try {
+        await applicationBatchApi.cancel(id)
+        toast.success("Đã hủy đơn thành công")
+        await fetchApplications()
+      } catch (error) {
+        const err = error as { response?: { data?: { error?: { message?: string } } } }
+        toast.error(err.response?.data?.error?.message ?? "Lỗi khi hủy đơn")
+      } finally {
+        setCancellingId(null)
+      }
+    },
+    [fetchApplications],
+  )
 
   return {
     applications,
@@ -177,6 +185,11 @@ export function useMyApplications(): UseMyApplicationsReturn {
     setKeyword,
     page,
     setPage,
+    pageSize,
+    setPageSize: (v) => {
+      setPageSize(v)
+      setPage(1)
+    },
     totalPages,
     total,
     refetch,

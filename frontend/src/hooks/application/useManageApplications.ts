@@ -1,28 +1,31 @@
-import { APPLICATION_STATUS } from "@/config/entities/attendance.config"
+import { APPLICATION_STATUS, type IApplicationFilterStatus } from "@/config/entities/attendance.config"
 import {
-  type IApplication,
-  type IListApplicationsQuery,
-  applicationApi,
-} from "@/lib/api/application.api"
+  type IApplicationBatch,
+  type IListBatchesQuery,
+  applicationBatchApi,
+} from "@/lib/api/application-batch.api"
+import { applicationApi, type IListApplicationsQuery } from "@/lib/api/application.api"
 
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import { toast } from "sonner"
 
-export type StatusFilter = "all" | "pending" | "approved" | "rejected" | "cancelled"
+
 
 interface UseManageApplicationsReturn {
-  applications: IApplication[]
+  applications: IApplicationBatch[]
   isLoading: boolean
   isRefreshing: boolean
-  statusFilter: StatusFilter
-  setStatusFilter: (v: StatusFilter) => void
+  statusFilter: IApplicationFilterStatus
+  setStatusFilter: (v: IApplicationFilterStatus) => void
   typeFilter: string
   setTypeFilter: (v: string) => void
   keyword: string
   setKeyword: (v: string) => void
   page: number
   setPage: (v: number) => void
+  pageSize: number
+  setPageSize: (v: number) => void
   totalPages: number
   total: number
   refetch: () => void
@@ -38,17 +41,26 @@ interface UseManageApplicationsReturn {
   handleReject: (id: string, reason: string) => Promise<void>
 }
 
-export function useManageApplications(): UseManageApplicationsReturn {
-  const [applications, setApplications] = useState<IApplication[]>([])
+export function useManageApplications(scope: "assigned" | "all" = "assigned"): UseManageApplicationsReturn {
+  const [applications, setApplications] = useState<IApplicationBatch[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending") // Default to pending for managers
+  const [statusFilter, setStatusFilter] = useState<IApplicationFilterStatus>(scope === "assigned" ? "pending" : "all")
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [keyword, setKeyword] = useState<string>("")
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [processingId, setProcessingId] = useState<string | null>(null)
+  
+  // Update default status filter when scope changes
+  useEffect(() => {
+    setTimeout(() => {
+      setStatusFilter(scope === "assigned" ? "pending" : "all")
+      setPage(1)
+    }, 0)
+  }, [scope])
   const [stats, setStats] = useState({
     pending: 0,
     approved: 0,
@@ -65,16 +77,18 @@ export function useManageApplications(): UseManageApplicationsReturn {
       }
 
       try {
-        const query: IListApplicationsQuery = {
+        // Backend query schema uses "pageSize" (not "limit") with .strict()
+        const query: IListBatchesQuery = {
           page,
-          pageSize: 10,
+          pageSize,
+          scope,
         }
 
         if (statusFilter !== "all") query.status = statusFilter
         if (typeFilter !== "all") query.type = typeFilter
         if (keyword.trim() !== "") query.keyword = keyword.trim()
 
-        const { data, meta } = await applicationApi.listAll(query)
+        const { data, meta } = await applicationBatchApi.listAll(query)
 
         if (!activeRef.current) return
 
@@ -93,7 +107,7 @@ export function useManageApplications(): UseManageApplicationsReturn {
         }
       }
     },
-    [statusFilter, typeFilter, keyword, page],
+    [statusFilter, typeFilter, keyword, page, pageSize, scope],
   )
 
   const fetchStats = useCallback(async () => {
@@ -107,10 +121,10 @@ export function useManageApplications(): UseManageApplicationsReturn {
 
       const counts = await Promise.all(
         statuses.map((s) => {
-          const query: IListApplicationsQuery = { status: s, page: 1, pageSize: 1 }
+          const query: IListApplicationsQuery = { status: s, page: 1, pageSize: 1, scope }
           if (typeFilter !== "all") query.type = typeFilter
           if (keyword.trim() !== "") query.keyword = keyword.trim()
-          return applicationApi
+          return applicationBatchApi
             .listAll(query)
             .then((r) => r.meta?.total ?? 0)
             .catch(() => 0)
@@ -124,12 +138,12 @@ export function useManageApplications(): UseManageApplicationsReturn {
         approved: counts[1],
         rejected: counts[2],
         cancelled: counts[3],
-        total: counts.reduce((a, b) => a + b, 0),
+        total: counts.reduce((a: number, b: number) => a + b, 0),
       })
     } catch (error) {
-      console.error("Failed to fetch application stats", error)
+      console.error("Failed to fetch manage stats:", error)
     }
-  }, [typeFilter, keyword])
+  }, [typeFilter, keyword, scope])
 
   useEffect(() => {
     activeRef.current = true
@@ -190,6 +204,8 @@ export function useManageApplications(): UseManageApplicationsReturn {
     setKeyword,
     page,
     setPage,
+    pageSize,
+    setPageSize: (v) => { setPageSize(v); setPage(1); },
     totalPages,
     total,
     refetch,

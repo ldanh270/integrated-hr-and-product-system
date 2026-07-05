@@ -74,6 +74,48 @@ export class ScheduleController {
   }
 
   /**
+   * Gets the materialized EmployeeShift record for the authenticated user on a given date.
+   * Used by the shift-swap/overtime/late-early forms to resolve the correct EmployeeShift.id.
+   * @param req - Authenticated request with optional `date` query param (YYYY-MM-DD).
+   * @param res - API response with the EmployeeShift (including nested shift) or null.
+   */
+  getMyShift = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
+    const accountId = req.user?.empId
+    if (!accountId) {
+      return res.status(HttpStatusCode.UNAUTHORIZED).json({
+        data: null,
+        error: {
+          message: ATTENDANCE_ERROR_MESSAGES.UNAUTHORIZED,
+          code: ATTENDANCE_ERROR_CODES.UNAUTHORIZED,
+        },
+      })
+    }
+    const employeeId = await resolvePersonalEmployeeId(accountId)
+    const dateQuery = req.query.date as string | undefined
+    const targetDate = dateQuery ? new Date(dateQuery) : new Date()
+
+    const employeeShift = await this.service.getEmployeeShiftForDate(employeeId, targetDate)
+    res.status(HttpStatusCode.OK).json({ data: employeeShift, error: null })
+  }
+
+  /**
+   * Gets the materialized EmployeeShift record for a specific employee on a given date (admin/manager use).
+   * @param req - Request with `employeeId` param and optional `date` query.
+   * @param res - API response with the EmployeeShift or null.
+   */
+  getEmployeeShiftByDate = async (
+    req: Request<{ employeeId: string }>,
+    res: Response<ApiResponse<unknown>>,
+  ) => {
+    const { employeeId } = req.params
+    const dateQuery = req.query.date as string | undefined
+    const targetDate = dateQuery ? new Date(dateQuery) : new Date()
+
+    const employeeShift = await this.service.getEmployeeShiftForDate(employeeId, targetDate)
+    res.status(HttpStatusCode.OK).json({ data: employeeShift, error: null })
+  }
+
+  /**
    * Lists all schedules for the authenticated employee.
    * @param req - Authenticated request.
    * @param res - API response with a list of schedules.

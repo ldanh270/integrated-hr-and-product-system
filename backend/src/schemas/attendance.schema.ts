@@ -5,6 +5,8 @@ import {
   HOLIDAY_TYPES,
   LEAVE_TYPE_VALUES,
   REGIME_TYPES,
+  BATCHABLE_APPLICATION_TYPES,
+  APPLICATION_SCOPES,
 } from "@/configs/entities/attendance.config.ts"
 import { ATTENDANCE_ERROR_MESSAGES } from "@/constants/attendance.constants.ts"
 
@@ -73,7 +75,9 @@ const baseApplicationFields = {
   endDate: dateString.optional(),
   reason: z.string().min(5).max(500).optional(),
   note: z.string().max(1000).optional(),
-  assignedToId: z.string().cuid("Invalid assignedTo employee ID").optional(),
+  attachmentUrl: z.string().url("URL không hợp lệ").optional(),
+  attachmentId: z.string().optional(),
+  assignedToId: z.string().cuid("ID người duyệt không hợp lệ").optional(),
 }
 
 // ─── TYPE-SPECIFIC APPLICATION SCHEMAS ───────────────────────
@@ -97,7 +101,8 @@ const overtimeApplicationSchema = z
     type: z.literal("overtime"),
     ...baseApplicationFields,
     detail: z.object({
-      employeeShiftId: z.string().cuid("Invalid shift ID"),
+      employeeShiftId: z.string().cuid("ID ca làm việc không hợp lệ"),
+      overtimeHours: z.number().min(0.5).max(24).multipleOf(0.5),
     }),
   })
   .strict()
@@ -143,6 +148,14 @@ const lateEarlyApplicationSchema = z
   })
   .strict()
 
+const resignationApplicationSchema = z
+  .object({
+    type: z.literal("resignation"),
+    ...baseApplicationFields,
+    detail: z.object({}).optional(),
+  })
+  .strict()
+
 // ─── DISCRIMINATED UNION ─────────────────────────────────────
 
 export const submitApplicationSchema = z.discriminatedUnion("type", [
@@ -151,9 +164,37 @@ export const submitApplicationSchema = z.discriminatedUnion("type", [
   workFromHomeApplicationSchema,
   shiftSwapApplicationSchema,
   lateEarlyApplicationSchema,
+  resignationApplicationSchema,
 ])
 
 export type SubmitApplicationSchemaType = z.infer<typeof submitApplicationSchema>
+
+// ─── BATCH SUBMIT ─────────────────────────────────────────────
+
+/**
+ * Batch submit: array of same-type applications.
+ * Each item reuses the individual type schema's detail shape.
+ * Resignation is excluded (not batchable).
+ */
+const batchItemSchema = z.object({
+  startDate: dateString,
+  endDate: dateString.optional(),
+  reason: z.string().min(5).max(500).optional(),
+  note: z.string().max(1000).optional(),
+  attachmentUrl: z.string().url("URL không hợp lệ").optional(),
+  attachmentId: z.string().optional(),
+  detail: z.record(z.string(), z.unknown()).default({}),
+})
+
+export const submitBatchApplicationSchema = z
+  .object({
+    type: z.enum(BATCHABLE_APPLICATION_TYPES),
+    assignedToId: z.string().cuid("Invalid assignedTo employee ID").optional(),
+    items: z.array(batchItemSchema).min(1, "At least one item is required").max(30, "Maximum 30 items per batch"),
+  })
+  .strict()
+
+export type SubmitBatchApplicationSchemaType = z.infer<typeof submitBatchApplicationSchema>
 
 // ─── APPROVE ─────────────────────────────────────────────────
 
@@ -205,6 +246,7 @@ export const listApplicationsQuerySchema = z
     keyword: z.string().optional(),
     startDate: dateString.optional(),
     endDate: dateString.optional(),
+    scope: z.enum(APPLICATION_SCOPES).optional(),
   })
   .strict()
 

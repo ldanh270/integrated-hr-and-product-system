@@ -9,13 +9,15 @@ export type IEmployeeShiftStatus = (typeof EMPLOYEE_SHIFT_STATUSES)[number]
 export const HOLIDAY_TYPES = ["national", "company"] as const
 export type IHolidayType = (typeof HOLIDAY_TYPES)[number]
 
+
+
 export const ATTENDANCE_STATUSES = ["on_time", "late", "early_leave", "absent", "overtime"] as const
 export type IAttendanceStatus = (typeof ATTENDANCE_STATUSES)[number]
 
 export const APPLICATION_TYPES = {
   LEAVE: { LABEL: "leave", DESCRIPTION: "Xin nghỉ phép" },
   OVERTIME: { LABEL: "overtime", DESCRIPTION: "Tăng ca (OT)" },
-  WORK_FROM_HOME: { LABEL: "work_from_home", DESCRIPTION: "Làm việc từ xa (WFH)" },
+  WORK_FROM_HOME: { LABEL: "work_from_home", DESCRIPTION: "Làm việc từ xa" },
   SHIFT_SWAP: { LABEL: "shift_swap", DESCRIPTION: "Đổi ca làm việc" },
   LATE_EARLY: { LABEL: "late_early", DESCRIPTION: "Đi muộn/về sớm" },
   RESIGNATION: { LABEL: "resignation", DESCRIPTION: "Thôi việc" },
@@ -30,6 +32,16 @@ export const APPLICATION_TYPE_VALUES = [
   APPLICATION_TYPES.LATE_EARLY.LABEL,
   APPLICATION_TYPES.RESIGNATION.LABEL,
 ] as const
+
+// Types that support batch (multi-item) submission — excludes resignation
+export const BATCHABLE_APPLICATION_TYPES = [
+  APPLICATION_TYPES.LEAVE.LABEL,
+  APPLICATION_TYPES.OVERTIME.LABEL,
+  APPLICATION_TYPES.WORK_FROM_HOME.LABEL,
+  APPLICATION_TYPES.SHIFT_SWAP.LABEL,
+  APPLICATION_TYPES.LATE_EARLY.LABEL,
+] as const
+export type IBatchableApplicationType = (typeof BATCHABLE_APPLICATION_TYPES)[number]
 
 export const APPLICATION_STATUS = {
   PENDING: "pending",
@@ -51,10 +63,18 @@ export const APPLICATION_FILTER = {
   ALL: "all",
 } as const
 
+export const PARTNER_APPROVAL_STATUS = {
+  PENDING: "pending",
+  APPROVED: "approved",
+  REJECTED: "rejected",
+} as const
+export type IPartnerApprovalStatus = (typeof PARTNER_APPROVAL_STATUS)[keyof typeof PARTNER_APPROVAL_STATUS]
+
 export const APPLICATION_VIEW_MODE = {
   MINE: "mine",
   MANAGE: "manage",
 } as const
+export type IApplicationViewMode = (typeof APPLICATION_VIEW_MODE)[keyof typeof APPLICATION_VIEW_MODE]
 
 export const REGIME_TYPE = {
   PAID: "paid",
@@ -86,6 +106,16 @@ export const LEAVE_TYPE_VALUES = [
 export type ILeaveType = (typeof LEAVE_TYPE_VALUES)[number]
 
 // ─── Label Maps ───────────────────────────────────────────────
+
+export const LEAVE_TYPE_LABELS: Record<string, string> = {
+  [LEAVE_TYPE.ANNUAL_LEAVE]: "Nghỉ phép năm",
+  [LEAVE_TYPE.SICK_LEAVE]: "Nghỉ ốm",
+  [LEAVE_TYPE.MATERNITY_LEAVE]: "Nghỉ thai sản",
+  [LEAVE_TYPE.BEREAVEMENT_LEAVE]: "Nghỉ tang chế",
+  [LEAVE_TYPE.MARRIAGE_LEAVE]: "Nghỉ cưới",
+  [LEAVE_TYPE.UNPAID_LEAVE]: "Nghỉ không lương",
+  [LEAVE_TYPE.OTHER]: "Khác",
+}
 
 export const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
   on_time: "Đúng giờ",
@@ -122,6 +152,16 @@ export const APPLICATION_STATUS_LABELS: Record<string, string> = {
   approved: "Đã duyệt",
   rejected: "Từ chối",
   cancelled: "Đã hủy",
+}
+
+export const APPLICATION_STATUS_INFO: Record<
+  string,
+  { label: string; colorClass: string }
+> = {
+  [APPLICATION_STATUS.PENDING]: { label: "Chờ duyệt", colorClass: "text-amber-600 border-amber-600 font-medium" },
+  [APPLICATION_STATUS.APPROVED]: { label: "Đã duyệt", colorClass: "text-emerald-600 border-emerald-600 font-medium" },
+  [APPLICATION_STATUS.REJECTED]: { label: "Không duyệt", colorClass: "text-red-600 border-red-600 font-medium" },
+  [APPLICATION_STATUS.CANCELLED]: { label: "Đã hủy", colorClass: "text-slate-500 border-slate-500 font-medium" },
 }
 
 export const APPLICATION_STATUS_VARIANTS: Record<

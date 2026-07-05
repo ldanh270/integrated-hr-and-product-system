@@ -1,7 +1,5 @@
 import { Request } from "express"
 
-
-
 export interface AuthenticatedRequest extends Request {
   user: {
     empId: string
@@ -184,6 +182,8 @@ export interface AuthEmployeeDocument {
   lockedUntil?: Date | null
   failedLoginCount: number
   lastLoginAt?: Date | null
+  totalLeaves: number
+  usedLeaves: number
 }
 
 /**

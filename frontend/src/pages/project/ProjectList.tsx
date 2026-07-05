@@ -34,7 +34,7 @@ import { Textarea } from "@/components/ui/textarea"
 // Import project domain configs (statuses and creation policy list)
 import { PROJECT_STATUSES, TASK_CREATION_POLICIES } from "@/config/entities/project.config"
 // Import employee role mappings
-import { ROLE } from "@/config/entities/employee.config"
+import { SYSTEM_ROLE } from "@/config/entities/employee.config"
 import { usePermission } from "@/hooks/use-permission"
 // Import API client wrappers
 import { employeeApi } from "@/lib/api/employee.api"
@@ -62,7 +62,7 @@ export default function ProjectList() {
   const { roles } = usePermission()
   // Determine if the current user possesses administrative or managerial rights
   const isManager =
-    !!user && [ROLE.ADMIN, ROLE.GENERAL_MANAGER].some((role) => roles.includes(role))
+    !!user && [SYSTEM_ROLE.ADMIN, SYSTEM_ROLE.GENERAL_MANAGER].some((role) => roles.includes(role))
 
   // Initialize state hooks to filter projects list
   const [search, setSearch] = useState("") // Search keyword

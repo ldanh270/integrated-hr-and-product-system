@@ -14,6 +14,8 @@ export interface User {
     fullName: string
     email: string
   } | null
+  totalLeaves?: number
+  usedLeaves?: number
 }
 
 interface AuthState {

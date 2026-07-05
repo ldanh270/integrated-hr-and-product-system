@@ -50,6 +50,9 @@ const editSchema = z.object({
 
   employeeType: z.enum(EMPLOYEE_TYPES).optional(),
   status: z.enum(EMPLOYEE_STATUSES).optional(),
+  
+  totalLeaves: z.number().int("Tổng phép phải là số nguyên").min(0, "Tổng phép không hợp lệ").optional(),
+  usedLeaves: z.number().int("Số phép đã dùng phải là số nguyên").min(0, "Số phép đã dùng không hợp lệ").optional(),
 
   dateOfBirth: z
     .string()
@@ -88,11 +91,14 @@ type EditFormValues = z.infer<typeof editSchema>
 export function useEmployeeEditModal(
   employee: Employee | null,
   isOpen: boolean,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _onClose: () => void,
 ) {
   const updateMutation = useUpdateEmployee()
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
     reset,
   } = useForm<EditFormValues>({
@@ -122,6 +128,8 @@ export function useEmployeeEditModal(
         address: employee.address || undefined,
         startDate: formatDateForInput(employee.startDate),
         endDate: formatDateForInput(employee.endDate),
+        totalLeaves: employee.totalLeaves,
+        usedLeaves: employee.usedLeaves,
       })
     }
   }, [employee, isOpen, reset])
@@ -138,12 +146,15 @@ export function useEmployeeEditModal(
       address: data.address === "" ? null : data.address,
       startDate: data.startDate === "" ? null : data.startDate,
       endDate: data.endDate === "" ? null : data.endDate,
+      totalLeaves: data.totalLeaves,
+      usedLeaves: data.usedLeaves,
     }
     await updateMutation.mutateAsync({ id: employee.id, data: formattedData })
   }
 
   return {
     register,
+    watch,
     handleSubmit,
     onSubmitEmployee,
     errors,
