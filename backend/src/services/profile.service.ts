@@ -208,7 +208,7 @@ export class ProfileService implements IProfileService {
       )
     }
 
-    let personalEmployeeId = data.personalEmployeeId
+    let personalEmployeeId = data.personalEmployeeId ?? null
     if (personalEmployeeId === empId) {
       personalEmployeeId = null
     }
