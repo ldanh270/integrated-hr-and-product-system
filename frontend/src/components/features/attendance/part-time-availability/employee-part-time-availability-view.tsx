@@ -241,6 +241,7 @@ export function EmployeePartTimeAvailabilityView() {
 
   return (
     <EmployeePartTimeAvailabilityForm
+      // Remount local form state when week or saved record changes — avoids stale days/note.
       key={`${weekStartKey}-${availability?.id ?? "new"}`}
       availability={availability}
       weekStart={weekStart}

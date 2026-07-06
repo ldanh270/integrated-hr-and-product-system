@@ -166,6 +166,7 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
 
       const shiftId = await this.resolveWorkingShiftId(startTime, endTime, data.createdById)
       const assignedDate = getDateForWeekDay(weekStart, item.dayOfWeek)
+      // Append-only: one day may have multiple admin-assigned slots after week wipe.
       await this.employeeShiftRepo.createOverrideShift({
         employeeId: availability.employeeId,
         assignedDate,

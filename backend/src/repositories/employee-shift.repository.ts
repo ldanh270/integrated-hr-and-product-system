@@ -29,6 +29,7 @@ export class PrismaEmployeeShiftRepository
     const { employeeId, assignedDate, shiftId, createdById } = data
     const date = new Date(assignedDate)
     date.setHours(0, 0, 0, 0)
+    // Audit trail: admin assign passes createdById; self-service paths fall back to employee.
     const actorId = createdById ?? employeeId
 
     return this.prisma.employeeShift.create({
@@ -71,6 +72,7 @@ export class PrismaEmployeeShiftRepository
     const { employeeId, assignedDate, shiftId, createdById } = data
     const date = new Date(assignedDate)
     date.setHours(0, 0, 0, 0)
+    // Audit trail: admin assign passes createdById; self-service paths fall back to employee.
     const actorId = createdById ?? employeeId
 
     // Promote existing schedule row or create override — safe under @@unique([employeeId, assignedDate, shiftId]).

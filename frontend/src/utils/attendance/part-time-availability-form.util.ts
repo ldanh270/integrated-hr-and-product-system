@@ -50,6 +50,7 @@ export function buildDefaultPartTimeAssignments(
 ): IPartTimeAssignmentDayForm[] {
   const dayMap = new Map(availability.days.map((day) => [day.dayOfWeek, day]))
 
+  // Busy days start unscheduled so admin explicitly opts in; free days pre-fill from employee slots.
   return WORK_WEEK_DISPLAY_DAY_ORDER.map((dayOfWeek) => {
     const day = dayMap.get(dayOfWeek)
     const isBusyDay = Boolean(day?.isBusyAllDay)
@@ -70,6 +71,7 @@ export function flattenPartTimeAssignments(
   days: IPartTimeAssignmentDayForm[],
 ): IPartTimeAssignmentForm[] {
   return days.flatMap((day) => {
+    // Off day → omit from API payload; partial empty slot → skip (not a valid shift).
     if (!day.isScheduled) return []
 
     return day.slots
@@ -111,6 +113,7 @@ export function validatePartTimeAssignmentSlot(
   endTime: string | null,
   day: IPartTimeAvailabilityDay | undefined,
 ): string | null {
+  // Both empty = day off for assign; one-sided input is invalid, not skipped.
   if (!startTime && !endTime) return null
   if (!startTime || !endTime) return PART_TIME_AVAILABILITY_ASSIGN_VALIDATION.INCOMPLETE
 
@@ -200,6 +203,7 @@ export function mapAvailabilityToForm(
 
   return WORK_WEEK_DISPLAY_DAY_ORDER.map((dayOfWeek) => {
     const day = byDay.get(dayOfWeek)
+    // Missing weekday in DB → editable default slot (employee has not declared that day yet).
     if (!day) {
       return {
         dayOfWeek,

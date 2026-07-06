@@ -18,12 +18,14 @@ export function clampToEarliestRequestableWeek(
 ): Date {
   const normalized = getWeekStart(weekStart)
   const earliest = getEarliestRequestableWeekStart(referenceDate)
+  // Employees may only declare from next Monday onward — block navigating into past/current week.
   return normalized.getTime() < earliest.getTime() ? earliest : normalized
 }
 
 export function isPartTimeAvailabilityEditable(
   status: IPartTimeAvailabilityStatus | null | undefined,
 ): boolean {
+  // No saved row yet — first submit is always allowed for the target week.
   if (!status) return true
   return PART_TIME_AVAILABILITY_EDITABLE_STATUSES.includes(status)
 }

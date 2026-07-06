@@ -260,6 +260,7 @@ export function AdminPartTimeAssignDayColumn({
                               updateSlot(index, { startTime: event.target.value || null })
                             }}
                             onBlur={function handleStartTimeBlur() {
+                              // Validate captured slot — not assignment.slots[index] (stale after rapid edits).
                               notifySlotValidation(slot)
                             }}
                           />
@@ -275,6 +276,7 @@ export function AdminPartTimeAssignDayColumn({
                               updateSlot(index, { endTime: event.target.value || null })
                             }}
                             onBlur={function handleEndTimeBlur() {
+                              // Validate captured slot — not assignment.slots[index] (stale after rapid edits).
                               notifySlotValidation(slot)
                             }}
                           />

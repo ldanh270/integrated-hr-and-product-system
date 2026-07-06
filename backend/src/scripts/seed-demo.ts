@@ -37,6 +37,7 @@ async function hydrateContext(context: SeedContext): Promise<SeedContext> {
 async function shouldSkipSeederInternal(name: string): Promise<boolean> {
   let count = 0
 
+  // Per-seeder idempotency: skip when target data already exists (safe re-run of demo seed).
   switch (name) {
     case "WorkingShifts":
       count = await prisma.workingShift.count()

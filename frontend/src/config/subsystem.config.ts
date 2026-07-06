@@ -152,6 +152,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         path: ROUTES.ATTENDANCE.PART_TIME_AVAILABILITY,
         icon: CalendarRange,
         permissions: ["attendance.update"],
+        // Assign from submitted free-time windows — not fixed weekly templates.
       },
       {
         name: "Lịch hàng tuần",

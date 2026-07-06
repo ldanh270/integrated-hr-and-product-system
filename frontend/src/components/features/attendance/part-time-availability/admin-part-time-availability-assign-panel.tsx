@@ -162,6 +162,7 @@ export function AdminPartTimeAvailabilityAssignPanel({
       </div>
 
       <AdminPartTimeAvailabilityAssignPanelForm
+        // Switching employee must reset assign form — slots are per availability record.
         key={availability.id}
         availability={availability}
         weekStart={weekStart}

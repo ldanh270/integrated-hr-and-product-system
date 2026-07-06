@@ -50,4 +50,6 @@ partTimeAvailabilityRoutes.post(
   controller.assignShifts,
 )
 
+// No approve/reject routes: workflow is submit → admin assign; submitted rows are assignable immediately.
+
 export default partTimeAvailabilityRoutes

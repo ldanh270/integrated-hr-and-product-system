@@ -29,6 +29,7 @@ export function isPastOrCurrentAvailabilityWeek(
 export function normalizeWeekStart(date: string | Date): Date {
   const normalized = normalizeScheduleDate(new Date(date))
   const day = normalized.getDay()
+  // getDay(): 0 = Sunday — roll back 6 days so ISO week starts on Monday, not Sunday.
   const diff = normalized.getDate() - day + (day === 0 ? -6 : 1)
 
   normalized.setDate(diff)
@@ -38,6 +39,7 @@ export function normalizeWeekStart(date: string | Date): Date {
 /** Maps dayOfWeek within a week starting Monday to a calendar date. */
 export function getDateForWeekDay(weekStart: Date, dayOfWeek: number): Date {
   const start = normalizeWeekStart(weekStart)
+  // Prisma dayOfWeek: 0 = Sunday at end of Mon–Sun display order (+6 from Monday).
   const offset = dayOfWeek === 0 ? 6 : dayOfWeek - 1
   const date = new Date(start)
   date.setDate(start.getDate() + offset)

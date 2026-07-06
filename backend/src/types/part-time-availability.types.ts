@@ -1,4 +1,5 @@
 import type { IPartTimeAvailabilityStatus } from "@/configs/entities/part-time-availability.config.ts"
+import type { AssignPartTimeShiftsSchemaType } from "@/schemas/part-time-availability.schema.ts"
 
 export interface IPartTimeAvailabilitySlot {
   id?: string
@@ -54,7 +55,7 @@ export interface IUpsertPartTimeAvailabilityDTO {
 /** Admin assigns shifts from submitted availability — writes EmployeeShift rows bounded by declared slots. */
 export interface IAssignPartTimeShiftsDTO {
   availabilityId: string
-  assignments: Array<{ dayOfWeek: number; startTime: string | null; endTime: string | null }>
+  assignments: AssignPartTimeShiftsSchemaType["assignments"]
   createdById: string
 }
 

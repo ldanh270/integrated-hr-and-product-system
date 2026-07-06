@@ -62,6 +62,7 @@ export function resolvePartTimePayrollVariables(
   return {
     overtimeMultiplier,
     workingDayMultiplier,
+    // 0 or unset → payroll must read hourly rate from the project, not the global default.
     defaultHourlyRate: defaultHourlyRate > 0 ? defaultHourlyRate : null,
   }
 }

@@ -29,6 +29,7 @@ export class PartTimeAvailabilityController {
   /** Employee self-service: map auth account to HR employee record before week lookup. */
   getMine = async (req: AuthRequest, res: Response<ApiResponse<IPartTimeWeeklyAvailability | null>>) => {
     const accountId = req.user?.empId
+    // JWT may be valid before HR links account → employee; fail closed instead of 500 on lookup.
     if (!accountId) {
       return res.status(HttpStatusCode.UNAUTHORIZED).json({
         data: null,
@@ -48,6 +49,7 @@ export class PartTimeAvailabilityController {
   /** Employee submits weekly availability; service forces submitted status, PT-only, future weeks, and slot rules. */
   upsertMine = async (req: AuthRequest, res: Response<ApiResponse<IPartTimeWeeklyAvailability>>) => {
     const accountId = req.user?.empId
+    // Same guard as getMine — upsert must not run without a resolvable employee id.
     if (!accountId) {
       return res.status(HttpStatusCode.UNAUTHORIZED).json({
         data: null,

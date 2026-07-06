@@ -23,6 +23,7 @@ export function AdminPartTimeAvailabilityView() {
 
   const [weekStart, setWeekStart] = useState(() => getEarliestRequestableWeekStart())
   const weekStartKey = formatDateParam(weekStart)
+  // Block "Tuần trước" before earliest assignable week (same rule as employee submit).
   const canGoToPreviousWeek = weekStart.getTime() > earliestWeekStart.getTime()
   const weekDays = useMemo(() => getWeekDates(weekStart), [weekStart])
   const weekRangeLabel = useMemo(() => getWeekRangeLabel(weekDays), [weekDays])
