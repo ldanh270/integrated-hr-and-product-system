@@ -11,7 +11,7 @@ interface ActualWorkBlockProps {
 }
 
 export function ActualWorkBlock({
-  record, 
+  record,
   scheduleDay,
   labelPlacement = "default",
 }: ActualWorkBlockProps) {

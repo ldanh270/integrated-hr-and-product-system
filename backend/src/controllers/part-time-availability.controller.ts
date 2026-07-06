@@ -28,17 +28,39 @@ export class PartTimeAvailabilityController {
 
   /** Employee self-service: map auth account to HR employee record before week lookup. */
   getMine = async (req: AuthRequest, res: Response<ApiResponse<IPartTimeWeeklyAvailability | null>>) => {
+    const accountId = req.user?.empId
+    if (!accountId) {
+      return res.status(HttpStatusCode.UNAUTHORIZED).json({
+        data: null,
+        error: {
+          message: "Unauthorized",
+          code: ErrorCode.UNAUTHORIZED,
+        },
+      })
+    }
+
     const { weekStart } = weekStartQuerySchema.parse(req.query)
-    const employeeId = await resolvePersonalEmployeeId(req.user?.empId || "")
+    const employeeId = await resolvePersonalEmployeeId(accountId)
     const availability = await this.service.getMine(employeeId, weekStart)
     res.status(HttpStatusCode.OK).json({ data: availability, error: null })
   }
 
   /** Employee submits weekly availability; service forces submitted status, PT-only, future weeks, and slot rules. */
   upsertMine = async (req: AuthRequest, res: Response<ApiResponse<IPartTimeWeeklyAvailability>>) => {
+    const accountId = req.user?.empId
+    if (!accountId) {
+      return res.status(HttpStatusCode.UNAUTHORIZED).json({
+        data: null,
+        error: {
+          message: "Unauthorized",
+          code: ErrorCode.UNAUTHORIZED,
+        },
+      })
+    }
+
     try {
       const payload = upsertPartTimeAvailabilitySchema.parse(req.body)
-      const availability = await this.service.upsertMine(req.user?.empId || "", {
+      const availability = await this.service.upsertMine(accountId, {
         weekStart: payload.weekStart,
         note: payload.note,
         status: payload.status,

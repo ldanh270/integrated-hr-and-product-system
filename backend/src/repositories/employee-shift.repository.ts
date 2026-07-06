@@ -73,40 +73,28 @@ export class PrismaEmployeeShiftRepository
     date.setHours(0, 0, 0, 0)
     const actorId = createdById ?? employeeId
 
-    // Multi-slot schema: no longer unique on [employeeId, assignedDate] alone.
-    const existing = await this.prisma.employeeShift.findFirst({
+    // Promote existing schedule row or create override — safe under @@unique([employeeId, assignedDate, shiftId]).
+    return this.prisma.employeeShift.upsert({
       where: {
-        employeeId,
-        assignedDate: date,
-        isOverride: true,
-      },
-      orderBy: { createdAt: "asc" },
-    })
-
-    if (existing) {
-      return this.prisma.employeeShift.update({
-        where: { id: existing.id },
-        data: {
-          shiftId,
-          isOverride: true,
-          status: ShiftStatus.scheduled,
-        },
-      })
-    } else {
-      // Need createdById if creating a new shift...
-      // Since it's missing in DTO, we might just fail or use a system placeholder if allowed.
-      // Assuming employeeId is acting as creator or we require createdById in override
-      return this.prisma.employeeShift.create({
-        data: {
+        employeeId_assignedDate_shiftId: {
           employeeId,
           assignedDate: date,
           shiftId,
-          isOverride: true,
-          status: ShiftStatus.scheduled,
-          createdById: actorId, // fallback
         },
-      })
-    }
+      },
+      update: {
+        isOverride: true,
+        status: ShiftStatus.scheduled,
+      },
+      create: {
+        employeeId,
+        assignedDate: date,
+        shiftId,
+        isOverride: true,
+        status: ShiftStatus.scheduled,
+        createdById: actorId,
+      },
+    })
   }
 
   /**

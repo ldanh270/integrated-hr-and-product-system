@@ -19,9 +19,11 @@ import { useMemo, useState } from "react"
 export function AdminPartTimeAvailabilityView() {
   // Shift assignment starts from the upcoming week, not historical weeks.
   const earliestWeekStart = useMemo(() => getEarliestRequestableWeekStart(), [])
+  const earliestWeekStartKey = formatDateParam(earliestWeekStart)
 
   const [weekStart, setWeekStart] = useState(() => getEarliestRequestableWeekStart())
   const weekStartKey = formatDateParam(weekStart)
+  const canGoToPreviousWeek = weekStart.getTime() > earliestWeekStart.getTime()
   const weekDays = useMemo(() => getWeekDates(weekStart), [weekStart])
   const weekRangeLabel = useMemo(() => getWeekRangeLabel(weekDays), [weekDays])
   const { data: items = [], isLoading } = usePartTimeAvailabilityList(weekStartKey)
@@ -52,6 +54,7 @@ export function AdminPartTimeAvailabilityView() {
               variant="outline"
               size="icon"
               className="h-8 w-8 rounded-full"
+              disabled={!canGoToPreviousWeek}
               onClick={() => {
                 shiftWeek(-1)
               }}
@@ -62,6 +65,7 @@ export function AdminPartTimeAvailabilityView() {
             <WeekPickerActions
               weekStartIso={weekStartKey}
               weekRangeLabel={weekRangeLabel}
+              minWeekStartIso={earliestWeekStartKey}
               defaultWeekStart={earliestWeekStart}
               defaultWeekLabel="Tuần kế tiếp"
               onWeekStartChange={handleWeekStartChange}
