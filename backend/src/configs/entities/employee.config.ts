@@ -35,13 +35,4 @@ export const ROLE = {
   EMPLOYEE: "employee",
 } as const
 
-export const EMPLOYEE_ROLES = [
-  ROLE.EMPLOYEE,
-  ROLE.TEAM_LEADER,
-  ROLE.HR_MANAGER,
-  ROLE.GENERAL_MANAGER,
-  ROLE.ADMIN,
-] as const
-export type IEmployeeRole = (typeof EMPLOYEE_ROLES)[number]
-
 export const GM_SCOPES = ["all", "department", "region"] as const

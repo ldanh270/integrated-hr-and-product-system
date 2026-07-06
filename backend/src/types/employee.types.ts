@@ -1,5 +1,4 @@
 import {
-  IEmployeeRole,
   IEmployeeStatus,
   IEmployeeType,
 } from "@/configs/entities/employee.config.ts"
@@ -72,7 +71,7 @@ export interface CreateEmployeeDto {
   fullName: string
   email: string
   username: string
-  role?: IEmployeeRole
+  role?: string
   roleId?: string
   passwordHash?: string
   phone?: string | null
