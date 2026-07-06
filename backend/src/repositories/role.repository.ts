@@ -1,12 +1,13 @@
 import { SORT_ORDER } from "@/configs/system/db.config.ts"
+import { ROLE_ERROR_CODES } from "@/constants/permission.constants.ts"
 import {
   AppRole,
   CreateRoleDto,
   IRoleRepository,
   PaginatedRolesDto,
+  Permission,
   RoleListQuery,
   UpdateRoleDto,
-  Permission,
 } from "@/types"
 
 import { Prisma, AppRole as PrismaAppRole, PrismaClient } from "@prisma/client"
@@ -47,6 +48,7 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
       isSystem: role.isSystem,
       isActive: role.isActive,
       isAdministrative: role.isAdministrative,
+      isDefault: role.isDefault,
       createdAt: role.createdAt,
       updatedAt: role.updatedAt,
       createdBy: role.createdBy,
@@ -205,15 +207,24 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
    * @returns The newly created AppRole domain object.
    */
   async createRole(data: CreateRoleDto): Promise<AppRole> {
-    const role = await this.prisma.appRole.create({
-      data: {
-        name: data.name,
-        description: data.description || null,
-        createdBy: data.createdBy || null,
-        isAdministrative: data.isAdministrative || false,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      if (data.isDefault) {
+        await tx.appRole.updateMany({
+          where: { deletedAt: null },
+          data: { isDefault: false },
+        })
+      }
+      const role = await tx.appRole.create({
+        data: {
+          name: data.name,
+          description: data.description || null,
+          createdBy: data.createdBy || null,
+          isAdministrative: data.isAdministrative || false,
+          isDefault: data.isDefault || false,
+        },
+      })
+      return this.mapToDomain(role)
     })
-    return this.mapToDomain(role)
   }
 
   /**
@@ -224,7 +235,20 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
    */
   async updateRole(id: string, data: UpdateRoleDto): Promise<AppRole | null> {
     return this.prisma.$transaction(async (tx) => {
-      // If deactivating the role, enforce locks and check active admin count retention
+      const record = await tx.appRole.findFirst({
+        where: { id, deletedAt: null },
+      })
+
+      if (!record) return null
+
+      // If deactivating the role or disabling default role, enforce locks & checks
+      if (data.isActive === false && record.isDefault) {
+        throw new Error(ROLE_ERROR_CODES.CANNOT_DEACTIVATE_DEFAULT_ROLE)
+      }
+      if (data.isDefault === false && record.isDefault) {
+        throw new Error(ROLE_ERROR_CODES.CANNOT_DISABLE_ONLY_DEFAULT_ROLE)
+      }
+
       if (data.isActive === false) {
         // Locking is based on the case-normalized role name "admin" because the unique constraint on the name field is case-sensitive, allowing different cases like "Admin" and "admin" to coexist. Normalized lock LOWER(TRIM(name)) = 'admin' ensures deactivating/deleting any of these active roles named "Admin" (case-insensitively) will acquire a lock on ALL of them, preventing race conditions.
         await tx.$executeRaw`
@@ -234,15 +258,19 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
           FOR UPDATE
         `
 
-        const record = await tx.appRole.findFirst({
-          where: { id, deletedAt: null },
-        })
-        if (record && record.name.trim().toLowerCase() === "admin") {
+        if (record.name.trim().toLowerCase() === "admin") {
           const remainingAdminUsers = await this.countRemainingAdminUsers(id, tx)
           if (remainingAdminUsers === 0) {
-            throw new Error("CANNOT_REMOVE_LAST_ADMIN")
+            throw new Error(ROLE_ERROR_CODES.CANNOT_REMOVE_LAST_ADMIN)
           }
         }
+      }
+
+      if (data.isDefault === true) {
+        await tx.appRole.updateMany({
+          where: { id: { not: id }, deletedAt: null },
+          data: { isDefault: false },
+        })
       }
 
       const role = await tx.appRole.update({
@@ -253,6 +281,7 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
           isActive: data.isActive,
           updatedBy: data.updatedBy,
           isAdministrative: data.isAdministrative,
+          isDefault: data.isDefault,
         },
       })
       return this.mapToDomain(role)
@@ -283,15 +312,20 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
 
       // Verify system role protection
       if (record.isSystem) {
-        throw new Error("ROLE_SYSTEM_PROTECTED")
+        throw new Error(ROLE_ERROR_CODES.ROLE_SYSTEM_PROTECTED)
       }
 
       // Verify deleting this role doesn't leave the system with 0 active admins
       if (record.name.trim().toLowerCase() === "admin") {
         const remainingAdminUsers = await this.countRemainingAdminUsers(id, tx)
         if (remainingAdminUsers === 0) {
-          throw new Error("CANNOT_REMOVE_LAST_ADMIN")
+          throw new Error(ROLE_ERROR_CODES.CANNOT_REMOVE_LAST_ADMIN)
         }
+      }
+
+      // Verify deleting this role doesn't remove the default role
+      if (record.isDefault) {
+        throw new Error(ROLE_ERROR_CODES.CANNOT_DELETE_DEFAULT_ROLE)
       }
 
       // Check employee assignments
@@ -299,7 +333,7 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
         where: { roleId: id },
       })
       if (employeesCount > 0) {
-        throw new Error("ROLE_ASSIGNED_EMPLOYEE")
+        throw new Error(ROLE_ERROR_CODES.ROLE_ASSIGNED_EMPLOYEE)
       }
 
       // Check permission assignments
@@ -307,7 +341,7 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
         where: { roleId: id },
       })
       if (permissionsCount > 0) {
-        throw new Error("ROLE_ASSIGNED_PERMISSION")
+        throw new Error(ROLE_ERROR_CODES.ROLE_ASSIGNED_PERMISSION)
       }
 
       const timestamp = Date.now()
@@ -379,6 +413,9 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
     })
   }
 
+  /**
+   * Performs operations for mapPermissionToDomain.
+   */
   private mapPermissionToDomain(permission: any): Permission {
     return {
       id: permission.id,
@@ -396,6 +433,9 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
     }
   }
 
+  /**
+   * Performs operations for findPermissionsByRoleId.
+   */
   async findPermissionsByRoleId(roleId: string): Promise<Permission[]> {
     const rolePermissions = await this.prisma.rolePermission.findMany({
       where: {
@@ -411,6 +451,9 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
     return rolePermissions.map((rp) => this.mapPermissionToDomain(rp.permission))
   }
 
+  /**
+   * Performs operations for assignPermission.
+   */
   async assignPermission(
     roleId: string,
     permissionId: string,
@@ -437,6 +480,9 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
     return { success: true, created: true }
   }
 
+  /**
+   * Performs operations for revokePermission.
+   */
   async revokePermission(roleId: string, permissionId: string): Promise<boolean> {
     const existing = await this.prisma.rolePermission.findUnique({
       where: {
@@ -460,6 +506,9 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
     return true
   }
 
+  /**
+   * Performs operations for updatePermissions.
+   */
   async updatePermissions(
     roleId: string,
     permissionIds: string[],
@@ -467,10 +516,7 @@ export class PrismaRoleRepository extends BaseRepository implements IRoleReposit
   ): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       // Exclusive lock on the role record to serialize concurrent updates
-      await tx.$queryRawUnsafe(
-        'SELECT id FROM "roles" WHERE id = $1 FOR UPDATE',
-        roleId
-      )
+      await tx.$queryRawUnsafe('SELECT id FROM "roles" WHERE id = $1 FOR UPDATE', roleId)
 
       await tx.rolePermission.deleteMany({
         where: { roleId },

@@ -1,9 +1,5 @@
-/* eslint-disable security/detect-object-injection */
-// Import common layout containers
-import { PageCard, StatusPill, SafeHtml } from "@/components/common"
-// Import spent time modal component
+import { PageCard, SafeHtml, StatusPill } from "@/components/common"
 import LogTimeModal from "@/components/features/project/LogTimeModal"
-// Import custom UI elements
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -15,6 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { RichTextEditor } from "@/components/ui/rich-text-editor"
 import {
   Select,
   SelectContent,
@@ -22,13 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-// Import Skeleton screen layout loading helpers
 import { Skeleton } from "@/components/ui/skeleton"
-import { RichTextEditor } from "@/components/ui/rich-text-editor"
-// Import employee role specifications
-import { ROLE } from "@/config/entities/employee.config"
-import { usePermission } from "@/hooks/use-permission"
-// Import task property categories lists
 import {
   SPENT_TIME_STATUS,
   TASK_PRIORITIES,
@@ -36,30 +27,24 @@ import {
   TASK_TRACKERS,
   getSpentTimeStatusLabel,
 } from "@/config/entities/project.config"
-import {
-  SPENT_TIME_UI,
-  getSpentTimeStatusPillVariant,
-} from "@/config/rules/spent-time.config"
-// Import API endpoint wrapper clients
+import { SPENT_TIME_UI, getSpentTimeStatusPillVariant } from "@/config/rules/spent-time.config"
+import { usePermission } from "@/hooks/use-permission"
+import { projectTaskStatusApi } from "@/lib/api/project-task-status.api"
 import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
-import { projectTaskStatusApi } from "@/lib/api/project-task-status.api"
-// Import authorization store
 import { useAuthStore } from "@/store/auth-store"
-// Import Spent Time log type structure
-import type { SpentTime } from "@/types/spent-time.types"
-// Import task types
-import type { TaskTracker, TaskPriority } from "@/types/task.types"
 import type { ProjectTaskStatus } from "@/types/project-task-status.types"
-// Import React Query hooks for fetching and mutations
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-// Import toast notification client
-import { toast } from "sonner"
+import type { SpentTime } from "@/types/spent-time.types"
+import type { TaskPriority, TaskTracker } from "@/types/task.types"
 import { extractErrorMessage } from "@/utils/error-helper"
-// Import Lucide icons
+
+import { useEffect, useState } from "react"
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   AlertCircle,
   Calendar,
+  Check,
   Clock,
   Edit,
   Folder,
@@ -67,14 +52,14 @@ import {
   Plus,
   Trash2,
   User,
-  Check,
   X,
 } from "lucide-react"
-// Import standard React hooks
-import { useState, useEffect } from "react"
-// Import routing navigation
 import { Link, useNavigate, useParams } from "react-router-dom"
+import { toast } from "sonner"
 
+/**
+ * Helper function for cleanHtml.
+ */
 const cleanHtml = (html: string) => {
   if (!html) return null
   let insideTag = false
@@ -93,12 +78,15 @@ const cleanHtml = (html: string) => {
 }
 
 // Main component to render task detailed specifications
+/**
+ * TaskDetail Component.
+ */
 export default function TaskDetail() {
   // Initialize query client, route navigation, and auth store
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const { roles } = usePermission()
+  const { hasAnyPermission } = usePermission()
 
   // Extract task ID from URL parameters
   const { id: taskId } = useParams<{ id: string }>()
@@ -148,7 +136,6 @@ export default function TaskDetail() {
     enabled: !!id,
   })
 
-
   // Capture project ID associated with this task
   const projectId = task?.projectId || ""
 
@@ -187,7 +174,6 @@ export default function TaskDetail() {
     enabled: !!projectId,
   })
 
-
   // Query hook to fetch project custom statuses
   const { data: statusesData } = useQuery({
     queryKey: ["project-statuses", projectId],
@@ -198,14 +184,15 @@ export default function TaskDetail() {
 
   // PT task totals exclude rejected logs; pending + approved count toward estimate cap
   const totalSpentHours =
-    spentTimes?.filter((st) => st.status !== SPENT_TIME_STATUS.REJECTED).reduce((sum, st) => sum + st.hours, 0) || 0
+    spentTimes
+      ?.filter((st) => st.status !== SPENT_TIME_STATUS.REJECTED)
+      .reduce((sum, st) => sum + st.hours, 0) || 0
 
   // Check roles/permissions
   const isCreator = task?.createdById === user?.id
   const isAssignee = task?.assigneeId === user?.id
   const isLeader = project?.teamLeaderId === user?.id
-  const isAdminOrGM =
-    !!user && [ROLE.ADMIN, ROLE.GENERAL_MANAGER].some((role) => roles.includes(role))
+  const isAdminOrGM = hasAnyPermission(["project.update", "project.task.approve"])
 
   // Who can edit this task: Admin/GM, TL, Creator, Assignee
   const canEditTask = isAdminOrGM || isLeader || isCreator || isAssignee
@@ -254,7 +241,8 @@ export default function TaskDetail() {
     onError: (err: unknown) => {
       let errorMessage = "Đã xảy ra lỗi"
       if (err && typeof err === "object" && "response" in err) {
-        const response = (err as { response?: { data?: { error?: { message?: string } } } }).response
+        const response = (err as { response?: { data?: { error?: { message?: string } } } })
+          .response
         if (response?.data?.error?.message) {
           errorMessage = response.data.error.message
         }
@@ -318,7 +306,10 @@ export default function TaskDetail() {
   const siblingTasks = siblingTasksData?.data || []
   const currentTaskIndex = siblingTasks.findIndex((t) => t.id === id)
   const prevTaskId = currentTaskIndex > 0 ? siblingTasks[currentTaskIndex - 1].id : null
-  const nextTaskId = currentTaskIndex < siblingTasks.length - 1 && currentTaskIndex !== -1 ? siblingTasks[currentTaskIndex + 1].id : null
+  const nextTaskId =
+    currentTaskIndex < siblingTasks.length - 1 && currentTaskIndex !== -1
+      ? siblingTasks[currentTaskIndex + 1].id
+      : null
 
   if (isLoadingTask) {
     return (
@@ -336,7 +327,14 @@ export default function TaskDetail() {
         <AlertCircle className="size-12 text-destructive mx-auto" />
         <h3 className="text-lg font-bold text-foreground">Không tìm thấy công việc</h3>
         <p className="text-sm text-muted-foreground">Công việc không tồn tại hoặc đã bị xóa.</p>
-        <Button onClick={() => { navigate(-1); }} className="rounded-full">Quay lại</Button>
+        <Button
+          onClick={() => {
+            navigate(-1)
+          }}
+          className="rounded-full"
+        >
+          Quay lại
+        </Button>
       </div>
     )
   }
@@ -352,8 +350,6 @@ export default function TaskDetail() {
     return status
   }
 
-
-
   const formatPriority = (priority: string) => {
     if (priority === "low") return "Thấp"
     if (priority === "medium") return "Trung bình"
@@ -364,8 +360,10 @@ export default function TaskDetail() {
 
   const getPriorityColor = (priority: string) => {
     if (priority === "urgent") return "bg-destructive/10 text-destructive border-destructive/20"
-    if (priority === "high") return "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-500"
-    if (priority === "medium") return "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400"
+    if (priority === "high")
+      return "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-500"
+    if (priority === "medium")
+      return "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400"
     return "bg-secondary text-secondary-foreground"
   }
 
@@ -385,12 +383,18 @@ export default function TaskDetail() {
         <div>
           <div className="flex flex-wrap items-center justify-between gap-4 w-full md:min-w-[450px]">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Link to="/project/list" className="hover:text-primary transition-colors flex items-center gap-1">
+              <Link
+                to="/project/list"
+                className="hover:text-primary transition-colors flex items-center gap-1"
+              >
                 <Folder className="size-3.5" />
                 Dự án
               </Link>
               <span>/</span>
-              <Link to="/project/overview" className="hover:text-primary transition-colors font-semibold">
+              <Link
+                to="/project/overview"
+                className="hover:text-primary transition-colors font-semibold"
+              >
                 {task.project?.name || "Chi tiết dự án"}
               </Link>
               <span>/</span>
@@ -433,7 +437,10 @@ export default function TaskDetail() {
           </div>
 
           <div className="flex items-center gap-2 mt-2">
-            <Badge variant="outline" className="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200">
+            <Badge
+              variant="outline"
+              className="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
+            >
               {task.tracker}
             </Badge>
             <h1 className="text-xl font-bold text-foreground">{task.title}</h1>
@@ -489,21 +496,31 @@ export default function TaskDetail() {
               <div className="flex justify-between border-b border-border/40 pb-2">
                 <span className="font-medium text-muted-foreground">Trạng thái:</span>
                 {(() => {
-                  const customStatus = statuses.find((s: ProjectTaskStatus) => s.id === task.statusId)
+                  const customStatus = statuses.find(
+                    (s: ProjectTaskStatus) => s.id === task.statusId,
+                  )
                   const label = customStatus ? customStatus.name : formatStatus(task.status)
-                  const isCompleted = customStatus ? customStatus.isCompleted : (task.status === TASK_STATUS.DONE || task.status === TASK_STATUS.CANCELLED)
-                  const variant = isCompleted ? "success" : (customStatus?.name.toLowerCase().includes("progress") ? "warning" : "info")
+                  const isCompleted = customStatus
+                    ? customStatus.isCompleted
+                    : task.status === TASK_STATUS.DONE || task.status === TASK_STATUS.CANCELLED
+                  const variant = isCompleted
+                    ? "success"
+                    : customStatus?.name.toLowerCase().includes("progress")
+                      ? "warning"
+                      : "info"
                   return <StatusPill label={label} variant={variant} />
                 })()}
               </div>
 
               <div className="flex justify-between border-b border-border/40 pb-2">
                 <span className="font-medium text-muted-foreground">Độ ưu tiên:</span>
-                <Badge variant="outline" className={`rounded-full text-[10px] ${getPriorityColor(task.priority)}`}>
+                <Badge
+                  variant="outline"
+                  className={`rounded-full text-[10px] ${getPriorityColor(task.priority)}`}
+                >
                   {formatPriority(task.priority)}
                 </Badge>
               </div>
-
 
               <div className="flex justify-between border-b border-border/40 pb-2">
                 <span className="font-medium text-muted-foreground">Người thực hiện:</span>
@@ -570,12 +587,14 @@ export default function TaskDetail() {
               Mô tả chi tiết
             </h3>
             {task.description ? (
-              <SafeHtml 
+              <SafeHtml
                 content={task.description}
                 className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground leading-relaxed"
               />
             ) : (
-              <p className="text-xs text-muted-foreground italic">Không có mô tả chi tiết cho công việc này.</p>
+              <p className="text-xs text-muted-foreground italic">
+                Không có mô tả chi tiết cho công việc này.
+              </p>
             )}
           </PageCard>
 
@@ -588,8 +607,10 @@ export default function TaskDetail() {
               </h3>
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <span className="text-xs font-semibold text-muted-foreground">Ghi chú kết quả:</span>
-                  <SafeHtml 
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    Ghi chú kết quả:
+                  </span>
+                  <SafeHtml
                     content={task.resultNotes}
                     className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground leading-relaxed bg-muted/30 p-3 rounded-lg border border-border/40"
                   />
@@ -652,7 +673,10 @@ export default function TaskDetail() {
                             className="text-[9px] px-2 py-0"
                             label={getSpentTimeStatusLabel(st.status)}
                           />
-                          <Badge variant="outline" className="rounded-full text-[9px] bg-primary/5 text-primary border-primary/10 font-black">
+                          <Badge
+                            variant="outline"
+                            className="rounded-full text-[9px] bg-primary/5 text-primary border-primary/10 font-black"
+                          >
                             {st.hours} {SPENT_TIME_UI.TASK_HOURS_BADGE_SUFFIX}
                           </Badge>
 
@@ -679,7 +703,10 @@ export default function TaskDetail() {
                                 onClick={() => {
                                   const reason = window.prompt(SPENT_TIME_UI.REJECT_REASON_PROMPT)
                                   if (reason?.trim()) {
-                                    rejectSpentTimeMutation.mutate({ logId: st.id, reason: reason.trim() })
+                                    rejectSpentTimeMutation.mutate({
+                                      logId: st.id,
+                                      reason: reason.trim(),
+                                    })
                                   }
                                 }}
                               >
@@ -759,7 +786,9 @@ export default function TaskDetail() {
       <Dialog open={isOpenEditModal} onOpenChange={setIsOpenEditModal}>
         <DialogContent className="sm:max-w-[650px] rounded-xl bg-background border-border p-6 shadow-lg">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-foreground">Chỉnh sửa công việc</DialogTitle>
+            <DialogTitle className="text-lg font-bold text-foreground">
+              Chỉnh sửa công việc
+            </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
               Cập nhật các thông tin chi tiết và tiến độ cho công việc này.
             </DialogDescription>
@@ -794,7 +823,9 @@ export default function TaskDetail() {
               <Input
                 id="editTitle"
                 value={taskTitle}
-                onChange={(e) => { setTaskTitle(e.target.value); }}
+                onChange={(e) => {
+                  setTaskTitle(e.target.value)
+                }}
                 className="h-10 text-sm border-border rounded-full px-4"
                 required
               />
@@ -813,11 +844,17 @@ export default function TaskDetail() {
 
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="editTracker" className="text-xs font-semibold text-muted-foreground">
+                <Label
+                  htmlFor="editTracker"
+                  className="text-xs font-semibold text-muted-foreground"
+                >
                   Tracker
                 </Label>
                 <Select value={taskTracker} onValueChange={setTaskTracker}>
-                  <SelectTrigger id="editTracker" className="w-full h-10 border-border rounded-full px-4 bg-background">
+                  <SelectTrigger
+                    id="editTracker"
+                    className="w-full h-10 border-border rounded-full px-4 bg-background"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent position="popper" className="rounded-xl border-border bg-popover">
@@ -831,11 +868,17 @@ export default function TaskDetail() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="editPriority" className="text-xs font-semibold text-muted-foreground">
+                <Label
+                  htmlFor="editPriority"
+                  className="text-xs font-semibold text-muted-foreground"
+                >
                   Độ ưu tiên
                 </Label>
                 <Select value={taskPriority} onValueChange={setTaskPriority}>
-                  <SelectTrigger id="editPriority" className="w-full h-10 border-border rounded-full px-4 bg-background">
+                  <SelectTrigger
+                    id="editPriority"
+                    className="w-full h-10 border-border rounded-full px-4 bg-background"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent position="popper" className="rounded-xl border-border bg-popover">
@@ -853,14 +896,20 @@ export default function TaskDetail() {
                   Trạng thái
                 </Label>
                 <Select value={taskStatusId} onValueChange={setTaskStatusId}>
-                  <SelectTrigger id="editStatus" className="w-full h-10 border-border rounded-full px-4 bg-background">
+                  <SelectTrigger
+                    id="editStatus"
+                    className="w-full h-10 border-border rounded-full px-4 bg-background"
+                  >
                     <SelectValue placeholder="Chọn trạng thái..." />
                   </SelectTrigger>
                   <SelectContent position="popper" className="rounded-xl border-border bg-popover">
                     {statuses.map((st: ProjectTaskStatus) => (
                       <SelectItem key={st.id} value={st.id} className="rounded-lg">
                         <span className="flex items-center gap-2">
-                          <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: st.color }} />
+                          <span
+                            className="size-2 rounded-full shrink-0"
+                            style={{ backgroundColor: st.color }}
+                          />
                           {st.name} {st.isDefault && " (Mặc định)"}
                         </span>
                       </SelectItem>
@@ -872,15 +921,23 @@ export default function TaskDetail() {
 
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="editAssignee" className="text-xs font-semibold text-muted-foreground">
+                <Label
+                  htmlFor="editAssignee"
+                  className="text-xs font-semibold text-muted-foreground"
+                >
                   Người thực hiện (Assignee)
                 </Label>
                 <Select value={taskAssignee} onValueChange={setTaskAssignee}>
-                  <SelectTrigger id="editAssignee" className="w-full h-10 border-border rounded-full px-4 bg-background">
+                  <SelectTrigger
+                    id="editAssignee"
+                    className="w-full h-10 border-border rounded-full px-4 bg-background"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent position="popper" className="rounded-xl border-border bg-popover">
-                    <SelectItem value="none" className="rounded-lg">Không phân công</SelectItem>
+                    <SelectItem value="none" className="rounded-lg">
+                      Không phân công
+                    </SelectItem>
                     {members?.map((m) => (
                       <SelectItem key={m.id} value={m.employeeId} className="rounded-lg">
                         {m.employee?.fullName || "Chưa rõ"}
@@ -890,9 +947,11 @@ export default function TaskDetail() {
                 </Select>
               </div>
 
-
               <div className="space-y-1.5">
-                <Label htmlFor="editProgress" className="text-xs font-semibold text-muted-foreground">
+                <Label
+                  htmlFor="editProgress"
+                  className="text-xs font-semibold text-muted-foreground"
+                >
                   Tiến độ (% Done)
                 </Label>
                 <Input
@@ -901,7 +960,9 @@ export default function TaskDetail() {
                   min="0"
                   max="100"
                   value={taskProgress}
-                  onChange={(e) => { setTaskProgress(Number(e.target.value)); }}
+                  onChange={(e) => {
+                    setTaskProgress(Number(e.target.value))
+                  }}
                   className="h-10 text-sm border-border rounded-full px-4"
                   required
                 />
@@ -917,7 +978,9 @@ export default function TaskDetail() {
                   id="editStart"
                   type="date"
                   value={taskStart}
-                  onChange={(e) => { setTaskStart(e.target.value); }}
+                  onChange={(e) => {
+                    setTaskStart(e.target.value)
+                  }}
                   className="h-10 text-sm border-border rounded-full px-4"
                 />
               </div>
@@ -930,13 +993,18 @@ export default function TaskDetail() {
                   id="editDue"
                   type="date"
                   value={taskDue}
-                  onChange={(e) => { setTaskDue(e.target.value); }}
+                  onChange={(e) => {
+                    setTaskDue(e.target.value)
+                  }}
                   className="h-10 text-sm border-border rounded-full px-4"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="editEstimate" className="text-xs font-semibold text-muted-foreground">
+                <Label
+                  htmlFor="editEstimate"
+                  className="text-xs font-semibold text-muted-foreground"
+                >
                   Ước tính (Giờ)
                 </Label>
                 <Input
@@ -945,7 +1013,9 @@ export default function TaskDetail() {
                   step="0.5"
                   min="0"
                   value={taskEstimate}
-                  onChange={(e) => { setTaskEstimate(e.target.value); }}
+                  onChange={(e) => {
+                    setTaskEstimate(e.target.value)
+                  }}
                   className="h-10 text-sm border-border rounded-full px-4"
                 />
               </div>
@@ -955,7 +1025,10 @@ export default function TaskDetail() {
               <div className="text-xs font-bold text-foreground">Kết quả công việc</div>
               <div className="grid grid-cols-1 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="editResultNotes" className="text-xs font-semibold text-muted-foreground">
+                  <Label
+                    htmlFor="editResultNotes"
+                    className="text-xs font-semibold text-muted-foreground"
+                  >
                     Ghi chú kết quả (resultNotes)
                   </Label>
                   <RichTextEditor
@@ -966,7 +1039,8 @@ export default function TaskDetail() {
                 </div>
               </div>
               <div className="text-[10px] text-muted-foreground italic">
-                * Lưu ý: Bắt buộc điền ghi chú kết quả khi gửi yêu cầu đánh giá công việc (in_review).
+                * Lưu ý: Bắt buộc điền ghi chú kết quả khi gửi yêu cầu đánh giá công việc
+                (in_review).
               </div>
             </div>
 
@@ -974,7 +1048,9 @@ export default function TaskDetail() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => { setIsOpenEditModal(false); }}
+                onClick={() => {
+                  setIsOpenEditModal(false)
+                }}
                 className="h-10 rounded-full px-5 text-sm"
                 disabled={updateMutation.isPending}
               >
@@ -994,4 +1070,3 @@ export default function TaskDetail() {
     </div>
   )
 }
-

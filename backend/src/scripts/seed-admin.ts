@@ -1,8 +1,7 @@
-import { SYSTEM_ROLE } from "../configs/entities/employee.config.ts"
 import { EMPLOYEE_TYPE } from "../configs/entities/employee.config.ts"
 import { prisma } from "../libs/database.ts"
-import { getSeedPassword } from "./seeders/seed-password.util.ts"
 import { HashUtil } from "../utils/hash.util.ts"
+import { getSeedPassword } from "./seeders/seed-password.util.ts"
 
 const PASSWORD = getSeedPassword("SEED_CORE_ACCOUNTS_PASSWORD")
 
@@ -13,15 +12,15 @@ async function seedAdminAccounts() {
     const passwordHash = await HashUtil.hash(PASSWORD)
 
     const rolesToSeed = [
-      SYSTEM_ROLE.ADMIN,
-      SYSTEM_ROLE.HR_MANAGER,
-      SYSTEM_ROLE.GENERAL_MANAGER,
-      SYSTEM_ROLE.TEAM_LEADER,
-      SYSTEM_ROLE.EMPLOYEE,
+      "admin",
+      "hr_manager",
+      "general_manager",
+      "team_leader",
+      "employee",
     ]
 
     for (const role of rolesToSeed) {
-      const username = role === SYSTEM_ROLE.ADMIN ? SYSTEM_ROLE.ADMIN : role
+      const username = role === "admin" ? "admin" : role
       const fullName = role
         .split("_")
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -32,11 +31,11 @@ async function seedAdminAccounts() {
       })
 
       let phoneSuffix = "0"
-      if (role === SYSTEM_ROLE.ADMIN) phoneSuffix = "1"
-      else if (role === SYSTEM_ROLE.HR_MANAGER) phoneSuffix = "2"
-      else if (role === SYSTEM_ROLE.GENERAL_MANAGER) phoneSuffix = "3"
-      else if (role === SYSTEM_ROLE.TEAM_LEADER) phoneSuffix = "4"
-      else if (role === SYSTEM_ROLE.EMPLOYEE) phoneSuffix = "5"
+      if (role === "admin") phoneSuffix = "1"
+      else if (role === "hr_manager") phoneSuffix = "2"
+      else if (role === "general_manager") phoneSuffix = "3"
+      else if (role === "team_leader") phoneSuffix = "4"
+      else if (role === "employee") phoneSuffix = "5"
 
       const data = {
         username,
@@ -64,11 +63,13 @@ async function seedAdminAccounts() {
 
     const partTimeUsername = "part_time"
     // Demo / E2E account — employeeType part_time, not full-time shift model.
-    const partTimeExisting = await prisma.employee.findFirst({ where: { username: partTimeUsername } })
+    const partTimeExisting = await prisma.employee.findFirst({
+      where: { username: partTimeUsername },
+    })
     const partTimeData = {
       username: partTimeUsername,
       passwordHash,
-      role: SYSTEM_ROLE.EMPLOYEE,
+      role: "employee",
       employeeType: EMPLOYEE_TYPE.PART_TIME,
       fullName: "Part Time User",
       email: "part_time@example.com",

@@ -8,6 +8,7 @@ export const createRoleSchema = z
   .object({
     name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name too long").trim(),
     description: z.string().max(255, "Description too long").optional().nullable(),
+    isDefault: z.boolean().optional(),
   })
   .strict()
 
@@ -21,6 +22,7 @@ export const updateRoleSchema = z
     name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name too long").trim().optional(),
     description: z.string().max(255, "Description too long").optional().nullable(),
     isActive: z.boolean().optional(),
+    isDefault: z.boolean().optional(),
   })
   .strict()
 

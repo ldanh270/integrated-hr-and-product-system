@@ -33,6 +33,7 @@ import {
   Search,
   Trash2,
   User,
+  Unlock,
 } from "lucide-react"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -40,7 +41,7 @@ import {
 /**
  * Valid identifiers for active filter tabs on the dashboard page.
  */
-type ActiveTab = "all" | EmployeeType | typeof EMPLOYEE_STATUS.TERMINATED
+type ActiveTab = "all" | EmployeeType | typeof EMPLOYEE_STATUS.TERMINATED | "locked"
 
 /**
  * Tab definition model representing dashboard filter criteria.
@@ -62,6 +63,7 @@ const TAB_DEFINITIONS: TabDefinition[] = [
   { id: EMPLOYEE_TYPES[1], label: EMPLOYEE_TYPE_LABELS[EMPLOYEE_TYPES[1]] },
   { id: EMPLOYEE_TYPES[3], label: EMPLOYEE_TYPE_LABELS[EMPLOYEE_TYPES[3]] },
   { id: EMPLOYEE_TYPES[2], label: EMPLOYEE_TYPE_LABELS[EMPLOYEE_TYPES[2]] },
+  { id: "locked", label: "Bị khóa", separator: true },
   { id: EMPLOYEE_STATUS.TERMINATED, label: "Đã nghỉ việc", separator: true },
 ]
 
@@ -106,6 +108,7 @@ export default function EmployeeList() {
     handleTabChange,
     handleDelete,
     handleReinstate,
+    handleUnlock,
     isAdminOrManager,
   } = useEmployeeMaster()
 
@@ -322,6 +325,19 @@ export default function EmployeeList() {
                         <DropdownMenuContent align="end" className="w-44">
                           {isAdminOrManager && (
                             <>
+                              {employee.lockedUntil && new Date(employee.lockedUntil) > new Date() && (
+                                <>
+                                  <DropdownMenuItem
+                                    onClick={() => handleUnlock(employee.id)}
+                                    className="cursor-pointer gap-2 text-amber-600 focus:text-amber-700 focus:bg-amber-50 dark:text-amber-400 dark:focus:text-amber-300 dark:focus:bg-amber-950/30"
+                                  >
+                                    <Unlock size={13} />
+                                    Mở khóa tài khoản
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                </>
+                              )}
+
                               {employee.status !== EMPLOYEE_STATUS.TERMINATED && (
                                 <>
                                   <DropdownMenuItem
