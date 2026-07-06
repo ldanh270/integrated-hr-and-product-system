@@ -11,6 +11,7 @@ import attendanceRoutes from "@/routes/attendance.route.ts"
 import auditRoutes from "@/routes/audit.route.ts"
 import authRoutes from "@/routes/auth.route.ts"
 import customQueryRoutes from "@/routes/custom-query.route.ts"
+import debugRoutes from "@/routes/debug.route.ts"
 import employeeSalaryConfigRoutes from "@/routes/employee-salary-config.route.ts"
 import employeeRoutes from "@/routes/employee.route.ts"
 import holidayRoutes from "@/routes/holiday.route.ts"
@@ -88,6 +89,7 @@ app.use("/api/roles", roleRoutes)
 app.use("/api", auditRoutes)
 app.use("/api/spent-times", spentTimeRoutes)
 app.use("/api/custom-queries", customQueryRoutes)
+app.use("/api/debug", debugRoutes)
 
 // 404 handler
 app.use((req, res) => {
