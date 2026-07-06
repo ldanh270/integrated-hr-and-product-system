@@ -35,37 +35,60 @@ async function hydrateContext(context: SeedContext): Promise<SeedContext> {
 }
 
 async function shouldSkipSeederInternal(name: string): Promise<boolean> {
-  try {
-    switch (name) {
-      case "WorkingShifts":
-        return (await prisma.workingShift.count()) > 0
-      case "HolidayCalendars":
-        return (await prisma.holidayCalendar.count()) > 0
-      case "ShiftSchedules":
-        return (await prisma.shiftSchedule.count()) >= (await prisma.employee.count())
-      case "EmployeeShifts":
-        return (await prisma.employeeShift.count()) > 0
-      case "AttendanceRecords":
-        return (await prisma.attendanceRecord.count()) > 0
-      case "Projects":
-        return (await prisma.project.count()) > 0
-      case "Applications":
-        return (await prisma.application.count()) > 0
-      case "Tasks":
-        return (await prisma.task.count()) > 0
-      case "SpentTimes":
-        return (await prisma.spentTime.count()) > 0
-      default:
-        return false
+  let count = 0
+
+  switch (name) {
+    case "WorkingShifts":
+      count = await prisma.workingShift.count()
+      return count > 0
+
+    case "HolidayCalendars":
+      count = await prisma.holidayCalendar.count()
+      return count > 0
+
+    case "ShiftSchedules": {
+      const shiftScheduleCount = await prisma.shiftSchedule.count()
+      const employeeCount = await prisma.employee.count()
+
+      return shiftScheduleCount >= employeeCount
     }
+
+    case "EmployeeShifts":
+      count = await prisma.employeeShift.count()
+      return count > 0
+
+    case "AttendanceRecords":
+      count = await prisma.attendanceRecord.count()
+      return count > 0
+
+    case "Projects":
+      count = await prisma.project.count()
+      return count > 0
+
+    case "Applications":
+      count = await prisma.application.count()
+      return count > 0
+
+    case "Tasks":
+      count = await prisma.task.count()
+      return count > 0
+
+    case "SpentTimes":
+      count = await prisma.spentTime.count()
+      return count > 0
+
+    default:
+      return false
+  }
+}
+
+async function shouldSkipSeeder(name: string): Promise<boolean> {
+  try {
+    return await shouldSkipSeederInternal(name)
   } catch (error: unknown) {
     console.error(`Failed to evaluate skip state for ${name}:`, error)
     return false
   }
-}
-
-function shouldSkipSeeder(name: string): Promise<boolean> {
-  return shouldSkipSeederInternal(name)
 }
 
 async function main(): Promise<void> {
