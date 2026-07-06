@@ -9,7 +9,8 @@ import {
   getEmployeeStatusLabel,
   getEmployeeTypeLabel,
   getRoleLabel,
-  getWorkScheduleTypeLabel,
+  WORK_SCHEDULE_TYPE,
+  WORK_SCHEDULE_TYPE_LABELS,
   WORK_SCHEDULE_TYPES,
 } from "@/config/entities/employee.config"
 import { useEmployeeCreateModal } from "@/hooks/employees/useEmployeeCreateModal"
@@ -318,7 +319,9 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                   >
                     {WORK_SCHEDULE_TYPES.map((typeKey) => (
                       <option key={typeKey} value={typeKey}>
-                        {getWorkScheduleTypeLabel(typeKey)}
+                        {typeKey === WORK_SCHEDULE_TYPE.FULL_TIME
+                          ? WORK_SCHEDULE_TYPE_LABELS.full_time
+                          : WORK_SCHEDULE_TYPE_LABELS.part_time}
                       </option>
                     ))}
                   </select>

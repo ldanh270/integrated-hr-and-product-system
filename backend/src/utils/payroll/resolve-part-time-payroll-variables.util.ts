@@ -16,25 +16,23 @@ export interface PartTimePayrollContext {
 }
 
 function readOptionalNumber(value: number | undefined, fallback: number): number {
-  if (typeof value !== "number") {
-    return fallback
-  }
-
-  if (Number.isNaN(value)) {
+  if (value === undefined || Number.isNaN(value)) {
     return fallback
   }
 
   return value
 }
 
-/** Maps SalaryVariable rows to typed PT payroll inputs (avoids dynamic Record indexing). */
+/** Maps SalaryVariable rows to typed PT payroll inputs via Map lookup (no dynamic object indexing). */
 export function pickPartTimePayrollContext(
   variables: Record<string, number>,
 ): PartTimePayrollContext {
+  const variableMap = new Map<string, number>(Object.entries(variables))
+
   return {
-    partTimeOvertimeMultiplier: variables[PART_TIME_PAYROLL_VARIABLE.OVERTIME_MULTIPLIER],
-    partTimeWorkingDayMultiplier: variables[PART_TIME_PAYROLL_VARIABLE.WORKING_DAY_MULTIPLIER],
-    partTimeDefaultHourlyRate: variables[PART_TIME_PAYROLL_VARIABLE.DEFAULT_HOURLY_RATE],
+    partTimeOvertimeMultiplier: variableMap.get(PART_TIME_PAYROLL_VARIABLE.OVERTIME_MULTIPLIER),
+    partTimeWorkingDayMultiplier: variableMap.get(PART_TIME_PAYROLL_VARIABLE.WORKING_DAY_MULTIPLIER),
+    partTimeDefaultHourlyRate: variableMap.get(PART_TIME_PAYROLL_VARIABLE.DEFAULT_HOURLY_RATE),
   }
 }
 

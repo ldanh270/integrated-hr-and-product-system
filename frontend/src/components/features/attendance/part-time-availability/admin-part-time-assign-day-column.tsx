@@ -259,7 +259,9 @@ export function AdminPartTimeAssignDayColumn({
                             onChange={function handleStartTimeChange(event) {
                               updateSlot(index, { startTime: event.target.value || null })
                             }}
-                            onBlur={() => { notifySlotValidation(assignment.slots[index] ?? slot); }}
+                            onBlur={function handleStartTimeBlur() {
+                              notifySlotValidation(slot)
+                            }}
                           />
                         </label>
                         <label className="flex items-center gap-1.5">
@@ -270,7 +272,7 @@ export function AdminPartTimeAssignDayColumn({
                             disabled={disabled}
                             className="availability-time-input flex h-8 w-full rounded-full border border-input/60 bg-background px-3 py-1 text-xs font-mono focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50 [color-scheme:light] dark:[color-scheme:dark]"
                             onChange={function handleEndTimeChange(event) {
-                              { updateSlot(index, { endTime: event.target.value || null }); }
+                              updateSlot(index, { endTime: event.target.value || null })
                             }}
                             onBlur={function handleEndTimeBlur() {
                               notifySlotValidation(slot)

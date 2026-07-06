@@ -51,26 +51,25 @@ export function validateAvailabilityDays(days: IUpsertPartTimeAvailabilityDTO["d
 
     const sorted = [...day.slots].sort((a, b) => a.startTime - b.startTime)
 
-    for (const slot of sorted) {
-      if (slot.startTime >= slot.endTime) {
+    let previousEndTime: number | null = null
+    for (const { startTime, endTime } of sorted) {
+      if (startTime >= endTime) {
         throw new AppError(
           PART_TIME_AVAILABILITY_MESSAGES.SLOT_INVALID_RANGE,
           HttpStatusCode.BAD_REQUEST,
           PART_TIME_AVAILABILITY_LAYERS.SERVICE,
         )
       }
-    }
 
-    let previousEndTime: number | null = null
-    for (const slot of sorted) {
-      if (previousEndTime !== null && slot.startTime < previousEndTime) {
+      if (previousEndTime !== null && startTime < previousEndTime) {
         throw new AppError(
           PART_TIME_AVAILABILITY_MESSAGES.SLOT_OVERLAP,
           HttpStatusCode.BAD_REQUEST,
           PART_TIME_AVAILABILITY_LAYERS.SERVICE,
         )
       }
-      previousEndTime = slot.endTime
+
+      previousEndTime = endTime
     }
   }
 }

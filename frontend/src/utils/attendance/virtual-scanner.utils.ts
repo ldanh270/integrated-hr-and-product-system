@@ -46,7 +46,11 @@ export function getScannerApiErrorMessage(error: unknown, fallback: string): str
 }
 
 export function buildTodayShiftInfo(scheduleShift?: Partial<IWorkingShift>): TodayShiftInfo | null {
-  if (!scheduleShift?.name || scheduleShift.startTime == null || scheduleShift.endTime == null) {
+  const shiftName = scheduleShift?.name
+  const startTime = scheduleShift?.startTime
+  const endTime = scheduleShift?.endTime
+
+  if (!shiftName || startTime == null || endTime == null) {
     return null
   }
 
@@ -56,10 +60,10 @@ export function buildTodayShiftInfo(scheduleShift?: Partial<IWorkingShift>): Tod
   const lng = scheduleShift.gpsLng
 
   return {
-    name: scheduleShift.name,
-    workWindow: `${minutesToDayTime(scheduleShift.startTime)} - ${minutesToDayTime(scheduleShift.endTime)}`,
-    checkInWindow: `${minutesToDayTime(scheduleShift.startTime - gracePeriod)} - ${minutesToDayTime(scheduleShift.startTime + gracePeriod)}`,
-    checkOutWindow: `${ATTENDANCE_MESSAGES.SCANNER.CHECK_OUT_FROM} ${minutesToDayTime(scheduleShift.endTime - gracePeriod)}`,
+    name: shiftName,
+    workWindow: `${minutesToDayTime(startTime)} - ${minutesToDayTime(endTime)}`,
+    checkInWindow: `${minutesToDayTime(startTime - gracePeriod)} - ${minutesToDayTime(startTime + gracePeriod)}`,
+    checkOutWindow: `${ATTENDANCE_MESSAGES.SCANNER.CHECK_OUT_FROM} ${minutesToDayTime(endTime - gracePeriod)}`,
     gpsLabel: buildScannerGpsLabel(radius, lat, lng),
   }
 }
