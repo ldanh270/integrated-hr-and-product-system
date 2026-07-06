@@ -9,9 +9,17 @@ import { ApiResponse, IProjectRoleService, ProjectRole } from "@/types"
 import { Response } from "express"
 import { z } from "zod"
 
+/**
+ * Controller handling HTTP requests for project-scoped member roles.
+ */
 export class ProjectRoleController {
   constructor(private service: IProjectRoleService) {}
 
+  /**
+   * Lists all roles for a given project.
+   * @param req - Express auth request containing projectId param.
+   * @param res - Express response containing the array of project roles.
+   */
   list = async (req: AuthRequest, res: Response<ApiResponse<ProjectRole[]>>) => {
     try {
       if (!req.user) {
@@ -39,6 +47,11 @@ export class ProjectRoleController {
     }
   }
 
+  /**
+   * Creates a new custom project role.
+   * @param req - Express auth request with role details in body and projectId in params.
+   * @param res - Express response containing the created project role.
+   */
   create = async (req: AuthRequest, res: Response<ApiResponse<ProjectRole>>) => {
     try {
       if (!req.user) {
@@ -67,6 +80,11 @@ export class ProjectRoleController {
     }
   }
 
+  /**
+   * Updates an existing custom project role.
+   * @param req - Express auth request with updated role details in body.
+   * @param res - Express response containing the updated project role.
+   */
   update = async (req: AuthRequest, res: Response<ApiResponse<ProjectRole>>) => {
     try {
       if (!req.user) {
@@ -101,6 +119,11 @@ export class ProjectRoleController {
     }
   }
 
+  /**
+   * Deletes a custom project role.
+   * @param req - Express auth request with role id and projectId.
+   * @param res - Express response with empty content (204).
+   */
   delete = async (req: AuthRequest, res: Response<ApiResponse<void>>) => {
     try {
       if (!req.user) {

@@ -2,6 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { positionApi } from "@/lib/api/position.api"
 import type { UpdatePositionDto, ProjectPositionRuleDto } from "@/lib/api/position.api"
 
+/**
+ * Key definitions for caching position queries.
+ */
 const positionKeys = {
   all: ["positions"] as const,
   lists: () => [...positionKeys.all, "list"] as const,
@@ -11,6 +14,9 @@ const positionKeys = {
   projectRules: (projectId: string) => [...positionKeys.projectRulesAll(), projectId] as const,
 }
 
+/**
+ * Hook to retrieve all positions list.
+ */
 export function usePositions() {
   return useQuery({
     queryKey: positionKeys.lists(),
@@ -18,6 +24,10 @@ export function usePositions() {
   })
 }
 
+/**
+ * Hook to retrieve a single position details.
+ * @param id - Position ID.
+ */
 export function usePosition(id: string) {
   return useQuery({
     queryKey: positionKeys.detail(id),
@@ -26,6 +36,9 @@ export function usePosition(id: string) {
   })
 }
 
+/**
+ * Hook to create a new position.
+ */
 export function useCreatePosition() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -36,6 +49,9 @@ export function useCreatePosition() {
   })
 }
 
+/**
+ * Hook to update an existing position.
+ */
 export function useUpdatePosition() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -47,6 +63,9 @@ export function useUpdatePosition() {
   })
 }
 
+/**
+ * Hook to delete a position.
+ */
 export function useDeletePosition() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -57,6 +76,10 @@ export function useDeletePosition() {
   })
 }
 
+/**
+ * Hook to fetch allowed task trackers rules for all positions in a project.
+ * @param projectId - Project ID.
+ */
 export function useProjectPositionRules(projectId: string) {
   return useQuery({
     queryKey: positionKeys.projectRules(projectId),
@@ -65,6 +88,9 @@ export function useProjectPositionRules(projectId: string) {
   })
 }
 
+/**
+ * Hook to batch save position allowed task trackers project rules.
+ */
 export function useSaveProjectPositionRules() {
   const queryClient = useQueryClient()
   return useMutation({

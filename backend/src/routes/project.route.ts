@@ -13,6 +13,11 @@ import { ProjectTaskStatusService } from "@/services/project-task-status.service
 import { ProjectTrackerService } from "@/services/project-tracker.service.ts"
 import express from "express"
 
+/**
+ * Router configuration for projects, project member mappings, gantt data,
+ * task statuses (Kanban columns), project-scoped task trackers, and roles.
+ * Constructor injection wires repositories and services into controllers.
+ */
 const projectRoutes = express.Router()
 const employeeRepository = new PrismaEmployeeRepository(prisma)
 const repository = new PrismaProjectRepository(prisma)

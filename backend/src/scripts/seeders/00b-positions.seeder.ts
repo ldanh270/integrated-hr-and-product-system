@@ -3,10 +3,18 @@ import { SeedContext } from "@/scripts/seeders/seed-context.ts"
 import { ISeeder } from "@/scripts/seeders/seeder.interface.ts"
 import { registry } from "@/scripts/seeders/seeder.registry.ts"
 
+/**
+ * Seeder to pre-populate default system positions in the database.
+ */
 export class PositionsSeeder implements ISeeder {
   readonly name = "Positions"
   readonly order = 0.5
 
+  /**
+   * Runs the seeder logic to create standard roles/positions if they do not exist.
+   * @param context - The shared seed context database.
+   * @returns Updated context object.
+   */
   async run(context: SeedContext): Promise<Partial<SeedContext>> {
     console.log("  Seeding Positions...")
     const positionsData = [

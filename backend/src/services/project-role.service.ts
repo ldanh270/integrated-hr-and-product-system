@@ -11,12 +11,20 @@ import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { PROJECT_ROLE } from "@/configs/entities/project.config.ts"
 
+/**
+ * Service implementing business logic for project-scoped member roles.
+ */
 export class ProjectRoleService implements IProjectRoleService {
   constructor(
     private repository: IProjectRoleRepository,
     private projectRepository: IProjectRepository
   ) {}
 
+  /**
+   * Helper to slugify a string for unique role code identification.
+   * @param str - The input string.
+   * @returns Slugified code.
+   */
   private generateSlug(str: string): string {
     let slug = str.toLowerCase();
     const from = "àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ";
@@ -34,6 +42,12 @@ export class ProjectRoleService implements IProjectRoleService {
       .replace(/^-+|-+$/g, "");    // trim leading/trailing dashes
   }
 
+  /**
+   * Lists all roles configured in a project. Automatically seeds default roles
+   * if the role set is currently empty for that project.
+   * @param projectId - Project ID.
+   * @returns Array of project roles.
+   */
   async list(projectId: string): Promise<ProjectRole[]> {
     const project = await this.projectRepository.findById(projectId)
     if (!project) {
@@ -58,6 +72,12 @@ export class ProjectRoleService implements IProjectRoleService {
     return list
   }
 
+  /**
+   * Creates a new custom project role.
+   * @param projectId - Project ID.
+   * @param data - Role details.
+   * @returns The created role.
+   */
   async create(projectId: string, data: CreateProjectRoleDto): Promise<ProjectRole> {
     const project = await this.projectRepository.findById(projectId)
     if (!project) {
@@ -78,6 +98,13 @@ export class ProjectRoleService implements IProjectRoleService {
     })
   }
 
+  /**
+   * Updates an existing custom project role.
+   * @param projectId - Project ID.
+   * @param id - Role ID.
+   * @param data - Updated details.
+   * @returns The updated role or null.
+   */
   async update(projectId: string, id: string, data: UpdateProjectRoleDto): Promise<ProjectRole | null> {
     const role = await this.repository.findById(id)
     if (!role || role.projectId !== projectId) {
@@ -100,6 +127,11 @@ export class ProjectRoleService implements IProjectRoleService {
     })
   }
 
+  /**
+   * Deletes a custom project role. Protects the default Leader role from being deleted.
+   * @param projectId - Project ID.
+   * @param id - Role ID.
+   */
   async delete(projectId: string, id: string): Promise<void> {
     const role = await this.repository.findById(id)
     if (!role || role.projectId !== projectId) {

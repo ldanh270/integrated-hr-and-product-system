@@ -29,6 +29,11 @@ const TRACKER_LABELS: Record<string, string> = {
   management: "Management (Quản lý)",
 }
 
+/**
+ * Component for administering organizational Positions.
+ * Provides a management panel for administrators to list, create, update,
+ * and delete positions, including configuring the globally allowed task trackers per position.
+ */
 export default function PositionsManagement() {
   const { data: positions = [], isLoading, refetch } = usePositions()
   const createMutation = useCreatePosition()

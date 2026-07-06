@@ -31,6 +31,11 @@ interface UseProjectGanttProps {
   project: Project
 }
 
+/**
+ * Hook to manage Gantt chart states: timeline calculations, zoom levels, filters,
+ * custom query saves/deletes, task date mutations, and task updates.
+ * Implements persistent state syncing with react-router-dom searchParams.
+ */
 export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   const queryClient = useQueryClient()
   const { user } = useAuthStore()

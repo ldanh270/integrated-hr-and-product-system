@@ -1,3 +1,4 @@
+-- Migration: Initialize Dynamic Positions and Position Rules tables, and link Position to Employee
 -- AlterTable
 ALTER TABLE "Employee" ADD COLUMN     "positionId" TEXT;
 

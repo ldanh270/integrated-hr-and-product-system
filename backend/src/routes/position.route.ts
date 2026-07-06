@@ -8,6 +8,10 @@ import { PrismaProjectRepository } from "@/repositories/project.repository.ts"
 import { PositionService } from "@/services/position.service.ts"
 import express from "express"
 
+/**
+ * Routes config for Positions and Position Rules.
+ * Constructor injects Prisma repositories into PositionService and PositionController.
+ */
 const positionRoutes = express.Router()
 
 // Wire dependencies via Constructor Injection

@@ -62,7 +62,12 @@ const TRACKER_LIST = [
   { key: "management", label: "Management (Quản lý)" },
 ]
 
-// Main React component to render the global list of projects
+/**
+ * Component displaying the main project list dashboard.
+ * Provides features to view all projects, search/filter by status, and create new projects
+ * (accessible to Administrators and General Managers) with start/end dates, lead assignments,
+ * task policies, and tracker configurations.
+ */
 export default function ProjectList() {
   // Initialize query client for cache validation
   const queryClient = useQueryClient()

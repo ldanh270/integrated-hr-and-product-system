@@ -35,6 +35,9 @@ import {
 import type { Employee } from "@/types/employee.types"
 import type { Project } from "@/types/project.types"
 
+/**
+ * Properties for EditProjectModal component.
+ */
 interface EditProjectModalProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
@@ -53,7 +56,10 @@ const PROJECT_STATUS_LABELS = new Map<string, string>([
   ["cancelled", "Đã hủy"],
 ])
 
-
+/**
+ * Modal dialog component for editing project properties: metadata, leadership,
+ * task creation policies, and custom project-scoped task trackers.
+ */
 export function EditProjectModal({
   isOpen,
   onOpenChange,

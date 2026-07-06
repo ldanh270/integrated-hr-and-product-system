@@ -1,6 +1,9 @@
 import { TaskTracker } from "./task.types.ts"
 import { IApplicationType } from "./attendance.types.ts"
 
+/**
+ * Position domain entity.
+ */
 export interface Position {
   id: string
   name: string
@@ -13,6 +16,9 @@ export interface Position {
   deletedAt: Date | null
 }
 
+/**
+ * Project-scoped allowed task trackers rule for a position.
+ */
 export interface ProjectPositionRule {
   id: string
   projectId: string
@@ -23,6 +29,9 @@ export interface ProjectPositionRule {
   updatedAt: Date
 }
 
+/**
+ * DTO for creating a new position.
+ */
 export interface CreatePositionDto {
   name: string
   code: string
@@ -31,6 +40,9 @@ export interface CreatePositionDto {
   allowedApplicationTypes?: IApplicationType[]
 }
 
+/**
+ * DTO for updating an existing position.
+ */
 export interface UpdatePositionDto {
   name?: string
   code?: string
@@ -39,12 +51,18 @@ export interface UpdatePositionDto {
   allowedApplicationTypes?: IApplicationType[]
 }
 
+/**
+ * DTO for setting allowed task trackers for a position in a project.
+ */
 export interface ProjectPositionRuleDto {
   positionId: string
   allowedTaskTrackers: TaskTracker[]
   allowedApplicationTypes: IApplicationType[]
 }
 
+/**
+ * Repository interface for position data operations.
+ */
 export interface IPositionRepository {
   findAll(): Promise<Position[]>
   findById(id: string): Promise<Position | null>
@@ -57,6 +75,9 @@ export interface IPositionRepository {
   findActiveProjectMemberships(employeeId: string): Promise<{ projectId: string; projectName: string }[]>
 }
 
+/**
+ * Service interface for position business logic.
+ */
 export interface IPositionService {
   getAllPositions(): Promise<Position[]>
   getPositionById(id: string): Promise<Position>

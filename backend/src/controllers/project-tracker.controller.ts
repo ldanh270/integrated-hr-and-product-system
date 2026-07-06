@@ -9,9 +9,17 @@ import { ApiResponse, IProjectTrackerService, ProjectTracker } from "@/types"
 import { Response } from "express"
 import { z } from "zod"
 
+/**
+ * Controller handling HTTP requests for project-scoped task trackers.
+ */
 export class ProjectTrackerController {
   constructor(private service: IProjectTrackerService) {}
 
+  /**
+   * Lists all task trackers configured for a specific project.
+   * @param req - Express auth request with projectId in parameters.
+   * @param res - Express response containing the array of trackers.
+   */
   list = async (req: AuthRequest, res: Response<ApiResponse<ProjectTracker[]>>) => {
     try {
       if (!req.user) {
@@ -39,6 +47,11 @@ export class ProjectTrackerController {
     }
   }
 
+  /**
+   * Creates a new task tracker in a project.
+   * @param req - Express auth request containing tracker details in body and projectId in params.
+   * @param res - Express response containing the created tracker.
+   */
   create = async (req: AuthRequest, res: Response<ApiResponse<ProjectTracker>>) => {
     try {
       if (!req.user) {
@@ -67,6 +80,11 @@ export class ProjectTrackerController {
     }
   }
 
+  /**
+   * Updates an existing project task tracker.
+   * @param req - Express auth request with updated tracker details in body.
+   * @param res - Express response containing the updated tracker.
+   */
   update = async (req: AuthRequest, res: Response<ApiResponse<ProjectTracker>>) => {
     try {
       if (!req.user) {
@@ -101,6 +119,11 @@ export class ProjectTrackerController {
     }
   }
 
+  /**
+   * Deletes a project task tracker.
+   * @param req - Express auth request containing tracker id and projectId.
+   * @param res - Express response containing empty data.
+   */
   delete = async (req: AuthRequest, res: Response<ApiResponse<null>>) => {
     try {
       if (!req.user) {

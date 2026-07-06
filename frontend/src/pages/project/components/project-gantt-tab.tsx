@@ -59,11 +59,18 @@ const GANTT_AVAILABLE_COLUMNS = [
   { key: "progress", label: "Hiển thị nhãn tiến độ dòng thời gian (Progress)" }
 ]
 
+/**
+ * Properties for ProjectGanttTab component.
+ */
 interface ProjectGanttTabProps {
   projectId: string
   project: Project
 }
 
+/**
+ * Gantt timeline tab component. Allows project managers and team members to visualize,
+ * track, plan, and manage task schedules dynamically across a grid-based timeline.
+ */
 export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
   const {
     timelineStart,

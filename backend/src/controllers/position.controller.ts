@@ -6,9 +6,17 @@ import { ApiResponse, IPositionService, Position, ProjectPositionRule } from "@/
 import { Response } from "express"
 import { z } from "zod"
 
+/**
+ * Controller handling HTTP requests for Positions and Project Position Rules.
+ */
 export class PositionController {
   constructor(private service: IPositionService) {}
 
+  /**
+   * Retrieves all positions from the database.
+   * @param req - Express auth request.
+   * @param res - Express response containing the array of positions.
+   */
   list = async (req: AuthRequest, res: Response<ApiResponse<Position[]>>) => {
     try {
       const result = await this.service.getAllPositions()
@@ -18,6 +26,11 @@ export class PositionController {
     }
   }
 
+  /**
+   * Retrieves a single position by its unique identifier.
+   * @param req - Express auth request with id parameter.
+   * @param res - Express response containing the position.
+   */
   getOne = async (req: AuthRequest, res: Response<ApiResponse<Position>>) => {
     try {
       const { id } = req.params as { id: string }
@@ -28,6 +41,11 @@ export class PositionController {
     }
   }
 
+  /**
+   * Creates a new position. Validates input schema.
+   * @param req - Express auth request with position details in body.
+   * @param res - Express response containing the created position.
+   */
   create = async (req: AuthRequest, res: Response<ApiResponse<Position>>) => {
     try {
       const body = createPositionSchema.parse(req.body) as any
@@ -48,6 +66,11 @@ export class PositionController {
     }
   }
 
+  /**
+   * Updates an existing position. Validates input schema.
+   * @param req - Express auth request with updated position details in body.
+   * @param res - Express response containing the updated position.
+   */
   update = async (req: AuthRequest, res: Response<ApiResponse<Position>>) => {
     try {
       const { id } = req.params as { id: string }
@@ -69,6 +92,11 @@ export class PositionController {
     }
   }
 
+  /**
+   * Deletes a position by its unique identifier.
+   * @param req - Express auth request with id parameter.
+   * @param res - Express response containing the deleted position metadata.
+   */
   delete = async (req: AuthRequest, res: Response<ApiResponse<Position>>) => {
     try {
       const { id } = req.params as { id: string }
@@ -79,7 +107,11 @@ export class PositionController {
     }
   }
 
-  // Project Rules
+  /**
+   * Lists allowed task trackers configured for all positions in a specific project.
+   * @param req - Express auth request with projectId parameter.
+   * @param res - Express response containing project position rules.
+   */
   listProjectRules = async (req: AuthRequest, res: Response<ApiResponse<ProjectPositionRule[]>>) => {
     try {
       const { projectId } = req.params as { projectId: string }
@@ -90,6 +122,11 @@ export class PositionController {
     }
   }
 
+  /**
+   * Saves/updates task tracker allowances for positions in a specific project.
+   * @param req - Express auth request with projectId parameter and rules array in body.
+   * @param res - Express response containing the updated project rules.
+   */
   saveProjectRules = async (req: AuthRequest, res: Response<ApiResponse<ProjectPositionRule[]>>) => {
     try {
       const { projectId } = req.params as { projectId: string }

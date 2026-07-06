@@ -3,6 +3,10 @@ import { projectRoleApi } from "@/lib/api/project-role.api"
 import type { CreateProjectRoleDto, UpdateProjectRoleDto } from "@/types/project-role.types"
 import { toast } from "sonner"
 
+/**
+ * Hook to retrieve all roles in a project.
+ * @param projectId - Project ID.
+ */
 export function useProjectRoles(projectId: string) {
   return useQuery({
     queryKey: ["projectRoles", projectId],
@@ -11,6 +15,10 @@ export function useProjectRoles(projectId: string) {
   })
 }
 
+/**
+ * Hook to create a project-scoped custom role.
+ * @param projectId - Project ID.
+ */
 export function useCreateProjectRole(projectId: string) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -26,6 +34,10 @@ export function useCreateProjectRole(projectId: string) {
   })
 }
 
+/**
+ * Hook to update a project-scoped custom role.
+ * @param projectId - Project ID.
+ */
 export function useUpdateProjectRole(projectId: string) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -43,6 +55,10 @@ export function useUpdateProjectRole(projectId: string) {
   })
 }
 
+/**
+ * Hook to delete a project-scoped custom role.
+ * @param projectId - Project ID.
+ */
 export function useDeleteProjectRole(projectId: string) {
   const queryClient = useQueryClient()
   return useMutation({

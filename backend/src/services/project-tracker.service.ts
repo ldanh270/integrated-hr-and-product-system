@@ -10,12 +10,20 @@ import { AppError } from "@/utils/error.util.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 
+/**
+ * Service implementing business logic for project-scoped task trackers.
+ */
 export class ProjectTrackerService implements IProjectTrackerService {
   constructor(
     private repository: IProjectTrackerRepository,
     private projectRepository: IProjectRepository
   ) {}
 
+  /**
+   * Helper to slugify a string for unique tracker code identification.
+   * @param str - Input string.
+   * @returns Slugified code.
+   */
   private generateSlug(str: string): string {
     let slug = str.toLowerCase();
     const from = "àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ";
@@ -33,6 +41,12 @@ export class ProjectTrackerService implements IProjectTrackerService {
       .replace(/^-+|-+$/g, "");    // trim leading/trailing dashes
   }
 
+  /**
+   * Lists all task trackers configured in a project. Automatically seeds default trackers
+   * if the tracker set is currently empty for that project.
+   * @param projectId - Project ID.
+   * @returns Array of project task trackers.
+   */
   async list(projectId: string): Promise<ProjectTracker[]> {
     const project = await this.projectRepository.findById(projectId)
     if (!project) {
@@ -61,6 +75,12 @@ export class ProjectTrackerService implements IProjectTrackerService {
     return list
   }
 
+  /**
+   * Creates a new custom project task tracker.
+   * @param projectId - Project ID.
+   * @param data - Tracker details.
+   * @returns The created tracker.
+   */
   async create(projectId: string, data: CreateProjectTrackerDto): Promise<ProjectTracker> {
     const project = await this.projectRepository.findById(projectId)
     if (!project) {
@@ -82,6 +102,13 @@ export class ProjectTrackerService implements IProjectTrackerService {
     })
   }
 
+  /**
+   * Updates an existing project task tracker.
+   * @param projectId - Project ID.
+   * @param id - Tracker ID.
+   * @param data - Updated details.
+   * @returns The updated tracker or null.
+   */
   async update(projectId: string, id: string, data: UpdateProjectTrackerDto): Promise<ProjectTracker | null> {
     const tracker = await this.repository.findById(id)
     if (!tracker || tracker.projectId !== projectId) {
@@ -105,6 +132,11 @@ export class ProjectTrackerService implements IProjectTrackerService {
     })
   }
 
+  /**
+   * Deletes a project task tracker.
+   * @param projectId - Project ID.
+   * @param id - Tracker ID.
+   */
   async delete(projectId: string, id: string): Promise<void> {
     const tracker = await this.repository.findById(id)
     if (!tracker || tracker.projectId !== projectId) {

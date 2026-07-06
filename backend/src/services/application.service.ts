@@ -21,6 +21,10 @@ import {
 import { AppError } from "@/utils/error.util.ts"
 import { IPositionService } from "@/types/position.types.ts"
 
+/**
+ * Service managing organizational application requests (leaves, overtime, late/early checkins, shift swaps).
+ * Incorporates validation with position constraints and role-based workflow rules.
+ */
 export class ApplicationService implements IApplicationService {
   constructor(
     private applicationRepo: IApplicationRepository,

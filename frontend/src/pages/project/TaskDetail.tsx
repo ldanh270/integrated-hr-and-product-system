@@ -94,7 +94,11 @@ const cleanHtml = (html: string) => {
   return textLength === 0 ? null : html.trim()
 }
 
-// Main component to render task detailed specifications
+/**
+ * Component representing the task detail view.
+ * Enables team members to view detailed specifications, update metadata (trackers, status, assignee, priority, description),
+ * log/review spent time records, and post/cancel review status checks.
+ */
 export default function TaskDetail() {
   // Initialize query client, route navigation, and auth store
   const queryClient = useQueryClient()

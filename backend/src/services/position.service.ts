@@ -10,6 +10,9 @@ import { PrismaClient } from "@prisma/client"
 import { SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
 import { PROJECT_ROLE } from "@/configs/entities/project.config.ts"
 
+/**
+ * Service implementing business logic for organizational positions and dynamic rules.
+ */
 export class PositionService implements IPositionService {
   constructor(
     private readonly positionRepo: IPositionRepository,
@@ -18,10 +21,19 @@ export class PositionService implements IPositionService {
     private readonly prisma: PrismaClient
   ) {}
 
+  /**
+   * Retrieves all positions configured in the organization.
+   * @returns Array of positions.
+   */
   async getAllPositions(): Promise<Position[]> {
     return this.positionRepo.findAll()
   }
 
+  /**
+   * Retrieves a single position by ID.
+   * @param id - Position ID.
+   * @returns The position.
+   */
   async getPositionById(id: string): Promise<Position> {
     const position = await this.positionRepo.findById(id)
     if (!position) {
@@ -30,6 +42,11 @@ export class PositionService implements IPositionService {
     return position
   }
 
+  /**
+   * Creates a new position. Sanitizes inputs and checks for duplicates.
+   * @param data - Position details.
+   * @returns The created position.
+   */
   async createPosition(data: CreatePositionDto): Promise<Position> {
     // Clean inputs
     const name = data.name.trim()
@@ -52,6 +69,12 @@ export class PositionService implements IPositionService {
     })
   }
 
+  /**
+   * Updates an existing position.
+   * @param id - Position ID.
+   * @param data - Updated details.
+   * @returns The updated position.
+   */
   async updatePosition(id: string, data: UpdatePositionDto): Promise<Position> {
     const position = await this.getPositionById(id)
 
@@ -79,6 +102,11 @@ export class PositionService implements IPositionService {
     return this.positionRepo.update(id, updatedData)
   }
 
+  /**
+   * Soft deletes a position.
+   * @param id - Position ID to delete.
+   * @returns The deleted position metadata.
+   */
   async deletePosition(id: string): Promise<Position> {
     await this.getPositionById(id)
     // Check if position is currently assigned to any employee
@@ -87,15 +115,32 @@ export class PositionService implements IPositionService {
     return this.positionRepo.delete(id)
   }
 
-  // Project Position Rules
+  /**
+   * Stub helper to retrieve project-scoped rules.
+   * @param projectId - Project ID.
+   * @returns Array of project rules.
+   */
   async getProjectRules(projectId: string): Promise<ProjectPositionRule[]> {
     return []
   }
 
+  /**
+   * Stub helper to save project-scoped rules.
+   * @param projectId - Project ID.
+   * @param rules - Rules payload.
+   * @returns Saved project rules array.
+   */
   async saveProjectRules(projectId: string, rules: ProjectPositionRuleDto[]): Promise<ProjectPositionRule[]> {
     return []
   }
 
+  /**
+   * Validates whether an employee is permitted to create a task with a specific tracker in a project.
+   * Admin/GM and Project Team Leaders are bypassed. Viewer role is blocked. Allowed trackers are validated.
+   * @param projectId - Project ID.
+   * @param employeeId - Employee ID.
+   * @param tracker - Task tracker code (feature, bug, etc.).
+   */
   async validateTaskCreation(projectId: string, employeeId: string, tracker: TaskTracker): Promise<void> {
     const employee = await this.employeeRepo.findById(employeeId)
     if (!employee) {
@@ -160,6 +205,9 @@ export class PositionService implements IPositionService {
     }
   }
 
+  /**
+   * Stub validator for application submission check.
+   */
   async validateApplicationSubmission(employeeId: string, type: IApplicationType): Promise<void> {
     return
   }

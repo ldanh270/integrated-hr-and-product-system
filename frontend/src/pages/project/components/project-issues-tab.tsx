@@ -59,6 +59,9 @@ import {
 import type { Task, TaskTracker, TaskPriority } from "@/types/task.types"
 import type { ProjectMember } from "@/types/project.types"
 
+/**
+ * Properties for ProjectIssuesTab component.
+ */
 interface ProjectIssuesTabProps {
   projectId: string
   members: ProjectMember[]
@@ -75,6 +78,11 @@ interface ProjectIssuesTabProps {
 }
 
 const ALL_FILTER_VALUE = "all"
+
+/**
+ * Issues list tab component. Handles searching, sorting, advanced filters,
+ * custom query persistence, pagination, and deletion of project tasks.
+ */
 
 const formatStatus = (status: string) => {
   switch (status) {

@@ -12,6 +12,12 @@ import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
 import { PrismaProjectRepository } from "@/repositories/project.repository.ts"
 import { PositionService } from "@/services/position.service.ts"
 
+/**
+ * Application workflow routing configuration.
+ * Instantiates dependencies for PrismaApplicationRepository, PrismaEmployeeRepository,
+ * PrismaProjectRepository, PrismaPositionRepository, PositionService, and ApplicationService,
+ * wiring them into the ApplicationController endpoints.
+ */
 const applicationRoutes = express.Router()
 
 const repository = new PrismaApplicationRepository(prisma)

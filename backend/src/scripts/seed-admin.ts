@@ -6,6 +6,10 @@ import { HashUtil } from "../utils/hash.util.ts"
 
 const PASSWORD = getSeedPassword("SEED_CORE_ACCOUNTS_PASSWORD")
 
+/**
+ * Seeds default administrator and system-role accounts (HR Manager, General Manager,
+ * Team Leader, Employee) alongside their associated system positions (PM, Developer, Tester, etc.).
+ */
 async function seedAdminAccounts() {
   console.log("Seeding admin and role accounts...")
 
