@@ -27,12 +27,4 @@ export const EMPLOYEE_STATUSES = [
 ] as const
 export type IEmployeeStatus = (typeof EMPLOYEE_STATUSES)[number]
 
-export const ROLE = {
-  ADMIN: "admin",
-  GENERAL_MANAGER: "general_manager",
-  HR_MANAGER: "hr_manager",
-  TEAM_LEADER: "team_leader",
-  EMPLOYEE: "employee",
-} as const
-
 export const GM_SCOPES = ["all", "department", "region"] as const
