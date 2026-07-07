@@ -43,14 +43,17 @@ export class AttendanceService implements IAttendanceService {
     private employeeRepo: IEmployeeRepository,
   ) {}
 
+  /** Normalize to local midnight so date-bound shift lookups stay consistent. */
   private normalizeDate(date: Date): Date {
     return normalizeAttendanceDate(date)
   }
 
+  /** Return today's open attendance session, if any. */
   private findActiveRecord(employeeId: string, now: Date) {
     return findActiveAttendanceRecord(this.attendanceRepo, employeeId, now)
   }
 
+  /** Map weekly template to a shift id for the given calendar day. */
   private resolveShiftIdFromSchedule(
     schedule: IAttendanceScheduleDTO | null | undefined,
     date: Date,
@@ -67,6 +70,7 @@ export class AttendanceService implements IAttendanceService {
     return undefined
   }
 
+  /** Last-resort FT shift when employee has no override and no weekly template. */
   private async resolveFallbackShiftId(date: Date): Promise<string | undefined> {
     const activeShifts = (await this.workingShiftRepo.listAll()).filter((shift) => shift.isActive)
     if (activeShifts.length === 0) return undefined
@@ -109,6 +113,8 @@ export class AttendanceService implements IAttendanceService {
 
     const employee = await this.employeeRepo.findById(employeeId)
     const currentMinutes = getMinutesFromDateTime(now)
+
+    // 1. Daily override — PT uses atMinutes to pick the correct slot on multi-shift days.
     let employeeShift = await this.employeeShiftRepo.getShiftForEmployeeDate(employeeId, today, {
       atMinutes: currentMinutes,
     })
@@ -144,6 +150,7 @@ export class AttendanceService implements IAttendanceService {
       ReturnType<IShiftScheduleRepository["getScheduleByEmployee"]>
     > | null
 
+    // 2. Fallback to weekly schedule when no daily override exists.
     if (!shiftId) {
       schedule = await this.scheduleRepo.getScheduleByEmployee(employeeId, today)
       shiftId = this.resolveShiftIdFromSchedule(schedule, today)
@@ -162,6 +169,8 @@ export class AttendanceService implements IAttendanceService {
     }
 
     const shift = shiftId ? await this.workingShiftRepo.findById(shiftId) : null
+
+    // 3. Validate check-in window and GPS radius against resolved shift.
     assertCheckInWindow(now, today, shift)
     assertWithinShiftGps(location, shift)
 
@@ -182,9 +191,10 @@ export class AttendanceService implements IAttendanceService {
       )
     }
 
+    // 4. Holiday check — informational today; check-in is not blocked on holidays yet.
     const isHoliday = await this.holidayRepo.checkIsHoliday(today)
-    // Holiday check is informational today; check-in is not blocked on holidays yet.
     if (isHoliday) {
+      // Future: auto-apply overtime rules when holiday attendance is enabled.
     }
 
     // Same EmployeeShift linkage as PT branch — traceable shift assignment on the record.
@@ -258,6 +268,7 @@ export class AttendanceService implements IAttendanceService {
     return this.checkOut(employeeId, location)
   }
 
+  /** Query attendance history with optional employee/date filters. */
   async getAttendanceRecords(query: IAttendanceRecordQueryDTO): Promise<IAttendanceRecordDTO[]> {
     return this.attendanceRepo.queryRecords(query)
   }
