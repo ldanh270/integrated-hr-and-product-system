@@ -8,18 +8,12 @@ import { taskApi } from "@/lib/api/task.api"
 import { customQueryApi } from "@/lib/api/custom-query.api"
 import type { CustomQuery } from "@/lib/api/custom-query.api"
 import { projectTaskStatusApi } from "@/lib/api/project-task-status.api"
-import { ROLE } from "@/config/entities/employee.config"
 import { TASK_STATUS, TASK_PRIORITY, TASK_TRACKER, CUSTOM_QUERY_TYPE } from "@/config/entities/project.config"
 import { useAuthStore } from "@/store/auth-store"
 import type { Project } from "@/types/project.types"
 import type { Task, UpdateTaskDto } from "@/types/task.types"
 import { extractErrorMessage } from "@/utils/error-helper"
-
-import { useEffect, useMemo, useState } from "react"
-
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { addDays, differenceInDays, eachDayOfInterval, format } from "date-fns"
-import { toast } from "sonner"
+import { usePermission } from "@/hooks/use-permission"
 
 import {
   DEFAULT_MONTHS_RANGE,
@@ -46,6 +40,7 @@ interface UseProjectGanttProps {
 export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
+  const { hasAnyPermission } = usePermission()
   const [searchParams, setSearchParams] = useSearchParams()
   const [appliedUrlQueryId, setAppliedUrlQueryId] = useState<string | null>(null)
 
