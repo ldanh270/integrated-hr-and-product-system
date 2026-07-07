@@ -79,6 +79,15 @@ export class AttendanceService implements IAttendanceService {
     return matchingShift?.id ?? activeShifts[0]?.id
   }
 
+  /**
+   * Records employee check-in for today.
+   * PT employees require an admin-assigned shift; FT resolves schedule/template then validates GPS.
+   * @param employeeId - The employee ID.
+   * @param location - GPS coordinates from the client.
+   * @param createdById - Account ID for audit when auto-creating a missing shift row.
+   * @returns The created or updated attendance record.
+   * @throws {AppError} If already checked in, no shift, outside window, or outside GPS radius.
+   */
   async checkIn(
     employeeId: string,
     location: { lat: number; lng: number },
@@ -175,6 +184,13 @@ export class AttendanceService implements IAttendanceService {
     return this.attendanceRepo.checkIn(employeeId, location, employeeShift.id)
   }
 
+  /**
+   * Records employee check-out for the active session and computes late/early/overtime metrics.
+   * @param employeeId - The employee ID.
+   * @param location - GPS coordinates from the client.
+   * @returns The updated attendance record.
+   * @throws {AppError} If not checked in, too early to check out, or outside GPS radius.
+   */
   async checkOut(
     employeeId: string,
     location: { lat: number; lng: number },

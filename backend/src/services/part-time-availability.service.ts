@@ -43,10 +43,12 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
     private workingShiftRepo: IWorkingShiftRepository,
   ) {}
 
+  /** Employee reads own weekly availability for the selected Monday weekStart. */
   async getMine(employeeId: string, weekStart: string): Promise<IPartTimeWeeklyAvailability | null> {
     return this.availabilityRepo.findByEmployeeAndWeek(employeeId, normalizeWeekStart(weekStart))
   }
 
+  /** PT employee submits or updates free-time slots; only future weeks, always persisted as submitted. */
   async upsertMine(
     accountId: string,
     data: IUpsertPartTimeAvailabilityDTO,
@@ -75,14 +77,17 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
     })
   }
 
+  /** Admin roster: all availability submissions for a given week. */
   listForWeek(weekStart: string): Promise<IPartTimeWeeklyAvailability[]> {
     return this.availabilityRepo.listByWeek(normalizeWeekStart(weekStart))
   }
 
+  /** Admin drill-down: one employee's availability for a week. */
   getByEmployee(employeeId: string, weekStart: string): Promise<IPartTimeWeeklyAvailability | null> {
     return this.availabilityRepo.findByEmployeeAndWeek(employeeId, normalizeWeekStart(weekStart))
   }
 
+  /** Legacy review path — optional; primary workflow assigns directly from submitted status. */
   async approve(data: IReviewPartTimeAvailabilityDTO): Promise<IPartTimeWeeklyAvailability> {
     const availability = await this.requireAvailability(data.availabilityId)
     assertSubmittedForReview(availability.status)
@@ -93,6 +98,7 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
     )
   }
 
+  /** Legacy review path — rejects with reason so employee can fix and resubmit. */
   async reject(data: IReviewPartTimeAvailabilityDTO): Promise<IPartTimeWeeklyAvailability> {
     const availability = await this.requireAvailability(data.availabilityId)
     assertSubmittedForReview(availability.status)
@@ -111,6 +117,10 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
     )
   }
 
+  /**
+   * Admin assigns shifts from submitted availability.
+   * Wipes prior admin overrides for the week, then creates one EmployeeShift per slot.
+   */
   async assignShifts(data: IAssignPartTimeShiftsDTO): Promise<{ assigned: number; skipped: number }> {
     const availability = await this.requireAvailability(data.availabilityId)
     assertSubmittedForAssign(availability.status)

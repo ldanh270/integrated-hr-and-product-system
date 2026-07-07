@@ -28,6 +28,7 @@ function getDistanceMeters(
   )
 }
 
+/** Rejects check-in/out when client GPS is outside the shift geofence; no-op when shift has no GPS config. */
 export function assertWithinShiftGps(
   location: { lat: number; lng: number },
   shift: IAttendanceShiftDTO | null | undefined,

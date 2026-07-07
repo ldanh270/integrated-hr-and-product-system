@@ -24,6 +24,7 @@ type EmployeeRoleSummary = {
   }
 }
 
+/** Whitelist client sort fields → Prisma orderBy; unknown keys fall back to createdAt. */
 function buildEmployeeOrderBy(
   sortBy: string,
   sortOrder: string,

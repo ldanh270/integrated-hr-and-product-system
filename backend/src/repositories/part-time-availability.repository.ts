@@ -37,6 +37,7 @@ export class PrismaPartTimeAvailabilityRepository
     super(prisma)
   }
 
+  /** Maps Prisma row (Date objects, nested days/slots) to API contract (ISO strings, YYYY-MM-DD weekStart). */
   private mapRecord(record: RawAvailability): IPartTimeWeeklyAvailability {
     return {
       id: record.id,
