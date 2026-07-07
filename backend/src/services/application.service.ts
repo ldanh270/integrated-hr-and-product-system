@@ -215,7 +215,7 @@ export class ApplicationService implements IApplicationService {
 
         if (!activeProject) {
           throw new AppError(
-            "Forbidden: You can only view applications of employees in your projects",
+            SERVICE_ERRORS.VIEW_FORBIDDEN,
             HttpStatusCode.FORBIDDEN,
             ErrorLayer.SERVICE,
             "FORBIDDEN",

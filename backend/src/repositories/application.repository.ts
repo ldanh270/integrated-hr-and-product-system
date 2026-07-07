@@ -9,6 +9,7 @@ import {
   IListApplicationsQueryDTO,
   ISubmitApplicationDTO,
 } from "@/types/attendance.types.ts"
+import { APPLICATION_NOTES } from "@/constants/application.constants.ts"
 
 import {
   ApplicationShiftSwapDetail,
@@ -24,13 +25,6 @@ import {
 import { BaseRepository } from "./base.repository.ts"
 
 // Shared include shape — returns all detail relations + employee info
-const APPLICATION_NOTES = {
-  WFH_APPROVED: "WFH có phê duyệt",
-  LATE: "đi muộn",
-  EARLY: "về sớm",
-  LATE_EARLY_APPROVED: (action: string, minutes: number) => `Được duyệt ${action}: ${minutes} phút`,
-}
-
 const APPLICATION_INCLUDE = {
   employee: {
     select: { id: true, fullName: true, email: true, position: true, avatarUrl: true },

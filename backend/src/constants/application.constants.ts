@@ -25,3 +25,21 @@ export const APPLICATION_SERVICE_NOTIFICATIONS = {
   SWAP_REJECTED_TITLE: "Đơn đổi ca bị từ chối",
   SWAP_REJECTED_MSG: "Nhân viên bạn muốn đổi ca cùng đã từ chối yêu cầu của bạn.",
 } as const
+
+export const APPLICATION_CONTROLLER_ERRORS = {
+  UNAUTHORIZED: "Unauthorized",
+  NO_ACCESS: "Không có quyền truy cập",
+  NO_FILE: "Không có tệp nào được tải lên",
+  UPLOAD_CLOUDINARY_FAILED: "Tải lên Cloudinary thất bại",
+  UPLOAD_FAILED: "Tải lên tệp đính kèm thất bại",
+  INVALID_QUERY: "Invalid query parameters",
+  MISSING_EMPLOYEE_ID: "Missing employeeId in request body",
+  VALIDATION_ERROR: "Validation error",
+} as const
+
+export const APPLICATION_NOTES = {
+  WFH_APPROVED: "WFH có phê duyệt",
+  LATE: "đi muộn",
+  EARLY: "về sớm",
+  LATE_EARLY_APPROVED: (action: string, minutes: number) => `Được duyệt ${action}: ${minutes} phút`,
+} as const

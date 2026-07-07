@@ -11,6 +11,7 @@ import {
 import { ApiResponse } from "@/types"
 import { IApplicationService } from "@/types/attendance.types.ts"
 import { AppError } from "@/utils/error.util.ts"
+import { APPLICATION_CONTROLLER_ERRORS as ERRORS } from "@/constants/application.constants.ts"
 
 import { Request, Response } from "express"
 import { z } from "zod"
@@ -31,7 +32,7 @@ export class ApplicationController {
   submit = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
       const employeeId = req.user?.empId // §SEC: always from JWT, never from body
-      if (!employeeId) throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
+      if (!employeeId) throw new AppError(ERRORS.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
       const data = submitApplicationSchema.parse(req.body)
       const app = await this.service.submitApplication({ ...data, employeeId } as any)
       res.status(HttpStatusCode.CREATED).json({ data: app, error: null })
@@ -40,7 +41,7 @@ export class ApplicationController {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
           error: {
-            message: "Validation error",
+            message: ERRORS.VALIDATION_ERROR,
             code: ErrorCode.VALIDATION_ERROR,
             meta: error.issues,
           },
@@ -60,10 +61,10 @@ export class ApplicationController {
   uploadAttachment = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
       const employeeId = req.user?.empId
-      if (!employeeId) throw new AppError("Không có quyền truy cập", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
+      if (!employeeId) throw new AppError(ERRORS.NO_ACCESS, HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
 
       if (!req.file) {
-        throw new AppError("Không có tệp nào được tải lên", HttpStatusCode.BAD_REQUEST, ErrorLayer.CONTROLLER, ErrorCode.VALIDATION_ERROR)
+        throw new AppError(ERRORS.NO_FILE, HttpStatusCode.BAD_REQUEST, ErrorLayer.CONTROLLER, ErrorCode.VALIDATION_ERROR)
       }
 
       // Check Cloudinary config inline or assert it
@@ -78,7 +79,7 @@ export class ApplicationController {
           },
           (error, result) => {
             if (error || !result) {
-              reject(error instanceof Error ? error : new AppError("Tải lên Cloudinary thất bại", HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorLayer.CONTROLLER))
+              reject(error instanceof Error ? error : new AppError(ERRORS.UPLOAD_CLOUDINARY_FAILED, HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorLayer.CONTROLLER))
               return
             }
             resolve({ url: result.secure_url, id: result.public_id })
@@ -97,7 +98,7 @@ export class ApplicationController {
     } catch (error) {
       console.error("Cloudinary Error:", error)
       if (error instanceof AppError) throw error
-      throw new AppError("Tải lên tệp đính kèm thất bại", HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorLayer.CONTROLLER)
+      throw new AppError(ERRORS.UPLOAD_FAILED, HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorLayer.CONTROLLER)
     }
   }
 
@@ -140,7 +141,7 @@ export class ApplicationController {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
           error: {
-            message: "Invalid query parameters",
+            message: ERRORS.INVALID_QUERY,
             code: ErrorCode.VALIDATION_ERROR,
             meta: error.issues,
           },
@@ -161,7 +162,7 @@ export class ApplicationController {
   listMine = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
       const employeeId = req.user?.empId
-      if (!employeeId) throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
+      if (!employeeId) throw new AppError(ERRORS.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
       const query = listApplicationsQuerySchema.parse(req.query)
       const result = await this.service.getEmployeeApplications(employeeId, query)
       res.status(HttpStatusCode.OK).json({
@@ -179,7 +180,7 @@ export class ApplicationController {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
           error: {
-            message: "Invalid query parameters",
+            message: ERRORS.INVALID_QUERY,
             code: ErrorCode.VALIDATION_ERROR,
             meta: error.issues,
           },
@@ -204,7 +205,7 @@ export class ApplicationController {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
           error: {
-            message: "Missing employeeId in request body",
+            message: ERRORS.MISSING_EMPLOYEE_ID,
             code: ErrorCode.VALIDATION_ERROR,
           },
         })
@@ -228,7 +229,7 @@ export class ApplicationController {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
           error: {
-            message: "Invalid query parameters",
+            message: ERRORS.INVALID_QUERY,
             code: ErrorCode.VALIDATION_ERROR,
             meta: error.issues,
           },
@@ -248,7 +249,7 @@ export class ApplicationController {
   cancel = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
       const employeeId = req.user?.empId
-      if (!employeeId) throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
+      if (!employeeId) throw new AppError(ERRORS.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
       cancelApplicationSchema.parse(req.body ?? {}) // validates optional reason field
       const app = await this.service.cancelApplication(String(req.params.id), employeeId)
       res.status(HttpStatusCode.OK).json({ data: app, error: null })
@@ -257,7 +258,7 @@ export class ApplicationController {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
           error: {
-            message: "Validation error",
+            message: ERRORS.VALIDATION_ERROR,
             code: ErrorCode.VALIDATION_ERROR,
             meta: error.issues,
           },
@@ -278,7 +279,7 @@ export class ApplicationController {
   approve = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
       const processorId = req.user?.empId // §SEC: from JWT
-      if (!processorId) throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
+      if (!processorId) throw new AppError(ERRORS.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
       approveApplicationSchema.parse(req.body) // validates status=approved only
 
       const app = await this.service.approveApplication(String(req.params.id), processorId)
@@ -287,7 +288,7 @@ export class ApplicationController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Validation error", code: ErrorCode.VALIDATION_ERROR, meta: error.issues },
+          error: { message: ERRORS.VALIDATION_ERROR, code: ErrorCode.VALIDATION_ERROR, meta: error.issues },
         })
       }
       throw error
@@ -305,7 +306,7 @@ export class ApplicationController {
   reject = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
       const processorId = req.user?.empId // §SEC: from JWT
-      if (!processorId) throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
+      if (!processorId) throw new AppError(ERRORS.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
       const { rejectReason } = rejectApplicationSchema.parse(req.body)
 
       const app = await this.service.rejectApplication(
@@ -318,7 +319,7 @@ export class ApplicationController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Validation error", code: ErrorCode.VALIDATION_ERROR, meta: error.issues },
+          error: { message: ERRORS.VALIDATION_ERROR, code: ErrorCode.VALIDATION_ERROR, meta: error.issues },
         })
       }
       throw error
@@ -331,7 +332,7 @@ export class ApplicationController {
   partnerApprove = async (req: AuthRequest, res: Response<ApiResponse<Application>>) => {
     try {
       const partnerId = req.user?.empId
-      if (!partnerId) throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
+      if (!partnerId) throw new AppError(ERRORS.UNAUTHORIZED, HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER, ErrorCode.UNAUTHORIZED)
 
       const schema = z.object({ isApproved: z.boolean() })
       const { isApproved } = schema.parse(req.body)
@@ -346,7 +347,7 @@ export class ApplicationController {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
-          error: { message: "Validation error", code: ErrorCode.VALIDATION_ERROR, meta: error.issues },
+          error: { message: ERRORS.VALIDATION_ERROR, code: ErrorCode.VALIDATION_ERROR, meta: error.issues },
         })
       }
       throw error
