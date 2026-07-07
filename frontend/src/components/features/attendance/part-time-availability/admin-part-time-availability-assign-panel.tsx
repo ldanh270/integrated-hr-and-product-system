@@ -1,29 +1,10 @@
-import { Button } from "@/components/ui/button"
-import {
-  DAY_OF_WEEK_LABELS,
-  WORK_WEEK_DISPLAY_DAY_ORDER,
-} from "@/config/entities/attendance.config"
-import {
-  PART_TIME_AVAILABILITY_ASSIGN_LABELS,
-  PART_TIME_AVAILABILITY_ASSIGN_VALIDATION,
-} from "@/config/entities/part-time-availability.config"
-import { useAssignPartTimeShifts } from "@/hooks/attendance/use-part-time-availability"
 import type { IPartTimeWeeklyAvailability } from "@/types/part-time-availability.types"
-import {
-  buildDefaultPartTimeAssignments,
-  collectPartTimeAssignmentIssues,
-  flattenPartTimeAssignments,
-  isPartTimeAvailabilityAssignable,
-  type IPartTimeAssignmentDayForm,
-} from "@/utils/attendance/part-time-availability.util"
+import { isPartTimeAvailabilityAssignable } from "@/utils/attendance/part-time-availability.util"
 import { getWeekDates } from "@/utils/attendance/get-week-dates"
 
-import { useMemo, useState } from "react"
-import { toast } from "sonner"
+import { useMemo } from "react"
 
-import { AdminPartTimeAssignDayColumn } from "./admin-part-time-assign-day-column"
-
-import { Loader2 } from "lucide-react"
+import { AdminPartTimeAvailabilityAssignPanelForm } from "./admin-part-time-availability-assign-panel-form"
 
 interface AdminPartTimeAvailabilityAssignPanelProps {
   availability: IPartTimeWeeklyAvailability
@@ -32,133 +13,7 @@ interface AdminPartTimeAvailabilityAssignPanelProps {
   onAssigned?: () => void
 }
 
-interface AssignPanelFormProps extends AdminPartTimeAvailabilityAssignPanelProps {
-  canAssign: boolean
-  weekDates: ReturnType<typeof getWeekDates>
-  dayMap: Map<number, IPartTimeWeeklyAvailability["days"][number]>
-}
-
-function AdminPartTimeAvailabilityAssignPanelForm({
-  availability,
-  weekStartKey,
-  onAssigned,
-  canAssign,
-  weekDates,
-  dayMap,
-}: AssignPanelFormProps) {
-  const assignMutation = useAssignPartTimeShifts(weekStartKey)
-  const [assignments, setAssignments] = useState<IPartTimeAssignmentDayForm[]>(() =>
-    buildDefaultPartTimeAssignments(availability),
-  )
-
-  const validationIssues = useMemo(
-    () => collectPartTimeAssignmentIssues(assignments, dayMap, DAY_OF_WEEK_LABELS),
-    [assignments, dayMap],
-  )
-
-  const isAllBusyWeek = useMemo(
-    () =>
-      WORK_WEEK_DISPLAY_DAY_ORDER.every((dayOfWeek) => dayMap.get(dayOfWeek)?.isBusyAllDay),
-    [dayMap],
-  )
-
-  const hasValidationErrors = validationIssues.length > 0
-
-  const handleAssign = async () => {
-    if (isAllBusyWeek) {
-      toast.error(PART_TIME_AVAILABILITY_ASSIGN_LABELS.ALL_BUSY_WEEK)
-      return
-    }
-
-    if (hasValidationErrors) {
-      toast.error(validationIssues[0] ?? PART_TIME_AVAILABILITY_ASSIGN_VALIDATION.CHECK_ASSIGNMENTS)
-      return
-    }
-
-    try {
-      const result = await assignMutation.mutateAsync({
-        id: availability.id,
-        assignments: flattenPartTimeAssignments(assignments),
-      })
-      if (result.assigned === 0) {
-        toast.success(PART_TIME_AVAILABILITY_ASSIGN_LABELS.CLEAR_WEEK_SUCCESS)
-      } else {
-        toast.success(`Đã xếp ${result.assigned} ca, bỏ qua ${result.skipped} ngày`)
-      }
-      onAssigned?.()
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Không thể xếp ca")
-    }
-  }
-
-  return (
-    <>
-      <div className="flex-1 overflow-y-auto px-6 py-5">
-        {isAllBusyWeek ? (
-          <div className="flex h-full min-h-[12rem] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 px-6 text-center">
-            <p className="text-sm font-medium text-foreground">
-              {PART_TIME_AVAILABILITY_ASSIGN_LABELS.ALL_BUSY_WEEK}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Nhân viên đã đánh dấu bận cả tuần — không có ngày nào để xếp ca.
-            </p>
-          </div>
-        ) : (
-        <div className="overflow-x-auto">
-          <div className="min-w-[77rem] grid grid-cols-7 gap-3 pb-2">
-            {WORK_WEEK_DISPLAY_DAY_ORDER.map((dayOfWeek) => {
-              const assignment = assignments.find((entry) => entry.dayOfWeek === dayOfWeek)
-              const weekDay = weekDates.find((entry) => entry.dayOfWeek === dayOfWeek)
-
-              if (!assignment) return null
-
-              return (
-                <AdminPartTimeAssignDayColumn
-                  key={dayOfWeek}
-                  dayLabel={DAY_OF_WEEK_LABELS.get(dayOfWeek) ?? ""}
-                  shortDate={weekDay?.shortDate}
-                  availabilityDay={dayMap.get(dayOfWeek)}
-                  assignment={assignment}
-                  disabled={!canAssign}
-                  onChange={(next) => {
-                    setAssignments((current) =>
-                      current.map((entry) =>
-                        entry.dayOfWeek === dayOfWeek ? next : entry,
-                      ),
-                    )
-                  }}
-                />
-              )
-            })}
-          </div>
-        </div>
-        )}
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 px-6 py-4">
-        <p className="text-xs text-muted-foreground">
-          Chọn Làm/Không làm từng ngày. Giờ xếp ca phải nằm trong khung rảnh nhân viên đã gửi.
-        </p>
-        <Button
-          type="button"
-          className="rounded-full"
-          disabled={
-            !canAssign || assignMutation.isPending || hasValidationErrors || isAllBusyWeek
-          }
-          onClick={() => {
-            void handleAssign()
-          }}
-        >
-          {assignMutation.isPending && (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          )}
-          Xếp ca tuần này
-        </Button>
-      </div>
-    </>
-  )
-}
-
+/** Admin shell: employee header + assign form keyed by availability id. */
 export function AdminPartTimeAvailabilityAssignPanel({
   availability,
   weekStart,
@@ -166,7 +21,6 @@ export function AdminPartTimeAvailabilityAssignPanel({
   onAssigned,
 }: AdminPartTimeAvailabilityAssignPanelProps) {
   const weekDates = getWeekDates(weekStart)
-  // Only submitted (or legacy approved) rows can receive shift assignments.
   const canAssign = isPartTimeAvailabilityAssignable(availability.status)
 
   const dayMap = useMemo(
@@ -194,10 +48,8 @@ export function AdminPartTimeAvailabilityAssignPanel({
       </div>
 
       <AdminPartTimeAvailabilityAssignPanelForm
-        // Switching employee must reset assign form — slots are per availability record.
         key={availability.id}
         availability={availability}
-        weekStart={weekStart}
         weekStartKey={weekStartKey}
         onAssigned={onAssigned}
         canAssign={canAssign}

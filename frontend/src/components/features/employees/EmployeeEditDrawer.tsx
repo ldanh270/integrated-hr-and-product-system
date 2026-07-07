@@ -1,5 +1,6 @@
 import { AppDrawer } from "@/components/common"
 import { EmployeeWeeklyScheduleSection } from "@/components/features/employees/employee-weekly-schedule-section"
+import { EmployeeEditRoleCheckboxes } from "@/components/features/employees/employee-edit-role-checkboxes"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,7 +9,6 @@ import {
   EMPLOYEE_STATUS_LABELS,
   EMPLOYMENT_CATEGORY_TYPES,
   getEmployeeTypeLabel,
-  getRoleLabel,
   getWorkScheduleTypeLabel,
   WORK_SCHEDULE_TYPES,
 } from "@/config/entities/employee.config"
@@ -21,93 +21,17 @@ import {
   useUpdateEmployeeRoles,
 } from "@/hooks/security/queries/use-security-query"
 import type { Employee } from "@/types/employee.types"
-import type { Role } from "@/types/security.types"
 
-import { useEffect, useRef, useState } from "react"
-
-import { RefreshCw } from "lucide-react"
+import { useEffect, useRef } from "react"
 import { toast } from "sonner"
 
-/**
- * Prop definitions for EmployeeEditDrawer component.
- */
 interface Props {
-  /** Boolean state flag indicating if the edit drawer is visible */
   isOpen: boolean
-  /** Callback event function triggered on closing the drawer */
   onClose: () => void
-  /** The Employee object to edit, or null if none is selected */
   employee: Employee | null
 }
 
-interface EmployeeEditRoleCheckboxesProps {
-  allRoles: Role[] | undefined
-  initialRoleIds: string[]
-  isLoadingRoles: boolean
-  onSelectionChange: (roleIds: string[]) => void
-}
-
-function EmployeeEditRoleCheckboxes({
-  allRoles,
-  initialRoleIds,
-  isLoadingRoles,
-  onSelectionChange,
-}: EmployeeEditRoleCheckboxesProps) {
-  const [selectedRoleIds, setSelectedRoleIds] = useState(initialRoleIds)
-
-  // Parent ref must stay in sync when roles load — submit can fire before child effect runs.
-  useEffect(() => {
-    setSelectedRoleIds(initialRoleIds)
-    onSelectionChange(initialRoleIds)
-  }, [initialRoleIds, onSelectionChange])
-
-  useEffect(() => {
-    onSelectionChange(selectedRoleIds)
-  }, [onSelectionChange, selectedRoleIds])
-
-  if (isLoadingRoles) {
-    return (
-      <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-2">
-        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-        Đang tải vai trò...
-      </div>
-    )
-  }
-
-  return (
-    <div className="grid grid-cols-1 gap-2 pt-1">
-      {allRoles?.map((role) => {
-        const isChecked = selectedRoleIds.includes(role.id)
-        return (
-          <label
-            key={role.id}
-            className="flex items-center gap-2 text-xs text-foreground cursor-pointer select-none"
-          >
-            <input
-              type="checkbox"
-              checked={isChecked}
-              onChange={(event) => {
-                setSelectedRoleIds((previous) =>
-                  event.target.checked
-                    ? [...previous, role.id]
-                    : previous.filter((id) => id !== role.id),
-                )
-              }}
-              className="h-3.5 w-3.5 rounded border-border text-primary"
-            />
-            <span>{getRoleLabel(role.name)}</span>
-          </label>
-        )
-      })}
-    </div>
-  )
-}
-
-/**
- * EmployeeEditDrawer Component.
- * Slide-out sidebar drawer containing a form to update an existing employee's details.
- * Integrates useEmployeeEditModal hook to handle reactive form state and mutation updates.
- */
+/** Slide-out drawer to edit employee profile, roles, and weekly schedule. */
 export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
   const {
     register,
@@ -157,13 +81,11 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
 
   const isPending = isEmployeePending || weeklySchedule.isPending || updateEmployeeRoles.isPending
 
-  // Avoid rendering if no employee is selected for editing
   if (!employee) return null
 
   return (
     <AppDrawer isOpen={isOpen} onClose={onClose}>
       <div className="flex flex-col h-full">
-        {/* Header toolbar banner */}
         <div className="px-10 pt-14 pb-8 bg-muted/20 border-b border-border">
           <h2 className="text-2xl font-bold tracking-tight text-foreground">Chỉnh sửa nhân sự</h2>
           <p className="text-[13px] text-muted-foreground mt-1.5">
@@ -171,10 +93,8 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
           </p>
         </div>
 
-        {/* Form content viewport */}
         <div className="p-10 flex-1 overflow-y-auto">
           <form id="edit-employee-form" onSubmit={onSubmit} className="space-y-8">
-            {/* Account section */}
             <section>
               <h3 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                 Tài khoản & Phân quyền
@@ -244,7 +164,6 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
               </div>
             </section>
 
-            {/* Basic Info section */}
             <section>
               <h3 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                 Thông tin cơ bản
@@ -325,7 +244,6 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
               </div>
             </section>
 
-            {/* Employment and contract options section */}
             <section>
               <h3 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                 Công việc & Hợp đồng
@@ -345,7 +263,6 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                   )}
                 </div>
 
-                {/* Dropdowns for status & employment contract type */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="status" className="text-[12px] text-muted-foreground">
@@ -381,7 +298,6 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                     </select>
                   </div>
 
-                  {/* Editable schedule type; PT employees skip weekly shift templates below. */}
                   <div className="space-y-1.5">
                     <Label htmlFor="workScheduleType" className="text-[12px] text-muted-foreground">
                       Hình thức làm việc
@@ -436,7 +352,6 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
 
             <EmployeeWeeklyScheduleSection
               section={weeklySchedule}
-              // Reflect form selection — admin may switch PT ↔ FT before save.
               hidden={isPartTimeWorkSchedule({
                 workScheduleType: watch("workScheduleType") ?? employee.workScheduleType,
                 employeeType: watch("employeeType") ?? employee.employeeType,
@@ -445,7 +360,6 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
           </form>
         </div>
 
-        {/* Actions footer toolbar */}
         <div className="p-6 bg-muted/20 border-t border-border flex items-center justify-end gap-3 shrink-0">
           <Button variant="outline" onClick={onClose} type="button">
             Hủy

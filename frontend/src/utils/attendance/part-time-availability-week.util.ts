@@ -5,6 +5,9 @@ import {
   type IPartTimeAvailabilityStatus,
 } from "@/config/entities/part-time-availability.config"
 
+/**
+ * Returns the Monday of the earliest week employees may declare availability (always next week onward).
+ */
 export function getEarliestRequestableWeekStart(referenceDate = new Date()): Date {
   const currentWeekStart = getWeekStart(referenceDate)
   const nextWeekStart = new Date(currentWeekStart)
@@ -12,25 +15,31 @@ export function getEarliestRequestableWeekStart(referenceDate = new Date()): Dat
   return nextWeekStart
 }
 
+/**
+ * Clamps week navigation so employees cannot select the current or past week for new declarations.
+ */
 export function clampToEarliestRequestableWeek(
   weekStart: Date,
   referenceDate = new Date(),
 ): Date {
   const normalized = getWeekStart(weekStart)
   const earliest = getEarliestRequestableWeekStart(referenceDate)
-  // Employees may only declare from next Monday onward — block navigating into past/current week.
   return normalized.getTime() < earliest.getTime() ? earliest : normalized
 }
 
+/**
+ * Gates whether the employee availability form may be edited for draft/submitted/rejected rows.
+ */
 export function isPartTimeAvailabilityEditable(
   status: IPartTimeAvailabilityStatus | null | undefined,
 ): boolean {
-  // Intended gate for draft/submitted/rejected; UI keeps form open after submit because assign needs no approval.
-  // No saved row yet — first submit is always allowed for the target week.
   if (!status) return true
   return PART_TIME_AVAILABILITY_EDITABLE_STATUSES.includes(status)
 }
 
+/**
+ * Gates whether admin may assign shifts from a saved availability row based on workflow status.
+ */
 export function isPartTimeAvailabilityAssignable(
   status: IPartTimeAvailabilityStatus | null | undefined,
 ): boolean {

@@ -1,3 +1,9 @@
+/**
+ * Demo dataset seeder — invoked via `bun run seed:demo`.
+ * Populates sample shifts, schedules, payroll, projects, and related HR data for local demos.
+ * Idempotent: each sub-seeder skips when its target table already has rows.
+ * Prerequisite: run `bun run seed:admin` first so the admin account exists.
+ */
 import { prisma } from "@/libs/database.ts"
 import { createEmptyContext, registry } from "./seeders/index.ts"
 import type { SeedContext } from "./seeders/seed-context.ts"

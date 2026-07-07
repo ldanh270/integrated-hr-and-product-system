@@ -31,7 +31,7 @@ import shiftRoutes from "@/routes/shift.route.ts"
 import spentTimeRoutes from "@/routes/spent-time.route.ts"
 import taskRoutes from "@/routes/task.route.ts"
 import weeklyScheduleTemplateRoutes from "@/routes/weekly-schedule-template.route.ts"
-import { bootstrapAdmin, countStaticRoleReferences } from "@/utils/startup-assertion.util.ts"
+import { bootstrapAdmin, assertNoLegacyStaticRoleReferences } from "@/utils/startup-assertion.util.ts"
 
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
@@ -111,15 +111,7 @@ app.use(globalErrorHandler)
 void connectDB()
   .then(async () => {
     const skipAssert = process.env.SKIP_ADMIN_ASSERT === "true" || process.env.NODE_ENV === "test"
-    if (!skipAssert) {
-      const staticRefs = countStaticRoleReferences()
-      if (staticRefs.total > 0) {
-        console.error("FATAL ERROR: SYSTEM_INVARIANT_BROKEN: Legacy static role references found:")
-        staticRefs.details.forEach((d) => console.error(`  - ${d}`))
-        console.error("All Legacy ROLE references must be purged under Sprint D2.6.")
-        process.exit(1)
-      }
-    }
+    assertNoLegacyStaticRoleReferences(skipAssert)
 
     // Ensure fail-safe administrator exists
     await bootstrapAdmin()
