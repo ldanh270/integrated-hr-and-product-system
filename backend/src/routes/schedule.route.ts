@@ -8,8 +8,7 @@ import { ScheduleController } from "@/controllers/schedule.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { getDefaultWeeklyScheduleSettings } from "@/libs/weekly-schedule-cron.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
-import { authorizeRoles, requirePermission } from "@/middlewares/permission.middleware.ts"
-import { SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
+import { requirePermission } from "@/middlewares/permission.middleware.ts"
 import { PrismaEmployeeShiftRepository } from "@/repositories/employee-shift.repository.ts"
 import { PrismaShiftScheduleRepository } from "@/repositories/schedule.repository.ts"
 import { ScheduleService } from "@/services/schedule.service.ts"
@@ -44,7 +43,7 @@ scheduleRoutes.get(
 // Returns the materialized EmployeeShift record for a specific employee on a given date (?date=YYYY-MM-DD)
 scheduleRoutes.get(
   "/employee/:employeeId/shift",
-  authorizeRoles(SYSTEM_ROLE.ADMIN, SYSTEM_ROLE.HR_MANAGER, SYSTEM_ROLE.GENERAL_MANAGER),
+  requirePermission("attendance.read"),
   controller.getEmployeeShiftByDate,
 )
 

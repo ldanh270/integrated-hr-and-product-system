@@ -1,5 +1,4 @@
-import { APPLICATION_TYPES, PARTNER_APPROVAL_STATUS, APPLICATION_SCOPE } from "@/configs/entities/attendance.config.ts"
-import { SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
+import { APPLICATION_SCOPE, APPLICATION_TYPES } from "@/configs/entities/attendance.config.ts"
 import {
   IApplicationBatchRepository,
   IListApplicationsQueryDTO,
@@ -43,7 +42,10 @@ const BATCH_INCLUDE = {
   },
 } as const
 
-export class PrismaApplicationBatchRepository extends BaseRepository implements IApplicationBatchRepository {
+export class PrismaApplicationBatchRepository
+  extends BaseRepository
+  implements IApplicationBatchRepository
+{
   constructor(prisma: PrismaClient) {
     super(prisma)
   }
@@ -57,41 +59,44 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
   async createBatch(data: ISubmitBatchApplicationDTO): Promise<unknown> {
     const { employeeId, type, assignedToId, items } = data
 
-    return this.prisma.$transaction(async (tx) => {
-      const batch = await tx.applicationBatch.create({
-        data: {
-          employeeId,
-          type: type as ApplicationType,
-          assignedToId: assignedToId ?? null,
-        },
-      })
+    return this.prisma.$transaction(
+      async (tx) => {
+        const batch = await tx.applicationBatch.create({
+          data: {
+            employeeId,
+            type: type as ApplicationType,
+            assignedToId: assignedToId ?? null,
+          },
+        })
 
-      await Promise.all(
-        items.map((item) =>
-          tx.application.create({
-            data: {
-              employeeId,
-              type: type as ApplicationType,
-              status: ApplicationStatus.pending,
-              startDate: new Date(item.startDate),
-              endDate: new Date(item.endDate ?? item.startDate),
-              reason: item.reason,
-              note: item.note,
-              attachmentUrl: item.attachmentUrl,
-              attachmentId: item.attachmentId,
-              assignedToId: assignedToId ?? null,
-              batchId: batch.id,
-              ...this._buildDetailCreate(type, item.detail),
-            },
-          }),
-        ),
-      )
+        await Promise.all(
+          items.map((item) =>
+            tx.application.create({
+              data: {
+                employeeId,
+                type: type as ApplicationType,
+                status: ApplicationStatus.pending,
+                startDate: new Date(item.startDate),
+                endDate: new Date(item.endDate ?? item.startDate),
+                reason: item.reason,
+                note: item.note,
+                attachmentUrl: item.attachmentUrl,
+                attachmentId: item.attachmentId,
+                assignedToId: assignedToId ?? null,
+                batchId: batch.id,
+                ...this._buildDetailCreate(type, item.detail),
+              },
+            }),
+          ),
+        )
 
-      return tx.applicationBatch.findUnique({
-        where: { id: batch.id },
-        include: BATCH_INCLUDE,
-      })
-    }, { timeout: 15000, maxWait: 15000 })
+        return tx.applicationBatch.findUnique({
+          where: { id: batch.id },
+          include: BATCH_INCLUDE,
+        })
+      },
+      { timeout: 15000, maxWait: 15000 },
+    )
   }
 
   /**
@@ -129,7 +134,7 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
    */
   async findAll(
     query: IListApplicationsQueryDTO,
-    managedBy?: { empId: string; role: string },
+    managedBy?: { empId: string; role?: string; isApprover?: boolean },
   ): Promise<{ data: unknown[]; total: number }> {
     const where = this._buildWhere(query, managedBy)
     return this._paginate(where, query)
@@ -145,25 +150,28 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
    */
   async cancelBatch(id: string, employeeId: string): Promise<unknown | null> {
     try {
-      return await this.prisma.$transaction(async (tx) => {
-        // Verify ownership
-        const batch = await tx.applicationBatch.findUnique({
-          where: { id, employeeId },
-          select: { id: true },
-        })
-        if (!batch) return null
+      return await this.prisma.$transaction(
+        async (tx) => {
+          // Verify ownership
+          const batch = await tx.applicationBatch.findUnique({
+            where: { id, employeeId },
+            select: { id: true },
+          })
+          if (!batch) return null
 
-        // Cancel all pending sub-applications
-        await tx.application.updateMany({
-          where: { batchId: id, status: ApplicationStatus.pending },
-          data: { status: ApplicationStatus.cancelled },
-        })
+          // Cancel all pending sub-applications
+          await tx.application.updateMany({
+            where: { batchId: id, status: ApplicationStatus.pending },
+            data: { status: ApplicationStatus.cancelled },
+          })
 
-        return tx.applicationBatch.findUnique({
-          where: { id },
-          include: BATCH_INCLUDE,
-        })
-      }, { timeout: 10000 })
+          return tx.applicationBatch.findUnique({
+            where: { id },
+            include: BATCH_INCLUDE,
+          })
+        },
+        { timeout: 10000 },
+      )
     } catch {
       return null
     }
@@ -174,7 +182,10 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
   /**
    * Constructs the Prisma nested detail creation payload based on application type.
    */
-  private _buildDetailCreate(type: string, detail: Record<string, unknown>): Record<string, unknown> {
+  private _buildDetailCreate(
+    type: string,
+    detail: Record<string, unknown>,
+  ): Record<string, unknown> {
     switch (type) {
       case APPLICATION_TYPES.LEAVE.LABEL:
         return {
@@ -233,7 +244,7 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
    */
   private _buildWhere(
     query: IListApplicationsQueryDTO & { employeeId?: string },
-    managedBy?: { empId: string; role: string },
+    managedBy?: { empId: string; role?: string; isApprover?: boolean },
   ): Record<string, unknown> {
     const where: Record<string, unknown> = {}
 
@@ -261,7 +272,8 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
     }
 
     if (managedBy) {
-      if (query.scope === APPLICATION_SCOPE.ASSIGNED || managedBy.role === SYSTEM_ROLE.EMPLOYEE) {
+      const isApprover = managedBy.isApprover ?? false
+      if (query.scope === APPLICATION_SCOPE.ASSIGNED || !isApprover) {
         return {
           AND: [
             where,
@@ -273,13 +285,13 @@ export class PrismaApplicationBatchRepository extends BaseRepository implements 
                     some: {
                       type: APPLICATION_TYPES.SHIFT_SWAP.LABEL,
                       shiftSwapDetail: {
-                        swapWithEmployeeId: managedBy.empId
-                      }
-                    }
-                  }
-                }
-              ]
-            }
+                        swapWithEmployeeId: managedBy.empId,
+                      },
+                    },
+                  },
+                },
+              ],
+            },
           ],
         }
       } else {

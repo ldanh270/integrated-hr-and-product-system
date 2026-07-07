@@ -7,7 +7,12 @@ import {
   IRegimeType,
 } from "@/configs/entities/attendance.config.ts"
 
-import { AttendanceStatus, HolidayCalendar, ApplicationShiftSwapDetail, PartnerApprovalStatus, Application } from "@prisma/client"
+import {
+  Application,
+  ApplicationShiftSwapDetail,
+  HolidayCalendar,
+  PartnerApprovalStatus,
+} from "@prisma/client"
 
 // Re-export for consumers that import from this module
 export type {
@@ -259,7 +264,10 @@ export interface IAttendanceRepository {
     realShift?: IRealShiftUpsertDTO,
   ): Promise<IAttendanceRecordDTO>
   /** Finds record by employee and date. */
-  findByEmployeeAndDate(employeeId: string, date: string | Date): Promise<IAttendanceRecordDTO | null>
+  findByEmployeeAndDate(
+    employeeId: string,
+    date: string | Date,
+  ): Promise<IAttendanceRecordDTO | null>
   /** Queries records with filters. */
   queryRecords(query: IAttendanceRecordQueryDTO): Promise<IAttendanceRecordDTO[]>
 }
@@ -277,7 +285,7 @@ export interface IApplicationRepository {
   ): Promise<{ data: any[]; total: number }>
   findAll(
     query: IListApplicationsQueryDTO,
-    managedBy?: { empId: string; role: string }
+    managedBy?: { empId: string; role?: string; isApprover?: boolean },
   ): Promise<{ data: any[]; total: number }>
   cancel(id: string, employeeId: string): Promise<any | null>
   /** Approves an application (sets status=approved). */
@@ -292,7 +300,10 @@ export interface IApplicationRepository {
   ): Promise<boolean>
   getUsedLeaveDays(employeeId: string, leaveType: ILeaveType, year: number): Promise<number>
   /** Updates partner approval status for shift swap applications. */
-  updateShiftSwapPartnerApproval(applicationId: string, status: PartnerApprovalStatus): Promise<ApplicationShiftSwapDetail>
+  updateShiftSwapPartnerApproval(
+    applicationId: string,
+    status: PartnerApprovalStatus,
+  ): Promise<ApplicationShiftSwapDetail>
 }
 
 /**
@@ -348,7 +359,7 @@ export interface IApplicationService {
   getApplicationById(id: string): Promise<any>
   listApplications(
     query: IListApplicationsQueryDTO,
-    user?: { empId: string; role: string }
+    user?: { empId: string; role?: string; isApprover?: boolean },
   ): Promise<{ data: any[]; total: number }>
   getEmployeeApplications(
     employeeId: string,
@@ -365,7 +376,7 @@ export interface IApplicationService {
     status: IApplicationStatus,
     processorId: string,
   ): Promise<any | null>
-  
+
   /** Approves/rejects a shift swap as a partner */
   partnerApproveSwap(id: string, partnerId: string, isApproved: boolean): Promise<Application>
 }
@@ -400,9 +411,15 @@ export interface IApplicationBatchRepository {
   /** Finds a batch by ID, including all sub-applications with their details. */
   findById(id: string): Promise<unknown | null>
   /** Lists batches submitted by a specific employee. */
-  findByEmployee(employeeId: string, query: IListApplicationsQueryDTO): Promise<{ data: unknown[]; total: number }>
+  findByEmployee(
+    employeeId: string,
+    query: IListApplicationsQueryDTO,
+  ): Promise<{ data: unknown[]; total: number }>
   /** Lists all batches visible to a manager. */
-  findAll(query: IListApplicationsQueryDTO, managedBy?: { empId: string; role: string }): Promise<{ data: unknown[]; total: number }>
+  findAll(
+    query: IListApplicationsQueryDTO,
+    managedBy?: { empId: string; role?: string; isApprover?: boolean },
+  ): Promise<{ data: unknown[]; total: number }>
   /** Cancels all pending sub-applications within a batch. */
   cancelBatch(id: string, employeeId: string): Promise<unknown | null>
 }
@@ -416,9 +433,15 @@ export interface IApplicationBatchService {
   /** Gets a batch by ID. */
   getBatchById(id: string): Promise<unknown>
   /** Lists the authenticated employee's batches. */
-  listMyBatches(employeeId: string, query: IListApplicationsQueryDTO): Promise<{ data: unknown[]; total: number }>
+  listMyBatches(
+    employeeId: string,
+    query: IListApplicationsQueryDTO,
+  ): Promise<{ data: unknown[]; total: number }>
   /** Lists all batches (manager view). */
-  listAllBatches(query: IListApplicationsQueryDTO, user?: { empId: string; role: string }): Promise<{ data: unknown[]; total: number }>
+  listAllBatches(
+    query: IListApplicationsQueryDTO,
+    user?: { empId: string; role?: string; isApprover?: boolean },
+  ): Promise<{ data: unknown[]; total: number }>
   /** Cancels a batch (only owner, only pending items). */
   cancelBatch(id: string, requesterId: string): Promise<unknown>
 }

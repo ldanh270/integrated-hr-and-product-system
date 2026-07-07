@@ -15,6 +15,7 @@ import { AppError } from "@/utils/error.util.ts"
 import { Request, Response } from "express"
 import { z } from "zod"
 import { Application } from "@prisma/client"
+import { Readable } from "stream"
 
 export class ApplicationController {
   constructor(private service: IApplicationService) {}
@@ -70,7 +71,6 @@ export class ApplicationController {
       assertCloudinaryConfigured()
 
       const result = await new Promise<{ url: string; id: string }>((resolve, reject) => {
-        const { Readable } = require("stream")
         const uploadStream = cloudinary.uploader.upload_stream(
           {
             folder: "hrp/applications",
@@ -95,6 +95,7 @@ export class ApplicationController {
 
       res.status(HttpStatusCode.CREATED).json({ data: result, error: null })
     } catch (error) {
+      console.error("Cloudinary Error:", error)
       if (error instanceof AppError) throw error
       throw new AppError("Tải lên tệp đính kèm thất bại", HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorLayer.CONTROLLER)
     }

@@ -1,11 +1,8 @@
 import {
-  APPLICATION_TYPES,
-  EMPLOYEE_SHIFT_STATUS,
-  PAID_LEAVE_TYPES,
-  PARTNER_APPROVAL_STATUS,
   APPLICATION_SCOPE,
+  APPLICATION_TYPES,
+  PAID_LEAVE_TYPES,
 } from "@/configs/entities/attendance.config.ts"
-import { EMPLOYEE_STATUS, SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
 import {
   IApplicationRepository,
   ILeaveType,
@@ -138,7 +135,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    */
   async findAll(
     query: IListApplicationsQueryDTO,
-    managedBy?: { empId: string; role: string },
+    managedBy?: { empId: string; role?: string; isApprover?: boolean },
   ): Promise<{ data: any[]; total: number }> {
     const where = this._buildWhere(query, managedBy)
     return this._paginate(where, query)
@@ -458,7 +455,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    */
   private _buildWhere(
     query: IListApplicationsQueryDTO & { employeeId?: string; keyword?: string },
-    managedBy?: { empId: string; role: string },
+    managedBy?: { empId: string; role?: string; isApprover?: boolean },
   ) {
     let where: Record<string, unknown> = {}
 
@@ -483,9 +480,9 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     }
 
     if (managedBy) {
-      const role = managedBy.role
+      const isApprover = managedBy.isApprover ?? false
       const empId = managedBy.empId
-      if (query.scope === APPLICATION_SCOPE.ASSIGNED || role === SYSTEM_ROLE.EMPLOYEE) {
+      if (query.scope === APPLICATION_SCOPE.ASSIGNED || !isApprover) {
         where = {
           AND: [
             where,

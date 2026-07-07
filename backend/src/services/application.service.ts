@@ -3,9 +3,7 @@ import {
   APPLICATION_TYPES,
   PARTNER_APPROVAL_STATUS,
 } from "@/configs/entities/attendance.config.ts"
-import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
-import { APPROVAL_CATEGORY } from "@/configs/rules/approval.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
@@ -13,11 +11,11 @@ import {
   APPLICATION_SERVICE_NOTIFICATIONS as SERVICE_NOTIFICATIONS,
 } from "@/constants/application.constants.ts"
 import { prisma } from "@/libs/database.ts"
-import { authorizationService } from "@/services/authorization.service.ts"
 import {
   ApplicationTypeStrategyFactory,
   IStrategyDeps,
 } from "@/services/application-type.strategy.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
 import { NotificationService } from "@/services/notification.service.ts"
 import {
   IApplicationRepository,
@@ -156,8 +154,13 @@ export class ApplicationService implements IApplicationService {
    */
   async listApplications(
     query: IListApplicationsQueryDTO,
-    user?: { empId: string; role: string },
+    user?: { empId: string; role?: string; isApprover?: boolean },
   ): Promise<{ data: any[]; total: number }> {
+    if (user) {
+      const authContext = await authorizationService.getAuthorizationContext(user.empId)
+      user.isApprover =
+        authContext.isDynamicAdmin || authContext.permissions.has("application.approve")
+    }
     return this.applicationRepo.findAll(query, user)
   }
 
