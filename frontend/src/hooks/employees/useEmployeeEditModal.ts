@@ -134,6 +134,7 @@ export function useEmployeeEditModal(
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<EditFormValues>({
     resolver: zodResolver(editSchema),
@@ -160,6 +161,7 @@ export function useEmployeeEditModal(
   return {
     register,
     handleSubmit,
+    watch,
     onSubmitEmployee,
     errors,
     isPending: updateMutation.isPending,

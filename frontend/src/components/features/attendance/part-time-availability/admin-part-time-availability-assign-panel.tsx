@@ -3,7 +3,10 @@ import {
   DAY_OF_WEEK_LABELS,
   WORK_WEEK_DISPLAY_DAY_ORDER,
 } from "@/config/entities/attendance.config"
-import { PART_TIME_AVAILABILITY_ASSIGN_VALIDATION } from "@/config/entities/part-time-availability.config"
+import {
+  PART_TIME_AVAILABILITY_ASSIGN_LABELS,
+  PART_TIME_AVAILABILITY_ASSIGN_VALIDATION,
+} from "@/config/entities/part-time-availability.config"
 import { useAssignPartTimeShifts } from "@/hooks/attendance/use-part-time-availability"
 import type { IPartTimeWeeklyAvailability } from "@/types/part-time-availability.types"
 import {
@@ -53,9 +56,20 @@ function AdminPartTimeAvailabilityAssignPanelForm({
     [assignments, dayMap],
   )
 
+  const isAllBusyWeek = useMemo(
+    () =>
+      WORK_WEEK_DISPLAY_DAY_ORDER.every((dayOfWeek) => dayMap.get(dayOfWeek)?.isBusyAllDay),
+    [dayMap],
+  )
+
   const hasValidationErrors = validationIssues.length > 0
 
   const handleAssign = async () => {
+    if (isAllBusyWeek) {
+      toast.error(PART_TIME_AVAILABILITY_ASSIGN_LABELS.ALL_BUSY_WEEK)
+      return
+    }
+
     if (hasValidationErrors) {
       toast.error(validationIssues[0] ?? PART_TIME_AVAILABILITY_ASSIGN_VALIDATION.CHECK_ASSIGNMENTS)
       return
@@ -66,7 +80,11 @@ function AdminPartTimeAvailabilityAssignPanelForm({
         id: availability.id,
         assignments: flattenPartTimeAssignments(assignments),
       })
-      toast.success(`Đã xếp ${result.assigned} ca, bỏ qua ${result.skipped} ngày`)
+      if (result.assigned === 0) {
+        toast.success(PART_TIME_AVAILABILITY_ASSIGN_LABELS.CLEAR_WEEK_SUCCESS)
+      } else {
+        toast.success(`Đã xếp ${result.assigned} ca, bỏ qua ${result.skipped} ngày`)
+      }
       onAssigned?.()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không thể xếp ca")
@@ -76,6 +94,16 @@ function AdminPartTimeAvailabilityAssignPanelForm({
   return (
     <>
       <div className="flex-1 overflow-y-auto px-6 py-5">
+        {isAllBusyWeek ? (
+          <div className="flex h-full min-h-[12rem] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 px-6 text-center">
+            <p className="text-sm font-medium text-foreground">
+              {PART_TIME_AVAILABILITY_ASSIGN_LABELS.ALL_BUSY_WEEK}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Nhân viên đã đánh dấu bận cả tuần — không có ngày nào để xếp ca.
+            </p>
+          </div>
+        ) : (
         <div className="overflow-x-auto">
           <div className="min-w-[77rem] grid grid-cols-7 gap-3 pb-2">
             {WORK_WEEK_DISPLAY_DAY_ORDER.map((dayOfWeek) => {
@@ -104,6 +132,7 @@ function AdminPartTimeAvailabilityAssignPanelForm({
             })}
           </div>
         </div>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 px-6 py-4">
@@ -113,7 +142,9 @@ function AdminPartTimeAvailabilityAssignPanelForm({
         <Button
           type="button"
           className="rounded-full"
-          disabled={!canAssign || assignMutation.isPending || hasValidationErrors}
+          disabled={
+            !canAssign || assignMutation.isPending || hasValidationErrors || isAllBusyWeek
+          }
           onClick={() => {
             void handleAssign()
           }}

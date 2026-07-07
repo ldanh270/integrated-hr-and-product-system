@@ -65,7 +65,7 @@ export const assignPartTimeShiftsSchema = z
             { message: "Phải nhập đủ giờ bắt đầu và kết thúc" },
           ),
       )
-      .min(1),
+      .min(0),
   })
   .strict()
 

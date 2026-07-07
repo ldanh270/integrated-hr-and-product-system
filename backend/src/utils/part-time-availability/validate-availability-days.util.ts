@@ -25,7 +25,12 @@ export function normalizeAvailabilityDays(
       existing ?? {
         dayOfWeek,
         isBusyAllDay: false,
-        slots: [{ startTime: 8 * 60, endTime: 17 * 60 }],
+        slots: [
+          {
+            startTime: PART_TIME_AVAILABILITY_RULES.DEFAULT_SLOT_START_MINUTES,
+            endTime: PART_TIME_AVAILABILITY_RULES.DEFAULT_SLOT_END_MINUTES,
+          },
+        ],
       }
     )
   })
@@ -36,6 +41,14 @@ export function validateAvailabilityDays(days: IUpsertPartTimeAvailabilityDTO["d
     if (day.isBusyAllDay && day.slots.length > 0) {
       throw new AppError(
         PART_TIME_AVAILABILITY_MESSAGES.BUSY_WITH_SLOTS,
+        HttpStatusCode.BAD_REQUEST,
+        PART_TIME_AVAILABILITY_LAYERS.SERVICE,
+      )
+    }
+
+    if (!day.isBusyAllDay && day.slots.length === 0) {
+      throw new AppError(
+        PART_TIME_AVAILABILITY_MESSAGES.EMPTY_DAY_SLOTS,
         HttpStatusCode.BAD_REQUEST,
         PART_TIME_AVAILABILITY_LAYERS.SERVICE,
       )
@@ -57,6 +70,14 @@ export function validateAvailabilityDays(days: IUpsertPartTimeAvailabilityDTO["d
       if (startTime >= endTime) {
         throw new AppError(
           PART_TIME_AVAILABILITY_MESSAGES.SLOT_INVALID_RANGE,
+          HttpStatusCode.BAD_REQUEST,
+          PART_TIME_AVAILABILITY_LAYERS.SERVICE,
+        )
+      }
+
+      if (endTime - startTime < PART_TIME_AVAILABILITY_RULES.MIN_SLOT_DURATION_MINUTES) {
+        throw new AppError(
+          PART_TIME_AVAILABILITY_MESSAGES.SLOT_TOO_SHORT,
           HttpStatusCode.BAD_REQUEST,
           PART_TIME_AVAILABILITY_LAYERS.SERVICE,
         )

@@ -172,10 +172,17 @@ export interface IEmployeeShiftRepository {
   overrideShift(data: IOverrideEmployeeShiftDTO): Promise<IEmployeeShiftOverrideRecord>
   createOverrideShift(data: IOverrideEmployeeShiftDTO): Promise<IEmployeeShiftOverrideRecord>
   deleteOverridesForEmployeeDates(employeeId: string, dates: Date[]): Promise<void>
-  /** Gets shift for employee on date. */
+  hasOverridesForEmployeeDates(employeeId: string, dates: Date[]): Promise<boolean>
+  replacePartTimeOverrides(
+    employeeId: string,
+    dates: Date[],
+    overrides: IOverrideEmployeeShiftDTO[],
+  ): Promise<void>
+  /** Gets shift for employee on date; atMinutes picks matching window for multi-slot PT days. */
   getShiftForEmployeeDate(
     employeeId: string,
     date: string | Date,
+    options?: { atMinutes?: number },
   ): Promise<IEmployeeShiftWithShift | null>
   /** Lists shifts for multiple employees within a date range. */
   listByEmployeesAndDateRange(

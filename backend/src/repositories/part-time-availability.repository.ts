@@ -4,6 +4,7 @@ import {
   IUpsertPartTimeAvailabilityDTO,
   partTimeAvailabilityInclude,
 } from "@/types/part-time-availability.types.ts"
+import { PART_TIME_AVAILABILITY_STATUS } from "@/configs/entities/part-time-availability.config.ts"
 import { PRISMA_INTERACTIVE_TRANSACTION_OPTIONS } from "@/configs/system/db.config.ts"
 import { formatScheduleDateKey } from "@/utils/schedule.util.ts"
 
@@ -108,8 +109,8 @@ export class PrismaPartTimeAvailabilityRepository
   ): Promise<IPartTimeWeeklyAvailability> {
     const weekStart = new Date(data.weekStart)
     weekStart.setHours(0, 0, 0, 0)
-    const status = (data.status ?? "submitted") as PartTimeAvailabilityStatus
-    const submittedAt = status === "submitted" ? new Date() : null
+    const status = (data.status ?? PART_TIME_AVAILABILITY_STATUS.SUBMITTED) as PartTimeAvailabilityStatus
+    const submittedAt = status === PART_TIME_AVAILABILITY_STATUS.SUBMITTED ? new Date() : null
 
     const record = await this.prisma.$transaction(async (tx) => {
       const header = await tx.partTimeWeeklyAvailability.upsert({

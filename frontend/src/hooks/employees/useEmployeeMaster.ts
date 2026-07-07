@@ -108,6 +108,7 @@ export const useEmployeeMaster = () => {
     } else if (tab === "locked") {
       const newQuery: EmployeeListQuery = { ...query, page: 1, status: "locked" }
       delete newQuery.type
+      delete newQuery.workSchedule
       setQuery(newQuery)
     } else {
       const newQuery = { ...query, page: 1, type: tab }

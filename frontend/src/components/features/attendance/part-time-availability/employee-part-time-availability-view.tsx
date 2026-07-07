@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import {
   PART_TIME_AVAILABILITY_ACTION_LABELS,
+  PART_TIME_AVAILABILITY_FORM_VALIDATION,
   PART_TIME_AVAILABILITY_STATUS,
   getPartTimeAvailabilityStatusLabel,
   getPartTimeAvailabilityStatusVariant,
@@ -21,6 +22,7 @@ import type {
 } from "@/types/part-time-availability.types"
 import {
   clampToEarliestRequestableWeek,
+  collectEmployeeAvailabilityIssues,
   getEarliestRequestableWeekStart,
   mapAvailabilityToForm,
 } from "@/utils/attendance/part-time-availability.util"
@@ -30,6 +32,7 @@ import { getWeekRangeLabel } from "@/utils/attendance/get-week-range-label"
 import { AlertCircle, ChevronLeft, ChevronRight, Info, Save, Send } from "lucide-react"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
+import { DAY_OF_WEEK_LABELS } from "@/config/entities/attendance.config"
 
 interface EmployeePartTimeAvailabilityFormProps {
   availability: IPartTimeWeeklyAvailability | null | undefined
@@ -66,11 +69,21 @@ function EmployeePartTimeAvailabilityForm({
     : PART_TIME_AVAILABILITY_ACTION_LABELS.SUBMIT
   const SubmitIcon = isUpdate ? Save : Send
 
+  const validationIssues = useMemo(
+    () => collectEmployeeAvailabilityIssues(days, DAY_OF_WEEK_LABELS),
+    [days],
+  )
+
   const handleDayChange = (dayOfWeek: number, day: IPartTimeAvailabilityDayForm) => {
     setDays((current) => current.map((entry) => (entry.dayOfWeek === dayOfWeek ? day : entry)))
   }
 
   const handleSubmit = async () => {
+    if (validationIssues.length > 0) {
+      toast.error(validationIssues[0] ?? PART_TIME_AVAILABILITY_FORM_VALIDATION.CHECK_FORM)
+      return
+    }
+
     try {
       await upsertMutation.mutateAsync({
         weekStart: weekStartKey,

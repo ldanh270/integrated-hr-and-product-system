@@ -55,6 +55,12 @@ function EmployeeEditRoleCheckboxes({
 }: EmployeeEditRoleCheckboxesProps) {
   const [selectedRoleIds, setSelectedRoleIds] = useState(initialRoleIds)
 
+  // Parent ref must stay in sync when roles load — submit can fire before child effect runs.
+  useEffect(() => {
+    setSelectedRoleIds(initialRoleIds)
+    onSelectionChange(initialRoleIds)
+  }, [initialRoleIds, onSelectionChange])
+
   useEffect(() => {
     onSelectionChange(selectedRoleIds)
   }, [onSelectionChange, selectedRoleIds])
@@ -106,6 +112,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
   const {
     register,
     handleSubmit,
+    watch,
     onSubmitEmployee,
     errors,
     isPending: isEmployeePending,
@@ -118,6 +125,10 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
 
   const selectedRoleIdsRef = useRef<string[]>([])
   const roleSeedKey = employeeRoles?.map((role) => role.id).join(",") ?? ""
+
+  useEffect(() => {
+    selectedRoleIdsRef.current = employeeRoles?.map((role) => role.id) ?? []
+  }, [roleSeedKey, employeeRoles])
 
   const handleRoleSelectionChange = (roleIds: string[]) => {
     selectedRoleIdsRef.current = roleIds
@@ -425,8 +436,11 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
 
             <EmployeeWeeklyScheduleSection
               section={weeklySchedule}
-              // PT uses project Spent Time, not company weekly shift templates.
-              hidden={employee ? isPartTimeWorkSchedule(employee) : false}
+              // Reflect form selection — admin may switch PT ↔ FT before save.
+              hidden={isPartTimeWorkSchedule({
+                workScheduleType: watch("workScheduleType") ?? employee.workScheduleType,
+                employeeType: watch("employeeType") ?? employee.employeeType,
+              })}
             />
           </form>
         </div>

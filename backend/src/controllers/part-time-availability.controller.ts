@@ -4,7 +4,6 @@ import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import {
   assignPartTimeShiftsSchema,
-  rejectPartTimeAvailabilitySchema,
   upsertPartTimeAvailabilitySchema,
   weekStartQuerySchema,
 } from "@/schemas/part-time-availability.schema.ts"
@@ -99,40 +98,6 @@ export class PartTimeAvailabilityController {
     const { weekStart } = weekStartQuerySchema.parse(req.query)
     const availability = await this.service.getByEmployee(String(req.params.employeeId), weekStart)
     res.status(HttpStatusCode.OK).json({ data: availability, error: null })
-  }
-
-  /** Optional review step: marks availability approved. Does not gate assign — assign only requires submitted (or legacy approved). */
-  approve = async (req: AuthRequest, res: Response<ApiResponse<IPartTimeWeeklyAvailability>>) => {
-    const availability = await this.service.approve({
-      availabilityId: String(req.params.id),
-      reviewedById: req.user?.empId || "system",
-    })
-    res.status(HttpStatusCode.OK).json({ data: availability, error: null })
-  }
-
-  /** Sends submission back to employee; rejectReason is mandatory for audit trail. */
-  reject = async (req: AuthRequest, res: Response<ApiResponse<IPartTimeWeeklyAvailability>>) => {
-    try {
-      const payload = rejectPartTimeAvailabilitySchema.parse(req.body)
-      const availability = await this.service.reject({
-        availabilityId: String(req.params.id),
-        reviewedById: req.user?.empId || "system",
-        rejectReason: payload.rejectReason,
-      })
-      res.status(HttpStatusCode.OK).json({ data: availability, error: null })
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(HttpStatusCode.BAD_REQUEST).json({
-          data: null,
-          error: {
-            message: "Validation error",
-            code: ErrorCode.VALIDATION_ERROR,
-            meta: error.issues,
-          },
-        })
-      }
-      throw error
-    }
   }
 
   /** Creates EmployeeShift overrides from submitted free slots; createdById tracks assigning admin. */

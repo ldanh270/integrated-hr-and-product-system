@@ -35,6 +35,7 @@ export interface IPartTimeWeeklyAvailability {
     fullName: string
     email: string
     employeeType: string
+    workScheduleType?: string | null
   }
 }
 
@@ -109,6 +110,7 @@ export const partTimeAvailabilityInclude = {
       fullName: true,
       email: true,
       employeeType: true,
+      workScheduleType: true,
     },
   },
 } as const

@@ -130,12 +130,12 @@ export function AdminPartTimeAssignDayColumn({
         </div>
         <div className="min-w-0">
           {isBusyDay ? (
-            <span className="inline-flex items-center rounded-full bg-rose-500/10 px-2 py-0.5 text-[9px] font-medium text-rose-600 dark:bg-rose-500/20 dark:text-rose-400">
+            <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[9px] font-medium text-destructive">
               Bận cả ngày
             </span>
           ) : (
             <span
-              className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 max-w-full truncate"
+              className="inline-flex items-center rounded-full bg-success/10 px-2 py-0.5 text-[9px] font-medium text-success max-w-full truncate"
               title={`Rảnh: ${formatAvailabilityDaySummary(availabilityDay)}`}
             >
               Rảnh: {formatAvailabilityDaySummary(availabilityDay)}

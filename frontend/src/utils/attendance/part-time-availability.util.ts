@@ -14,6 +14,7 @@ export {
   validatePartTimeAssignmentSlot,
   buildOutsideFreeRangeAlert,
   collectPartTimeAssignmentIssues,
+  collectEmployeeAvailabilityIssues,
   buildEmptyAvailabilityDays,
   mapAvailabilityToForm,
   formatAvailabilityDaySummary,

@@ -132,6 +132,48 @@ export const ROUTE_MANIFEST: RouteManifestEntry[] = [
     authRequired: true,
     permissions: ["attendance.export"],
   },
+
+  // Part-time availability
+  {
+    name: "Lịch rảnh PT — của tôi",
+    description: "Nhân viên PT xem lịch rảnh tuần hiện tại",
+    method: "GET",
+    path: "/api/part-time-availabilities/mine",
+    authRequired: true,
+    permissions: null,
+  },
+  {
+    name: "Lịch rảnh PT — gửi/cập nhật",
+    description: "Nhân viên PT gửi hoặc cập nhật lịch rảnh tuần",
+    method: "PUT",
+    path: "/api/part-time-availabilities/mine",
+    authRequired: true,
+    permissions: null,
+  },
+  {
+    name: "Lịch rảnh PT — danh sách tuần",
+    description: "Admin xem tất cả lịch rảnh PT trong tuần",
+    method: "GET",
+    path: "/api/part-time-availabilities",
+    authRequired: true,
+    permissions: ["attendance.update"],
+  },
+  {
+    name: "Lịch rảnh PT — theo nhân viên",
+    description: "Admin xem lịch rảnh PT của một nhân viên",
+    method: "GET",
+    path: "/api/part-time-availabilities/employee/:employeeId",
+    authRequired: true,
+    permissions: ["attendance.update"],
+  },
+  {
+    name: "Lịch rảnh PT — xếp ca",
+    description: "Admin xếp ca từ lịch rảnh đã gửi",
+    method: "POST",
+    path: "/api/part-time-availabilities/:id/assign-shifts",
+    authRequired: true,
+    permissions: ["attendance.update"],
+  },
   {
     name: "Thực hiện /scan",
     description: "API endpoint cho Điểm danh",

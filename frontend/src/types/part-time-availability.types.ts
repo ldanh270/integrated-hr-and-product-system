@@ -46,6 +46,7 @@ export interface IPartTimeWeeklyAvailability {
     fullName: string
     email: string
     employeeType: string
+    workScheduleType?: string | null
   }
 }
 

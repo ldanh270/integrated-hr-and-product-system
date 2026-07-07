@@ -13,6 +13,7 @@ export const AUDIT_ACTIONS = [
   "PERMISSION_DELETED",
   "EMPLOYEE_DEACTIVATED",
   "EMPLOYEE_DELETED",
+  "PART_TIME_SHIFTS_ASSIGNED",
 ] as const;
 
 export type AuditAction = typeof AUDIT_ACTIONS[number];

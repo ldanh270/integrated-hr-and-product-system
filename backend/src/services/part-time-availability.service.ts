@@ -34,6 +34,8 @@ import {
 } from "@/utils/part-time-availability.util.ts"
 import { AppError } from "@/utils/error.util.ts"
 
+import { auditService } from "./audit.service.ts"
+
 /** Part-time weekly availability: employee free-time submission and admin shift assignment. */
 export class PartTimeAvailabilityService implements IPartTimeAvailabilityService {
   constructor(
@@ -64,13 +66,29 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
       )
     }
 
+    const weekStart = normalizeWeekStart(data.weekStart)
+    const weekDates = DAY_OF_WEEK_VALUES.map((dayOfWeek) => getDateForWeekDay(weekStart, dayOfWeek))
+
+    // Admin-assigned overrides lock the week — employee edits would drift from scheduled shifts.
+    const hasAssignedShifts = await this.employeeShiftRepo.hasOverridesForEmployeeDates(
+      employeeId,
+      weekDates,
+    )
+    if (hasAssignedShifts) {
+      throw new AppError(
+        PART_TIME_AVAILABILITY_MESSAGES.WEEK_ALREADY_ASSIGNED,
+        HttpStatusCode.CONFLICT,
+        PART_TIME_AVAILABILITY_LAYERS.SERVICE,
+      )
+    }
+
     const days = normalizeAvailabilityDays(data.days)
     validateAvailabilityDays(days)
 
     // Every employee save enters the assign queue immediately; client status is ignored.
     return this.availabilityRepo.upsert({
       employeeId,
-      weekStart: normalizeWeekStart(data.weekStart),
+      weekStart,
       note: data.note,
       status: PART_TIME_AVAILABILITY_STATUS.SUBMITTED,
       days,
@@ -119,7 +137,7 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
 
   /**
    * Admin assigns shifts from submitted availability.
-   * Wipes prior admin overrides for the week, then creates one EmployeeShift per slot.
+   * Validates all slots first, then atomically replaces admin overrides for the week.
    */
   async assignShifts(data: IAssignPartTimeShiftsDTO): Promise<{ assigned: number; skipped: number }> {
     const availability = await this.requireAvailability(data.availabilityId)
@@ -129,14 +147,14 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
     const weekStart = normalizeWeekStart(availability.weekStart)
     const weekDates = DAY_OF_WEEK_VALUES.map((dayOfWeek) => getDateForWeekDay(weekStart, dayOfWeek))
 
-    // Clear prior admin overrides for this week so re-assign does not leave stale days.
-    await this.employeeShiftRepo.deleteOverridesForEmployeeDates(
-      availability.employeeId,
-      weekDates,
-    )
-
     let assigned = 0
     let skipped = 0
+    const pendingOverrides: Array<{
+      employeeId: string
+      assignedDate: Date
+      shiftId: string
+      createdById: string
+    }> = []
 
     for (const item of data.assignments) {
       // Null start/end means admin marked day off — skip without error.
@@ -175,16 +193,33 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
       }
 
       const shiftId = await this.resolveWorkingShiftId(startTime, endTime, data.createdById)
-      const assignedDate = getDateForWeekDay(weekStart, item.dayOfWeek)
-      // Append-only: one day may have multiple admin-assigned slots after week wipe.
-      await this.employeeShiftRepo.createOverrideShift({
+      pendingOverrides.push({
         employeeId: availability.employeeId,
-        assignedDate,
+        assignedDate: getDateForWeekDay(weekStart, item.dayOfWeek),
         shiftId,
         createdById: data.createdById,
       })
       assigned++
     }
+
+    // Empty payload clears the week — still transactional so delete is never left half-applied.
+    await this.employeeShiftRepo.replacePartTimeOverrides(
+      availability.employeeId,
+      weekDates,
+      pendingOverrides,
+    )
+
+    await auditService.log({
+      actorId: data.createdById,
+      targetEmployeeId: availability.employeeId,
+      action: "PART_TIME_SHIFTS_ASSIGNED",
+      newValue: {
+        availabilityId: availability.id,
+        weekStart: availability.weekStart,
+        assigned,
+        skipped,
+      },
+    })
 
     return { assigned, skipped }
   }

@@ -31,17 +31,30 @@ type ScheduleFields = {
   workScheduleType?: WorkScheduleType
 }
 
-/** Legacy employeeType=part_time maps to workScheduleType; category defaults to full_time. */
+/** Legacy employeeType=part_time maps to workScheduleType; explicit FT clears legacy PT category. */
 function normalizeScheduleFields<T extends ScheduleFields>(data: T): T {
-  if (data.employeeType !== EMPLOYEE_TYPE.PART_TIME) {
-    return data
+  let next = { ...data }
+
+  if (next.employeeType === EMPLOYEE_TYPE.PART_TIME) {
+    next = {
+      ...next,
+      employeeType: EMPLOYEE_TYPE.FULL_TIME,
+      workScheduleType: WORK_SCHEDULE_TYPE.PART_TIME,
+    }
   }
 
-  return {
-    ...data,
-    employeeType: EMPLOYEE_TYPE.FULL_TIME,
-    workScheduleType: WORK_SCHEDULE_TYPE.PART_TIME,
+  // workScheduleType=full_time alone must not leave employeeType stuck on legacy part_time.
+  if (next.workScheduleType === WORK_SCHEDULE_TYPE.FULL_TIME) {
+    next = {
+      ...next,
+      employeeType:
+        next.employeeType === EMPLOYEE_TYPE.PART_TIME
+          ? EMPLOYEE_TYPE.FULL_TIME
+          : (next.employeeType ?? EMPLOYEE_TYPE.FULL_TIME),
+    }
   }
+
+  return next
 }
 
 /**

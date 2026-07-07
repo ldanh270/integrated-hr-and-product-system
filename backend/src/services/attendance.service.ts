@@ -96,9 +96,10 @@ export class AttendanceService implements IAttendanceService {
   ): Promise<IAttendanceRecordDTO> {
     const now = new Date()
     const today = this.normalizeDate(now)
-    const existingRecord = await this.attendanceRepo.findByEmployeeAndDate(employeeId, today)
+    const activeRecord = await this.findActiveRecord(employeeId, now)
 
-    if (existingRecord?.checkInAt) {
+    // Block only open sessions — checked-out same-day records may check in again for another PT slot.
+    if (activeRecord?.checkInAt && !activeRecord.checkOutAt) {
       throw new AppError(
         ATTENDANCE_ERROR_MESSAGES.ALREADY_CHECKED_IN,
         HttpStatusCode.CONFLICT,
@@ -107,7 +108,10 @@ export class AttendanceService implements IAttendanceService {
     }
 
     const employee = await this.employeeRepo.findById(employeeId)
-    let employeeShift = await this.employeeShiftRepo.getShiftForEmployeeDate(employeeId, today)
+    const currentMinutes = getMinutesFromDateTime(now)
+    let employeeShift = await this.employeeShiftRepo.getShiftForEmployeeDate(employeeId, today, {
+      atMinutes: currentMinutes,
+    })
 
     // PT has no weekly template fallback — hours come from admin assign after availability submit.
     if (employee && isPartTimeWorkSchedule(employee)) {

@@ -4,6 +4,7 @@ import {
   IEmployeeShiftWithShift,
   IOverrideEmployeeShiftDTO,
 } from "@/types/shift.types.ts"
+import { isWithinShiftSelectionWindow } from "@/utils/attendance/attendance-shift.util.ts"
 
 import { PrismaClient, ShiftStatus } from "@prisma/client"
 
@@ -63,6 +64,71 @@ export class PrismaEmployeeShiftRepository
     })
   }
 
+  /** True when admin has already assigned PT override shifts for any date in the week. */
+  async hasOverridesForEmployeeDates(employeeId: string, dates: Date[]): Promise<boolean> {
+    if (dates.length === 0) return false
+
+    const normalizedDates = dates.map((date) => {
+      const next = new Date(date)
+      next.setHours(0, 0, 0, 0)
+      return next
+    })
+
+    const count = await this.prisma.employeeShift.count({
+      where: {
+        employeeId,
+        assignedDate: { in: normalizedDates },
+        isOverride: true,
+      },
+    })
+
+    return count > 0
+  }
+
+  /**
+   * Atomically replaces admin PT overrides for a week — delete then create in one transaction.
+   * Prevents partial week state if a create fails mid-loop.
+   */
+  async replacePartTimeOverrides(
+    employeeId: string,
+    dates: Date[],
+    overrides: IOverrideEmployeeShiftDTO[],
+  ): Promise<void> {
+    const normalizedDates = dates.map((date) => {
+      const next = new Date(date)
+      next.setHours(0, 0, 0, 0)
+      return next
+    })
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.employeeShift.deleteMany({
+        where: {
+          employeeId,
+          assignedDate: { in: normalizedDates },
+          isOverride: true,
+        },
+      })
+
+      if (overrides.length === 0) return
+
+      await tx.employeeShift.createMany({
+        data: overrides.map((override) => {
+          const assignedDate = new Date(override.assignedDate)
+          assignedDate.setHours(0, 0, 0, 0)
+
+          return {
+            employeeId: override.employeeId,
+            assignedDate,
+            shiftId: override.shiftId,
+            isOverride: true,
+            status: ShiftStatus.scheduled,
+            createdById: override.createdById ?? override.employeeId,
+          }
+        }),
+      })
+    })
+  }
+
   /**
    * Overrides an employee's shift for a specific date.
    * @param data - The override data.
@@ -101,20 +167,17 @@ export class PrismaEmployeeShiftRepository
 
   /**
    * Gets a shift assignment for an employee on a specific date.
-   * @param employeeId - The employee ID.
-   * @param date - The target date.
-   * @returns The employee shift assignment or null if not found.
+   * When atMinutes is provided, prefers the shift whose check-in window contains that time.
    */
   async getShiftForEmployeeDate(
     employeeId: string,
     date: string | Date,
+    options?: { atMinutes?: number },
   ): Promise<IEmployeeShiftWithShift | null> {
     const targetDate = new Date(date)
     targetDate.setHours(0, 0, 0, 0)
 
-    // PT may have multiple shifts/day; check-in uses one row until multi-shift attendance exists.
-    // Prefer admin override over template, earliest created first within same priority.
-    return this.prisma.employeeShift.findFirst({
+    const rows = await this.prisma.employeeShift.findMany({
       where: {
         employeeId,
         assignedDate: targetDate,
@@ -122,6 +185,18 @@ export class PrismaEmployeeShiftRepository
       include: { shift: true },
       orderBy: [{ isOverride: "desc" }, { createdAt: "asc" }],
     })
+
+    if (rows.length === 0) return null
+
+    if (options?.atMinutes === undefined) {
+      return rows[0]
+    }
+
+    const matching = rows.filter((row) =>
+      isWithinShiftSelectionWindow(options.atMinutes!, row.shift),
+    )
+
+    return matching[0] ?? rows[0]
   }
 
   async listByEmployeesAndDateRange(
