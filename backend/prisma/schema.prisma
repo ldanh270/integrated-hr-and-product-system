@@ -41,7 +41,6 @@ enum AttendanceStatus {
   overtime
 }
 
-
 enum ShiftStatus {
   scheduled
   holiday_pending
@@ -259,6 +258,10 @@ model Employee {
   @@index([status, employeeType])
   @@index([deletedAt])
   @@index([status, deletedAt])
+  @@index([lockedUntil])
+  @@index([failedLoginCount])
+  @@index([email])
+  @@index([username])
 }
 
 // ── Attendance ──
@@ -997,6 +1000,7 @@ model AppRole {
   isSystem         Boolean @default(false)
   isActive         Boolean @default(true)
   isAdministrative Boolean @default(false)
+  isDefault        Boolean @default(false)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -1010,6 +1014,7 @@ model AppRole {
   @@index([name])
   @@index([isActive])
   @@index([deletedAt])
+  @@index([isDefault])
   @@index([isAdministrative, isActive, deletedAt])
   @@map("roles")
 }
@@ -1039,6 +1044,8 @@ model Permission {
 
   @@index([module])
   @@index([deletedAt])
+  @@index([isActive])
+  @@index([module, isActive, deletedAt])
   @@map("permissions")
 }
 

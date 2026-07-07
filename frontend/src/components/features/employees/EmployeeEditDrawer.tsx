@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import {
   EMPLOYEE_STATUSES,
   EMPLOYEE_STATUS_LABELS,
+  EMPLOYEE_TYPE,
   EMPLOYEE_TYPES,
   EMPLOYEE_TYPE_LABELS,
   ROLE_LABELS,
@@ -171,7 +172,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label className="text-[12px] text-muted-foreground">
+                    <Label htmlFor="role-select" className="text-[12px] text-muted-foreground">
                       Vai trò (Dynamic RBAC)
                     </Label>
                     {isLoadingRoles ? (
@@ -180,33 +181,22 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                         Đang tải vai trò...
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 gap-2 pt-1">
-                        {allRoles?.data?.map((role: Role) => {
-                          const isChecked = selectedRoleIds.includes(role.id)
-                          return (
-                            <label
-                              key={role.id}
-                              className="flex items-center gap-2 text-xs text-foreground cursor-pointer select-none"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedRoleIds((prev) => [...prev, role.id])
-                                  } else {
-                                    setSelectedRoleIds((prev) =>
-                                      prev.filter((id) => id !== role.id),
-                                    )
-                                  }
-                                }}
-                                className="h-3.5 w-3.5 rounded border-border text-primary"
-                              />
-                              <span>{ROLE_LABELS[role.name] || role.name}</span>
-                            </label>
-                          )
-                        })}
-                      </div>
+                      <select
+                        id="role-select"
+                        value={selectedRoleIds[0] || ""}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setSelectedRoleIds(val ? [val] : [])
+                        }}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      >
+                        <option value="">-- Chọn vai trò --</option>
+                        {allRoles?.data?.map((role: Role) => (
+                          <option key={role.id} value={role.id}>
+                            {ROLE_LABELS[role.name] || role.name}
+                          </option>
+                        ))}
+                      </select>
                     )}
                   </div>
                 </div>
@@ -422,7 +412,11 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
               </div>
             </section>
 
-            <EmployeeWeeklyScheduleSection section={weeklySchedule} />
+            <EmployeeWeeklyScheduleSection
+              section={weeklySchedule}
+              // PT uses project Spent Time, not company weekly shift templates.
+              hidden={employee.employeeType === EMPLOYEE_TYPE.PART_TIME}
+            />
           </form>
         </div>
 

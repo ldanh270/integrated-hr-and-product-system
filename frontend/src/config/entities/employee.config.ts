@@ -44,13 +44,6 @@ export const EMPLOYEE_ROLES = [
 ] as const
 export type IEmployeeRole = (typeof EMPLOYEE_ROLES)[number]
 
-export const MANAGER_ROLES = [
-  SYSTEM_ROLE.ADMIN,
-  SYSTEM_ROLE.HR_MANAGER,
-  SYSTEM_ROLE.GENERAL_MANAGER,
-  SYSTEM_ROLE.TEAM_LEADER,
-] as const
-
 export const ROLE_LABELS: Record<string, string> = {
   [SYSTEM_ROLE.ADMIN]: "Quản trị viên",
   [SYSTEM_ROLE.GENERAL_MANAGER]: "Tổng quản lý",
@@ -73,7 +66,10 @@ export const EMPLOYEE_TYPE_LABELS: Record<string, string> = {
   intern: "Thực tập",
 } as const
 
-export const EMPLOYEE_STATUS_VARIANTS: Record<string, "success" | "danger" | "warning" | "neutral"> = {
+export const EMPLOYEE_STATUS_VARIANTS: Record<
+  string,
+  "success" | "danger" | "warning" | "neutral"
+> = {
   [EMPLOYEE_STATUS.ACTIVE]: "success",
   [EMPLOYEE_STATUS.INACTIVE]: "neutral",
   [EMPLOYEE_STATUS.ON_LEAVE]: "warning",

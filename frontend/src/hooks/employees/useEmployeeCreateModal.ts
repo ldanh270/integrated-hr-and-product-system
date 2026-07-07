@@ -1,16 +1,16 @@
 import {
-  EMPLOYEE_ROLES,
   EMPLOYEE_STATUSES,
   EMPLOYEE_TYPES,
-  SYSTEM_ROLE,
 } from "@/config/entities/employee.config"
 import type { CreateEmployeeDto } from "@/types/employee.types"
 
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
 
+import { useRoles } from "@/hooks/security/queries/use-security-query"
 import { useCreateEmployee } from "./queries/useEmployeeQuery"
 
 const createSchema = z.object({
@@ -36,7 +36,7 @@ const createSchema = z.object({
       "Mật khẩu phải chứa chữ hoa, chữ thường, số và ký tự đặc biệt",
     ),
 
-  role: z.enum(EMPLOYEE_ROLES),
+  role: z.string().min(1, "Vui lòng chọn vai trò"),
   employeeType: z.enum(EMPLOYEE_TYPES),
   status: z.enum(EMPLOYEE_STATUSES).optional(),
 
@@ -75,8 +75,13 @@ const createSchema = z.object({
 
 type CreateFormValues = z.infer<typeof createSchema>
 
+/**
+ * Custom hook to manage employeecreatemodal.
+ */
 export function useEmployeeCreateModal(onClose: () => void) {
   const createMutation = useCreateEmployee()
+  const { data: rolesData, isLoading: isLoadingRoles } = useRoles()
+
   const {
     register,
     handleSubmit,
@@ -86,11 +91,23 @@ export function useEmployeeCreateModal(onClose: () => void) {
     resolver: zodResolver(createSchema),
     mode: "onBlur", // Thêm mode onBlur để validate khi user rời khỏi trường nhập
     defaultValues: {
-      role: SYSTEM_ROLE.EMPLOYEE,
+      role: "",
       employeeType: EMPLOYEE_TYPES[0],
       status: EMPLOYEE_STATUSES[0],
     },
   })
+
+  // Dynamically set default role when roles finish loading
+  useEffect(() => {
+    if (rolesData?.data) {
+      const defaultRole = rolesData.data.find((r) => r.isDefault)?.name || "employee"
+      reset({
+        role: defaultRole,
+        employeeType: EMPLOYEE_TYPES[0],
+        status: EMPLOYEE_STATUSES[0],
+      })
+    }
+  }, [rolesData, reset])
 
   const onSubmit = async (data: CreateFormValues) => {
     try {
@@ -125,5 +142,7 @@ export function useEmployeeCreateModal(onClose: () => void) {
     errors,
     isPending: createMutation.isPending,
     handleClose,
+    roles: rolesData?.data || [],
+    isLoadingRoles,
   }
 }

@@ -1,8 +1,4 @@
-import {
-  EMPLOYEE_STATUSES,
-  SYSTEM_ROLE_NAMES,
-  EMPLOYEE_TYPES,
-} from "@/configs/entities/employee.config.ts"
+import { EMPLOYEE_STATUSES, EMPLOYEE_TYPES } from "@/configs/entities/employee.config.ts"
 import { SORT_ORDER_VALUES } from "@/configs/system/db.config.ts"
 
 import { z } from "zod"
@@ -54,8 +50,7 @@ export const createEmployeeSchema = z
         "Password must contain at least one uppercase, one lowercase, one number and one special character",
       ),
 
-
-    role: z.enum(SYSTEM_ROLE_NAMES).optional(),
+    role: z.string().optional(),
 
     employeeType: z.enum(EMPLOYEE_TYPES).optional(),
 
@@ -146,7 +141,6 @@ export const updateEmployeeSchema = z
         "Password must contain at least one uppercase, one lowercase, one number and one special character",
       )
       .optional(),
-
 
     phone: z
       .string()
@@ -247,7 +241,7 @@ export const listEmployeesQuerySchema = z.object({
     .refine((val) => val >= 1, { message: "Limit must be at least 1" })
     .optional(),
   search: z.string().optional(),
-  status: z.enum(EMPLOYEE_STATUSES).optional(),
+  status: z.enum([...EMPLOYEE_STATUSES, "locked"] as const).optional(),
   type: z.enum(EMPLOYEE_TYPES).optional(),
   roleId: z.string().optional(),
   sortBy: z

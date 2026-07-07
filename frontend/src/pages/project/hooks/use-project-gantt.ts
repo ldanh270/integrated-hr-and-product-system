@@ -1,10 +1,10 @@
-import { SYSTEM_ROLE } from "@/config/entities/employee.config"
 import {
   CUSTOM_QUERY_TYPE,
   TASK_PRIORITY,
   TASK_STATUS,
   TASK_TRACKER,
 } from "@/config/entities/project.config"
+import { usePermission } from "@/hooks/use-permission"
 import { customQueryApi } from "@/lib/api/custom-query.api"
 import type { CustomQuery } from "@/lib/api/custom-query.api"
 import { projectApi } from "@/lib/api/project.api"
@@ -37,9 +37,13 @@ interface UseProjectGanttProps {
   project: Project
 }
 
+/**
+ * Custom hook to manage projectgantt.
+ */
 export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
+  const { hasAnyPermission } = usePermission()
 
   // Timeline view range configuration (timeline start date)
   const [timelineStart, setTimelineStart] = useState<Date>(() => {
@@ -262,22 +266,22 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
       }
 
       if (minStart) {
-        setTimelineStart(minStart)
-        setMonthInput(minStart.getMonth())
-        setYearInput(minStart.getFullYear())
-      }
+        setTimeout(() => {
+          setTimelineStart(minStart)
+          setMonthInput(minStart.getMonth())
+          setYearInput(minStart.getFullYear())
 
-      if (minStart && maxEnd) {
-        // Add 2 days buffer at the end for clean design
-        const bufferedEnd = addDays(maxEnd, 2)
-        setTimelineEnd(bufferedEnd)
-
-        const days = differenceInDays(bufferedEnd, minStart) + 1
-        const months = Math.max(1, Math.ceil(days / 30))
-        setMonthsInput(months.toString())
-        setMonthsRange(months)
+          if (maxEnd) {
+            const bufferedEnd = addDays(maxEnd, 2)
+            setTimelineEnd(bufferedEnd)
+            const days = differenceInDays(bufferedEnd, minStart) + 1
+            const months = Math.max(1, Math.ceil(days / 30))
+            setMonthsInput(months.toString())
+            setMonthsRange(months)
+          }
+          setHasInitializedTimeline(true)
+        }, 0)
       }
-      setHasInitializedTimeline(true)
     }
   }, [tasks, hasInitializedTimeline])
 
@@ -572,7 +576,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
 
   // Check roles/permissions
   const isLeader = project.teamLeaderId === user?.id
-  const isAdminOrGM = user?.role === SYSTEM_ROLE.ADMIN || user?.role === SYSTEM_ROLE.GENERAL_MANAGER
+  const isAdminOrGM = hasAnyPermission(["project.update", "project.task.approve"])
 
   // Overlap leave days check removed per user request
 

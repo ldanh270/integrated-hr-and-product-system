@@ -12,6 +12,7 @@ export interface AppRole {
   isSystem: boolean
   isActive: boolean
   isAdministrative: boolean
+  isDefault: boolean
   createdAt: Date
   updatedAt: Date
   createdBy: string | null
@@ -29,6 +30,7 @@ export interface CreateRoleDto {
   description?: string | null
   createdBy?: string
   isAdministrative?: boolean
+  isDefault?: boolean
 }
 
 /**
@@ -40,6 +42,7 @@ export interface UpdateRoleDto {
   isActive?: boolean
   updatedBy?: string
   isAdministrative?: boolean
+  isDefault?: boolean
 }
 
 /**
