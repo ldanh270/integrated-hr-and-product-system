@@ -35,11 +35,6 @@ export function useProjectKanban({
   const isLeader = teamLeader?.id === user?.id
   const { hasAnyPermission } = usePermission()
   const isAdminOrGM = hasAnyPermission(["project.update", "project.task.approve"])
-  const isAdminOrGM =
-    user?.role === ROLE.ADMIN ||
-    user?.role === ROLE.GENERAL_MANAGER ||
-    user?.roles?.includes(ROLE.ADMIN) ||
-    user?.roles?.includes(ROLE.GENERAL_MANAGER)
   const canManageStatuses = isAdminOrGM || isLeader
 
   // Modal States

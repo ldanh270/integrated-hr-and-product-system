@@ -28,12 +28,9 @@ import {
 } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import { PROJECT_STATUSES, TASK_CREATION_POLICIES } from "@/config/entities/project.config"
-import { ROUTES } from "@/config/routes.config"
 import { usePermission } from "@/hooks/use-permission"
 import { employeeApi } from "@/lib/api/employee.api"
 import { projectApi } from "@/lib/api/project.api"
-// Import authentication global store
-import { useAuthStore } from "@/store/auth-store"
 // Import React Query utilities for data handling and server mutations
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 // Import Lucide visual icons
@@ -41,6 +38,7 @@ import { FolderKanban, Plus, Search, Users, ChevronDown, CheckSquare, Square } f
 import React, { useState } from "react"
 // Import router link navigation
 import { useNavigate } from "react-router-dom"
+import { extractErrorMessage } from "@/utils/error-helper"
 
 const TRACKER_LIST = [
   { key: "feature", label: "Feature (Tính năng)" },

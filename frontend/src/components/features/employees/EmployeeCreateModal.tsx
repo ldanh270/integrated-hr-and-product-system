@@ -31,7 +31,7 @@ interface Props {
  */
 export function EmployeeCreateModal({ isOpen, onClose }: Props) {
   // Extract react hook form fields, submission states, and error mappings
-  const { register, handleSubmit, errors, isPending, handleClose } = useEmployeeCreateModal(onClose)
+  const { register, handleSubmit, errors, isPending, handleClose, roles } = useEmployeeCreateModal(onClose)
   const { data: positions = [] } = usePositions()
 
   return (

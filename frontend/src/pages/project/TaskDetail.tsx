@@ -41,10 +41,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 // Import toast notification client
 import { toast } from "sonner"
 import { extractErrorMessage } from "@/utils/error-helper"
+import type { SpentTime } from "@/types/spent-time.types"
+import type { TaskTracker, TaskPriority } from "@/types/task.types"
+import { ROLE } from "@/config/entities/employee.config"
 
 import { useEffect, useState } from "react"
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   AlertCircle,
   Calendar,
@@ -59,7 +61,6 @@ import {
   X,
 } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { toast } from "sonner"
 
 /**
  * Helper function for cleanHtml.
