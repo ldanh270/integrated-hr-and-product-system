@@ -12,7 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 // Import entity configurations for task tracker, status, and priorities
-import { TASK_PRIORITIES, TASK_TRACKERS } from "@/config/entities/project.config"
+import { TASK_PRIORITIES, PROJECT_ROLE } from "@/config/entities/project.config"
+import { usePermission } from "@/hooks/use-permission"
 // Import API utilities for projects, tasks, and task categories
 import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
@@ -36,6 +37,9 @@ import { toast } from "sonner"
 // Import type definitions for task tracker, priority, and status
 import type { TaskTracker, TaskPriority } from "@/types/task.types"
 import type { ProjectTaskStatus } from "@/types/project-task-status.types"
+import { useAuthStore } from "@/store/auth-store"
+import { useProfile } from "@/hooks/use-profile"
+import { useProjectTrackers } from "@/pages/project/hooks/use-project-tracker"
 
 // Main component to render the "New Task" form
 export default function NewTask() {
@@ -48,6 +52,8 @@ export default function NewTask() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   
+  const { hasAnyPermission } = usePermission()
+
   // Extract parent task ID from URL query parameters (if creating a subtask)
   const parentTaskId = searchParams.get("parentTaskId") || ""
 
@@ -154,11 +160,50 @@ export default function NewTask() {
 
   // Query to fetch project custom statuses
   const { data: statusesData } = useQuery({
-    queryKey: ["project-statuses", pId],
+    queryKey: ["projectStatuses", pId],
     queryFn: () => projectTaskStatusApi.list(pId),
     enabled: !!pId,
   })
   const statuses = statusesData || []
+
+  // Auth context
+  const { user } = useAuthStore()
+  const { data: profile } = useProfile()
+
+  // Fetch dynamic project trackers
+  const { data: trackers = [] } = useProjectTrackers(pId || "")
+
+  // Helper to determine allowed trackers for the current user in this project
+  const allowedTrackers = (() => {
+    const activeTrackers = trackers.map(t => t.code)
+
+    // Default allowed trackers based on project configuration (or fallback to all if empty)
+    const projectAllowed = project?.allowedTaskTrackers && project.allowedTaskTrackers.length > 0
+      ? project.allowedTaskTrackers
+      : activeTrackers
+
+    const isAdminOrGM = hasAnyPermission(["project.update", "project.task.approve"])
+
+    const currentMember = members?.find((m) => m.employeeId === profile?.personalEmployeeId)
+    const isLeader = project?.teamLeaderId === user?.personalEmployeeId ||
+                     project?.teamLeaderId === profile?.personalEmployeeId ||
+                     currentMember?.role?.code === PROJECT_ROLE.LEADER
+
+    if (isAdminOrGM || isLeader) {
+      return projectAllowed
+    }
+
+    const role = currentMember?.role
+    if (role?.code === PROJECT_ROLE.VIEWER) {
+      return []
+    }
+
+    if (role) {
+      return projectAllowed.filter(tr => role.allowedTaskTrackers.includes(tr))
+    }
+
+    return projectAllowed
+  })()
 
   // Initialize taskStatusId to the default status of the project
   useEffect(() => {
@@ -167,6 +212,15 @@ export default function NewTask() {
       setTaskStatusId(defaultStatus.id)
     }
   }, [statuses, taskStatusId])
+
+  // Initialize taskTracker to the first allowed tracker of the project
+  useEffect(() => {
+    if (allowedTrackers.length > 0) {
+      if (!allowedTrackers.includes(taskTracker)) {
+        setTaskTracker(allowedTrackers[0] as TaskTracker)
+      }
+    }
+  }, [allowedTrackers, taskTracker])
 
   // Mutation to handle task creation API request
   const createTaskMutation = useMutation({
@@ -204,7 +258,7 @@ export default function NewTask() {
         setSelectedFiles([])
       } else {
         // Otherwise, navigate back to project detail page
-        navigate("/project/issues")
+        navigate(`/project/${pId}/issues`)
       }
     },
     // Display error details if task creation fails
@@ -240,16 +294,9 @@ export default function NewTask() {
   }
 
   // Translation helper for trackers format mapping
-  const formatTracker = (tracker: string) => {
-    if (tracker === "bug") return "Lỗi"
-    if (tracker === "feature") return "Tính năng"
-    if (tracker === "support") return "Hỗ trợ"
-    if (tracker === "task") return "Công việc"
-    if (tracker === "meeting") return "Cuộc họp"
-    if (tracker === "test") return "Kiểm thử"
-    if (tracker === "subtask") return "Công việc con"
-    if (tracker === "management") return "Quản lý"
-    return tracker.charAt(0).toUpperCase() + tracker.slice(1)
+  const formatTracker = (trackerCode: string) => {
+    const dbTracker = trackers.find(t => t.code === trackerCode)
+    return dbTracker ? dbTracker.name : trackerCode
   }
 
 
@@ -308,7 +355,7 @@ export default function NewTask() {
             Dự án
           </Link>
           <span>&gt;</span>
-          <Link to="/project/overview" className="hover:text-primary transition-colors font-medium">
+          <Link to={`/project/${pId}/overview`} className="hover:text-primary transition-colors font-medium">
             {project?.name || "Outfiz Redmine"}
           </Link>
           <span>&gt;</span>
@@ -351,7 +398,7 @@ export default function NewTask() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent position="popper" className="rounded-xl border-border bg-popover text-popover-foreground">
-                  {TASK_TRACKERS.map((tr) => (
+                  {allowedTrackers.map((tr) => (
                     <SelectItem key={tr} value={tr} className="rounded-lg">
                       {formatTracker(tr)}
                     </SelectItem>

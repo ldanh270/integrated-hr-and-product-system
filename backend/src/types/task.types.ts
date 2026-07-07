@@ -3,7 +3,7 @@ import { TASK_PRIORITIES, TASK_STATUSES, TASK_TRACKERS } from "@/configs/entitie
 /**
  * Type representing the tracker of a Task (e.g., feature, bug, support)
  */
-export type TaskTracker = (typeof TASK_TRACKERS)[number]
+export type TaskTracker = string
 
 /**
  * Type representing the priority level of a Task (e.g., low, medium, high)

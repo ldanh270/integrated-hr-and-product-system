@@ -8,7 +8,6 @@ datasource db {
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
-
 enum EmployeeStatus {
   active
   inactive
@@ -128,17 +127,6 @@ enum TaskStatus {
   reopened
 }
 
-enum TaskTracker {
-  feature
-  bug
-  support
-  task
-  meeting
-  test
-  subtask
-  management
-}
-
 enum TaskPriority {
   low
   medium
@@ -174,73 +162,75 @@ enum ActivityAction {
 
 // ── Employee ──
 model Employee {
-  id               String         @id @default(cuid())
-  fullName         String
-  username         String
-  passwordHash     String
-  email            String
-  phone            String?
-  dateOfBirth      DateTime?
-  nationalId       String?
-  address          String?
-  avatarUrl        String?
-  avatarId         String?
-  position         String?
-  employeeType     EmployeeType   @default(full_time)
-  status           EmployeeStatus @default(active)
-  failedLoginCount Int            @default(0)
-  lockedUntil      DateTime?
-  startDate        DateTime?      @db.Date
-  endDate          DateTime?      @db.Date
-  lastLoginAt      DateTime?
-  personalEmployeeId String?
-  personalEmployee   Employee?  @relation("PersonalEmployeeLink", fields: [personalEmployeeId], references: [id], onDelete: SetNull)
-  personalEmployeeLinks Employee[] @relation("PersonalEmployeeLink")
+  id                    String         @id @default(cuid())
+  fullName              String
+  username              String
+  passwordHash          String
+  email                 String
+  phone                 String?
+  dateOfBirth           DateTime?
+  nationalId            String?
+  address               String?
+  avatarUrl             String?
+  avatarId              String?
+  position              String?
+  positionId            String?
+  positionRel           Position?      @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  employeeType          EmployeeType   @default(full_time)
+  status                EmployeeStatus @default(active)
+  failedLoginCount      Int            @default(0)
+  lockedUntil           DateTime?
+  startDate             DateTime?      @db.Date
+  endDate               DateTime?      @db.Date
+  lastLoginAt           DateTime?
+  personalEmployeeId    String?
+  personalEmployee      Employee?      @relation("PersonalEmployeeLink", fields: [personalEmployeeId], references: [id], onDelete: SetNull)
+  personalEmployeeLinks Employee[]     @relation("PersonalEmployeeLink")
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime? // For soft deletes
-  version   Int       @default(1)
-  authorizationVersion Int @default(1)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  deletedAt            DateTime? // For soft deletes
+  version              Int       @default(1)
+  authorizationVersion Int       @default(1)
 
   // Relations
-  auditLogsActed   AuthorizationAuditLog[] @relation("AuditLogActor")
-  auditLogsTargeted AuthorizationAuditLog[] @relation("AuditLogTarget")
-  attendanceRecords          AttendanceRecord[]
-  realShifts                 RealShift[]
-  employeeShifts             EmployeeShift[]              @relation("EmployeeShiftEmployee")
-  employeeShiftsCreated      EmployeeShift[]              @relation("EmployeeShiftCreator")
-  applications               Application[]                @relation("ApplicationEmployee")
-  applicationsApproved       Application[]                @relation("ApplicationApprover")
-  applicationsAssigned       Application[]                @relation("ApplicationAssignedTo")
-  swapApplicationsAsPartner  ApplicationShiftSwapDetail[] @relation("ApplicationSwapWith")
-  shiftSchedules             ShiftSchedule[]              @relation("ShiftScheduleEmployee")
-  shiftSchedulesCreated      ShiftSchedule[]              @relation("ShiftScheduleCreator")
-  workingShiftsCreated              WorkingShift[]
-  weeklyScheduleTemplatesCreated  WeeklyScheduleTemplate[]     @relation("WeeklyScheduleTemplateCreator")
-  holidayCalendarsCreated    HolidayCalendar[]
-  salaryVariablesCreated     SalaryVariable[]
-  salaryComponentsCreated    SalaryComponent[]
-  payslipTemplatesCreated    PayslipTemplate[]
-  salaryConfigs              EmployeeSalaryConfig[]
-  salaryConfigsCreated       EmployeeSalaryConfig[]       @relation("SalaryConfigCreator")
-  payrollSettingsUpdated        PayrollSettings[]
-  weeklyScheduleSettingsUpdated WeeklyScheduleSettings[]
-  payrollsApproved           Payroll[]
-  payslips                   Payslip[]
-  projectsLead               Project[]                    @relation("ProjectTeamLeader")
-  projectsCreated            Project[]                    @relation("ProjectCreator")
-  projectMembers             ProjectMember[]
-  tasksAssigned              Task[]                       @relation("TaskAssignee")
-  tasksCreated               Task[]                       @relation("TaskCreator")
-  activityLogs               ActivityLog[]
-  passwordResetRequests      PasswordResetRequest[]       @relation("PasswordResetRequestEmployee")
-  passwordResetRequestsApprd PasswordResetRequest[]       @relation("PasswordResetRequestApprover")
-  refreshTokens              RefreshToken[]
-  spentTimes                 SpentTime[]                  @relation("EmployeeSpentTimes")
-  employeeRoles              EmployeeRole[]
-  spentTimesApproved         SpentTime[]                  @relation("SpentTimeApprover")
-  customQueries              CustomQuery[]
+  auditLogsActed                 AuthorizationAuditLog[]      @relation("AuditLogActor")
+  auditLogsTargeted              AuthorizationAuditLog[]      @relation("AuditLogTarget")
+  attendanceRecords              AttendanceRecord[]
+  realShifts                     RealShift[]
+  employeeShifts                 EmployeeShift[]              @relation("EmployeeShiftEmployee")
+  employeeShiftsCreated          EmployeeShift[]              @relation("EmployeeShiftCreator")
+  applications                   Application[]                @relation("ApplicationEmployee")
+  applicationsApproved           Application[]                @relation("ApplicationApprover")
+  applicationsAssigned           Application[]                @relation("ApplicationAssignedTo")
+  swapApplicationsAsPartner      ApplicationShiftSwapDetail[] @relation("ApplicationSwapWith")
+  shiftSchedules                 ShiftSchedule[]              @relation("ShiftScheduleEmployee")
+  shiftSchedulesCreated          ShiftSchedule[]              @relation("ShiftScheduleCreator")
+  workingShiftsCreated           WorkingShift[]
+  weeklyScheduleTemplatesCreated WeeklyScheduleTemplate[]     @relation("WeeklyScheduleTemplateCreator")
+  holidayCalendarsCreated        HolidayCalendar[]
+  salaryVariablesCreated         SalaryVariable[]
+  salaryComponentsCreated        SalaryComponent[]
+  payslipTemplatesCreated        PayslipTemplate[]
+  salaryConfigs                  EmployeeSalaryConfig[]
+  salaryConfigsCreated           EmployeeSalaryConfig[]       @relation("SalaryConfigCreator")
+  payrollSettingsUpdated         PayrollSettings[]
+  weeklyScheduleSettingsUpdated  WeeklyScheduleSettings[]
+  payrollsApproved               Payroll[]
+  payslips                       Payslip[]
+  projectsLead                   Project[]                    @relation("ProjectTeamLeader")
+  projectsCreated                Project[]                    @relation("ProjectCreator")
+  projectMembers                 ProjectMember[]
+  tasksAssigned                  Task[]                       @relation("TaskAssignee")
+  tasksCreated                   Task[]                       @relation("TaskCreator")
+  activityLogs                   ActivityLog[]
+  passwordResetRequests          PasswordResetRequest[]       @relation("PasswordResetRequestEmployee")
+  passwordResetRequestsApprd     PasswordResetRequest[]       @relation("PasswordResetRequestApprover")
+  refreshTokens                  RefreshToken[]
+  spentTimes                     SpentTime[]                  @relation("EmployeeSpentTimes")
+  employeeRoles                  EmployeeRole[]
+  spentTimesApproved             SpentTime[]                  @relation("SpentTimeApprover")
+  customQueries                  CustomQuery[]
 
   @@index([status, employeeType])
   @@index([deletedAt])
@@ -271,8 +261,8 @@ model WorkingShift {
   employeeShifts EmployeeShift[]
 
   // Relations for ShiftSchedule weekdays
-  shiftScheduleDays              ShiftScheduleDay[]
-  weeklyScheduleTemplateDays     WeeklyScheduleTemplateDay[]
+  shiftScheduleDays           ShiftScheduleDay[]
+  weeklyScheduleTemplateDays  WeeklyScheduleTemplateDay[]
   applicationShiftSwapDetails ApplicationShiftSwapDetail[] @relation("ShiftSwapWorkingShift")
 
   /// @db.Check("start_time >= 0 AND start_time < 1440")
@@ -315,28 +305,28 @@ model WeeklyScheduleTemplateWeek {
 }
 
 model WeeklyScheduleTemplateDay {
-  id        String                   @id @default(cuid())
+  id        String                     @id @default(cuid())
   weekId    String
   week      WeeklyScheduleTemplateWeek @relation(fields: [weekId], references: [id], onDelete: Cascade)
   dayOfWeek Int // 0 = Sunday, 1 = Monday, ... 6 = Saturday
   shiftId   String?
-  shift     WorkingShift?            @relation(fields: [shiftId], references: [id], onDelete: Restrict)
+  shift     WorkingShift?              @relation(fields: [shiftId], references: [id], onDelete: Restrict)
 
   @@unique([weekId, dayOfWeek])
   @@index([shiftId])
 }
 
 model ShiftSchedule {
-  id          String    @id @default(cuid())
+  id          String                  @id @default(cuid())
   employeeId  String
-  employee    Employee  @relation("ShiftScheduleEmployee", fields: [employeeId], references: [id], onDelete: Restrict)
+  employee    Employee                @relation("ShiftScheduleEmployee", fields: [employeeId], references: [id], onDelete: Restrict)
   validFrom   DateTime
   validTo     DateTime?
   templateId  String?
   template    WeeklyScheduleTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
   cycleWeeks  Int?
   createdById String
-  createdBy   Employee  @relation("ShiftScheduleCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy   Employee                @relation("ShiftScheduleCreator", fields: [createdById], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -787,10 +777,13 @@ model Project {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members    ProjectMember[]
-  tasks      Task[]
-  customQueries CustomQuery[]
-  taskStatuses  ProjectTaskStatus[]
+  members             ProjectMember[]
+  tasks               Task[]
+  customQueries       CustomQuery[]
+  taskStatuses        ProjectTaskStatus[]
+  roles               ProjectRole[]
+  allowedTaskTrackers String[]
+  trackers            ProjectTracker[]
 
   @@index([status])
   @@index([teamLeaderId, status])
@@ -807,6 +800,8 @@ model ProjectMember {
   hourlyRate Decimal?              @db.Decimal(12, 2)
   /// remote = Spent Time only; onsite = one GPS check-in per day, then Spent Time.
   workMode   ProjectMemberWorkMode @default(remote)
+  roleId     String?
+  role       ProjectRole?          @relation(fields: [roleId], references: [id], onDelete: SetNull)
   joinedAt   DateTime              @default(now())
   removedAt  DateTime?
 
@@ -815,32 +810,32 @@ model ProjectMember {
 }
 
 model Task {
-  id            String        @id @default(cuid())
-  projectId     String
-  project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  title         String
-  description   String?
-  tracker       TaskTracker   @default(feature)
-  priority      TaskPriority  @default(medium)
-  status        TaskStatus    @default(todo)
-  assigneeId    String?
-  assignee      Employee?     @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
-  createdById   String
-  createdBy     Employee      @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  startDate     DateTime?     @db.Date
-  dueDate       DateTime?
-  completedAt   DateTime?
+  id              String       @id @default(cuid())
+  projectId       String
+  project         Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  tracker         String       @default("feature")
+  priority        TaskPriority @default(medium)
+  status          TaskStatus   @default(todo)
+  assigneeId      String?
+  assignee        Employee?    @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdById     String
+  createdBy       Employee     @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  startDate       DateTime?    @db.Date
+  dueDate         DateTime?
+  completedAt     DateTime?
   estimatedTime   Float?
-  progress        Int           @default(0)
+  progress        Int          @default(0)
   resultUrl       String?
   resultNotes     String?
   rejectionReason String?
   parentTaskId    String?
-  parentTask      Task?         @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: Cascade)
-  subtasks        Task[]        @relation("TaskSubtasks")
+  parentTask      Task?        @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: Cascade)
+  subtasks        Task[]       @relation("TaskSubtasks")
 
-  statusId        String?
-  customStatus    ProjectTaskStatus? @relation(fields: [statusId], references: [id], onDelete: SetNull)
+  statusId     String?
+  customStatus ProjectTaskStatus? @relation(fields: [statusId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -935,29 +930,29 @@ model SpentTime {
 // ── Dynamic RBAC ──
 
 model AppRole {
-  id               String    @id @default(cuid())
-  name             String    @unique
+  id               String  @id @default(cuid())
+  name             String  @unique
   description      String?
   isSystem         Boolean   @default(false)
   isActive         Boolean   @default(true)
   isAdministrative Boolean   @default(false)
   isDefault        Boolean   @default(false)
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  createdBy   String?
-  updatedBy   String?
-  deletedAt   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
 
   permissions RolePermission[]
   employees   EmployeeRole[]
 
-  @@map("roles")
   @@index([name])
   @@index([isActive])
   @@index([deletedAt])
   @@index([isDefault])
   @@index([isAdministrative, isActive, deletedAt])
+  @@map("roles")
 }
 
 model AdminStateLock {
@@ -967,27 +962,25 @@ model AdminStateLock {
 }
 
 model Permission {
-  id          String    @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
-  code        String    @unique // Convention: module.action
+  code        String  @unique // Convention: module.action
   module      String
   description String?
-  isActive    Boolean   @default(true)
-  isSystem    Boolean   @default(false)
+  isActive    Boolean @default(true)
+  isSystem    Boolean @default(false)
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  createdBy   String?
-  updatedBy   String?
-  deletedAt   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
 
-  roles       RolePermission[]
+  roles RolePermission[]
 
-  @@map("permissions")
   @@index([module])
   @@index([deletedAt])
-  @@index([isActive])
-  @@index([module, isActive, deletedAt])
+  @@map("permissions")
 }
 
 model RolePermission {
@@ -996,8 +989,8 @@ model RolePermission {
   assignedAt   DateTime @default(now())
   assignedBy   String?
 
-  role         AppRole    @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role       AppRole    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
   @@index([permissionId])
@@ -1010,8 +1003,8 @@ model EmployeeRole {
   assignedAt DateTime @default(now())
   assignedBy String?
 
-  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  role       AppRole  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  role     AppRole  @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([employeeId, roleId])
   @@index([roleId])
@@ -1019,21 +1012,21 @@ model EmployeeRole {
 }
 
 model AuthorizationAuditLog {
-  id                 String   @id @default(uuid())
+  id                 String  @id @default(uuid())
   actorId            String?
   targetEmployeeId   String?
   targetRoleId       String?
   targetPermissionId String?
 
-  action             String
-  oldValue           Json?
-  newValue           Json?
-  metadata           Json?
+  action   String
+  oldValue Json?
+  newValue Json?
+  metadata Json?
 
-  createdAt          DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  actor              Employee? @relation("AuditLogActor", fields: [actorId], references: [id], onDelete: SetNull)
-  targetEmployee     Employee? @relation("AuditLogTarget", fields: [targetEmployeeId], references: [id], onDelete: SetNull)
+  actor          Employee? @relation("AuditLogActor", fields: [actorId], references: [id], onDelete: SetNull)
+  targetEmployee Employee? @relation("AuditLogTarget", fields: [targetEmployeeId], references: [id], onDelete: SetNull)
 
   @@index([actorId])
   @@index([targetEmployeeId])
@@ -1042,18 +1035,19 @@ model AuthorizationAuditLog {
   @@index([action])
   @@map("authorization_audit_logs")
 }
+
 // ── CustomQuery ──
 model CustomQuery {
-  id          String   @id @default(cuid())
-  name        String
-  type        String   @default("gantt")
-  projectId   String?
-  project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  employeeId  String
-  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  queryData   String   // JSON string storing filters
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  name       String
+  type       String   @default("gantt")
+  projectId  String?
+  project    Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  queryData  String // JSON string storing filters
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([employeeId, type])
 }
@@ -1062,11 +1056,11 @@ model ProjectTaskStatus {
   id          String   @id @default(cuid())
   projectId   String
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  name        String   // Tên trạng thái, ví dụ: "Idea", "To Do", "In Progress", "Done"
+  name        String // Tên trạng thái, ví dụ: "Idea", "To Do", "In Progress", "Done"
   color       String   @default("#A3A3A3") // Mã màu sắc đại diện
-  order       Int      @default(0)         // Thứ tự hiển thị cột trên Kanban Board
-  isDefault   Boolean  @default(false)     // Nhãn mặc định khi tạo mới Task
-  isCompleted Boolean  @default(false)     // Đánh dấu trạng thái đã hoàn thành (như Done, Closed)
+  order       Int      @default(0) // Thứ tự hiển thị cột trên Kanban Board
+  isDefault   Boolean  @default(false) // Nhãn mặc định khi tạo mới Task
+  isCompleted Boolean  @default(false) // Đánh dấu trạng thái đã hoàn thành (như Done, Closed)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   tasks       Task[]
@@ -1075,3 +1069,51 @@ model ProjectTaskStatus {
   @@index([projectId])
 }
 
+model Position {
+  id                      String            @id @default(cuid())
+  name                    String            @unique
+  code                    String            @unique // ví dụ: "developer", "tester", "pm"
+  description             String?
+  allowedTaskTrackers     String[]
+  allowedApplicationTypes ApplicationType[]
+
+  employees    Employee[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("positions")
+}
+
+model ProjectRole {
+  id                  String   @id @default(cuid())
+  projectId           String
+  project             Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name                String
+  code                String
+  allowedTaskTrackers String[]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  members             ProjectMember[]
+
+  @@unique([projectId, name])
+  @@unique([projectId, code])
+  @@map("project_roles")
+}
+
+model ProjectTracker {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  code      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, name])
+  @@unique([projectId, code])
+  @@map("project_trackers")
+}

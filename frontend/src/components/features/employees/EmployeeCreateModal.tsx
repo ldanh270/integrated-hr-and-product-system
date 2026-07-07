@@ -10,6 +10,7 @@ import {
   ROLE_LABELS,
 } from "@/config/entities/employee.config"
 import { useEmployeeCreateModal } from "@/hooks/employees/useEmployeeCreateModal"
+import { usePositions } from "@/hooks/use-position-query"
 
 import { X } from "lucide-react"
 
@@ -31,6 +32,7 @@ interface Props {
 export function EmployeeCreateModal({ isOpen, onClose }: Props) {
   // Extract react hook form fields, submission states, and error mappings
   const { register, handleSubmit, errors, isPending, handleClose, roles } = useEmployeeCreateModal(onClose)
+  const { data: positions = [] } = usePositions()
 
   return (
     <AppModal isOpen={isOpen} onClose={handleClose} widthClassName="sm:max-w-4xl">
@@ -247,18 +249,25 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
               <div className="col-span-8 grid grid-cols-2 gap-5">
                 <div className="col-span-2 space-y-1.5">
                   <Label
-                    htmlFor="position"
+                    htmlFor="positionId"
                     className="text-[12px] text-muted-foreground font-medium"
                   >
                     Chức danh (Vị trí)
                   </Label>
-                  <Input
-                    id="position"
-                    {...register("position")}
-                    className={`bg-background h-10 ${errors.position ? "border-destructive" : ""}`}
-                  />
-                  {errors.position && (
-                    <p className="text-xs text-destructive">{errors.position.message}</p>
+                  <select
+                    id="positionId"
+                    {...register("positionId")}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    <option value="">-- Chọn chức danh --</option>
+                    {positions.map((pos: any) => (
+                      <option key={pos.id} value={pos.id}>
+                        {pos.name}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.positionId && (
+                    <p className="text-xs text-destructive">{errors.positionId.message}</p>
                   )}
                 </div>
 

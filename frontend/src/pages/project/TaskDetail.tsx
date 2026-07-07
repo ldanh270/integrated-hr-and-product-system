@@ -24,8 +24,8 @@ import {
   SPENT_TIME_STATUS,
   TASK_PRIORITIES,
   TASK_STATUS,
-  TASK_TRACKERS,
   getSpentTimeStatusLabel,
+  PROJECT_ROLE,
 } from "@/config/entities/project.config"
 import { SPENT_TIME_UI, getSpentTimeStatusPillVariant } from "@/config/rules/spent-time.config"
 import { usePermission } from "@/hooks/use-permission"
@@ -34,13 +34,18 @@ import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
 import { useAuthStore } from "@/store/auth-store"
 import type { ProjectTaskStatus } from "@/types/project-task-status.types"
-import type { SpentTime } from "@/types/spent-time.types"
-import type { TaskPriority, TaskTracker } from "@/types/task.types"
+import { useProfile } from "@/hooks/use-profile"
+import { useProjectTrackers } from "@/pages/project/hooks/use-project-tracker"
+// Import React Query hooks for fetching and mutations
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+// Import toast notification client
+import { toast } from "sonner"
 import { extractErrorMessage } from "@/utils/error-helper"
+import type { SpentTime } from "@/types/spent-time.types"
+import type { TaskTracker, TaskPriority } from "@/types/task.types"
 
 import { useEffect, useState } from "react"
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   AlertCircle,
   Calendar,
@@ -55,7 +60,6 @@ import {
   X,
 } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { toast } from "sonner"
 
 /**
  * Helper function for cleanHtml.
@@ -77,9 +81,10 @@ const cleanHtml = (html: string) => {
   return textLength === 0 ? null : html.trim()
 }
 
-// Main component to render task detailed specifications
 /**
- * TaskDetail Component.
+ * Component representing the task detail view.
+ * Enables team members to view detailed specifications, update metadata (trackers, status, assignee, priority, description),
+ * log/review spent time records, and post/cancel review status checks.
  */
 export default function TaskDetail() {
   // Initialize query client, route navigation, and auth store
@@ -176,11 +181,62 @@ export default function TaskDetail() {
 
   // Query hook to fetch project custom statuses
   const { data: statusesData } = useQuery({
-    queryKey: ["project-statuses", projectId],
+    queryKey: ["projectStatuses", projectId],
     queryFn: () => projectTaskStatusApi.list(projectId),
     enabled: !!projectId,
   })
   const statuses = statusesData || []
+
+  // Auth context
+  const { data: profile } = useProfile()
+
+  // Fetch dynamic project trackers
+  const { data: trackers = [] } = useProjectTrackers(projectId || "")
+
+  // Helper to determine allowed trackers for the current user in this project
+  const allowedTrackers = (() => {
+    const activeTrackers = trackers.map(t => t.code)
+
+    // Default allowed trackers based on project configuration (or fallback to all if empty)
+    const projectAllowed = project?.allowedTaskTrackers && project.allowedTaskTrackers.length > 0
+      ? project.allowedTaskTrackers
+      : activeTrackers
+
+    const isAdminOrGM = hasAnyPermission(["project.update", "project.task.approve"])
+
+    const currentMember = members?.find((m) => m.employeeId === profile?.personalEmployeeId)
+    const isLeader = project?.teamLeaderId === user?.personalEmployeeId ||
+                     project?.teamLeaderId === profile?.personalEmployeeId ||
+                     currentMember?.role?.code === PROJECT_ROLE.LEADER
+
+    if (isAdminOrGM || isLeader) {
+      return projectAllowed
+    }
+
+    const role = currentMember?.role
+    if (role?.code === PROJECT_ROLE.VIEWER) {
+      return []
+    }
+
+    if (role) {
+      return projectAllowed.filter(tr => role.allowedTaskTrackers.includes(tr))
+    }
+
+    return projectAllowed
+  })()
+
+  // Format helper for display
+  const formatTracker = (trackerCode: string) => {
+    const dbTracker = trackers.find(t => t.code === trackerCode)
+    return dbTracker ? dbTracker.name : trackerCode
+  }
+
+  // Ensure current task tracker is included even if not allowed by current rules
+  const trackersToDisplay = allowedTrackers.includes(taskTracker)
+    ? allowedTrackers
+    : taskTracker
+      ? [taskTracker, ...allowedTrackers.filter(t => t !== taskTracker)]
+      : allowedTrackers
 
   // PT task totals exclude rejected logs; pending + approved count toward estimate cap
   const totalSpentHours =
@@ -293,7 +349,7 @@ export default function TaskDetail() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["tasks", "project", projectId] })
-      navigate("/project/overview")
+      navigate(`/project/${projectId}/overview`)
     },
   })
 
@@ -391,10 +447,7 @@ export default function TaskDetail() {
                 Dự án
               </Link>
               <span>/</span>
-              <Link
-                to="/project/overview"
-                className="hover:text-primary transition-colors font-semibold"
-              >
+              <Link to={`/project/${projectId}/overview`} className="hover:text-primary transition-colors font-semibold">
                 {task.project?.name || "Chi tiết dự án"}
               </Link>
               <span>/</span>
@@ -858,9 +911,9 @@ export default function TaskDetail() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent position="popper" className="rounded-xl border-border bg-popover">
-                    {TASK_TRACKERS.map((tr) => (
+                    {trackersToDisplay.map((tr) => (
                       <SelectItem key={tr} value={tr} className="rounded-lg">
-                        {tr}
+                        {formatTracker(tr)}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -15,6 +15,7 @@ export interface ProfileDto {
   nationalId: string | null
   address: string | null
   position: string | null
+  positionId: string | null
   roles: string[]
   employeeType: EmployeeType
   status: EmployeeStatus
@@ -62,6 +63,7 @@ export interface ProfileEmployeeDocument {
   nationalId: string | null
   address: string | null
   position: string | null
+  positionId: string | null
   employeeType: EmployeeType
   status: EmployeeStatus
   startDate: Date | null

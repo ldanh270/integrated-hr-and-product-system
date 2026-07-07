@@ -1,4 +1,4 @@
-import { PROJECT_STATUSES, TASK_CREATION_POLICIES, PROJECT_MEMBER_WORK_MODES } from "@/configs/entities/project.config.ts"
+import { PROJECT_STATUSES, TASK_CREATION_POLICIES, PROJECT_MEMBER_WORK_MODES, TASK_TRACKERS } from "@/configs/entities/project.config.ts"
 
 import { z } from "zod"
 
@@ -31,6 +31,7 @@ export const createProjectSchema = z
       .nullable(),
 
     teamLeaderId: z.string().optional().nullable(),
+    allowedTaskTrackers: z.array(z.string()).optional(),
   })
   .strict()
 
@@ -72,6 +73,7 @@ export const updateProjectSchema = z
       .nullable(),
 
     teamLeaderId: z.string().optional().nullable(),
+    allowedTaskTrackers: z.array(z.string()).optional(),
   })
   .strict()
 
@@ -94,19 +96,21 @@ export const addProjectMemberSchema = z
     employeeId: z.string().min(1, "Employee ID is required"),
     hourlyRate: z.number().positive("Hourly rate must be positive").optional().nullable(),
     workMode: z.enum(PROJECT_MEMBER_WORK_MODES).optional(),
+    roleId: z.string().optional().nullable(),
   })
   .strict()
 
 export type AddProjectMemberSchemaType = z.infer<typeof addProjectMemberSchema>
 
-/** PATCH body — at least one of hourlyRate / workMode required. */
+/** PATCH body — at least one field required. */
 export const updateProjectMemberSchema = z
   .object({
     hourlyRate: z.number().positive("Hourly rate must be positive").optional().nullable(),
     workMode: z.enum(PROJECT_MEMBER_WORK_MODES).optional(),
+    roleId: z.string().optional().nullable(),
   })
   .strict()
-  .refine((data) => data.hourlyRate !== undefined || data.workMode !== undefined, {
+  .refine((data) => data.hourlyRate !== undefined || data.workMode !== undefined || data.roleId !== undefined, {
     message: "At least one field must be provided",
   })
 

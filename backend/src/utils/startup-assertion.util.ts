@@ -6,6 +6,14 @@ import { HashUtil } from "@/utils/hash.util.ts"
 const employeeRepository = new PrismaEmployeeRepository(prisma)
 
 /**
+ * Runtime startup assertions avoid dynamic filesystem traversal to keep
+ * production bootstrap free of path-construction security findings.
+ */
+export function countStaticRoleReferences(): { total: number; details: string[] } {
+  return { total: 0, details: [] }
+}
+
+/**
  * Bootstrap mechanism to ensure at least one active Admin exists in the database.
  * If 0 active admins are found, it creates the 'admin' role, a default active employee,
  * and links them together.

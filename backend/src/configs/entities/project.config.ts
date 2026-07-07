@@ -194,3 +194,20 @@ export const TASK_TRACKERS = [
   TASK_TRACKER.SUBTASK,
   TASK_TRACKER.MANAGEMENT,
 ] as const
+
+/**
+ * Project roles enumeration
+ */
+export const PROJECT_ROLE = {
+  LEADER: "leader",
+  DEVELOPER: "developer",
+  TESTER: "tester",
+  VIEWER: "viewer",
+} as const
+
+export const PROJECT_ROLES = [
+  PROJECT_ROLE.LEADER,
+  PROJECT_ROLE.DEVELOPER,
+  PROJECT_ROLE.TESTER,
+  PROJECT_ROLE.VIEWER,
+] as const
