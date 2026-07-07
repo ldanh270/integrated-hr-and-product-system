@@ -43,7 +43,6 @@ import { toast } from "sonner"
 import { extractErrorMessage } from "@/utils/error-helper"
 import type { SpentTime } from "@/types/spent-time.types"
 import type { TaskTracker, TaskPriority } from "@/types/task.types"
-import { ROLE } from "@/config/entities/employee.config"
 
 import { useEffect, useState } from "react"
 
@@ -203,8 +202,7 @@ export default function TaskDetail() {
       ? project.allowedTaskTrackers
       : activeTrackers
 
-    const isAdminOrGM = user?.roles?.some(role => role === ROLE.ADMIN || role === ROLE.GENERAL_MANAGER) ||
-                        profile?.roles?.some(role => role === ROLE.ADMIN || role === ROLE.GENERAL_MANAGER)
+    const isAdminOrGM = hasAnyPermission(["project.update", "project.task.approve"])
 
     const currentMember = members?.find((m) => m.employeeId === profile?.personalEmployeeId)
     const isLeader = project?.teamLeaderId === user?.personalEmployeeId ||

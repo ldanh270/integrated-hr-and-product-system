@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select"
 // Import entity configurations for task tracker, status, and priorities
 import { TASK_PRIORITIES, PROJECT_ROLE } from "@/config/entities/project.config"
-import { ROLE } from "@/config/entities/employee.config"
+import { usePermission } from "@/hooks/use-permission"
 // Import API utilities for projects, tasks, and task categories
 import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
@@ -52,6 +52,8 @@ export default function NewTask() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   
+  const { hasAnyPermission } = usePermission()
+
   // Extract parent task ID from URL query parameters (if creating a subtask)
   const parentTaskId = searchParams.get("parentTaskId") || ""
 
@@ -180,8 +182,7 @@ export default function NewTask() {
       ? project.allowedTaskTrackers
       : activeTrackers
 
-    const isAdminOrGM = user?.roles?.some(role => role === ROLE.ADMIN || role === ROLE.GENERAL_MANAGER) ||
-                        profile?.roles?.some(role => role === ROLE.ADMIN || role === ROLE.GENERAL_MANAGER)
+    const isAdminOrGM = hasAnyPermission(["project.update", "project.task.approve"])
 
     const currentMember = members?.find((m) => m.employeeId === profile?.personalEmployeeId)
     const isLeader = project?.teamLeaderId === user?.personalEmployeeId ||
