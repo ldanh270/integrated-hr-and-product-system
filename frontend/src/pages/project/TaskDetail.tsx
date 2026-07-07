@@ -228,17 +228,7 @@ export default function TaskDetail() {
   // Format helper for display
   const formatTracker = (trackerCode: string) => {
     const dbTracker = trackers.find(t => t.code === trackerCode)
-    if (dbTracker) return dbTracker.name
-
-    if (trackerCode === "bug") return "Lỗi"
-    if (trackerCode === "feature") return "Tính năng"
-    if (trackerCode === "support") return "Hỗ trợ"
-    if (trackerCode === "task") return "Công việc"
-    if (trackerCode === "meeting") return "Cuộc họp"
-    if (trackerCode === "test") return "Kiểm thử"
-    if (trackerCode === "subtask") return "Công việc con"
-    if (trackerCode === "management") return "Quản lý"
-    return trackerCode.charAt(0).toUpperCase() + trackerCode.slice(1)
+    return dbTracker ? dbTracker.name : trackerCode
   }
 
   // Ensure current task tracker is included even if not allowed by current rules

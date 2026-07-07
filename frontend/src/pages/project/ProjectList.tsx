@@ -39,17 +39,7 @@ import React, { useState } from "react"
 // Import router link navigation
 import { useNavigate } from "react-router-dom"
 import { extractErrorMessage } from "@/utils/error-helper"
-
-const TRACKER_LIST = [
-  { key: "feature", label: "Feature (Tính năng)" },
-  { key: "bug", label: "Bug (Lỗi)" },
-  { key: "support", label: "Support (Hỗ trợ)" },
-  { key: "task", label: "Task (Công việc)" },
-  { key: "meeting", label: "Meeting (Họp)" },
-  { key: "test", label: "Test (Kiểm thử)" },
-  { key: "subtask", label: "Subtask (Việc con)" },
-  { key: "management", label: "Management (Quản lý)" },
-]
+import { useProjectTrackers } from "@/pages/project/hooks/use-project-tracker"
 
 /**
  * Component displaying the main project list dashboard.
@@ -98,6 +88,23 @@ export default function ProjectList() {
   // Destructure arrays, fallback to empty array structures if undefined
   const projects = projectsData?.data || []
   const employees = employeesData?.data || []
+
+  // Load trackers from the first project in the list if available, otherwise fallback
+  const firstProjectId = projects[0]?.id || ""
+  const { data: dbTrackers = [] } = useProjectTrackers(firstProjectId)
+
+  const trackersList = dbTrackers.length > 0
+    ? dbTrackers.map((t) => ({ key: t.code, label: `${t.name} (${t.code})` }))
+    : [
+        { key: "feature", label: "Tính năng (feature)" },
+        { key: "bug", label: "Lỗi (bug)" },
+        { key: "support", label: "Hỗ trợ (support)" },
+        { key: "task", label: "Công việc (task)" },
+        { key: "meeting", label: "Cuộc họp (meeting)" },
+        { key: "test", label: "Kiểm thử (test)" },
+        { key: "subtask", label: "Công việc con (subtask)" },
+        { key: "management", label: "Quản lý (management)" },
+      ]
 
   // Perform client-side filter computation on the fetched projects list
   const filteredProjects = projects.filter((proj) => {
@@ -479,7 +486,7 @@ export default function ProjectList() {
                     {newProjectTrackers.length === 0
                       ? "Cho phép tất cả"
                       : newProjectTrackers
-                          .map((k) => TRACKER_LIST.find((t) => t.key === k)?.label || k)
+                          .map((k) => trackersList.find((t) => t.key === k)?.label || k)
                           .join(", ")}
                   </span>
                   <ChevronDown className="size-4 shrink-0 text-muted-foreground ml-1" />
@@ -493,7 +500,7 @@ export default function ProjectList() {
                         <button
                           type="button"
                           onClick={() => {
-                            setNewProjectTrackers(TRACKER_LIST.map((t) => t.key))
+                            setNewProjectTrackers(trackersList.map((t) => t.key))
                           }}
                           className="text-[9px] font-extrabold text-primary hover:underline cursor-pointer"
                         >
@@ -511,7 +518,7 @@ export default function ProjectList() {
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-1.5 max-h-60 overflow-y-auto">
-                      {TRACKER_LIST.map((tracker) => {
+                      {trackersList.map((tracker) => {
                         const isChecked = newProjectTrackers.includes(tracker.key)
                         return (
                           <button

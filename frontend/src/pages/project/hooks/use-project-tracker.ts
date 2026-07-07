@@ -2,7 +2,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { projectTrackerApi } from "@/lib/api/project-tracker.api"
 import type { CreateProjectTrackerDto, UpdateProjectTrackerDto } from "@/types/project-tracker.types"
 import { toast } from "sonner"
+import { extractErrorMessage } from "@/utils/error-helper"
 
+/**
+ * Hook to retrieve all trackers configured in a project.
+ * @param projectId - Project ID.
+ */
 export function useProjectTrackers(projectId: string) {
   return useQuery({
     queryKey: ["projectTrackers", projectId],
@@ -11,6 +16,10 @@ export function useProjectTrackers(projectId: string) {
   })
 }
 
+/**
+ * Hook to create a project-scoped custom tracker.
+ * @param projectId - Project ID.
+ */
 export function useCreateProjectTracker(projectId: string) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -19,12 +28,16 @@ export function useCreateProjectTracker(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ["projectTrackers", projectId] })
       toast.success("Đã thêm loại yêu cầu mới")
     },
-    onError: (err: any) => {
-      toast.error(err.message || "Thêm loại yêu cầu thất bại")
+    onError: (err: unknown) => {
+      toast.error(extractErrorMessage(err))
     },
   })
 }
 
+/**
+ * Hook to update an existing project-scoped custom tracker.
+ * @param projectId - Project ID.
+ */
 export function useUpdateProjectTracker(projectId: string) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -35,12 +48,16 @@ export function useUpdateProjectTracker(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ["project", projectId] })
       toast.success("Đã cập nhật loại yêu cầu")
     },
-    onError: (err: any) => {
-      toast.error(err.message || "Cập nhật loại yêu cầu thất bại")
+    onError: (err: unknown) => {
+      toast.error(extractErrorMessage(err))
     },
   })
 }
 
+/**
+ * Hook to delete or deactivate a project-scoped custom tracker.
+ * @param projectId - Project ID.
+ */
 export function useDeleteProjectTracker(projectId: string) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -50,8 +67,8 @@ export function useDeleteProjectTracker(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ["project", projectId] })
       toast.success("Đã xóa loại yêu cầu")
     },
-    onError: (err: any) => {
-      toast.error(err.message || "Xóa loại yêu cầu thất bại")
+    onError: (err: unknown) => {
+      toast.error(extractErrorMessage(err))
     },
   })
 }
