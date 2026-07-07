@@ -1,19 +1,13 @@
 /**
- * Demo dataset seeder — invoked via `bun run seed:demo`.
- *
- * Purpose: populate a non-empty local database for demos and manual QA without wiping data.
- * Seeds (in dependency order): working shifts, holidays, schedules, employee shifts,
- * attendance records, projects, applications, tasks, and spent times.
- *
- * Idempotent: each sub-seeder skips when its target table already has rows.
- * Prerequisite: run `bun run seed:admin` first so the admin account exists.
+ * Incremental seed helpers — extracted from former seed-demo.ts.
+ * Used by `bun run seed -- --incremental` when DB already has admin/employees.
  */
 import { prisma } from "@/libs/database.ts"
 import { createEmptyContext, registry } from "./seeders/index.ts"
 import type { SeedContext } from "./seeders/seed-context.ts"
 
 /** Load FK ids and lookup maps from DB so downstream seeders can reference existing rows. */
-async function hydrateContext(context: SeedContext): Promise<SeedContext> {
+export async function hydrateSeedContext(context: SeedContext): Promise<SeedContext> {
   const admin = await prisma.employee.findFirst({ where: { username: "admin" } })
   if (!admin) {
     throw new Error("Missing admin account. Run: bun run seed:admin")
@@ -45,11 +39,10 @@ async function hydrateContext(context: SeedContext): Promise<SeedContext> {
   }
 }
 
-/** Per-seeder row-count guard — safe to re-run demo seed without duplicating data. */
+/** Per-seeder row-count guard — safe to re-run incremental seed without duplicating data. */
 async function shouldSkipSeederInternal(name: string): Promise<boolean> {
   let count = 0
 
-  // Per-seeder idempotency: skip when target data already exists (safe re-run of demo seed).
   switch (name) {
     case "WorkingShifts":
       count = await prisma.workingShift.count()
@@ -62,7 +55,6 @@ async function shouldSkipSeederInternal(name: string): Promise<boolean> {
     case "ShiftSchedules": {
       const shiftScheduleCount = await prisma.shiftSchedule.count()
       const employeeCount = await prisma.employee.count()
-
       return shiftScheduleCount >= employeeCount
     }
 
@@ -105,29 +97,27 @@ async function shouldSkipSeeder(name: string): Promise<boolean> {
   }
 }
 
-/** Run all registered demo seeders in topological order, refreshing context after each step. */
-async function main(): Promise<void> {
-  console.log("Seeding demo data (without clearing database)...")
+/**
+ * Incremental seed — no DB wipe; skips seeders whose target tables already have rows.
+ * Used when local DB already has admin/employees and only needs demo data filled in.
+ */
+export async function runIncrementalSeed(): Promise<void> {
+  console.log("Seeding data incrementally (without clearing database)...")
 
-  let context = await hydrateContext(createEmptyContext())
+  let context = await hydrateSeedContext(createEmptyContext())
   const seeders = registry.getSorted()
 
   for (const seeder of seeders) {
-    try {
-      if (await shouldSkipSeeder(seeder.name)) {
-        console.log(`[skip] ${seeder.name} — already has data`)
-        context = await hydrateContext(context)
-        continue
-      }
-
-      console.log(`\n[→] Running: ${seeder.name}`)
-      const result = await seeder.run(context)
-      context = await hydrateContext({ ...context, ...result })
-      console.log(`[✓] Done: ${seeder.name}`)
-    } catch (error) {
-      console.error(`[✗] Seeder ${seeder.name} failed:`, error)
-      throw error
+    if (await shouldSkipSeeder(seeder.name)) {
+      console.log(`[skip] ${seeder.name} — already has data`)
+      context = await hydrateSeedContext(context)
+      continue
     }
+
+    console.log(`\n[→] Running: ${seeder.name}`)
+    const result = await seeder.run(context)
+    context = await hydrateSeedContext({ ...context, ...result })
+    console.log(`[✓] Done: ${seeder.name}`)
   }
 
   const summary = {
@@ -140,22 +130,5 @@ async function main(): Promise<void> {
     spentTimes: await prisma.spentTime.count(),
   }
 
-  console.log("\nDemo seed complete:", summary)
+  console.log("\nIncremental seed complete:", summary)
 }
-
-async function disconnectDatabase(): Promise<void> {
-  await prisma.$disconnect()
-}
-
-async function runDemoSeed(): Promise<void> {
-  try {
-    await main()
-  } catch (error: unknown) {
-    console.error("Demo seed failed:", error)
-    process.exitCode = 1
-  } finally {
-    await disconnectDatabase()
-  }
-}
-
-void runDemoSeed()
