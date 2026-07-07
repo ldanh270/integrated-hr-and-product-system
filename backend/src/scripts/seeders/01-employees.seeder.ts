@@ -1,4 +1,4 @@
-import { EMPLOYEE_TYPE, EMPLOYEE_TYPES, SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
+import { EMPLOYEE_TYPE, EMPLOYEE_TYPES } from "@/configs/entities/employee.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
 import { getSeedPassword } from "@/scripts/seeders/seed-password.util.ts"
@@ -51,10 +51,10 @@ export class EmployeesSeeder implements ISeeder {
         else if (role === "employee") phoneSuffix = "5"
 
         let positionId = devPos?.id
-        if (role === SYSTEM_ROLE.ADMIN) positionId = adminPos?.id
-        else if (role === SYSTEM_ROLE.HR_MANAGER) positionId = hrPos?.id
-        else if (role === SYSTEM_ROLE.GENERAL_MANAGER) positionId = gmPos?.id
-        else if (role === SYSTEM_ROLE.TEAM_LEADER) positionId = pmPos?.id
+        if (role === "admin") positionId = adminPos?.id
+        else if (role === "hr_manager") positionId = hrPos?.id
+        else if (role === "general_manager") positionId = gmPos?.id
+        else if (role === "team_leader") positionId = pmPos?.id
 
         existing = await prisma.employee.create({
           data: {

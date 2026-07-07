@@ -7,7 +7,6 @@ import { AppError } from "@/utils/error.util.ts"
 import { IEmployeeRepository } from "@/types/employee.types.ts"
 import { IProjectRepository } from "@/types/project.types.ts"
 import { PrismaClient } from "@prisma/client"
-import { SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
 import { PROJECT_ROLE } from "@/configs/entities/project.config.ts"
 
 /**
@@ -154,8 +153,7 @@ export class PositionService implements IPositionService {
 
     // Admin or GM bypass rules
     const roles = await this.employeeRepo.findRolesByEmployeeId(employeeId)
-    const roleNames = roles.map(r => r.name)
-    const isAdminOrGM = roleNames.some(role => role === SYSTEM_ROLE.ADMIN || role === SYSTEM_ROLE.GENERAL_MANAGER)
+    const isAdminOrGM = roles.some(role => role.isAdministrative)
     
     // Query project member relation
     const member = await this.prisma.projectMember.findUnique({
