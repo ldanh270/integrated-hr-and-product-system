@@ -207,6 +207,7 @@ export class PayrollService implements IPayrollService {
       // Build context
       const context: Record<string, unknown> = {
         baseSalary: Number(config.baseSalary),
+        // Formula denominator is fixed 22; actualWorkingDays carries attendance-based pro-rating.
         workingDays: 22,
         actualWorkingDays: attendance.workingDays,
         absentDays: attendance.absentDays,
@@ -311,6 +312,7 @@ export class PayrollService implements IPayrollService {
       totalHours += row.hours
       grossPay += linePay
       details.push({
+        // PT has no salary-component mapping — each approved Spent Time row becomes one payslip line.
         componentId: row.id,
         name: `Dự án ${row.projectId}`,
         type: SALARY_COMPONENT_TYPES[0] as ComponentType,
@@ -332,6 +334,7 @@ export class PayrollService implements IPayrollService {
       totalAdditions: Number(grossPay.toFixed(2)),
       totalDeductions: 0,
       netSalary: Number(grossPay.toFixed(2)),
+      // PT pay is hour-based from Spent Time — attendance working-day fields stay zero.
       workingDays: 0,
       absentDays: 0,
       overtimeMinutes: Math.round(

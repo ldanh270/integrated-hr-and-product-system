@@ -25,6 +25,7 @@ export function clampToEarliestRequestableWeek(
 export function isPartTimeAvailabilityEditable(
   status: IPartTimeAvailabilityStatus | null | undefined,
 ): boolean {
+  // Intended gate for draft/submitted/rejected; UI keeps form open after submit because assign needs no approval.
   // No saved row yet — first submit is always allowed for the target week.
   if (!status) return true
   return PART_TIME_AVAILABILITY_EDITABLE_STATUSES.includes(status)

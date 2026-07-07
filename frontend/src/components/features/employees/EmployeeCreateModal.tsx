@@ -318,6 +318,7 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     {WORK_SCHEDULE_TYPES.map((typeKey) => (
+                      // Drives PT vs FT product paths (availability vs weekly template, payroll branch).
                       <option key={typeKey} value={typeKey}>
                         {typeKey === WORK_SCHEDULE_TYPE.FULL_TIME
                           ? WORK_SCHEDULE_TYPE_LABELS.full_time

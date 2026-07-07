@@ -186,6 +186,7 @@ function EmployeePartTimeAvailabilityForm({
           )}
         </div>
 
+        {/* Form stays editable after submit — admin assigns from submitted rows without approval gate. */}
         <AvailabilityWeekGrid
           weekStart={weekStart}
           days={days}

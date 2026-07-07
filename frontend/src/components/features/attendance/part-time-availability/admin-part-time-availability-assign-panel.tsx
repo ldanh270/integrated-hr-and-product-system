@@ -135,6 +135,7 @@ export function AdminPartTimeAvailabilityAssignPanel({
   onAssigned,
 }: AdminPartTimeAvailabilityAssignPanelProps) {
   const weekDates = getWeekDates(weekStart)
+  // Only submitted (or legacy approved) rows can receive shift assignments.
   const canAssign = isPartTimeAvailabilityAssignable(availability.status)
 
   const dayMap = useMemo(

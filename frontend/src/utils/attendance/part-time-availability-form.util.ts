@@ -30,6 +30,7 @@ export interface IPartTimeAssignmentForm {
 export function buildScheduledSlotsFromAvailabilityDay(
   day: IPartTimeAvailabilityDay | undefined,
 ): IPartTimeAssignmentSlotForm[] {
+  // Free day with no slots → seed default window so admin assign is not blocked on empty UI.
   if (!day || day.isBusyAllDay || day.slots.length === 0) {
     return [
       {
@@ -148,6 +149,7 @@ export function collectPartTimeAssignmentIssues(
     if (!assignment.isScheduled) return []
 
     const day = dayMap.get(assignment.dayOfWeek)
+    // Busy-all-day = zero availability; no shift possible — skip validation noise.
     if (day?.isBusyAllDay) return []
 
     const dayLabel = dayLabels.get(assignment.dayOfWeek) ?? `Ngày ${assignment.dayOfWeek}`

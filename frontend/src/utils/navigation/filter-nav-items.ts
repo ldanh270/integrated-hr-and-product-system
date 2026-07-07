@@ -15,6 +15,7 @@ export function filterNavItems(
   return items.filter((item) => {
     if (
       item.permissions &&
+      // Sidebar entry requires every listed permission — partial access is not enough.
       (!user || !item.permissions.every((permission) => user.permissions?.includes(permission)))
     ) {
       return false

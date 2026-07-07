@@ -112,7 +112,8 @@ export class PrismaEmployeeShiftRepository
     const targetDate = new Date(date)
     targetDate.setHours(0, 0, 0, 0)
 
-    // Multiple shifts per day (PT assign) — prefer admin override, earliest start first.
+    // PT may have multiple shifts/day; check-in uses one row until multi-shift attendance exists.
+    // Prefer admin override over template, earliest created first within same priority.
     return this.prisma.employeeShift.findFirst({
       where: {
         employeeId,
@@ -155,6 +156,7 @@ export class PrismaEmployeeShiftRepository
       where: {
         employeeId,
         assignedDate: targetDate,
+        // Template auto-fill must not touch admin PT overrides from availability assign.
         isOverride: false,
       },
       orderBy: { createdAt: "asc" },
@@ -199,6 +201,7 @@ export class PrismaEmployeeShiftRepository
       where: {
         employeeId,
         assignedDate: targetDate,
+        // Template auto-fill must not touch admin PT overrides from availability assign.
         isOverride: false,
       },
       orderBy: { createdAt: "asc" },

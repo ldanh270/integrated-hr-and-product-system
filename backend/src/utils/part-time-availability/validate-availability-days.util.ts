@@ -16,7 +16,7 @@ export const PART_TIME_AVAILABILITY_LAYERS = {
 export function normalizeAvailabilityDays(
   days: IUpsertPartTimeAvailabilityDTO["days"],
 ): IUpsertPartTimeAvailabilityDTO["days"] {
-  // Ensure all 7 weekdays exist; missing days default to a standard 08:00–17:00 window.
+  // Omitted weekdays default to 08:00–17:00 so admin always receives a full-week grid.
   const byDay = new Map(days.map((day) => [day.dayOfWeek, day]))
 
   return DAY_OF_WEEK_VALUES.map((dayOfWeek) => {
@@ -49,6 +49,7 @@ export function validateAvailabilityDays(days: IUpsertPartTimeAvailabilityDTO["d
       )
     }
 
+    // Sort before overlap check — client payload order is not guaranteed chronological.
     const sorted = [...day.slots].sort((a, b) => a.startTime - b.startTime)
 
     let previousEndTime: number | null = null

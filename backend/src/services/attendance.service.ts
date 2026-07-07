@@ -72,6 +72,7 @@ export class AttendanceService implements IAttendanceService {
     if (activeShifts.length === 0) return undefined
 
     const currentMinutes = date.getHours() * 60 + date.getMinutes()
+    // FT with no schedule today: pick shift whose window contains now, else first active shift.
     const matchingShift = activeShifts.find((shift) =>
       isWithinShiftSelectionWindow(currentMinutes, shift),
     )
@@ -108,7 +109,7 @@ export class AttendanceService implements IAttendanceService {
     const employee = await this.employeeRepo.findById(employeeId)
     let employeeShift = await this.employeeShiftRepo.getShiftForEmployeeDate(employeeId, today)
 
-    // PT onsite at company: only admin-assigned shifts allow GPS check-in/out.
+    // PT has no weekly template fallback — hours come from admin assign after availability submit.
     if (employee && isPartTimeWorkSchedule(employee)) {
       if (!employeeShift) {
         throw new AppError(
@@ -130,6 +131,7 @@ export class AttendanceService implements IAttendanceService {
       assertCheckInWindow(now, today, shift)
       assertWithinShiftGps(location, shift)
 
+      // Link attendance to EmployeeShift row — preserves override vs template provenance for PT multi-slot days.
       return this.attendanceRepo.checkIn(employeeId, location, employeeShift.id)
     }
 
@@ -181,6 +183,7 @@ export class AttendanceService implements IAttendanceService {
     if (isHoliday) {
     }
 
+    // Same EmployeeShift linkage as PT branch — traceable shift assignment on the record.
     return this.attendanceRepo.checkIn(employeeId, location, employeeShift.id)
   }
 
@@ -226,6 +229,7 @@ export class AttendanceService implements IAttendanceService {
     })
   }
 
+  /** QR toggle: check-in when no session; check-out when window open, else conflict (no silent double action). */
   async scan(
     employeeId: string,
     location: { lat: number; lng: number },
