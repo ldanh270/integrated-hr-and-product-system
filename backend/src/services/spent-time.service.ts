@@ -1,4 +1,4 @@
-﻿import {
+import {
   PROJECT_MEMBER_WORK_MODE,
   SPENT_TIME_STATUS,
 } from "@/configs/entities/project.config.ts"
@@ -37,9 +37,7 @@ export class SpentTimeService implements ISpentTimeService {
    */
   private async isAuthorizedAdminOrGM(userId: string): Promise<boolean> {
     const authContext = await authorizationService.getAuthorizationContext(userId)
-    if (authContext.isDynamicAdmin) return true
-    const roles = authContext.roles
-    return roles.has("admin") || roles.has("general_manager")
+    return authContext.permissions.has("project.update")
   }
 
   /**

@@ -20,19 +20,18 @@ import {
   ATTENDANCE_STATUS_LABELS,
   ATTENDANCE_STATUS_VARIANTS,
 } from "@/config/entities/attendance.config"
-import { ROLE } from "@/config/entities/employee.config"
 import { usePermission } from "@/hooks/use-permission"
 import { ROUTES } from "@/config/routes.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useAttendanceRecords } from "@/hooks/attendance/use-attendance"
 import { attendanceApi } from "@/lib/api/attendance.api"
 import { formatDate, formatTime } from "@/lib/utils"
-import { useAuthStore } from "@/store/auth-store"
 import dayjs from "dayjs"
 import type { IAttendanceStatus } from "@/config/entities/attendance.config"
 import type { IAttendanceRecord } from "@/types/attendance.types"
 import { getCurrentMonthRange } from "@/utils/attendance/get-current-month-range"
 
+import { Navigate } from "react-router-dom"
 import { useMemo, useState } from "react"
 
 import {
@@ -45,12 +44,9 @@ import {
   UserCheck,
   Users,
 } from "lucide-react"
-import { Navigate } from "react-router-dom"
-
-function canManageAttendance(roles: string[] = []) {
-  return [ROLE.ADMIN, ROLE.HR_MANAGER, ROLE.GENERAL_MANAGER].some((role) => roles.includes(role))
-}
-
+/**
+ * Helper function for toSelectedEmployee.
+ */
 function toSelectedEmployee(record: IAttendanceRecord): SelectedEmployeeSummary {
   return {
     id: record.employeeId,
@@ -60,20 +56,21 @@ function toSelectedEmployee(record: IAttendanceRecord): SelectedEmployeeSummary 
 }
 
 /**
- * AttendanceDashboard — Main management page for HR attendance oversight.
- * Displays aggregate stats and detailed history table.
+ * AttendanceDashboard Component.
  */
 export default function AttendanceDashboard() {
-  const user = useAuthStore((state) => state.user)
-  const { roles } = usePermission()
+  const { hasPermission } = usePermission()
 
-  if (user && !canManageAttendance(roles)) {
+  if (!hasPermission("attendance.read")) {
     return <Navigate to={ROUTES.ATTENDANCE.MY_SCHEDULE} replace />
   }
 
   return <AdminAttendanceDashboard />
 }
 
+/**
+ * AdminAttendanceDashboard Component.
+ */
 function AdminAttendanceDashboard() {
   // startDate, endDate: Filter range for attendance records (default: current month)
   const [startDate, setStartDate] = useState(() => getCurrentMonthRange().startDate)

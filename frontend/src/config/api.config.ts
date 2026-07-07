@@ -86,4 +86,7 @@ export const API_ENDPOINTS = {
     ROLES: (id: string) => `/employees/${id}/roles`,
     ROLE_DETAIL: (id: string, roleId: string) => `/employees/${id}/roles/${roleId}`,
   },
+  DEBUG: {
+    ROUTE_MANIFEST: "/debug/route-manifest",
+  },
 } as const

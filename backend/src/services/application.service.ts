@@ -4,13 +4,12 @@ import {
   LEAVE_BALANCE_DEFAULTS,
   PAID_LEAVE_TYPES,
 } from "@/configs/entities/attendance.config.ts"
-import { EMPLOYEE_STATUS, SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
-import { APPROVAL_CONFIG, APPROVAL_CATEGORY } from "@/configs/rules/approval.config.ts"
-import { authorizationService } from "@/services/authorization.service.ts"
+import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { prisma } from "@/libs/database.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
 import {
   IApplicationRepository,
   IApplicationService,
@@ -209,14 +208,10 @@ export class ApplicationService implements IApplicationService {
     // If requester is team_leader (and not a global approver), enforce access rules
     if (requester && employeeId !== requester.empId) {
       const authContext = await authorizationService.getAuthorizationContext(requester.empId)
-      const roles = authContext.roles
       const isGlobalApprover =
-        authContext.isDynamicAdmin ||
-        roles.has(SYSTEM_ROLE.ADMIN) ||
-        roles.has(SYSTEM_ROLE.GENERAL_MANAGER) ||
-        roles.has(SYSTEM_ROLE.HR_MANAGER)
-      
-      if (!isGlobalApprover && roles.has(SYSTEM_ROLE.TEAM_LEADER)) {
+        authContext.isDynamicAdmin || authContext.permissions.has("employee.update")
+
+      if (!isGlobalApprover && authContext.permissions.has("application.approve")) {
         const activeProject = await prisma.project.findFirst({
           where: {
             teamLeaderId: requester.empId,
@@ -554,10 +549,8 @@ export class ApplicationService implements IApplicationService {
     }
 
     const authContext = await authorizationService.getAuthorizationContext(employeeId)
-    const roles = authContext.roles
     const isApprover =
-      authContext.isDynamicAdmin ||
-      APPROVAL_CONFIG[APPROVAL_CATEGORY.APPLICATION].roles.some((role) => roles.has(role))
+      authContext.isDynamicAdmin || authContext.permissions.has("application.approve")
 
     if (!isApprover) {
       throw new AppError(

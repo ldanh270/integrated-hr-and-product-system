@@ -39,8 +39,7 @@ export class ProjectService implements IProjectService {
    */
   private async checkIsAdminOrGM(userId: string): Promise<boolean> {
     const authContext = await authorizationService.getAuthorizationContext(userId)
-    const roles = authContext.roles
-    return authContext.isDynamicAdmin || roles.has("admin") || roles.has("general_manager")
+    return authContext.permissions.has("project.update")
   }
 
   /**

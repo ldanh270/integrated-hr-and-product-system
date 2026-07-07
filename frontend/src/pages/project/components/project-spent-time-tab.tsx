@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ROLE } from "@/config/entities/employee.config"
+import { usePermission } from "@/hooks/use-permission"
 import { SPENT_TIME_STATUS, getSpentTimeStatusLabel } from "@/config/entities/project.config"
 import {
   SPENT_TIME_FILTER,
@@ -33,7 +33,6 @@ interface ProjectSpentTimeTabProps {
   projectId: string
   spentTimes: SpentTime[] | undefined
   isLoading: boolean
-  userRole?: string
   isLeader: boolean
 }
 
@@ -45,14 +44,14 @@ export function ProjectSpentTimeTab({
   projectId,
   spentTimes,
   isLoading,
-  userRole,
   isLeader,
 }: ProjectSpentTimeTabProps) {
   const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState<SpentTimeFilterValue>(SPENT_TIME_FILTER.ALL)
 
+  const { hasAnyPermission } = usePermission()
   const canApprove =
-    isLeader || userRole === ROLE.ADMIN || userRole === ROLE.GENERAL_MANAGER
+    isLeader || hasAnyPermission(["project.update", "project.task.approve"])
 
   const filteredLogs = useMemo(() => {
     const list = spentTimes ?? []

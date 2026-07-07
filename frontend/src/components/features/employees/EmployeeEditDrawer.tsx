@@ -1,5 +1,5 @@
-import { EmployeeWeeklyScheduleSection } from "@/components/features/employees/employee-weekly-schedule-section"
 import { AppDrawer } from "@/components/common"
+import { EmployeeWeeklyScheduleSection } from "@/components/features/employees/employee-weekly-schedule-section"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,16 +15,17 @@ import {
 import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util"
 import { useEmployeeEditModal } from "@/hooks/employees/useEmployeeEditModal"
 import { useEmployeeWeeklyScheduleSection } from "@/hooks/employees/use-employee-weekly-schedule-section"
-import type { Employee } from "@/types/employee.types"
 import {
-  useRoles,
   useEmployeeRoles,
+  useRoles,
   useUpdateEmployeeRoles,
 } from "@/hooks/security/queries/use-security-query"
+import type { Employee } from "@/types/employee.types"
 import type { Role } from "@/types/security.types"
-import { useEffect, useRef, useState } from "react"
-import { RefreshCw } from "lucide-react"
 
+import { useEffect, useRef, useState } from "react"
+
+import { RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 
 /**
@@ -217,7 +218,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label className="text-[12px] text-muted-foreground">
+                    <Label htmlFor="role-select" className="text-[12px] text-muted-foreground">
                       Vai trò (Dynamic RBAC)
                     </Label>
                     <EmployeeEditRoleCheckboxes

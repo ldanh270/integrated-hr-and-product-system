@@ -87,22 +87,16 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     icon: Users,
     routePrefix: ROUTES.HRM.BASE,
     sidebarItems: [
-      { name: "Hồ sơ", path: ROUTES.HRM.EMPLOYEES, icon: Users },
+      { name: "Quản lý hồ sơ", path: ROUTES.HRM.EMPLOYEES, icon: Users },
       {
-        name: "Người dùng",
-        path: ROUTES.SECURITY.USERS,
-        icon: Users,
-        permissions: ["security.read"],
-      },
-      {
-        name: "Nhật ký",
-        path: ROUTES.SECURITY.ACTIVITY_LOGS,
+        name: "Nhật ký hoạt động",
+        path: ROUTES.HRM.ACTIVITY_LOGS,
         icon: FileText,
         permissions: ["audit.read"],
       },
       {
         name: "Tổng quan bảo mật",
-        path: ROUTES.SECURITY.DASHBOARD,
+        path: ROUTES.HRM.DASHBOARD,
         icon: ShieldCheck,
         permissions: ["security.read"],
       },

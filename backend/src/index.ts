@@ -8,17 +8,20 @@ import { globalErrorHandler } from "@/middlewares/error.middleware.ts"
 import applicationRoutes from "@/routes/application.route.ts"
 import approvalRoutes from "@/routes/approval.route.ts"
 import attendanceRoutes from "@/routes/attendance.route.ts"
+import auditRoutes from "@/routes/audit.route.ts"
 import authRoutes from "@/routes/auth.route.ts"
 import customQueryRoutes from "@/routes/custom-query.route.ts"
+import debugRoutes from "@/routes/debug.route.ts"
 import employeeSalaryConfigRoutes from "@/routes/employee-salary-config.route.ts"
 import employeeRoutes from "@/routes/employee.route.ts"
 import holidayRoutes from "@/routes/holiday.route.ts"
+import partTimeAvailabilityRoutes from "@/routes/part-time-availability.route.ts"
 import payrollRoutes from "@/routes/payroll.route.ts"
 import payslipTemplateRoutes from "@/routes/payslip-template.route.ts"
 import permissionRoutes from "@/routes/permission.route.ts"
-import roleRoutes from "@/routes/role.route.ts"
 import profileRoutes from "@/routes/profile.route.ts"
 import projectRoutes from "@/routes/project.route.ts"
+import roleRoutes from "@/routes/role.route.ts"
 import salaryComponentRoutes from "@/routes/salary-component.route.ts"
 import salaryVariableRoutes from "@/routes/salary-variable.route.ts"
 import scheduleRoutes from "@/routes/schedule.route.ts"
@@ -28,9 +31,7 @@ import shiftRoutes from "@/routes/shift.route.ts"
 import spentTimeRoutes from "@/routes/spent-time.route.ts"
 import taskRoutes from "@/routes/task.route.ts"
 import weeklyScheduleTemplateRoutes from "@/routes/weekly-schedule-template.route.ts"
-import auditRoutes from "@/routes/audit.route.ts"
-import partTimeAvailabilityRoutes from "@/routes/part-time-availability.route.ts"
-import { countStaticRoleReferences, bootstrapAdmin } from "@/utils/startup-assertion.util.ts"
+import { bootstrapAdmin, countStaticRoleReferences } from "@/utils/startup-assertion.util.ts"
 
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
@@ -91,6 +92,7 @@ app.use("/api/roles", roleRoutes)
 app.use("/api", auditRoutes)
 app.use("/api/spent-times", spentTimeRoutes)
 app.use("/api/custom-queries", customQueryRoutes)
+app.use("/api/debug", debugRoutes)
 
 // 404 handler
 app.use((req, res) => {
@@ -108,29 +110,27 @@ app.use(globalErrorHandler)
  */
 void connectDB()
   .then(async () => {
-  // Check static role references
-  const skipAssert = process.env.SKIP_ADMIN_ASSERT === "true" || process.env.NODE_ENV === "test"
-  if (!skipAssert) {
-    const staticRefs = countStaticRoleReferences()
-    if (staticRefs.total > 0) {
-      console.error("FATAL ERROR: SYSTEM_INVARIANT_BROKEN: Legacy static role references found:")
-      staticRefs.details.forEach((d) => console.error(`  - ${d}`))
-      console.error("All Legacy ROLE references must be purged under Sprint D2.6.")
-      process.exit(1)
+    const skipAssert = process.env.SKIP_ADMIN_ASSERT === "true" || process.env.NODE_ENV === "test"
+    if (!skipAssert) {
+      const staticRefs = countStaticRoleReferences()
+      if (staticRefs.total > 0) {
+        console.error("FATAL ERROR: SYSTEM_INVARIANT_BROKEN: Legacy static role references found:")
+        staticRefs.details.forEach((d) => console.error(`  - ${d}`))
+        console.error("All Legacy ROLE references must be purged under Sprint D2.6.")
+        process.exit(1)
+      }
     }
-  }
 
-  // Ensure fail-safe administrator exists
-  await bootstrapAdmin()
+    // Ensure fail-safe administrator exists
+    await bootstrapAdmin()
 
-  app.listen(PORT, () => {
-    console.log("Server start on port " + PORT)
-    initCronJobs()
-    initWeeklyScheduleCron()
+    app.listen(PORT, () => {
+      console.log("Server start on port " + PORT)
+      initCronJobs()
+      initWeeklyScheduleCron()
+    })
   })
-})
   .catch((error) => {
     console.error("Failed to start server:", error)
     process.exit(1)
   })
-

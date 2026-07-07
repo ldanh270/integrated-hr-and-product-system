@@ -57,13 +57,6 @@ export const EMPLOYEE_ROLES = [
 ] as const
 export type IEmployeeRole = (typeof EMPLOYEE_ROLES)[number]
 
-export const MANAGER_ROLES = [
-  ROLE.ADMIN,
-  ROLE.HR_MANAGER,
-  ROLE.GENERAL_MANAGER,
-  ROLE.TEAM_LEADER,
-] as const
-
 export const ROLE_LABELS: Record<string, string> = {
   [ROLE.ADMIN]: "Quản trị viên",
   [ROLE.GENERAL_MANAGER]: "Tổng quản lý",
@@ -89,6 +82,16 @@ export const EMPLOYEE_TYPE_LABELS: Record<string, string> = {
 export const WORK_SCHEDULE_TYPE_LABELS: Record<IWorkScheduleType, string> = {
   full_time: "Toàn thời gian",
   part_time: "Bán thời gian",
+} as const
+
+export const EMPLOYEE_STATUS_VARIANTS: Record<
+  string,
+  "success" | "danger" | "warning" | "neutral"
+> = {
+  [EMPLOYEE_STATUS.ACTIVE]: "success",
+  [EMPLOYEE_STATUS.INACTIVE]: "neutral",
+  [EMPLOYEE_STATUS.ON_LEAVE]: "warning",
+  [EMPLOYEE_STATUS.TERMINATED]: "danger",
 } as const
 
 export function getWorkScheduleTypeLabel(type: IWorkScheduleType): string {
@@ -139,28 +142,8 @@ export function getEmployeeStatusVariant(
 }
 
 export function getRoleLabel(role: string): string {
-  switch (role) {
-    case ROLE.ADMIN:
-      return ROLE_LABELS[ROLE.ADMIN]
-    case ROLE.GENERAL_MANAGER:
-      return ROLE_LABELS[ROLE.GENERAL_MANAGER]
-    case ROLE.HR_MANAGER:
-      return ROLE_LABELS[ROLE.HR_MANAGER]
-    case ROLE.TEAM_LEADER:
-      return ROLE_LABELS[ROLE.TEAM_LEADER]
-    case ROLE.EMPLOYEE:
-      return ROLE_LABELS[ROLE.EMPLOYEE]
-    default:
-      return role
-  }
+  return ROLE_LABELS[role] ?? role
 }
 
 /** Tab id for filtering employees by part-time work schedule. */
 export const EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME = "schedule_part_time" as const
-
-export const EMPLOYEE_STATUS_VARIANTS: Record<string, "success" | "danger" | "warning" | "neutral"> = {
-  [EMPLOYEE_STATUS.ACTIVE]: "success",
-  [EMPLOYEE_STATUS.INACTIVE]: "neutral",
-  [EMPLOYEE_STATUS.ON_LEAVE]: "warning",
-  [EMPLOYEE_STATUS.TERMINATED]: "danger",
-} as const

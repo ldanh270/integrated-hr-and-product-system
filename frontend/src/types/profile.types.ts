@@ -1,5 +1,4 @@
 import type {
-  IEmployeeRole,
   IEmployeeStatus,
   IEmployeeType,
   IWorkScheduleType,
@@ -8,7 +7,7 @@ import type {
 export type EmployeeStatus = IEmployeeStatus
 export type EmployeeType = IEmployeeType
 export type WorkScheduleType = IWorkScheduleType // mirrored from employee.workScheduleType
-export type EmployeeRole = IEmployeeRole
+export type EmployeeRole = string
 
 export interface ProfileDto {
   id: string

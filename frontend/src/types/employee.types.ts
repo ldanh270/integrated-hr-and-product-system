@@ -1,5 +1,4 @@
 import type {
-  IEmployeeRole,
   IEmployeeStatus,
   IEmployeeType,
   IWorkScheduleType,
@@ -8,7 +7,7 @@ import type {
 export type EmployeeStatus = IEmployeeStatus
 export type EmployeeType = IEmployeeType
 export type WorkScheduleType = IWorkScheduleType // full_time | part_time — drives scheduling & payroll
-export type EmployeeRole = IEmployeeRole
+export type EmployeeRole = string
 
 export interface Employee {
   id: string
@@ -31,6 +30,7 @@ export interface Employee {
   version?: number
   createdAt: string
   updatedAt: string
+  lockedUntil?: string | null
 }
 
 export interface PaginatedEmployees {
@@ -47,7 +47,7 @@ export interface EmployeeListQuery {
   page?: number
   limit?: number
   search?: string
-  status?: EmployeeStatus
+  status?: EmployeeStatus | "locked"
   role?: EmployeeRole
   roleId?: string
   type?: EmployeeType

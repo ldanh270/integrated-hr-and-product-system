@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  EMPLOYEE_ROLES,
   EMPLOYEE_STATUSES,
   EMPLOYMENT_CATEGORY_TYPES,
   getEmployeeStatusLabel,
@@ -34,7 +33,7 @@ interface Props {
  */
 export function EmployeeCreateModal({ isOpen, onClose }: Props) {
   // Extract react hook form fields, submission states, and error mappings
-  const { register, handleSubmit, errors, isPending, handleClose } = useEmployeeCreateModal(onClose)
+  const { register, handleSubmit, errors, isPending, handleClose, roles } = useEmployeeCreateModal(onClose)
 
   return (
     <AppModal isOpen={isOpen} onClose={handleClose} widthClassName="sm:max-w-4xl">
@@ -128,9 +127,9 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                     {...register("role")}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
-                    {EMPLOYEE_ROLES.map((roleKey) => (
-                      <option key={roleKey} value={roleKey}>
-                        {getRoleLabel(roleKey)}
+                    {roles.map((r) => (
+                      <option key={r.id} value={r.name}>
+                        {getRoleLabel(r.name)}
                       </option>
                     ))}
                   </select>
