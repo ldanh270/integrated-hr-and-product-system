@@ -18,9 +18,17 @@ import {
   ISubmitApplicationDTO,
 } from "@/types/attendance.types.ts"
 import { AppError } from "@/utils/error.util.ts"
+import { IPositionService } from "@/types/position.types.ts"
 
+/**
+ * Service managing organizational application requests (leaves, overtime, late/early checkins, shift swaps).
+ * Incorporates validation with position constraints and role-based workflow rules.
+ */
 export class ApplicationService implements IApplicationService {
-  constructor(private applicationRepo: IApplicationRepository) {}
+  constructor(
+    private applicationRepo: IApplicationRepository,
+    private positionService?: IPositionService,
+  ) {}
 
   /**
    * Submits a new application after validating the specific business rules
@@ -42,6 +50,13 @@ export class ApplicationService implements IApplicationService {
         ErrorLayer.SERVICE,
         "INVALID_DATE_RANGE",
       )
+    }
+
+
+
+    // Validate position application restrictions
+    if (this.positionService) {
+      await this.positionService.validateApplicationSubmission(data.employeeId, data.type as any)
     }
 
     // Type-specific business rule validation

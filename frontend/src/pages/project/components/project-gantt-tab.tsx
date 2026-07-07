@@ -1,5 +1,5 @@
 /* eslint-disable security/detect-object-injection */
-import { useState } from "react"
+import React, { useState } from "react"
 import { 
   Clock, 
   User, 
@@ -59,11 +59,18 @@ const GANTT_AVAILABLE_COLUMNS = [
   { key: "progress", label: "Hiển thị nhãn tiến độ dòng thời gian (Progress)" }
 ]
 
+/**
+ * Properties for ProjectGanttTab component.
+ */
 interface ProjectGanttTabProps {
   projectId: string
   project: Project
 }
 
+/**
+ * Gantt timeline tab component. Allows project managers and team members to visualize,
+ * track, plan, and manage task schedules dynamically across a grid-based timeline.
+ */
 export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
   const {
     timelineStart,
@@ -99,6 +106,8 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
     applySavedQuery,
     handleSaveQuery,
     assignees,
+    statuses,
+    isLoadingStatuses,
     getDefaultOperator,
     getDefaultValue,
     timelineDays,
@@ -109,7 +118,6 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
     isLeader,
     isAdminOrGM,
     getTaskGridStyle,
-    shiftTaskDates,
     shiftTimelineByMonth,
     getMonthOffsetLabel,
     handleZoomIn,
@@ -216,7 +224,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
     setIsSaveQueryOpen(false)
   }
 
-  if (isLoading) {
+  if (isLoading || isLoadingStatuses) {
     return (
       <div className="flex flex-col items-center justify-center p-12 space-y-4">
         <Clock className="size-8 text-primary animate-spin" />
@@ -829,22 +837,15 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
 
         {/* Gantt Legend */}
         <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-muted-foreground px-1">
-          <div className="flex items-center gap-2">
-            <div className="size-3 rounded bg-sky-500" />
-            <span>Mới / Đang làm</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="size-3 rounded bg-indigo-500" />
-            <span>Chờ đánh giá</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="size-3 rounded bg-emerald-500" />
-            <span>Đã hoàn thành</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="size-3 rounded bg-amber-500" />
-            <span>Yêu cầu sửa đổi (Mở lại)</span>
-          </div>
+          {statuses.map((status) => (
+            <div key={status.id} className="flex items-center gap-2">
+              <div 
+                className="size-3 rounded" 
+                style={{ backgroundColor: status.color || "#6366F1" }} 
+              />
+              <span>{status.name}</span>
+            </div>
+          ))}
           <div className="flex items-center gap-2">
             <div className="size-3 rounded bg-rose-600 animate-pulse" />
             <span>Trễ hạn (Overdue)</span>
@@ -1013,39 +1014,64 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                       }
                     }
 
-                    // Style configuration based on status & timeline rules
-                    let containerBg = "bg-sky-950/20 dark:bg-sky-950/60 border border-sky-500/20"
-                    let progressBg = "bg-sky-500"
-                    let progressVal = task.progress
-                    let textColor = "text-sky-900 dark:text-sky-200"
+                    const matchedStatus = statuses.find(
+                      (s) => s.id === task.statusId || s.name.toLowerCase() === task.status.toLowerCase()
+                    )
+                    const statusColor = matchedStatus?.color || "#38bdf8"
+                    const isCompletedStatus = matchedStatus?.isCompleted === true || task.status === "done"
 
-                    if (task.status === "done") {
-                      if (isCompletedEarly) {
-                        // Completed early: remaining part is slate (gray/saved time), completed portion is green
-                        containerBg = "bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700"
-                        progressBg = "bg-emerald-500"
-                        progressVal = Math.round(earlyCompletionRatio * 100)
-                        textColor = "text-slate-800 dark:text-slate-200"
-                      } else {
-                        // Completed on time / late: entire bar is green
-                        containerBg = "bg-emerald-500 border border-emerald-600/30"
-                        progressBg = "bg-emerald-500"
-                        progressVal = 100
-                        textColor = "text-white"
+                    const getHexOpacity = (hex: string, opacityHex: string) => {
+                      if (hex.startsWith("#")) {
+                        return `${hex}${opacityHex}`
                       }
-                    } else if (task.status === "in_review") {
-                      containerBg = "bg-indigo-950/20 dark:bg-indigo-950/60 border border-indigo-500/20"
-                      progressBg = "bg-indigo-500 animate-pulse"
-                      textColor = "text-indigo-900 dark:text-indigo-200"
-                    } else if (task.status === "reopened") {
-                      containerBg = "bg-amber-950/20 dark:bg-amber-950/60 border border-amber-500/20"
-                      progressBg = "bg-amber-500"
-                      textColor = "text-amber-900 dark:text-amber-200"
+                      return hex
+                    }
+
+                    // Style configuration based on status & timeline rules
+                    let containerStyle: React.CSSProperties = {
+                      backgroundColor: getHexOpacity(statusColor, "15"),
+                      borderColor: getHexOpacity(statusColor, "40"),
+                      color: statusColor,
+                    }
+                    let progressStyle: React.CSSProperties = {
+                      backgroundColor: statusColor,
+                    }
+                    let progressVal = task.progress
+
+                    if (isCompletedStatus) {
+                      if (isCompletedEarly) {
+                        // Completed early: remaining part is slate (gray/saved time), completed portion is statusColor
+                        containerStyle = {
+                          backgroundColor: "rgba(100, 116, 139, 0.15)",
+                          borderColor: "rgba(100, 116, 139, 0.3)",
+                          color: "inherit",
+                        }
+                        progressStyle = {
+                          backgroundColor: statusColor,
+                        }
+                        progressVal = Math.round(earlyCompletionRatio * 100)
+                      } else {
+                        // Completed on time / late: entire bar is solid status color
+                        containerStyle = {
+                          backgroundColor: statusColor,
+                          borderColor: "transparent",
+                          color: "#ffffff",
+                        }
+                        progressStyle = {
+                          backgroundColor: statusColor,
+                        }
+                        progressVal = 100
+                      }
                     } else if (isOverdue) {
-                      // Overdue: completed part is green, remaining part is red
-                      containerBg = "bg-rose-600 border border-rose-700/30"
-                      progressBg = "bg-emerald-500"
-                      textColor = "text-white"
+                      // Overdue: completed part is statusColor, remaining part is red/rose-600
+                      containerStyle = {
+                        backgroundColor: "#e11d48",
+                        borderColor: "transparent",
+                        color: "#ffffff",
+                      }
+                      progressStyle = {
+                        backgroundColor: statusColor,
+                      }
                     }
 
                     return (
@@ -1085,10 +1111,17 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                                 gridRowStart: 1,
                                 gridRowEnd: 2
                               }}
-                              className="absolute top-0 h-full w-0.5 border-l border-dashed border-rose-500/80 z-20 pointer-events-none"
+                              className="absolute top-0 h-full w-0 z-20 pointer-events-none overflow-visible"
                               title={`Hạn hoàn thành: ${task.dueDate ? format(new Date(task.dueDate), "dd/MM/yyyy") : ""}`}
                             >
-                              <div className="absolute top-0 -left-1 w-2 h-2 bg-rose-500 rounded-full shadow-sm" />
+                              {/* Sleek vertical line starting below the dot */}
+                              <div className="absolute top-4 left-0 h-[calc(100%-16px)] w-[1.5px] bg-rose-500/60" />
+                              
+                              {/* Outer expanding pulse ring */}
+                              <div className="absolute top-1.5 -left-1.5 size-3.5 rounded-full bg-rose-500/40 animate-ping" />
+
+                              {/* Minimalist inner dot badge */}
+                              <div className="absolute top-2 -left-1 size-2 rounded-full bg-rose-500 border border-white dark:border-background shadow-[0_0_6px_rgba(244,63,94,0.8)]" />
                             </div>
                           )
                         })()}
@@ -1108,20 +1141,21 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <div 
-                                      className={`h-7 w-full ${containerBg} ${textColor} rounded-full px-2.5 flex items-center justify-between text-[10px] font-medium shadow-sm select-none relative overflow-hidden group cursor-pointer`}
+                                      className="h-7 w-full border rounded-full px-2.5 flex items-center justify-between text-[10px] font-medium shadow-sm select-none relative overflow-hidden group cursor-pointer"
+                                      style={containerStyle}
                                       onDoubleClick={() => { setSelectedTaskForReview(task); }}
                                     >
                                       {/* Progress bar inside task bar */}
                                       {showProgress && (
                                         <div 
-                                          className={`absolute top-0 left-0 h-full ${progressBg} transition-all duration-300`}
-                                          style={{ width: `${progressVal}%` }}
+                                          className="absolute top-0 left-0 h-full transition-all duration-300"
+                                          style={{ ...progressStyle, width: `${progressVal}%` }}
                                         />
                                       )}
 
                                       <span className="truncate pr-1 z-10 text-[10px] font-semibold">{task.title}</span>
 
-                                      {/* Right tools (shift buttons) */}
+                                      {/* Right tools (icons only) */}
                                       <div className="flex items-center gap-1 shrink-0 z-10">
                                         {task.status === "in_review" && (
                                           <FileText className="size-3 text-white/90" />
@@ -1131,32 +1165,6 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                                         )}
                                         {isOverdue && (
                                           <Clock className="size-3 text-white animate-pulse" />
-                                        )}
-
-                                        {/* Small shift adjustments (Leader/Admin only) */}
-                                        {(isLeader || isAdminOrGM) && (
-                                          <div className="hidden group-hover:flex items-center gap-0.5 ml-1 bg-black/20 rounded-full p-0.5">
-                                            <button 
-                                              className="size-3.5 flex items-center justify-center hover:bg-black/20 rounded-full text-[9px]"
-                                              onClick={(e) => {
-                                                e.stopPropagation()
-                                                shiftTaskDates(task, -1)
-                                              }}
-                                              title="Dịch sớm 1 ngày"
-                                            >
-                                              -
-                                            </button>
-                                            <button 
-                                              className="size-3.5 flex items-center justify-center hover:bg-black/20 rounded-full text-[9px]"
-                                              onClick={(e) => {
-                                                e.stopPropagation()
-                                                shiftTaskDates(task, 1)
-                                              }}
-                                              title="Dịch muộn 1 ngày"
-                                            >
-                                              +
-                                            </button>
-                                          </div>
                                         )}
                                       </div>
                                     </div>
@@ -1181,34 +1189,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                                 </Tooltip>
                               </TooltipProvider>
 
-                              {/* Status and Progress label next to the bar */}
-                              {showProgress && (
-                                <span 
-                                  className={`absolute left-full ml-2 text-[10px] font-semibold whitespace-nowrap select-none pointer-events-none ${
-                                    task.status === "done"
-                                      ? "text-emerald-600 dark:text-emerald-400"
-                                      : task.status === "in_review"
-                                      ? "text-indigo-600 dark:text-indigo-400"
-                                      : task.status === "reopened"
-                                      ? "text-amber-600 dark:text-amber-400"
-                                      : isOverdue
-                                      ? "text-rose-600 dark:text-rose-400 animate-pulse"
-                                      : "text-sky-600 dark:text-sky-400"
-                                  }`}
-                                >
-                                  {task.status === "done" ? (
-                                    isCompletedEarly ? "Hoàn thành sớm" : "Hoàn thành 100%"
-                                  ) : task.status === "in_review" ? (
-                                    `Đợi duyệt ${task.progress}%`
-                                  ) : task.status === "reopened" ? (
-                                    `Mở lại ${task.progress}%`
-                                  ) : isOverdue ? (
-                                    `Quá hạn ${task.progress}%`
-                                  ) : (
-                                    `Đang làm ${task.progress}%`
-                                  )}
-                                </span>
-                              )}
+                              {/* Status and Progress label next to the bar removed per user request */}
                             </div>
                           </div>
                         ) : (

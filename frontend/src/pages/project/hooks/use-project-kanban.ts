@@ -18,6 +18,7 @@ interface UseProjectKanbanProps {
   user: {
     id: string
     role?: string
+    roles?: string[]
     fullName: string
   } | null
 }

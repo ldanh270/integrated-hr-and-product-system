@@ -35,6 +35,7 @@ export function useEmployeeEditModal(employee: Employee | null, isOpen: boolean)
       password: data.password === "" ? undefined : data.password,
       phone: data.phone === "" ? null : data.phone,
       position: data.position === "" ? null : data.position,
+      positionId: data.positionId === "" ? null : data.positionId,
       dateOfBirth: data.dateOfBirth === "" ? null : data.dateOfBirth,
       nationalId: data.nationalId === "" ? null : data.nationalId,
       address: data.address === "" ? null : data.address,

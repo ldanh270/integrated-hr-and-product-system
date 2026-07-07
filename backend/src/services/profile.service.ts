@@ -38,6 +38,7 @@ async function toProfileDto(emp: ProfileEmployeeDocument): Promise<ProfileDto> {
     nationalId: emp.nationalId ?? null,
     address: emp.address ?? null,
     position: emp.position ?? null,
+    positionId: emp.positionId ?? null,
     roles,
     employeeType: emp.employeeType,
     workScheduleType: emp.workScheduleType, // drives PT nav/features on profile

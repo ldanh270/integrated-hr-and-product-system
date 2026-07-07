@@ -61,6 +61,7 @@ export const ROUTES = {
   PROJECT: {
     BASE: "/project",
     LIST: "/project/list",
+    POSITIONS: "/project/positions",
     DASHBOARD: "/project/dashboard",
     OVERVIEW: "/project/overview",
     ISSUES: "/project/issues",

@@ -27,6 +27,7 @@ interface AdminPartTimeAssignDayColumnProps {
   onChange: (assignment: IPartTimeAssignmentDayForm) => void
 }
 
+/** Admin assign grid column — shows free ranges, add/remove slots, validates against availability. */
 export function AdminPartTimeAssignDayColumn({
   dayLabel,
   shortDate,

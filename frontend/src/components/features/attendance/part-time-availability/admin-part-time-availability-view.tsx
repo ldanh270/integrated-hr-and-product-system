@@ -16,6 +16,7 @@ import {
 import { ChevronLeft, ChevronRight, Users } from "lucide-react"
 import { useMemo, useState } from "react"
 
+/** Admin page — week navigation, assignable-availability count, card list per employee. */
 export function AdminPartTimeAvailabilityView() {
   // Shift assignment starts from the upcoming week, not historical weeks.
   const earliestWeekStart = useMemo(() => getEarliestRequestableWeekStart(), [])

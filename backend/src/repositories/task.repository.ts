@@ -15,7 +15,6 @@ import {
   PrismaClient,
   Task as PrismaTask,
   Employee as PrismaEmployee,
-  TaskTracker as PrismaTaskTracker,
   TaskStatus as PrismaTaskStatus,
   TaskPriority as PrismaTaskPriority,
 } from "@prisma/client"
@@ -144,7 +143,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
       where.projectId = projectId
     }
     if (tracker) {
-      where.tracker = tracker as PrismaTaskTracker
+      where.tracker = tracker
     }
     if (status) {
       where.status = status as PrismaTaskStatus
@@ -228,7 +227,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
         projectId: data.projectId,
         title: data.title,
         description: data.description,
-        tracker: data.tracker as PrismaTaskTracker,
+        tracker: data.tracker,
         priority: data.priority as PrismaTaskPriority,
         status: data.status as PrismaTaskStatus,
         statusId: data.statusId,
@@ -266,7 +265,7 @@ export class PrismaTaskRepository extends BaseRepository implements ITaskReposit
     const updateData: Prisma.TaskUncheckedUpdateInput = {
       title: data.title,
       description: data.description,
-      tracker: data.tracker as PrismaTaskTracker,
+      tracker: data.tracker,
       priority: data.priority as PrismaTaskPriority,
       status: data.status as PrismaTaskStatus,
       statusId: data.statusId,

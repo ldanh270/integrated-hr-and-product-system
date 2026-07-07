@@ -15,6 +15,7 @@ export interface ProfileDto {
   nationalId: string | null
   address: string | null
   position: string | null
+  positionId: string | null
   roles: string[]
   employeeType: EmployeeType
   workScheduleType: WorkScheduleType // full_time | part_time scheduling model
@@ -63,6 +64,7 @@ export interface ProfileEmployeeDocument {
   nationalId: string | null
   address: string | null
   position: string | null
+  positionId: string | null
   employeeType: EmployeeType
   workScheduleType: WorkScheduleType // full_time | part_time scheduling model
   status: EmployeeStatus

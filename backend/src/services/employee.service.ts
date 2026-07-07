@@ -139,10 +139,22 @@ export class EmployeeService implements IEmployeeService {
     // Remove password from data before passing to repo
     const { password, role, ...repoData } = data
 
+    // Keep denormalized position string in sync when client sends positionId (dynamic positions).
+    let positionName = data.position
+    if (repoData.positionId) {
+      const posRecord = await prisma.position.findUnique({
+        where: { id: repoData.positionId }
+      })
+      if (posRecord) {
+        positionName = posRecord.name
+      }
+    }
+
     try {
       // Coerce legacy employeeType=part_time into workScheduleType before persisting.
       return await this.repository.createEmployee({
         ...normalizeScheduleFields(repoData),
+        position: positionName,
         passwordHash,
         roleId: initialRole.id,
       })
@@ -192,8 +204,24 @@ export class EmployeeService implements IEmployeeService {
     const { password, ...updateData } = data
 
     // Same normalization on update so old API clients sending employeeType=part_time still work.
+    // Resolve position name from positionId when dynamic position FK is provided.
+    let positionName = updateData.position
+    if (updateData.positionId !== undefined) {
+      if (updateData.positionId === null) {
+        positionName = null
+      } else {
+        const posRecord = await prisma.position.findUnique({
+          where: { id: updateData.positionId },
+        })
+        if (posRecord) {
+          positionName = posRecord.name
+        }
+      }
+    }
+
     const updated = await this.repository.updateEmployee(id, {
       ...normalizeScheduleFields(updateData),
+      position: positionName,
       passwordHash,
     })
 

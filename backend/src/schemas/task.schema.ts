@@ -14,7 +14,7 @@ export const createTaskSchema = z
 
     description: z.string().max(1000, "Description too long").trim().optional().nullable(),
 
-    tracker: z.enum(TASK_TRACKERS).optional(),
+    tracker: z.string().optional(),
 
     priority: z.enum(TASK_PRIORITIES).optional(),
 
@@ -54,7 +54,7 @@ export const updateTaskSchema = z
 
     description: z.string().max(1000, "Description too long").trim().optional().nullable(),
 
-    tracker: z.enum(TASK_TRACKERS).optional(),
+    tracker: z.string().optional(),
 
     priority: z.enum(TASK_PRIORITIES).optional(),
 
@@ -97,7 +97,7 @@ export const listTasksQuerySchema = z.object({
   page: z.string().regex(/^\d+$/).transform(Number).optional(),
   limit: z.string().regex(/^\d+$/).transform(Number).optional(),
   search: z.string().optional(),
-  tracker: z.enum(TASK_TRACKERS).optional(),
+  tracker: z.string().optional(),
   status: z.enum(TASK_STATUSES).optional(),
   statusId: z.string().optional(),
   priority: z.enum(TASK_PRIORITIES).optional(),

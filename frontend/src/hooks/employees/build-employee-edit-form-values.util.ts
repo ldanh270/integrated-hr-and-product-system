@@ -22,6 +22,7 @@ export function buildEmployeeEditFormValues(employee: Employee): EmployeeEditFor
     password: "",
     phone: employee.phone || undefined,
     position: employee.position || undefined,
+    positionId: employee.positionId || undefined,
     employeeType:
       employee.employeeType === EMPLOYEE_TYPE.PART_TIME
         ? EMPLOYEE_TYPE.FULL_TIME

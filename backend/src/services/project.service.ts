@@ -248,7 +248,7 @@ export class ProjectService implements IProjectService {
     projectId: string,
     employeeId: string,
     userId: string,
-    options?: { hourlyRate?: number | null; workMode?: string },
+    options?: { hourlyRate?: number | null; workMode?: string; roleId?: string | null },
   ): Promise<boolean> {
     const project = await this.repository.findById(projectId)
     if (!project) {
@@ -328,7 +328,7 @@ export class ProjectService implements IProjectService {
     projectId: string,
     employeeId: string,
     userId: string,
-    data: { hourlyRate?: number | null; workMode?: string },
+    data: { hourlyRate?: number | null; workMode?: string; roleId?: string | null },
   ): Promise<boolean> {
     const project = await this.repository.findById(projectId)
     if (!project) {

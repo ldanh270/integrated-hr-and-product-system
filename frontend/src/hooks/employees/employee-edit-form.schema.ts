@@ -41,6 +41,7 @@ export const employeeEditFormSchema = z.object({
     .optional(),
 
   position: z.string().max(100, "Chức danh quá dài").optional(),
+  positionId: z.string().optional(),
 
   employeeType: z.enum(EMPLOYEE_TYPES).optional(),
   workScheduleType: z.enum(WORK_SCHEDULE_TYPES).optional(),

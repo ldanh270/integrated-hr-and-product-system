@@ -29,6 +29,7 @@ import { projectApi } from "@/lib/api/project.api"
 import { extractErrorMessage } from "@/utils/error-helper"
 import type { Employee } from "@/types/employee.types"
 import type { ProjectMember } from "@/types/project.types"
+import { useProjectRoles } from "../hooks/use-project-role"
 
 interface EditMemberModalProps {
   isOpen: boolean
@@ -45,16 +46,21 @@ interface EditMemberFormProps {
   onClose: () => void
 }
 
+/** Inner form — hourly rate (PT only), work mode, project role; remounts via key on open. */
 function EditMemberForm({ projectId, member, isPartTime, onClose }: EditMemberFormProps) {
   const queryClient = useQueryClient()
+  const { data: roles = [] } = useProjectRoles(projectId)
+
   const [hourlyRate, setHourlyRate] = useState(
     () => (member.hourlyRate != null ? String(member.hourlyRate) : ""),
   )
   const [workMode, setWorkMode] = useState(
     () => member.workMode || PROJECT_MEMBER_WORK_MODE.REMOTE,
   )
+  const [roleId, setRoleId] = useState(() => member.roleId || "")
   const [memberError, setMemberError] = useState<string | null>(null)
 
+  // Rate/mode changes apply on next payroll run; workMode flips GPS requirement immediately.
   const updateMemberMutation = useMutation({
     mutationFn: async () => {
       if (isPartTime && (!hourlyRate || Number(hourlyRate) <= 0)) {
@@ -64,6 +70,7 @@ function EditMemberForm({ projectId, member, isPartTime, onClose }: EditMemberFo
       return projectApi.updateMember(projectId, member.employeeId, {
         hourlyRate: hourlyRate ? Number(hourlyRate) : null,
         workMode,
+        roleId: roleId || null,
       })
     },
     onSuccess: () => {
@@ -129,6 +136,27 @@ function EditMemberForm({ projectId, member, isPartTime, onClose }: EditMemberFo
         </Select>
       </div>
 
+      <div className="space-y-1.5">
+        <Label htmlFor="editRole" className="text-xs font-semibold text-muted-foreground">
+          Vai trò trong dự án
+        </Label>
+        <Select value={roleId} onValueChange={setRoleId}>
+          <SelectTrigger
+            id="editRole"
+            className="w-full h-10 border-border rounded-full px-4 bg-background"
+          >
+            <SelectValue placeholder="Chọn vai trò" />
+          </SelectTrigger>
+          <SelectContent className="rounded-xl border-border bg-popover">
+            {roles.map((role) => (
+              <SelectItem key={role.id} value={role.id} className="rounded-lg">
+                {role.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="flex justify-end gap-2 pt-2">
         <Button
           type="button"
@@ -151,6 +179,7 @@ function EditMemberForm({ projectId, member, isPartTime, onClose }: EditMemberFo
   )
 }
 
+/** Dialog to edit an existing project member's rate, work mode, and role. */
 export function EditMemberModal({
   isOpen,
   onOpenChange,
@@ -162,7 +191,7 @@ export function EditMemberModal({
 
   const employee = allEmployees.find((entry) => entry.id === member.employeeId)
   const isPartTime = employee ? isPartTimeWorkSchedule(employee) : false
-  const formKey = `${member.employeeId}-${isOpen}`
+  const formKey = `${member.employeeId}-${member.roleId ?? ""}-${isOpen}`
 
   const handleClose = () => {
     onOpenChange(false)

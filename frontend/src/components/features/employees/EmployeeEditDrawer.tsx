@@ -23,6 +23,8 @@ import {
 import type { Employee } from "@/types/employee.types"
 
 import { useEffect, useRef } from "react"
+
+import { usePositions } from "@/hooks/use-position-query"
 import { toast } from "sonner"
 
 interface Props {
@@ -41,6 +43,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
     errors,
     isPending: isEmployeePending,
   } = useEmployeeEditModal(employee, isOpen)
+  const { data: positions = [] } = usePositions()
 
   const weeklySchedule = useEmployeeWeeklyScheduleSection(employee?.id, isOpen)
   const { data: allRoles } = useRoles()
@@ -250,16 +253,23 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
               </h3>
               <div className="border border-border rounded-xl p-4 bg-card space-y-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="position" className="text-[12px] text-muted-foreground">
+                  <Label htmlFor="positionId" className="text-[12px] text-muted-foreground">
                     Chức danh (Vị trí)
                   </Label>
-                  <Input
-                    id="position"
-                    {...register("position")}
-                    className={`bg-background ${errors.position ? "border-destructive" : ""}`}
-                  />
-                  {errors.position && (
-                    <p className="text-xs text-destructive">{errors.position.message}</p>
+                  <select
+                    id="positionId"
+                    {...register("positionId")}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    <option value="">-- Chọn chức danh --</option>
+                    {positions.map((pos: any) => (
+                      <option key={pos.id} value={pos.id}>
+                        {pos.name}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.positionId && (
+                    <p className="text-xs text-destructive">{errors.positionId.message}</p>
                   )}
                 </div>
 

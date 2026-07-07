@@ -36,9 +36,12 @@ export interface Employee {
   email: string
   /** Contact phone number (nullable) */
   phone: string | null
-  /** Job position / title (nullable) */
+  /** Job position / title (nullable, denormalized from Position) */
   position: string | null
-  /** Type of employment (e.g. official, intern, contractor) */
+  /** FK to dynamic Position catalog */
+  positionId?: string | null
+  positionRel?: unknown
+  /** Employment category (e.g. official, intern, contractor) */
   employeeType: EmployeeType
   /** Hours-based schedule — drives PT availability, Spent Time payroll, and GPS rules (not employeeType). */
   workScheduleType: WorkScheduleType
@@ -84,6 +87,7 @@ export interface CreateEmployeeDto {
   passwordHash?: string
   phone?: string | null
   position?: string | null
+  positionId?: string | null
   employeeType?: EmployeeType
   workScheduleType?: WorkScheduleType
   status?: EmployeeStatus
@@ -103,6 +107,7 @@ export interface UpdateEmployeeDto {
   password?: string
   phone?: string | null
   position?: string | null
+  positionId?: string | null
   employeeType?: EmployeeType
   workScheduleType?: WorkScheduleType
   status?: EmployeeStatus

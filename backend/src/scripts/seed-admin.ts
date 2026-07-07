@@ -2,22 +2,48 @@ import { EMPLOYEE_TYPE, WORK_SCHEDULE_TYPE } from "../configs/entities/employee.
 import { prisma } from "../libs/database.ts"
 import { HashUtil } from "../utils/hash.util.ts"
 import { getSeedPassword } from "./seeders/seed-password.util.ts"
-
 const PASSWORD = getSeedPassword("SEED_CORE_ACCOUNTS_PASSWORD")
 
+/**
+ * Seeds default administrator and system-role accounts (HR Manager, General Manager,
+ * Team Leader, Employee) alongside their associated system positions (PM, Developer, Tester, etc.).
+ */
 async function seedAdminAccounts() {
   console.log("Seeding admin and role accounts...")
 
   try {
     const passwordHash = await HashUtil.hash(PASSWORD)
 
-    const rolesToSeed = [
+       const rolesToSeed = [
       "admin",
       "hr_manager",
       "general_manager",
       "team_leader",
       "employee",
     ]
+
+    // Ensure Positions exist
+    const positionsData = [
+      { name: "Admin", code: "admin", description: "System Administrator" },
+      { name: "General Manager", code: "gm", description: "General Manager" },
+      { name: "HR Manager", code: "hr", description: "Human Resource Manager" },
+      { name: "Project Manager", code: "pm", description: "Project Manager" },
+      { name: "Developer", code: "developer", description: "Software Developer" },
+      { name: "Tester", code: "tester", description: "QA Tester" },
+    ]
+
+    for (const pos of positionsData) {
+      const existingPos = await prisma.position.findUnique({ where: { code: pos.code } })
+      if (!existingPos) {
+        await prisma.position.create({ data: pos })
+      }
+    }
+
+    const devPos = await prisma.position.findUnique({ where: { code: "developer" } })
+    const pmPos = await prisma.position.findUnique({ where: { code: "pm" } })
+    const hrPos = await prisma.position.findUnique({ where: { code: "hr" } })
+    const gmPos = await prisma.position.findUnique({ where: { code: "gm" } })
+    const adminPos = await prisma.position.findUnique({ where: { code: "admin" } })
 
     for (const role of rolesToSeed) {
       const username = role === "admin" ? "admin" : role
@@ -37,6 +63,12 @@ async function seedAdminAccounts() {
       else if (role === "team_leader") phoneSuffix = "4"
       else if (role === "employee") phoneSuffix = "5"
 
+      let positionId = devPos?.id
+      if (role === "admin") positionId = adminPos?.id
+      else if (role === "hr_manager") positionId = hrPos?.id
+      else if (role === "general_manager") positionId = gmPos?.id
+      else if (role === "team_leader") positionId = pmPos?.id
+
       const data = {
         username,
         passwordHash,
@@ -45,6 +77,7 @@ async function seedAdminAccounts() {
         phone: `012345678${phoneSuffix}`,
         address: "System Generated",
         position: fullName,
+        positionId,
       }
 
       if (existing) {
@@ -62,6 +95,9 @@ async function seedAdminAccounts() {
     }
 
     const partTimeUsername = "part_time"
+    const partTimeExisting = await prisma.employee.findFirst({
+      where: { username: partTimeUsername },
+    })
     // Demo account: employment category full_time, schedule part_time (legacy used employeeType).
     const partTimeData = {
       username: partTimeUsername,
@@ -73,8 +109,8 @@ async function seedAdminAccounts() {
       phone: "0123456786",
       address: "System Generated",
       position: "Part-time Developer",
+      positionId: devPos?.id,
     }
-    const partTimeExisting = await prisma.employee.findFirst({ where: { username: partTimeUsername } })
 
     if (partTimeExisting) {
       await prisma.employee.update({ where: { id: partTimeExisting.id }, data: partTimeData })

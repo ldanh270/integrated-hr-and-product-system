@@ -11,6 +11,7 @@ interface AdminPartTimeAvailabilityAssignDrawerProps {
   onClose: () => void
 }
 
+/** Wide drawer shell for admin shift assignment (wraps assign panel). */
 export function AdminPartTimeAvailabilityAssignDrawer({
   availability,
   weekStart,

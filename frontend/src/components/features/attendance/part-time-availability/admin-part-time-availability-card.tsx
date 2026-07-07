@@ -19,6 +19,7 @@ interface AdminPartTimeAvailabilityCardProps {
   weekStartKey: string
 }
 
+/** One employee row — status pill, day summary, opens assign drawer on click. */
 export function AdminPartTimeAvailabilityCard({
   availability,
   weekStart,

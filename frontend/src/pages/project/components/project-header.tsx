@@ -3,6 +3,7 @@ import { Plus, Settings, UserPlus } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 interface ProjectHeaderProps {
+  projectId: string
   name: string
   description?: string | null
   canCreateTask: boolean
@@ -12,6 +13,7 @@ interface ProjectHeaderProps {
 }
 
 export function ProjectHeader({
+  projectId,
   name,
   description,
   canCreateTask,
@@ -37,7 +39,7 @@ export function ProjectHeader({
         {canCreateTask && (
           <Button
             onClick={() => {
-              navigate("/project/task/new")
+              navigate(`/project/${projectId}/task/new`)
             }}
             className="rounded-full bg-primary text-primary-foreground hover:bg-primary/95 flex items-center gap-1.5 h-10 text-xs px-4"
           >

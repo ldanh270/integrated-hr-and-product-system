@@ -52,6 +52,7 @@ const createSchema = z.object({
     .optional(),
 
   position: z.string().max(100, "Chức danh quá dài").optional(),
+  positionId: z.string().optional(),
 
   dateOfBirth: z
     .string()
@@ -120,6 +121,7 @@ export function useEmployeeCreateModal(onClose: () => void) {
         ...data,
         phone: data.phone === "" ? undefined : data.phone,
         position: data.position === "" ? undefined : data.position,
+        positionId: data.positionId === "" ? undefined : data.positionId,
         dateOfBirth: data.dateOfBirth === "" ? undefined : data.dateOfBirth,
         nationalId: data.nationalId === "" ? undefined : data.nationalId,
         address: data.address === "" ? undefined : data.address,

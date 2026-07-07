@@ -18,6 +18,8 @@ export interface Employee {
   roles?: string[]
   phone: string | null
   position: string | null
+  positionId?: string | null
+  positionRel?: any
   employeeType: EmployeeType
   workScheduleType: WorkScheduleType // separates contract category from PT schedule model
   status: EmployeeStatus
@@ -64,6 +66,7 @@ export interface CreateEmployeeDto {
   role?: EmployeeRole
   phone?: string
   position?: string
+  positionId?: string
   employeeType?: EmployeeType
   workScheduleType?: WorkScheduleType
   status?: EmployeeStatus
@@ -80,6 +83,7 @@ export interface UpdateEmployeeDto {
   password?: string
   phone?: string | null
   position?: string | null
+  positionId?: string | null
   employeeType?: EmployeeType
   workScheduleType?: WorkScheduleType
   status?: EmployeeStatus
