@@ -1,9 +1,8 @@
-import { SYSTEM_ROLE } from "../configs/entities/employee.config.ts"
-import { EMPLOYEE_TYPE } from "../configs/entities/employee.config.ts"
-import { prisma } from "../libs/database.ts"
-import { getSeedPassword } from "./seeders/seed-password.util.ts"
-import { HashUtil } from "../utils/hash.util.ts"
 
+import { prisma } from "../libs/database.ts"
+import { HashUtil } from "../utils/hash.util.ts"
+import { getSeedPassword } from "./seeders/seed-password.util.ts"
+import { SYSTEM_ROLE, EMPLOYEE_TYPE } from "../configs/entities/employee.config.ts"
 const PASSWORD = getSeedPassword("SEED_CORE_ACCOUNTS_PASSWORD")
 
 /**
@@ -16,7 +15,7 @@ async function seedAdminAccounts() {
   try {
     const passwordHash = await HashUtil.hash(PASSWORD)
 
-    const rolesToSeed = [
+       const rolesToSeed = [
       SYSTEM_ROLE.ADMIN,
       SYSTEM_ROLE.HR_MANAGER,
       SYSTEM_ROLE.GENERAL_MANAGER,
@@ -48,7 +47,7 @@ async function seedAdminAccounts() {
     const adminPos = await prisma.position.findUnique({ where: { code: "admin" } })
 
     for (const role of rolesToSeed) {
-      const username = role === SYSTEM_ROLE.ADMIN ? SYSTEM_ROLE.ADMIN : role
+      const username = role === SYSTEM_ROLE.ADMIN ? "admin" : role
       const fullName = role
         .split("_")
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -98,8 +97,10 @@ async function seedAdminAccounts() {
 
     const partTimeUsername = "part_time"
     // Demo / E2E account — employeeType part_time, not full-time shift model.
-    const partTimeExisting = await prisma.employee.findFirst({ where: { username: partTimeUsername } })
-    const partTimeData = {
+    const partTimeExisting = await prisma.employee.findFirst({
+      where: { username: partTimeUsername },
+    })
+       const partTimeData = {
       username: partTimeUsername,
       passwordHash,
       employeeType: EMPLOYEE_TYPE.PART_TIME,
@@ -110,7 +111,6 @@ async function seedAdminAccounts() {
       position: "Part-time Developer",
       positionId: devPos?.id,
     }
-
     if (partTimeExisting) {
       await prisma.employee.update({ where: { id: partTimeExisting.id }, data: partTimeData })
     } else {

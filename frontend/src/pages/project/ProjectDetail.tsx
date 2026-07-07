@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-import { ROLE } from "@/config/entities/employee.config"
 import { usePermission } from "@/hooks/use-permission"
 import { TASK_TRACKERS, SPENT_TIME_STATUS } from "@/config/entities/project.config"
 import { projectApi } from "@/lib/api/project.api"
@@ -55,6 +54,9 @@ const PROJECT_TABS = {
 
 type ProjectTab = typeof PROJECT_TABS[keyof typeof PROJECT_TABS]
 
+/**
+ * ProjectDetail Component.
+ */
 export default function ProjectDetail() {
   const { id, tab } = useParams<{ id: string; tab?: string }>()
   const queryClient = useQueryClient()
@@ -62,7 +64,7 @@ export default function ProjectDetail() {
   const [searchParams] = useSearchParams()
   const openCreateParam = searchParams.get("createTask") === "true"
   const { user } = useAuthStore()
-  const { roles } = usePermission()
+  const { hasAnyPermission } = usePermission()
   const confirm = useConfirm()
 
   const projectId = id || sessionStorage.getItem("activeProjectId") || ""
@@ -138,8 +140,7 @@ export default function ProjectDetail() {
 
   // Check roles/permissions
   const isLeader = project?.teamLeaderId === user?.id
-  const isAdminOrGM =
-    !!user && [ROLE.ADMIN, ROLE.GENERAL_MANAGER].some((role) => roles.includes(role))
+  const isAdminOrGM = hasAnyPermission(["project.update", "project.task.approve"])
   const isProjectMember = projectMembers.some((m) => m.employeeId === user?.id) || isLeader
   const canManageRules = isAdminOrGM || isLeader
 
@@ -364,7 +365,6 @@ export default function ProjectDetail() {
             projectId={projectId}
             spentTimes={spentTimes}
             isLoading={isLoadingSpent}
-            userRole={user?.role}
             isLeader={isLeader}
           />
         </TabsContent>

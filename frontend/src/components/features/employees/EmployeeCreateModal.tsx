@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  EMPLOYEE_ROLES,
   EMPLOYEE_STATUSES,
   EMPLOYEE_STATUS_LABELS,
   EMPLOYEE_TYPES,
@@ -127,9 +126,9 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                     {...register("role")}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
-                    {EMPLOYEE_ROLES.map((roleKey) => (
-                      <option key={roleKey} value={roleKey}>
-                        {ROLE_LABELS[roleKey]}
+                    {roles.map((r) => (
+                      <option key={r.id} value={r.name}>
+                        {ROLE_LABELS[r.name] || r.name}
                       </option>
                     ))}
                   </select>

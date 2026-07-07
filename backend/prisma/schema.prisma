@@ -235,6 +235,10 @@ model Employee {
   @@index([status, employeeType])
   @@index([deletedAt])
   @@index([status, deletedAt])
+  @@index([lockedUntil])
+  @@index([failedLoginCount])
+  @@index([email])
+  @@index([username])
 }
 
 // ── Attendance ──
@@ -929,9 +933,10 @@ model AppRole {
   id               String  @id @default(cuid())
   name             String  @unique
   description      String?
-  isSystem         Boolean @default(false)
-  isActive         Boolean @default(true)
-  isAdministrative Boolean @default(false)
+  isSystem         Boolean   @default(false)
+  isActive         Boolean   @default(true)
+  isAdministrative Boolean   @default(false)
+  isDefault        Boolean   @default(false)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -945,6 +950,7 @@ model AppRole {
   @@index([name])
   @@index([isActive])
   @@index([deletedAt])
+  @@index([isDefault])
   @@index([isAdministrative, isActive, deletedAt])
   @@map("roles")
 }

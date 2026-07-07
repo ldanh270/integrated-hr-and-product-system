@@ -63,6 +63,7 @@ export interface Role {
   isSystem: boolean
   isActive: boolean
   isAdministrative: boolean
+  isDefault: boolean
   createdAt: string
   updatedAt: string
   permissionsCount?: number

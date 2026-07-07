@@ -47,7 +47,7 @@ export interface UpdateProfileDto {
 }
 
 export interface UpdatePersonalEmployeeLinkDto {
-  personalEmployeeId: string | null
+  personalEmployeeId?: string | null
 }
 
 /**

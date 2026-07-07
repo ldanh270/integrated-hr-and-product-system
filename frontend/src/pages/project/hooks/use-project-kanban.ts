@@ -4,7 +4,7 @@ import { projectTaskStatusApi } from "@/lib/api/project-task-status.api"
 import { taskApi } from "@/lib/api/task.api"
 import { extractErrorMessage } from "@/utils/error-helper"
 import { toast } from "sonner"
-import { ROLE } from "@/config/entities/employee.config"
+import { usePermission } from "@/hooks/use-permission"
 import type { Task } from "@/types/task.types"
 import type { ProjectTaskStatus, CreateProjectTaskStatusDto, UpdateProjectTaskStatusDto } from "@/types/project-task-status.types"
 
@@ -23,6 +23,9 @@ interface UseProjectKanbanProps {
   } | null
 }
 
+/**
+ * Custom hook to manage projectkanban.
+ */
 export function useProjectKanban({
   projectId,
   teamLeader,
@@ -30,6 +33,8 @@ export function useProjectKanban({
 }: UseProjectKanbanProps) {
   const queryClient = useQueryClient()
   const isLeader = teamLeader?.id === user?.id
+  const { hasAnyPermission } = usePermission()
+  const isAdminOrGM = hasAnyPermission(["project.update", "project.task.approve"])
   const isAdminOrGM =
     user?.role === ROLE.ADMIN ||
     user?.role === ROLE.GENERAL_MANAGER ||

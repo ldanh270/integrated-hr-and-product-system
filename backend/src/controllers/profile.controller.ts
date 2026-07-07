@@ -1,4 +1,4 @@
-import { ErrorCode } from "@/configs/system/error-code.config.ts"
+import { ErrorCode, ErrorMessage } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import { changePasswordSchema, updatePersonalEmployeeLinkSchema, updateProfileSchema } from "@/schemas/profile.schema.ts"
@@ -22,7 +22,7 @@ export class ProfileController {
       if (!req.user) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           status: "error",
-          message: "Unauthorized",
+          message: ErrorMessage.UNAUTHORIZED,
         })
       }
 
@@ -49,7 +49,7 @@ export class ProfileController {
       if (!req.user) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           status: "error",
-          message: "Unauthorized",
+          message: ErrorMessage.UNAUTHORIZED,
         })
       }
 
@@ -86,7 +86,7 @@ export class ProfileController {
       if (!req.user) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           status: "error",
-          message: "Unauthorized",
+          message: ErrorMessage.UNAUTHORIZED,
         })
       }
 
@@ -122,7 +122,7 @@ export class ProfileController {
       if (!req.user) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           status: "error",
-          message: "Unauthorized",
+          message: ErrorMessage.UNAUTHORIZED,
         })
       }
 
@@ -161,7 +161,7 @@ export class ProfileController {
       if (!req.user) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           status: "error",
-          message: "Unauthorized",
+          message: ErrorMessage.UNAUTHORIZED,
         })
       }
 

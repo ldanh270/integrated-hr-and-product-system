@@ -1,6 +1,5 @@
 import { APPLICATION_STATUS } from "@/configs/entities/attendance.config.ts"
 import { PASSWORD_RESET_STATUS } from "@/configs/auth/auth.config.ts"
-import { SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
 import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
 import { APPROVAL_CATEGORY } from "@/configs/rules/approval.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
@@ -30,16 +29,13 @@ export class ApprovalService implements IApprovalService {
     const strategy = await ApprovalStrategyFactory.getStrategyForEmployee(processorId)
     const authContext = await authorizationService.getAuthorizationContext(processorId)
 
-    const roles = authContext.roles
     const isGlobalApprover =
       authContext.isDynamicAdmin ||
-      roles.has(SYSTEM_ROLE.ADMIN) ||
-      roles.has(SYSTEM_ROLE.GENERAL_MANAGER) ||
-      roles.has(SYSTEM_ROLE.HR_MANAGER)
-    const isTeamLeader = roles.has(SYSTEM_ROLE.TEAM_LEADER)
-    const canHandleApplications = isGlobalApprover || isTeamLeader
+      authContext.permissions.has("employee.update")
+    const isTeamLeader = !isGlobalApprover && authContext.permissions.has("application.approve")
+    const canHandleApplications = authContext.permissions.has("application.approve")
     const canHandlePasswordReset =
-      authContext.isDynamicAdmin || roles.has(SYSTEM_ROLE.ADMIN) || roles.has(SYSTEM_ROLE.GENERAL_MANAGER)
+      authContext.isDynamicAdmin || authContext.permissions.has("security.update")
 
     // Fetch Applications (Leaves, OT, etc.)
     if (canHandleApplications) {

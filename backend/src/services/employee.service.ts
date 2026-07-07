@@ -1,14 +1,10 @@
-import { EMPLOYEE_STATUS, SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
-import { ACTIVITY_ACTION, ACTIVITY_CATEGORY } from "@/configs/auth/auth.config.ts"
-import { APPROVAL_CATEGORY, APPROVAL_CONFIG } from "@/configs/rules/approval.config.ts"
+import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { DB_ERROR_CODES } from "@/configs/system/db.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { prisma } from "@/libs/database.ts"
-import { authorizationService } from "./authorization.service.ts"
-import { auditService } from "./audit.service.ts"
-
 import {
+  AppRole,
   CreateEmployeeDto,
   Employee,
   EmployeeListQuery,
@@ -17,11 +13,13 @@ import {
   IEmployeeService,
   PaginatedEmployeesDto,
   UpdateEmployeeDto,
-  AppRole,
 } from "@/types"
 import { IAuthRepository } from "@/types/auth.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
+
+import { auditService } from "./audit.service.ts"
+import { authorizationService } from "./authorization.service.ts"
 
 /**
  * Service for managing employee-related operations.
@@ -76,11 +74,27 @@ export class EmployeeService implements IEmployeeService {
     }
 
     const passwordHash = await HashUtil.hash(data.password)
-    const initialRoleName = data.role?.trim().toLowerCase() || SYSTEM_ROLE.EMPLOYEE
-    const initialRole = await prisma.appRole.findFirst({
-      where: { name: initialRoleName, deletedAt: null, isActive: true },
-      select: { id: true },
-    })
+
+    let initialRole
+    if (data.role) {
+      const initialRoleName = data.role.trim().toLowerCase()
+      initialRole = await prisma.appRole.findFirst({
+        where: { name: initialRoleName, deletedAt: null, isActive: true },
+        select: { id: true },
+      })
+    } else {
+      initialRole = await prisma.appRole.findFirst({
+        where: { isDefault: true, deletedAt: null, isActive: true },
+        select: { id: true },
+      })
+      if (!initialRole) {
+        // Fallback safety to the "employee" role name if no default role is flagged
+        initialRole = await prisma.appRole.findFirst({
+          where: { name: "employee", deletedAt: null, isActive: true },
+          select: { id: true },
+        })
+      }
+    }
 
     if (!initialRole) {
       throw new AppError("Role not found or inactive", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
@@ -107,7 +121,14 @@ export class EmployeeService implements IEmployeeService {
         roleId: initialRole.id,
       })
     } catch (error: unknown) {
-      if (error && typeof error === 'object' && 'code' in error && (DB_ERROR_CODES.UNIQUE_CONSTRAINT as readonly string[]).includes((error as { code: string }).code)) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        (DB_ERROR_CODES.UNIQUE_CONSTRAINT as readonly string[]).includes(
+          (error as { code: string }).code,
+        )
+      ) {
         throw new AppError(
           "Username, email, phone, or national ID already exists",
           HttpStatusCode.CONFLICT,
@@ -214,7 +235,10 @@ export class EmployeeService implements IEmployeeService {
 
     if (result) {
       await authorizationService.invalidateUserCache(id)
-      if (status === EMPLOYEE_STATUS.INACTIVE && currentEmployee.status !== EMPLOYEE_STATUS.INACTIVE) {
+      if (
+        status === EMPLOYEE_STATUS.INACTIVE &&
+        currentEmployee.status !== EMPLOYEE_STATUS.INACTIVE
+      ) {
         await auditService.log({
           actorId,
           targetEmployeeId: id,
@@ -405,7 +429,11 @@ export class EmployeeService implements IEmployeeService {
         },
       })
       if (roles.length !== roleIds.length) {
-        throw new AppError("One or more roles not found or inactive", HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE)
+        throw new AppError(
+          "One or more roles not found or inactive",
+          HttpStatusCode.NOT_FOUND,
+          ErrorLayer.SERVICE,
+        )
       }
     }
 
@@ -429,8 +457,9 @@ export class EmployeeService implements IEmployeeService {
    * Used to populate the "Người duyệt đơn" dropdown in the application form.
    * @returns List of approver employees with minimal fields.
    */
-  async listApprovers(): Promise<{ id: string; fullName: string; position: string | null; role: string }[]> {
-    const approvalRoles = [...APPROVAL_CONFIG[APPROVAL_CATEGORY.APPLICATION].roles]
+  async listApprovers(): Promise<
+    { id: string; fullName: string; position: string | null; role: string }[]
+  > {
     const approvers = await prisma.employee.findMany({
       where: {
         status: EMPLOYEE_STATUS.ACTIVE,
@@ -438,9 +467,17 @@ export class EmployeeService implements IEmployeeService {
         employeeRoles: {
           some: {
             role: {
-              name: { in: approvalRoles },
               isActive: true,
               deletedAt: null,
+              permissions: {
+                some: {
+                  permission: {
+                    code: "application.approve",
+                    isActive: true,
+                    deletedAt: null,
+                  },
+                },
+              },
             },
           },
         },
@@ -452,9 +489,17 @@ export class EmployeeService implements IEmployeeService {
         employeeRoles: {
           where: {
             role: {
-              name: { in: approvalRoles },
               isActive: true,
               deletedAt: null,
+              permissions: {
+                some: {
+                  permission: {
+                    code: "application.approve",
+                    isActive: true,
+                    deletedAt: null,
+                  },
+                },
+              },
             },
           },
           select: {
@@ -470,19 +515,19 @@ export class EmployeeService implements IEmployeeService {
     })
 
     return approvers.flatMap((approver) => {
-      const roleNames = approver.employeeRoles.map((employeeRole) => employeeRole.role.name)
-      const primaryRole = approvalRoles.find((roleName) => roleNames.includes(roleName)) ?? roleNames[0]
-
+      const primaryRole = approver.employeeRoles[0]?.role.name
       if (!primaryRole) {
         return []
       }
 
-      return [{
-        id: approver.id,
-        fullName: approver.fullName,
-        position: approver.position,
-        role: primaryRole,
-      }]
+      return [
+        {
+          id: approver.id,
+          fullName: approver.fullName,
+          position: approver.position,
+          role: primaryRole,
+        },
+      ]
     })
   }
 }

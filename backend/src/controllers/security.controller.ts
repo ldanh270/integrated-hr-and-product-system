@@ -1,3 +1,4 @@
+import { ErrorMessage } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode, RESPONSE_STATUS } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import { IAuthService } from "@/types/auth.types.ts"
@@ -59,7 +60,7 @@ export class SecurityController {
       if (!actorId) {
         return res.status(HttpStatusCode.UNAUTHORIZED).json({
           status: RESPONSE_STATUS.ERROR,
-          message: "Unauthorized",
+          message: ErrorMessage.UNAUTHORIZED,
         })
       }
 
