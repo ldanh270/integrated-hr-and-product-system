@@ -75,7 +75,7 @@ export default function UsersManagement() {
           <p className="text-sm text-muted-foreground mt-2">
             Không thể tải thông tin người dùng. Vui lòng thử lại sau.
           </p>
-          <Button variant="outline" className="mt-4" onClick={() => refetch()}>
+          <Button variant="outline" className="mt-4" onClick={() => { refetch(); }}>
             Thử lại
           </Button>
         </div>
@@ -101,7 +101,7 @@ export default function UsersManagement() {
         {/* Tab Switcher */}
         <nav className="flex items-end gap-0 px-5 border-b border-border">
           <button
-            onClick={() => handleTabChange("all")}
+            onClick={() => { handleTabChange("all"); }}
             className={cn(
               "relative py-4 px-4 text-[13px] font-medium transition-colors",
               activeTab === "all" ? "text-foreground" : "text-muted-foreground hover:text-foreground",
@@ -120,7 +120,7 @@ export default function UsersManagement() {
           </button>
           
           <button
-            onClick={() => handleTabChange("locked")}
+            onClick={() => { handleTabChange("locked"); }}
             className={cn(
               "relative py-4 px-4 text-[13px] font-medium transition-colors",
               activeTab === "locked" ? "text-rose-600" : "text-muted-foreground hover:text-foreground",
@@ -271,9 +271,9 @@ export default function UsersManagement() {
               size="sm"
               className="h-7 px-2 text-xs"
               disabled={query.page === 1}
-              onClick={() =>
+              onClick={() => {
                 setQuery((prev) => ({ ...prev, page: Math.max(1, (prev.page || 1) - 1) }))
-              }
+              }}
             >
               ←
             </Button>
@@ -281,7 +281,7 @@ export default function UsersManagement() {
             {visiblePages.map((p) => (
               <button
                 key={p}
-                onClick={() => setQuery((prev) => ({ ...prev, page: p }))}
+                onClick={() => { setQuery((prev) => ({ ...prev, page: p })) }}
                 className={[
                   "w-7 h-7 rounded-md text-xs flex items-center justify-center transition-colors",
                   query.page === p
@@ -298,7 +298,7 @@ export default function UsersManagement() {
               size="sm"
               className="h-7 px-2 text-xs"
               disabled={query.page === totalPages || totalPages === 0}
-              onClick={() => setQuery((prev) => ({ ...prev, page: (prev.page || 1) + 1 }))}
+              onClick={() => { setQuery((prev) => ({ ...prev, page: (prev.page || 1) + 1 })) }}
             >
               →
             </Button>

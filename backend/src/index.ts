@@ -15,6 +15,7 @@ import debugRoutes from "@/routes/debug.route.ts"
 import employeeSalaryConfigRoutes from "@/routes/employee-salary-config.route.ts"
 import employeeRoutes from "@/routes/employee.route.ts"
 import holidayRoutes from "@/routes/holiday.route.ts"
+import partTimeAvailabilityRoutes from "@/routes/part-time-availability.route.ts"
 import payrollRoutes from "@/routes/payroll.route.ts"
 import payslipTemplateRoutes from "@/routes/payslip-template.route.ts"
 import permissionRoutes from "@/routes/permission.route.ts"
@@ -31,7 +32,7 @@ import spentTimeRoutes from "@/routes/spent-time.route.ts"
 import taskRoutes from "@/routes/task.route.ts"
 import weeklyScheduleTemplateRoutes from "@/routes/weekly-schedule-template.route.ts"
 import positionRoutes from "@/routes/position.route.ts"
-import { countStaticRoleReferences, bootstrapAdmin } from "@/utils/startup-assertion.util.ts"
+import { bootstrapAdmin, assertNoLegacyStaticRoleReferences } from "@/utils/startup-assertion.util.ts"
 
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
@@ -73,6 +74,8 @@ app.use("/api/applications", applicationRoutes)
 app.use("/api/shift-change-requests", shiftChangeRequestRoutes)
 app.use("/api/holidays", holidayRoutes)
 app.use("/api/weekly-schedule-templates", weeklyScheduleTemplateRoutes)
+// PT weekly availability — separate from full-time shift templates; employee declares, admin assigns.
+app.use("/api/part-time-availabilities", partTimeAvailabilityRoutes)
 app.use("/api/approvals", approvalRoutes)
 
 // Payroll routes
@@ -107,13 +110,21 @@ app.use(globalErrorHandler)
 /**
  * Must connect to database successfully before start server
  */
-connectDB().then(async () => {
-  // Ensure fail-safe administrator exists
-  await bootstrapAdmin()
+void connectDB()
+  .then(async () => {
+    const skipAssert = process.env.SKIP_ADMIN_ASSERT === "true" || process.env.NODE_ENV === "test"
+    assertNoLegacyStaticRoleReferences(skipAssert)
 
-  app.listen(PORT, () => {
-    console.log("Server start on port " + PORT)
-    initCronJobs()
-    initWeeklyScheduleCron()
+    // Ensure fail-safe administrator exists
+    await bootstrapAdmin()
+
+    app.listen(PORT, () => {
+      console.log("Server start on port " + PORT)
+      initCronJobs()
+      initWeeklyScheduleCron()
+    })
   })
-})
+  .catch((error) => {
+    console.error("Failed to start server:", error)
+    process.exit(1)
+  })

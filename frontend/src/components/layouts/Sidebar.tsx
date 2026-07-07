@@ -1,18 +1,13 @@
 import SubsystemDropdown from "@/components/layouts/SubsystemDropdown"
 import UserMenu from "@/components/layouts/user-menu"
+import type { NavItem } from "@/config/subsystem.config"
+import { useProfile } from "@/hooks/use-profile"
 import { useAuthStore } from "@/store/auth-store"
 import { useSidebarStore } from "@/store/sidebar-store"
 import { useSubsystemStore } from "@/store/subsystem-store"
+import { filterNavItems } from "@/utils/navigation/filter-nav-items"
 
 import { Link, useLocation } from "react-router-dom"
-
-interface NavItem {
-  name: string
-  path: string
-  icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>
-  roles?: string[]
-  permissions?: string[]
-}
 
 interface SidebarProps {
   className?: string
@@ -30,12 +25,15 @@ export default function Sidebar({ className, isMobile, onNavClick }: SidebarProp
   const { getActiveSubsystemConfig } = useSubsystemStore()
   const activeSubsystemConfig = getActiveSubsystemConfig()
   const user = useAuthStore((s) => s.user)
+  const { data: profile } = useProfile()
   const { isCollapsed } = useSidebarStore()
 
-  const navItems: NavItem[] = (activeSubsystemConfig?.sidebarItems || []).filter(
-    (item: NavItem) =>
-      !item.permissions ||
-      (user && item.permissions.every((p: string) => user.permissions?.includes(p))),
+  const navItems: NavItem[] = filterNavItems(
+    activeSubsystemConfig?.sidebarItems ?? [],
+    user,
+    profile?.employeeType,
+    // workScheduleType gates PT-only nav (e.g. availability tab).
+    profile?.workScheduleType,
   )
 
   // Mobile mode effectively ignores 'isCollapsed' for layout purposes since it's a drawer

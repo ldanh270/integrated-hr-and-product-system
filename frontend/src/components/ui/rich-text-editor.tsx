@@ -110,21 +110,21 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
       <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 border-b border-border/60 bg-muted/20">
         <button
           type="button"
-          onClick={() => editor.chain().focus().toggleBold().run()}
+          onClick={() => { editor.chain().focus().toggleBold().run(); }}
           className={`p-1 rounded transition-colors ${editor.isActive("bold") ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
         >
           <Bold className="size-3.5" />
         </button>
         <button
           type="button"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
+          onClick={() => { editor.chain().focus().toggleItalic().run(); }}
           className={`p-1 rounded transition-colors ${editor.isActive("italic") ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
         >
           <Italic className="size-3.5" />
         </button>
         <button
           type="button"
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          onClick={() => { editor.chain().focus().toggleUnderline().run(); }}
           className={`p-1 rounded transition-colors ${editor.isActive("underline") ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
         >
           <UnderlineIcon className="size-3.5" />
@@ -134,14 +134,14 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
 
         <button
           type="button"
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          onClick={() => { editor.chain().focus().toggleBulletList().run(); }}
           className={`p-1 rounded transition-colors ${editor.isActive("bulletList") ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
         >
           <List className="size-3.5" />
         </button>
         <button
           type="button"
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          onClick={() => { editor.chain().focus().toggleOrderedList().run(); }}
           className={`p-1 rounded transition-colors ${editor.isActive("orderedList") ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
         >
           <ListOrdered className="size-3.5" />
@@ -168,13 +168,13 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
 
         <button
           type="button"
-          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+          onClick={() => { editor.chain().focus().toggleCodeBlock().run(); }}
           className={`p-1 rounded transition-colors ${editor.isActive("codeBlock") ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
         >
           <Code className="size-3.5" />
         </button>
       </div>
-      <div className="flex-1 cursor-text" onClick={() => editor.commands.focus()}>
+      <div className="flex-1 cursor-text" onClick={() => { editor.commands.focus(); }}>
         <EditorContent editor={editor} />
       </div>
     </div>

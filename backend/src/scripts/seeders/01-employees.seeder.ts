@@ -1,4 +1,9 @@
-import { EMPLOYEE_TYPE, EMPLOYEE_TYPES } from "@/configs/entities/employee.config.ts"
+import {
+  EMPLOYEE_STATUS,
+  EMPLOYEE_TYPES,
+  EMPLOYEE_TYPE,
+  WORK_SCHEDULE_TYPE,
+} from "@/configs/entities/employee.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
 import { getSeedPassword } from "@/scripts/seeders/seed-password.util.ts"
@@ -85,7 +90,8 @@ export class EmployeesSeeder implements ISeeder {
         data: {
           username: partTimeUsername,
           passwordHash: passwordHashCore,
-          employeeType: EMPLOYEE_TYPE.PART_TIME,
+          employeeType: EMPLOYEE_TYPE.FULL_TIME,
+          workScheduleType: WORK_SCHEDULE_TYPE.PART_TIME, // PT schedule, not contract type
           fullName: "Part Time User",
           email: "part_time@example.com",
           phone: "0123456786",
@@ -122,12 +128,12 @@ export class EmployeesSeeder implements ISeeder {
         email: faker.internet.email({ firstName, lastName, provider: "example.com" }),
         phone: faker.phone.number({ style: "national" }),
         address: faker.location.streetAddress(),
-        position: isTeamLeader ? "Project Manager" : (index % 2 === 0 ? "Developer" : "Tester"),
-        positionId: isTeamLeader ? pmPos?.id : (index % 2 === 0 ? devPos?.id : testerPos?.id),
-        employeeType: type as any,
+        position: isTeamLeader ? "Project Manager" : index % 2 === 0 ? "Developer" : "Tester",
+        positionId: isTeamLeader ? pmPos?.id : index % 2 === 0 ? devPos?.id : testerPos?.id,
+        employeeType: type,
         dateOfBirth: faker.date.birthdate({ min: 22, max: 55, mode: "age" }),
         startDate: faker.date.past({ years: 3 }),
-        status: "active" as any,
+        status: EMPLOYEE_STATUS.ACTIVE,
       }
     })
 

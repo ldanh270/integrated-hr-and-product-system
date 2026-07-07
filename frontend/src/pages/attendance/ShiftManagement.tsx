@@ -144,7 +144,7 @@ export default function ShiftManagement() {
                     </TableCell>
                     <TableCell className="px-4 py-4 font-medium text-foreground">
                       <button
-                        onClick={() => handleEdit(shift)}
+                        onClick={() => { handleEdit(shift); }}
                         className="hover:text-primary hover:underline focus:outline-none"
                       >
                         {shift.name}
@@ -185,13 +185,13 @@ export default function ShiftManagement() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(shift)}>
+                          <DropdownMenuItem onClick={() => { handleEdit(shift); }}>
                             Chỉnh sửa
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-destructive"
-                            onClick={() => handleDelete(shift.id)}
+                            onClick={() => { handleDelete(shift.id); }}
                           >
                             Xoá ca
                           </DropdownMenuItem>

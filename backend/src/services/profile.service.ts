@@ -41,6 +41,7 @@ async function toProfileDto(emp: ProfileEmployeeDocument): Promise<ProfileDto> {
     positionId: emp.positionId ?? null,
     roles,
     employeeType: emp.employeeType,
+    workScheduleType: emp.workScheduleType, // drives PT nav/features on profile
     status: emp.status,
     startDate: emp.startDate ? emp.startDate.toISOString().split("T")[0] : null,
     avatar: {
@@ -129,8 +130,9 @@ export class ProfileService implements IProfileService {
     // Check if Cloudinary is configured
     try {
       assertCloudinaryConfigured()
-    } catch (err: any) {
-      throw new AppError(err.message, HttpStatusCode.BAD_REQUEST, LAYER_NAME)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Cloudinary is not configured"
+      throw new AppError(message, HttpStatusCode.BAD_REQUEST, LAYER_NAME)
     }
 
     // Fetch current profile to get old avatar id for cleanup

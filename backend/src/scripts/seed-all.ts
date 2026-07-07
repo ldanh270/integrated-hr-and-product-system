@@ -1,35 +1,54 @@
+/**
+ * Database seeder entry point — invoked via `bun run seed`.
+ *
+ * Default (fresh): wipes DB then runs all registered seeders in dependency order.
+ * Incremental: `bun run seed -- --incremental` — no wipe; skips seeders that already have data.
+ * Prerequisite for incremental: `bun run seed:admin` must have been run first.
+ */
 import { prisma } from "../libs/database.ts"
 import { clearDatabase } from "./clear-db.ts"
+import { runIncrementalSeed } from "./seed-incremental.util.ts"
 import { SeedContext, createEmptyContext, registry } from "./seeders/index.ts"
 
-async function main() {
-  console.log("Starting full database seed...")
+const isIncremental = process.argv.includes("--incremental")
+
+/** Wipe DB then run every registered seeder — default first-time / reset flow. */
+async function runFreshSeed(): Promise<void> {
+  console.log("Starting full database seed (clear + seed)...")
   let context: SeedContext = createEmptyContext()
 
+  const sortedSeeders = registry.getSorted()
+  if (sortedSeeders.length === 0) {
+    console.log("No seeders registered.")
+    return
+  }
+
+  await clearDatabase()
+
+  for (const seeder of sortedSeeders) {
+    console.log(`\n[→] Running: ${seeder.name}`)
+    const result = await seeder.run(context)
+    context = { ...context, ...result }
+    console.log(`[✓] Done: ${seeder.name}`)
+  }
+
+  console.log("\nAll seeders completed successfully.")
+}
+
+/** Route to fresh or incremental seed based on --incremental CLI flag. */
+async function main(): Promise<void> {
   try {
-    const sortedSeeders = registry.getSorted()
-
-    if (sortedSeeders.length === 0) {
-      console.log("No seeders registered.")
-      return
+    if (isIncremental) {
+      await runIncrementalSeed()
+    } else {
+      await runFreshSeed()
     }
-
-    // Clear the database before seeding
-    await clearDatabase()
-
-    for (const seeder of sortedSeeders) {
-      console.log(`\n[→] Running: ${seeder.name}`)
-      const result = await seeder.run(context)
-      context = { ...context, ...result }
-      console.log(`[✓] Done: ${seeder.name}`)
-    }
-
-    console.log("\nAll seeders completed successfully.")
   } catch (error) {
     console.error("Error during seeding:", error)
+    process.exitCode = 1
   } finally {
     await prisma.$disconnect()
   }
 }
 
-main()
+void main()

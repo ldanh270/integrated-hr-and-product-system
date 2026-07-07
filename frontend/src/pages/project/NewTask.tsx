@@ -604,7 +604,7 @@ export default function NewTask() {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => { fileInputRef.current?.click(); }}
                 className={`flex flex-col items-center justify-center border-2 border-dashed transition-all rounded-lg p-6 cursor-pointer min-h-[140px] text-center ${
                   isDragOver
                     ? "border-primary bg-primary/5 shadow-sm"

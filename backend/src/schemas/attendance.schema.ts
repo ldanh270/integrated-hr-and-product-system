@@ -6,7 +6,7 @@ import {
   LEAVE_TYPE_VALUES,
   REGIME_TYPES,
 } from "@/configs/entities/attendance.config.ts"
-import { ATTENDANCE_ERROR_MESSAGES } from "@/constants/attendance.constants.ts"
+import { ATTENDANCE_ERROR_MESSAGES } from "@/configs/messages/attendance.message.ts"
 
 import { z } from "zod"
 

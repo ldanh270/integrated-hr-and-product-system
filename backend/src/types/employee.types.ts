@@ -1,9 +1,10 @@
 import {
   IEmployeeStatus,
   IEmployeeType,
+  IWorkScheduleType,
 } from "@/configs/entities/employee.config.ts"
 import { SORT_ORDER } from "@/configs/system/db.config.ts"
-
+import { Prisma } from "@prisma/client"
 import { AppRole } from "./role.types.ts"
 
 /**
@@ -15,6 +16,11 @@ export type EmployeeStatus = IEmployeeStatus
  * Type representing valid Employee Type values.
  */
 export type EmployeeType = IEmployeeType
+
+/**
+ * Type representing full-time vs part-time work schedule.
+ */
+export type WorkScheduleType = IWorkScheduleType
 
 /**
  * Domain interface representing an Employee object.
@@ -30,12 +36,15 @@ export interface Employee {
   email: string
   /** Contact phone number (nullable) */
   phone: string | null
-  /** Job position / title (nullable) */
+  /** Job position / title (nullable, denormalized from Position) */
   position: string | null
+  /** FK to dynamic Position catalog */
   positionId?: string | null
-  positionRel?: any
-  /** Type of employment (e.g. full-time, part-time) */
+  positionRel?: unknown
+  /** Employment category (e.g. official, intern, contractor) */
   employeeType: EmployeeType
+  /** Hours-based schedule — drives PT availability, Spent Time payroll, and GPS rules (not employeeType). */
+  workScheduleType: WorkScheduleType
   /** Active status of the employee */
   status: EmployeeStatus
   /** Date of birth (nullable) */
@@ -80,6 +89,7 @@ export interface CreateEmployeeDto {
   position?: string | null
   positionId?: string | null
   employeeType?: EmployeeType
+  workScheduleType?: WorkScheduleType
   status?: EmployeeStatus
   dateOfBirth?: Date | string | null
   nationalId?: string | null
@@ -99,6 +109,7 @@ export interface UpdateEmployeeDto {
   position?: string | null
   positionId?: string | null
   employeeType?: EmployeeType
+  workScheduleType?: WorkScheduleType
   status?: EmployeeStatus
   dateOfBirth?: Date | string | null
   nationalId?: string | null
@@ -117,10 +128,12 @@ export interface EmployeeListQuery {
   limit?: number
   /** Partial search string for names/emails */
   search?: string
-  /** Status filter */
+  /** Status filter (includes locked accounts) */
   status?: EmployeeStatus | "locked"
-  /** Employee type filter */
+  /** Employee type filter (employment category) */
   type?: EmployeeType
+  /** Work schedule filter (full-time / part-time hours) */
+  workSchedule?: WorkScheduleType
   /** Role ID filter */
   roleId?: string
   /** Column/property to sort by */
@@ -179,7 +192,7 @@ export interface IEmployeeRepository {
     actorId?: string,
   ): Promise<void>
   /** Count active admin users in the system */
-  countActiveAdmins(tx?: any): Promise<number>
+  countActiveAdmins(tx?: Prisma.TransactionClient): Promise<number>
 }
 
 /**
@@ -247,7 +260,7 @@ export interface IAuthorizationService {
   invalidateRoleCache(roleId: string): Promise<void>
   invalidatePermissionCache(permissionId: string): Promise<void>
   incrementMetric(metric: string): void
-  getMetrics(): any
+  getMetrics(): Record<string, number>
   logDecision(employeeId: string, permission: string, allowed: boolean, source: string): void
   getGlobalVersion(): Promise<number>
 }

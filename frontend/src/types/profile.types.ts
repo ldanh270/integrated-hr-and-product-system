@@ -1,10 +1,12 @@
 import type {
   IEmployeeStatus,
   IEmployeeType,
+  IWorkScheduleType,
 } from "@/config/entities/employee.config"
 
 export type EmployeeStatus = IEmployeeStatus
 export type EmployeeType = IEmployeeType
+export type WorkScheduleType = IWorkScheduleType // mirrored from employee.workScheduleType
 export type EmployeeRole = string
 
 export interface ProfileDto {
@@ -20,6 +22,7 @@ export interface ProfileDto {
   positionId: string | null
   roles: EmployeeRole[]
   employeeType: EmployeeType
+  workScheduleType: WorkScheduleType // exposed on profile for PT vs full-time UX
   status: EmployeeStatus
   startDate: string | null
   avatar: {

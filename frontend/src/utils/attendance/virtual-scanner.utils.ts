@@ -1,3 +1,4 @@
+import { ATTENDANCE_MESSAGES } from "@/config/messages/attendance.message"
 import { ATTENDANCE_TIME_RULES } from "@/config/rules/attendance.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import type { IAttendanceRecord, IWorkingShift } from "@/types/attendance.types"
@@ -45,25 +46,38 @@ export function getScannerApiErrorMessage(error: unknown, fallback: string): str
 }
 
 export function buildTodayShiftInfo(scheduleShift?: Partial<IWorkingShift>): TodayShiftInfo | null {
-  if (!scheduleShift?.name || scheduleShift.startTime == null || scheduleShift.endTime == null) {
+  const shiftName = scheduleShift?.name
+  const startTime = scheduleShift?.startTime
+  const endTime = scheduleShift?.endTime
+
+  if (!shiftName || startTime == null || endTime == null) {
     return null
   }
 
   const gracePeriod = scheduleShift.gracePeriodMinutes ?? ATTENDANCE_TIME_RULES.DEFAULT_WINDOW_MINUTES
-  const hasGps =
-    scheduleShift.gpsLat != null &&
-    scheduleShift.gpsLng != null &&
-    scheduleShift.gpsRadiusMeters != null
+  const radius = scheduleShift.gpsRadiusMeters
+  const lat = scheduleShift.gpsLat
+  const lng = scheduleShift.gpsLng
 
   return {
-    name: scheduleShift.name,
-    workWindow: `${minutesToDayTime(scheduleShift.startTime)} - ${minutesToDayTime(scheduleShift.endTime)}`,
-    checkInWindow: `${minutesToDayTime(scheduleShift.startTime - gracePeriod)} - ${minutesToDayTime(scheduleShift.startTime + gracePeriod)}`,
-    checkOutWindow: `Từ ${minutesToDayTime(scheduleShift.endTime - gracePeriod)}`,
-    gpsLabel: hasGps
-      ? `${scheduleShift.gpsRadiusMeters}m quanh ${scheduleShift.gpsLat?.toFixed(5)}, ${scheduleShift.gpsLng?.toFixed(5)}`
-      : "Chưa cấu hình GPS",
+    name: shiftName,
+    workWindow: `${minutesToDayTime(startTime)} - ${minutesToDayTime(endTime)}`,
+    checkInWindow: `${minutesToDayTime(startTime - gracePeriod)} - ${minutesToDayTime(startTime + gracePeriod)}`,
+    checkOutWindow: `${ATTENDANCE_MESSAGES.SCANNER.CHECK_OUT_FROM} ${minutesToDayTime(endTime - gracePeriod)}`,
+    gpsLabel: buildScannerGpsLabel(radius, lat, lng),
   }
+}
+
+function buildScannerGpsLabel(
+  radius: number | null | undefined,
+  lat: number | null | undefined,
+  lng: number | null | undefined,
+): string {
+  if (radius == null || lat == null || lng == null) {
+    return ATTENDANCE_MESSAGES.SCANNER.NO_GPS_CONFIGURED
+  }
+
+  return ATTENDANCE_MESSAGES.SCANNER.GPS_RADIUS_LABEL(radius, lat, lng)
 }
 
 export function resolveNextScanAction(records?: IAttendanceRecord[]): ScanAction {

@@ -18,12 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { PROJECT_MESSAGES } from "@/config/messages/project.message"
 import {
   PROJECT_MEMBER_WORK_MODE,
   PROJECT_MEMBER_WORK_MODES,
   getProjectMemberWorkModeLabel,
 } from "@/config/entities/project.config"
-import { EMPLOYEE_TYPE } from "@/config/entities/employee.config"
+import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util"
 import { projectApi } from "@/lib/api/project.api"
 import { extractErrorMessage } from "@/utils/error-helper"
 import type { Employee } from "@/types/employee.types"
@@ -72,7 +73,8 @@ export function AddMemberModal({
   }, [roles, roleId])
 
   const selectedEmployee = allEmployees.find((e) => e.id === memberEmployeeId)
-  const isPartTime = selectedEmployee?.employeeType === EMPLOYEE_TYPE.PART_TIME
+  // PT members require hourlyRate on ProjectMember for payroll.
+  const isPartTime = selectedEmployee ? isPartTimeWorkSchedule(selectedEmployee) : false
 
   const addMemberMutation = useMutation({
     mutationFn: async () => {
@@ -81,7 +83,7 @@ export function AddMemberModal({
       }
       if (isPartTime && (!hourlyRate || Number(hourlyRate) <= 0)) {
         // Backend rejects PT members without rate — payroll uses ProjectMember.hourlyRate.
-        throw new Error("Nhân viên part-time cần mức lương theo giờ")
+        throw new Error(PROJECT_MESSAGES.PART_TIME_HOURLY_RATE_REQUIRED)
       }
 
       return projectApi.addMember(projectId, {
