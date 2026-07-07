@@ -224,6 +224,7 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
     return { assigned, skipped }
   }
 
+  /** Load availability or throw 404 — shared guard for admin mutation endpoints. */
   private async requireAvailability(id: string): Promise<IPartTimeWeeklyAvailability> {
     const availability = await this.availabilityRepo.findById(id)
     if (!availability) {
@@ -236,6 +237,7 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
     return availability
   }
 
+  /** Find or create a WorkingShift template matching assigned minutes — needed for check-in window + GPS. */
   private async resolveWorkingShiftId(
     startTime: number,
     endTime: number,
@@ -260,6 +262,7 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
     return created.id
   }
 
+  /** Gate all PT availability endpoints to employees with part-time work schedule only. */
   private async assertPartTimeEmployee(employeeId: string): Promise<void> {
     const employee = await this.employeeRepo.findById(employeeId)
     if (!employee || !isPartTimeWorkSchedule(employee)) {
@@ -271,6 +274,7 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
     }
   }
 
+  /** Controller helper — converts HH:mm API payload to minute-based domain DTO before service call. */
   static mapPayloadDays(
     days: Array<{
       dayOfWeek: number

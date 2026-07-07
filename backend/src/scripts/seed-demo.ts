@@ -1,6 +1,10 @@
 /**
  * Demo dataset seeder — invoked via `bun run seed:demo`.
- * Populates sample shifts, schedules, payroll, projects, and related HR data for local demos.
+ *
+ * Purpose: populate a non-empty local database for demos and manual QA without wiping data.
+ * Seeds (in dependency order): working shifts, holidays, schedules, employee shifts,
+ * attendance records, projects, applications, tasks, and spent times.
+ *
  * Idempotent: each sub-seeder skips when its target table already has rows.
  * Prerequisite: run `bun run seed:admin` first so the admin account exists.
  */
@@ -8,6 +12,7 @@ import { prisma } from "@/libs/database.ts"
 import { createEmptyContext, registry } from "./seeders/index.ts"
 import type { SeedContext } from "./seeders/seed-context.ts"
 
+/** Load FK ids and lookup maps from DB so downstream seeders can reference existing rows. */
 async function hydrateContext(context: SeedContext): Promise<SeedContext> {
   const admin = await prisma.employee.findFirst({ where: { username: "admin" } })
   if (!admin) {
@@ -40,6 +45,7 @@ async function hydrateContext(context: SeedContext): Promise<SeedContext> {
   }
 }
 
+/** Per-seeder row-count guard — safe to re-run demo seed without duplicating data. */
 async function shouldSkipSeederInternal(name: string): Promise<boolean> {
   let count = 0
 
@@ -89,6 +95,7 @@ async function shouldSkipSeederInternal(name: string): Promise<boolean> {
   }
 }
 
+/** Wraps skip evaluation — on DB error, fall through and attempt seed rather than abort silently. */
 async function shouldSkipSeeder(name: string): Promise<boolean> {
   try {
     return await shouldSkipSeederInternal(name)
@@ -98,6 +105,7 @@ async function shouldSkipSeeder(name: string): Promise<boolean> {
   }
 }
 
+/** Run all registered demo seeders in topological order, refreshing context after each step. */
 async function main(): Promise<void> {
   console.log("Seeding demo data (without clearing database)...")
 

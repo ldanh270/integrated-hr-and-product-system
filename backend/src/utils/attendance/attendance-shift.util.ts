@@ -5,6 +5,7 @@ import { ATTENDANCE_LAYERS } from "@/constants/attendance.constants.ts"
 import type { IAttendanceRecordDTO, IAttendanceShiftDTO } from "@/types/attendance.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 
+/** Shift duration in minutes — handles overnight shifts that cross midnight. */
 export function getShiftDurationMinutes(startTime: number, endTime: number): number {
   if (endTime >= startTime) {
     return endTime - startTime
@@ -12,6 +13,7 @@ export function getShiftDurationMinutes(startTime: number, endTime: number): num
   return ATTENDANCE_TIME_RULES.MINUTES_PER_DAY - startTime + endTime
 }
 
+/** True when current clock time falls inside the shift's minute window (inclusive). */
 export function isWithinShiftWindow(
   currentMinutes: number,
   startTime: number,
@@ -23,10 +25,12 @@ export function isWithinShiftWindow(
   return currentMinutes >= startTime || currentMinutes <= endTime
 }
 
+/** Extract minutes-since-midnight from a Date — used for PT multi-slot day selection. */
 export function getMinutesFromDateTime(date: Date): number {
   return date.getHours() * 60 + date.getMinutes()
 }
 
+/** Exact match check for scheduled vs actual start/end — drives isMatched flag on checkout. */
 export function isActualShiftMatched(
   actualStartTime: number,
   actualEndTime: number,
@@ -37,16 +41,19 @@ export function isActualShiftMatched(
   )
 }
 
+/** Grace period before/after shift boundaries — defaults from ATTENDANCE_TIME_RULES when unset. */
 export function getWindowMinutes(shift?: IAttendanceShiftDTO | null): number {
   return shift?.gracePeriodMinutes ?? ATTENDANCE_TIME_RULES.DEFAULT_WINDOW_MINUTES
 }
 
+/** Type guard for cross-midnight shifts where endTime < startTime. */
 export function isOvernightShift(
   shift: IAttendanceShiftDTO | null | undefined,
 ): shift is IAttendanceShiftDTO {
   return Boolean(shift && shift.endTime < shift.startTime)
 }
 
+/** Convert minute-based shift template to concrete Date objects on a calendar day. */
 export function getShiftDateTimes(
   baseDate: Date,
   shift: IAttendanceShiftDTO,
@@ -63,6 +70,7 @@ export function getShiftDateTimes(
   return { start, end }
 }
 
+/** FT fallback: pick shift whose grace-adjusted window contains the current minute. */
 export function isWithinShiftSelectionWindow(
   currentMinutes: number,
   shift: IAttendanceShiftDTO,
@@ -74,6 +82,7 @@ export function isWithinShiftSelectionWindow(
   return isWithinShiftWindow(currentMinutes, windowStart, shift.endTime)
 }
 
+/** Fail-fast when check-in is before grace window or after scheduled shift end. */
 export function assertCheckInWindow(
   now: Date,
   date: Date,
@@ -102,6 +111,7 @@ export function assertCheckInWindow(
   }
 }
 
+/** Block checkout until grace window opens — prevents premature scan/check-out. */
 export function isBeforeCheckOutWindow(
   now: Date,
   record: IAttendanceRecordDTO,
@@ -116,6 +126,7 @@ export function isBeforeCheckOutWindow(
   return now.getTime() < windowStart.getTime()
 }
 
+/** Extend active session lookup into the next calendar day for overnight shift checkout. */
 export function isWithinOvernightCarryover(
   now: Date,
   record: IAttendanceRecordDTO,

@@ -7,6 +7,10 @@ import type {
 } from "@/types/attendance.types.ts"
 import { getShiftDateTimes } from "@/utils/attendance/attendance-shift.util.ts"
 
+/**
+ * Derive late/early/overtime minutes and attendance status at checkout.
+ * Grace period reduces late penalty; status priority: late > early leave > overtime > on time.
+ */
 export function computeAttendanceMetrics(
   record: IAttendanceRecordDTO,
   shift: IAttendanceShiftDTO | null | undefined,

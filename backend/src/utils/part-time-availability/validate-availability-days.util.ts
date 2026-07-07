@@ -9,10 +9,15 @@ import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import type { IUpsertPartTimeAvailabilityDTO } from "@/types/part-time-availability.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 
+/** AppError layer tag for part-time availability service boundary. */
 export const PART_TIME_AVAILABILITY_LAYERS = {
   SERVICE: "PartTimeAvailabilityService",
 } as const
 
+/**
+ * Fill missing weekdays with default 08:00–17:00 slot.
+ * Admin assign UI expects a full Mon–Sun grid even when employee omits days.
+ */
 export function normalizeAvailabilityDays(
   days: IUpsertPartTimeAvailabilityDTO["days"],
 ): IUpsertPartTimeAvailabilityDTO["days"] {
@@ -36,6 +41,10 @@ export function normalizeAvailabilityDays(
   })
 }
 
+/**
+ * Validate employee-submitted free-time slots before persistence.
+ * Enforces busy/slot consistency, max slots, min duration, and no overlaps.
+ */
 export function validateAvailabilityDays(days: IUpsertPartTimeAvailabilityDTO["days"]): void {
   for (const day of days) {
     if (day.isBusyAllDay && day.slots.length > 0) {

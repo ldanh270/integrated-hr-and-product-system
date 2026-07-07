@@ -67,6 +67,7 @@ export class PrismaPartTimeAvailabilityRepository
     }
   }
 
+  /** Lookup one employee's availability header for a specific Monday weekStart. */
   async findByEmployeeAndWeek(
     employeeId: string,
     weekStart: Date,
@@ -81,6 +82,7 @@ export class PrismaPartTimeAvailabilityRepository
     return record ? this.mapRecord(record as RawAvailability) : null
   }
 
+  /** Admin roster query — all submissions for the same weekStart, sorted by employee name. */
   async listByWeek(weekStart: Date): Promise<IPartTimeWeeklyAvailability[]> {
     const records = await this.prisma.partTimeWeeklyAvailability.findMany({
       where: { weekStart },
@@ -91,6 +93,7 @@ export class PrismaPartTimeAvailabilityRepository
     return records.map((record) => this.mapRecord(record as RawAvailability))
   }
 
+  /** Fetch availability by primary key — used by assign/approve/reject flows. */
   async findById(id: string): Promise<IPartTimeWeeklyAvailability | null> {
     const record = await this.prisma.partTimeWeeklyAvailability.findUnique({
       where: { id },
@@ -178,6 +181,7 @@ export class PrismaPartTimeAvailabilityRepository
     return this.mapRecord(record as RawAvailability)
   }
 
+  /** Persist approve/reject outcome and stamp reviewer metadata on the header row. */
   async updateStatus(
     id: string,
     status: PartTimeAvailabilityStatus,
