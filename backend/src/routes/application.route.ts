@@ -10,12 +10,28 @@ import express from "express"
 import { NotificationService } from "@/services/notification.service.ts"
 import { NotificationRepository } from "@/repositories/notification.repository.ts"
 
+import { PrismaPositionRepository } from "@/repositories/position.repository.ts"
+import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
+import { PrismaProjectRepository } from "@/repositories/project.repository.ts"
+import { PositionService } from "@/services/position.service.ts"
+
+/**
+ * Application workflow routing configuration.
+ * Instantiates dependencies for PrismaApplicationRepository, PrismaEmployeeRepository,
+ * PrismaProjectRepository, PrismaPositionRepository, PositionService, and ApplicationService,
+ * wiring them into the ApplicationController endpoints.
+ */
 const applicationRoutes = express.Router()
 
 const notifRepo = new NotificationRepository()
 const notifService = new NotificationService(notifRepo)
 const repository = new PrismaApplicationRepository(prisma)
 const service = new ApplicationService(repository, notifService)
+const employeeRepository = new PrismaEmployeeRepository(prisma)
+const projectRepository = new PrismaProjectRepository(prisma)
+const positionRepository = new PrismaPositionRepository(prisma)
+const positionService = new PositionService(positionRepository, employeeRepository, projectRepository, prisma)
+const service = new ApplicationService(repository, positionService)
 const controller = new ApplicationController(service)
 
 // All routes require authentication

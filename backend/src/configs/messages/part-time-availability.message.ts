@@ -1,0 +1,24 @@
+/** User-facing PT availability errors — keep in sync with service guard clauses. */
+export const PART_TIME_AVAILABILITY_MESSAGES = {
+  NOT_PART_TIME: "Chỉ nhân viên bán thời gian mới được khai báo lịch rảnh",
+  NOT_FOUND: "Không tìm thấy lịch rảnh tuần này",
+  INVALID_WEEK_START: "weekStart không hợp lệ",
+  INVALID_DAY: "dayOfWeek phải từ 0 đến 6",
+  SLOT_OVERLAP: "Khung giờ rảnh trong cùng ngày không được chồng lấn",
+  SLOT_INVALID_RANGE: "Giờ bắt đầu phải trước giờ kết thúc",
+  MAX_SLOTS: "Mỗi ngày tối đa 4 khung giờ rảnh",
+  BUSY_WITH_SLOTS: "Ngày bận cả ngày không được có khung giờ rảnh",
+  ALREADY_APPROVED: "Lịch rảnh đã duyệt, không thể chỉnh sửa",
+  PAST_OR_CURRENT_WEEK_NOT_ALLOWED: "Chỉ có thể khai báo lịch rảnh từ tuần kế tiếp trở đi",
+  NOT_SUBMITTED: "Chỉ có thể duyệt hoặc từ chối lịch rảnh đang chờ duyệt",
+  NOT_SUBMITTED_FOR_ASSIGN: "Nhân viên phải gửi lịch rảnh trước khi xếp ca",
+  REJECT_REASON_REQUIRED: "Thiếu lý do từ chối",
+  ASSIGN_INVALID_RANGE: "Giờ bắt đầu phải trước giờ kết thúc",
+  ASSIGN_INCOMPLETE_TIME: "Phải nhập đủ giờ bắt đầu và kết thúc",
+  SHIFT_NOT_IN_SLOT: "Ca làm việc không nằm trong khung rảnh của nhân viên",
+  ASSIGN_SUCCESS: "Đã xếp ca cho nhân viên",
+  WEEK_ALREADY_ASSIGNED:
+    "Tuần này đã được xếp ca. Liên hệ quản lý nếu cần chỉnh sửa lịch rảnh",
+  EMPTY_DAY_SLOTS: "Ngày rảnh phải có ít nhất một khung giờ hoặc đánh dấu bận cả ngày",
+  SLOT_TOO_SHORT: "Mỗi khung rảnh phải dài ít nhất 30 phút",
+} as const

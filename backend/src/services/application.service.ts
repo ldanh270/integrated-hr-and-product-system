@@ -3,10 +3,8 @@ import {
   APPLICATION_TYPES,
   PARTNER_APPROVAL_STATUS,
 } from "@/configs/entities/attendance.config.ts"
-import { SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
 import { NOTIFICATION_TYPE } from "@/configs/entities/notification.config.ts"
 import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
-import { APPROVAL_CATEGORY, APPROVAL_CONFIG } from "@/configs/rules/approval.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
@@ -14,11 +12,11 @@ import {
   APPLICATION_SERVICE_NOTIFICATIONS as SERVICE_NOTIFICATIONS,
 } from "@/constants/application.constants.ts"
 import { prisma } from "@/libs/database.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
 import {
   ApplicationTypeStrategyFactory,
   IStrategyDeps,
 } from "@/services/application-type.strategy.ts"
-import { authorizationService } from "@/services/authorization.service.ts"
 import { NotificationService } from "@/services/notification.service.ts"
 import {
   IApplicationRepository,
@@ -28,13 +26,19 @@ import {
   ISubmitApplicationDTO,
 } from "@/types/attendance.types.ts"
 import { AppError } from "@/utils/error.util.ts"
+import { IPositionService } from "@/types/position.types.ts"
 
 import { Application } from "@prisma/client"
 
+
+/**
+ * Service managing organizational application requests (leaves, overtime, late/early checkins, shift swaps).
+ * Incorporates validation with position constraints and role-based workflow rules.
+ */
 export class ApplicationService implements IApplicationService {
   constructor(
     private applicationRepo: IApplicationRepository,
-    private notificationService: NotificationService,
+    private positionService?: IPositionService,
   ) {}
 
   /**
@@ -59,10 +63,51 @@ export class ApplicationService implements IApplicationService {
       )
     }
 
-    // Type-specific validation & side-effects via Strategy Pattern
-    const strategyDeps: IStrategyDeps = {
-      applicationRepo: this.applicationRepo,
-      notificationService: this.notificationService,
+
+
+    // Validate position application restrictions
+    if (this.positionService) {
+      await this.positionService.validateApplicationSubmission(data.employeeId, data.type as any)
+    }
+
+    // Type-specific business rule validation
+    switch (data.type) {
+      case APPLICATION_TYPES.LEAVE.LABEL:
+        await this._validateLeaveApplication(
+          data.employeeId,
+          data.detail.leaveType,
+          startDate,
+          endDate,
+        )
+        break
+
+      case APPLICATION_TYPES.OVERTIME.LABEL:
+        await this._validateShiftOwnership(data.detail.employeeShiftId, data.employeeId)
+        await this._validateOvertimeDates(data.detail.employeeShiftId, startDate, endDate)
+        break
+
+      case APPLICATION_TYPES.LATE_EARLY.LABEL:
+        await this._validateShiftOwnership(data.detail.employeeShiftId, data.employeeId)
+        break
+
+      case APPLICATION_TYPES.SHIFT_SWAP.LABEL:
+        await this._validateShiftOwnership(data.detail.employeeShiftId, data.employeeId)
+        if (data.detail.swapWithEmployeeId) {
+          await this._validateEmployeeExists(data.detail.swapWithEmployeeId)
+        }
+        if (data.detail.swapWithShiftId && data.detail.swapWithEmployeeId) {
+          await this._validateShiftOwnership(
+            data.detail.swapWithShiftId,
+            data.detail.swapWithEmployeeId,
+            "Forbidden: The swap-with shift does not belong to the target employee",
+          )
+        }
+        break
+
+      // work_from_home, business_trip, regime, resignation — no extra ownership checks
+      case APPLICATION_TYPES.RESIGNATION.LABEL:
+      default:
+        break
     }
     const strategy = ApplicationTypeStrategyFactory.getStrategy(data.type)
     await strategy.validate(data, strategyDeps)
@@ -194,14 +239,10 @@ export class ApplicationService implements IApplicationService {
     // If requester is team_leader (and not a global approver), enforce access rules
     if (requester && employeeId !== requester.empId) {
       const authContext = await authorizationService.getAuthorizationContext(requester.empId)
-      const roles = authContext.roles
       const isGlobalApprover =
-        authContext.isDynamicAdmin ||
-        roles.has(SYSTEM_ROLE.ADMIN) ||
-        roles.has(SYSTEM_ROLE.GENERAL_MANAGER) ||
-        roles.has(SYSTEM_ROLE.HR_MANAGER)
+        authContext.isDynamicAdmin || authContext.permissions.has("employee.update")
 
-      if (!isGlobalApprover && roles.has(SYSTEM_ROLE.TEAM_LEADER)) {
+      if (!isGlobalApprover && authContext.permissions.has("application.approve")) {
         const activeProject = await prisma.project.findFirst({
           where: {
             teamLeaderId: requester.empId,
@@ -449,10 +490,8 @@ export class ApplicationService implements IApplicationService {
     }
 
     const authContext = await authorizationService.getAuthorizationContext(employeeId)
-    const roles = authContext.roles
     const isApprover =
-      authContext.isDynamicAdmin ||
-      APPROVAL_CONFIG[APPROVAL_CATEGORY.APPLICATION].roles.some((role) => roles.has(role))
+      authContext.isDynamicAdmin || authContext.permissions.has("application.approve")
 
     if (!isApprover) {
       throw new AppError(

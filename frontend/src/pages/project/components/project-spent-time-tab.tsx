@@ -1,9 +1,3 @@
-import { useMemo, useState } from "react"
-import { Link } from "react-router-dom"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { Check, Clock, ExternalLink, X } from "lucide-react"
-import { toast } from "sonner"
-
 import { PageCard, StatusPill } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -15,25 +9,31 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { SYSTEM_ROLE } from "@/config/entities/employee.config"
 import { SPENT_TIME_STATUS, getSpentTimeStatusLabel } from "@/config/entities/project.config"
 import {
   SPENT_TIME_FILTER,
   SPENT_TIME_UI,
+  type SpentTimeFilterValue,
   buildSpentTimeFilterOptions,
   formatBulkApproveLabel,
   getSpentTimeStatusPillVariant,
-  type SpentTimeFilterValue,
 } from "@/config/rules/spent-time.config"
+import { usePermission } from "@/hooks/use-permission"
 import { taskApi } from "@/lib/api/task.api"
-import { extractErrorMessage } from "@/utils/error-helper"
 import type { SpentTime } from "@/types/spent-time.types"
+import { extractErrorMessage } from "@/utils/error-helper"
+
+import { useMemo, useState } from "react"
+
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { Check, Clock, ExternalLink, X } from "lucide-react"
+import { Link } from "react-router-dom"
+import { toast } from "sonner"
 
 interface ProjectSpentTimeTabProps {
   projectId: string
   spentTimes: SpentTime[] | undefined
   isLoading: boolean
-  userRole?: string
   isLeader: boolean
 }
 
@@ -45,14 +45,13 @@ export function ProjectSpentTimeTab({
   projectId,
   spentTimes,
   isLoading,
-  userRole,
   isLeader,
 }: ProjectSpentTimeTabProps) {
   const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState<SpentTimeFilterValue>(SPENT_TIME_FILTER.ALL)
 
-  const canApprove =
-    isLeader || userRole === SYSTEM_ROLE.ADMIN || userRole === SYSTEM_ROLE.GENERAL_MANAGER
+  const { hasAnyPermission } = usePermission()
+  const canApprove = isLeader || hasAnyPermission(["project.update", "project.task.approve"])
 
   const filteredLogs = useMemo(() => {
     const list = spentTimes ?? []
@@ -62,9 +61,7 @@ export function ProjectSpentTimeTab({
 
   const pendingIds = useMemo(
     () =>
-      (spentTimes ?? [])
-        .filter((st) => st.status === SPENT_TIME_STATUS.PENDING)
-        .map((st) => st.id),
+      (spentTimes ?? []).filter((st) => st.status === SPENT_TIME_STATUS.PENDING).map((st) => st.id),
     [spentTimes],
   )
 
@@ -157,13 +154,21 @@ export function ProjectSpentTimeTab({
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent h-10">
-                <TableHead className="font-semibold text-xs">{SPENT_TIME_UI.TABLE_EMPLOYEE}</TableHead>
+                <TableHead className="font-semibold text-xs">
+                  {SPENT_TIME_UI.TABLE_EMPLOYEE}
+                </TableHead>
                 <TableHead className="font-semibold text-xs">{SPENT_TIME_UI.TABLE_TASK}</TableHead>
                 <TableHead className="font-semibold text-xs">{SPENT_TIME_UI.TABLE_DATE}</TableHead>
-                <TableHead className="font-semibold text-xs text-center">{SPENT_TIME_UI.TABLE_HOURS}</TableHead>
-                <TableHead className="font-semibold text-xs">{SPENT_TIME_UI.TABLE_STATUS}</TableHead>
+                <TableHead className="font-semibold text-xs text-center">
+                  {SPENT_TIME_UI.TABLE_HOURS}
+                </TableHead>
+                <TableHead className="font-semibold text-xs">
+                  {SPENT_TIME_UI.TABLE_STATUS}
+                </TableHead>
                 {canApprove && (
-                  <TableHead className="font-semibold text-xs text-right">{SPENT_TIME_UI.TABLE_ACTIONS}</TableHead>
+                  <TableHead className="font-semibold text-xs text-right">
+                    {SPENT_TIME_UI.TABLE_ACTIONS}
+                  </TableHead>
                 )}
               </TableRow>
             </TableHeader>
@@ -228,7 +233,9 @@ export function ProjectSpentTimeTab({
                             </Button>
                           </div>
                         ) : (
-                          <span className="text-[10px] text-muted-foreground">{SPENT_TIME_UI.EMPTY_CELL}</span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {SPENT_TIME_UI.EMPTY_CELL}
+                          </span>
                         )}
                       </TableCell>
                     )}

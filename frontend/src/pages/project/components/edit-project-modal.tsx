@@ -18,6 +18,12 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { PROJECT_STATUSES, TASK_CREATION_POLICIES } from "@/config/entities/project.config"
 import { projectApi } from "@/lib/api/project.api"
+import {
+  useCreateProjectTracker,
+  useDeleteProjectTracker,
+  useProjectTrackers,
+  useUpdateProjectTracker,
+} from "@/pages/project/hooks/use-project-tracker"
 import type { Employee } from "@/types/employee.types"
 import type { Project } from "@/types/project.types"
 import { extractErrorMessage } from "@/utils/error-helper"
@@ -25,8 +31,12 @@ import { extractErrorMessage } from "@/utils/error-helper"
 import { startTransition, useEffect, useState } from "react"
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { Check, CheckSquare, ChevronDown, Edit2, Plus, Square, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
 
+/**
+ * Properties for EditProjectModal component.
+ */
 interface EditProjectModalProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
@@ -45,6 +55,10 @@ const PROJECT_STATUS_LABELS = new Map<string, string>([
   ["cancelled", "Đã hủy"],
 ])
 
+/**
+ * Modal dialog component for editing project properties: metadata, leadership,
+ * task creation policies, and custom project-scoped task trackers.
+ */
 export function EditProjectModal({
   isOpen,
   onOpenChange,
@@ -61,10 +75,72 @@ export function EditProjectModal({
   const [editProjectLeader, setEditProjectLeader] = useState(SELECT_NONE_VALUE)
   const [editProjectStart, setEditProjectStart] = useState("")
   const [editProjectEnd, setEditProjectEnd] = useState("")
+  const [editProjectTrackers, setEditProjectTrackers] = useState<string[]>([])
+  const [tempTrackers, setTempTrackers] = useState<string[]>([])
   const [editProjectError, setEditProjectError] = useState<string | null>(null)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+
+  // Load dynamic project trackers
+  const { data: trackers = [] } = useProjectTrackers(projectId)
+  const createTrackerMutation = useCreateProjectTracker(projectId)
+  const updateTrackerMutation = useUpdateProjectTracker(projectId)
+  const deleteTrackerMutation = useDeleteProjectTracker(projectId)
+
+  const [editingTrackerId, setEditingTrackerId] = useState("")
+  const [editingTrackerName, setEditingTrackerName] = useState("")
+  const [newTrackerName, setNewTrackerName] = useState("")
+
+  const handleCreateTracker = () => {
+    if (!newTrackerName.trim()) return
+    createTrackerMutation.mutate(
+      { name: newTrackerName.trim() },
+      {
+        onSuccess: (newTracker) => {
+          setNewTrackerName("")
+          setEditProjectTrackers((prev) => [...prev, newTracker.code])
+          setTempTrackers((prev) => [...prev, newTracker.code])
+        },
+      },
+    )
+  }
+
+  const handleSaveRename = (id: string) => {
+    if (!editingTrackerName.trim()) {
+      setEditingTrackerId("")
+      return
+    }
+    const oldTracker = trackers.find((t) => t.id === id)
+    updateTrackerMutation.mutate(
+      { id, data: { name: editingTrackerName.trim() } },
+      {
+        onSuccess: (updatedTracker) => {
+          setEditingTrackerId("")
+          if (oldTracker) {
+            setEditProjectTrackers((prev) =>
+              prev.map((code) => (code === oldTracker.code ? updatedTracker.code : code)),
+            )
+            setTempTrackers((prev) =>
+              prev.map((code) => (code === oldTracker.code ? updatedTracker.code : code)),
+            )
+          }
+        },
+      },
+    )
+  }
+
+  const handleDeleteTracker = (id: string, code: string) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa loại yêu cầu này?")) {
+      deleteTrackerMutation.mutate(id, {
+        onSuccess: () => {
+          setEditProjectTrackers((prev) => prev.filter((k) => k !== code))
+          setTempTrackers((prev) => prev.filter((k) => k !== code))
+        },
+      })
+    }
+  }
 
   useEffect(() => {
-    if (isOpen && project) {
+    if (isOpen && project && trackers.length > 0) {
       startTransition(() => {
         setEditProjectName(project.name)
         setEditProjectDesc(project.description || "")
@@ -79,10 +155,15 @@ export function EditProjectModal({
             ? new Date(project.expectedEndDate).toISOString().split("T")[0]
             : "",
         )
+        const initialTrackers =
+          project.allowedTaskTrackers && project.allowedTaskTrackers.length > 0
+            ? project.allowedTaskTrackers
+            : trackers.map((t) => t.code)
+        setEditProjectTrackers(initialTrackers)
         setEditProjectError(null)
       })
     }
-  }, [isOpen, project])
+  }, [isOpen, project, trackers])
 
   const updateProjectMutation = useMutation({
     mutationFn: async () => {
@@ -104,6 +185,7 @@ export function EditProjectModal({
         teamLeaderId: editProjectLeader === SELECT_NONE_VALUE ? null : editProjectLeader,
         startDate: editProjectStart || null,
         expectedEndDate: editProjectEnd || null,
+        allowedTaskTrackers: editProjectTrackers,
       })
     },
     onSuccess: () => {
@@ -121,6 +203,10 @@ export function EditProjectModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setEditProjectError(null)
+    if (editProjectTrackers.length === 0) {
+      setEditProjectError("Vui lòng chọn ít nhất 1 loại yêu cầu.")
+      return
+    }
     updateProjectMutation.mutate()
   }
 
@@ -254,6 +340,203 @@ export function EditProjectModal({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-1.5 relative">
+            <Label className="text-xs font-semibold text-muted-foreground">
+              Các loại yêu cầu được phép hoạt động
+            </Label>
+            <p className="text-[10px] text-muted-foreground mt-0.5 mb-2">
+              Chỉ chọn các loại yêu cầu được phép tạo trong dự án này (để trống nếu cho phép tất
+              cả).
+            </p>
+
+            {isDropdownOpen && (
+              <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />
+            )}
+
+            <div className="relative w-full">
+              <button
+                type="button"
+                onClick={() => {
+                  // Capture current state to temp trackers when opening the dropdown list
+                  setTempTrackers(editProjectTrackers)
+                  setIsDropdownOpen(!isDropdownOpen)
+                }}
+                className="w-full h-10 border border-border rounded-full px-4 bg-background flex items-center justify-between text-xs font-semibold cursor-pointer hover:bg-muted/30 text-foreground"
+              >
+                <span className="truncate">
+                  {editProjectTrackers.length === trackers.length
+                    ? "Cho phép tất cả"
+                    : editProjectTrackers.length === 0
+                      ? "Chọn ít nhất 1 loại yêu cầu"
+                      : editProjectTrackers
+                          .map((k) => trackers.find((t) => t.code === k)?.name || k)
+                          .join(", ")}
+                </span>
+                <ChevronDown className="size-4 shrink-0 text-muted-foreground ml-1" />
+              </button>
+
+              {isDropdownOpen && (
+                <div className="absolute left-0 mt-1 w-full bg-popover border border-border rounded-xl p-3 shadow-lg z-50 space-y-2">
+                  <div className="flex items-center justify-between border-b border-border pb-1.5 mb-1.5">
+                    <span className="text-[10px] font-bold text-muted-foreground">
+                      Chọn loại công việc
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1.5 mr-1 border-r border-border pr-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTempTrackers(trackers.map((t) => t.code))
+                          }}
+                          className="text-[9px] font-extrabold text-primary hover:underline cursor-pointer"
+                        >
+                          Tất cả
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTempTrackers([])
+                          }}
+                          className="text-[9px] font-extrabold text-muted-foreground hover:text-red-500 hover:underline cursor-pointer"
+                        >
+                          Xóa tất cả
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // Apply temporary tracker selections to editProjectTrackers and close dropdown
+                          setEditProjectTrackers(tempTrackers)
+                          setIsDropdownOpen(false)
+                        }}
+                        className="size-5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center cursor-pointer transition-colors"
+                        title="Lưu"
+                      >
+                        <Check className="size-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // Discard temporary selections and close dropdown
+                          setIsDropdownOpen(false)
+                        }}
+                        className="size-5 rounded-full bg-muted hover:bg-muted-hover text-muted-foreground flex items-center justify-center cursor-pointer transition-colors"
+                        title="Hủy"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-1.5 max-h-60 overflow-y-auto pr-1">
+                    {trackers.map((tracker) => {
+                      const isChecked = tempTrackers.includes(tracker.code)
+                      return (
+                        <div
+                          key={tracker.id}
+                          className="group flex items-center justify-between gap-1 p-1 hover:bg-muted/30 rounded-lg"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              // Toggle selection in the temporary trackers array
+                              setTempTrackers((prev) =>
+                                prev.includes(tracker.code)
+                                  ? prev.filter((k) => k !== tracker.code)
+                                  : [...prev, tracker.code],
+                              )
+                            }}
+                            className={`flex items-center gap-2 p-1 flex-1 rounded-lg text-left transition-all duration-200 cursor-pointer ${
+                              isChecked ? "text-primary" : "text-foreground"
+                            }`}
+                          >
+                            {isChecked ? (
+                              <CheckSquare className="size-3.5 shrink-0 text-primary fill-primary/10" />
+                            ) : (
+                              <Square className="size-3.5 shrink-0 text-muted-foreground" />
+                            )}
+                            {editingTrackerId === tracker.id ? (
+                              <input
+                                type="text"
+                                value={editingTrackerName}
+                                onChange={(e) => setEditingTrackerName(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    handleSaveRename(tracker.id)
+                                  } else if (e.key === "Escape") {
+                                    setEditingTrackerId("")
+                                  }
+                                }}
+                                onBlur={() => handleSaveRename(tracker.id)}
+                                className="h-6 text-xs border border-border rounded px-1.5 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary w-full"
+                                autoFocus
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            ) : (
+                              <span className="text-xs font-semibold leading-tight line-clamp-1">
+                                {tracker.name}
+                              </span>
+                            )}
+                          </button>
+
+                          {editingTrackerId !== tracker.id && (
+                            <div className="flex opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setEditingTrackerId(tracker.id)
+                                  setEditingTrackerName(tracker.name)
+                                }}
+                                className="p-1 hover:text-primary text-muted-foreground rounded-full cursor-pointer"
+                              >
+                                <Edit2 className="size-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleDeleteTracker(tracker.id, tracker.code)
+                                }}
+                                className="p-1 hover:text-red-500 text-muted-foreground rounded-full cursor-pointer"
+                              >
+                                <Trash2 className="size-3" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div className="border-t border-border pt-2 mt-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Thêm loại yêu cầu mới..."
+                        value={newTrackerName}
+                        onChange={(e) => setNewTrackerName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault()
+                            handleCreateTracker()
+                          }
+                        }}
+                        className="flex-1 h-8 text-xs border border-border rounded-full px-3 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCreateTracker}
+                        disabled={createTrackerMutation.isPending}
+                        className="h-8 px-3 rounded-full bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/95 flex items-center justify-center shrink-0 cursor-pointer"
+                      >
+                        <Plus className="size-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

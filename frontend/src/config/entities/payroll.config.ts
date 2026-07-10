@@ -1,5 +1,3 @@
-import { type IEmployeeRole, SYSTEM_ROLE } from "@/config/entities/employee.config"
-
 export const PAYROLL_STATUS = {
   DRAFT: "draft",
   PENDING_APPROVAL: "pending_approval",
@@ -62,15 +60,6 @@ export const FORMULA_VALIDATION_STATUS = {
 } as const
 export type FormulaValidationStatus =
   (typeof FORMULA_VALIDATION_STATUS)[keyof typeof FORMULA_VALIDATION_STATUS]
-
-// Role groups for use-role-guard
-export const PAYROLL_MANAGER_ROLES: readonly IEmployeeRole[] = [
-  SYSTEM_ROLE.ADMIN,
-  SYSTEM_ROLE.HR_MANAGER,
-  SYSTEM_ROLE.GENERAL_MANAGER,
-]
-export const PAYROLL_EDITOR_ROLES: readonly IEmployeeRole[] = [SYSTEM_ROLE.ADMIN, SYSTEM_ROLE.HR_MANAGER]
-export const PAYROLL_APPROVER_ROLES: readonly IEmployeeRole[] = [SYSTEM_ROLE.ADMIN, SYSTEM_ROLE.GENERAL_MANAGER]
 
 export const PAYROLL_SETTINGS_FIELDS = ["triggerDay", "triggerHour", "triggerMinute"] as const
 

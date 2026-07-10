@@ -1,7 +1,11 @@
-import { SECURITY_QUERY_KEY, SECURITY_QUERY_SCOPE, type ISecurityQueryScope } from "@/config/entities/security.config"
+import {
+  type ISecurityQueryScope,
+  SECURITY_QUERY_KEY,
+  SECURITY_QUERY_SCOPE,
+} from "@/config/entities/security.config"
+import { employeeKeys } from "@/hooks/employees/queries/useEmployeeQuery"
 import { securityApi } from "@/lib/api/security.api"
 import type { ActivityLogQuery } from "@/types/security.types"
-import { employeeKeys } from "@/hooks/employees/queries/useEmployeeQuery"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
@@ -15,17 +19,25 @@ export const securityKeys = {
   lockedAccounts: () => [...securityKeys.all, SECURITY_QUERY_KEY.LOCKED_ACCOUNTS] as const,
   logs: () => [...securityKeys.all, SECURITY_QUERY_KEY.LOGS] as const,
   logList: (query: ActivityLogQuery) => [...securityKeys.logs(), query] as const,
-  myLogList: (query: ActivityLogQuery) => [...securityKeys.logs(), SECURITY_QUERY_SCOPE.ME, query] as const,
+  myLogList: (query: ActivityLogQuery) =>
+    [...securityKeys.logs(), SECURITY_QUERY_SCOPE.ME, query] as const,
   logDetail: (scope: ISecurityQueryScope, id: string) =>
     [...securityKeys.logs(), scope, SECURITY_QUERY_KEY.DETAIL, id] as const,
   roles: () => [...securityKeys.all, SECURITY_QUERY_KEY.ROLES] as const,
-  roleList: (params?: { page?: number; limit?: number }) => [...securityKeys.roles(), params] as const,
+  roleList: (params?: { page?: number; limit?: number }) =>
+    [...securityKeys.roles(), params] as const,
   roleDetail: (id: string) => [...securityKeys.roles(), SECURITY_QUERY_KEY.DETAIL, id] as const,
-  rolePermissions: (roleId: string) => [...securityKeys.roles(), SECURITY_QUERY_KEY.PERMISSIONS, roleId] as const,
+  rolePermissions: (roleId: string) =>
+    [...securityKeys.roles(), SECURITY_QUERY_KEY.PERMISSIONS, roleId] as const,
   permissions: (params?: { page?: number; limit?: number }) =>
     [...securityKeys.all, SECURITY_QUERY_KEY.PERMISSIONS, params] as const,
   employeeRoles: (employeeId: string) =>
-    [...securityKeys.all, SECURITY_QUERY_KEY.EMPLOYEES, SECURITY_QUERY_KEY.ROLES, employeeId] as const,
+    [
+      ...securityKeys.all,
+      SECURITY_QUERY_KEY.EMPLOYEES,
+      SECURITY_QUERY_KEY.ROLES,
+      employeeId,
+    ] as const,
 }
 
 /**
@@ -98,7 +110,9 @@ export function useActivityLog(id: string, scope: ISecurityQueryScope = SECURITY
   return useQuery({
     queryKey: securityKeys.logDetail(scope, id),
     queryFn: () =>
-      scope === SECURITY_QUERY_SCOPE.ME ? securityApi.getMyLogDetail(id) : securityApi.getLogDetail(id),
+      scope === SECURITY_QUERY_SCOPE.ME
+        ? securityApi.getMyLogDetail(id)
+        : securityApi.getLogDetail(id),
     enabled: !!id,
   })
 }
@@ -143,8 +157,13 @@ export function useCreateRole() {
 export function useUpdateRole() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { name: string; description: string } }) =>
-      securityApi.updateRole(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string
+      data: { name: string; description: string; isDefault?: boolean }
+    }) => securityApi.updateRole(id, data),
     onSuccess: (_, { id }) => {
       void queryClient.invalidateQueries({ queryKey: securityKeys.roles() })
       void queryClient.invalidateQueries({ queryKey: securityKeys.roleDetail(id) })
@@ -217,8 +236,15 @@ export function useEmployeeRoles(employeeId: string) {
 export function useUpdateEmployeeRoles() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ employeeId, roleIds, version }: { employeeId: string; roleIds: string[]; version: number }) =>
-      securityApi.updateEmployeeRoles(employeeId, roleIds, version),
+    mutationFn: ({
+      employeeId,
+      roleIds,
+      version,
+    }: {
+      employeeId: string
+      roleIds: string[]
+      version: number
+    }) => securityApi.updateEmployeeRoles(employeeId, roleIds, version),
     onSuccess: (_, { employeeId }) => {
       void queryClient.invalidateQueries({ queryKey: securityKeys.employeeRoles(employeeId) })
       void queryClient.invalidateQueries({ queryKey: employeeKeys.lists() })

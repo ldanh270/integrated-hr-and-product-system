@@ -44,6 +44,9 @@ interface PaginatedLogs {
   }
 }
 
+/**
+ * Helper function for mapAuditToActivity.
+ */
 function mapAuditToActivity(log: BackendAuditLog): ActivityLogItem {
   let category: string = SECURITY_ACTIVITY_CATEGORY.SECURITY
   const action = log.action || ""
@@ -172,7 +175,7 @@ export const securityApi = {
     return response.data.data
   },
 
-  createRole: async (data: { name: string; description: string }): Promise<Role> => {
+  createRole: async (data: { name: string; description: string; isDefault?: boolean }): Promise<Role> => {
     const response = await apiClient.post<ApiResponse<Role>>(
       API_ENDPOINTS.ROLES.BASE,
       data
@@ -180,7 +183,7 @@ export const securityApi = {
     return response.data.data
   },
 
-  updateRole: async (id: string, data: { name: string; description: string }): Promise<Role> => {
+  updateRole: async (id: string, data: { name: string; description: string; isDefault?: boolean }): Promise<Role> => {
     const response = await apiClient.put<ApiResponse<Role>>(
       API_ENDPOINTS.ROLES.DETAIL(id),
       data

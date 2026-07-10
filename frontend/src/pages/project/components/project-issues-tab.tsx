@@ -1,7 +1,7 @@
 /* eslint-disable security/detect-object-injection */
 import { useState, useEffect } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Link } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import {
   AlertCircle,
   MoreVertical,
@@ -59,6 +59,9 @@ import {
 import type { Task, TaskTracker, TaskPriority } from "@/types/task.types"
 import type { ProjectMember } from "@/types/project.types"
 
+/**
+ * Properties for ProjectIssuesTab component.
+ */
 interface ProjectIssuesTabProps {
   projectId: string
   members: ProjectMember[]
@@ -75,6 +78,11 @@ interface ProjectIssuesTabProps {
 }
 
 const ALL_FILTER_VALUE = "all"
+
+/**
+ * Issues list tab component. Handles searching, sorting, advanced filters,
+ * custom query persistence, pagination, and deletion of project tasks.
+ */
 
 const formatStatus = (status: string) => {
   switch (status) {
@@ -277,6 +285,20 @@ export function ProjectIssuesTab({
   user,
 }: ProjectIssuesTabProps) {
   const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [appliedUrlQueryId, setAppliedUrlQueryId] = useState<string | null>(null)
+
+  // Filter & Pagination States
+  const [issueSearch, setIssueSearch] = useState("")
+  const [trackerFilter, setTrackerFilter] = useState<string>(ALL_FILTER_VALUE)
+  const [statusFilter, setStatusFilter] = useState<string>(ALL_FILTER_VALUE)
+  const [priorityFilter, setPriorityFilter] = useState<string>(ALL_FILTER_VALUE)
+  const [assigneeFilter, setAssigneeFilter] = useState<string>(ALL_FILTER_VALUE)
+  const [createdByIdFilter, setCreatedByIdFilter] = useState<string>(ALL_FILTER_VALUE)
+  const [sortBy, setSortBy] = useState<string>("createdAt")
+  const [sortOrder, setSortOrder] = useState<string>("desc")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
 
   // Display Columns State
   const [displayColumns, setDisplayColumns] = useState<string[]>([
@@ -326,6 +348,99 @@ export function ProjectIssuesTab({
     enabled: !!projectId,
   })
 
+  const urlQueryId = searchParams.get("queryId")
+
+  useEffect(() => {
+    if (urlQueryId && savedQueries.length > 0 && urlQueryId !== appliedUrlQueryId) {
+      const matched = savedQueries.find((q) => q.id === urlQueryId)
+      if (matched) {
+        try {
+          const data = JSON.parse(matched.queryData)
+          
+          if (data.defaultColumns) {
+            setDisplayColumns(["id", "tracker", "title", "assignee", "status", "priority", "progress"])
+          } else if (Array.isArray(data.selectedColumns)) {
+            setDisplayColumns(data.selectedColumns)
+          }
+          
+          if (data.filters) {
+            if (data.filters.status?.enabled) {
+              setStatusFilter(data.filters.status.value)
+            } else {
+              setStatusFilter(ALL_FILTER_VALUE)
+            }
+            if (data.filters.tracker?.enabled) {
+              setTrackerFilter(data.filters.tracker.value)
+            } else {
+              setTrackerFilter(ALL_FILTER_VALUE)
+            }
+            if (data.filters.priority?.enabled) {
+              setPriorityFilter(data.filters.priority.value)
+            } else {
+              setPriorityFilter(ALL_FILTER_VALUE)
+            }
+            if (data.filters.assignee?.enabled) {
+              setAssigneeFilter(data.filters.assignee.value === "me" ? (user?.id || ALL_FILTER_VALUE) : data.filters.assignee.value)
+            } else {
+              setAssigneeFilter(ALL_FILTER_VALUE)
+            }
+            if (data.filters.createdBy?.enabled) {
+              setCreatedByIdFilter(data.filters.createdBy.value === "me" ? (user?.id || ALL_FILTER_VALUE) : data.filters.createdBy.value)
+            } else {
+              setCreatedByIdFilter(ALL_FILTER_VALUE)
+            }
+          }
+          setAppliedUrlQueryId(urlQueryId)
+          toast.success(`Đã tự động áp dụng truy vấn: ${matched.name}`)
+        } catch (e) {
+          console.error("Error parsing URL query data", e)
+        }
+      }
+    }
+  }, [urlQueryId, savedQueries, appliedUrlQueryId, user])
+
+  // Clear URL queryId when filters are manually changed
+  useEffect(() => {
+    if (urlQueryId && appliedUrlQueryId) {
+      const matched = savedQueries.find((q) => q.id === urlQueryId)
+      if (matched) {
+        try {
+          const data = JSON.parse(matched.queryData)
+          const matchStatus = data.filters?.status?.enabled ? data.filters.status.value : ALL_FILTER_VALUE
+          const matchTracker = data.filters?.tracker?.enabled ? data.filters.tracker.value : ALL_FILTER_VALUE
+          const matchPriority = data.filters?.priority?.enabled ? data.filters.priority.value : ALL_FILTER_VALUE
+          const matchAssignee = data.filters?.assignee?.enabled ? (data.filters.assignee.value === "me" ? (user?.id || ALL_FILTER_VALUE) : data.filters.assignee.value) : ALL_FILTER_VALUE
+          const matchCreatedBy = data.filters?.createdBy?.enabled ? (data.filters.createdBy.value === "me" ? (user?.id || ALL_FILTER_VALUE) : data.filters.createdBy.value) : ALL_FILTER_VALUE
+
+          if (
+            statusFilter !== matchStatus ||
+            trackerFilter !== matchTracker ||
+            priorityFilter !== matchPriority ||
+            assigneeFilter !== matchAssignee ||
+            createdByIdFilter !== matchCreatedBy
+          ) {
+            const newParams = new URLSearchParams(searchParams)
+            newParams.delete("queryId")
+            setSearchParams(newParams)
+            setAppliedUrlQueryId(null)
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
+  }, [
+    statusFilter,
+    trackerFilter,
+    priorityFilter,
+    assigneeFilter,
+    createdByIdFilter,
+    urlQueryId,
+    appliedUrlQueryId,
+    savedQueries,
+    user
+  ])
+
   // Save query mutation
   const saveQueryMutation = useMutation({
     mutationFn: async (data: { name: string; projectId: string | null; queryData: string }) => {
@@ -367,8 +482,14 @@ export function ProjectIssuesTab({
     mutationFn: async (id: string) => {
       return customQueryApi.delete(id)
     },
-    onSuccess: () => {
+    onSuccess: (_, deletedId) => {
       void queryClient.invalidateQueries({ queryKey: ["customQueries", projectId, "issues"] })
+      if (urlQueryId === deletedId) {
+        const newParams = new URLSearchParams(searchParams)
+        newParams.delete("queryId")
+        setSearchParams(newParams)
+        setAppliedUrlQueryId(null)
+      }
       toast.success("Đã xóa truy vấn thành công")
     },
     onError: (err: unknown) => {
@@ -416,6 +537,12 @@ export function ProjectIssuesTab({
           setCreatedByIdFilter(ALL_FILTER_VALUE)
         }
       }
+
+      setAppliedUrlQueryId(q.id)
+      const newParams = new URLSearchParams(searchParams)
+      newParams.set("queryId", q.id)
+      setSearchParams(newParams)
+
       toast.success(`Đã áp dụng truy vấn: ${q.name}`)
     } catch (e) {
       toast.error("Không thể đọc dữ liệu truy vấn đã lưu")
@@ -446,18 +573,6 @@ export function ProjectIssuesTab({
     queryFn: () => projectTaskStatusApi.list(projectId),
     enabled: !!projectId,
   })
-
-  // Filter & Pagination States
-  const [issueSearch, setIssueSearch] = useState("")
-  const [trackerFilter, setTrackerFilter] = useState<string>(ALL_FILTER_VALUE)
-  const [statusFilter, setStatusFilter] = useState<string>(ALL_FILTER_VALUE)
-  const [priorityFilter, setPriorityFilter] = useState<string>(ALL_FILTER_VALUE)
-  const [assigneeFilter, setAssigneeFilter] = useState<string>(ALL_FILTER_VALUE)
-  const [createdByIdFilter, setCreatedByIdFilter] = useState<string>(ALL_FILTER_VALUE)
-  const [sortBy, setSortBy] = useState<string>("createdAt")
-  const [sortOrder, setSortOrder] = useState<string>("desc")
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(25)
 
   // Reset page number back to 1 when filters are updated
   useEffect(() => {

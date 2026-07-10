@@ -1,4 +1,3 @@
-
 export const EMPLOYEE_STATUS = {
   ACTIVE: "active",
   INACTIVE: "inactive",
@@ -11,9 +10,16 @@ export const DEFAULT_POSITION = "New Hire";
 export const EMPLOYEE_TYPES = ["full_time", "part_time", "contractor", "intern"] as const
 export type IEmployeeType = (typeof EMPLOYEE_TYPES)[number]
 
+export const WORK_SCHEDULE_TYPES = ["full_time", "part_time"] as const
+export type IWorkScheduleType = (typeof WORK_SCHEDULE_TYPES)[number]
+
+/** Employment category options shown in HR forms (excludes legacy part_time). */
+export const EMPLOYMENT_CATEGORY_TYPES = ["full_time", "contractor", "intern"] as const
+export type IEmploymentCategoryType = (typeof EMPLOYMENT_CATEGORY_TYPES)[number]
+
 /**
  * Contract type keys — values must match Prisma EmployeeType exactly.
- * PART_TIME: payroll from approved project Spent Time; skips weekly shift templates.
+ * PART_TIME (legacy): kept for DB enum; use workScheduleType for schedule logic.
  */
 export const EMPLOYEE_TYPE = {
   FULL_TIME: "full_time",
@@ -22,6 +28,13 @@ export const EMPLOYEE_TYPE = {
   INTERN: "intern",
 } as const
 
+export const WORK_SCHEDULE_TYPE = {
+  FULL_TIME: "full_time",
+  PART_TIME: "part_time",
+} as const
+
+/** Schedule hours drive attendance/payroll branching — independent of employment category (employeeType). */
+
 export const EMPLOYEE_STATUSES = [
   EMPLOYEE_STATUS.ACTIVE,
   EMPLOYEE_STATUS.INACTIVE,
@@ -29,23 +42,5 @@ export const EMPLOYEE_STATUSES = [
   EMPLOYEE_STATUS.TERMINATED,
 ] as const
 export type IEmployeeStatus = (typeof EMPLOYEE_STATUSES)[number]
-
-export const SYSTEM_ROLE = {
-  ADMIN: "admin",
-  GENERAL_MANAGER: "general_manager",
-  HR_MANAGER: "hr_manager",
-  TEAM_LEADER: "team_leader",
-  EMPLOYEE: "employee",
-} as const
-
-export const SYSTEM_ROLE_NAMES = [
-  SYSTEM_ROLE.EMPLOYEE,
-  SYSTEM_ROLE.TEAM_LEADER,
-  SYSTEM_ROLE.HR_MANAGER,
-  SYSTEM_ROLE.GENERAL_MANAGER,
-  SYSTEM_ROLE.ADMIN,
-] as const
-export type ISystemRole = (typeof SYSTEM_ROLE_NAMES)[number]
-
 
 export const GM_SCOPES = ["all", "department", "region"] as const

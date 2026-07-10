@@ -1,21 +1,25 @@
 import { useConfirm } from "@/components/common"
-import { EMPLOYEE_STATUS, SYSTEM_ROLE } from "@/config/entities/employee.config"
+import {
+  EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME,
+  EMPLOYEE_STATUS,
+  WORK_SCHEDULE_TYPE,
+} from "@/config/entities/employee.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import { usePermission } from "@/hooks/use-permission"
-import { useAuthStore } from "@/store/auth-store"
 import type {
   Employee,
   EmployeeListQuery,
   EmployeeStatus,
   EmployeeType,
+  WorkScheduleType,
 } from "@/types/employee.types"
 
 import { useState } from "react"
-
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 
 import { useEmployees, useUpdateEmployeeStatus } from "./queries/useEmployeeQuery"
+import { useUnlockAccount } from "@/hooks/security/queries/use-security-query"
 
 /**
  * Custom React hook that encapsulates state and methods for the Employee Master view.
@@ -32,24 +36,30 @@ export const useEmployeeMaster = () => {
     limit: SYSTEM_CONFIG.PAGINATION.SMALL_LIMIT,
   })
 
-  // The active filter tab (all, full-time, part-time, intern, contractor, terminated)
+  // The active filter tab (all, full-time, part-time, intern, contractor, terminated, locked)
   const [activeTab, setActiveTab] = useState<
-    "all" | EmployeeType | typeof EMPLOYEE_STATUS.TERMINATED
+    | "all"
+    | EmployeeType
+    | typeof EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME
+    | typeof EMPLOYEE_STATUS.TERMINATED
+    | "locked"
   >("all")
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [editEmployee, setEditEmployee] = useState<Employee | null>(null)
   const [viewingEmployeeId, setViewingEmployeeId] = useState<string | null>(null)
   // Auth context to check permission roles
-  const user = useAuthStore((state) => state.user)
-  const { hasRole } = usePermission()
-  const isAdminOrManager =
-    !!user &&
-    [SYSTEM_ROLE.ADMIN, SYSTEM_ROLE.HR_MANAGER, SYSTEM_ROLE.GENERAL_MANAGER].some((role) => hasRole(role))
+  const { hasAnyPermission } = usePermission()
+  const isAdminOrManager = hasAnyPermission([
+    "employee.create",
+    "employee.update",
+    "employee.delete",
+  ])
   const navigate = useNavigate()
 
   // Queries and mutations from React Query hooks
   const { data, isLoading, isFetching } = useEmployees(query)
   const updateStatusMutation = useUpdateEmployeeStatus()
+  const unlockMutation = useUnlockAccount()
 
   /**
    * Event handler for searching employees by text input.
@@ -65,19 +75,44 @@ export const useEmployeeMaster = () => {
    * Adjusts the query filters accordingly.
    * @param tab Selected tab identifier.
    */
-  const handleTabChange = (tab: "all" | EmployeeType | typeof EMPLOYEE_STATUS.TERMINATED) => {
+  const handleTabChange = (
+    tab:
+      | "all"
+      | EmployeeType
+      | typeof EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME
+      | typeof EMPLOYEE_STATUS.TERMINATED
+      | "locked",
+  ) => {
     setActiveTab(tab)
     if (tab === "all") {
       const newQuery = { ...query, page: 1 }
       delete newQuery.type
+      delete newQuery.workSchedule
       delete newQuery.status
       setQuery(newQuery)
     } else if (tab === EMPLOYEE_STATUS.TERMINATED) {
       const newQuery = { ...query, page: 1, status: EMPLOYEE_STATUS.TERMINATED as EmployeeStatus }
       delete newQuery.type
+      delete newQuery.workSchedule
+      setQuery(newQuery)
+    } else if (tab === EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME) {
+      // Part-time tab filters by workScheduleType, not legacy employeeType=part_time.
+      const newQuery = {
+        ...query,
+        page: 1,
+        workSchedule: WORK_SCHEDULE_TYPE.PART_TIME as WorkScheduleType,
+      }
+      delete newQuery.type
+      delete newQuery.status
+      setQuery(newQuery)
+    } else if (tab === "locked") {
+      const newQuery: EmployeeListQuery = { ...query, page: 1, status: "locked" }
+      delete newQuery.type
+      delete newQuery.workSchedule
       setQuery(newQuery)
     } else {
       const newQuery = { ...query, page: 1, type: tab }
+      delete newQuery.workSchedule
       delete newQuery.status
       setQuery(newQuery)
     }
@@ -133,6 +168,19 @@ export const useEmployeeMaster = () => {
     }
   }
 
+  /**
+   * Unlocks a locked employee account manually.
+   * @param id The employee ID.
+   */
+  const handleUnlock = async (id: string) => {
+    try {
+      await unlockMutation.mutateAsync(id)
+      toast.success("Đã mở khóa tài khoản thành công.")
+    } catch {
+      toast.error("Có lỗi xảy ra khi mở khóa tài khoản.")
+    }
+  }
+
   return {
     // State
     query,
@@ -153,6 +201,7 @@ export const useEmployeeMaster = () => {
     handleTabChange,
     handleDelete,
     handleReinstate,
+    handleUnlock,
     // Auth & Nav
     isAdminOrManager,
     navigate,

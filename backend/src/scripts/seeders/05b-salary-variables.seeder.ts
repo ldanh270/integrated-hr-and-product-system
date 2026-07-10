@@ -1,4 +1,5 @@
 import { prisma } from "@/libs/database.ts"
+import { PART_TIME_PAYROLL_VARIABLE_SEED } from "@/configs/entities/part-time-payroll.config.ts"
 
 import { SeedContext } from "./seed-context.ts"
 import { ISeeder } from "./seeder.interface.ts"
@@ -88,6 +89,24 @@ export class SalaryVariablesSeeder implements ISeeder {
         where: { code: data.code },
         update: {},
         create: data,
+      })
+    }
+
+    // Seed editable part-time payroll multipliers (partTimeOvertimeMultiplier, etc.).
+    for (const data of PART_TIME_PAYROLL_VARIABLE_SEED) {
+      await prisma.salaryVariable.upsert({
+        where: { code: data.code },
+        update: {
+          name: data.name,
+          description: data.description,
+          value: data.value,
+          isActive: true,
+        },
+        create: {
+          ...data,
+          isActive: true,
+          createdById: adminId,
+        },
       })
     }
 

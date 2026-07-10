@@ -1,9 +1,9 @@
-import { EMPLOYEE_TYPE } from "@/configs/entities/employee.config.ts"
 import {
   DEFAULT_PROJECT_TASK_STATUSES,
   PROJECT_STATUS,
   TASK_CREATION_POLICY,
 } from "@/configs/entities/project.config.ts"
+import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { authorizationService } from "@/services/authorization.service.ts"
 import {
@@ -39,8 +39,7 @@ export class ProjectService implements IProjectService {
    */
   private async checkIsAdminOrGM(userId: string): Promise<boolean> {
     const authContext = await authorizationService.getAuthorizationContext(userId)
-    const roles = authContext.roles
-    return authContext.isDynamicAdmin || roles.has("admin") || roles.has("general_manager")
+    return authContext.permissions.has("project.update")
   }
 
   /**
@@ -249,7 +248,7 @@ export class ProjectService implements IProjectService {
     projectId: string,
     employeeId: string,
     userId: string,
-    options?: { hourlyRate?: number | null; workMode?: string },
+    options?: { hourlyRate?: number | null; workMode?: string; roleId?: string | null },
   ): Promise<boolean> {
     const project = await this.repository.findById(projectId)
     if (!project) {
@@ -272,9 +271,10 @@ export class ProjectService implements IProjectService {
     }
 
     if (
-      employee.employeeType === EMPLOYEE_TYPE.PART_TIME &&
+      isPartTimeWorkSchedule(employee) &&
       (options?.hourlyRate == null || options.hourlyRate <= 0)
     ) {
+      // PT payroll reads hourlyRate per project, not base salary alone.
       throw new AppError(
         "Part-time members require an hourly rate",
         HttpStatusCode.UNPROCESSABLE_ENTITY,
@@ -328,7 +328,7 @@ export class ProjectService implements IProjectService {
     projectId: string,
     employeeId: string,
     userId: string,
-    data: { hourlyRate?: number | null; workMode?: string },
+    data: { hourlyRate?: number | null; workMode?: string; roleId?: string | null },
   ): Promise<boolean> {
     const project = await this.repository.findById(projectId)
     if (!project) {
@@ -360,9 +360,10 @@ export class ProjectService implements IProjectService {
       data.hourlyRate !== undefined ? data.hourlyRate : (existingMember?.hourlyRate ?? null)
 
     if (
-      employee.employeeType === EMPLOYEE_TYPE.PART_TIME &&
+      isPartTimeWorkSchedule(employee) &&
       (resolvedHourlyRate == null || resolvedHourlyRate <= 0)
     ) {
+      // PT members must keep a positive hourlyRate when updating project membership.
       throw new AppError(
         "Part-time members require an hourly rate",
         HttpStatusCode.UNPROCESSABLE_ENTITY,

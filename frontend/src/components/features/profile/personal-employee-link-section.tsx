@@ -8,7 +8,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { PERSONAL_EMPLOYEE_LINK_SELF } from "@/config/entities/attendance.config"
-import { EMPLOYEE_STATUS, SYSTEM_ROLE } from "@/config/entities/employee.config"
+import { EMPLOYEE_STATUS } from "@/config/entities/employee.config"
+import { usePermission } from "@/hooks/use-permission"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useEmployees } from "@/hooks/employees/queries/useEmployeeQuery"
 import { useUpdatePersonalEmployeeLink } from "@/hooks/use-profile"
@@ -20,7 +21,6 @@ import { useState } from "react"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
-const MANAGEMENT_ROLES = [SYSTEM_ROLE.ADMIN, SYSTEM_ROLE.HR_MANAGER, SYSTEM_ROLE.GENERAL_MANAGER] as const
 
 interface PersonalEmployeeLinkSectionProps {
   profile: ProfileDto
@@ -33,6 +33,9 @@ interface PersonalEmployeeLinkFormProps {
   initialEmployeeId: string
 }
 
+/**
+ * PersonalEmployeeLinkForm Component.
+ */
 function PersonalEmployeeLinkForm({
   profile,
   employees,
@@ -98,10 +101,12 @@ function PersonalEmployeeLinkForm({
   )
 }
 
+/**
+ * PersonalEmployeeLinkSection Component.
+ */
 export function PersonalEmployeeLinkSection({ profile }: PersonalEmployeeLinkSectionProps) {
-  const canManageLink = profile.roles.some((role) =>
-    MANAGEMENT_ROLES.includes(role as (typeof MANAGEMENT_ROLES)[number]),
-  )
+  const { hasPermission } = usePermission()
+  const canManageLink = hasPermission("employee.update")
   const { data: employeeData, isLoading: isEmployeesLoading } = useEmployees({
     page: 1,
     limit: SYSTEM_CONFIG.PAGINATION.BULK_LIMIT,

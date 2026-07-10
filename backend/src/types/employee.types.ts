@@ -1,5 +1,10 @@
-import { IEmployeeStatus, IEmployeeType, ISystemRole } from "@/configs/entities/employee.config.ts"
+import {
+  IEmployeeStatus,
+  IEmployeeType,
+  IWorkScheduleType,
+} from "@/configs/entities/employee.config.ts"
 import { SORT_ORDER } from "@/configs/system/db.config.ts"
+import { Prisma } from "@prisma/client"
 import { AppRole } from "./role.types.ts"
 
 /**
@@ -12,6 +17,10 @@ export type EmployeeStatus = IEmployeeStatus
  */
 export type EmployeeType = IEmployeeType
 
+/**
+ * Type representing full-time vs part-time work schedule.
+ */
+export type WorkScheduleType = IWorkScheduleType
 
 /**
  * Domain interface representing an Employee object.
@@ -27,10 +36,15 @@ export interface Employee {
   email: string
   /** Contact phone number (nullable) */
   phone: string | null
-  /** Job position / title (nullable) */
+  /** Job position / title (nullable, denormalized from Position) */
   position: string | null
-  /** Type of employment (e.g. full-time, part-time) */
+  /** FK to dynamic Position catalog */
+  positionId?: string | null
+  positionRel?: unknown
+  /** Employment category (e.g. official, intern, contractor) */
   employeeType: EmployeeType
+  /** Hours-based schedule — drives PT availability, Spent Time payroll, and GPS rules (not employeeType). */
+  workScheduleType: WorkScheduleType
   /** Active status of the employee */
   status: EmployeeStatus
   /** Date of birth (nullable) */
@@ -61,6 +75,8 @@ export interface Employee {
   version: number
   /** Version number for authorization caching */
   authorizationVersion: number
+  /** Temporary account lock expiration timestamp */
+  lockedUntil?: Date | null
 }
 
 /**
@@ -70,12 +86,14 @@ export interface CreateEmployeeDto {
   fullName: string
   email: string
   username: string
-  role?: ISystemRole
+  role?: string
   roleId?: string
   passwordHash?: string
   phone?: string | null
   position?: string | null
+  positionId?: string | null
   employeeType?: EmployeeType
+  workScheduleType?: WorkScheduleType
   status?: EmployeeStatus
   totalLeaves?: number
   usedLeaves?: number
@@ -95,7 +113,9 @@ export interface UpdateEmployeeDto {
   password?: string
   phone?: string | null
   position?: string | null
+  positionId?: string | null
   employeeType?: EmployeeType
+  workScheduleType?: WorkScheduleType
   status?: EmployeeStatus
   totalLeaves?: number
   usedLeaves?: number
@@ -116,10 +136,12 @@ export interface EmployeeListQuery {
   limit?: number
   /** Partial search string for names/emails */
   search?: string
-  /** Status filter */
-  status?: EmployeeStatus
-  /** Employee type filter */
+  /** Status filter (includes locked accounts) */
+  status?: EmployeeStatus | "locked"
+  /** Employee type filter (employment category) */
   type?: EmployeeType
+  /** Work schedule filter (full-time / part-time hours) */
+  workSchedule?: WorkScheduleType
   /** Role ID filter */
   roleId?: string
   /** Column/property to sort by */
@@ -163,13 +185,22 @@ export interface IEmployeeRepository {
   /** Find roles assigned to an employee */
   findRolesByEmployeeId(employeeId: string): Promise<AppRole[]>
   /** Assign a role to an employee (Idempotent) */
-  assignRole(employeeId: string, roleId: string, actorId?: string): Promise<{ success: boolean; created: boolean }>
+  assignRole(
+    employeeId: string,
+    roleId: string,
+    actorId?: string,
+  ): Promise<{ success: boolean; created: boolean }>
   /** Revoke a role from an employee (Idempotent) */
   revokeRole(employeeId: string, roleId: string): Promise<boolean>
   /** Bulk replace employee roles under optimistic concurrency control */
-  updateRoles(employeeId: string, roleIds: string[], version: number, actorId?: string): Promise<void>
+  updateRoles(
+    employeeId: string,
+    roleIds: string[],
+    version: number,
+    actorId?: string,
+  ): Promise<void>
   /** Count active admin users in the system */
-  countActiveAdmins(tx?: any): Promise<number>
+  countActiveAdmins(tx?: Prisma.TransactionClient): Promise<number>
 }
 
 /**
@@ -183,21 +214,42 @@ export interface IEmployeeService {
   /** Register a new employee */
   createEmployee(data: CreateEmployeeDto & { password?: string }): Promise<Employee>
   /** Update existing employee info */
-  updateEmployee(id: string, data: UpdateEmployeeDto, actorId?: string, ipAddress?: string): Promise<Employee | null>
+  updateEmployee(
+    id: string,
+    data: UpdateEmployeeDto,
+    actorId?: string,
+    ipAddress?: string,
+  ): Promise<Employee | null>
   /** Update employee status */
-  updateStatus(id: string, status: EmployeeStatus, actorId?: string, ipAddress?: string): Promise<Employee | null>
+  updateStatus(
+    id: string,
+    status: EmployeeStatus,
+    actorId?: string,
+    ipAddress?: string,
+  ): Promise<Employee | null>
   /** Remove employee record (soft delete) */
   deleteEmployee(id: string, actorId?: string): Promise<boolean>
   /** Retrieve list of approver-eligible employees for dropdown */
-  listApprovers(): Promise<{ id: string; fullName: string; position: string | null; role: string }[]>
+  listApprovers(): Promise<
+    { id: string; fullName: string; position: string | null; role: string }[]
+  >
   /** Find roles assigned to an employee */
   getEmployeeRoles(employeeId: string): Promise<AppRole[]>
   /** Assign a role to an employee */
-  assignRole(employeeId: string, roleId: string, actorId?: string): Promise<{ success: boolean; created: boolean }>
+  assignRole(
+    employeeId: string,
+    roleId: string,
+    actorId?: string,
+  ): Promise<{ success: boolean; created: boolean }>
   /** Revoke a role from an employee */
   revokeRole(employeeId: string, roleId: string, actorId?: string): Promise<boolean>
   /** Bulk replace employee roles with optimistic lock and self-demotion verification */
-  updateRoles(employeeId: string, roleIds: string[], version: number, actorId?: string): Promise<void>
+  updateRoles(
+    employeeId: string,
+    roleIds: string[],
+    version: number,
+    actorId?: string,
+  ): Promise<void>
 }
 
 export interface AuthorizationContext {
@@ -209,15 +261,14 @@ export interface AuthorizationContext {
 export interface IAuthorizationService {
   getAuthorizationContext(
     employeeId: string,
-    options?: { skipCache?: boolean }
+    options?: { skipCache?: boolean },
   ): Promise<AuthorizationContext>
   invalidateUserCache(employeeId: string): Promise<void>
   invalidateGlobalVersion(): Promise<void>
   invalidateRoleCache(roleId: string): Promise<void>
   invalidatePermissionCache(permissionId: string): Promise<void>
   incrementMetric(metric: string): void
-  getMetrics(): any
+  getMetrics(): Record<string, number>
   logDecision(employeeId: string, permission: string, allowed: boolean, source: string): void
   getGlobalVersion(): Promise<number>
 }
-

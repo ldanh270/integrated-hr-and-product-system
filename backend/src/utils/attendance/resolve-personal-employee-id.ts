@@ -11,6 +11,7 @@ export interface PersonalEmployeeLink {
 }
 
 export async function resolvePersonalEmployeeId(accountId: string): Promise<string> {
+  // Auth account may be a phantom profile linked to the real HR employee row.
   const account = await prisma.employee.findFirst({
     where: { id: accountId, deletedAt: null },
     select: { personalEmployeeId: true },
@@ -29,6 +30,7 @@ export async function resolvePersonalEmployeeId(accountId: string): Promise<stri
     select: { id: true },
   })
 
+  // Inactive/missing HR link → keep auth account id so availability APIs do not hard-fail.
   return linked?.id ?? accountId
 }
 
@@ -48,6 +50,7 @@ export async function getPersonalEmployeeLink(accountId: string): Promise<Person
   }
 
   const linked = account.personalEmployee
+  // Hide terminated/deleted HR links — personal UI must not act on stale employee identity.
   const isLinkedActive =
     linked && linked.deletedAt == null && linked.status === EMPLOYEE_STATUS.ACTIVE
 

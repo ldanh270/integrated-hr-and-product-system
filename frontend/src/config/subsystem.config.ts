@@ -1,3 +1,4 @@
+import { WORK_SCHEDULE_TYPE, type IEmployeeType, type IWorkScheduleType } from "@/config/entities/employee.config"
 import { PERSONAL_TAB_LABELS } from "@/config/entities/personal.config"
 import { ROUTES } from "@/config/routes.config"
 
@@ -5,6 +6,7 @@ import {
   Briefcase,
   CalendarClock,
   CalendarDays,
+  CalendarRange,
   ChartNoAxesColumn,
   CircleDollarSign,
   FilePlus2,
@@ -36,6 +38,9 @@ export interface NavItem {
   name: string
   path: string
   icon: LucideIcon
+  roles?: string[]
+  employeeTypes?: IEmployeeType[]
+  workScheduleTypes?: IWorkScheduleType[]
   permissions?: string[]
   subItems?: { name: string; path: string; icon?: LucideIcon }[]
 }
@@ -60,6 +65,13 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     sidebarItems: [
       { name: PERSONAL_TAB_LABELS.schedule, path: ROUTES.PERSONAL.SCHEDULE, icon: CalendarClock },
       {
+        name: PERSONAL_TAB_LABELS.availability,
+        path: ROUTES.PERSONAL.AVAILABILITY,
+        icon: CalendarRange,
+        // Only part-time schedule employees submit weekly free-time windows.
+        workScheduleTypes: [WORK_SCHEDULE_TYPE.PART_TIME],
+      },
+      {
         name: PERSONAL_TAB_LABELS.payslips,
         path: ROUTES.PERSONAL.PAYSLIPS,
         icon: CircleDollarSign,
@@ -75,22 +87,16 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     icon: Users,
     routePrefix: ROUTES.HRM.BASE,
     sidebarItems: [
-      { name: "Hồ sơ", path: ROUTES.HRM.EMPLOYEES, icon: Users },
+      { name: "Quản lý hồ sơ", path: ROUTES.HRM.EMPLOYEES, icon: Users },
       {
-        name: "Người dùng",
-        path: ROUTES.SECURITY.USERS,
-        icon: Users,
-        permissions: ["security.read"],
-      },
-      {
-        name: "Nhật ký",
-        path: ROUTES.SECURITY.ACTIVITY_LOGS,
+        name: "Nhật ký hoạt động",
+        path: ROUTES.HRM.ACTIVITY_LOGS,
         icon: FileText,
         permissions: ["audit.read"],
       },
       {
         name: "Tổng quan bảo mật",
-        path: ROUTES.SECURITY.DASHBOARD,
+        path: ROUTES.HRM.DASHBOARD,
         icon: ShieldCheck,
         permissions: ["security.read"],
       },
@@ -119,25 +125,24 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     routePrefix: ROUTES.ATTENDANCE.BASE,
     sidebarItems: [
       {
-        name: "Tổng quan",
-        path: ROUTES.ATTENDANCE.DASHBOARD,
-        icon: CalendarClock,
-        permissions: ["attendance.read"],
-      },
-      {
         name: "Tổng hợp",
         path: ROUTES.ATTENDANCE.SUMMARY,
         icon: ChartNoAxesColumn,
         permissions: ["attendance.read"],
       },
-      { name: "Lịch của tôi", path: ROUTES.ATTENDANCE.MY_SCHEDULE, icon: CalendarClock },
       {
         name: "Lịch làm việc",
         path: ROUTES.ATTENDANCE.WORK_SCHEDULES,
         icon: CalendarDays,
         permissions: ["attendance.update"],
       },
-      { name: "Đơn từ", path: ROUTES.ATTENDANCE.APPLICATIONS, icon: FileText },
+      {
+        name: "Xếp ca part-time",
+        path: ROUTES.ATTENDANCE.PART_TIME_AVAILABILITY,
+        icon: CalendarRange,
+        permissions: ["attendance.update"],
+        // Assign from submitted free-time windows — not fixed weekly templates.
+      },
       {
         name: "Lịch hàng tuần",
         path: ROUTES.ATTENDANCE.WEEKLY_SCHEDULES,
