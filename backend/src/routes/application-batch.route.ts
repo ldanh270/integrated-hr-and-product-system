@@ -1,4 +1,4 @@
-import { SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
+
 import { ApplicationBatchController } from "@/controllers/application-batch.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"

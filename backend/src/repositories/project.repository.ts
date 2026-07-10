@@ -334,7 +334,6 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
             position: true,
           },
         },
-        role: true,
       },
     })
     return members.map((m) => ({

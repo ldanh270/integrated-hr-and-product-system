@@ -1,12 +1,14 @@
 import type { Employee, UpdateEmployeeDto } from "@/types/employee.types"
 
-import { useMemo } from "react"
+import { useMemo, useEffect } from "react"
+import * as z from "zod"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 
+import { EMPLOYEE_TYPES, EMPLOYEE_STATUSES, WORK_SCHEDULE_TYPES } from "@/config/entities/employee.config"
+
 import { buildEmployeeEditFormValues } from "./build-employee-edit-form-values.util"
-import { employeeEditFormSchema, type EmployeeEditFormValues } from "./employee-edit-form.schema"
 import { useUpdateEmployee } from "./queries/useEmployeeQuery"
 
 const editSchema = z.object({
@@ -44,8 +46,10 @@ const editSchema = z.object({
     .optional(),
 
   position: z.string().max(100, "Chức danh quá dài").optional(),
+  positionId: z.string().optional(),
 
   employeeType: z.enum(EMPLOYEE_TYPES).optional(),
+  workScheduleType: z.enum(WORK_SCHEDULE_TYPES).optional(),
   status: z.enum(EMPLOYEE_STATUSES).optional(),
   
   totalLeaves: z.number().int("Tổng phép phải là số nguyên").min(0, "Tổng phép không hợp lệ").optional(),
@@ -85,12 +89,6 @@ const editSchema = z.object({
 
 type EditFormValues = z.infer<typeof editSchema>
 
-export function useEmployeeEditModal(
-  employee: Employee | null,
-  isOpen: boolean,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _onClose: () => void,
-) {
 /** Form state + mutation for EmployeeEditDrawer. */
 export function useEmployeeEditModal(employee: Employee | null, isOpen: boolean) {
   const updateMutation = useUpdateEmployee()
@@ -103,9 +101,10 @@ export function useEmployeeEditModal(employee: Employee | null, isOpen: boolean)
     register,
     handleSubmit,
     watch,
+    reset,
     formState: { errors },
-  } = useForm<EmployeeEditFormValues>({
-    resolver: zodResolver(employeeEditFormSchema),
+  } = useForm<EditFormValues>({
+    resolver: zodResolver(editSchema),
     mode: "onBlur",
     values: formValues,
   })
@@ -125,7 +124,9 @@ export function useEmployeeEditModal(employee: Employee | null, isOpen: boolean)
         password: "",
         phone: employee.phone || undefined,
         position: employee.position || undefined,
+        positionId: employee.positionId || undefined,
         employeeType: employee.employeeType,
+        workScheduleType: employee.workScheduleType || undefined,
         status: employee.status,
         dateOfBirth: formatDateForInput(employee.dateOfBirth),
         nationalId: employee.nationalId || undefined,
@@ -139,7 +140,6 @@ export function useEmployeeEditModal(employee: Employee | null, isOpen: boolean)
   }, [employee, isOpen, reset])
 
   const onSubmitEmployee = async (data: EditFormValues) => {
-  const onSubmitEmployee = async (data: EmployeeEditFormValues) => {
     if (!employee) return
     const formattedData: UpdateEmployeeDto = {
       ...data,
@@ -162,7 +162,6 @@ export function useEmployeeEditModal(employee: Employee | null, isOpen: boolean)
     register,
     watch,
     handleSubmit,
-    watch,
     onSubmitEmployee,
     errors,
     isPending: updateMutation.isPending,

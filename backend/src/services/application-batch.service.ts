@@ -2,7 +2,7 @@ import {
   APPLICATION_TYPES,
   BATCHABLE_APPLICATION_TYPES,
 } from "@/configs/entities/attendance.config.ts"
-import { SYSTEM_ROLE } from "@/configs/entities/employee.config.ts"
+
 import { NOTIFICATION_TYPE } from "@/configs/entities/notification.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
@@ -18,6 +18,7 @@ import { AppError } from "@/utils/error.util.ts"
 import { prisma } from "@/libs/database.ts"
 
 import { NotificationService } from "@/services/notification.service.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
 import {
   ApplicationTypeStrategyFactory,
   IStrategyDeps,
@@ -46,12 +47,7 @@ const BATCH_NOTIFICATIONS = {
     `${employeeName} đã gửi yêu cầu đổi ca với bạn. Vui lòng xem xét và phản hồi.`,
 } as const
 
-const APPROVER_ROLES = [
-  SYSTEM_ROLE.ADMIN,
-  SYSTEM_ROLE.GENERAL_MANAGER,
-  SYSTEM_ROLE.HR_MANAGER,
-  SYSTEM_ROLE.TEAM_LEADER,
-] as string[]
+
 
 export class ApplicationBatchService implements IApplicationBatchService {
   constructor(
@@ -252,7 +248,7 @@ export class ApplicationBatchService implements IApplicationBatchService {
   private async _validateApproverRole(employeeId: string): Promise<void> {
     const employee = await prisma.employee.findUnique({
       where: { id: employeeId },
-      select: { id: true, role: true },
+      select: { id: true },
     })
 
     if (!employee) {
@@ -264,7 +260,8 @@ export class ApplicationBatchService implements IApplicationBatchService {
       )
     }
 
-    if (!APPROVER_ROLES.includes(employee.role)) {
+    const authContext = await authorizationService.getAuthorizationContext(employeeId)
+    if (!authContext.isDynamicAdmin && !authContext.permissions.has("application.approve")) {
       throw new AppError(
         BATCH_SERVICE_ERRORS.INVALID_APPROVER_ROLE,
         HttpStatusCode.BAD_REQUEST,

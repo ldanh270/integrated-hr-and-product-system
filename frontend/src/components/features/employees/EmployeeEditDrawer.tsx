@@ -7,17 +7,13 @@ import { Label } from "@/components/ui/label"
 import {
   EMPLOYEE_STATUSES,
   EMPLOYEE_STATUS_LABELS,
-  EMPLOYEE_TYPES,
-  EMPLOYEE_TYPE_LABELS,
-  ROLE_LABELS,
-} from "@/config/entities/employee.config"
-import { useEmployeeWeeklyScheduleSection } from "@/hooks/employees/use-employee-weekly-schedule-section"
-import { useEmployeeEditModal } from "@/hooks/employees/useEmployeeEditModal"
   EMPLOYMENT_CATEGORY_TYPES,
   getEmployeeTypeLabel,
   getWorkScheduleTypeLabel,
   WORK_SCHEDULE_TYPES,
 } from "@/config/entities/employee.config"
+import { useEmployeeWeeklyScheduleSection } from "@/hooks/employees/use-employee-weekly-schedule-section"
+import { useEmployeeEditModal } from "@/hooks/employees/useEmployeeEditModal"
 import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util"
 import {
   useEmployeeRoles,
@@ -43,7 +39,6 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
     register,
     watch,
     handleSubmit,
-    watch,
     onSubmitEmployee,
     errors,
     isPending: isEmployeePending,
@@ -165,40 +160,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                     <Label htmlFor="role-select" className="text-[12px] text-muted-foreground">
                       Vai trò (Dynamic RBAC)
                     </Label>
-                    {isLoadingRoles ? (
-                      <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-2">
-                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                        Đang tải vai trò...
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 gap-2 pt-1">
-                        {allRoles?.data?.map((role: Role) => {
-                          const isChecked = selectedRoleIds.includes(role.id)
-                          return (
-                            <label
-                              key={role.id}
-                              className="flex items-center gap-2 text-xs text-foreground cursor-pointer select-none"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedRoleIds((prev) => [...prev, role.id])
-                                  } else {
-                                    setSelectedRoleIds((prev) =>
-                                      prev.filter((id) => id !== role.id),
-                                    )
-                                  }
-                                }}
-                                className="h-3.5 w-3.5 rounded border-border text-primary"
-                              />
-                              <span>{ROLE_LABELS[role.name] || role.name}</span>
-                            </label>
-                          )
-                        })}
-                      </div>
-                    )}
+
                     <EmployeeEditRoleCheckboxes
                       key={roleSeedKey}
                       allRoles={allRoles?.data}
