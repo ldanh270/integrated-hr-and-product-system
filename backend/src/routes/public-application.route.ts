@@ -9,7 +9,7 @@ import { apiLimiter } from "../middlewares/rate-limit.middleware";
 const router = Router();
 
 const catchAsync = (fn: any): RequestHandler => (req: Request, res: Response, next: NextFunction) => {
-  Promise.resolve(fn(req, res, next)).catch(next);
+  void Promise.resolve(fn(req, res, next)).catch(next);
 };
 
 // DI wiring

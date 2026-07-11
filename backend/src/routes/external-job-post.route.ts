@@ -12,7 +12,7 @@ import { requirePermission } from "../middlewares/permission.middleware";
 const router = Router({ mergeParams: true }); // Will be mounted under /requisitions/:requisitionId/external-posts
 
 const catchAsync = (fn: any): RequestHandler => (req: Request, res: Response, next: NextFunction) => {
-  Promise.resolve(fn(req, res, next)).catch(next);
+  void Promise.resolve(fn(req, res, next)).catch(next);
 };
 
 // DI wiring

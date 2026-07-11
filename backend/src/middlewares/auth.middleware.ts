@@ -111,7 +111,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   req.user = {
     empId: decoded.empId,
     username: decoded.username,
-    role: employee!.role || "",
+    role: employee?.role || "",
   }
 
   next()
