@@ -185,12 +185,6 @@ enum RequisitionStatus {
   rejected
 }
 
-enum PostingStatus {
-  draft
-  open
-  paused
-  closed
-}
 
 enum JobApplicationStatus {
   new
@@ -200,7 +194,6 @@ enum JobApplicationStatus {
   final_review
   offer_sent
   offer_accepted
-  background_check
   pending_onboarding
   hired
   rejected

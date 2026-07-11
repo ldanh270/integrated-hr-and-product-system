@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { NextFunction, Request, RequestHandler, Response, Router } from "express";
 import { authenticate } from "../middlewares/auth.middleware";
 import { validate } from "../middlewares/validate.middleware";
 import { ExternalJobPostController } from "../controllers/external-job-post.controller";
@@ -7,9 +7,13 @@ import { ExternalJobPostRepository } from "../repositories/external-job-post.rep
 import { JobRequisitionRepository } from "../repositories/job-requisition.repository";
 import { CreateExternalJobPostSchema, UpdateExternalJobPostStatusSchema } from "../schemas/recruitment/external-job-post.schema";
 import { internalLimiter } from "../middlewares/rate-limit.middleware";
-import { requireAnyPermission } from "../middlewares/permission.middleware";
+import { requirePermission } from "../middlewares/permission.middleware";
 
 const router = Router({ mergeParams: true }); // Will be mounted under /requisitions/:requisitionId/external-posts
+
+const catchAsync = (fn: any): RequestHandler => (req: Request, res: Response, next: NextFunction) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
 
 // DI wiring
 const externalJobPostRepository = new ExternalJobPostRepository();
@@ -18,29 +22,29 @@ const externalJobPostService = new ExternalJobPostService(externalJobPostReposit
 const controller = new ExternalJobPostController(externalJobPostService);
 
 // Routes
-router.use(internalLimiter);
-router.use(authenticate);
+router.use(catchAsync(internalLimiter));
+router.use(catchAsync(authenticate));
 
 // Get by requisitionId
 router.get(
   "/",
-  controller.getByRequisitionId
+  catchAsync(controller.getByRequisitionId)
 );
 
 // Create new post
 router.post(
   "/",
-  requireAnyPermission(["manage_recruitment", "manage_system"]),
-  validate(CreateExternalJobPostSchema),
-  controller.create
+  catchAsync(requirePermission("recruitment.create")),
+  catchAsync(validate(CreateExternalJobPostSchema)),
+  catchAsync(controller.create)
 );
 
 // Update status
 router.patch(
   "/:id/status",
-  requireAnyPermission(["manage_recruitment", "manage_system"]),
-  validate(UpdateExternalJobPostStatusSchema),
-  controller.updateStatus
+  catchAsync(requirePermission("recruitment.update")),
+  catchAsync(validate(UpdateExternalJobPostStatusSchema)),
+  catchAsync(controller.updateStatus)
 );
 
 export default router;

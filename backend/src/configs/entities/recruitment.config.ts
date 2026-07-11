@@ -6,7 +6,6 @@ export const CANDIDATE_COOLDOWN_MONTHS = 6;
 // Enums mapping from Prisma schema
 export const REQUISITION_STATUS_VALUES = ["open", "closed", "rejected"] as const;
 
-export const POSTING_STATUS_VALUES = ["draft", "open", "paused", "closed"] as const;
 
 export const JOB_APPLICATION_STATUS_VALUES = [
   "new",
@@ -16,7 +15,6 @@ export const JOB_APPLICATION_STATUS_VALUES = [
   "final_review",
   "offer_sent",
   "offer_accepted",
-  "background_check",
   "pending_onboarding",
   "hired",
   "rejected",
@@ -69,12 +67,6 @@ export const REQUISITION_STATUS = {
   REJECTED: "rejected"
 } as const;
 
-export const POSTING_STATUS = {
-  DRAFT: "draft",
-  OPEN: "open",
-  PAUSED: "paused",
-  CLOSED: "closed"
-} as const;
 
 export const JOB_APPLICATION_STATUS = {
   NEW: "new",
@@ -84,7 +76,6 @@ export const JOB_APPLICATION_STATUS = {
   FINAL_REVIEW: "final_review",
   OFFER_SENT: "offer_sent",
   OFFER_ACCEPTED: "offer_accepted",
-  BACKGROUND_CHECK: "background_check",
   PENDING_ONBOARDING: "pending_onboarding",
   HIRED: "hired",
   REJECTED: "rejected",

@@ -63,7 +63,7 @@ export default function ApplicationDashboard() {
 
       if (updatedBatch) {
         if (JSON.stringify(updatedBatch) !== JSON.stringify(selectedBatch)) {
-          setTimeout(() => setSelectedBatch(updatedBatch), 0)
+          setTimeout(() => { setSelectedBatch(updatedBatch) }, 0)
         }
       } else if (
         !myApps.isLoading &&

@@ -352,7 +352,7 @@ export function EditProjectModal({
             </p>
 
             {isDropdownOpen && (
-              <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />
+              <div className="fixed inset-0 z-40" onClick={() => { setIsDropdownOpen(false) }} />
             )}
 
             <div className="relative w-full">

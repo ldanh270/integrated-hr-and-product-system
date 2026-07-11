@@ -84,6 +84,32 @@ export class RBACSeeder implements ISeeder {
         description: "Approve or reject applications",
       },
 
+      // Recruitment
+      {
+        name: "Read Recruitment",
+        code: "recruitment.read",
+        module: "recruitment",
+        description: "View recruitment data (requisitions, posts, etc.)",
+      },
+      {
+        name: "Create Recruitment",
+        code: "recruitment.create",
+        module: "recruitment",
+        description: "Create new recruitment data (requisitions, posts, etc.)",
+      },
+      {
+        name: "Update Recruitment",
+        code: "recruitment.update",
+        module: "recruitment",
+        description: "Modify recruitment data",
+      },
+      {
+        name: "Delete Recruitment",
+        code: "recruitment.delete",
+        module: "recruitment",
+        description: "Delete recruitment data",
+      },
+
       // Security
       {
         name: "Read Security",
@@ -345,6 +371,10 @@ export class RBACSeeder implements ISeeder {
         "payroll.create",
         "payroll.update",
         "payroll.delete",
+        "recruitment.read",
+        "recruitment.create",
+        "recruitment.update",
+        "recruitment.delete",
         "role.read",
         "audit.read",
       ],

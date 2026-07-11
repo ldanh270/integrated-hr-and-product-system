@@ -2,6 +2,7 @@ import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { PORT } from "@/configs/system/server.config.ts"
 import { connectDB } from "@/libs/database.ts"
 import { initCronJobs } from "@/libs/payroll-cron.ts"
+import { initRecruitmentCron } from "@/libs/recruitment-cron.ts"
 import { initWeeklyScheduleCron } from "@/libs/weekly-schedule-cron.ts"
 import { cors } from "@/middlewares/cors.middleware.ts"
 import { globalErrorHandler } from "@/middlewares/error.middleware.ts"
@@ -145,6 +146,7 @@ void connectDB()
       console.log("Server start on port " + PORT)
       initCronJobs()
       initWeeklyScheduleCron()
+      initRecruitmentCron()
     })
   })
   .catch((error) => {

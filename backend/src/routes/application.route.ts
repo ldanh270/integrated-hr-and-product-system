@@ -34,7 +34,9 @@ const positionService = new PositionService(
   projectRepository,
   prisma,
 )
-const service = new ApplicationService(repository, positionService)
+const notificationRepository = new NotificationRepository()
+const notificationService = new NotificationService(notificationRepository)
+const service = new ApplicationService(repository, notificationService, positionService)
 const controller = new ApplicationController(service)
 
 // All routes require authentication

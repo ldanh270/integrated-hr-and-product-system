@@ -78,7 +78,12 @@ export class ApplicationController {
           },
           (error, result) => {
             if (error || !result) {
-              reject(error instanceof Error ? error : new AppError("Tải lên Cloudinary thất bại", HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorLayer.CONTROLLER))
+              if (error instanceof AppError) {
+                reject(error)
+              } else {
+                const message = error instanceof Error ? error.message : "Tải lên Cloudinary thất bại"
+                reject(new AppError(message, HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorLayer.CONTROLLER))
+              }
               return
             }
             resolve({ url: result.secure_url, id: result.public_id })

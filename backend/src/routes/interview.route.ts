@@ -8,7 +8,7 @@ import { InterviewScorecardRepository } from "../repositories/interview-scorecar
 import { JobRequisitionRepository } from "../repositories/job-requisition.repository";
 import { CreateInterviewRoundSchema, SubmitScorecardSchema, UpdateInterviewRoundSchema } from "../schemas/recruitment/interview.schema";
 import { internalLimiter } from "../middlewares/rate-limit.middleware";
-import { requireAnyPermission } from "../middlewares/permission.middleware";
+import { requirePermission } from "../middlewares/permission.middleware";
 
 const router = Router();
 
@@ -30,7 +30,7 @@ router.use(authenticate);
 // Rounds
 router.post(
   "/rounds",
-  requireAnyPermission(["manage_recruitment", "manage_system"]),
+  requirePermission("recruitment.create"),
   validate(CreateInterviewRoundSchema),
   controller.scheduleRound
 );
@@ -42,14 +42,14 @@ router.get(
 
 router.put(
   "/rounds/:id",
-  requireAnyPermission(["manage_recruitment", "manage_system"]),
+  requirePermission("recruitment.update"),
   validate(UpdateInterviewRoundSchema),
   controller.updateRound
 );
 
 router.delete(
   "/rounds/:id",
-  requireAnyPermission(["manage_recruitment", "manage_system"]),
+  requirePermission("recruitment.delete"),
   controller.deleteRound
 );
 
