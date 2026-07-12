@@ -10,13 +10,13 @@ import { IApplicationBatchService } from "@/types/attendance.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 
 import { Request, Response } from "express"
-import { z } from "zod"
+import { z} from "zod"
 
 export class ApplicationBatchController {
   constructor(private service: IApplicationBatchService) {}
 
   /**
-   * Submits a batch of applications (same type) for the authenticated employee.
+   * Submits a batch of applications  (same type) for the authenticated employee.
    *
    * @param req - Authenticated request with batch payload.
    * @param res - Response with created batch.
