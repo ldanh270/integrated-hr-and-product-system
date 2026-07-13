@@ -208,6 +208,54 @@ export class RBACSeeder implements ISeeder {
         module: "audit",
         description: "View authorization audit logs",
       },
+      {
+        name: "Read Permissions",
+        code: "permission.read",
+        module: "role",
+        description: "View permission matrix",
+      },
+      {
+        name: "Create Permission",
+        code: "permission.create",
+        module: "role",
+        description: "Create new permission in system",
+      },
+      {
+        name: "Update Permission",
+        code: "permission.update",
+        module: "role",
+        description: "Modify permission definitions",
+      },
+      {
+        name: "Delete Permission",
+        code: "permission.delete",
+        module: "role",
+        description: "Delete custom permissions",
+      },
+      {
+        name: "Read Role Permissions",
+        code: "role.permission.read",
+        module: "role",
+        description: "View role permissions mapping",
+      },
+      {
+        name: "Update Role Permissions",
+        code: "role.permission.update",
+        module: "role",
+        description: "Assign permissions to roles",
+      },
+      {
+        name: "Read Employee Roles",
+        code: "employee.role.read",
+        module: "role",
+        description: "View employee roles mapping",
+      },
+      {
+        name: "Update Employee Roles",
+        code: "employee.role.update",
+        module: "role",
+        description: "Assign roles to employees",
+      },
     ]
 
     // Create permissions
@@ -224,25 +272,39 @@ export class RBACSeeder implements ISeeder {
 
     // Define AppRoles mapping
     const rolesData = [
-      { name: "admin", description: "Full system administration access", isSystem: true, isAdministrative: true },
+      {
+        name: "admin",
+        description: "Full system administration access",
+        isSystem: true,
+        isAdministrative: true,
+        isDefault: false,
+      },
       {
         name: "hr_manager",
         description: "Human Resource and Payroll management access",
         isSystem: true,
         isAdministrative: true,
+        isDefault: false,
       },
       {
         name: "general_manager",
         description: "Executive reporting and approval access",
         isSystem: true,
         isAdministrative: true,
+        isDefault: false,
       },
       {
         name: "team_leader",
         description: "Project management and team coordination access",
         isSystem: true,
+        isDefault: false,
       },
-      { name: "employee", description: "Regular employee portal access", isSystem: true },
+      {
+        name: "employee",
+        description: "Regular employee portal access",
+        isSystem: true,
+        isDefault: true,
+      },
     ]
 
     // Create AppRoles
@@ -250,7 +312,12 @@ export class RBACSeeder implements ISeeder {
     for (const r of rolesData) {
       const dbRole = await prisma.appRole.upsert({
         where: { name: r.name },
-        update: { description: r.description, isSystem: r.isSystem, isAdministrative: r.isAdministrative },
+        update: {
+          description: r.description,
+          isSystem: r.isSystem,
+          isAdministrative: r.isAdministrative,
+          isDefault: r.isDefault,
+        },
         create: r,
       })
       createdRoles[r.name] = dbRole.id
@@ -265,6 +332,8 @@ export class RBACSeeder implements ISeeder {
         "employee.create",
         "employee.update",
         "employee.delete",
+        "employee.role.read",
+        "employee.role.update",
         "attendance.read",
         "attendance.create",
         "attendance.update",
@@ -331,7 +400,8 @@ export class RBACSeeder implements ISeeder {
         if (emp.username === "admin") targetRoleName = "admin"
         else if (emp.username === "hr_manager") targetRoleName = "hr_manager"
         else if (emp.username === "general_manager") targetRoleName = "general_manager"
-        else if (emp.position === "Team Leader" || emp.username === "team_leader") targetRoleName = "team_leader"
+        else if (emp.position === "Team Leader" || emp.username === "team_leader")
+          targetRoleName = "team_leader"
 
         const roleId = createdRoles[targetRoleName]
         if (!roleId) continue

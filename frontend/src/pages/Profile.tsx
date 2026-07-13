@@ -8,6 +8,7 @@ import {
   EMPLOYEE_STATUS,
   EMPLOYEE_STATUS_LABELS,
   EMPLOYEE_TYPE_LABELS,
+  getWorkScheduleTypeLabel,
   ROLE_LABELS,
 } from "@/config/entities/employee.config"
 import { useProfileMaster } from "@/hooks/profile/useProfileMaster"
@@ -410,10 +411,27 @@ export default function Profile() {
                       />
                       <div>
                         <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-                          Loại hợp đồng
+                          Loại nhân sự
                         </p>
                         <p className="text-sm font-semibold text-foreground mt-0.5">
                           {EMPLOYEE_TYPE_LABELS[profile.employeeType] || profile.employeeType}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* workScheduleType: whether employee uses shift templates or PT availability. */}
+                    <div className="flex items-center gap-3 py-1 border-b border-border/20 md:border-none">
+                      <IconBox
+                        icon={Briefcase}
+                        colorClass="bg-orange-500/10 text-orange-600 dark:text-orange-500"
+                        size="sm"
+                      />
+                      <div>
+                        <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+                          Hình thức làm việc
+                        </p>
+                        <p className="text-sm font-semibold text-foreground mt-0.5">
+                          {getWorkScheduleTypeLabel(profile.workScheduleType)}
                         </p>
                       </div>
                     </div>
@@ -487,7 +505,9 @@ export default function Profile() {
 
                 {isEditing && (
                   <button
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => {
+                      fileInputRef.current?.click()
+                    }}
                     disabled={uploadAvatar.isPending}
                     className="absolute bottom-0 right-0 p-2.5 bg-primary text-primary-foreground rounded-full shadow-md border border-background hover:bg-primary/95 transition-all cursor-pointer disabled:opacity-50"
                     aria-label="Thay đổi ảnh đại diện"

@@ -13,7 +13,7 @@ import {
 } from "@/types"
 import { AppError } from "@/utils/error.util.ts"
 
-import { Prisma, PrismaClient, Employee as PrismaEmployee } from "@prisma/client"
+import { Prisma, PrismaClient, AppRole as PrismaAppRole, Employee as PrismaEmployee } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
@@ -21,6 +21,45 @@ type EmployeeRoleSummary = {
   role: {
     id: string
     name: string
+  }
+}
+
+/** Whitelist client sort fields → Prisma orderBy; unknown keys fall back to createdAt. */
+function buildEmployeeOrderBy(
+  sortBy: string,
+  sortOrder: string,
+): Prisma.EmployeeOrderByWithRelationInput {
+  const direction = sortOrder === SORT_ORDER.ASC ? SORT_ORDER.ASC : SORT_ORDER.DESC
+
+  switch (sortBy) {
+    case "id":
+      return { id: direction }
+    case "fullName":
+      return { fullName: direction }
+    case "username":
+      return { username: direction }
+    case "email":
+      return { email: direction }
+    case "phone":
+      return { phone: direction }
+    case "dateOfBirth":
+      return { dateOfBirth: direction }
+    case "position":
+      return { position: direction }
+    case "employeeType":
+      return { employeeType: direction }
+    case "workScheduleType":
+      return { workScheduleType: direction }
+    case "status":
+      return { status: direction }
+    case "startDate":
+      return { startDate: direction }
+    case "endDate":
+      return { endDate: direction }
+    case "updatedAt":
+      return { updatedAt: direction }
+    default:
+      return { createdAt: direction }
   }
 }
 
@@ -58,7 +97,9 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       email: employee.email,
       phone: employee.phone,
       position: employee.position,
+      positionId: employee.positionId,
       employeeType: employee.employeeType,
+      workScheduleType: employee.workScheduleType,
       status: employee.status,
       dateOfBirth: employee.dateOfBirth,
       nationalId: employee.nationalId,
@@ -75,6 +116,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       updatedAt: employee.updatedAt,
       version: employee.version,
       authorizationVersion: employee.authorizationVersion,
+      lockedUntil: employee.lockedUntil,
     }
   }
 
@@ -91,13 +133,14 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       search,
       status,
       type: employeeType,
+      workSchedule,
       roleId,
       sortBy = "createdAt",
       sortOrder = SORT_ORDER.DESC,
     } = query
 
     const skip = (page - 1) * limit
-    const where: Prisma.EmployeeWhereInput = { deletedAt: null } as any
+    const where: Prisma.EmployeeWhereInput = { deletedAt: null }
 
     // Apply role filter if provided
     if (roleId) {
@@ -118,19 +161,24 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     }
 
     // Apply status filter, default to excluding terminated employees
-    if (status) {
-      where.status = status
+    if (status === "locked") {
+      const now = new Date()
+      where.OR = [
+        { lockedUntil: { gt: now } },
+        { failedLoginCount: { gte: 5 } },
+      ]
+    } else if (status) {
+      where.status = status as EmployeeStatus
     } else {
       where.status = { not: EMPLOYEE_STATUS.TERMINATED }
     }
 
     // Apply optional field filters
     if (employeeType) where.employeeType = employeeType
+    if (workSchedule) where.workScheduleType = workSchedule // part-time tab filter
 
     // Define ordering criteria dynamically
-    const orderBy: Prisma.EmployeeOrderByWithRelationInput = {
-      [sortBy]: sortOrder === SORT_ORDER.ASC ? SORT_ORDER.ASC : SORT_ORDER.DESC,
-    }
+    const orderBy = buildEmployeeOrderBy(sortBy, sortOrder)
 
     // Perform concurrent data fetching and count query
     const [data, total] = await Promise.all([
@@ -180,7 +228,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
    */
   async findById(id: string): Promise<Employee | null> {
     const employee = await this.prisma.employee.findFirst({
-      where: { id, deletedAt: null } as any,
+      where: { id, deletedAt: null },
       include: {
         employeeRoles: {
           where: {
@@ -218,7 +266,9 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
         passwordHash: data.passwordHash,
         phone: data.phone,
         position: data.position,
+        positionId: data.positionId,
         employeeType: data.employeeType,
+        workScheduleType: data.workScheduleType,
         status: data.status,
         dateOfBirth:
           data.dateOfBirth !== undefined
@@ -274,14 +324,16 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     id: string,
     data: Omit<UpdateEmployeeDto, "password"> & { passwordHash?: string },
   ): Promise<Employee | null> {
-    const updateData: Prisma.EmployeeUpdateInput = {
+    const updateData: any = {
       fullName: data.fullName,
       email: data.email,
       username: data.username,
       passwordHash: data.passwordHash,
       phone: data.phone,
       position: data.position,
+      positionId: data.positionId,
       employeeType: data.employeeType,
+      workScheduleType: data.workScheduleType,
       status: data.status,
       dateOfBirth:
         data.dateOfBirth !== undefined
@@ -372,7 +424,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
    */
   async deleteEmployee(id: string): Promise<boolean> {
     const record = await this.prisma.employee.findFirst({
-      where: { id, deletedAt: null } as any,
+      where: { id, deletedAt: null },
     })
     if (!record) return false
 
@@ -394,7 +446,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
   /**
    * Maps a Prisma role record to the application AppRole type.
    */
-  private mapRoleToDomain(role: any): AppRole {
+  private mapRoleToDomain(role: PrismaAppRole): AppRole {
     return {
       id: role.id,
       name: role.name,
@@ -402,6 +454,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       isSystem: role.isSystem,
       isActive: role.isActive,
       isAdministrative: role.isAdministrative,
+      isDefault: role.isDefault,
       createdAt: role.createdAt,
       updatedAt: role.updatedAt,
       createdBy: role.createdBy,

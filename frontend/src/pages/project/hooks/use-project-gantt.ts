@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react"
+import { useSearchParams } from "react-router-dom"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { format, differenceInDays, addDays, eachDayOfInterval } from "date-fns"
@@ -6,22 +7,24 @@ import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
 import { customQueryApi } from "@/lib/api/custom-query.api"
 import type { CustomQuery } from "@/lib/api/custom-query.api"
-import { ROLE } from "@/config/entities/employee.config"
+import { projectTaskStatusApi } from "@/lib/api/project-task-status.api"
 import { TASK_STATUS, TASK_PRIORITY, TASK_TRACKER, CUSTOM_QUERY_TYPE } from "@/config/entities/project.config"
 import { useAuthStore } from "@/store/auth-store"
-import { extractErrorMessage } from "@/utils/error-helper"
 import type { Project } from "@/types/project.types"
 import type { Task, UpdateTaskDto } from "@/types/task.types"
+import { extractErrorMessage } from "@/utils/error-helper"
+import { usePermission } from "@/hooks/use-permission"
+
 import {
-  FILTER_DEFINITIONS,
-  GANTT_FILTER_KEY,
-  QUICK_QUERY_TYPE,
-  GANTT_FILTER_TYPE,
-  GANTT_FILTER_OPERATOR,
-  PROJECT_QUERY_KEY,
   DEFAULT_MONTHS_RANGE,
   DEFAULT_MONTHS_RANGE_STRING,
   DEFAULT_RECENT_DAYS_RANGE,
+  FILTER_DEFINITIONS,
+  GANTT_FILTER_KEY,
+  GANTT_FILTER_OPERATOR,
+  GANTT_FILTER_TYPE,
+  PROJECT_QUERY_KEY,
+  QUICK_QUERY_TYPE,
 } from "../constants/gantt.constants"
 
 interface UseProjectGanttProps {
@@ -29,9 +32,17 @@ interface UseProjectGanttProps {
   project: Project
 }
 
+/**
+ * Hook to manage Gantt chart states: timeline calculations, zoom levels, filters,
+ * custom query saves/deletes, task date mutations, and task updates.
+ * Implements persistent state syncing with react-router-dom searchParams.
+ */
 export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
+  const { hasAnyPermission } = usePermission()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [appliedUrlQueryId, setAppliedUrlQueryId] = useState<string | null>(null)
 
   // Timeline view range configuration (timeline start date)
   const [timelineStart, setTimelineStart] = useState<Date>(() => {
@@ -68,26 +79,54 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   // Redmine Filters State
   const [isFiltersExpanded, setIsFiltersExpanded] = useState(true)
   const [activeFilterKeys, setActiveFilterKeys] = useState<string[]>([GANTT_FILTER_KEY.STATUS])
-  const [filterStates, setFilterStates] = useState<Record<string, {
-    enabled: boolean
-    operator: string
-    value: string
-  } | undefined>>({
+  const [filterStates, setFilterStates] = useState<
+    Record<
+      string,
+      | {
+          enabled: boolean
+          operator: string
+          value: string
+        }
+      | undefined
+    >
+  >({
     [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: GANTT_FILTER_OPERATOR.OPEN, value: "" },
-    [GANTT_FILTER_KEY.TRACKER]: { enabled: true, operator: GANTT_FILTER_OPERATOR.IS, value: TASK_TRACKER.TASK },
-    [GANTT_FILTER_KEY.PRIORITY]: { enabled: true, operator: GANTT_FILTER_OPERATOR.IS, value: TASK_PRIORITY.MEDIUM },
+    [GANTT_FILTER_KEY.TRACKER]: {
+      enabled: true,
+      operator: GANTT_FILTER_OPERATOR.IS,
+      value: TASK_TRACKER.TASK,
+    },
+    [GANTT_FILTER_KEY.PRIORITY]: {
+      enabled: true,
+      operator: GANTT_FILTER_OPERATOR.IS,
+      value: TASK_PRIORITY.MEDIUM,
+    },
     [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: true, operator: GANTT_FILTER_OPERATOR.IS, value: "" },
   })
 
   const [appliedFilterKeys, setAppliedFilterKeys] = useState<string[]>([GANTT_FILTER_KEY.STATUS])
-  const [appliedFilterStates, setAppliedFilterStates] = useState<Record<string, {
-    enabled: boolean
-    operator: string
-    value: string
-  } | undefined>>({
+  const [appliedFilterStates, setAppliedFilterStates] = useState<
+    Record<
+      string,
+      | {
+          enabled: boolean
+          operator: string
+          value: string
+        }
+      | undefined
+    >
+  >({
     [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: GANTT_FILTER_OPERATOR.OPEN, value: "" },
-    [GANTT_FILTER_KEY.TRACKER]: { enabled: true, operator: GANTT_FILTER_OPERATOR.IS, value: TASK_TRACKER.TASK },
-    [GANTT_FILTER_KEY.PRIORITY]: { enabled: true, operator: GANTT_FILTER_OPERATOR.IS, value: TASK_PRIORITY.MEDIUM },
+    [GANTT_FILTER_KEY.TRACKER]: {
+      enabled: true,
+      operator: GANTT_FILTER_OPERATOR.IS,
+      value: TASK_TRACKER.TASK,
+    },
+    [GANTT_FILTER_KEY.PRIORITY]: {
+      enabled: true,
+      operator: GANTT_FILTER_OPERATOR.IS,
+      value: TASK_PRIORITY.MEDIUM,
+    },
     [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: true, operator: GANTT_FILTER_OPERATOR.IS, value: "" },
   })
 
@@ -110,6 +149,42 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     queryFn: () => customQueryApi.list(projectId),
     enabled: !!projectId,
   })
+
+  // Fetch dynamic project statuses (Kanban columns)
+  const { data: statuses = [], isLoading: isLoadingStatuses } = useQuery({
+    queryKey: ["projectStatuses", projectId],
+    queryFn: () => projectTaskStatusApi.list(projectId),
+    enabled: !!projectId,
+  })
+
+  const urlQueryId = searchParams.get("queryId")
+
+  useEffect(() => {
+    if (urlQueryId && savedQueries.length > 0 && urlQueryId !== appliedUrlQueryId) {
+      const matched = savedQueries.find((q) => q.id === urlQueryId)
+      if (matched) {
+        try {
+          const data = JSON.parse(matched.queryData)
+          if (data && Array.isArray(data.activeFilterKeys) && data.filterStates) {
+            setActiveFilterKeys(data.activeFilterKeys)
+            setFilterStates(data.filterStates)
+            setAppliedFilterKeys(data.activeFilterKeys)
+            setAppliedFilterStates(data.filterStates)
+
+            if (data.options) {
+              if (data.options.showEstTime !== undefined) setShowEstTime(data.options.showEstTime)
+              if (data.options.showAssignee !== undefined) setShowAssignee(data.options.showAssignee)
+              if (data.options.showProgress !== undefined) setShowProgress(data.options.showProgress)
+            }
+            setAppliedUrlQueryId(urlQueryId)
+            toast.success(`Đã tự động áp dụng truy vấn: ${matched.name}`)
+          }
+        } catch (e) {
+          console.error("Error parsing URL query data", e)
+        }
+      }
+    }
+  }, [urlQueryId, savedQueries, appliedUrlQueryId])
 
   // Mutation to save custom query
   const saveQueryMutation = useMutation({
@@ -135,8 +210,14 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     mutationFn: async (id: string) => {
       return customQueryApi.delete(id)
     },
-    onSuccess: () => {
+    onSuccess: (_, deletedId) => {
       void refetchSavedQueries()
+      if (urlQueryId === deletedId) {
+        const newParams = new URLSearchParams(searchParams)
+        newParams.delete("queryId")
+        setSearchParams(newParams)
+        setAppliedUrlQueryId(null)
+      }
       toast.success("Đã xóa truy vấn thành công")
     },
     onError: (err: unknown) => {
@@ -161,6 +242,12 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
           if (data.options.showProgress !== undefined) setShowProgress(data.options.showProgress)
         }
 
+        // Set search params and update appliedUrlQueryId to prevent duplicate trigger
+        setAppliedUrlQueryId(savedQuery.id)
+        const newParams = new URLSearchParams(searchParams)
+        newParams.set("queryId", savedQuery.id)
+        setSearchParams(newParams)
+
         toast.success(`Đã áp dụng truy vấn: ${savedQuery.name}`)
       } else {
         toast.error("Dữ liệu truy vấn không hợp lệ")
@@ -171,7 +258,11 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   }
 
   // Handle saving new custom query
-  const handleSaveQuery = (data: { name: string; projectId?: string | null; queryData: string }) => {
+  const handleSaveQuery = (data: {
+    name: string
+    projectId?: string | null
+    queryData: string
+  }) => {
     saveQueryMutation.mutate(data)
   }
 
@@ -180,14 +271,14 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   // Find all unique assignees (team leader + project members)
   const assignees = useMemo(() => {
     const list: { id: string; fullName: string }[] = []
-    
+
     // Add team leader
     if (project?.teamLeader) {
       list.push({ id: project.teamLeader.id, fullName: project.teamLeader.fullName })
     } else if (project?.teamLeaderId) {
       list.push({ id: project.teamLeaderId, fullName: "Team Leader" })
     }
-    
+
     // Add members
     const members = ganttData?.members || []
     members.forEach((m) => {
@@ -195,7 +286,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
         list.push({ id: m.id, fullName: m.fullName })
       }
     })
-    
+
     return list
   }, [project, ganttData])
 
@@ -210,52 +301,58 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
           const d = new Date(t.startDate)
           if (!minStart || d.getTime() < minStart.getTime()) minStart = d
         }
-        
+
         const dates: Date[] = []
         if (t.updatedAt) dates.push(new Date(t.updatedAt))
         if (t.completedAt) dates.push(new Date(t.completedAt))
         if (t.dueDate) dates.push(new Date(t.dueDate))
-        
+
         for (const d of dates) {
           if (!maxEnd || d.getTime() > maxEnd.getTime()) maxEnd = d
         }
       }
 
       if (minStart) {
-        setTimelineStart(minStart)
-        setMonthInput(minStart.getMonth())
-        setYearInput(minStart.getFullYear())
+        setTimeout(() => {
+          setTimelineStart(minStart)
+          setMonthInput(minStart.getMonth())
+          setYearInput(minStart.getFullYear())
+
+          if (maxEnd) {
+            const bufferedEnd = addDays(maxEnd, 2)
+            setTimelineEnd(bufferedEnd)
+            const days = differenceInDays(bufferedEnd, minStart) + 1
+            const months = Math.max(1, Math.ceil(days / 30))
+            setMonthsInput(months.toString())
+            setMonthsRange(months)
+          }
+          setHasInitializedTimeline(true)
+        }, 0)
       }
-      
-      if (minStart && maxEnd) {
-        // Add 2 days buffer at the end for clean design
-        const bufferedEnd = addDays(maxEnd, 2)
-        setTimelineEnd(bufferedEnd)
-        
-        const days = differenceInDays(bufferedEnd, minStart) + 1
-        const months = Math.max(1, Math.ceil(days / 30))
-        setMonthsInput(months.toString())
-        setMonthsRange(months)
-      }
-      setHasInitializedTimeline(true)
     }
   }, [tasks, hasInitializedTimeline])
 
   const getDefaultOperator = (key: string) => {
-    const def = Reflect.get(FILTER_DEFINITIONS, key) as { label: string; type: string; group: string } | undefined
+    const def = Reflect.get(FILTER_DEFINITIONS, key) as
+      | { label: string; type: string; group: string }
+      | undefined
     if (def === undefined) return GANTT_FILTER_OPERATOR.IS
     if (key === GANTT_FILTER_KEY.STATUS) return GANTT_FILTER_OPERATOR.OPEN
-    if (key === GANTT_FILTER_KEY.TRACKER || key === GANTT_FILTER_KEY.PRIORITY) return GANTT_FILTER_OPERATOR.IS
+    if (key === GANTT_FILTER_KEY.TRACKER || key === GANTT_FILTER_KEY.PRIORITY)
+      return GANTT_FILTER_OPERATOR.IS
     if (def.type === GANTT_FILTER_TYPE.EMPLOYEE) return GANTT_FILTER_OPERATOR.LA
     if (def.type === GANTT_FILTER_TYPE.TEXT) return GANTT_FILTER_OPERATOR.CHUA
-    if (def.type === GANTT_FILTER_TYPE.PROGRESS || def.type === GANTT_FILTER_TYPE.NUMBER) return GANTT_FILTER_OPERATOR.EQUAL
+    if (def.type === GANTT_FILTER_TYPE.PROGRESS || def.type === GANTT_FILTER_TYPE.NUMBER)
+      return GANTT_FILTER_OPERATOR.EQUAL
     if (def.type === GANTT_FILTER_TYPE.DATE) return GANTT_FILTER_OPERATOR.ANY
     if (def.type === GANTT_FILTER_TYPE.RELATION) return GANTT_FILTER_OPERATOR.ANY
     return GANTT_FILTER_OPERATOR.IS
   }
 
   const getDefaultValue = (key: string) => {
-    const def = Reflect.get(FILTER_DEFINITIONS, key) as { label: string; type: string; group: string } | undefined
+    const def = Reflect.get(FILTER_DEFINITIONS, key) as
+      | { label: string; type: string; group: string }
+      | undefined
     if (def === undefined) return ""
     if (key === GANTT_FILTER_KEY.TRACKER) return TASK_TRACKER.TASK
     if (key === GANTT_FILTER_KEY.PRIORITY) return TASK_PRIORITY.MEDIUM
@@ -273,7 +370,9 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [PROJECT_QUERY_KEY.GANTT, projectId] })
-      void queryClient.invalidateQueries({ queryKey: [PROJECT_QUERY_KEY.TASKS, PROJECT_QUERY_KEY.OVERVIEW, projectId] })
+      void queryClient.invalidateQueries({
+        queryKey: [PROJECT_QUERY_KEY.TASKS, PROJECT_QUERY_KEY.OVERVIEW, projectId],
+      })
       toast.success("Đã cập nhật công việc")
     },
     onError: (err) => {
@@ -293,37 +392,37 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   const monthSpans = useMemo(() => {
     if (timelineDays.length === 0) return []
     const spans: { label: string; colSpan: number; startCol: number; endCol: number }[] = []
-    
+
     let currentLabel = format(timelineDays[0], "yyyy-M")
     let currentCount = 0
     let startIndex = 1
-    
+
     timelineDays.forEach((day, index) => {
       const label = format(day, "yyyy-M")
       if (label === currentLabel) {
         currentCount++
       } else {
-        spans.push({ 
-          label: currentLabel, 
-          colSpan: currentCount, 
-          startCol: startIndex, 
-          endCol: startIndex + currentCount 
+        spans.push({
+          label: currentLabel,
+          colSpan: currentCount,
+          startCol: startIndex,
+          endCol: startIndex + currentCount,
         })
         currentLabel = label
         startIndex = index + 1
         currentCount = 1
       }
     })
-    
+
     if (currentCount > 0) {
-      spans.push({ 
-        label: currentLabel, 
-        colSpan: currentCount, 
-        startCol: startIndex, 
-        endCol: startIndex + currentCount 
+      spans.push({
+        label: currentLabel,
+        colSpan: currentCount,
+        startCol: startIndex,
+        endCol: startIndex + currentCount,
       })
     }
-    
+
     return spans
   }, [timelineDays])
 
@@ -332,16 +431,27 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     return tasks.filter((task: Task) => {
       for (const key of appliedFilterKeys) {
         if (!Object.prototype.hasOwnProperty.call(appliedFilterStates, key)) continue
-        const filter = Reflect.get(appliedFilterStates, key) as { enabled: boolean; operator: string; value: string } | undefined
+        const filter = Reflect.get(appliedFilterStates, key) as
+          | { enabled: boolean; operator: string; value: string }
+          | undefined
         if (!filter?.enabled) continue
 
         if (key === GANTT_FILTER_KEY.STATUS) {
           const statusVal = task.status
           if (filter.operator === GANTT_FILTER_OPERATOR.OPEN) {
-            const isOpen = ([TASK_STATUS.TODO, TASK_STATUS.IN_PROGRESS, TASK_STATUS.IN_REVIEW, TASK_STATUS.REOPENED] as string[]).includes(statusVal)
+            const isOpen = (
+              [
+                TASK_STATUS.TODO,
+                TASK_STATUS.IN_PROGRESS,
+                TASK_STATUS.IN_REVIEW,
+                TASK_STATUS.REOPENED,
+              ] as string[]
+            ).includes(statusVal)
             if (!isOpen) return false
           } else if (filter.operator === GANTT_FILTER_OPERATOR.DONG) {
-            const isClosed = ([TASK_STATUS.DONE, TASK_STATUS.CANCELLED] as string[]).includes(statusVal)
+            const isClosed = ([TASK_STATUS.DONE, TASK_STATUS.CANCELLED] as string[]).includes(
+              statusVal,
+            )
             if (!isClosed) return false
           } else if (filter.operator === GANTT_FILTER_OPERATOR.TAT_CA) {
             // matches all
@@ -350,39 +460,34 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
           } else if (filter.operator === GANTT_FILTER_OPERATOR.KHONG_LA) {
             if (statusVal === filter.value) return false
           }
-        }
-
-        else if (key === GANTT_FILTER_KEY.TRACKER) {
+        } else if (key === GANTT_FILTER_KEY.TRACKER) {
           const val = task.tracker
           if (filter.operator === GANTT_FILTER_OPERATOR.IS && val !== filter.value) return false
           if (filter.operator === GANTT_FILTER_OPERATOR.IS_NOT && val === filter.value) return false
-        }
-
-        else if (key === GANTT_FILTER_KEY.PRIORITY) {
+        } else if (key === GANTT_FILTER_KEY.PRIORITY) {
           const val = task.priority
           if (filter.operator === GANTT_FILTER_OPERATOR.IS && val !== filter.value) return false
           if (filter.operator === GANTT_FILTER_OPERATOR.IS_NOT && val === filter.value) return false
-        }
-
-        else if (key === GANTT_FILTER_KEY.ASSIGNEE) {
+        } else if (key === GANTT_FILTER_KEY.ASSIGNEE) {
           const assigneeVal = task.assigneeId
-          if (filter.operator === GANTT_FILTER_OPERATOR.LA && assigneeVal !== filter.value) return false
-          if (filter.operator === GANTT_FILTER_OPERATOR.KHONG_LA && assigneeVal === filter.value) return false
-          if (filter.operator === GANTT_FILTER_OPERATOR.TOI && assigneeVal !== user?.id) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.LA && assigneeVal !== filter.value)
+            return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.KHONG_LA && assigneeVal === filter.value)
+            return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.TOI && assigneeVal !== user?.id)
+            return false
           if (filter.operator === GANTT_FILTER_OPERATOR.NONE && assigneeVal !== null) return false
         }
 
         // Custom internal filters from sidebar quick links
         else if (key === GANTT_FILTER_KEY.QUICK_REPORTED) {
           if (task.createdById !== filter.value) return false
-        }
-        else if (key === GANTT_FILTER_KEY.QUICK_UPDATED) {
+        } else if (key === GANTT_FILTER_KEY.QUICK_UPDATED) {
           // just filter active tasks updated recently
           const updateDate = new Date(task.updatedAt)
           const diff = differenceInDays(new Date(), updateDate)
           if (diff > DEFAULT_RECENT_DAYS_RANGE) return false // updated more than 7 days ago
-        }
-        else if (key === GANTT_FILTER_KEY.QUICK_WATCHED) {
+        } else if (key === GANTT_FILTER_KEY.QUICK_WATCHED) {
           // not fully implemented watch model, simulate by assignee or creator
           if (task.assigneeId !== filter.value && task.createdById !== filter.value) return false
         }
@@ -392,17 +497,20 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
           const val = task.title.toLowerCase()
           const search = filter.value.toLowerCase()
           if (filter.operator === GANTT_FILTER_OPERATOR.CHUA && !val.includes(search)) return false
-          if (filter.operator === GANTT_FILTER_OPERATOR.KHONG_CHUA && val.includes(search)) return false
-          if (filter.operator === GANTT_FILTER_OPERATOR.BAT_DAU_BANG && !val.startsWith(search)) return false
-          if (filter.operator === GANTT_FILTER_OPERATOR.KET_THUC_BANG && !val.endsWith(search)) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.KHONG_CHUA && val.includes(search))
+            return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.BAT_DAU_BANG && !val.startsWith(search))
+            return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.KET_THUC_BANG && !val.endsWith(search))
+            return false
           if (filter.operator === GANTT_FILTER_OPERATOR.NONE && val.trim() !== "") return false
           if (filter.operator === GANTT_FILTER_OPERATOR.ANY && val.trim() === "") return false
-        }
-        else if (key === GANTT_FILTER_KEY.TXT_DESC) {
+        } else if (key === GANTT_FILTER_KEY.TXT_DESC) {
           const val = (task.description || "").toLowerCase()
           const search = filter.value.toLowerCase()
           if (filter.operator === GANTT_FILTER_OPERATOR.CHUA && !val.includes(search)) return false
-          if (filter.operator === GANTT_FILTER_OPERATOR.KHONG_CHUA && val.includes(search)) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.KHONG_CHUA && val.includes(search))
+            return false
           if (filter.operator === GANTT_FILTER_OPERATOR.NONE && val.trim() !== "") return false
           if (filter.operator === GANTT_FILTER_OPERATOR.ANY && val.trim() === "") return false
         }
@@ -412,7 +520,8 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
           const val = task.progress
           const comp = parseInt(filter.value) || 0
           if (filter.operator === GANTT_FILTER_OPERATOR.EQUAL && val !== comp) return false
-          if (filter.operator === GANTT_FILTER_OPERATOR.GREATER_THAN_EQUAL && val < comp) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.GREATER_THAN_EQUAL && val < comp)
+            return false
           if (filter.operator === GANTT_FILTER_OPERATOR.LESS_THAN_EQUAL && val > comp) return false
         }
 
@@ -421,10 +530,13 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
           const val = task.estimatedTime || 0
           const comp = parseFloat(filter.value) || 0
           if (filter.operator === GANTT_FILTER_OPERATOR.EQUAL && val !== comp) return false
-          if (filter.operator === GANTT_FILTER_OPERATOR.GREATER_THAN_EQUAL && val < comp) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.GREATER_THAN_EQUAL && val < comp)
+            return false
           if (filter.operator === GANTT_FILTER_OPERATOR.LESS_THAN_EQUAL && val > comp) return false
-          if (filter.operator === GANTT_FILTER_OPERATOR.NONE && task.estimatedTime !== null) return false
-          if (filter.operator === GANTT_FILTER_OPERATOR.ANY && task.estimatedTime === null) return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.NONE && task.estimatedTime !== null)
+            return false
+          if (filter.operator === GANTT_FILTER_OPERATOR.ANY && task.estimatedTime === null)
+            return false
         }
 
         // Date logic (Start Date & Due Date)
@@ -434,7 +546,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
             if (filter.operator === GANTT_FILTER_OPERATOR.ANY) continue // matches any
             return false
           }
-          
+
           const taskDate = new Date(taskDateStr)
           const today = new Date()
 
@@ -511,7 +623,7 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
 
   // Check roles/permissions
   const isLeader = project.teamLeaderId === user?.id
-  const isAdminOrGM = user?.role === ROLE.ADMIN || user?.role === ROLE.GENERAL_MANAGER
+  const isAdminOrGM = hasAnyPermission(["project.update", "project.task.approve"])
 
   // Overlap leave days check removed per user request
 
@@ -580,8 +692,18 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   const getMonthOffsetLabel = (offset: number) => {
     const d = new Date(timelineStart.getFullYear(), timelineStart.getMonth() + offset, 1)
     const months = [
-      "Tháng một", "Tháng hai", "Tháng ba", "Tháng tư", "Tháng năm", "Tháng sáu",
-      "Tháng bảy", "Tháng tám", "Tháng chín", "Tháng mười", "Tháng mười một", "Tháng mười hai"
+      "Tháng một",
+      "Tháng hai",
+      "Tháng ba",
+      "Tháng tư",
+      "Tháng năm",
+      "Tháng sáu",
+      "Tháng bảy",
+      "Tháng tám",
+      "Tháng chín",
+      "Tháng mười",
+      "Tháng mười một",
+      "Tháng mười hai",
     ]
     return months[d.getMonth()]
   }
@@ -601,10 +723,18 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     const newStart = new Date(yearInput, monthInput, 1)
     setTimelineStart(newStart)
     setTimelineEnd(addDays(newStart, range * 30 - 1))
-    
+
     // Apply filters
     setAppliedFilterKeys([...activeFilterKeys])
     setAppliedFilterStates(JSON.parse(JSON.stringify(filterStates)))
+    
+    // Clear queryId from URL
+    if (urlQueryId) {
+      const newParams = new URLSearchParams(searchParams)
+      newParams.delete("queryId")
+      setSearchParams(newParams)
+      setAppliedUrlQueryId(null)
+    }
     
     toast.success("Đã áp dụng bộ lọc và dòng thời gian")
   }
@@ -672,17 +802,37 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     setAppliedFilterKeys(["status"])
     setAppliedFilterStates(defaultStates)
     
+    // Clear queryId from URL
+    if (urlQueryId) {
+      const newParams = new URLSearchParams(searchParams)
+      newParams.delete("queryId")
+      setSearchParams(newParams)
+      setAppliedUrlQueryId(null)
+    }
+    
     toast.info("Đã khôi phục bộ lọc mặc định")
   }
 
   // Quick Query Sidebar Handler
   const handleQuickQuery = (type: string) => {
+    // Clear queryId from URL on quick query
+    if (urlQueryId) {
+      const newParams = new URLSearchParams(searchParams)
+      newParams.delete("queryId")
+      setSearchParams(newParams)
+      setAppliedUrlQueryId(null)
+    }
+
     if (type === QUICK_QUERY_TYPE.ASSIGNED_TO_ME) {
       setActiveFilterKeys([GANTT_FILTER_KEY.STATUS, GANTT_FILTER_KEY.ASSIGNEE])
       const states = {
         [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: "open", value: "" },
         [GANTT_FILTER_KEY.TRACKER]: { enabled: false, operator: "is", value: TASK_TRACKER.TASK },
-        [GANTT_FILTER_KEY.PRIORITY]: { enabled: false, operator: "is", value: TASK_PRIORITY.MEDIUM },
+        [GANTT_FILTER_KEY.PRIORITY]: {
+          enabled: false,
+          operator: "is",
+          value: TASK_PRIORITY.MEDIUM,
+        },
         [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: true, operator: "tôi", value: "" },
       }
       setFilterStates(states)
@@ -694,14 +844,18 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
       const states = {
         [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: "open", value: "" },
         [GANTT_FILTER_KEY.TRACKER]: { enabled: false, operator: "is", value: TASK_TRACKER.TASK },
-        [GANTT_FILTER_KEY.PRIORITY]: { enabled: false, operator: "is", value: TASK_PRIORITY.MEDIUM },
+        [GANTT_FILTER_KEY.PRIORITY]: {
+          enabled: false,
+          operator: "is",
+          value: TASK_PRIORITY.MEDIUM,
+        },
         [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: false, operator: "is", value: "" },
       }
       setFilterStates(states)
       setAppliedFilterKeys([GANTT_FILTER_KEY.STATUS, GANTT_FILTER_KEY.QUICK_REPORTED])
       setAppliedFilterStates({
         ...states,
-        [GANTT_FILTER_KEY.QUICK_REPORTED]: { enabled: true, operator: "is", value: user?.id || "" }
+        [GANTT_FILTER_KEY.QUICK_REPORTED]: { enabled: true, operator: "is", value: user?.id || "" },
       })
       toast.success("Đã áp dụng: Công việc do tôi tạo")
     } else if (type === QUICK_QUERY_TYPE.UPDATED_ISSUES) {
@@ -709,14 +863,18 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
       const states = {
         [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: "open", value: "" },
         [GANTT_FILTER_KEY.TRACKER]: { enabled: false, operator: "is", value: TASK_TRACKER.TASK },
-        [GANTT_FILTER_KEY.PRIORITY]: { enabled: false, operator: "is", value: TASK_PRIORITY.MEDIUM },
+        [GANTT_FILTER_KEY.PRIORITY]: {
+          enabled: false,
+          operator: "is",
+          value: TASK_PRIORITY.MEDIUM,
+        },
         [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: false, operator: "is", value: "" },
       }
       setFilterStates(states)
       setAppliedFilterKeys([GANTT_FILTER_KEY.STATUS, GANTT_FILTER_KEY.QUICK_UPDATED])
       setAppliedFilterStates({
         ...states,
-        [GANTT_FILTER_KEY.QUICK_UPDATED]: { enabled: true, operator: "is", value: "" }
+        [GANTT_FILTER_KEY.QUICK_UPDATED]: { enabled: true, operator: "is", value: "" },
       })
       toast.success("Đã áp dụng: Công việc được cập nhật gần đây")
     } else if (type === QUICK_QUERY_TYPE.WATCHED_ISSUES) {
@@ -724,14 +882,18 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
       const states = {
         [GANTT_FILTER_KEY.STATUS]: { enabled: true, operator: "open", value: "" },
         [GANTT_FILTER_KEY.TRACKER]: { enabled: false, operator: "is", value: TASK_TRACKER.TASK },
-        [GANTT_FILTER_KEY.PRIORITY]: { enabled: false, operator: "is", value: TASK_PRIORITY.MEDIUM },
+        [GANTT_FILTER_KEY.PRIORITY]: {
+          enabled: false,
+          operator: "is",
+          value: TASK_PRIORITY.MEDIUM,
+        },
         [GANTT_FILTER_KEY.ASSIGNEE]: { enabled: false, operator: "is", value: "" },
       }
       setFilterStates(states)
       setAppliedFilterKeys([GANTT_FILTER_KEY.STATUS, GANTT_FILTER_KEY.QUICK_WATCHED])
       setAppliedFilterStates({
         ...states,
-        [GANTT_FILTER_KEY.QUICK_WATCHED]: { enabled: true, operator: "is", value: user?.id || "" }
+        [GANTT_FILTER_KEY.QUICK_WATCHED]: { enabled: true, operator: "is", value: user?.id || "" },
       })
       toast.success("Đã áp dụng: Công việc tôi quan tâm")
     }
@@ -777,6 +939,8 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     applySavedQuery,
     handleSaveQuery,
     assignees,
+    statuses,
+    isLoadingStatuses,
     getDefaultOperator,
     getDefaultValue,
     timelineDays,

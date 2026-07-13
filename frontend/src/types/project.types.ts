@@ -27,6 +27,7 @@ export interface Project {
     fullName: string
     email: string
   }
+  allowedTaskTrackers: string[]
 }
 
 export interface CreateProjectDto {
@@ -38,6 +39,7 @@ export interface CreateProjectDto {
   startDate?: string | null
   expectedEndDate?: string | null
   teamLeaderId?: string | null
+  allowedTaskTrackers?: string[]
 }
 
 export interface UpdateProjectDto {
@@ -50,6 +52,7 @@ export interface UpdateProjectDto {
   expectedEndDate?: string | null
   actualEndDate?: string | null
   teamLeaderId?: string | null
+  allowedTaskTrackers?: string[]
 }
 
 export interface ProjectListQuery {
@@ -79,7 +82,8 @@ export interface ProjectMember {
   hourlyRate: number | null
   /** remote = log only | onsite = one GPS check-in/day before logging hours. */
   workMode: string
-  role: string | null
+  roleId: string | null
+  role: { id: string; name: string; code: string; allowedTaskTrackers: string[] } | null
   createdAt: string
   employee: {
     id: string

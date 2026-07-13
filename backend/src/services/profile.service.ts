@@ -1,20 +1,21 @@
+import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { assertCloudinaryConfigured, cloudinary } from "@/configs/system/cloudinary.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
 import type {
   IProfileRepository,
   IProfileService,
   ProfileDto,
   ProfileEmployeeDocument,
   ProfileEmployeeDocumentWithPassword,
-  UpdateProfileDto,
   UpdatePersonalEmployeeLinkDto,
+  UpdateProfileDto,
 } from "@/types/profile.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
 
 import { Readable } from "stream"
-import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
-import { authorizationService } from "@/services/authorization.service.ts"
+
 const LAYER_NAME = "ProfileService"
 /**
  * Maps a Mongoose employee document to a clean ProfileDto
@@ -37,8 +38,10 @@ async function toProfileDto(emp: ProfileEmployeeDocument): Promise<ProfileDto> {
     nationalId: emp.nationalId ?? null,
     address: emp.address ?? null,
     position: emp.position ?? null,
+    positionId: emp.positionId ?? null,
     roles,
     employeeType: emp.employeeType,
+    workScheduleType: emp.workScheduleType, // drives PT nav/features on profile
     status: emp.status,
     startDate: emp.startDate ? emp.startDate.toISOString().split("T")[0] : null,
     avatar: {
@@ -127,8 +130,9 @@ export class ProfileService implements IProfileService {
     // Check if Cloudinary is configured
     try {
       assertCloudinaryConfigured()
-    } catch (err: any) {
-      throw new AppError(err.message, HttpStatusCode.BAD_REQUEST, LAYER_NAME)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Cloudinary is not configured"
+      throw new AppError(message, HttpStatusCode.BAD_REQUEST, LAYER_NAME)
     }
 
     // Fetch current profile to get old avatar id for cleanup
@@ -153,11 +157,7 @@ export class ProfileService implements IProfileService {
     const updated = await this.repo.updateAvatar(empId, { url, id })
 
     if (!updated) {
-      throw new AppError(
-        "Failed to save avatar",
-        HttpStatusCode.INTERNAL_SERVER_ERROR,
-        LAYER_NAME,
-      )
+      throw new AppError("Failed to save avatar", HttpStatusCode.INTERNAL_SERVER_ERROR, LAYER_NAME)
     }
 
     return await toProfileDto(updated)
@@ -188,6 +188,9 @@ export class ProfileService implements IProfileService {
     await this.repo.updatePassword(empId, await HashUtil.hash(newPass))
   }
 
+  /**
+   * Performs operations for updatePersonalEmployeeLink.
+   */
   async updatePersonalEmployeeLink(
     empId: string,
     data: UpdatePersonalEmployeeLinkDto,
@@ -198,8 +201,7 @@ export class ProfileService implements IProfileService {
     }
 
     const authContext = await authorizationService.getAuthorizationContext(empId)
-    const roles = authContext.roles
-    const isManager = authContext.isDynamicAdmin || roles.has("admin") || roles.has("hr_manager") || roles.has("general_manager")
+    const isManager = authContext.isDynamicAdmin || authContext.permissions.has("employee.update")
 
     if (!isManager) {
       throw new AppError(
@@ -209,7 +211,7 @@ export class ProfileService implements IProfileService {
       )
     }
 
-    let personalEmployeeId = data.personalEmployeeId
+    let personalEmployeeId = data.personalEmployeeId ?? null
     if (personalEmployeeId === empId) {
       personalEmployeeId = null
     }

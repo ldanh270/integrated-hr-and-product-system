@@ -31,7 +31,7 @@ export class ProjectTaskStatusService implements IProjectTaskStatusService {
    */
   private async isAuthorizedAdminOrGM(userId: string): Promise<boolean> {
     const authContext = await authorizationService.getAuthorizationContext(userId)
-    return authContext.isDynamicAdmin || authContext.roles.has("admin") || authContext.roles.has("general_manager")
+    return authContext.permissions.has("project.update")
   }
 
   /**

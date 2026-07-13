@@ -73,7 +73,7 @@ export default function SubsystemDropdown() {
             return (
               <DropdownMenuItem
                 key={subsystem.id}
-                onClick={() => handleSelectSubsystem(subsystem.id, subsystem.routePrefix)}
+                onClick={() => { handleSelectSubsystem(subsystem.id, subsystem.routePrefix); }}
                 className={`flex cursor-pointer items-center gap-2 rounded-md p-2 transition-colors ${
                   isActive
                     ? "bg-primary/10 text-primary focus:bg-primary/15 focus:text-primary"

@@ -14,6 +14,24 @@ export function countStaticRoleReferences(): { total: number; details: string[] 
 }
 
 /**
+ * Fail-fast startup gate for Sprint D2.6 dynamic RBAC.
+ * Blocks server boot when legacy static ROLE string literals remain in source.
+ * Skipped in test via SKIP_ADMIN_ASSERT or NODE_ENV=test.
+ * Scanner is currently a stub (always 0) — re-enable filesystem scan when purge is complete.
+ */
+export function assertNoLegacyStaticRoleReferences(skipAssert: boolean): void {
+  if (skipAssert) return
+
+  const staticRefs = countStaticRoleReferences()
+  if (staticRefs.total > 0) {
+    console.error("FATAL ERROR: SYSTEM_INVARIANT_BROKEN: Legacy static role references found:")
+    staticRefs.details.forEach((detail) => console.error(`  - ${detail}`))
+    console.error("All Legacy ROLE references must be purged under Sprint D2.6.")
+    process.exit(1)
+  }
+}
+
+/**
  * Bootstrap mechanism to ensure at least one active Admin exists in the database.
  * If 0 active admins are found, it creates the 'admin' role, a default active employee,
  * and links them together.

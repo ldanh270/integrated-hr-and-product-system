@@ -1,16 +1,18 @@
 import {
-  EMPLOYEE_ROLES,
   EMPLOYEE_STATUSES,
-  EMPLOYEE_TYPES,
-  ROLE,
+  EMPLOYMENT_CATEGORY_TYPES,
+  WORK_SCHEDULE_TYPES,
+  WORK_SCHEDULE_TYPE,
 } from "@/config/entities/employee.config"
 import type { CreateEmployeeDto } from "@/types/employee.types"
 
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
 
+import { useRoles } from "@/hooks/security/queries/use-security-query"
 import { useCreateEmployee } from "./queries/useEmployeeQuery"
 
 const createSchema = z.object({
@@ -36,8 +38,9 @@ const createSchema = z.object({
       "Mật khẩu phải chứa chữ hoa, chữ thường, số và ký tự đặc biệt",
     ),
 
-  role: z.enum(EMPLOYEE_ROLES),
-  employeeType: z.enum(EMPLOYEE_TYPES),
+  role: z.string().min(1, "Vui lòng chọn vai trò"),
+  employeeType: z.enum(EMPLOYMENT_CATEGORY_TYPES),
+  workScheduleType: z.enum(WORK_SCHEDULE_TYPES), // full_time | part_time schedule model
   status: z.enum(EMPLOYEE_STATUSES).optional(),
 
   phone: z
@@ -49,6 +52,7 @@ const createSchema = z.object({
     .optional(),
 
   position: z.string().max(100, "Chức danh quá dài").optional(),
+  positionId: z.string().optional(),
 
   dateOfBirth: z
     .string()
@@ -75,8 +79,13 @@ const createSchema = z.object({
 
 type CreateFormValues = z.infer<typeof createSchema>
 
+/**
+ * Custom hook to manage employeecreatemodal.
+ */
 export function useEmployeeCreateModal(onClose: () => void) {
   const createMutation = useCreateEmployee()
+  const { data: rolesData, isLoading: isLoadingRoles } = useRoles()
+
   const {
     register,
     handleSubmit,
@@ -86,11 +95,25 @@ export function useEmployeeCreateModal(onClose: () => void) {
     resolver: zodResolver(createSchema),
     mode: "onBlur", // Thêm mode onBlur để validate khi user rời khỏi trường nhập
     defaultValues: {
-      role: ROLE.EMPLOYEE,
-      employeeType: EMPLOYEE_TYPES[0],
+      role: "",
+      employeeType: EMPLOYMENT_CATEGORY_TYPES[0],
+      workScheduleType: WORK_SCHEDULE_TYPE.FULL_TIME, // default new hires to company shift model
       status: EMPLOYEE_STATUSES[0],
     },
   })
+
+  // Dynamically set default role when roles finish loading
+  useEffect(() => {
+    if (rolesData?.data) {
+      const defaultRole = rolesData.data.find((r) => r.isDefault)?.name || "employee"
+      reset({
+        role: defaultRole,
+        employeeType: EMPLOYMENT_CATEGORY_TYPES[0],
+        workScheduleType: WORK_SCHEDULE_TYPE.FULL_TIME,
+        status: EMPLOYEE_STATUSES[0],
+      })
+    }
+  }, [rolesData, reset])
 
   const onSubmit = async (data: CreateFormValues) => {
     try {
@@ -98,6 +121,7 @@ export function useEmployeeCreateModal(onClose: () => void) {
         ...data,
         phone: data.phone === "" ? undefined : data.phone,
         position: data.position === "" ? undefined : data.position,
+        positionId: data.positionId === "" ? undefined : data.positionId,
         dateOfBirth: data.dateOfBirth === "" ? undefined : data.dateOfBirth,
         nationalId: data.nationalId === "" ? undefined : data.nationalId,
         address: data.address === "" ? undefined : data.address,
@@ -125,5 +149,7 @@ export function useEmployeeCreateModal(onClose: () => void) {
     errors,
     isPending: createMutation.isPending,
     handleClose,
+    roles: rolesData?.data || [],
+    isLoadingRoles,
   }
 }

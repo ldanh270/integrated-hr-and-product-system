@@ -147,7 +147,7 @@ export default function Login() {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
+                  onClick={() => { setShowPassword((prev) => !prev); }}
                   className="absolute right-4 text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   tabIndex={-1}
@@ -186,7 +186,7 @@ export default function Login() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => setShowForgotModal(true)}
+            onClick={() => { setShowForgotModal(true); }}
             className="w-full h-12 text-sm font-semibold flex items-center justify-center gap-2 border-border shadow-sm hover:bg-secondary/40"
           >
             <KeyRound size={16} />
@@ -219,7 +219,7 @@ export default function Login() {
                 placeholder="Nhập email của bạn..."
                 required
                 value={forgotEmail}
-                onChange={(e) => setForgotEmail(e.target.value)}
+                onChange={(e) => { setForgotEmail(e.target.value); }}
                 className="w-full"
               />
             </div>

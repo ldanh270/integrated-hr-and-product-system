@@ -1,6 +1,4 @@
-// Import layout cards, headers, and status display pills
 import { PageCard, PageHeader, StatusPill } from "@/components/common"
-// Import custom UI components
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,9 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-// Import Skeleton screen placeholders
 import { Skeleton } from "@/components/ui/skeleton"
-// Import custom UI tables
 import {
   Table,
   TableBody,
@@ -31,38 +27,33 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
-// Import project domain configs (statuses and creation policy list)
 import { PROJECT_STATUSES, TASK_CREATION_POLICIES } from "@/config/entities/project.config"
-// Import employee role mappings
-import { ROLE } from "@/config/entities/employee.config"
 import { usePermission } from "@/hooks/use-permission"
-// Import API client wrappers
 import { employeeApi } from "@/lib/api/employee.api"
 import { projectApi } from "@/lib/api/project.api"
-// Import authentication global store
-import { useAuthStore } from "@/store/auth-store"
-import { ROUTES } from "@/config/routes.config"
 // Import React Query utilities for data handling and server mutations
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 // Import Lucide visual icons
-import { FolderKanban, Plus, Search, Users } from "lucide-react"
+import { FolderKanban, Plus, Search, Users, ChevronDown, CheckSquare, Square } from "lucide-react"
 import React, { useState } from "react"
 // Import router link navigation
 import { useNavigate } from "react-router-dom"
 import { extractErrorMessage } from "@/utils/error-helper"
+import { useProjectTrackers } from "@/pages/project/hooks/use-project-tracker"
 
-
-// Main React component to render the global list of projects
+/**
+ * Component displaying the main project list dashboard.
+ * Provides features to view all projects, search/filter by status, and create new projects
+ * (accessible to Administrators and General Managers) with start/end dates, lead assignments,
+ * task policies, and tracker configurations.
+ */
 export default function ProjectList() {
   // Initialize query client for cache validation
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  // Retrieve the logged-in user profile details
-  const { user } = useAuthStore()
-  const { roles } = usePermission()
+  const { hasPermission } = usePermission()
   // Determine if the current user possesses administrative or managerial rights
-  const isManager =
-    !!user && [ROLE.ADMIN, ROLE.GENERAL_MANAGER].some((role) => roles.includes(role))
+  const isManager = hasPermission("project.create")
 
   // Initialize state hooks to filter projects list
   const [search, setSearch] = useState("") // Search keyword
@@ -77,7 +68,9 @@ export default function ProjectList() {
   const [newProjectPolicy, setNewProjectPolicy] = useState("all_members") // Who is authorized to create tasks
   const [newProjectStart, setNewProjectStart] = useState("") // Planned start date
   const [newProjectEnd, setNewProjectEnd] = useState("") // Planned expected end date
+  const [newProjectTrackers, setNewProjectTrackers] = useState<string[]>([])
   const [createError, setCreateError] = useState<string | null>(null) // Submission error warning banner
+  const [isCreateDropdownOpen, setIsCreateDropdownOpen] = useState(false)
 
   // Query to fetch the list of all active projects from the server
   const { data: projectsData, isLoading } = useQuery({
@@ -95,6 +88,23 @@ export default function ProjectList() {
   // Destructure arrays, fallback to empty array structures if undefined
   const projects = projectsData?.data || []
   const employees = employeesData?.data || []
+
+  // Load trackers from the first project in the list if available, otherwise fallback
+  const firstProjectId = projects[0]?.id || ""
+  const { data: dbTrackers = [] } = useProjectTrackers(firstProjectId)
+
+  const trackersList = dbTrackers.length > 0
+    ? dbTrackers.map((t) => ({ key: t.code, label: `${t.name} (${t.code})` }))
+    : [
+        { key: "feature", label: "Tính năng (feature)" },
+        { key: "bug", label: "Lỗi (bug)" },
+        { key: "support", label: "Hỗ trợ (support)" },
+        { key: "task", label: "Công việc (task)" },
+        { key: "meeting", label: "Cuộc họp (meeting)" },
+        { key: "test", label: "Kiểm thử (test)" },
+        { key: "subtask", label: "Công việc con (subtask)" },
+        { key: "management", label: "Quản lý (management)" },
+      ]
 
   // Perform client-side filter computation on the fetched projects list
   const filteredProjects = projects.filter((proj) => {
@@ -138,6 +148,7 @@ export default function ProjectList() {
         startDate: newProjectStart || null,
         expectedEndDate: newProjectEnd || null,
         teamLeaderId: newProjectLeader === "none" ? null : newProjectLeader,
+        allowedTaskTrackers: newProjectTrackers,
       })
     },
     // On success, invalidate projects cache, close dialog, and clear out form state variables
@@ -152,6 +163,7 @@ export default function ProjectList() {
       setNewProjectPolicy("all_members")
       setNewProjectStart("")
       setNewProjectEnd("")
+      setNewProjectTrackers([])
       setCreateError(null)
     },
     // Display error messages from the server on failure
@@ -195,11 +207,16 @@ export default function ProjectList() {
     <div className="container p-8 space-y-6">
       {/* Top Header section layout */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <PageHeader title="Danh sách dự án" description="Quản lý các dự án đang phát triển trong công ty" />
+        <PageHeader
+          title="Danh sách dự án"
+          description="Quản lý các dự án đang phát triển trong công ty"
+        />
         {/* Render create project button if user has appropriate access rights */}
         {isManager && (
           <Button
-            onClick={() => { setIsOpenCreateModal(true); }}
+            onClick={() => {
+              setIsOpenCreateModal(true)
+            }}
             className="rounded-full bg-primary text-primary-foreground hover:bg-primary/95 flex items-center gap-1.5 h-11 px-5 text-sm"
           >
             <Plus className="size-4" />
@@ -216,20 +233,26 @@ export default function ProjectList() {
           <Input
             placeholder="Tìm theo tên, mô tả, công nghệ..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); }}
+            onChange={(e) => {
+              setSearch(e.target.value)
+            }}
             className="pl-11 h-10 text-sm border-border rounded-full"
           />
         </div>
 
         {/* Status selection dropdown */}
         <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-          <Label className="text-xs font-semibold text-muted-foreground whitespace-nowrap">Trạng thái:</Label>
+          <Label className="text-xs font-semibold text-muted-foreground whitespace-nowrap">
+            Trạng thái:
+          </Label>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-40 h-10 border-border rounded-full px-4 bg-background">
               <SelectValue placeholder="Tất cả" />
             </SelectTrigger>
             <SelectContent position="popper" className="rounded-xl border-border bg-popover">
-              <SelectItem value="all" className="rounded-lg">Tất cả</SelectItem>
+              <SelectItem value="all" className="rounded-lg">
+                Tất cả
+              </SelectItem>
               {PROJECT_STATUSES.map((st) => (
                 <SelectItem key={st} value={st} className="rounded-lg">
                   {formatStatus(st)}
@@ -257,7 +280,9 @@ export default function ProjectList() {
               <FolderKanban className="size-8" />
             </div>
             <h3 className="text-base font-bold text-foreground">Không tìm thấy dự án nào</h3>
-            <p className="text-sm text-muted-foreground mt-1">Vui lòng điều chỉnh bộ lọc hoặc tạo dự án mới.</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Vui lòng điều chỉnh bộ lọc hoặc tạo dự án mới.
+            </p>
           </div>
         ) : (
           // Projects grid listing table representation
@@ -281,7 +306,7 @@ export default function ProjectList() {
                       <button
                         onClick={() => {
                           sessionStorage.setItem("activeProjectId", proj.id)
-                          navigate(ROUTES.PROJECT.OVERVIEW)
+                          navigate(`/project/${proj.id}/overview`)
                         }}
                         className="text-primary hover:underline font-bold text-sm text-left cursor-pointer"
                       >
@@ -310,14 +335,21 @@ export default function ProjectList() {
                     </TableCell>
                     {/* Status badges */}
                     <TableCell>
-                      <StatusPill label={formatStatus(proj.status)} variant={getStatusVariant(proj.status)} />
+                      <StatusPill
+                        label={formatStatus(proj.status)}
+                        variant={getStatusVariant(proj.status)}
+                      />
                     </TableCell>
                     {/* Tech stacks layout badges */}
                     <TableCell>
                       <div className="flex flex-wrap gap-1 max-w-[200px]">
                         {proj.techStack.length > 0 ? (
                           proj.techStack.map((tech) => (
-                            <Badge key={tech} variant="secondary" className="rounded-full px-2 py-0.5 text-[10px] font-medium">
+                            <Badge
+                              key={tech}
+                              variant="secondary"
+                              className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                            >
                               {tech}
                             </Badge>
                           ))
@@ -331,7 +363,9 @@ export default function ProjectList() {
                       {proj.startDate ? new Date(proj.startDate).toLocaleDateString("vi-VN") : "-"}
                     </TableCell>
                     <TableCell className="text-xs font-medium text-muted-foreground">
-                      {proj.expectedEndDate ? new Date(proj.expectedEndDate).toLocaleDateString("vi-VN") : "-"}
+                      {proj.expectedEndDate
+                        ? new Date(proj.expectedEndDate).toLocaleDateString("vi-VN")
+                        : "-"}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -369,7 +403,9 @@ export default function ProjectList() {
                 id="projName"
                 placeholder="Nhập tên dự án..."
                 value={newProjectName}
-                onChange={(e) => { setNewProjectName(e.target.value); }}
+                onChange={(e) => {
+                  setNewProjectName(e.target.value)
+                }}
                 className="h-10 text-sm border-border rounded-full px-4"
                 required
               />
@@ -384,7 +420,9 @@ export default function ProjectList() {
                 id="projDesc"
                 placeholder="Nhập mô tả tóm tắt dự án..."
                 value={newProjectDesc}
-                onChange={(e) => { setNewProjectDesc(e.target.value); }}
+                onChange={(e) => {
+                  setNewProjectDesc(e.target.value)
+                }}
                 className="min-h-[80px] rounded-xl border-border p-3 text-sm focus-visible:ring-1 focus-visible:ring-ring"
               />
             </div>
@@ -399,7 +437,9 @@ export default function ProjectList() {
                   id="projStart"
                   type="date"
                   value={newProjectStart}
-                  onChange={(e) => { setNewProjectStart(e.target.value); }}
+                  onChange={(e) => {
+                    setNewProjectStart(e.target.value)
+                  }}
                   className="h-10 text-sm border-border rounded-full px-4"
                 />
               </div>
@@ -412,9 +452,101 @@ export default function ProjectList() {
                   id="projEnd"
                   type="date"
                   value={newProjectEnd}
-                  onChange={(e) => { setNewProjectEnd(e.target.value); }}
+                  onChange={(e) => {
+                    setNewProjectEnd(e.target.value)
+                  }}
                   className="h-10 text-sm border-border rounded-full px-4"
                 />
+              </div>
+            </div>
+
+            {/* Allowed Task Trackers (Các loại yêu cầu) */}
+            <div className="space-y-1.5 relative">
+              <Label className="text-xs font-semibold text-muted-foreground">
+                Các loại yêu cầu được phép hoạt động
+              </Label>
+              <p className="text-[10px] text-muted-foreground mt-0.5 mb-2">
+                Chỉ chọn các loại yêu cầu được phép tạo trong dự án này (để trống nếu cho phép tất cả).
+              </p>
+
+              {isCreateDropdownOpen && (
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setIsCreateDropdownOpen(false)}
+                />
+              )}
+
+              <div className="relative w-full">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateDropdownOpen(!isCreateDropdownOpen)}
+                  className="w-full h-10 border border-border rounded-full px-4 bg-background flex items-center justify-between text-xs font-semibold cursor-pointer hover:bg-muted/30 text-foreground"
+                >
+                  <span className="truncate">
+                    {newProjectTrackers.length === 0
+                      ? "Cho phép tất cả"
+                      : newProjectTrackers
+                          .map((k) => trackersList.find((t) => t.key === k)?.label || k)
+                          .join(", ")}
+                  </span>
+                  <ChevronDown className="size-4 shrink-0 text-muted-foreground ml-1" />
+                </button>
+
+                {isCreateDropdownOpen && (
+                  <div className="absolute left-0 mt-1 w-full bg-popover border border-border rounded-xl p-3 shadow-lg z-50 space-y-2">
+                    <div className="flex items-center justify-between border-b border-border pb-1.5 mb-1.5">
+                      <span className="text-[10px] font-bold text-muted-foreground">Chọn loại công việc</span>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewProjectTrackers(trackersList.map((t) => t.key))
+                          }}
+                          className="text-[9px] font-extrabold text-primary hover:underline cursor-pointer"
+                        >
+                          Tất cả
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewProjectTrackers([])
+                          }}
+                          className="text-[9px] font-extrabold text-muted-foreground hover:text-red-500 hover:underline cursor-pointer"
+                        >
+                          Xóa tất cả
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5 max-h-60 overflow-y-auto">
+                      {trackersList.map((tracker) => {
+                        const isChecked = newProjectTrackers.includes(tracker.key)
+                        return (
+                          <button
+                            type="button"
+                            key={tracker.key}
+                            onClick={() => {
+                              setNewProjectTrackers((prev) =>
+                                prev.includes(tracker.key)
+                                  ? prev.filter((k) => k !== tracker.key)
+                                  : [...prev, tracker.key]
+                              )
+                            }}
+                            className={`flex items-center gap-2 p-2 rounded-lg text-left transition-all duration-200 cursor-pointer ${
+                              isChecked ? "bg-primary/5 text-primary" : "hover:bg-muted/40 text-foreground"
+                            }`}
+                          >
+                            {isChecked ? (
+                              <CheckSquare className="size-3.5 shrink-0 text-primary fill-primary/10" />
+                            ) : (
+                              <Square className="size-3.5 shrink-0 text-muted-foreground" />
+                            )}
+                            <span className="text-xs font-semibold leading-tight line-clamp-1">{tracker.label}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -425,11 +557,16 @@ export default function ProjectList() {
                   Trưởng nhóm (Team Leader)
                 </Label>
                 <Select value={newProjectLeader} onValueChange={setNewProjectLeader}>
-                  <SelectTrigger id="projLeader" className="w-full h-10 border-border rounded-full px-4 bg-background">
+                  <SelectTrigger
+                    id="projLeader"
+                    className="w-full h-10 border-border rounded-full px-4 bg-background"
+                  >
                     <SelectValue placeholder="Chọn Trưởng nhóm" />
                   </SelectTrigger>
                   <SelectContent position="popper" className="rounded-xl border-border bg-popover">
-                    <SelectItem value="none" className="rounded-lg">Không phân công</SelectItem>
+                    <SelectItem value="none" className="rounded-lg">
+                      Không phân công
+                    </SelectItem>
                     {employees.map((emp) => (
                       <SelectItem key={emp.id} value={emp.id} className="rounded-lg">
                         {emp.fullName}
@@ -444,7 +581,10 @@ export default function ProjectList() {
                   Quyền tạo công việc
                 </Label>
                 <Select value={newProjectPolicy} onValueChange={setNewProjectPolicy}>
-                  <SelectTrigger id="projPolicy" className="w-full h-10 border-border rounded-full px-4 bg-background">
+                  <SelectTrigger
+                    id="projPolicy"
+                    className="w-full h-10 border-border rounded-full px-4 bg-background"
+                  >
                     <SelectValue placeholder="Chọn quyền" />
                   </SelectTrigger>
                   <SelectContent position="popper" className="rounded-xl border-border bg-popover">
@@ -467,7 +607,9 @@ export default function ProjectList() {
                 id="projTech"
                 placeholder="Ví dụ: React, Node.js, TypeScript (Ngăn cách bằng dấu phẩy)"
                 value={newProjectTech}
-                onChange={(e) => { setNewProjectTech(e.target.value); }}
+                onChange={(e) => {
+                  setNewProjectTech(e.target.value)
+                }}
                 className="h-10 text-sm border-border rounded-full px-4"
               />
             </div>
@@ -477,7 +619,9 @@ export default function ProjectList() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => { setIsOpenCreateModal(false); }}
+                onClick={() => {
+                  setIsOpenCreateModal(false)
+                }}
                 className="h-10 rounded-full px-5 text-sm"
                 disabled={createMutation.isPending}
               >
@@ -497,4 +641,3 @@ export default function ProjectList() {
     </div>
   )
 }
-

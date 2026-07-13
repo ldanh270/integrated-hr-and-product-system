@@ -112,7 +112,7 @@ export function ApplicationDetail({
           {mode === "manage" && isPending && (
             <div className="flex items-center gap-3 ml-4 border-l border-border pl-4">
               <button
-                onClick={() => onApprove?.(application)}
+                onClick={() => { onApprove?.(application); }}
                 className="flex items-center gap-2 text-sm font-semibold text-emerald-600 hover:bg-emerald-50 px-3 py-1.5 rounded-full border border-transparent hover:border-emerald-200 transition-all"
               >
                 <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
@@ -121,7 +121,7 @@ export function ApplicationDetail({
                 Duyệt đơn
               </button>
               <button
-                onClick={() => onReject?.(application)}
+                onClick={() => { onReject?.(application); }}
                 className="flex items-center gap-2 text-sm font-semibold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-full border border-transparent hover:border-red-200 transition-all"
               >
                 <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center text-red-600">

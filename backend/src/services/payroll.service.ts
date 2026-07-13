@@ -1,12 +1,12 @@
 import { ATTENDANCE_STATUS, EMPLOYEE_SHIFT_STATUS, PAID_LEAVE_TYPES } from "@/configs/entities/attendance.config.ts"
-import { EMPLOYEE_STATUS, EMPLOYEE_TYPE } from "@/configs/entities/employee.config.ts"
+import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
+import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util.ts"
 import { SPENT_TIME_WORK_TIME_TYPE } from "@/configs/entities/project.config.ts"
 import {
   PAYROLL_STATUS,
   SALARY_COMPONENT_TYPES,
   generateDefaultPayrollName,
 } from "@/configs/entities/payroll.config.ts"
-import { SPENT_TIME_OT_MULTIPLIERS } from "@/configs/rules/project.config.ts"
 import { PAYROLL_MESSAGES } from "@/configs/messages/payroll.message"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
@@ -14,16 +14,21 @@ import { IAttendanceRepository } from "@/types/attendance.types.ts"
 import { IEmployeeRepository } from "@/types/employee.types.ts"
 import {
   IEmployeeSalaryConfigRepository,
-  IFormulaContext,
   IPayrollRepository,
   IPayrollService,
   IPayslipRepository,
+  IMyPayslipSummary,
+  PayrollWithPayslips,
   PayslipWithDetails,
 } from "@/types/payroll.types.ts"
 import { ISpentTimeRepository } from "@/types/spent-time.types.ts"
 import { AppError } from "@/utils/error.util.ts"
+import {
+  pickPartTimePayrollContext,
+  resolvePartTimePayrollVariables,
+} from "@/utils/payroll/resolve-part-time-payroll-variables.util.ts"
 
-import { Application, ApplicationType, ComponentType, Payroll, PayrollStatus, Prisma, PrismaClient } from "@prisma/client"
+import { Application, ApplicationType, ComponentType, Payroll, PayrollStatus, Payslip, Prisma, PrismaClient } from "@prisma/client"
 import * as math from "mathjs"
 
 // Need an interface for SettingsRepository
@@ -84,10 +89,9 @@ export class PayrollService implements IPayrollService {
     const globalVariables = await this.prisma.salaryVariable.findMany({
       where: { isActive: true },
     })
-    const variablesContext: Record<string, number> = {}
-    globalVariables.forEach((v: any) => {
-      variablesContext[v.code] = Number(v.value)
-    })
+    const variablesContext: Record<string, number> = Object.fromEntries(
+      globalVariables.map((variable) => [variable.code, Number(variable.value)]),
+    )
     let totalAmount = new Prisma.Decimal(0)
 
     // Fetch all approved applications for the period ONCE (N+1 fix)
@@ -103,14 +107,13 @@ export class PayrollService implements IPayrollService {
     });
 
     // Group by employeeId in memory
-    const appsByEmployeeId: Record<string, Prisma.ApplicationGetPayload<{ include: { leaveDetail: true, lateEarlyDetail: true } }>[] | undefined> = {};
-    allApprovedApps.forEach(app => {
-      if (!appsByEmployeeId[app.employeeId]) appsByEmployeeId[app.employeeId] = [];
-      const employeeApps = appsByEmployeeId[app.employeeId];
-      if (employeeApps) {
-        employeeApps.push(app);
-      }
-    });
+    type ApprovedApplication = (typeof allApprovedApps)[number]
+    const appsByEmployeeId = new Map<string, ApprovedApplication[]>()
+    allApprovedApps.forEach((app) => {
+      const existing = appsByEmployeeId.get(app.employeeId) ?? []
+      existing.push(app)
+      appsByEmployeeId.set(app.employeeId, existing)
+    })
 
     for (const employee of employees) {
       const config = await this.salaryConfigRepo.findActiveByEmployee(employee.id, periodStart)
@@ -120,13 +123,14 @@ export class PayrollService implements IPayrollService {
       }
 
       // PT payroll branch: skip attendance workingDays — salary from approved SpentTime only.
-      if (employee.employeeType === EMPLOYEE_TYPE.PART_TIME) {
+      if (isPartTimeWorkSchedule(employee)) {
         const ptResult = await this.buildPartTimePayslip(
           payroll.id,
           employee.id,
           config.id,
           periodStart,
           periodEnd,
+          variablesContext,
         )
         if (ptResult) {
           totalAmount = totalAmount.add(ptResult.netSalary)
@@ -165,7 +169,7 @@ export class PayrollService implements IPayrollService {
       })
 
       // Use pre-fetched applications to prevent N+1
-      const approvedApps = appsByEmployeeId[employee.id] || [];
+      const approvedApps = appsByEmployeeId.get(employee.id) ?? []
 
       let paidLeaveDays = 0
       let excusedLateMinutes = 0
@@ -201,9 +205,10 @@ export class PayrollService implements IPayrollService {
       attendance.earlyLeaveMinutes = Math.max(0, attendance.earlyLeaveMinutes - excusedEarlyMinutes)
 
       // Build context
-      const context: IFormulaContext | any = {
+      const context: Record<string, unknown> = {
         baseSalary: Number(config.baseSalary),
-        workingDays: 22, // Should ideally be standard working days for the month. Currently hardcoded to 22 or fetched from config
+        // Formula denominator is fixed 22; actualWorkingDays carries attendance-based pro-rating.
+        workingDays: 22,
         actualWorkingDays: attendance.workingDays,
         absentDays: attendance.absentDays,
         overtimeMinutes: attendance.overtimeMinutes,
@@ -276,7 +281,9 @@ export class PayrollService implements IPayrollService {
     salaryConfigId: string,
     periodStart: Date,
     periodEnd: Date,
+    variablesContext: Record<string, number>,
   ): Promise<{ netSalary: Prisma.Decimal } | null> {
+    const ptVariables = resolvePartTimePayrollVariables(pickPartTimePayrollContext(variablesContext))
     const rows = await this.spentTimeRepo.listApprovedForPayroll(employeeId, periodStart, periodEnd)
     if (rows.length === 0) {
       console.warn(`[PayrollService] No approved spent time for PT employee ${employeeId}`)
@@ -288,19 +295,34 @@ export class PayrollService implements IPayrollService {
     const details: { componentId: string; name: string; type: ComponentType; value: number }[] = []
 
     for (const row of rows) {
+      // Overtime vs regular Spent Time lines use different SalaryVariable multipliers.
       const multiplier =
-        SPENT_TIME_OT_MULTIPLIERS[row.workTimeType] ??
-        SPENT_TIME_OT_MULTIPLIERS[SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY]
-      // gross = hours × project member rate × OT factor (see SPENT_TIME_RULES).
-      const linePay = row.hours * row.hourlyRate * multiplier
+        row.workTimeType === SPENT_TIME_WORK_TIME_TYPE.OVERTIME
+          ? ptVariables.overtimeMultiplier
+          : ptVariables.workingDayMultiplier
+      const hourlyRate = row.hourlyRate ?? ptVariables.defaultHourlyRate
+      if (!hourlyRate || hourlyRate <= 0) {
+        console.warn(
+          `[PayrollService] Skip PT line ${row.id}: missing hourlyRate and no partTimeDefaultHourlyRate`,
+        )
+        continue
+      }
+      // gross = hours × rate (project or default variable) × multiplier from SalaryVariable
+      const linePay = row.hours * hourlyRate * multiplier
       totalHours += row.hours
       grossPay += linePay
       details.push({
+        // PT has no salary-component mapping — each approved Spent Time row becomes one payslip line.
         componentId: row.id,
         name: `Dự án ${row.projectId}`,
         type: SALARY_COMPONENT_TYPES[0] as ComponentType,
         value: Number(linePay.toFixed(2)),
       })
+    }
+
+    if (totalHours === 0) {
+      console.warn(`[PayrollService] No billable PT hours for employee ${employeeId}`)
+      return null
     }
 
     const netSalary = new Prisma.Decimal(Number(grossPay.toFixed(2)))
@@ -312,6 +334,7 @@ export class PayrollService implements IPayrollService {
       totalAdditions: Number(grossPay.toFixed(2)),
       totalDeductions: 0,
       netSalary: Number(grossPay.toFixed(2)),
+      // PT pay is hour-based from Spent Time — attendance working-day fields stay zero.
       workingDays: 0,
       absentDays: 0,
       overtimeMinutes: Math.round(
@@ -353,7 +376,7 @@ export class PayrollService implements IPayrollService {
    * @returns Returns the result of type Promise<any>
    * @throws AppError if a business logic error occurs or data is not found
    */
-  async getPayrollById(id: string): Promise<any> {
+  async getPayrollById(id: string): Promise<PayrollWithPayslips> {
     const payroll = await this.payrollRepo.findById(id)
     if (!payroll)
       throw new AppError(
@@ -437,14 +460,20 @@ export class PayrollService implements IPayrollService {
    * @param employeeId - The employeeId parameter
    * @returns Returns the result of type Promise<any[]>
    */
-  async getMyPayslips(employeeId: string): Promise<any[]> {
-    const rawPayslips = await this.payslipRepo.findByEmployee(employeeId)
-    // Map included payroll info to the top level for the frontend
-    return rawPayslips.map((p: any) => ({
-      ...p,
-      periodMonth: p.payroll?.periodMonth,
-      periodYear: p.payroll?.periodYear,
-      status: p.payroll?.status,
+  async getMyPayslips(employeeId: string): Promise<IMyPayslipSummary[]> {
+    type PayslipWithPayrollRelation = Payslip & {
+      payroll?: Pick<Payroll, "periodMonth" | "periodYear" | "status"> | null
+    }
+
+    const rawPayslips = (await this.payslipRepo.findByEmployee(
+      employeeId,
+    )) as PayslipWithPayrollRelation[]
+
+    return rawPayslips.map((payslip) => ({
+      ...payslip,
+      periodMonth: payslip.payroll?.periodMonth,
+      periodYear: payslip.payroll?.periodYear,
+      status: payslip.payroll?.status,
     }))
   }
 }

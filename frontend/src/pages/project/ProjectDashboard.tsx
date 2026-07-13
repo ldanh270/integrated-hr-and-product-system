@@ -34,10 +34,13 @@ import { usePermission } from "@/hooks/use-permission"
 import type { Task } from "@/types/task.types"
 
 // Main component to render the employee project portal ("My Page")
+/**
+ * ProjectDashboard Component.
+ */
 export default function ProjectDashboard() {
   // Retrieve current user session information
   const { user } = useAuthStore()
-  const { roles } = usePermission()
+  const { hasAnyPermission } = usePermission()
   // Initialize navigation
   const navigate = useNavigate()
   // Initialize react-query client to manage caching
@@ -472,7 +475,7 @@ export default function ProjectDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {projects.map((proj) => {
               const isLeader = proj.teamLeaderId === user?.id
-              const isAdminOrGM = ["admin", "general_manager"].some((role) => roles.includes(role))
+              const isAdminOrGM = hasAnyPermission(["project.update", "project.task.approve"])
               const canCreateInProj = isAdminOrGM || isLeader || proj.taskCreationPolicy === "all_members"
 
               // Map member role to badges
@@ -490,7 +493,10 @@ export default function ProjectDashboard() {
                 <PageCard
                   key={proj.id}
                   className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 border border-border/85 flex flex-col justify-between p-5 min-h-[140px] space-y-4 hover:border-primary/50 cursor-pointer group"
-                  onClick={() => { navigate("/project/list"); }}
+                  onClick={() => {
+                    sessionStorage.setItem("activeProjectId", proj.id)
+                    navigate(`/project/${proj.id}/overview`)
+                  }}
                 >
                   <div className="space-y-2">
                     <div className="flex items-start justify-between gap-3">
@@ -516,7 +522,7 @@ export default function ProjectDashboard() {
                       {/* Show create task shortcut link if current user matches creation policies */}
                       {canCreateInProj && (
                         <Link
-                          to="/project/task/new"
+                          to={`/project/${proj.id}/task/new`}
                           onClick={(e) => { e.stopPropagation(); sessionStorage.setItem("activeProjectId", proj.id); }}
                           className="rounded-full bg-primary/10 hover:bg-primary/20 text-primary px-2.5 py-1 font-bold text-[10px] flex items-center gap-1 transition-all duration-200 cursor-pointer"
                         >
@@ -829,7 +835,7 @@ export default function ProjectDashboard() {
 
           {/* Shortcut link to add subtask associated with active task */}
           <Link
-            to="/project/task/new"
+            to={`/project/${activeTask.projectId}/task/new`}
             onClick={() => { sessionStorage.setItem("activeProjectId", activeTask.projectId); sessionStorage.setItem("parentTaskId", activeTask.id); setContextMenu({ isOpen: false, x: 0, y: 0, task: null }); }}
             className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground hover:no-underline"
           >

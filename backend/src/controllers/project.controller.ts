@@ -88,7 +88,7 @@ export class ProjectController {
       }
 
       const data = createProjectSchema.parse(req.body)
-      const project = await this.service.createProject(data, req.user.empId)
+      const project = await this.service.createProject(data as any, req.user.empId)
       res.status(HttpStatusCode.CREATED).json({ data: project, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -122,7 +122,7 @@ export class ProjectController {
       const data = updateProjectSchema.parse(req.body)
       const project = await this.service.updateProject(
         String(req.params.id),
-        data,
+        data as any,
         req.user.empId,
       )
       if (!project) {
@@ -177,12 +177,12 @@ export class ProjectController {
         })
       }
 
-      const { employeeId, hourlyRate, workMode } = addProjectMemberSchema.parse(req.body)
+      const { employeeId, hourlyRate, workMode, roleId } = addProjectMemberSchema.parse(req.body)
       await this.service.addMember(
         String(req.params.id),
         employeeId,
         req.user.empId,
-        { hourlyRate, workMode },
+        { hourlyRate, workMode, roleId },
       )
       res.status(HttpStatusCode.OK).json({ data: null, error: null })
     } catch (error) {

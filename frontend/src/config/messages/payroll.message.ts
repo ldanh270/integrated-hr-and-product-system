@@ -40,11 +40,17 @@ export const PAYROLL_MESSAGES = {
 } as const
 
 export const SALARY_VARIABLE_DESCRIPTIONS = {
-  BASE_SALARY: "Mức lương cơ bản của nhân viên",
+  BASE_SALARY: "Mức lương cơ bản của nhân viên (full-time)",
   STANDARD_DAYS: "Số ngày công chuẩn trong kỳ lương",
   WORKING_DAYS: "Số ngày công thực tế đi làm",
   OVERTIME_MINUTES: "Tổng số phút làm thêm giờ",
   HOLIDAY_DAYS: "Tổng số ngày nghỉ được hưởng lương",
   ABSENT_DAYS: "Tổng số ngày nghỉ không lương",
+  // Part-time payroll formula variables (Spent Time × hourly rate × multipliers).
+  PT_SPENT_TIME_HOURS: "Tổng giờ Spent Time đã duyệt trong kỳ (part-time)",
+  PT_HOURLY_RATE: "Đơn giá/giờ trên từng dự án (ProjectMember.hourlyRate)",
+  PT_OVERTIME_MULTIPLIER: "Hệ số nhân cho giờ overtime — biến partTimeOvertimeMultiplier",
+  PT_WORKING_DAY_MULTIPLIER: "Hệ số nhân cho giờ thường — biến partTimeWorkingDayMultiplier",
+  PT_DEFAULT_HOURLY_RATE: "Đơn giá/giờ fallback — biến partTimeDefaultHourlyRate (0 = tắt)",
   DELETE_TITLE: "Xóa biến số",
 } as const

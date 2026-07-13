@@ -8,7 +8,10 @@ export const ROUTES = {
     BASE: "/hrm",
     PROFILE: "/hrm/profile",
     EMPLOYEES: "/hrm/employees",
-    LOGIN_HISTORY: "/profile/login-history",
+    MY_ACTIVITY_LOGS: "/hrm/my-activity-logs",
+    LOGIN_HISTORY: "/hrm/login-history",
+    DASHBOARD: "/hrm/dashboard",
+    ACTIVITY_LOGS: "/hrm/activity-logs",
   },
   APPLICATION: {
     BASE: "/application",
@@ -21,6 +24,8 @@ export const ROUTES = {
     SUMMARY: "/attendance/summary",
     MY_SCHEDULE: "/attendance/my-schedule",
     WORK_SCHEDULES: "/attendance/work-schedules",
+    /** Admin shift assignment from PT employee availability submissions. */
+    PART_TIME_AVAILABILITY: "/attendance/part-time-availability",
     REAL_SHIFT: "/attendance/real-shift",
     APPLICATIONS: "/attendance/applications",
     SHIFTS: "/attendance/shifts",
@@ -46,12 +51,6 @@ export const ROUTES = {
     BASE: "/recruitment",
     DASHBOARD: "/recruitment/dashboard",
   },
-  SECURITY: {
-    BASE: "/security",
-    DASHBOARD: "/security/dashboard",
-    USERS: "/security/users",
-    ACTIVITY_LOGS: "/security/activity-logs",
-  },
   SETTINGS: {
     BASE: "/settings",
     DASHBOARD: "/settings/dashboard",
@@ -62,6 +61,7 @@ export const ROUTES = {
   PROJECT: {
     BASE: "/project",
     LIST: "/project/list",
+    POSITIONS: "/project/positions",
     DASHBOARD: "/project/dashboard",
     OVERVIEW: "/project/overview",
     ISSUES: "/project/issues",
@@ -74,6 +74,8 @@ export const ROUTES = {
   PERSONAL: {
     BASE: "/personal",
     SCHEDULE: "/personal/schedule",
+    /** Part-time employees submit weekly free-time windows here. */
+    AVAILABILITY: "/personal/availability",
     PAYSLIPS: "/personal/payslips",
     PROJECTS: "/personal/projects",
   },

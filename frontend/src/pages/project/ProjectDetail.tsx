@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-import { ROLE } from "@/config/entities/employee.config"
 import { usePermission } from "@/hooks/use-permission"
 import { TASK_TRACKERS, SPENT_TIME_STATUS } from "@/config/entities/project.config"
 import { projectApi } from "@/lib/api/project.api"
@@ -17,6 +16,7 @@ import { taskApi } from "@/lib/api/task.api"
 import { useAuthStore } from "@/store/auth-store"
 
 import { extractErrorMessage } from "@/utils/error-helper"
+import { useConfirm } from "@/components/common"
 
 // Sub-components imports
 import { ProjectHeader } from "./components/project-header"
@@ -29,6 +29,7 @@ import { ProjectKanbanTab } from "./components/project-kanban-tab"
 import { ProjectActivityTab } from "./components/project-activity-tab"
 import { ProjectGanttTab } from "./components/project-gantt-tab"
 import { ProjectSpentTimeTab } from "./components/project-spent-time-tab"
+import { ProjectPositionRules } from "./components/project-position-rules"
 import type { ProjectMember } from "@/types/project.types"
 
 interface ActivityItem {
@@ -48,24 +49,34 @@ const PROJECT_TABS = {
   ACTIVITY: "activity",
   SPENT_TIME: "spent-time",
   GANTT: "gantt",
+  RULES: "rules",
 } as const
 
 type ProjectTab = typeof PROJECT_TABS[keyof typeof PROJECT_TABS]
 
+/**
+ * ProjectDetail Component.
+ */
 export default function ProjectDetail() {
-  const { tab } = useParams<{ tab?: string }>()
+  const { id, tab } = useParams<{ id: string; tab?: string }>()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const openCreateParam = searchParams.get("createTask") === "true"
   const { user } = useAuthStore()
-  const { roles } = usePermission()
+  const { hasAnyPermission } = usePermission()
+  const confirm = useConfirm()
 
-  // Route format: /project/:tab  (e.g., /project/overview)
-  // Project ID is always stored in sessionStorage (set when clicking a project from the list)
+  const projectId = id || sessionStorage.getItem("activeProjectId") || ""
+
+  // Store in sessionStorage to sync with other components
+  useEffect(() => {
+    if (projectId) {
+      sessionStorage.setItem("activeProjectId", projectId)
+    }
+  }, [projectId])
+
   const isTabValid = tab ? (Object.values(PROJECT_TABS) as readonly string[]).includes(tab) : false
-
-  const projectId = sessionStorage.getItem("activeProjectId") || ""
   const activeTab: ProjectTab =
     isTabValid ? (tab as ProjectTab) : PROJECT_TABS.OVERVIEW
 
@@ -81,7 +92,7 @@ export default function ProjectDetail() {
       navigate("/project/list", { replace: true })
       return
     }
-    const correctPath = `/project/${activeTab}`
+    const correctPath = `/project/${projectId}/${activeTab}`
     const currentPath = window.location.pathname
     if (currentPath !== correctPath) {
       navigate(`${correctPath}${searchStr}`, { replace: true })
@@ -129,9 +140,9 @@ export default function ProjectDetail() {
 
   // Check roles/permissions
   const isLeader = project?.teamLeaderId === user?.id
-  const isAdminOrGM =
-    !!user && [ROLE.ADMIN, ROLE.GENERAL_MANAGER].some((role) => roles.includes(role))
+  const isAdminOrGM = hasAnyPermission(["project.update", "project.task.approve"])
   const isProjectMember = projectMembers.some((m) => m.employeeId === user?.id) || isLeader
+  const canManageRules = isAdminOrGM || isLeader
 
   // Enforce task creation policy based on user roles and project configuration settings
   const canCreateTask =
@@ -253,6 +264,7 @@ export default function ProjectDetail() {
     <div className="container p-8 space-y-6">
       {/* Top Header Section */}
       <ProjectHeader
+        projectId={projectId}
         name={project.name}
         description={project.description}
         canCreateTask={canCreateTask}
@@ -266,7 +278,7 @@ export default function ProjectDetail() {
       />
 
       {/* Tabs navigation panel: switches between Overview, Issues, and Activity views */}
-      <Tabs value={activeTab} onValueChange={(newTab) => { navigate(`/project/${newTab}`); }} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={(newTab) => { navigate(`/project/${projectId}/${newTab}`); }} className="space-y-6">
         <TabsList className="bg-secondary rounded-full p-1 border border-border/40 inline-flex">
           <TabsTrigger
             value={PROJECT_TABS.OVERVIEW}
@@ -304,6 +316,14 @@ export default function ProjectDetail() {
           >
             Biểu đồ Gantt
           </TabsTrigger>
+          {canManageRules && (
+            <TabsTrigger
+              value={PROJECT_TABS.RULES}
+              className="rounded-full px-5 py-2 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            >
+              Cấu hình quyền (Rules)
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* OVERVIEW TAB */}
@@ -318,8 +338,19 @@ export default function ProjectDetail() {
             totalSpentHours={totalSpentHours}
             members={projectMembers}
             canManageMembers={canManageMembers}
-            onRemoveMember={(employeeId) => {
-              removeMemberMutation.mutate(employeeId)
+            onRemoveMember={async (employeeId) => {
+              // Retrieve employee full name for descriptive warning message
+              const memberName = projectMembers.find((m) => m.employeeId === employeeId)?.employee?.fullName || "thành viên này"
+              
+              // Prompt user with unified custom confirm modal before calling delete mutation
+              const ok = await confirm({
+                title: "Xóa thành viên khỏi dự án",
+                description: `Bạn có chắc chắn muốn xóa thành viên ${memberName} ra khỏi dự án này?`,
+                variant: "destructive",
+              })
+              if (ok) {
+                removeMemberMutation.mutate(employeeId)
+              }
             }}
             onEditMember={(member) => {
               setEditingMember(member)
@@ -334,7 +365,6 @@ export default function ProjectDetail() {
             projectId={projectId}
             spentTimes={spentTimes}
             isLoading={isLoadingSpent}
-            userRole={user?.role}
             isLeader={isLeader}
           />
         </TabsContent>
@@ -374,6 +404,13 @@ export default function ProjectDetail() {
             project={project}
           />
         </TabsContent>
+
+        {/* RULES TAB */}
+        {canManageRules && (
+          <TabsContent value={PROJECT_TABS.RULES}>
+            <ProjectPositionRules projectId={projectId} />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* MEMBER MODAL: Dialog overlay to add a member to the active project team */}

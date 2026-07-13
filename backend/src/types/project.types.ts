@@ -1,5 +1,5 @@
 import { PROJECT_STATUS, TASK_CREATION_POLICY } from "@/configs/entities/project.config.ts"
-import { Task } from "./task.types.ts"
+import { Task, TaskTracker } from "./task.types.ts"
 
 /**
  * Type representing the status of a Project (e.g., active, completed, suspended)
@@ -29,6 +29,7 @@ export interface Project {
   createdById: string
   createdAt: Date
   updatedAt: Date
+  allowedTaskTrackers: TaskTracker[]
   /**
    * The team leader assigned to this project
    */
@@ -59,6 +60,7 @@ export interface CreateProjectDto {
   startDate?: Date | string | null
   expectedEndDate?: Date | string | null
   teamLeaderId?: string | null
+  allowedTaskTrackers?: TaskTracker[]
 }
 
 /**
@@ -74,6 +76,7 @@ export interface UpdateProjectDto {
   expectedEndDate?: Date | string | null
   actualEndDate?: Date | string | null
   teamLeaderId?: string | null
+  allowedTaskTrackers?: TaskTracker[]
 }
 
 /**
@@ -119,14 +122,14 @@ export interface IProjectRepository {
   addMember(
     projectId: string,
     employeeId: string,
-    options?: { hourlyRate?: number | null; workMode?: string },
+    options?: { hourlyRate?: number | null; workMode?: string; roleId?: string | null },
   ): Promise<boolean>
   removeMember(projectId: string, employeeId: string): Promise<boolean>
   isMember(projectId: string, employeeId: string): Promise<boolean>
   getMember(
     projectId: string,
     employeeId: string,
-  ): Promise<{ hourlyRate: number | null; workMode: string } | null>
+  ): Promise<{ hourlyRate: number | null; workMode: string; roleId: string | null } | null>
   getMembers(projectId: string): Promise<any[]>
   getGanttData(projectId: string): Promise<GanttDataDto>
   /** Onsite PT only — AttendanceService uses this to allow GPS check-in. */
@@ -134,7 +137,7 @@ export interface IProjectRepository {
   updateMember(
     projectId: string,
     employeeId: string,
-    data: { hourlyRate?: number | null; workMode?: string },
+    data: { hourlyRate?: number | null; workMode?: string; roleId?: string | null },
   ): Promise<boolean>
 }
 
@@ -179,7 +182,7 @@ export interface IProjectService {
     projectId: string,
     employeeId: string,
     userId: string,
-    options?: { hourlyRate?: number | null; workMode?: string },
+    options?: { hourlyRate?: number | null; workMode?: string; roleId?: string | null },
   ): Promise<boolean>
   removeMember(
     projectId: string,
@@ -192,6 +195,6 @@ export interface IProjectService {
     projectId: string,
     employeeId: string,
     userId: string,
-    data: { hourlyRate?: number | null; workMode?: string },
+    data: { hourlyRate?: number | null; workMode?: string; roleId?: string | null },
   ): Promise<boolean>
 }
