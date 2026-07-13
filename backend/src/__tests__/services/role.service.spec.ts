@@ -3,6 +3,7 @@ import { RoleService } from '../../services/role.service';
 import { prisma } from '@/libs/database';
 import { authorizationService } from '../../services/authorization.service';
 import { auditService } from '../../services/audit.service';
+import { IRoleRepository, RoleListQuery } from '../../types';
 
 // Mock all external modules
 jest.mock('@/libs/database.ts', () => ({
@@ -75,11 +76,11 @@ describe('RoleService', () => {
 
   const mockFindFirst = prisma.permission.findFirst as jest.Mock;
   const mockFindMany = prisma.permission.findMany as jest.Mock;
-  const mockInvalidateRoleCache = authorizationService.invalidateRoleCache as jest.Mock;
-  const mockGetAuthorizationContext = authorizationService.getAuthorizationContext as jest.Mock;
-  const mockAuditLog = auditService.log as jest.Mock;
+  const mockInvalidateRoleCache = jest.mocked(authorizationService.invalidateRoleCache);
+  const mockGetAuthorizationContext = jest.mocked(authorizationService.getAuthorizationContext);
+  const mockAuditLog = jest.mocked(auditService.log);
 
-  const roleService = new RoleService(mockRepository as any);
+  const roleService = new RoleService(mockRepository as unknown as IRoleRepository);
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -115,7 +116,7 @@ describe('RoleService', () => {
       mockRepository.listRolesPaginated.mockRejectedValue(new Error('Invalid arguments'));
 
       // Act & Assert
-      await expect(roleService.listRoles(query as any)).rejects.toThrow('Invalid arguments');
+      await expect(roleService.listRoles(query as unknown as RoleListQuery)).rejects.toThrow('Invalid arguments');
     });
   });
 
@@ -421,7 +422,7 @@ describe('RoleService', () => {
       const actorId = 'non-admin-actor';
       mockRepository.findById.mockResolvedValue({ id: roleId, name: 'User' });
       mockFindFirst.mockResolvedValue({ id: permissionId, code: 'PROTECTED_PERM', deletedAt: null, isActive: true });
-      mockGetAuthorizationContext.mockResolvedValue({ isDynamicAdmin: false });
+      mockGetAuthorizationContext.mockResolvedValue({ isDynamicAdmin: false, roles: new Set(), permissions: new Set() });
 
       // Act & Assert
       await expect(roleService.assignPermission(roleId, permissionId, actorId)).rejects.toThrow('Only administrators can assign protected permissions.');
@@ -457,7 +458,7 @@ describe('RoleService', () => {
       const permissionId = 'protected-perm-id';
       const actorId = 'non-admin-actor';
       mockFindFirst.mockResolvedValue({ id: permissionId, code: 'PROTECTED_PERM', deletedAt: null });
-      mockGetAuthorizationContext.mockResolvedValue({ isDynamicAdmin: false });
+      mockGetAuthorizationContext.mockResolvedValue({ isDynamicAdmin: false, roles: new Set(), permissions: new Set() });
 
       // Act & Assert
       await expect(roleService.revokePermission(roleId, permissionId, actorId)).rejects.toThrow('Only administrators can revoke protected permissions.');
@@ -539,7 +540,7 @@ describe('RoleService', () => {
       mockRepository.findById.mockResolvedValue({ id: roleId, name: 'User' });
       mockRepository.findPermissionsByRoleId.mockResolvedValue([]);
       mockFindMany.mockResolvedValue([{ id: 'protected-perm-id', code: 'PROTECTED_PERM' }]);
-      mockGetAuthorizationContext.mockResolvedValue({ isDynamicAdmin: false });
+      mockGetAuthorizationContext.mockResolvedValue({ isDynamicAdmin: false, roles: new Set(), permissions: new Set() });
 
       // Act & Assert
       await expect(roleService.updatePermissions(roleId, permissionIds, actorId)).rejects.toThrow('Only administrators can assign protected permissions.');

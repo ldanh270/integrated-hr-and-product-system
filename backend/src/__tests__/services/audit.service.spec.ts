@@ -1,6 +1,7 @@
 /// <reference types="jest" />
 import { AuditService, auditService } from '../../services/audit.service';
 import { AppError } from '@/utils/error.util.ts';
+import { IAuditRepository, CreateAuditLogDto, AuditLogQuery } from '../../types';
 
 jest.mock("@/configs/system/http.config.ts", () => ({
   HttpStatusCode: {
@@ -62,7 +63,7 @@ describe('AuditService', () => {
       listLogsByEmployeeId: jest.fn(),
       listLogsByRoleId: jest.fn()
     };
-    service = new AuditService(mockRepository as any);
+    service = new AuditService(mockRepository as unknown as IAuditRepository);
     jest.restoreAllMocks();
   });
 
@@ -71,7 +72,7 @@ describe('AuditService', () => {
     let consoleErrorSpy: jest.SpyInstance;
 
     beforeEach(() => {
-      setImmediateSpy = jest.spyOn(global, 'setImmediate').mockImplementation((cb: (...args: any[]) => void): NodeJS.Immediate => {
+      setImmediateSpy = jest.spyOn(global, 'setImmediate').mockImplementation((cb: (...args: unknown[]) => void): NodeJS.Immediate => {
         cb();
         return {} as NodeJS.Immediate;
       });
@@ -93,7 +94,7 @@ describe('AuditService', () => {
       mockRepository.createLog.mockResolvedValue(undefined);
 
       // Act
-      await service.log(event as any);
+      await service.log(event as CreateAuditLogDto);
 
       // Assert
       expect(setImmediateSpy).toHaveBeenCalled();
@@ -206,7 +207,7 @@ describe('AuditService', () => {
       mockRepository.listLogsPaginated.mockResolvedValue(expectedResult);
 
       // Act
-      const result = await service.listLogs(query as any);
+      const result = await service.listLogs(query as AuditLogQuery);
 
       // Assert
       expect(mockRepository.listLogsPaginated).toHaveBeenCalledWith(query);
@@ -220,7 +221,7 @@ describe('AuditService', () => {
       mockRepository.listLogsPaginated.mockRejectedValue(dbError);
 
       // Act & Assert
-      await expect(service.listLogs(query as any)).rejects.toThrow('Invalid limit parameter');
+      await expect(service.listLogs(query as AuditLogQuery)).rejects.toThrow('Invalid limit parameter');
       expect(mockRepository.listLogsPaginated).toHaveBeenCalledWith(query);
     });
 
@@ -231,7 +232,7 @@ describe('AuditService', () => {
       mockRepository.listLogsPaginated.mockRejectedValue(dbError);
 
       // Act & Assert
-      await expect(service.listLogs(query as any)).rejects.toThrow('Database connection failed');
+      await expect(service.listLogs(query as AuditLogQuery)).rejects.toThrow('Database connection failed');
       expect(mockRepository.listLogsPaginated).toHaveBeenCalledWith(query);
     });
   });
@@ -252,7 +253,7 @@ describe('AuditService', () => {
       mockRepository.listLogsByEmployeeId.mockResolvedValue(expectedResult);
 
       // Act
-      const result = await service.listLogsByEmployee(employeeId, query as any);
+      const result = await service.listLogsByEmployee(employeeId, query as AuditLogQuery);
 
       // Assert
       expect(mockRepository.listLogsByEmployeeId).toHaveBeenCalledWith(employeeId, query);
@@ -267,7 +268,7 @@ describe('AuditService', () => {
       mockRepository.listLogsByEmployeeId.mockRejectedValue(dbError);
 
       // Act & Assert
-      await expect(service.listLogsByEmployee(employeeId, query as any)).rejects.toThrow('Invalid employee ID');
+      await expect(service.listLogsByEmployee(employeeId, query as AuditLogQuery)).rejects.toThrow('Invalid employee ID');
       expect(mockRepository.listLogsByEmployeeId).toHaveBeenCalledWith(employeeId, query);
     });
 
@@ -279,7 +280,7 @@ describe('AuditService', () => {
       mockRepository.listLogsByEmployeeId.mockRejectedValue(dbError);
 
       // Act & Assert
-      await expect(service.listLogsByEmployee(employeeId, query as any)).rejects.toThrow('Database offline');
+      await expect(service.listLogsByEmployee(employeeId, query as AuditLogQuery)).rejects.toThrow('Database offline');
       expect(mockRepository.listLogsByEmployeeId).toHaveBeenCalledWith(employeeId, query);
     });
   });
@@ -300,7 +301,7 @@ describe('AuditService', () => {
       mockRepository.listLogsByRoleId.mockResolvedValue(expectedResult);
 
       // Act
-      const result = await service.listLogsByRole(roleId, query as any);
+      const result = await service.listLogsByRole(roleId, query as AuditLogQuery);
 
       // Assert
       expect(mockRepository.listLogsByRoleId).toHaveBeenCalledWith(roleId, query);
@@ -315,7 +316,7 @@ describe('AuditService', () => {
       mockRepository.listLogsByRoleId.mockRejectedValue(dbError);
 
       // Act & Assert
-      await expect(service.listLogsByRole(roleId, query as any)).rejects.toThrow('Invalid role ID');
+      await expect(service.listLogsByRole(roleId, query as AuditLogQuery)).rejects.toThrow('Invalid role ID');
       expect(mockRepository.listLogsByRoleId).toHaveBeenCalledWith(roleId, query);
     });
 
@@ -327,7 +328,7 @@ describe('AuditService', () => {
       mockRepository.listLogsByRoleId.mockRejectedValue(dbError);
 
       // Act & Assert
-      await expect(service.listLogsByRole(roleId, query as any)).rejects.toThrow('Database query timed out');
+      await expect(service.listLogsByRole(roleId, query as AuditLogQuery)).rejects.toThrow('Database query timed out');
       expect(mockRepository.listLogsByRoleId).toHaveBeenCalledWith(roleId, query);
     });
   });

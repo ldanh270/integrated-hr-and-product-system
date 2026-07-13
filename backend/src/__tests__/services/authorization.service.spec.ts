@@ -54,7 +54,7 @@ describe('AuthorizationService', () => {
       service.incrementMetric(metricKey);
 
       // Assert
-      expect(service.getMetrics()[metricKey]).toBe(1);
+      expect(service.getMetrics().authorization_cache_hits_total).toBe(1);
     });
 
     it('UTCID02 - should not increment when the metric key is unknown', () => {
@@ -122,7 +122,7 @@ describe('AuthorizationService', () => {
   });
 
   describe('logDecision', () => {
-    let consoleSpy: jest.SpyInstance<void, [any?, ...any[]]>;
+    let consoleSpy: jest.SpyInstance;
 
     beforeEach(() => {
       consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
@@ -253,7 +253,7 @@ describe('AuthorizationService', () => {
       expect(context.isDynamicAdmin).toBe(false);
       expect(context.roles).toEqual(new Set(['Viewer']));
       expect(context.permissions).toEqual(new Set(['post:view']));
-      expect(cacheService.get).not.toHaveBeenCalled();
+      expect(jest.mocked(cacheService.get)).not.toHaveBeenCalled();
       expect(service.getMetrics().authorization_cache_misses_total).toBe(1);
     });
 
@@ -320,7 +320,7 @@ describe('AuthorizationService', () => {
       expect(context.isDynamicAdmin).toBe(true);
       expect(context.roles).toEqual(new Set(['SuperAdmin']));
       expect(context.permissions).toEqual(new Set(['system:reboot', 'users:delete']));
-      expect(cacheService.set).toHaveBeenCalledWith(
+      expect(jest.mocked(cacheService.set)).toHaveBeenCalledWith(
         'permissions:v2:3:admin-123',
         {
           isDynamicAdmin: true,

@@ -227,7 +227,7 @@ describe('PermissionService', () => {
         description: dto.description,
         createdBy: dto.actorId,
       });
-      expect(auditService.log).toHaveBeenCalledWith({
+      expect(jest.mocked(auditService.log)).toHaveBeenCalledWith({
         actorId: dto.actorId,
         targetPermissionId: createdPermission.id,
         action: 'CREATED',
@@ -269,7 +269,7 @@ describe('PermissionService', () => {
         })
       );
       expect(mockRepository.createPermission).not.toHaveBeenCalled();
-      expect(auditService.log).not.toHaveBeenCalled();
+      expect(jest.mocked(auditService.log)).not.toHaveBeenCalled();
     });
 
     it('UTCID03 - should throw error when repository execution fails during creation', async () => {
@@ -336,8 +336,8 @@ describe('PermissionService', () => {
         isActive: dto.isActive,
         updatedBy: dto.actorId,
       });
-      expect(authorizationService.invalidatePermissionCache).toHaveBeenCalledWith(id);
-      expect(auditService.log).toHaveBeenCalledWith({
+      expect(jest.mocked(authorizationService.invalidatePermissionCache)).toHaveBeenCalledWith(id);
+      expect(jest.mocked(auditService.log)).toHaveBeenCalledWith({
         actorId: dto.actorId,
         targetPermissionId: id,
         action: 'UPDATED',

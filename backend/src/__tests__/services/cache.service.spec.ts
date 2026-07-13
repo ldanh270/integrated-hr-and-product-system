@@ -195,7 +195,7 @@ describe('InMemoryCacheService.subscribe', () => {
 
   beforeEach(() => {
     service = new InMemoryCacheService();
-    spyOn = jest.spyOn(EventEmitter.prototype, 'on').mockImplementation((_event: string | symbol, _listener: (...args: any[]) => void) => {
+    spyOn = jest.spyOn(EventEmitter.prototype, 'on').mockImplementation((_event: string | symbol, _listener: (...args: unknown[]) => void) => {
       return new EventEmitter();
     });
   });

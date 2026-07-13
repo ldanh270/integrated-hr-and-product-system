@@ -5,6 +5,7 @@ import { EmailUtil } from '@/utils/email.util.ts';
 import { HashUtil } from '@/utils/hash.util.ts';
 import { JwtUtil } from '@/utils/jwt.util.ts';
 import { authorizationService } from '../../services/authorization.service';
+import { IAuthRepository } from '../../types/auth.types';
 
 jest.mock('@/configs/auth/auth.config.ts', () => ({
   ACCOUNT_LOCK_TTL: 300000,
@@ -126,7 +127,7 @@ jest.mock('../../services/authorization.service', () => ({
 
 describe('AuthService', () => {
   let authService: AuthService;
-  let mockRepo: any;
+  let mockRepo: Record<string, jest.Mock>;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -153,7 +154,7 @@ describe('AuthService', () => {
       unlockEmployee: jest.fn(),
       invalidateAllPendingRequests: jest.fn(),
     };
-    authService = new AuthService(mockRepo);
+    authService = new AuthService(mockRepo as unknown as IAuthRepository);
   });
 
   describe('login', () => {
