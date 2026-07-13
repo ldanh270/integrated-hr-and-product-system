@@ -9,12 +9,19 @@ interface WeekPickerActionsProps {
   weekStartIso: string
   weekRangeLabel: string
   onWeekStartChange: (weekStart: Date) => void
+  /** Optional bounds for part-time availability week picker (earliest submitted week). */
+  minWeekStartIso?: string
+  defaultWeekStart?: Date
+  defaultWeekLabel?: string
 }
 
 export function WeekPickerActions({
   weekStartIso,
   weekRangeLabel,
   onWeekStartChange,
+  minWeekStartIso,
+  defaultWeekStart,
+  defaultWeekLabel = "Hôm nay",
 }: WeekPickerActionsProps) {
   const dateInputRef = useRef<HTMLInputElement>(null)
 
@@ -45,6 +52,7 @@ export function WeekPickerActions({
         ref={dateInputRef}
         type="date"
         value={weekStartIso}
+        min={minWeekStartIso}
         onChange={(event) => {
           if (!event.target.value) return
 
@@ -57,10 +65,10 @@ export function WeekPickerActions({
         size="sm"
         className="h-8 rounded-full px-4"
         onClick={() => {
-          onWeekStartChange(getWeekStart(new Date()))
+          onWeekStartChange(defaultWeekStart ?? getWeekStart(new Date()))
         }}
       >
-        Hôm nay
+        {defaultWeekLabel}
       </Button>
     </>
   )

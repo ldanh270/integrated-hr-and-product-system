@@ -4,12 +4,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   EMPLOYEE_STATUSES,
-  EMPLOYEE_STATUS_LABELS,
-  EMPLOYEE_TYPES,
-  EMPLOYEE_TYPE_LABELS,
-  ROLE_LABELS,
+  EMPLOYMENT_CATEGORY_TYPES,
+  getEmployeeStatusLabel,
+  getEmployeeTypeLabel,
+  getRoleLabel,
+  WORK_SCHEDULE_TYPE,
+  WORK_SCHEDULE_TYPE_LABELS,
+  WORK_SCHEDULE_TYPES,
 } from "@/config/entities/employee.config"
 import { useEmployeeCreateModal } from "@/hooks/employees/useEmployeeCreateModal"
+import { usePositions } from "@/hooks/use-position-query"
 
 import { X } from "lucide-react"
 
@@ -31,6 +35,7 @@ interface Props {
 export function EmployeeCreateModal({ isOpen, onClose }: Props) {
   // Extract react hook form fields, submission states, and error mappings
   const { register, handleSubmit, errors, isPending, handleClose, roles } = useEmployeeCreateModal(onClose)
+  const { data: positions = [] } = usePositions()
 
   return (
     <AppModal isOpen={isOpen} onClose={handleClose} widthClassName="sm:max-w-4xl">
@@ -126,7 +131,7 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                   >
                     {roles.map((r) => (
                       <option key={r.id} value={r.name}>
-                        {ROLE_LABELS[r.name] || r.name}
+                        {getRoleLabel(r.name)}
                       </option>
                     ))}
                   </select>
@@ -247,18 +252,25 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
               <div className="col-span-8 grid grid-cols-2 gap-5">
                 <div className="col-span-2 space-y-1.5">
                   <Label
-                    htmlFor="position"
+                    htmlFor="positionId"
                     className="text-[12px] text-muted-foreground font-medium"
                   >
                     Chức danh (Vị trí)
                   </Label>
-                  <Input
-                    id="position"
-                    {...register("position")}
-                    className={`bg-background h-10 ${errors.position ? "border-destructive" : ""}`}
-                  />
-                  {errors.position && (
-                    <p className="text-xs text-destructive">{errors.position.message}</p>
+                  <select
+                    id="positionId"
+                    {...register("positionId")}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    <option value="">-- Chọn chức danh --</option>
+                    {positions.map((pos: any) => (
+                      <option key={pos.id} value={pos.id}>
+                        {pos.name}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.positionId && (
+                    <p className="text-xs text-destructive">{errors.positionId.message}</p>
                   )}
                 </div>
 
@@ -273,7 +285,7 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                   >
                     {EMPLOYEE_STATUSES.map((statusKey) => (
                       <option key={statusKey} value={statusKey}>
-                        {EMPLOYEE_STATUS_LABELS[statusKey]}
+                        {getEmployeeStatusLabel(statusKey)}
                       </option>
                     ))}
                   </select>
@@ -284,16 +296,41 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                     htmlFor="employeeType"
                     className="text-[12px] text-muted-foreground font-medium"
                   >
-                    Loại hợp đồng
+                    Loại nhân sự
                   </Label>
                   <select
                     id="employeeType"
                     {...register("employeeType")}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
-                    {EMPLOYEE_TYPES.map((typeKey) => (
+                    {EMPLOYMENT_CATEGORY_TYPES.map((typeKey) => (
+                      // Contract category only; part-time schedule is workScheduleType below.
                       <option key={typeKey} value={typeKey}>
-                        {EMPLOYEE_TYPE_LABELS[typeKey]}
+                        {getEmployeeTypeLabel(typeKey)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Part-time schedule is separate from employment category (contract type). */}
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="workScheduleType"
+                    className="text-[12px] text-muted-foreground font-medium"
+                  >
+                    Hình thức làm việc
+                  </Label>
+                  <select
+                    id="workScheduleType"
+                    {...register("workScheduleType")}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    {WORK_SCHEDULE_TYPES.map((typeKey) => (
+                      // Drives PT vs FT product paths (availability vs weekly template, payroll branch).
+                      <option key={typeKey} value={typeKey}>
+                        {typeKey === WORK_SCHEDULE_TYPE.FULL_TIME
+                          ? WORK_SCHEDULE_TYPE_LABELS.full_time
+                          : WORK_SCHEDULE_TYPE_LABELS.part_time}
                       </option>
                     ))}
                   </select>

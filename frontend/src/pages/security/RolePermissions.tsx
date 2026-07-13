@@ -72,7 +72,7 @@ export default function RolePermissions() {
           <p className="text-xs text-muted-foreground mt-1.5 leading-normal">
             Hệ thống gặp sự cố khi tải thông tin vai trò. Vui lòng kiểm tra lại kết nối.
           </p>
-          <Button variant="outline" size="sm" className="mt-4 h-8 text-xs font-semibold" onClick={() => refetchRoles()}>
+          <Button variant="outline" size="sm" className="mt-4 h-8 text-xs font-semibold" onClick={() => { refetchRoles(); }}>
             Tải lại trang
           </Button>
         </div>
@@ -121,7 +121,7 @@ export default function RolePermissions() {
                     variant="ghost"
                     size="sm"
                     className="gap-1.5 h-8 px-2.5 text-xs text-primary hover:text-primary hover:bg-primary/5"
-                    onClick={() => handleOpenRoleDetail(role)}
+                    onClick={() => { handleOpenRoleDetail(role); }}
                   >
                     Cấu hình quyền
                     <ArrowRight size={13} />

@@ -320,7 +320,7 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
             </span>
             <div className="flex items-center gap-1 ml-2">
               <button
-                onClick={() => setPage(page - 1)}
+                onClick={() => { setPage(page - 1); }}
                 disabled={page <= 1}
                 className="w-8 h-8 flex items-center justify-center rounded hover:bg-muted text-muted-foreground disabled:opacity-50 transition-colors"
               >
@@ -330,7 +330,7 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
                 {page}
               </button>
               <button
-                onClick={() => setPage(page + 1)}
+                onClick={() => { setPage(page + 1); }}
                 disabled={page >= totalPages}
                 className="w-8 h-8 flex items-center justify-center rounded hover:bg-muted text-muted-foreground disabled:opacity-50 transition-colors"
               >

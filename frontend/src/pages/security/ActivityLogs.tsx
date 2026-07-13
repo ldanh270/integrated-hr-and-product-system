@@ -66,7 +66,7 @@ export default function ActivityLogs() {
           <p className="text-sm text-muted-foreground mt-2">
             Không thể tải nhật ký hoạt động. Vui lòng thử lại sau.
           </p>
-          <Button variant="outline" className="mt-4" onClick={() => refetch()}>
+          <Button variant="outline" className="mt-4" onClick={() => { refetch(); }}>
             Thử lại
           </Button>
         </div>
@@ -89,7 +89,7 @@ export default function ActivityLogs() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => refetch()}
+          onClick={() => { refetch(); }}
           className="gap-1.5 h-8 px-3 text-xs"
         >
           <RefreshCw className={cn("h-3 w-3", isFetching && "animate-spin")} />
@@ -116,7 +116,7 @@ export default function ActivityLogs() {
               <select
                 className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 value={query.category || ""}
-                onChange={(e) => handleFilterChange("category", e.target.value || undefined)}
+                onChange={(e) => { handleFilterChange("category", e.target.value || undefined); }}
               >
                 <option value="">Tất cả danh mục</option>
                 <option value="role">Vai trò</option>
@@ -129,7 +129,7 @@ export default function ActivityLogs() {
               <span className="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-1 rounded text-xs font-semibold border border-primary/20">
                 Hành động: {query.actionType}
                 <button
-                  onClick={() => handleFilterChange("actionType", undefined)}
+                  onClick={() => { handleFilterChange("actionType", undefined); }}
                   className="hover:bg-primary hover:text-white rounded p-0.5 transition-colors flex items-center justify-center"
                 >
                   <X size={10} />
@@ -145,14 +145,14 @@ export default function ActivityLogs() {
               type="date"
               className="h-9 w-40 text-xs"
               value={query.fromDate || ""}
-              onChange={(e) => handleFilterChange("fromDate", e.target.value || undefined)}
+              onChange={(e) => { handleFilterChange("fromDate", e.target.value || undefined); }}
             />
             <span className="text-muted-foreground">—</span>
             <Input
               type="date"
               className="h-9 w-40 text-xs"
               value={query.toDate || ""}
-              onChange={(e) => handleFilterChange("toDate", e.target.value || undefined)}
+              onChange={(e) => { handleFilterChange("toDate", e.target.value || undefined); }}
             />
           </div>
         </div>
@@ -173,9 +173,9 @@ export default function ActivityLogs() {
               size="icon"
               className="h-8 w-8 text-xs"
               disabled={query.page === 1}
-              onClick={() =>
+              onClick={() => {
                 setQuery((prev) => ({ ...prev, page: Math.max(1, (prev.page || 1) - 1) }))
-              }
+              }}
             >
               ←
             </Button>
@@ -183,7 +183,7 @@ export default function ActivityLogs() {
             {visiblePages.map((p) => (
               <button
                 key={p}
-                onClick={() => setQuery((prev) => ({ ...prev, page: p }))}
+                onClick={() => { setQuery((prev) => ({ ...prev, page: p })) }}
                 className={[
                   "w-8 h-8 rounded-md text-xs flex items-center justify-center transition-all duration-200 border",
                   query.page === p
@@ -200,7 +200,7 @@ export default function ActivityLogs() {
               size="icon"
               className="h-8 w-8 text-xs"
               disabled={!data || query.page === totalPages || totalPages === 0}
-              onClick={() => setQuery((prev) => ({ ...prev, page: (prev.page || 1) + 1 }))}
+              onClick={() => { setQuery((prev) => ({ ...prev, page: (prev.page || 1) + 1 })) }}
             >
               →
             </Button>
@@ -211,7 +211,7 @@ export default function ActivityLogs() {
       {/* Detail Drawer */}
       <ActivityLogDetailDrawer
         logId={viewingLogId}
-        onClose={() => setViewingLogId(null)}
+        onClose={() => { setViewingLogId(null); }}
       />
     </div>
   )

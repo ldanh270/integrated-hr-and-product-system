@@ -44,6 +44,8 @@ const BATCH_NOTIFICATIONS = {
     `${employeeName} đã gửi yêu cầu đổi ca với bạn. Vui lòng xem xét và phản hồi.`,
 } as const
 
+
+
 export class ApplicationBatchService implements IApplicationBatchService {
   constructor(
     private batchRepo: IApplicationBatchRepository,

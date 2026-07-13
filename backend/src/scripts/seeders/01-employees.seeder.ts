@@ -1,4 +1,9 @@
-import { EMPLOYEE_TYPE, EMPLOYEE_TYPES } from "@/configs/entities/employee.config.ts"
+import {
+  EMPLOYEE_STATUS,
+  EMPLOYEE_TYPES,
+  EMPLOYEE_TYPE,
+  WORK_SCHEDULE_TYPE,
+} from "@/configs/entities/employee.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
 import { getSeedPassword } from "@/scripts/seeders/seed-password.util.ts"
@@ -24,6 +29,13 @@ export class EmployeesSeeder implements ISeeder {
       "employee",
     ]
     let adminId = ""
+    const devPos = await prisma.position.findUnique({ where: { code: "developer" } })
+    const testerPos = await prisma.position.findUnique({ where: { code: "tester" } })
+    const pmPos = await prisma.position.findUnique({ where: { code: "pm" } })
+    const hrPos = await prisma.position.findUnique({ where: { code: "hr" } })
+    const gmPos = await prisma.position.findUnique({ where: { code: "gm" } })
+    const adminPos = await prisma.position.findUnique({ where: { code: "admin" } })
+
     const passwordHashCore = await HashUtil.hash(getSeedPassword("SEED_CORE_ACCOUNTS_PASSWORD"))
 
     for (const role of rolesToSeed) {
@@ -43,6 +55,12 @@ export class EmployeesSeeder implements ISeeder {
         else if (role === "team_leader") phoneSuffix = "4"
         else if (role === "employee") phoneSuffix = "5"
 
+        let positionId = devPos?.id
+        if (role === "admin") positionId = adminPos?.id
+        else if (role === "hr_manager") positionId = hrPos?.id
+        else if (role === "general_manager") positionId = gmPos?.id
+        else if (role === "team_leader") positionId = pmPos?.id
+
         existing = await prisma.employee.create({
           data: {
             username,
@@ -53,6 +71,7 @@ export class EmployeesSeeder implements ISeeder {
             phone: `012345678${phoneSuffix}`,
             address: "System Generated",
             position: fullName,
+            positionId,
           },
         })
         console.log(`  [!] Core account missing, created default account: ${username}`)
@@ -71,12 +90,14 @@ export class EmployeesSeeder implements ISeeder {
         data: {
           username: partTimeUsername,
           passwordHash: passwordHashCore,
-          employeeType: EMPLOYEE_TYPE.PART_TIME,
+          employeeType: EMPLOYEE_TYPE.FULL_TIME,
+          workScheduleType: WORK_SCHEDULE_TYPE.PART_TIME, // PT schedule, not contract type
           fullName: "Part Time User",
           email: "part_time@example.com",
           phone: "0123456786",
           address: "System Generated",
           position: "Part-time Developer",
+          positionId: devPos?.id,
         },
       })
       console.log(`  [!] Created part-time account: ${partTimeUsername}`)
@@ -107,11 +128,12 @@ export class EmployeesSeeder implements ISeeder {
         email: faker.internet.email({ firstName, lastName, provider: "example.com" }),
         phone: faker.phone.number({ style: "national" }),
         address: faker.location.streetAddress(),
-        position: isTeamLeader ? "Team Leader" : faker.person.jobTitle(),
-        employeeType: type as any,
+        position: isTeamLeader ? "Project Manager" : index % 2 === 0 ? "Developer" : "Tester",
+        positionId: isTeamLeader ? pmPos?.id : index % 2 === 0 ? devPos?.id : testerPos?.id,
+        employeeType: type,
         dateOfBirth: faker.date.birthdate({ min: 22, max: 55, mode: "age" }),
         startDate: faker.date.past({ years: 3 }),
-        status: "active" as any,
+        status: EMPLOYEE_STATUS.ACTIVE,
       }
     })
 

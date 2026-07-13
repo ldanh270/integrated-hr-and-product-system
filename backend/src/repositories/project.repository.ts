@@ -1,15 +1,20 @@
+import { PROJECT_MEMBER_WORK_MODE } from "@/configs/entities/project.config.ts"
 import {
   CreateProjectDto,
-  Project,
-  ProjectListQuery,
+  GanttDataDto,
   IProjectRepository,
   PaginatedProjectsDto,
+  Project,
+  ProjectListQuery,
   UpdateProjectDto,
-  GanttDataDto,
 } from "@/types"
 
-import { Prisma, PrismaClient, Project as PrismaProject, Employee as PrismaEmployee } from "@prisma/client"
-import { PROJECT_MEMBER_WORK_MODE } from "@/configs/entities/project.config.ts"
+import {
+  Prisma,
+  PrismaClient,
+  Employee as PrismaEmployee,
+  Project as PrismaProject,
+} from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
@@ -42,6 +47,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
       createdById: project.createdById,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
+      allowedTaskTrackers: project.allowedTaskTrackers as any,
       teamLeader: project.teamLeader
         ? {
             id: project.teamLeader.id,
@@ -99,16 +105,9 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
   async listProjects(
     query: ProjectListQuery,
     userId: string,
-    isAdminOrGM: boolean
+    isAdminOrGM: boolean,
   ): Promise<PaginatedProjectsDto> {
-    const {
-      page = 1,
-      limit = 10,
-      search,
-      status,
-      sortBy = "createdAt",
-      sortOrder = "desc",
-    } = query
+    const { page = 1, limit = 10, search, status, sortBy = "createdAt", sortOrder = "desc" } = query
 
     const skip = (page - 1) * limit
     const where: Prisma.ProjectWhereInput = {}
@@ -184,6 +183,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
         expectedEndDate: data.expectedEndDate ? new Date(data.expectedEndDate) : null,
         teamLeaderId: data.teamLeaderId,
         createdById: data.createdById,
+        allowedTaskTrackers: data.allowedTaskTrackers as any,
       },
       include: {
         teamLeader: true,
@@ -199,7 +199,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
    * Returns updated project or null if not found
    */
   async updateProject(id: string, data: UpdateProjectDto): Promise<Project | null> {
-   const updateData: Prisma.ProjectUncheckedUpdateInput = {
+    const updateData: Prisma.ProjectUncheckedUpdateInput = {
       name: data.name,
       description: data.description,
       techStack: data.techStack,
@@ -209,6 +209,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
       expectedEndDate: data.expectedEndDate ? new Date(data.expectedEndDate) : undefined,
       actualEndDate: data.actualEndDate ? new Date(data.actualEndDate) : undefined,
       teamLeaderId: data.teamLeaderId,
+      allowedTaskTrackers: data.allowedTaskTrackers as any,
     }
 
     if (data.startDate === null) updateData.startDate = null
@@ -245,7 +246,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
   async addMember(
     projectId: string,
     employeeId: string,
-    options?: { hourlyRate?: number | null; workMode?: string },
+    options?: { hourlyRate?: number | null; workMode?: string; roleId?: string | null },
   ): Promise<boolean> {
     await this.prisma.projectMember.upsert({
       where: {
@@ -256,6 +257,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
         employeeId,
         hourlyRate: options?.hourlyRate ?? null,
         workMode: (options?.workMode as Prisma.ProjectMemberCreateInput["workMode"]) ?? undefined,
+        roleId: options?.roleId ?? null,
       },
       update: {
         removedAt: null,
@@ -263,6 +265,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
         ...(options?.workMode
           ? { workMode: options.workMode as Prisma.ProjectMemberUpdateInput["workMode"] }
           : {}),
+        ...(options?.roleId !== undefined ? { roleId: options.roleId } : {}),
       },
     })
     return true
@@ -299,7 +302,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
   async getMember(
     projectId: string,
     employeeId: string,
-  ): Promise<{ hourlyRate: number | null; workMode: string } | null> {
+  ): Promise<{ hourlyRate: number | null; workMode: string; roleId: string | null } | null> {
     const member = await this.prisma.projectMember.findUnique({
       where: {
         projectId_employeeId: { projectId, employeeId },
@@ -309,6 +312,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
     return {
       hourlyRate: member.hourlyRate ? Number(member.hourlyRate) : null,
       workMode: member.workMode,
+      roleId: member.roleId,
     }
   }
 
@@ -336,6 +340,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
       employeeId: m.employeeId,
       hourlyRate: m.hourlyRate ? Number(m.hourlyRate) : null,
       workMode: m.workMode,
+      roleId: m.roleId,
       joinedAt: m.joinedAt,
       removedAt: m.removedAt,
       employee: m.employee,
@@ -364,7 +369,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
   async updateMember(
     projectId: string,
     employeeId: string,
-    data: { hourlyRate?: number | null; workMode?: string },
+    data: { hourlyRate?: number | null; workMode?: string; roleId?: string | null },
   ): Promise<boolean> {
     // Partial update — only fields sent by PATCH are changed.
     await this.prisma.projectMember.update({
@@ -373,7 +378,10 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
       },
       data: {
         ...(data.hourlyRate !== undefined ? { hourlyRate: data.hourlyRate } : {}),
-        ...(data.workMode ? { workMode: data.workMode as Prisma.ProjectMemberUpdateInput["workMode"] } : {}),
+        ...(data.workMode
+          ? { workMode: data.workMode as Prisma.ProjectMemberUpdateInput["workMode"] }
+          : {}),
+        ...(data.roleId !== undefined ? { roleId: data.roleId } : {}),
       },
     })
     return true

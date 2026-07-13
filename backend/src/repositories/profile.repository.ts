@@ -5,7 +5,7 @@ import type {
   UpdateProfileDto,
 } from "@/types/profile.types.ts"
 
-import { PrismaClient, Employee as PrismaEmployee } from "@prisma/client"
+import { Prisma, PrismaClient, Employee as PrismaEmployee } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
@@ -33,7 +33,9 @@ export class PrismaProfileRepository extends BaseRepository implements IProfileR
       nationalId: employee.nationalId,
       address: employee.address,
       position: employee.position,
+      positionId: employee.positionId,
       employeeType: employee.employeeType,
+      workScheduleType: employee.workScheduleType, // PT vs full-time scheduling model
       status: employee.status,
       startDate: employee.startDate,
       avatarUrl: employee.avatarUrl,
@@ -86,7 +88,7 @@ export class PrismaProfileRepository extends BaseRepository implements IProfileR
     empId: string,
     data: UpdateProfileDto,
   ): Promise<ProfileEmployeeDocument | null> {
-    const updateFields: any = {}
+    const updateFields: Prisma.EmployeeUpdateInput = {}
 
     if (data.fullName !== undefined) updateFields.fullName = data.fullName
     if (data.phone !== undefined) updateFields.phone = data.phone

@@ -1,5 +1,6 @@
 // Auto-register seeders (import them here as they are created)
 import "./00-rbac.seeder.ts"
+import "./00b-positions.seeder.ts"
 import "./01-employees.seeder.ts"
 import "./02-working-shifts.seeder.ts"
 import "./03-holiday-calendars.seeder.ts"

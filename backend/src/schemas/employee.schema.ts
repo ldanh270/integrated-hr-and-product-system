@@ -1,4 +1,8 @@
-import { EMPLOYEE_STATUSES, EMPLOYEE_TYPES } from "@/configs/entities/employee.config.ts"
+import {
+  EMPLOYEE_STATUSES,
+  EMPLOYEE_TYPES,
+  WORK_SCHEDULE_TYPES,
+} from "@/configs/entities/employee.config.ts"
 import { SORT_ORDER_VALUES } from "@/configs/system/db.config.ts"
 
 import { z } from "zod"
@@ -7,7 +11,7 @@ import { z } from "zod"
  * Zod validation schema for creating a new Employee.
  * Enforces field validations, data types, and value constraints.
  */
-const emptyToNull = (val: any) => (val === "" ? null : val)
+const emptyToNull = (val: unknown) => (val === "" ? null : val)
 
 export const createEmployeeSchema = z
   .object({
@@ -53,6 +57,9 @@ export const createEmployeeSchema = z
     role: z.string().optional(),
 
     employeeType: z.enum(EMPLOYEE_TYPES).optional(),
+
+    // Separate from employeeType — a contractor can still work part-time hours.
+    workScheduleType: z.enum(WORK_SCHEDULE_TYPES).optional(),
 
     phone: z.preprocess(
       emptyToNull,
@@ -155,6 +162,9 @@ export const updateEmployeeSchema = z
 
     employeeType: z.enum(EMPLOYEE_TYPES).optional(),
 
+    // Separate from employeeType — a contractor can still work part-time hours.
+    workScheduleType: z.enum(WORK_SCHEDULE_TYPES).optional(),
+
     status: z.enum(EMPLOYEE_STATUSES).optional(),
     
     totalLeaves: z.preprocess((val) => (val === "" ? undefined : Number(val)), z.number().min(0, "Tổng số phép không được âm").optional()),
@@ -243,6 +253,7 @@ export const listEmployeesQuerySchema = z.object({
   search: z.string().optional(),
   status: z.enum([...EMPLOYEE_STATUSES, "locked"] as const).optional(),
   type: z.enum(EMPLOYEE_TYPES).optional(),
+  workSchedule: z.enum(WORK_SCHEDULE_TYPES).optional(),
   roleId: z.string().optional(),
   sortBy: z
     .enum([
@@ -254,6 +265,7 @@ export const listEmployeesQuerySchema = z.object({
       "dateOfBirth",
       "position",
       "employeeType",
+      "workScheduleType",
       "status",
       "startDate",
       "endDate",

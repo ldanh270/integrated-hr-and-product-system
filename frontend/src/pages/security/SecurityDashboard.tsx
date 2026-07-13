@@ -105,7 +105,7 @@ export default function SecurityDashboard() {
           <p className="text-sm text-muted-foreground mt-2">
             Không thể tải thông tin bảo mật. Vui lòng thử lại sau.
           </p>
-          <Button variant="outline" className="mt-4" onClick={() => refetch()}>
+          <Button variant="outline" className="mt-4" onClick={() => { refetch(); }}>
             Thử lại
           </Button>
         </div>
@@ -129,7 +129,7 @@ export default function SecurityDashboard() {
           variant="outline"
           size="sm"
           className="h-8 gap-1.5 text-xs"
-          onClick={() => refetch()}
+          onClick={() => { refetch(); }}
         >
           <RefreshCw className="h-3 w-3" />
           Làm mới

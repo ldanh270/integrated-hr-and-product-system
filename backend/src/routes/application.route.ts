@@ -3,27 +3,44 @@ import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
 import { requirePermission } from "@/middlewares/permission.middleware.ts"
 import { PrismaApplicationRepository } from "@/repositories/application.repository.ts"
+import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
+import { NotificationRepository } from "@/repositories/notification.repository.ts"
+import { PrismaPositionRepository } from "@/repositories/position.repository.ts"
+import { PrismaProjectRepository } from "@/repositories/project.repository.ts"
 import { ApplicationService } from "@/services/application.service.ts"
+import { NotificationService } from "@/services/notification.service.ts"
+import { PositionService } from "@/services/position.service.ts"
 
 import express from "express"
+// ─── Employee endpoints ───────────────────────────────────────
 
-import { NotificationService } from "@/services/notification.service.ts"
-import { NotificationRepository } from "@/repositories/notification.repository.ts"
+import multer from "multer"
 
+/**
+ * Application workflow routing configuration.
+ * Instantiates dependencies for PrismaApplicationRepository, PrismaEmployeeRepository,
+ * PrismaProjectRepository, PrismaPositionRepository, PositionService, and ApplicationService,
+ * wiring them into the ApplicationController endpoints.
+ */
 const applicationRoutes = express.Router()
 
-const notifRepo = new NotificationRepository()
-const notifService = new NotificationService(notifRepo)
 const repository = new PrismaApplicationRepository(prisma)
-const service = new ApplicationService(repository, notifService)
+const employeeRepository = new PrismaEmployeeRepository(prisma)
+const projectRepository = new PrismaProjectRepository(prisma)
+const positionRepository = new PrismaPositionRepository(prisma)
+const positionService = new PositionService(
+  positionRepository,
+  employeeRepository,
+  projectRepository,
+  prisma,
+)
+const notificationRepository = new NotificationRepository()
+const notificationService = new NotificationService(notificationRepository)
+const service = new ApplicationService(repository, notificationService, positionService)
 const controller = new ApplicationController(service)
 
 // All routes require authentication
 applicationRoutes.use(authenticate)
-
-// ─── Employee endpoints ───────────────────────────────────────
-
-import multer from "multer"
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB max
 const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"]
@@ -44,7 +61,11 @@ const upload = multer({
 applicationRoutes.post("/", controller.submit)
 
 // Upload attachment
-applicationRoutes.post("/upload-attachment", upload.single("file"), controller.uploadAttachment as express.RequestHandler)
+applicationRoutes.post(
+  "/upload-attachment",
+  upload.single("file"),
+  controller.uploadAttachment as express.RequestHandler,
+)
 
 // List own applications (with pagination + filters)
 applicationRoutes.get("/me", controller.listMine)
@@ -61,11 +82,7 @@ applicationRoutes.patch("/:id/partner-approve", controller.partnerApprove)
 // ─── Manager endpoints ────────────────────────────────────────
 
 // List all applications across all employees
-applicationRoutes.get(
-  "/",
-  requirePermission("application.read"),
-  controller.listAll,
-)
+applicationRoutes.get("/", requirePermission("application.read"), controller.listAll)
 
 // List applications for a specific employee
 applicationRoutes.get(
@@ -82,10 +99,6 @@ applicationRoutes.patch(
 )
 
 // Reject an application with a mandatory rejectReason
-applicationRoutes.patch(
-  "/:id/reject",
-  requirePermission("application.approve"),
-  controller.reject,
-)
+applicationRoutes.patch("/:id/reject", requirePermission("application.approve"), controller.reject)
 
 export default applicationRoutes

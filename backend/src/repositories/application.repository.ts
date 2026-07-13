@@ -3,6 +3,7 @@ import {
   APPLICATION_TYPES,
   PAID_LEAVE_TYPES,
 } from "@/configs/entities/attendance.config.ts"
+import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import {
   IApplicationRepository,
   ILeaveType,
@@ -476,7 +477,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     if (managedBy) {
       const isApprover = managedBy.isApprover ?? false
       const empId = managedBy.empId
-      if (query.scope === APPLICATION_SCOPE.ASSIGNED || !isApprover) {
+      if (query.scope === APPLICATION_SCOPE.ASSIGNED) {
         where = {
           AND: [
             where,

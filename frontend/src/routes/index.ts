@@ -60,6 +60,12 @@ const privateRoutes: RouteConfig[] = [
     permissions: ["attendance.update"],
   },
   {
+    path: ROUTES.ATTENDANCE.PART_TIME_AVAILABILITY,
+    component: lazy(() => import("@/pages/attendance/PartTimeAvailability.tsx")),
+    layout: MainLayout,
+    permissions: ["attendance.update"],
+  },
+  {
     path: ROUTES.ATTENDANCE.WEEKLY_SCHEDULES,
     component: lazy(() => import("@/pages/attendance/WeeklySchedules.tsx")),
     layout: MainLayout,
@@ -167,6 +173,12 @@ const privateRoutes: RouteConfig[] = [
     permissions: ["role.read"],
   },
   {
+    path: "/project/positions",
+    component: lazy(() => import("@/pages/security/PositionsManagement.tsx")),
+    layout: MainLayout,
+    permissions: ["role.read"],
+  },
+  {
     path: ROUTES.SETTINGS.ROLE_PERMISSIONS,
     component: lazy(() => import("@/pages/security/RolePermissions.tsx")),
     layout: MainLayout,
@@ -195,6 +207,12 @@ const privateRoutes: RouteConfig[] = [
     layout: MainLayout,
   },
   {
+    path: ROUTES.PERSONAL.AVAILABILITY,
+    component: lazy(() => import("@/pages/personal/MyPartTimeAvailability.tsx")),
+    layout: MainLayout,
+    // Page-level guard redirects full-time employees to schedule view.
+  },
+  {
     path: ROUTES.PERSONAL.PAYSLIPS,
     component: lazy(() => import("@/pages/payroll/MyPayslips.tsx")),
     layout: MainLayout,
@@ -210,7 +228,12 @@ const privateRoutes: RouteConfig[] = [
     layout: MainLayout,
   },
   {
-    path: ROUTES.PROJECT.DETAIL_TAB,
+    path: "/project/:id/:tab",
+    component: lazy(() => import("@/pages/project/ProjectDetail.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/project/:id",
     component: lazy(() => import("@/pages/project/ProjectDetail.tsx")),
     layout: MainLayout,
   },

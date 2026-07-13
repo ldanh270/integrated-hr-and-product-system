@@ -26,6 +26,8 @@ export const ROUTES = {
     SUMMARY: "/attendance/summary",
     MY_SCHEDULE: "/attendance/my-schedule",
     WORK_SCHEDULES: "/attendance/work-schedules",
+    /** Admin shift assignment from PT employee availability submissions. */
+    PART_TIME_AVAILABILITY: "/attendance/part-time-availability",
     REAL_SHIFT: "/attendance/real-shift",
     APPLICATIONS: "/attendance/applications",
     SHIFTS: "/attendance/shifts",
@@ -61,6 +63,7 @@ export const ROUTES = {
   PROJECT: {
     BASE: "/project",
     LIST: "/project/list",
+    POSITIONS: "/project/positions",
     DASHBOARD: "/project/dashboard",
     OVERVIEW: "/project/overview",
     ISSUES: "/project/issues",
@@ -73,6 +76,8 @@ export const ROUTES = {
   PERSONAL: {
     BASE: "/personal",
     SCHEDULE: "/personal/schedule",
+    /** Part-time employees submit weekly free-time windows here. */
+    AVAILABILITY: "/personal/availability",
     PAYSLIPS: "/personal/payslips",
     PROJECTS: "/personal/projects",
     APPLICATIONS: "/personal/applications",

@@ -1,0 +1,217 @@
+{
+  "info": {
+    "name": "HRM Recruitment Flow",
+    "description": "API collection for testing the HRM Recruitment Module",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "YOUR_JWT_TOKEN_HERE",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Job Requisition",
+      "item": [
+        {
+          "name": "Create Requisition",
+          "request": {
+            "method": "POST",
+            "header": [
+              
+            ],
+            "url": { "raw": "{{baseUrl}}/job-requisitions", "host": ["{{baseUrl}}"], "path": ["job-requisitions"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Senior Frontend Engineer\",\n  \"departmentName\": \"Engineering\",\n  \"headcountNeeded\": 2,\n  \"budgetMin\": 2000,\n  \"budgetMax\": 4000,\n  \"jobFamily\": \"engineering\",\n  \"level\": \"senior\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Approve Requisition (GM only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              
+            ],
+            "url": { "raw": "{{baseUrl}}/job-requisitions/{{replaceReqId}}/approve", "host": ["{{baseUrl}}"], "path": ["job-requisitions", "{{replaceReqId}}", "approve"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Job Posting",
+      "item": [
+        {
+          "name": "Create Posting",
+          "request": {
+            "method": "POST",
+            "header": [
+              
+            ],
+            "url": { "raw": "{{baseUrl}}/job-postings", "host": ["{{baseUrl}}"], "path": ["job-postings"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requisitionId\": \"{{replaceReqId}}\",\n  \"title\": \"Senior Frontend Engineer\",\n  \"description\": \"We need a React expert\",\n  \"requirements\": \"5+ years React\",\n  \"benefits\": \"Health insurance\",\n  \"salaryMin\": 2000,\n  \"salaryMax\": 4000\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Application",
+      "item": [
+        {
+          "name": "Apply for Job",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/job-applications/apply", "host": ["{{baseUrl}}"], "path": ["job-applications", "apply"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requisitionId\": \"replaceReqId\",\n  \"postingId\": \"replacePostingId\",\n  \"fullName\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"phone\": \"0987654321\",\n  \"resumeUrl\": \"https://example.com/cv.pdf\",\n  \"source\": \"linkedin\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Interview",
+      "item": [
+        {
+          "name": "Schedule Interview Round",
+          "request": {
+            "method": "POST",
+            "header": [
+              
+            ],
+            "url": { "raw": "{{baseUrl}}/interviews/schedule", "host": ["{{baseUrl}}"], "path": ["interviews", "schedule"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"applicationId\": \"{{replaceAppId}}\",\n  \"roundNumber\": 1,\n  \"title\": \"Technical React Interview\",\n  \"format\": \"online\",\n  \"scheduledAt\": \"2026-07-01T10:00:00Z\",\n  \"interviewerIds\": [\"replaceEmployeeId1\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Submit Scorecard",
+          "request": {
+            "method": "POST",
+            "header": [
+              
+            ],
+            "url": { "raw": "{{baseUrl}}/interviews/scorecard", "host": ["{{baseUrl}}"], "path": ["interviews", "scorecard"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roundId\": \"{{replaceRoundId}}\",\n  \"scores\": {\n    \"technical\": 4,\n    \"culture\": 5\n  },\n  \"verdict\": \"pass\",\n  \"note\": \"Very good candidate\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Offer",
+      "item": [
+        {
+          "name": "Create Offer",
+          "request": {
+            "method": "POST",
+            "header": [
+              
+            ],
+            "url": { "raw": "{{baseUrl}}/offers", "host": ["{{baseUrl}}"], "path": ["offers"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"applicationId\": \"replaceAppId\",\n  \"position\": \"Senior Frontend Engineer\",\n  \"department\": \"Engineering\",\n  \"baseSalary\": 3000,\n  \"currency\": \"USD\",\n  \"startDate\": \"2026-08-01T00:00:00Z\",\n  \"probationMonths\": 2,\n  \"benefits\": \"Health insurance, Gym\",\n  \"deadline\": \"2026-07-10T00:00:00Z\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Candidate Respond to Offer",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/offers/replaceOfferId/respond", "host": ["{{baseUrl}}"], "path": ["offers", "replaceOfferId", "respond"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"accepted\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Background Check",
+      "item": [
+        {
+          "name": "Initiate Background Check",
+          "request": {
+            "method": "POST",
+            "header": [
+              
+            ],
+            "url": { "raw": "{{baseUrl}}/background-checks", "host": ["{{baseUrl}}"], "path": ["background-checks"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"applicationId\": \"replaceAppId\",\n  \"provider\": \"Checkr\",\n  \"notes\": \"Standard criminal + education check\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Update Background Check Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              
+            ],
+            "url": { "raw": "{{baseUrl}}/background-checks/replaceBgcId/status", "host": ["{{baseUrl}}"], "path": ["background-checks", "replaceBgcId", "status"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"passed\",\n  \"notes\": \"All clear\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Onboarding",
+      "item": [
+        {
+          "name": "Convert Candidate to Employee",
+          "request": {
+            "method": "POST",
+            "header": [
+              
+            ],
+            "url": { "raw": "{{baseUrl}}/onboarding/replaceAppId/convert", "host": ["{{baseUrl}}"], "path": ["onboarding", "replaceAppId", "convert"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startDate\": \"2026-08-01T00:00:00Z\",\n  \"position\": \"Senior Frontend Engineer\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

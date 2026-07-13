@@ -1,4 +1,9 @@
-import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
+import {
+  EMPLOYEE_STATUS,
+  EMPLOYEE_TYPE,
+  WORK_SCHEDULE_TYPE,
+} from "@/configs/entities/employee.config.ts"
+import type { EmployeeType, WorkScheduleType } from "@/types/employee.types.ts"
 import { DB_ERROR_CODES } from "@/configs/system/db.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
@@ -20,6 +25,37 @@ import { HashUtil } from "@/utils/hash.util.ts"
 
 import { auditService } from "./audit.service.ts"
 import { authorizationService } from "./authorization.service.ts"
+
+type ScheduleFields = {
+  employeeType?: EmployeeType
+  workScheduleType?: WorkScheduleType
+}
+
+/** Legacy employeeType=part_time maps to workScheduleType; explicit FT clears legacy PT category. */
+function normalizeScheduleFields<T extends ScheduleFields>(data: T): T {
+  let next = { ...data }
+
+  if (next.employeeType === EMPLOYEE_TYPE.PART_TIME) {
+    next = {
+      ...next,
+      employeeType: EMPLOYEE_TYPE.FULL_TIME,
+      workScheduleType: WORK_SCHEDULE_TYPE.PART_TIME,
+    }
+  }
+
+  // workScheduleType=full_time alone must not leave employeeType stuck on legacy part_time.
+  if (next.workScheduleType === WORK_SCHEDULE_TYPE.FULL_TIME) {
+    next = {
+      ...next,
+      employeeType:
+        next.employeeType === EMPLOYEE_TYPE.PART_TIME
+          ? EMPLOYEE_TYPE.FULL_TIME
+          : (next.employeeType ?? EMPLOYEE_TYPE.FULL_TIME),
+    }
+  }
+
+  return next
+}
 
 /**
  * Service for managing employee-related operations.
@@ -103,9 +139,22 @@ export class EmployeeService implements IEmployeeService {
     // Remove password from data before passing to repo
     const { password, role, ...repoData } = data
 
+    // Keep denormalized position string in sync when client sends positionId (dynamic positions).
+    let positionName = data.position
+    if (repoData.positionId) {
+      const posRecord = await prisma.position.findUnique({
+        where: { id: repoData.positionId }
+      })
+      if (posRecord) {
+        positionName = posRecord.name
+      }
+    }
+
     try {
+      // Coerce legacy employeeType=part_time into workScheduleType before persisting.
       return await this.repository.createEmployee({
-        ...repoData,
+        ...normalizeScheduleFields(repoData),
+        position: positionName,
         passwordHash,
         roleId: initialRole.id,
       })
@@ -154,8 +203,25 @@ export class EmployeeService implements IEmployeeService {
     // Remove password from data
     const { password, ...updateData } = data
 
+    // Same normalization on update so old API clients sending employeeType=part_time still work.
+    // Resolve position name from positionId when dynamic position FK is provided.
+    let positionName = updateData.position
+    if (updateData.positionId !== undefined) {
+      if (updateData.positionId === null) {
+        positionName = null
+      } else {
+        const posRecord = await prisma.position.findUnique({
+          where: { id: updateData.positionId },
+        })
+        if (posRecord) {
+          positionName = posRecord.name
+        }
+      }
+    }
+
     const updated = await this.repository.updateEmployee(id, {
-      ...updateData,
+      ...normalizeScheduleFields(updateData),
+      position: positionName,
       passwordHash,
     })
 

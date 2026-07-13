@@ -16,15 +16,28 @@ export const EMPLOYEE_STATUS = {
 export const EMPLOYEE_TYPES = ["full_time", "part_time", "contractor", "intern"] as const
 export type IEmployeeType = (typeof EMPLOYEE_TYPES)[number]
 
+export const WORK_SCHEDULE_TYPES = ["full_time", "part_time"] as const
+export type IWorkScheduleType = (typeof WORK_SCHEDULE_TYPES)[number]
+
+/** Employment category options in HR forms (excludes legacy part_time). */
+export const EMPLOYMENT_CATEGORY_TYPES = ["full_time", "contractor", "intern"] as const
+export type IEmploymentCategoryType = (typeof EMPLOYMENT_CATEGORY_TYPES)[number]
+
 /**
  * Contract type keys — values must match backend/Prisma EmployeeType exactly.
- * PART_TIME: Spent Time workflow; weekly schedule UI hidden in EmployeeEditDrawer.
+ * PART_TIME (legacy): use workScheduleType for schedule-based logic.
  */
 export const EMPLOYEE_TYPE = {
   FULL_TIME: "full_time",
   PART_TIME: "part_time",
   CONTRACTOR: "contractor",
   INTERN: "intern",
+} as const
+
+export const WORK_SCHEDULE_TYPE = {
+  FULL_TIME: "full_time",
+  /** Drives PT availability nav and shift-assignment flows (not legacy employeeType). */
+  PART_TIME: "part_time",
 } as const
 
 export const EMPLOYEE_STATUSES = [
@@ -66,6 +79,11 @@ export const EMPLOYEE_TYPE_LABELS: Record<string, string> = {
   intern: "Thực tập",
 } as const
 
+export const WORK_SCHEDULE_TYPE_LABELS: Record<IWorkScheduleType, string> = {
+  full_time: "Toàn thời gian",
+  part_time: "Bán thời gian",
+} as const
+
 export const EMPLOYEE_STATUS_VARIANTS: Record<
   string,
   "success" | "danger" | "warning" | "neutral"
@@ -75,3 +93,57 @@ export const EMPLOYEE_STATUS_VARIANTS: Record<
   [EMPLOYEE_STATUS.ON_LEAVE]: "warning",
   [EMPLOYEE_STATUS.TERMINATED]: "danger",
 } as const
+
+export function getWorkScheduleTypeLabel(type: IWorkScheduleType): string {
+  return type === WORK_SCHEDULE_TYPE.FULL_TIME
+    ? WORK_SCHEDULE_TYPE_LABELS.full_time
+    : WORK_SCHEDULE_TYPE_LABELS.part_time
+}
+
+export function getEmployeeTypeLabel(type: IEmployeeType): string {
+  switch (type) {
+    case EMPLOYEE_TYPE.FULL_TIME:
+      return EMPLOYEE_TYPE_LABELS.full_time
+    case EMPLOYEE_TYPE.PART_TIME:
+      return EMPLOYEE_TYPE_LABELS.part_time
+    case EMPLOYEE_TYPE.CONTRACTOR:
+      return EMPLOYEE_TYPE_LABELS.contractor
+    case EMPLOYEE_TYPE.INTERN:
+      return EMPLOYEE_TYPE_LABELS.intern
+  }
+}
+
+export function getEmployeeStatusLabel(status: IEmployeeStatus): string {
+  switch (status) {
+    case EMPLOYEE_STATUS.ACTIVE:
+      return EMPLOYEE_STATUS_LABELS[EMPLOYEE_STATUS.ACTIVE]
+    case EMPLOYEE_STATUS.INACTIVE:
+      return EMPLOYEE_STATUS_LABELS[EMPLOYEE_STATUS.INACTIVE]
+    case EMPLOYEE_STATUS.ON_LEAVE:
+      return EMPLOYEE_STATUS_LABELS[EMPLOYEE_STATUS.ON_LEAVE]
+    case EMPLOYEE_STATUS.TERMINATED:
+      return EMPLOYEE_STATUS_LABELS[EMPLOYEE_STATUS.TERMINATED]
+  }
+}
+
+export function getEmployeeStatusVariant(
+  status: IEmployeeStatus,
+): "success" | "danger" | "warning" | "neutral" {
+  switch (status) {
+    case EMPLOYEE_STATUS.ACTIVE:
+      return EMPLOYEE_STATUS_VARIANTS[EMPLOYEE_STATUS.ACTIVE]
+    case EMPLOYEE_STATUS.INACTIVE:
+      return EMPLOYEE_STATUS_VARIANTS[EMPLOYEE_STATUS.INACTIVE]
+    case EMPLOYEE_STATUS.ON_LEAVE:
+      return EMPLOYEE_STATUS_VARIANTS[EMPLOYEE_STATUS.ON_LEAVE]
+    case EMPLOYEE_STATUS.TERMINATED:
+      return EMPLOYEE_STATUS_VARIANTS[EMPLOYEE_STATUS.TERMINATED]
+  }
+}
+
+export function getRoleLabel(role: string): string {
+  return ROLE_LABELS[role] ?? role
+}
+
+/** Tab id for filtering employees by part-time work schedule. */
+export const EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME = "schedule_part_time" as const

@@ -1,6 +1,8 @@
 import {
   EMPLOYEE_STATUSES,
-  EMPLOYEE_TYPES,
+  EMPLOYMENT_CATEGORY_TYPES,
+  WORK_SCHEDULE_TYPES,
+  WORK_SCHEDULE_TYPE,
 } from "@/config/entities/employee.config"
 import type { CreateEmployeeDto } from "@/types/employee.types"
 
@@ -37,7 +39,8 @@ const createSchema = z.object({
     ),
 
   role: z.string().min(1, "Vui lòng chọn vai trò"),
-  employeeType: z.enum(EMPLOYEE_TYPES),
+  employeeType: z.enum(EMPLOYMENT_CATEGORY_TYPES),
+  workScheduleType: z.enum(WORK_SCHEDULE_TYPES), // full_time | part_time schedule model
   status: z.enum(EMPLOYEE_STATUSES).optional(),
 
   phone: z
@@ -49,6 +52,7 @@ const createSchema = z.object({
     .optional(),
 
   position: z.string().max(100, "Chức danh quá dài").optional(),
+  positionId: z.string().optional(),
 
   dateOfBirth: z
     .string()
@@ -92,7 +96,8 @@ export function useEmployeeCreateModal(onClose: () => void) {
     mode: "onBlur", // Thêm mode onBlur để validate khi user rời khỏi trường nhập
     defaultValues: {
       role: "",
-      employeeType: EMPLOYEE_TYPES[0],
+      employeeType: EMPLOYMENT_CATEGORY_TYPES[0],
+      workScheduleType: WORK_SCHEDULE_TYPE.FULL_TIME, // default new hires to company shift model
       status: EMPLOYEE_STATUSES[0],
     },
   })
@@ -103,7 +108,8 @@ export function useEmployeeCreateModal(onClose: () => void) {
       const defaultRole = rolesData.data.find((r) => r.isDefault)?.name || "employee"
       reset({
         role: defaultRole,
-        employeeType: EMPLOYEE_TYPES[0],
+        employeeType: EMPLOYMENT_CATEGORY_TYPES[0],
+        workScheduleType: WORK_SCHEDULE_TYPE.FULL_TIME,
         status: EMPLOYEE_STATUSES[0],
       })
     }
@@ -115,6 +121,7 @@ export function useEmployeeCreateModal(onClose: () => void) {
         ...data,
         phone: data.phone === "" ? undefined : data.phone,
         position: data.position === "" ? undefined : data.position,
+        positionId: data.positionId === "" ? undefined : data.positionId,
         dateOfBirth: data.dateOfBirth === "" ? undefined : data.dateOfBirth,
         nationalId: data.nationalId === "" ? undefined : data.nationalId,
         address: data.address === "" ? undefined : data.address,

@@ -2,11 +2,12 @@ import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { PORT } from "@/configs/system/server.config.ts"
 import { connectDB } from "@/libs/database.ts"
 import { initCronJobs } from "@/libs/payroll-cron.ts"
+import { initRecruitmentCron } from "@/libs/recruitment-cron.ts"
 import { initWeeklyScheduleCron } from "@/libs/weekly-schedule-cron.ts"
 import { cors } from "@/middlewares/cors.middleware.ts"
 import { globalErrorHandler } from "@/middlewares/error.middleware.ts"
-import applicationRoutes from "@/routes/application.route.ts"
 import applicationBatchRoutes from "@/routes/application-batch.route.ts"
+import applicationRoutes from "@/routes/application.route.ts"
 import approvalRoutes from "@/routes/approval.route.ts"
 import attendanceRoutes from "@/routes/attendance.route.ts"
 import auditRoutes from "@/routes/audit.route.ts"
@@ -15,13 +16,23 @@ import customQueryRoutes from "@/routes/custom-query.route.ts"
 import debugRoutes from "@/routes/debug.route.ts"
 import employeeSalaryConfigRoutes from "@/routes/employee-salary-config.route.ts"
 import employeeRoutes from "@/routes/employee.route.ts"
+import externalJobPostRoutes from "@/routes/external-job-post.route.ts"
 import holidayRoutes from "@/routes/holiday.route.ts"
+import interviewRoutes from "@/routes/interview.route.ts"
+import jobApplicationRoutes from "@/routes/job-application.route.ts"
+import jobDescriptionRoutes from "@/routes/job-description.route.ts"
+import jobRequisitionRoutes from "@/routes/job-requisition.route.ts"
 import notificationRoutes from "@/routes/notification.route.ts"
+import offerRoutes from "@/routes/offer.route.ts"
+import onboardingRoutes from "@/routes/onboarding.route.ts"
+import partTimeAvailabilityRoutes from "@/routes/part-time-availability.route.ts"
 import payrollRoutes from "@/routes/payroll.route.ts"
 import payslipTemplateRoutes from "@/routes/payslip-template.route.ts"
 import permissionRoutes from "@/routes/permission.route.ts"
+import positionRoutes from "@/routes/position.route.ts"
 import profileRoutes from "@/routes/profile.route.ts"
 import projectRoutes from "@/routes/project.route.ts"
+import publicApplicationRoutes from "@/routes/public-application.route.ts"
 import roleRoutes from "@/routes/role.route.ts"
 import salaryComponentRoutes from "@/routes/salary-component.route.ts"
 import salaryVariableRoutes from "@/routes/salary-variable.route.ts"
@@ -33,6 +44,7 @@ import spentTimeRoutes from "@/routes/spent-time.route.ts"
 import taskRoutes from "@/routes/task.route.ts"
 import weeklyScheduleTemplateRoutes from "@/routes/weekly-schedule-template.route.ts"
 import { bootstrapAdmin } from "@/utils/startup-assertion.util.ts"
+import { assertNoLegacyStaticRoleReferences } from "@/utils/startup-assertion.util.ts"
 
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
@@ -61,6 +73,8 @@ app.get("/", async (req, res) =>
   res.status(HttpStatusCode.OK).json({ message: "Connect to server successfully" }),
 )
 
+app.use("/api/public/job-applications", publicApplicationRoutes)
+
 app.use("/api/auth", authRoutes)
 app.use("/api/security", securityRoutes)
 app.use("/api/employees", employeeRoutes)
@@ -75,6 +89,8 @@ app.use("/api/application-batches", applicationBatchRoutes)
 app.use("/api/shift-change-requests", shiftChangeRequestRoutes)
 app.use("/api/holidays", holidayRoutes)
 app.use("/api/weekly-schedule-templates", weeklyScheduleTemplateRoutes)
+// PT weekly availability — separate from full-time shift templates; employee declares, admin assigns.
+app.use("/api/part-time-availabilities", partTimeAvailabilityRoutes)
 app.use("/api/approvals", approvalRoutes)
 
 // Payroll routes
@@ -90,11 +106,20 @@ app.use("/api/tasks", taskRoutes)
 app.use("/api/notifications", notificationRoutes)
 app.use("/api/permissions", permissionRoutes)
 app.use("/api/roles", roleRoutes)
+app.use("/api/positions", positionRoutes)
 app.use("/api", auditRoutes)
 app.use("/api/spent-times", spentTimeRoutes)
 app.use("/api/custom-queries", customQueryRoutes)
 app.use("/api/debug", debugRoutes)
 
+// Recruitment routes
+app.use("/api/job-requisitions", jobRequisitionRoutes)
+app.use("/api/job-requisitions/:requisitionId/description", jobDescriptionRoutes)
+app.use("/api/job-requisitions/:requisitionId/external-posts", externalJobPostRoutes)
+app.use("/api/job-applications", jobApplicationRoutes)
+app.use("/api/interviews", interviewRoutes)
+app.use("/api/offers", offerRoutes)
+app.use("/api/onboarding", onboardingRoutes)
 // 404 handler
 app.use((req, res) => {
   res.status(HttpStatusCode.NOT_FOUND).json({
@@ -109,13 +134,22 @@ app.use(globalErrorHandler)
 /**
  * Must connect to database successfully before start server
  */
-connectDB().then(async () => {
-  // Ensure fail-safe administrator exists
-  await bootstrapAdmin()
+void connectDB()
+  .then(async () => {
+    const skipAssert = process.env.SKIP_ADMIN_ASSERT === "true" || process.env.NODE_ENV === "test"
+    assertNoLegacyStaticRoleReferences(skipAssert)
 
-  app.listen(PORT, () => {
-    console.log("Server start on port " + PORT)
-    initCronJobs()
-    initWeeklyScheduleCron()
+    // Ensure fail-safe administrator exists
+    await bootstrapAdmin()
+
+    app.listen(PORT, () => {
+      console.log("Server start on port " + PORT)
+      initCronJobs()
+      initWeeklyScheduleCron()
+      initRecruitmentCron()
+    })
   })
-})
+  .catch((error) => {
+    console.error("Failed to start server:", error)
+    process.exit(1)
+  })

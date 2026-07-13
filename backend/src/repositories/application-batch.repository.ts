@@ -1,4 +1,8 @@
-import { APPLICATION_SCOPE, APPLICATION_TYPES } from "@/configs/entities/attendance.config.ts"
+import {
+  APPLICATION_SCOPE,
+  APPLICATION_TYPES,
+  PARTNER_APPROVAL_STATUS,
+} from "@/configs/entities/attendance.config.ts"
 import {
   IApplicationBatchRepository,
   IListApplicationsQueryDTO,
@@ -272,8 +276,7 @@ export class PrismaApplicationBatchRepository
     }
 
     if (managedBy) {
-      const isApprover = managedBy.isApprover ?? false
-      if (query.scope === APPLICATION_SCOPE.ASSIGNED || !isApprover) {
+      if (query.scope === APPLICATION_SCOPE.ASSIGNED) {
         return {
           AND: [
             where,

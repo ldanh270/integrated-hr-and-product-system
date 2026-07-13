@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import {
@@ -18,16 +18,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { PROJECT_MESSAGES } from "@/config/messages/project.message"
 import {
   PROJECT_MEMBER_WORK_MODE,
   PROJECT_MEMBER_WORK_MODES,
   getProjectMemberWorkModeLabel,
 } from "@/config/entities/project.config"
-import { EMPLOYEE_TYPE } from "@/config/entities/employee.config"
+import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util"
 import { projectApi } from "@/lib/api/project.api"
 import { extractErrorMessage } from "@/utils/error-helper"
 import type { Employee } from "@/types/employee.types"
 import type { ProjectMember } from "@/types/project.types"
+import { useProjectRoles } from "../hooks/use-project-role"
 
 interface AddMemberModalProps {
   isOpen: boolean
@@ -54,10 +56,25 @@ export function AddMemberModal({
   const [hourlyRate, setHourlyRate] = useState("")
   // Default remote: PT logs Spent Time without GPS. TL can switch to onsite per project.
   const [workMode, setWorkMode] = useState<string>(PROJECT_MEMBER_WORK_MODE.REMOTE)
+  const [roleId, setRoleId] = useState("")
   const [memberError, setMemberError] = useState<string | null>(null)
 
+  const { data: roles = [] } = useProjectRoles(projectId)
+
+  useEffect(() => {
+    if (roles.length > 0 && !roleId) {
+      const devRole = roles.find((r) => r.code === "developer")
+      if (devRole) {
+        setRoleId(devRole.id)
+      } else {
+        setRoleId(roles[0].id)
+      }
+    }
+  }, [roles, roleId])
+
   const selectedEmployee = allEmployees.find((e) => e.id === memberEmployeeId)
-  const isPartTime = selectedEmployee?.employeeType === EMPLOYEE_TYPE.PART_TIME
+  // PT members require hourlyRate on ProjectMember for payroll.
+  const isPartTime = selectedEmployee ? isPartTimeWorkSchedule(selectedEmployee) : false
 
   const addMemberMutation = useMutation({
     mutationFn: async () => {
@@ -66,13 +83,14 @@ export function AddMemberModal({
       }
       if (isPartTime && (!hourlyRate || Number(hourlyRate) <= 0)) {
         // Backend rejects PT members without rate — payroll uses ProjectMember.hourlyRate.
-        throw new Error("Nhân viên part-time cần mức lương theo giờ")
+        throw new Error(PROJECT_MESSAGES.PART_TIME_HOURLY_RATE_REQUIRED)
       }
 
       return projectApi.addMember(projectId, {
         employeeId: memberEmployeeId,
         hourlyRate: hourlyRate ? Number(hourlyRate) : null,
         workMode,
+        roleId: roleId || null,
       })
     },
     onSuccess: () => {
@@ -81,6 +99,9 @@ export function AddMemberModal({
       setMemberEmployeeId(SELECT_NONE_VALUE)
       setHourlyRate("")
       setWorkMode(PROJECT_MEMBER_WORK_MODE.REMOTE)
+      // Reset roleId to default developer
+      const devRole = roles.find((r) => r.code === "developer")
+      setRoleId(devRole ? devRole.id : roles[0]?.id || "")
       setMemberError(null)
       toast.success("Thêm thành viên vào dự án thành công")
     },
@@ -99,6 +120,8 @@ export function AddMemberModal({
     setMemberEmployeeId(SELECT_NONE_VALUE)
     setHourlyRate("")
     setWorkMode(PROJECT_MEMBER_WORK_MODE.REMOTE)
+    const devRole = roles.find((r) => r.code === "developer")
+    setRoleId(devRole ? devRole.id : roles[0]?.id || "")
     setMemberError(null)
     onOpenChange(false)
   }
@@ -175,6 +198,24 @@ export function AddMemberModal({
                 {PROJECT_MEMBER_WORK_MODES.map((mode) => (
                   <SelectItem key={mode} value={mode} className="rounded-lg">
                     {getProjectMemberWorkModeLabel(mode)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="role" className="text-xs font-semibold text-muted-foreground">
+              Vai trò trong dự án
+            </Label>
+            <Select value={roleId} onValueChange={setRoleId}>
+              <SelectTrigger id="role" className="w-full h-10 border-border rounded-full px-4 bg-background">
+                <SelectValue placeholder="Chọn vai trò" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-border bg-popover">
+                {roles.map((r) => (
+                  <SelectItem key={r.id} value={r.id} className="rounded-lg">
+                    {r.name}
                   </SelectItem>
                 ))}
               </SelectContent>

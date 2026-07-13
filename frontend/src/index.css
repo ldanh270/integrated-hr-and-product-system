@@ -46,6 +46,28 @@
     margin: 0;
     padding: 0;
   }
+
+  input[type="time"] {
+    appearance: auto;
+  }
+
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.65;
+  }
+
+  .availability-time-input {
+    /* Align HH:MM digits in narrow day columns for easier scanning. */
+    font-variant-numeric: tabular-nums;
+  }
+
+  .availability-time-input::-webkit-calendar-picker-indicator {
+    /* Hide native picker icon; inline time fields are edited directly. */
+    display: none;
+    width: 0;
+    padding: 0;
+    margin: 0;
+  }
 }
 
 @layer components {

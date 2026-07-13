@@ -7,6 +7,7 @@ import {
 import { usePermission } from "@/hooks/use-permission"
 import { customQueryApi } from "@/lib/api/custom-query.api"
 import type { CustomQuery } from "@/lib/api/custom-query.api"
+import { projectTaskStatusApi } from "@/lib/api/project-task-status.api"
 import { projectApi } from "@/lib/api/project.api"
 import { taskApi } from "@/lib/api/task.api"
 import { useAuthStore } from "@/store/auth-store"
@@ -18,6 +19,7 @@ import { useEffect, useMemo, useState } from "react"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { addDays, differenceInDays, eachDayOfInterval, format } from "date-fns"
+import { useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
 
 import {
@@ -38,12 +40,16 @@ interface UseProjectGanttProps {
 }
 
 /**
- * Custom hook to manage projectgantt.
+ * Hook to manage Gantt chart states: timeline calculations, zoom levels, filters,
+ * custom query saves/deletes, task date mutations, and task updates.
+ * Implements persistent state syncing with react-router-dom searchParams.
  */
 export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
   const { hasAnyPermission } = usePermission()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [appliedUrlQueryId, setAppliedUrlQueryId] = useState<string | null>(null)
 
   // Timeline view range configuration (timeline start date)
   const [timelineStart, setTimelineStart] = useState<Date>(() => {
@@ -151,6 +157,44 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     enabled: !!projectId,
   })
 
+  // Fetch dynamic project statuses (Kanban columns)
+  const { data: statuses = [], isLoading: isLoadingStatuses } = useQuery({
+    queryKey: ["projectStatuses", projectId],
+    queryFn: () => projectTaskStatusApi.list(projectId),
+    enabled: !!projectId,
+  })
+
+  const urlQueryId = searchParams.get("queryId")
+
+  useEffect(() => {
+    if (urlQueryId && savedQueries.length > 0 && urlQueryId !== appliedUrlQueryId) {
+      const matched = savedQueries.find((q) => q.id === urlQueryId)
+      if (matched) {
+        try {
+          const data = JSON.parse(matched.queryData)
+          if (data && Array.isArray(data.activeFilterKeys) && data.filterStates) {
+            setActiveFilterKeys(data.activeFilterKeys)
+            setFilterStates(data.filterStates)
+            setAppliedFilterKeys(data.activeFilterKeys)
+            setAppliedFilterStates(data.filterStates)
+
+            if (data.options) {
+              if (data.options.showEstTime !== undefined) setShowEstTime(data.options.showEstTime)
+              if (data.options.showAssignee !== undefined)
+                setShowAssignee(data.options.showAssignee)
+              if (data.options.showProgress !== undefined)
+                setShowProgress(data.options.showProgress)
+            }
+            setAppliedUrlQueryId(urlQueryId)
+            toast.success(`Đã tự động áp dụng truy vấn: ${matched.name}`)
+          }
+        } catch (e) {
+          console.error("Error parsing URL query data", e)
+        }
+      }
+    }
+  }, [urlQueryId, savedQueries, appliedUrlQueryId])
+
   // Mutation to save custom query
   const saveQueryMutation = useMutation({
     mutationFn: async (data: { name: string; projectId?: string | null; queryData: string }) => {
@@ -175,8 +219,14 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     mutationFn: async (id: string) => {
       return customQueryApi.delete(id)
     },
-    onSuccess: () => {
+    onSuccess: (_, deletedId) => {
       void refetchSavedQueries()
+      if (urlQueryId === deletedId) {
+        const newParams = new URLSearchParams(searchParams)
+        newParams.delete("queryId")
+        setSearchParams(newParams)
+        setAppliedUrlQueryId(null)
+      }
       toast.success("Đã xóa truy vấn thành công")
     },
     onError: (err: unknown) => {
@@ -200,6 +250,12 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
           if (data.options.showAssignee !== undefined) setShowAssignee(data.options.showAssignee)
           if (data.options.showProgress !== undefined) setShowProgress(data.options.showProgress)
         }
+
+        // Set search params and update appliedUrlQueryId to prevent duplicate trigger
+        setAppliedUrlQueryId(savedQuery.id)
+        const newParams = new URLSearchParams(searchParams)
+        newParams.set("queryId", savedQuery.id)
+        setSearchParams(newParams)
 
         toast.success(`Đã áp dụng truy vấn: ${savedQuery.name}`)
       } else {
@@ -681,6 +737,14 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     setAppliedFilterKeys([...activeFilterKeys])
     setAppliedFilterStates(JSON.parse(JSON.stringify(filterStates)))
 
+    // Clear queryId from URL
+    if (urlQueryId) {
+      const newParams = new URLSearchParams(searchParams)
+      newParams.delete("queryId")
+      setSearchParams(newParams)
+      setAppliedUrlQueryId(null)
+    }
+
     toast.success("Đã áp dụng bộ lọc và dòng thời gian")
   }
 
@@ -747,11 +811,27 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     setAppliedFilterKeys(["status"])
     setAppliedFilterStates(defaultStates)
 
+    // Clear queryId from URL
+    if (urlQueryId) {
+      const newParams = new URLSearchParams(searchParams)
+      newParams.delete("queryId")
+      setSearchParams(newParams)
+      setAppliedUrlQueryId(null)
+    }
+
     toast.info("Đã khôi phục bộ lọc mặc định")
   }
 
   // Quick Query Sidebar Handler
   const handleQuickQuery = (type: string) => {
+    // Clear queryId from URL on quick query
+    if (urlQueryId) {
+      const newParams = new URLSearchParams(searchParams)
+      newParams.delete("queryId")
+      setSearchParams(newParams)
+      setAppliedUrlQueryId(null)
+    }
+
     if (type === QUICK_QUERY_TYPE.ASSIGNED_TO_ME) {
       setActiveFilterKeys([GANTT_FILTER_KEY.STATUS, GANTT_FILTER_KEY.ASSIGNEE])
       const states = {
@@ -868,6 +948,8 @@ export function useProjectGantt({ projectId, project }: UseProjectGanttProps) {
     applySavedQuery,
     handleSaveQuery,
     assignees,
+    statuses,
+    isLoadingStatuses,
     getDefaultOperator,
     getDefaultValue,
     timelineDays,

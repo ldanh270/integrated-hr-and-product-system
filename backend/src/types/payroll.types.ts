@@ -42,6 +42,12 @@ export type PayrollWithPayslips = Payroll & {
   payslips: PayslipWithDetails[]
 }
 
+export type IMyPayslipSummary = Payslip & {
+  periodMonth?: number
+  periodYear?: number
+  status?: PayrollStatus
+}
+
 // ── SalaryVariable ──────────────────────────────────────────────────────────
 
 export interface ISalaryVariableRepository {
@@ -192,7 +198,7 @@ export interface IPayrollService {
   approvePayroll(payrollId: string, approverId: string): Promise<Payroll>
   rejectPayroll(payrollId: string, approverId: string, reason: string): Promise<Payroll>
   getPayslip(payrollId: string, employeeId: string): Promise<PayslipWithDetails>
-  getMyPayslips(employeeId: string): Promise<Payslip[]>
+  getMyPayslips(employeeId: string): Promise<IMyPayslipSummary[]>
 }
 
 export interface IUpdatePayrollStatusDTO {

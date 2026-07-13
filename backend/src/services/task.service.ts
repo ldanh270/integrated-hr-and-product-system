@@ -13,6 +13,7 @@ import {
   Task,
   TaskListQuery,
   UpdateTaskDto,
+  IPositionService,
 } from "@/types"
 import { AppError } from "@/utils/error.util.ts"
 import { mapStatusNameToEnum } from "@/utils/status-mapping.util.ts"
@@ -28,6 +29,7 @@ export class TaskService implements ITaskService {
     private projectRepository: IProjectRepository,
     private employeeRepository: IEmployeeRepository,
     private statusRepository?: IProjectTaskStatusRepository,
+    private positionService?: IPositionService,
   ) {}
 
   /**
@@ -142,6 +144,10 @@ export class TaskService implements ITaskService {
           ErrorLayer.SERVICE,
         )
       }
+    }
+
+    if (this.positionService) {
+      await this.positionService.validateTaskCreation(data.projectId, userId, data.tracker || "feature")
     }
 
     if (data.assigneeId) {

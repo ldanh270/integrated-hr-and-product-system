@@ -2,7 +2,11 @@ import {
   APPLICATION_STATUS,
   APPLICATION_TYPES,
   PARTNER_APPROVAL_STATUS,
+  PAID_LEAVE_TYPES,
+  LEAVE_BALANCE_DEFAULTS,
 } from "@/configs/entities/attendance.config.ts"
+import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
+import { authorizationService } from "@/services/authorization.service"
 import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
@@ -15,7 +19,6 @@ import {
   ApplicationTypeStrategyFactory,
   IStrategyDeps,
 } from "@/services/application-type.strategy.ts"
-import { authorizationService } from "@/services/authorization.service.ts"
 import { NotificationService } from "@/services/notification.service.ts"
 import {
   IApplicationRepository,
@@ -25,13 +28,20 @@ import {
   ISubmitApplicationDTO,
 } from "@/types/attendance.types.ts"
 import { AppError } from "@/utils/error.util.ts"
+import { IPositionService } from "@/types/position.types.ts"
 
 import { Application } from "@prisma/client"
 
+
+/**
+ * Service managing organizational application requests (leaves, overtime, late/early checkins, shift swaps).
+ * Incorporates validation with position constraints and role-based workflow rules.
+ */
 export class ApplicationService implements IApplicationService {
   constructor(
     private applicationRepo: IApplicationRepository,
     private notificationService: NotificationService,
+    private positionService?: IPositionService,
   ) {}
 
   /**
@@ -56,12 +66,57 @@ export class ApplicationService implements IApplicationService {
       )
     }
 
-    // Type-specific validation & side-effects via Strategy Pattern
+
+
+    // Validate position application restrictions
+    if (this.positionService) {
+      await this.positionService.validateApplicationSubmission(data.employeeId, data.type as any)
+    }
+
+    // Type-specific business rule validation
+    switch (data.type) {
+      case APPLICATION_TYPES.LEAVE.LABEL:
+        await this._validateLeaveApplication(
+          data.employeeId,
+          data.detail.leaveType,
+          startDate,
+          endDate,
+        )
+        break
+
+      case APPLICATION_TYPES.OVERTIME.LABEL:
+        await this._validateShiftOwnership(data.detail.employeeShiftId, data.employeeId)
+        await this._validateOvertimeDates(data.detail.employeeShiftId, startDate, endDate)
+        break
+
+      case APPLICATION_TYPES.LATE_EARLY.LABEL:
+        await this._validateShiftOwnership(data.detail.employeeShiftId, data.employeeId)
+        break
+
+      case APPLICATION_TYPES.SHIFT_SWAP.LABEL:
+        await this._validateShiftOwnership(data.detail.employeeShiftId, data.employeeId)
+        if (data.detail.swapWithEmployeeId) {
+          await this._validateEmployeeExists(data.detail.swapWithEmployeeId)
+        }
+        if (data.detail.swapWithShiftId && data.detail.swapWithEmployeeId) {
+          await this._validateShiftOwnership(
+            data.detail.swapWithShiftId,
+            data.detail.swapWithEmployeeId,
+            "Forbidden: The swap-with shift does not belong to the target employee",
+          )
+        }
+        break
+
+      // work_from_home, business_trip, regime, resignation — no extra ownership checks
+      case APPLICATION_TYPES.RESIGNATION.LABEL:
+      default:
+        break
+    }
+    const strategy = ApplicationTypeStrategyFactory.getStrategy(data.type)
     const strategyDeps: IStrategyDeps = {
       applicationRepo: this.applicationRepo,
       notificationService: this.notificationService,
     }
-    const strategy = ApplicationTypeStrategyFactory.getStrategy(data.type)
     await strategy.validate(data, strategyDeps)
 
     // §V7: If assignedToId is provided, validate that the person exists and has an approver role
@@ -454,6 +509,170 @@ export class ApplicationService implements IApplicationService {
         HttpStatusCode.BAD_REQUEST,
         ErrorLayer.SERVICE,
         "INVALID_APPROVER_ROLE",
+      )
+    }
+  }
+  /**
+   * §V4: Leave application validator. Checks for date overlaps and leave balance quotas.
+   *
+   * @param employeeId - The ID of the employee submitting the leave.
+   * @param leaveType - The type of leave (annual, sick, etc.).
+   * @param startDate - The starting date of the leave.
+   * @param endDate - The ending date of the leave.
+   * @throws {AppError} If overlap is detected or the employee has insufficient leave balance.
+   */
+  private async _validateLeaveApplication(
+    employeeId: string,
+    leaveType: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<void> {
+    // §V4a: no overlap with pending/approved leave
+    const hasOverlap = await this.applicationRepo.checkLeaveOverlap(employeeId, startDate, endDate)
+    if (hasOverlap) {
+      throw new AppError(
+        "Leave request overlaps with an existing pending or approved leave",
+        HttpStatusCode.CONFLICT,
+        ErrorLayer.SERVICE,
+        "LEAVE_OVERLAP",
+      )
+    }
+
+    // §V4b: check leave balance for paid leave types
+    if (PAID_LEAVE_TYPES.includes(leaveType as any)) {
+      const quota = LEAVE_BALANCE_DEFAULTS[leaveType as keyof typeof LEAVE_BALANCE_DEFAULTS] ?? 0
+      if (quota === 0) return // unlimited
+
+      const year = startDate.getFullYear()
+      const usedDays = await this.applicationRepo.getUsedLeaveDays(
+        employeeId,
+        leaveType as any,
+        year,
+      )
+
+      const requestedDays =
+        Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+
+      if (usedDays + requestedDays > quota) {
+        throw new AppError(
+          `Insufficient leave balance. Quota: ${quota} days/year. Used: ${usedDays} days. Requested: ${requestedDays} days.`,
+          HttpStatusCode.UNPROCESSABLE_ENTITY,
+          ErrorLayer.SERVICE,
+          "INSUFFICIENT_LEAVE_BALANCE",
+        )
+      }
+    }
+  }
+  /**
+   * §V5: Verifies that the specified employeeShift belongs to the requester.
+   *
+   * @param shiftId - The ID of the employee shift to check.
+   * @param employeeId - The ID of the employee.
+   * @throws {AppError} If the shift doesn't exist or is not owned by the employee.
+   */
+  private async _validateShiftOwnership(
+    shiftId: string,
+    employeeId: string,
+    customErrorMessage?: string,
+  ): Promise<void> {
+    const shift = await prisma.employeeShift.findUnique({
+      where: { id: shiftId },
+      select: { employeeId: true },
+    })
+
+    if (!shift) {
+      throw new AppError(
+        `Employee shift '${shiftId}' not found`,
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+        "SHIFT_NOT_FOUND",
+      )
+    }
+
+    if (shift.employeeId !== employeeId) {
+      throw new AppError(
+        customErrorMessage || "Forbidden: The specified shift does not belong to you",
+        HttpStatusCode.FORBIDDEN,
+        ErrorLayer.SERVICE,
+        "SHIFT_NOT_OWNED",
+      )
+    }
+  }
+  /**
+   * §V6: Overtime application validator. Verifies that the application dates match the shift date.
+   *
+   * @param employeeShiftId - The ID of the employee shift.
+   * @param startDate - The starting date of the overtime.
+   * @param endDate - The ending date of the overtime.
+   * @throws {AppError} If either the start or end date does not match the shift's assigned date.
+   */
+  private async _validateOvertimeDates(
+    employeeShiftId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<void> {
+    const shift = await prisma.employeeShift.findUnique({
+      where: { id: employeeShiftId },
+      select: { assignedDate: true },
+    })
+
+    if (!shift) return // already caught by _validateShiftOwnership
+
+    const shiftDate = new Date(shift.assignedDate)
+
+    // Normalize to date-only for comparison (strip time)
+    const toDateOnly = (d: Date) =>
+      new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
+
+    const shiftDateOnly = toDateOnly(shiftDate)
+    const startDateOnly = toDateOnly(startDate)
+    const endDateOnly = toDateOnly(endDate)
+
+    if (startDateOnly.getTime() !== shiftDateOnly.getTime()) {
+      throw new AppError(
+        `Overtime startDate (${startDate.toISOString().slice(0, 10)}) must match shift date (${shiftDate.toISOString().slice(0, 10)})`,
+        HttpStatusCode.BAD_REQUEST,
+        ErrorLayer.SERVICE,
+        "OVERTIME_DATE_MISMATCH",
+      )
+    }
+
+    if (endDateOnly.getTime() !== shiftDateOnly.getTime()) {
+      throw new AppError(
+        `Overtime endDate (${endDate.toISOString().slice(0, 10)}) must match shift date (${shiftDate.toISOString().slice(0, 10)})`,
+        HttpStatusCode.BAD_REQUEST,
+        ErrorLayer.SERVICE,
+        "OVERTIME_DATE_MISMATCH",
+      )
+    }
+  }
+  /**
+   * §V7: Validates that the swap target employee exists, is active, and is not deleted.
+   *
+   * @param employeeId - The ID of the swap target employee.
+   * @throws {AppError} If the target employee is not found, deleted, or not active.
+   */
+  private async _validateEmployeeExists(employeeId: string): Promise<void> {
+    const employee = await prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { id: true, status: true, deletedAt: true },
+    })
+
+    if (!employee || employee.deletedAt) {
+      throw new AppError(
+        `Employee '${employeeId}' not found`,
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+        "EMPLOYEE_NOT_FOUND",
+      )
+    }
+
+    if (employee.status !== EMPLOYEE_STATUS.ACTIVE) {
+      throw new AppError(
+        `Employee '${employeeId}' is not active`,
+        HttpStatusCode.BAD_REQUEST,
+        ErrorLayer.SERVICE,
+        "EMPLOYEE_INACTIVE",
       )
     }
   }
