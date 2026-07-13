@@ -118,8 +118,10 @@ describe("ProfileService", () => {
         nationalId: null,
         address: null,
         position: null,
+        positionId: null,
         roles: ["employee", "staff"],
         employeeType: "FULL_TIME",
+        workScheduleType: undefined,
         status: "ACTIVE",
         startDate: "2021-01-10",
         avatar: { url: null, id: null },
@@ -438,6 +440,7 @@ describe("ProfileService", () => {
       ;(authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         roles: new Set(["admin"]),
         isDynamicAdmin: false,
+        permissions: new Set(["employee.update"]),
       })
 
       const linkedEmployee = {
@@ -486,6 +489,7 @@ describe("ProfileService", () => {
       ;(authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         roles: new Set(["employee"]),
         isDynamicAdmin: false,
+        permissions: new Set(),
       })
 
       // Act & Assert
@@ -506,6 +510,7 @@ describe("ProfileService", () => {
       ;(authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         roles: new Set(["admin"]),
         isDynamicAdmin: false,
+        permissions: new Set(["employee.update"]),
       })
       mockRepo.findById.mockResolvedValueOnce(null) // Linked employee not found
 
@@ -527,6 +532,7 @@ describe("ProfileService", () => {
       ;(authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         roles: new Set(["general_manager"]),
         isDynamicAdmin: false,
+        permissions: new Set(["employee.update"]),
       })
       const updatedEmployee = {
         ...mockEmployee,
@@ -551,6 +557,7 @@ describe("ProfileService", () => {
       ;(authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         roles: new Set(),
         isDynamicAdmin: true,
+        permissions: new Set(),
       })
       mockRepo.updatePersonalEmployeeLink.mockResolvedValue(null)
 

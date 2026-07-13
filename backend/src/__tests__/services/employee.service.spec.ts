@@ -10,7 +10,17 @@ const prismaMock = prisma as any;
 
 jest.mock('@/configs/entities/employee.config.ts', () => ({
   EMPLOYEE_STATUS: { ACTIVE: 'active', INACTIVE: 'inactive', TERMINATED: 'terminated' },
-  SYSTEM_ROLE: { EMPLOYEE: 'employee' }
+  SYSTEM_ROLE: { EMPLOYEE: 'employee' },
+  EMPLOYEE_TYPE: {
+    FULL_TIME: 'full_time',
+    PART_TIME: 'part_time',
+    CONTRACTOR: 'contractor',
+    INTERN: 'intern'
+  },
+  WORK_SCHEDULE_TYPE: {
+    FULL_TIME: 'full_time',
+    PART_TIME: 'part_time'
+  }
 }));
 
 jest.mock('@/configs/auth/auth.config.ts', () => ({
