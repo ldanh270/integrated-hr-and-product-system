@@ -240,7 +240,7 @@ describe('ScheduleInsightsService.suggestTemplates', () => {
     ];
     const suggested = { templates: [{ id: 'tpl-1' }] };
 
-    jest.spyOn(service, 'getInsights').mockResolvedValue(insights as never);
+    const getInsightsSpy = jest.spyOn(service, 'getInsights').mockResolvedValue(insights as never);
     workingShiftRepo.listAll.mockResolvedValue(shifts as never);
     mockedBuildSuggestedWeeklyTemplates.mockReturnValue(suggested as never);
 
@@ -248,7 +248,7 @@ describe('ScheduleInsightsService.suggestTemplates', () => {
     const result = await service.suggestTemplates(10);
 
     // Assert
-    expect(service.getInsights).toHaveBeenCalledWith(10);
+    expect(getInsightsSpy).toHaveBeenCalledWith(10);
     expect(workingShiftRepo.listAll).toHaveBeenCalledTimes(1);
     expect(mockedBuildSuggestedWeeklyTemplates).toHaveBeenCalledWith({
       insights,
@@ -292,7 +292,7 @@ describe('ScheduleInsightsService.suggestTemplates', () => {
     const insights = { summary: 'insights' };
     const shiftsError = new Error('shift list failed');
 
-    jest.spyOn(service, 'getInsights').mockResolvedValue(insights as never);
+    const getInsightsSpy = jest.spyOn(service, 'getInsights').mockResolvedValue(insights as never);
     workingShiftRepo.listAll.mockRejectedValue(shiftsError);
 
     // Act
@@ -300,7 +300,7 @@ describe('ScheduleInsightsService.suggestTemplates', () => {
 
     // Assert
     await expect(act).rejects.toThrow('shift list failed');
-    expect(service.getInsights).toHaveBeenCalledWith(12);
+    expect(getInsightsSpy).toHaveBeenCalledWith(12);
     expect(mockedBuildSuggestedWeeklyTemplates).not.toHaveBeenCalled();
   });
 
@@ -367,7 +367,7 @@ describe('ScheduleInsightsService.simulateTemplate', () => {
     ];
     const simulated = { projectedCoverage: 95 };
 
-    jest.spyOn(service, 'getInsights').mockResolvedValue(insights as never);
+    const getInsightsSpy = jest.spyOn(service, 'getInsights').mockResolvedValue(insights as never);
     workingShiftRepo.listAll.mockResolvedValue(shifts as never);
     mockedSimulateWeeklyTemplateDraft.mockReturnValue(simulated as never);
 
@@ -375,7 +375,7 @@ describe('ScheduleInsightsService.simulateTemplate', () => {
     const result = await service.simulateTemplate(draft as never);
 
     // Assert
-    expect(service.getInsights).toHaveBeenCalledWith(8);
+    expect(getInsightsSpy).toHaveBeenCalledWith(8);
     expect(workingShiftRepo.listAll).toHaveBeenCalledTimes(1);
     expect(mockedSimulateWeeklyTemplateDraft).toHaveBeenCalledTimes(1);
 
@@ -428,7 +428,7 @@ describe('ScheduleInsightsService.simulateTemplate', () => {
     const insights = { summary: 'insights' };
     const shiftsError = new Error('shift list failed');
 
-    jest.spyOn(service, 'getInsights').mockResolvedValue(insights as never);
+    const getInsightsSpy = jest.spyOn(service, 'getInsights').mockResolvedValue(insights as never);
     workingShiftRepo.listAll.mockRejectedValue(shiftsError);
 
     // Act
@@ -436,7 +436,7 @@ describe('ScheduleInsightsService.simulateTemplate', () => {
 
     // Assert
     await expect(act).rejects.toThrow('shift list failed');
-    expect(service.getInsights).toHaveBeenCalledWith(6);
+    expect(getInsightsSpy).toHaveBeenCalledWith(6);
     expect(mockedSimulateWeeklyTemplateDraft).not.toHaveBeenCalled();
   });
 

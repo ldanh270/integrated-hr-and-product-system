@@ -146,7 +146,7 @@ const mockedNormalizeWeekStart = normalizeWeekStart as unknown as MockFn;
 const mockedParseTimeToMinutes = parseTimeToMinutes as unknown as MockFn;
 const mockedShiftFitsAvailabilityDay = shiftFitsAvailabilityDay as unknown as MockFn;
 const mockedBuildAssignedDaySummaries = buildAssignedDaySummaries as unknown as MockFn;
-const mockedAuditServiceLog = auditService.log as unknown as MockFn;
+const mockedAuditServiceLog = (auditService as unknown as { log: MockFn }).log;
 
 const createService = (): {
   service: PartTimeAvailabilityService;
@@ -736,14 +736,20 @@ describe('PartTimeAvailabilityService.assignShifts', () => {
     mockedNormalizeWeekStart.mockReturnValue('2025-02-10');
     mockedGetDateForWeekDay.mockImplementation((_weekStartArg: string, dayOfWeek: number) => `date-${dayOfWeek}`);
     mockedParseTimeToMinutes.mockImplementation((value: string) => {
-      const map: Record<string, number> = {
-        '09:00': 540,
-        '12:00': 720,
-        '10:00': 600,
-        '13:00': 780,
-        '14:00': 840,
-      };
-      return map[value];
+      switch (value) {
+        case '09:00':
+          return 540;
+        case '12:00':
+          return 720;
+        case '10:00':
+          return 600;
+        case '13:00':
+          return 780;
+        case '14:00':
+          return 840;
+        default:
+          return undefined;
+      }
     });
     mockedShiftFitsAvailabilityDay.mockReturnValue(true);
     workingShiftRepo.listAll.mockResolvedValue([{ id: 'shift-existing', startTime: 540, endTime: 720 }]);
@@ -751,14 +757,20 @@ describe('PartTimeAvailabilityService.assignShifts', () => {
     employeeShiftRepo.replacePartTimeOverrides.mockResolvedValue(undefined);
     mockedAuditServiceLog.mockResolvedValue(undefined);
     mockedMinutesToTime.mockImplementation((minutes: number) => {
-      const map: Record<number, string> = {
-        540: '09:00',
-        720: '12:00',
-        600: '10:00',
-        780: '13:00',
-        840: '14:00',
-      };
-      return map[minutes];
+      switch (minutes) {
+        case 540:
+          return '09:00';
+        case 720:
+          return '12:00';
+        case 600:
+          return '10:00';
+        case 780:
+          return '13:00';
+        case 840:
+          return '14:00';
+        default:
+          return undefined;
+      }
     });
   });
 
@@ -830,11 +842,14 @@ describe('PartTimeAvailabilityService.assignShifts', () => {
 
   it('UTCID03 - throws when assignment range is invalid', async () => {
     mockedParseTimeToMinutes.mockImplementation((value: string) => {
-      const map: Record<string, number> = {
-        '12:00': 720,
-        '09:00': 540,
-      };
-      return map[value];
+      switch (value) {
+        case '12:00':
+          return 720;
+        case '09:00':
+          return 540;
+        default:
+          return undefined;
+      }
     });
 
     await expect(

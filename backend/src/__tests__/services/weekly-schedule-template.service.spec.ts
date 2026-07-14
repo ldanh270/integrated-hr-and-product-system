@@ -48,37 +48,76 @@ import { HttpStatusCode } from '@/configs/system/http.config.ts'
 import { AppError } from '@/utils/error.util.ts'
 import { getCycleWeekIndex, normalizeScheduleDate } from '@/utils/schedule.util.ts'
 
+type AsyncFn = (...args: unknown[]) => Promise<unknown>
+type AsyncMock = jest.Mock<AsyncFn>
+
+type TemplateRepoMock = {
+  create: AsyncMock
+  update: AsyncMock
+  findById: AsyncMock
+  delete: AsyncMock
+  listAll: AsyncMock
+}
+
+type ScheduleRepoMock = {
+  assignSchedule: AsyncMock
+}
+
+type EmployeeShiftRepoMock = {
+  ensureShiftForEmployeeDate: AsyncMock
+}
+
+type EmployeeRepoMock = {
+  findById: AsyncMock
+}
+
+const createTemplateRepo = (): TemplateRepoMock => ({
+  create: jest.fn<AsyncFn>(),
+  update: jest.fn<AsyncFn>(),
+  findById: jest.fn<AsyncFn>(),
+  delete: jest.fn<AsyncFn>(),
+  listAll: jest.fn<AsyncFn>(),
+})
+
+const createScheduleRepo = (): ScheduleRepoMock => ({
+  assignSchedule: jest.fn<AsyncFn>(),
+})
+
+const createEmployeeShiftRepo = (): EmployeeShiftRepoMock => ({
+  ensureShiftForEmployeeDate: jest.fn<AsyncFn>(),
+})
+
+const createEmployeeRepo = (): EmployeeRepoMock => ({
+  findById: jest.fn<AsyncFn>(),
+})
+
+const createTemplateService = (
+  templateRepo: TemplateRepoMock,
+  scheduleRepo: ScheduleRepoMock,
+  employeeShiftRepo: EmployeeShiftRepoMock,
+  employeeRepo: EmployeeRepoMock,
+): WeeklyScheduleTemplateService =>
+  new WeeklyScheduleTemplateService(
+    templateRepo as never,
+    scheduleRepo as never,
+    employeeShiftRepo as never,
+    employeeRepo as never,
+  )
+
 describe('WeeklyScheduleTemplateService.createTemplate', () => {
-  let templateRepo: any
-  let scheduleRepo: any
-  let employeeShiftRepo: any
-  let employeeRepo: any
+  let templateRepo: TemplateRepoMock
+  let scheduleRepo: ScheduleRepoMock
+  let employeeShiftRepo: EmployeeShiftRepoMock
+  let employeeRepo: EmployeeRepoMock
   let service: WeeklyScheduleTemplateService
 
   beforeEach(() => {
     // Arrange
-    templateRepo = {
-      create: jest.fn(),
-      update: jest.fn(),
-      findById: jest.fn(),
-      delete: jest.fn(),
-      listAll: jest.fn(),
-    }
-    scheduleRepo = {
-      assignSchedule: jest.fn(),
-    }
-    employeeShiftRepo = {
-      ensureShiftForEmployeeDate: jest.fn(),
-    }
-    employeeRepo = {
-      findById: jest.fn(),
-    }
-    service = new WeeklyScheduleTemplateService(
-      templateRepo,
-      scheduleRepo,
-      employeeShiftRepo,
-      employeeRepo,
-    )
+    templateRepo = createTemplateRepo()
+    scheduleRepo = createScheduleRepo()
+    employeeShiftRepo = createEmployeeShiftRepo()
+    employeeRepo = createEmployeeRepo()
+    service = createTemplateService(templateRepo, scheduleRepo, employeeShiftRepo, employeeRepo)
     jest.clearAllMocks()
   })
 
@@ -89,7 +128,7 @@ describe('WeeklyScheduleTemplateService.createTemplate', () => {
     templateRepo.create.mockResolvedValue(created)
 
     // Act
-    const result = await service.createTemplate(data as any)
+    const result = await service.createTemplate(data as never)
 
     // Assert
     expect(templateRepo.create).toHaveBeenCalledTimes(1)
@@ -104,7 +143,7 @@ describe('WeeklyScheduleTemplateService.createTemplate', () => {
     templateRepo.create.mockRejectedValue(repoError)
 
     // Act
-    const action = service.createTemplate(data as any)
+    const action = service.createTemplate(data as never)
 
     // Assert
     await expect(action).rejects.toThrow('create failed')
@@ -118,7 +157,7 @@ describe('WeeklyScheduleTemplateService.createTemplate', () => {
     templateRepo.create.mockRejectedValue(repoError)
 
     // Act
-    const action = service.createTemplate(data as any)
+    const action = service.createTemplate(data as never)
 
     // Assert
     await expect(action).rejects.toMatchObject({
@@ -131,10 +170,10 @@ describe('WeeklyScheduleTemplateService.createTemplate', () => {
 })
 
 describe('WeeklyScheduleTemplateService.updateTemplate', () => {
-  let templateRepo: any
-  let scheduleRepo: any
-  let employeeShiftRepo: any
-  let employeeRepo: any
+  let templateRepo: TemplateRepoMock
+  let scheduleRepo: ScheduleRepoMock
+  let employeeShiftRepo: EmployeeShiftRepoMock
+  let employeeRepo: EmployeeRepoMock
   let service: WeeklyScheduleTemplateService
 
   beforeEach(() => {
@@ -155,12 +194,7 @@ describe('WeeklyScheduleTemplateService.updateTemplate', () => {
     employeeRepo = {
       findById: jest.fn(),
     }
-    service = new WeeklyScheduleTemplateService(
-      templateRepo,
-      scheduleRepo,
-      employeeShiftRepo,
-      employeeRepo,
-    )
+    service = createTemplateService(templateRepo, scheduleRepo, employeeShiftRepo, employeeRepo)
     jest.clearAllMocks()
   })
 
@@ -172,7 +206,7 @@ describe('WeeklyScheduleTemplateService.updateTemplate', () => {
     templateRepo.update.mockResolvedValue(updated)
 
     // Act
-    const result = await service.updateTemplate(id, data as any)
+    const result = await service.updateTemplate(id, data as never)
 
     // Assert
     expect(templateRepo.update).toHaveBeenCalledTimes(1)
@@ -187,7 +221,7 @@ describe('WeeklyScheduleTemplateService.updateTemplate', () => {
     templateRepo.update.mockRejectedValue(new Error('update failed'))
 
     // Act
-    const action = service.updateTemplate(id, data as any)
+    const action = service.updateTemplate(id, data as never)
 
     // Assert
     await expect(action).rejects.toThrow('update failed')
@@ -202,7 +236,7 @@ describe('WeeklyScheduleTemplateService.updateTemplate', () => {
     templateRepo.update.mockRejectedValue(repoError)
 
     // Act
-    const action = service.updateTemplate(id, data as any)
+    const action = service.updateTemplate(id, data as never)
 
     // Assert
     await expect(action).rejects.toMatchObject({
@@ -215,10 +249,10 @@ describe('WeeklyScheduleTemplateService.updateTemplate', () => {
 })
 
 describe('WeeklyScheduleTemplateService.deleteTemplate', () => {
-  let templateRepo: any
-  let scheduleRepo: any
-  let employeeShiftRepo: any
-  let employeeRepo: any
+  let templateRepo: TemplateRepoMock
+  let scheduleRepo: ScheduleRepoMock
+  let employeeShiftRepo: EmployeeShiftRepoMock
+  let employeeRepo: EmployeeRepoMock
   let service: WeeklyScheduleTemplateService
 
   beforeEach(() => {
@@ -239,12 +273,7 @@ describe('WeeklyScheduleTemplateService.deleteTemplate', () => {
     employeeRepo = {
       findById: jest.fn(),
     }
-    service = new WeeklyScheduleTemplateService(
-      templateRepo,
-      scheduleRepo,
-      employeeShiftRepo,
-      employeeRepo,
-    )
+    service = createTemplateService(templateRepo, scheduleRepo, employeeShiftRepo, employeeRepo)
     jest.clearAllMocks()
   })
 
@@ -298,10 +327,10 @@ describe('WeeklyScheduleTemplateService.deleteTemplate', () => {
 })
 
 describe('WeeklyScheduleTemplateService.getTemplate', () => {
-  let templateRepo: any
-  let scheduleRepo: any
-  let employeeShiftRepo: any
-  let employeeRepo: any
+  let templateRepo: TemplateRepoMock
+  let scheduleRepo: ScheduleRepoMock
+  let employeeShiftRepo: EmployeeShiftRepoMock
+  let employeeRepo: EmployeeRepoMock
   let service: WeeklyScheduleTemplateService
 
   beforeEach(() => {
@@ -322,12 +351,7 @@ describe('WeeklyScheduleTemplateService.getTemplate', () => {
     employeeRepo = {
       findById: jest.fn(),
     }
-    service = new WeeklyScheduleTemplateService(
-      templateRepo,
-      scheduleRepo,
-      employeeShiftRepo,
-      employeeRepo,
-    )
+    service = createTemplateService(templateRepo, scheduleRepo, employeeShiftRepo, employeeRepo)
     jest.clearAllMocks()
   })
 
@@ -377,10 +401,10 @@ describe('WeeklyScheduleTemplateService.getTemplate', () => {
 })
 
 describe('WeeklyScheduleTemplateService.listTemplates', () => {
-  let templateRepo: any
-  let scheduleRepo: any
-  let employeeShiftRepo: any
-  let employeeRepo: any
+  let templateRepo: TemplateRepoMock
+  let scheduleRepo: ScheduleRepoMock
+  let employeeShiftRepo: EmployeeShiftRepoMock
+  let employeeRepo: EmployeeRepoMock
   let service: WeeklyScheduleTemplateService
 
   beforeEach(() => {
@@ -401,12 +425,7 @@ describe('WeeklyScheduleTemplateService.listTemplates', () => {
     employeeRepo = {
       findById: jest.fn(),
     }
-    service = new WeeklyScheduleTemplateService(
-      templateRepo,
-      scheduleRepo,
-      employeeShiftRepo,
-      employeeRepo,
-    )
+    service = createTemplateService(templateRepo, scheduleRepo, employeeShiftRepo, employeeRepo)
     jest.clearAllMocks()
   })
 
@@ -457,10 +476,10 @@ describe('WeeklyScheduleTemplateService.listTemplates', () => {
 })
 
 describe('WeeklyScheduleTemplateService.applyTemplate', () => {
-  let templateRepo: any
-  let scheduleRepo: any
-  let employeeShiftRepo: any
-  let employeeRepo: any
+  let templateRepo: TemplateRepoMock
+  let scheduleRepo: ScheduleRepoMock
+  let employeeShiftRepo: EmployeeShiftRepoMock
+  let employeeRepo: EmployeeRepoMock
   let service: WeeklyScheduleTemplateService
 
   beforeEach(() => {
@@ -481,12 +500,7 @@ describe('WeeklyScheduleTemplateService.applyTemplate', () => {
     employeeRepo = {
       findById: jest.fn(),
     }
-    service = new WeeklyScheduleTemplateService(
-      templateRepo,
-      scheduleRepo,
-      employeeShiftRepo,
-      employeeRepo,
-    )
+    service = createTemplateService(templateRepo, scheduleRepo, employeeShiftRepo, employeeRepo)
     jest.clearAllMocks()
   })
 
@@ -536,7 +550,7 @@ describe('WeeklyScheduleTemplateService.applyTemplate', () => {
     employeeShiftRepo.ensureShiftForEmployeeDate.mockResolvedValue(undefined)
 
     // Act
-    const result = await service.applyTemplate(data as any)
+    const result = await service.applyTemplate(data as never)
 
     // Assert
     expect(templateRepo.findById).toHaveBeenCalledWith('template-1')
@@ -587,7 +601,7 @@ describe('WeeklyScheduleTemplateService.applyTemplate', () => {
     templateRepo.findById.mockResolvedValue(null)
 
     // Act
-    const action = service.applyTemplate(data as any)
+    const action = service.applyTemplate(data as never)
 
     // Assert
     await expect(action).rejects.toMatchObject({
@@ -617,7 +631,7 @@ describe('WeeklyScheduleTemplateService.applyTemplate', () => {
     })
 
     // Act
-    const action = service.applyTemplate(data as any)
+    const action = service.applyTemplate(data as never)
 
     // Assert
     await expect(action).rejects.toMatchObject({
@@ -658,7 +672,7 @@ describe('WeeklyScheduleTemplateService.applyTemplate', () => {
     }
 
     // Act
-    const action = service.applyTemplate(data as any)
+    const action = service.applyTemplate(data as never)
 
     // Assert
     await expect(action).rejects.toMatchObject({
@@ -702,7 +716,7 @@ describe('WeeklyScheduleTemplateService.applyTemplate', () => {
     }
 
     // Act
-    const action = service.applyTemplate(data as any)
+    const action = service.applyTemplate(data as never)
 
     // Assert
     await expect(action).rejects.toMatchObject({
@@ -749,7 +763,7 @@ describe('WeeklyScheduleTemplateService.applyTemplate', () => {
     }
 
     // Act
-    const action = service.applyTemplate(data as any)
+    const action = service.applyTemplate(data as never)
 
     // Assert
     await expect(action).rejects.toMatchObject({
@@ -794,7 +808,7 @@ describe('WeeklyScheduleTemplateService.applyTemplate', () => {
     }
 
     // Act
-    const action = service.applyTemplate(data as any)
+    const action = service.applyTemplate(data as never)
 
     // Assert
     await expect(action).rejects.toThrow('assign failed')

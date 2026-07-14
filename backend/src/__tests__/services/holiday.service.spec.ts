@@ -65,6 +65,7 @@ import { EMPLOYEE_STATUS } from '@/configs/entities/employee.config.ts';
 import { ErrorLayer } from '@/configs/system/error-code.config.ts';
 import { HttpStatusCode } from '@/configs/system/http.config.ts';
 import { prisma } from '@/libs/database.ts';
+import type { IHolidayRepository } from '@/types/attendance.types.ts';
 import { AppError } from '@/utils/error.util.ts';
 
 describe('HolidayService', () => {
@@ -87,7 +88,7 @@ describe('HolidayService', () => {
       checkIsHoliday: jest.fn(),
     };
 
-    service = new HolidayService(holidayRepo as any);
+    service = new HolidayService(holidayRepo as unknown as IHolidayRepository);
 
     jest.clearAllMocks();
   });
@@ -100,7 +101,7 @@ describe('HolidayService', () => {
       holidayRepo.listHolidays.mockResolvedValue(holidays);
 
       // Act
-      const result = await service.listHolidays(query as any);
+      const result = await service.listHolidays(query as never);
 
       // Assert
       expect(holidayRepo.listHolidays).toHaveBeenCalledTimes(1);
@@ -120,7 +121,7 @@ describe('HolidayService', () => {
       holidayRepo.listHolidays.mockRejectedValue(error);
 
       // Act
-      const act = service.listHolidays(query as any);
+      const act = service.listHolidays(query as never);
 
       // Assert
       await expect(act).rejects.toBe(error);
@@ -134,7 +135,7 @@ describe('HolidayService', () => {
       holidayRepo.listHolidays.mockRejectedValue(error);
 
       // Act
-      const act = service.listHolidays(query as any);
+      const act = service.listHolidays(query as never);
 
       // Assert
       await expect(act).rejects.toThrow('database failure');
@@ -154,7 +155,7 @@ describe('HolidayService', () => {
       holidayRepo.createHolidayRange.mockResolvedValue(repoResult);
 
       // Act
-      const result = await service.createHoliday(data as any, createdById);
+      const result = await service.createHoliday(data as never, createdById);
 
       // Assert
       expect(holidayRepo.createHolidayRange).toHaveBeenCalledTimes(1);
@@ -179,7 +180,7 @@ describe('HolidayService', () => {
       };
 
       // Act
-      const act = service.createHoliday(data as any, 'user-1');
+      const act = service.createHoliday(data as never, 'user-1');
 
       // Assert
       await expect(act).rejects.toMatchObject({
@@ -203,7 +204,7 @@ describe('HolidayService', () => {
       (prisma.position.findFirst as jest.Mock).mockResolvedValue(null);
 
       // Act
-      const act = service.createHoliday(data as any, 'user-1');
+      const act = service.createHoliday(data as never, 'user-1');
 
       // Assert
       await expect(act).rejects.toMatchObject({
@@ -231,7 +232,7 @@ describe('HolidayService', () => {
       (prisma.employee.count as jest.Mock).mockResolvedValue(0);
 
       // Act
-      const act = service.createHoliday(data as any, 'user-1');
+      const act = service.createHoliday(data as never, 'user-1');
 
       // Assert
       await expect(act).rejects.toMatchObject({
@@ -262,7 +263,7 @@ describe('HolidayService', () => {
       holidayRepo.createHolidayRange.mockRejectedValue(error);
 
       // Act
-      const act = service.createHoliday(data as any, 'user-1');
+      const act = service.createHoliday(data as never, 'user-1');
 
       // Assert
       await expect(act).rejects.toThrow('insert failed');
@@ -286,7 +287,7 @@ describe('HolidayService', () => {
       holidayRepo.updateHoliday.mockResolvedValue(updatedHoliday);
 
       // Act
-      const result = await service.updateHoliday(id, data as any);
+      const result = await service.updateHoliday(id, data as never);
 
       // Assert
       expect(holidayRepo.updateHoliday).toHaveBeenCalledTimes(1);
@@ -307,7 +308,7 @@ describe('HolidayService', () => {
       holidayRepo.updateHoliday.mockRejectedValue(error);
 
       // Act
-      const act = service.updateHoliday(id, data as any);
+      const act = service.updateHoliday(id, data as never);
 
       // Assert
       await expect(act).rejects.toBe(error);
@@ -322,7 +323,7 @@ describe('HolidayService', () => {
       holidayRepo.updateHoliday.mockRejectedValue(error);
 
       // Act
-      const act = service.updateHoliday(id, data as any);
+      const act = service.updateHoliday(id, data as never);
 
       // Assert
       await expect(act).rejects.toThrow('update failed');
@@ -337,12 +338,11 @@ describe('HolidayService', () => {
       holidayRepo.deleteHoliday.mockResolvedValue(undefined);
 
       // Act
-      const result = await service.deleteHoliday(id);
+      await service.deleteHoliday(id);
 
       // Assert
       expect(holidayRepo.deleteHoliday).toHaveBeenCalledTimes(1);
       expect(holidayRepo.deleteHoliday).toHaveBeenCalledWith(id, true);
-      expect(result).toBeUndefined();
     });
 
     it('UTCID02 - propagates repository not found AppError', async () => {

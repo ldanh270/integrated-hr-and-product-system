@@ -585,10 +585,7 @@ describe('ScheduleService.getPlannedWeekForEmployee', () => {
 
       // Assert
       expect(capturedCallback).not.toBeNull();
-      if (!capturedCallback) {
-        throw new Error('Expected callback to be captured');
-      }
-      const callback: GetScheduleForDateCallback = capturedCallback;
+      const callback = capturedCallback as unknown as GetScheduleForDateCallback;
       const callbackResult = await callback(callbackDate);
       expect(localScheduleRepo.getScheduleByEmployee).toHaveBeenCalledWith(employeeId, callbackDate);
       expect(callbackResult).toEqual(schedule);
@@ -616,10 +613,7 @@ describe('ScheduleService.getPlannedWeekForEmployee', () => {
 
       // Assert
       expect(capturedCallback).not.toBeNull();
-      if (!capturedCallback) {
-        throw new Error('Expected callback to be captured');
-      }
-      const callback: GetScheduleForDateCallback = capturedCallback;
+      const callback = capturedCallback as unknown as GetScheduleForDateCallback;
       const act = callback(callbackDate);
       await expect(act).rejects.toThrow('Schedule callback failure');
       expect(localScheduleRepo.getScheduleByEmployee).toHaveBeenCalledWith(employeeId, callbackDate);
@@ -646,10 +640,7 @@ describe('ScheduleService.getPlannedWeekForEmployee', () => {
 
       // Assert
       expect(capturedCallback).not.toBeNull();
-      if (!capturedCallback) {
-        throw new Error('Expected callback to be captured');
-      }
-      const callback: GetScheduleForDateCallback = capturedCallback;
+      const callback = capturedCallback as unknown as GetScheduleForDateCallback;
       const callbackResult = await callback(callbackDate);
       expect(localScheduleRepo.getScheduleByEmployee).toHaveBeenCalledWith(employeeId, callbackDate);
       expect(callbackResult).toBeNull();

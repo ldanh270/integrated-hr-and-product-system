@@ -129,7 +129,7 @@ type AttendanceQuery = {
   toDate?: string;
 };
 
-type AsyncFn = (...args: any[]) => Promise<any>;
+type AsyncFn = (...args: unknown[]) => Promise<unknown>;
 type AsyncMock = jest.Mock<AsyncFn>;
 type AttendanceRepoMock = {
   checkIn: AsyncMock;
