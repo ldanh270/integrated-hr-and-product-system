@@ -234,6 +234,13 @@ export interface IScheduleService {
   getScheduleForEmployee(employeeId: string, date: string | Date): Promise<IShiftScheduleWithDays | null>
   /** Lists schedules for an employee. */
   listSchedulesForEmployee(employeeId: string): Promise<IShiftScheduleWithDays[]>
+
+  getEmployeeShifts(
+    employeeId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<IEmployeeShiftWithShift[]>
+
   /** Overrides shift for a date. */
   overrideEmployeeShift(data: IOverrideEmployeeShiftDTO): Promise<unknown>
   /** Previews shifts that would be generated for a date range. */

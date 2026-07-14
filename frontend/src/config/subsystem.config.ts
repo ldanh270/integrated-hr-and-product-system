@@ -78,6 +78,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         icon: CircleDollarSign,
       },
       { name: PERSONAL_TAB_LABELS.projects, path: ROUTES.PERSONAL.PROJECTS, icon: Briefcase },
+      { name: PERSONAL_TAB_LABELS.applications, path: ROUTES.PERSONAL.APPLICATIONS, icon: FileText },
     ],
   },
   {
@@ -109,17 +110,17 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     icon: FileText,
     routePrefix: ROUTES.APPLICATION.BASE,
     sidebarItems: [
-      { name: "Bạn duyệt", path: ROUTES.APPLICATION.DASHBOARD + "?tab=manage", icon: UserCheck },
+      { name: "Bạn duyệt", path: ROUTES.APPLICATION.MANAGE, icon: UserCheck },
       {
-        name: "Đơn từ",
-        path: ROUTES.APPLICATION.DASHBOARD,
+        name: "Đơn thư",
+        path: ROUTES.APPLICATION.ALL,
         icon: FilePlus2,
+        permissions: ["application.read"],
         subItems: Object.values(APPLICATION_TYPES).map((t) => ({
           name: t.DESCRIPTION,
-          path: `${ROUTES.APPLICATION.DASHBOARD}?type=${t.LABEL}`,
+          path: `${ROUTES.APPLICATION.ALL}?type=${t.LABEL}`,
         })),
       },
-      { name: "Của bạn", path: ROUTES.APPLICATION.DASHBOARD + "?tab=mine", icon: User },
     ],
   },
   {

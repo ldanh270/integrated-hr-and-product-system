@@ -2,19 +2,20 @@
 
 import { ApplicationDetail } from "@/components/features/application/ApplicationDetail"
 import { ApplicationList } from "@/components/features/application/ApplicationList"
-import { APPLICATION_TYPES } from "@/config/entities/attendance.config"
 import { useManageApplications } from "@/hooks/application/useManageApplications"
 import { useMyApplications } from "@/hooks/application/useMyApplications"
+import { useAllApplications } from "@/hooks/application/useAllApplications"
 import type { IApplication } from "@/lib/api/application.api"
 
 import { startTransition, useEffect, useState } from "react"
 
-import { ChevronRight, Plus } from "lucide-react"
-import { useSearchParams } from "react-router-dom"
+import { Plus } from "lucide-react"
+import { useLocation, useSearchParams, useNavigate } from "react-router-dom"
+import { ROUTES } from "@/config/routes.config"
 
-import { CancelDialog } from "./components/CancelDialog"
-import { RejectDialog } from "./components/RejectDialog"
-import { SubmitApplicationModal } from "./components/SubmitApplicationModal"
+import { CancelDialog } from "@/components/features/application/CancelDialog"
+import { RejectDialog } from "@/components/features/application/RejectDialog"
+import { SubmitApplicationModal } from "@/components/features/application/SubmitApplicationModal"
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
@@ -22,15 +23,25 @@ export default function ApplicationDashboard() {
   // View State: "list" | "detail"
   const [view, setView] = useState<"list" | "detail">("list")
   const [selectedApp, setSelectedApp] = useState<IApplication | null>(null)
+  const [mineSubTab, setMineSubTab] = useState<"list" | "leaves">("list")
 
   const [searchParams] = useSearchParams()
-  const activeTab = (searchParams.get("tab") || "manage") as "mine" | "manage"
+  const location = useLocation()
+  const navigate = useNavigate()
+  
+  let activeTab: "mine" | "manage" | "all" = "mine"
+  if (location.pathname.startsWith(ROUTES.APPLICATION.MANAGE)) activeTab = "manage"
+  else if (location.pathname.startsWith(ROUTES.APPLICATION.ALL)) activeTab = "all"
+  
   const activeType = searchParams.get("type") || "all"
 
   const myApps = useMyApplications()
   const manageApps = useManageApplications()
+  const allApps = useAllApplications()
+
   const { setTypeFilter: setMyTypeFilter } = myApps
   const { setTypeFilter: setManageTypeFilter } = manageApps
+  const { setTypeFilter: setAllTypeFilter } = allApps
 
   useEffect(() => {
     startTransition(() => {
@@ -39,13 +50,15 @@ export default function ApplicationDashboard() {
     })
     setMyTypeFilter(activeType)
     setManageTypeFilter(activeType)
-  }, [activeTab, activeType, setManageTypeFilter, setMyTypeFilter])
+    setAllTypeFilter(activeType)
+  }, [activeTab, activeType, setManageTypeFilter, setMyTypeFilter, setAllTypeFilter])
 
   const [showSubmitModal, setShowSubmitModal] = useState(false)
-  const [showCreateMenu, setShowCreateMenu] = useState(false)
+
   const [createType, setCreateType] = useState<string | undefined>(undefined)
   const [cancelTarget, setCancelTarget] = useState<IApplication | null>(null)
   const [rejectTarget, setRejectTarget] = useState<IApplication | null>(null)
+  const [swapConfirmTarget, setSwapConfirmTarget] = useState<IApplication | null>(null)
 
   const handleCancelConfirm = async () => {
     if (!cancelTarget) return
@@ -68,6 +81,18 @@ export default function ApplicationDashboard() {
     setView("list")
   }
 
+  const handleSwapConfirmFromDetail = async (app: IApplication) => {
+    await manageApps.handleSwapConfirm(app.id)
+    setView("list")
+  }
+
+  const handleSwapRejectConfirm = async (reason: string) => {
+    if (!swapConfirmTarget) return
+    await manageApps.handleSwapReject(swapConfirmTarget.id, reason)
+    setSwapConfirmTarget(null)
+    if (view === "detail" && selectedApp?.id === swapConfirmTarget.id) setView("list")
+  }
+
   const handleRowClick = (app: IApplication) => {
     setSelectedApp(app)
     setView("detail")
@@ -75,20 +100,52 @@ export default function ApplicationDashboard() {
 
   if (view === "detail") {
     return (
-      <ApplicationDetail
-        application={selectedApp}
-        isLoading={activeTab === "mine" ? myApps.isLoading : manageApps.isLoading}
-        mode={activeTab}
-        onBack={() => {
-          setView("list")
-        }}
-        onApprove={handleApproveFromDetail}
-        onReject={setRejectTarget}
-      />
+      <>
+        <ApplicationDetail
+          application={selectedApp}
+          isLoading={activeTab === "mine" ? myApps.isLoading : activeTab === "manage" ? manageApps.isLoading : allApps.isLoading}
+          mode={activeTab}
+          onBack={() => {
+            setView("list")
+            navigate(ROUTES.APPLICATION.BASE)
+          }}
+          onApprove={handleApproveFromDetail}
+          onReject={setRejectTarget}
+          onSwapConfirm={handleSwapConfirmFromDetail}
+          onSwapReject={setSwapConfirmTarget}
+        />
+        {/* Detail View Modals */}
+        {rejectTarget && (
+          <RejectDialog
+            app={rejectTarget}
+            onCancel={() => {
+              setRejectTarget(null)
+            }}
+            onConfirm={(reason: string) => {
+              void handleRejectConfirm(reason)
+            }}
+            isLoading={manageApps.processingId === rejectTarget.id}
+          />
+        )}
+        {swapConfirmTarget && (
+          <RejectDialog
+            app={swapConfirmTarget}
+            onCancel={() => {
+              setSwapConfirmTarget(null)
+            }}
+            onConfirm={(reason: string) => {
+              void handleSwapRejectConfirm(reason)
+            }}
+            isLoading={manageApps.processingId === swapConfirmTarget.id}
+            title="Không duyệt đổi ca"
+            description="Bạn có chắc chắn muốn không duyệt đổi ca này không?"
+            optionalReason={true}
+          />
+        )}
+      </>
     )
   }
 
-  const currentTypeConfig = Object.values(APPLICATION_TYPES).find((t) => t.LABEL === activeType)
 
   return (
     <div className="flex flex-col gap-6 p-6 w-full mx-auto animate-in fade-in duration-300">
@@ -97,61 +154,96 @@ export default function ApplicationDashboard() {
         <div className="flex items-center gap-4">
           <div className="relative">
             <button
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-primary text-primary hover:bg-primary/10 transition-colors"
+              className="flex items-center gap-2 h-9 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium shadow-sm"
               onClick={() => {
-                setShowCreateMenu(!showCreateMenu)
+                setCreateType(undefined)
+                setShowSubmitModal(true)
               }}
             >
-              <Plus size={18} strokeWidth={2.5} />
+              <Plus size={16} strokeWidth={2.5} />
+              Tạo đơn
             </button>
-
-            {showCreateMenu && (
-              <div className="absolute top-full left-0 mt-2 w-48 bg-background rounded-xl shadow-lg border border-border py-2 z-50 animate-in fade-in slide-in-from-top-2">
-                <button
-                  onClick={() => {
-                    setCreateType(undefined)
-                    setShowSubmitModal(true)
-                    setShowCreateMenu(false)
-                  }}
-                  className="w-full text-left px-4 py-2.5 text-[14px] text-foreground hover:bg-muted hover:text-primary transition-colors"
-                >
-                  Tạo mới đơn từ
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center text-[15px]">
-            <span className="font-semibold text-foreground">Đơn thư</span>
-            <ChevronRight className="mx-2 text-muted-foreground/70" size={16} />
-            {searchParams.get("tab") === "manage" ? (
-              <span className="text-muted-foreground font-medium">Bạn duyệt</span>
-            ) : searchParams.get("tab") === "mine" ? (
-              <span className="text-muted-foreground font-medium">Của bạn</span>
-            ) : (
-              <>
-                <span className="text-muted-foreground font-medium">Danh sách đơn thư</span>
-                {currentTypeConfig && (
-                  <>
-                    <ChevronRight className="mx-2 text-muted-foreground/70" size={16} />
-                    <span className="text-primary font-medium">
-                      {currentTypeConfig.DESCRIPTION}
-                    </span>
-                  </>
-                )}
-              </>
-            )}
           </div>
         </div>
+
+        {activeTab === "mine" && (
+          <div className="flex items-center gap-6 border-b border-border mt-2">
+            <button
+              onClick={() => { setMineSubTab("list"); }}
+              className={`relative flex items-center py-3 font-medium text-[14px] transition-colors ${
+                mineSubTab === "list" ? "text-primary" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Danh sách đơn
+              {mineSubTab === "list" && (
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-t-full" />
+              )}
+            </button>
+            <button
+              onClick={() => { setMineSubTab("leaves"); }}
+              className={`relative flex items-center py-3 font-medium text-[14px] transition-colors ${
+                mineSubTab === "leaves" ? "text-primary" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Tổng phép
+              {mineSubTab === "leaves" && (
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-t-full" />
+              )}
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="flex-1 w-full mt-4 min-w-0 bg-background border border-border rounded-xl px-6 pb-6 shadow-sm">
-        <ApplicationList
-          mode={activeTab}
-          onRowClick={handleRowClick}
-          hookState={activeTab === "mine" ? myApps : manageApps}
-        />
-      </div>
+      {mineSubTab === "list" || activeTab === "manage" || activeTab === "all" ? (
+        <div className="flex-1 w-full mt-4 min-w-0 bg-background border border-border rounded-xl p-6 shadow-sm">
+          <ApplicationList
+            mode={activeTab}
+            onRowClick={handleRowClick}
+            hookState={activeTab === "mine" ? myApps : activeTab === "manage" ? manageApps : allApps}
+          />
+        </div>
+      ) : (
+        <div className="flex-1 w-full mt-4 min-w-0 bg-background border border-border rounded-xl p-6 shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-[13px] border-collapse border border-border">
+              <thead>
+                <tr>
+                  <th
+                    colSpan={3}
+                    className="px-4 py-3 bg-muted/50 border border-border text-center font-semibold text-foreground"
+                  >
+                    Tổng phép
+                  </th>
+                </tr>
+                <tr>
+                  <th className="px-4 py-3 bg-muted/50 border border-border text-center font-semibold text-foreground w-1/3">
+                    Số phép
+                  </th>
+                  <th className="px-4 py-3 bg-muted/50 border border-border text-center font-semibold text-foreground w-1/3">
+                    Đã dùng
+                  </th>
+                  <th className="px-4 py-3 bg-muted/50 border border-border text-center font-semibold text-foreground w-1/3">
+                    Còn lại
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="px-4 py-4 border border-border text-center text-foreground font-medium">
+                    7
+                  </td>
+                  <td className="px-4 py-4 border border-border text-center text-foreground font-medium">
+                    0
+                  </td>
+                  <td className="px-4 py-4 border border-border text-center text-foreground font-medium">
+                    7
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       {showSubmitModal && (
@@ -161,6 +253,8 @@ export default function ApplicationDashboard() {
           }}
           onSuccess={() => {
             void myApps.refetch()
+            void manageApps.refetch()
+            void allApps.refetch()
           }}
           initialType={createType}
         />
@@ -183,10 +277,25 @@ export default function ApplicationDashboard() {
           onCancel={() => {
             setRejectTarget(null)
           }}
-          onConfirm={(reason) => {
+          onConfirm={(reason: string) => {
             void handleRejectConfirm(reason)
           }}
           isLoading={manageApps.processingId === rejectTarget.id}
+        />
+      )}
+      {swapConfirmTarget && (
+        <RejectDialog
+          app={swapConfirmTarget}
+          onCancel={() => {
+            setSwapConfirmTarget(null)
+          }}
+          onConfirm={(reason: string) => {
+            void handleSwapRejectConfirm(reason)
+          }}
+          isLoading={manageApps.processingId === swapConfirmTarget.id}
+          title="Không duyệt đổi ca"
+          description="Bạn có chắc chắn muốn không duyệt đổi ca này không?"
+          optionalReason={true}
         />
       )}
     </div>

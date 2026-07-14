@@ -14,12 +14,12 @@
     "seed:admin": "tsx src/scripts/seed-admin.ts",
     "clear": "tsx src/scripts/clear-db.ts",
     "repair:admin": "tsx src/scripts/repair-admin.ts",
-    "hash-password": "tsx src/scripts/hash-password.ts",
-    "test": "jest"
+    "hash-password": "tsx src/scripts/hash-password.ts"
   },
   "type": "module",
   "author": "ldanh270",
   "dependencies": {
+    "@ldanh270/aatest": "^1.0.17",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@types/cookie-parser": "^1.4.10",

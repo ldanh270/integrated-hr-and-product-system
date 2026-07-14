@@ -82,6 +82,7 @@ enum ApplicationType {
 
 enum ApplicationStatus {
   pending
+  partner_pending
   approved
   rejected
   cancelled
@@ -218,6 +219,7 @@ model Employee {
   applications                       Application[]                @relation("ApplicationEmployee")
   applicationsApproved               Application[]                @relation("ApplicationApprover")
   applicationsAssigned             Application[]                @relation("ApplicationAssignedTo")
+  applicationsPartnerApproved      Application[]                @relation("ApplicationPartnerApprover")
   swapApplicationsAsPartner          ApplicationShiftSwapDetail[] @relation("ApplicationSwapWith")
   shiftSchedules                     ShiftSchedule[]              @relation("ShiftScheduleEmployee")
   shiftSchedulesCreated            ShiftSchedule[]              @relation("ShiftScheduleCreator")
@@ -248,6 +250,7 @@ model Employee {
   customQueries                    CustomQuery[]
   partTimeWeeklyAvailabilities     PartTimeWeeklyAvailability[] @relation("PartTimeAvailabilityEmployee")
   partTimeAvailabilitiesReviewed   PartTimeWeeklyAvailability[] @relation("PartTimeAvailabilityReviewer")
+  leaveBalances                    EmployeeLeaveBalance[]
 
   @@index([status, employeeType])
   @@index([deletedAt])
@@ -392,7 +395,7 @@ model EmployeeShift {
   swapDetails      ApplicationShiftSwapDetail[] @relation("ApplicationEmployeeShift")
   swapWithDetails  ApplicationShiftSwapDetail[] @relation("ApplicationSwapWithShift")
   lateEarlyDetails ApplicationLateEarlyDetail[] @relation("ApplicationLateEarlyShift")
-
+  workFromHomeDetails ApplicationWorkFromHomeDetail[]
   @@unique([employeeId, assignedDate, shiftId])
   @@index([shiftId, assignedDate])
   @@index([status, assignedDate])
@@ -444,6 +447,7 @@ model RealShift {
   actualStartTime    Int // minutes from midnight, derived from checkInAt
   actualEndTime      Int? // minutes from midnight, derived from checkOutAt
   isMatched          Boolean          @default(false) // true when actual bounds equal planned shift times
+  isPaidLeave        Boolean          @default(false) // true when this shift is a paid leave day
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -467,6 +471,11 @@ model Application {
   approvedBy   Employee? @relation("ApplicationApprover", fields: [approvedById], references: [id], onDelete: Restrict)
   approvedAt   DateTime?
   rejectReason String?
+
+  partnerApprovedById String?
+  partnerApprovedBy   Employee? @relation("ApplicationPartnerApprover", fields: [partnerApprovedById], references: [id], onDelete: SetNull)
+  partnerApprovedAt   DateTime?
+  partnerRejectReason String?
 
   assignedToId String?
   assignedTo   Employee? @relation("ApplicationAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
@@ -494,6 +503,7 @@ model ApplicationLeaveDetail {
   application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   leaveType     LeaveType
   regimeType    RegimeType
+  documentUrl   String?
 }
 
 model ApplicationShiftSwapDetail {
@@ -560,9 +570,10 @@ model ApplicationBusinessTripDetail {
 }
 
 model ApplicationWorkFromHomeDetail {
-  applicationId String      @id
-  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  location      String?
+  applicationId   String        @id
+  application     Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  employeeShiftId String
+  employeeShift   EmployeeShift @relation(fields: [employeeShiftId], references: [id], onDelete: Restrict)
 }
 
 model HolidayCalendar {
@@ -1183,4 +1194,19 @@ model ProjectTracker {
   @@unique([projectId, name])
   @@unique([projectId, code])
   @@map("project_trackers")
+}
+
+model EmployeeLeaveBalance {
+  id           String   @id @default(cuid())
+  employeeId   String
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  year         Int
+  totalDays    Decimal  @db.Decimal(5, 2)
+  usedDays     Decimal  @default(0) @db.Decimal(5, 2)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([employeeId, year])
+  @@index([employeeId, year])
 }

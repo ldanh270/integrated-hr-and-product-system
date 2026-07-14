@@ -5,6 +5,7 @@ import { APPLICATION_TYPES, REGIME_TYPE } from "@/config/entities/attendance.con
 import { useSubmitApplication } from "@/hooks/application/useSubmitApplication"
 
 import { useState } from "react"
+
 import { ArrowLeft, ChevronDown, Send, X } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
@@ -39,7 +40,6 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
     swapWithShiftId: "",
     // work_from_home
     location: "",
-
   })
 
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => {
@@ -108,8 +108,6 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
         detail = form.location.trim() ? { location: form.location.trim() } : {}
         break
 
-
-
       case APPLICATION_TYPES.RESIGNATION.LABEL:
         detail = {}
         break
@@ -130,11 +128,17 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
     }
   }
 
-  const meta = Object.entries(APP_TYPE_META).find(([k]) => k === selectedType)?.[1] || APP_TYPE_META[APPLICATION_TYPES.LEAVE.LABEL]
+  const meta =
+    Object.entries(APP_TYPE_META).find(([k]) => k === selectedType)?.[1] ||
+    APP_TYPE_META[APPLICATION_TYPES.LEAVE.LABEL]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <div
+        onClick={(e) => { e.stopPropagation() }}
         className={`bg-background w-full ${step === "type" ? "max-w-3xl" : "max-w-lg"} rounded-2xl shadow-2xl shadow-slate-900/20 overflow-hidden flex flex-col max-h-[90vh] transition-all duration-300`}
       >
         {/* Header */}
@@ -143,7 +147,9 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
             {step === "details" && (
               <button
                 type="button"
-                onClick={() => { setStep("type"); }}
+                onClick={() => {
+                  setStep("type")
+                }}
                 className="p-1.5 rounded-full hover:bg-slate-100 transition-colors text-slate-500"
               >
                 <ArrowLeft size={16} />
@@ -202,7 +208,13 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
 
           {/* Step 2: Details form */}
           {step === "details" && (
-            <form id="submit-form" onSubmit={(e) => { void handleSubmit(e); }} className="p-5 flex flex-col gap-4">
+            <form
+              id="submit-form"
+              onSubmit={(e) => {
+                void handleSubmit(e)
+              }}
+              className="p-5 flex flex-col gap-4"
+            >
               {/* Type badge */}
               <div
                 className={`flex items-center gap-2.5 p-3 rounded-xl border ${meta.border} ${meta.bg}`}
@@ -225,25 +237,29 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
                     type="date"
                     required
                     value={form.startDate}
-                    onChange={(e) => { set("startDate", e.target.value); }}
+                    onChange={(e) => {
+                      set("startDate", e.target.value)
+                    }}
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
-                  {!(
-                    [
-                      APPLICATION_TYPES.OVERTIME.LABEL,
-                      APPLICATION_TYPES.SHIFT_SWAP.LABEL,
-                      APPLICATION_TYPES.LATE_EARLY.LABEL,
-                      APPLICATION_TYPES.RESIGNATION.LABEL,
-                    ] as string[]
-                  ).includes(selectedType) && (
+                {!(
+                  [
+                    APPLICATION_TYPES.OVERTIME.LABEL,
+                    APPLICATION_TYPES.SHIFT_SWAP.LABEL,
+                    APPLICATION_TYPES.LATE_EARLY.LABEL,
+                    APPLICATION_TYPES.RESIGNATION.LABEL,
+                  ] as string[]
+                ).includes(selectedType) && (
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-slate-600">Ngày kết thúc</label>
                     <input
                       type="date"
                       value={form.endDate}
                       min={form.startDate}
-                      onChange={(e) => { set("endDate", e.target.value); }}
+                      onChange={(e) => {
+                        set("endDate", e.target.value)
+                      }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -258,7 +274,9 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
                     <div className="relative">
                       <select
                         value={form.leaveType}
-                        onChange={(e) => { set("leaveType", e.target.value); }}
+                        onChange={(e) => {
+                          set("leaveType", e.target.value)
+                        }}
                         className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-background pr-8"
                       >
                         {LEAVE_TYPE_OPTIONS.map((o) => (
@@ -280,7 +298,9 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
                         <button
                           key={rt}
                           type="button"
-                          onClick={() => { set("leaveRegimeType", rt); }}
+                          onClick={() => {
+                            set("leaveRegimeType", rt)
+                          }}
                           className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
                             form.leaveRegimeType === rt
                               ? "border-primary bg-primary/5 text-primary"
@@ -304,7 +324,9 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
                     required
                     placeholder="Nhập CUID ca làm việc..."
                     value={form.employeeShiftId}
-                    onChange={(e) => { set("employeeShiftId", e.target.value); }}
+                    onChange={(e) => {
+                      set("employeeShiftId", e.target.value)
+                    }}
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
@@ -320,7 +342,9 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
                       required
                       placeholder="Nhập CUID ca làm việc..."
                       value={form.employeeShiftId}
-                      onChange={(e) => { set("employeeShiftId", e.target.value); }}
+                      onChange={(e) => {
+                        set("employeeShiftId", e.target.value)
+                      }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -331,7 +355,9 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
                         <button
                           key={String(v)}
                           type="button"
-                          onClick={() => { set("isLate", v); }}
+                          onClick={() => {
+                            set("isLate", v)
+                          }}
                           className={`py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
                             form.isLate === v
                               ? "border-primary bg-primary/5 text-primary"
@@ -353,7 +379,9 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
                       min={1}
                       max={480}
                       value={form.durationMinutes}
-                      onChange={(e) => { set("durationMinutes", Number(e.target.value)); }}
+                      onChange={(e) => {
+                        set("durationMinutes", Number(e.target.value))
+                      }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -370,7 +398,9 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
                       required
                       placeholder="Nhập CUID ca làm việc..."
                       value={form.employeeShiftId}
-                      onChange={(e) => { set("employeeShiftId", e.target.value); }}
+                      onChange={(e) => {
+                        set("employeeShiftId", e.target.value)
+                      }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -382,7 +412,9 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
                       type="text"
                       placeholder="CUID nhân viên..."
                       value={form.swapWithEmployeeId}
-                      onChange={(e) => { set("swapWithEmployeeId", e.target.value); }}
+                      onChange={(e) => {
+                        set("swapWithEmployeeId", e.target.value)
+                      }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -394,7 +426,9 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
                       type="text"
                       placeholder="CUID ca làm việc..."
                       value={form.swapWithShiftId}
-                      onChange={(e) => { set("swapWithShiftId", e.target.value); }}
+                      onChange={(e) => {
+                        set("swapWithShiftId", e.target.value)
+                      }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
@@ -410,13 +444,13 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
                     type="text"
                     placeholder="VD: Tại nhà, Quán cà phê..."
                     value={form.location}
-                    onChange={(e) => { set("location", e.target.value); }}
+                    onChange={(e) => {
+                      set("location", e.target.value)
+                    }}
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </div>
               )}
-
-
 
               {/* Reason */}
               <div className="flex flex-col gap-1.5">
@@ -429,7 +463,9 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
                   minLength={5}
                   placeholder="Nhập lý do gửi đơn..."
                   value={form.reason}
-                  onChange={(e) => { set("reason", e.target.value); }}
+                  onChange={(e) => {
+                    set("reason", e.target.value)
+                  }}
                   className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
                 />
               </div>
@@ -441,7 +477,9 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
                   type="text"
                   placeholder="Thông tin bổ sung (nếu có)..."
                   value={form.note}
-                  onChange={(e) => { set("note", e.target.value); }}
+                  onChange={(e) => {
+                    set("note", e.target.value)
+                  }}
                   className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
               </div>
@@ -454,7 +492,9 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
           <div className="border-t border-slate-100 px-5 py-4 flex gap-3 bg-slate-50">
             <button
               type="button"
-              onClick={() => { setStep("type"); }}
+              onClick={() => {
+                setStep("type")
+              }}
               className="flex-1 py-2.5 border border-slate-200 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
             >
               Quay lại

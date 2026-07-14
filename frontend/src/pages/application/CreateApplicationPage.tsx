@@ -9,9 +9,10 @@ import { useAuthStore } from "@/store/auth-store"
 import { ChevronRight, Plus } from "lucide-react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 
-import { useCreateApplicationForm } from "./hooks/useCreateApplicationForm"
-import { CreateApplicationInfoSection } from "./components/CreateApplicationInfoSection"
-import { CreateApplicationTimeSection } from "./components/CreateApplicationTimeSection"
+import { useCreateApplicationForm } from "@/hooks/application/useCreateApplicationForm"
+import { CreateApplicationInfoSection } from "@/components/features/application/CreateApplicationInfoSection"
+import { CreateApplicationTimeSection } from "@/components/features/application/CreateApplicationTimeSection"
+import { ROUTES } from "@/config/routes.config"
 
 export default function CreateApplicationPage() {
   const navigate = useNavigate()
@@ -20,12 +21,12 @@ export default function CreateApplicationPage() {
 
   const { user } = useAuthStore()
 
-  const { form, set, approvers, shifts, employees, isSubmitting, handleSubmit } = useCreateApplicationForm(type)
+  const { forms, addForm, removeForm, updateForm, assignedToId, setAssignedToId, approvers, employees, isSubmitting, handleSubmit } = useCreateApplicationForm(type)
 
   const typeLabel = Object.entries(APPLICATION_TYPE_LABELS).find(([k]) => k === type)?.[1] || "đơn từ"
 
   const handleBack = () => {
-    navigate(-1)
+    navigate(ROUTES.APPLICATION.BASE, { replace: true })
   }
 
   return (
@@ -43,16 +44,46 @@ export default function CreateApplicationPage() {
         <span className="text-[15px] text-muted-foreground">Tạo mới {typeLabel.toLowerCase()}</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-[1400px] mx-auto w-full">
+      <div className="flex-1 overflow-y-auto w-full h-full">
+        <div className="p-6 max-w-5xl mx-auto w-full flex flex-col gap-6 min-h-full">
         {/* Section 1: Thông tin đơn */}
-        <CreateApplicationInfoSection type={type} form={form} set={set} user={user} approvers={approvers} />
+        <CreateApplicationInfoSection 
+          type={type} 
+          form={forms[0]}
+          set={(k, v) => updateForm(0, k, v)}
+          assignedToId={assignedToId} 
+          setAssignedToId={setAssignedToId} 
+          user={user} 
+          approvers={approvers} 
+        />
 
-        {/* Section 2: Thời gian */}
+        {/* Section 2: Danh sách các đơn chi tiết */}
         {type !== APPLICATION_TYPES.RESIGNATION.LABEL && (
-          <CreateApplicationTimeSection type={type} form={form} set={set} shifts={shifts} employees={employees} />
+          <div className="space-y-6">
+            {forms.map((form, index) => (
+              <CreateApplicationTimeSection 
+                key={index}
+                formIndex={index}
+                onRemove={forms.length > 1 ? () => removeForm(index) : undefined}
+                type={type} 
+                form={form} 
+                set={(k, v) => updateForm(index, k, v)} 
+                employees={employees} 
+              />
+            ))}
+            
+            <div className="flex justify-center mt-4">
+              <button 
+                onClick={addForm} 
+                className="border border-dashed border-primary text-primary px-6 py-2.5 rounded-lg flex items-center gap-2 hover:bg-primary/5 transition-colors font-medium text-sm"
+              >
+                <Plus size={16} /> Thêm {typeLabel.toLowerCase()}
+              </button>
+            </div>
+          </div>
         )}
 
-        <div className="flex justify-end gap-3 pb-8">
+        <div className="flex justify-end gap-3 pb-8 mt-auto pt-6">
           <button
             onClick={handleBack}
             className="px-6 py-2 rounded-md border border-input text-foreground font-medium hover:bg-muted transition-colors"
@@ -61,12 +92,13 @@ export default function CreateApplicationPage() {
           </button>
           <button
               onClick={(e) => { e.preventDefault(); void handleSubmit(); }}
-            disabled={isSubmitting || !form.startDate}
-            className="px-6 py-2 rounded-md bg-primary text-white font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+            disabled={isSubmitting}
+            className="px-6 py-2 rounded-md bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
-            {isSubmitting ? "Đang gửi..." : "Gửi đơn"}
+            {isSubmitting ? "Đang gửi..." : `Gửi ${forms.length} đơn`}
           </button>
         </div>
+      </div>
       </div>
     </div>
   )

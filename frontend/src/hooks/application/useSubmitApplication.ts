@@ -7,6 +7,7 @@ import { toast } from "sonner"
 interface UseSubmitApplicationReturn {
   isSubmitting: boolean
   submitApplication: (dto: ISubmitApplicationDTO) => Promise<boolean>
+  submitBulkApplications: (forms: ISubmitApplicationDTO[]) => Promise<boolean>
 }
 
 export function useSubmitApplication(): UseSubmitApplicationReturn {
@@ -61,6 +62,49 @@ export function useSubmitApplication(): UseSubmitApplicationReturn {
     }
   }
 
-  return { isSubmitting, submitApplication }
+  const submitBulkApplications = async (forms: ISubmitApplicationDTO[]): Promise<boolean> => {
+    setIsSubmitting(true)
+    try {
+      await applicationApi.submitBulk(forms)
+      toast.success(`Đã gửi thành công ${forms.length} đơn!`)
+      return true
+    } catch (error: unknown) {
+      console.error("[submitBulkApplications] error:", error)
+
+      const axiosErr = error as {
+        response?: {
+          status?: number
+          data?: { error?: { message?: string; code?: string }; message?: string }
+        }
+        message?: string
+        code?: string
+      }
+
+      if (axiosErr.response) {
+        const status = axiosErr.response.status
+        const msg =
+          axiosErr.response.data?.error?.message ??
+          axiosErr.response.data?.message ??
+          `Lỗi server (${status})`
+
+        if (status === 401) {
+          toast.error(`Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.`)
+        } else {
+          toast.error(msg)
+        }
+
+      } else if (axiosErr.code === "ERR_NETWORK" || axiosErr.message?.includes("Network Error")) {
+        toast.error("Không thể kết nối server. Vui lòng kiểm tra backend đang chạy.")
+      } else {
+        toast.error(axiosErr.message ?? "Lỗi không xác định khi gửi nhiều đơn")
+      }
+
+      return false
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return { isSubmitting, submitApplication, submitBulkApplications }
 }
 

@@ -33,6 +33,7 @@ export const APPLICATION_TYPE_VALUES = [
 
 export const APPLICATION_STATUS = {
   PENDING: "pending",
+  PARTNER_PENDING: "partner_pending",
   APPROVED: "approved",
   REJECTED: "rejected",
   CANCELLED: "cancelled",
@@ -40,6 +41,7 @@ export const APPLICATION_STATUS = {
 
 export const APPLICATION_STATUSES = [
   APPLICATION_STATUS.PENDING,
+  APPLICATION_STATUS.PARTNER_PENDING,
   APPLICATION_STATUS.APPROVED,
   APPLICATION_STATUS.REJECTED,
   APPLICATION_STATUS.CANCELLED,
@@ -118,20 +120,22 @@ export const APPLICATION_TYPE_LABELS: Record<string, string> = {
 }
 
 export const APPLICATION_STATUS_LABELS: Record<string, string> = {
-  pending: "Chờ duyệt",
-  approved: "Đã duyệt",
-  rejected: "Từ chối",
-  cancelled: "Đã hủy",
+  [APPLICATION_STATUS.PENDING]: "Đang duyệt",
+  [APPLICATION_STATUS.PARTNER_PENDING]: "Chờ xác nhận đổi ca",
+  [APPLICATION_STATUS.APPROVED]: "Đã duyệt",
+  [APPLICATION_STATUS.REJECTED]: "Không duyệt",
+  [APPLICATION_STATUS.CANCELLED]: "Đã hủy",
 }
 
 export const APPLICATION_STATUS_VARIANTS: Record<
   string,
   "success" | "warning" | "danger" | "info" | "neutral"
 > = {
-  pending: "warning",
-  approved: "success",
-  rejected: "danger",
-  cancelled: "neutral",
+  [APPLICATION_STATUS.PENDING]: "warning",
+  [APPLICATION_STATUS.PARTNER_PENDING]: "info",
+  [APPLICATION_STATUS.APPROVED]: "success",
+  [APPLICATION_STATUS.REJECTED]: "danger",
+  [APPLICATION_STATUS.CANCELLED]: "neutral",
 }
 
 /** Vietnamese display labels for holiday type enums. */

@@ -11,7 +11,7 @@ import { toast } from "sonner"
 
 export type StatusFilter = "all" | "pending" | "approved" | "rejected" | "cancelled"
 
-interface UseManageApplicationsReturn {
+interface UseAllApplicationsReturn {
   applications: IApplication[]
   isLoading: boolean
   isRefreshing: boolean
@@ -40,11 +40,11 @@ interface UseManageApplicationsReturn {
   handleSwapReject: (id: string, reason: string) => Promise<void>
 }
 
-export function useManageApplications(): UseManageApplicationsReturn {
+export function useAllApplications(): UseAllApplicationsReturn {
   const [applications, setApplications] = useState<IApplication[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending") // Default to pending for managers
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all") // Default to all
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [keyword, setKeyword] = useState<string>("")
   const [page, setPage] = useState(1)
@@ -76,7 +76,7 @@ export function useManageApplications(): UseManageApplicationsReturn {
         if (typeFilter !== "all") query.type = typeFilter
         if (keyword.trim() !== "") query.keyword = keyword.trim()
 
-        const { data, meta } = await applicationApi.listApprovals(query)
+        const { data, meta } = await applicationApi.listAll(query)
 
         if (!activeRef.current) return
 
@@ -113,7 +113,7 @@ export function useManageApplications(): UseManageApplicationsReturn {
           if (typeFilter !== "all") query.type = typeFilter
           if (keyword.trim() !== "") query.keyword = keyword.trim()
           return applicationApi
-            .listApprovals(query)
+            .listAll(query)
             .then((r) => r.meta?.total ?? 0)
             .catch(() => 0)
         }),
@@ -137,8 +137,8 @@ export function useManageApplications(): UseManageApplicationsReturn {
     activeRef.current = true
     const timer = setTimeout(() => {
       if (activeRef.current) {
-        fetchApplications(true)
-        fetchStats()
+        void fetchApplications(true)
+        void fetchStats()
       }
     }, 0)
     return () => {
@@ -148,8 +148,8 @@ export function useManageApplications(): UseManageApplicationsReturn {
   }, [fetchApplications, fetchStats])
 
   const refetch = useCallback(() => {
-    fetchApplications(false)
-    fetchStats()
+    void fetchApplications(false)
+    void fetchStats()
   }, [fetchApplications, fetchStats])
 
   const handleApprove = async (id: string) => {

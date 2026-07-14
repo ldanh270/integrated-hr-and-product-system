@@ -42,7 +42,7 @@ export const APP_TYPE_META: Record<
     hint: "Đăng ký tăng ca ngoài ca",
   },
   [APPLICATION_TYPES.WORK_FROM_HOME.LABEL]: {
-    label: "WFH",
+    label: "Làm việc từ xa",
     icon: Laptop,
     color: "text-sky-600",
     bg: "bg-sky-50",
@@ -87,7 +87,14 @@ export const STATUS_META: Record<
   }
 > = {
   pending: {
-    label: "Chờ duyệt",
+    label: "Đang duyệt",
+    color: "text-amber-700",
+    bg: "bg-amber-50",
+    border: "border-amber-200",
+    icon: Hourglass,
+  },
+  partner_pending: {
+    label: "Chờ xác nhận đổi ca",
     color: "text-amber-700",
     bg: "bg-amber-50",
     border: "border-amber-200",
@@ -101,7 +108,7 @@ export const STATUS_META: Record<
     icon: FileCheck2,
   },
   rejected: {
-    label: "Từ chối",
+    label: "Không duyệt",
     color: "text-red-700",
     bg: "bg-red-50",
     border: "border-red-200",

@@ -15,7 +15,8 @@ export const ROUTES = {
   },
   APPLICATION: {
     BASE: "/application",
-    DASHBOARD: "/application/dashboard",
+    ALL: "/application/all",
+    MANAGE: "/application/manage",
     CREATE: "/application/create",
   },
   ATTENDANCE: {
@@ -78,5 +79,6 @@ export const ROUTES = {
     AVAILABILITY: "/personal/availability",
     PAYSLIPS: "/personal/payslips",
     PROJECTS: "/personal/projects",
+    APPLICATIONS: "/personal/applications",
   },
 } as const

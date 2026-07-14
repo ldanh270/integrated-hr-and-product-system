@@ -10,6 +10,11 @@ export const SYSTEM_CONFIG = {
     /** Bulk fetch for admin dropdowns and schedule grids. */
     BULK_LIMIT: 1000,
   },
+  UPLOAD: {
+    MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
+    MAX_FILE_SIZE_MB: 10,
+    ALLOWED_MIME_TYPES: "image/jpeg,image/png,image/webp,image/gif,application/pdf",
+  },
 } as const
 
 /**

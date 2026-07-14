@@ -71,7 +71,7 @@ const dateString = z
 const baseApplicationFields = {
   startDate: dateString,
   endDate: dateString.optional(),
-  reason: z.string().min(5).max(500).optional(),
+  reason: z.string().max(500).optional(),
   note: z.string().max(1000).optional(),
   assignedToId: z.string().cuid("Invalid assignedTo employee ID").optional(),
 }
@@ -87,6 +87,7 @@ const leaveApplicationSchema = z
     detail: z.object({
       leaveType: z.enum(LEAVE_TYPE_VALUES),
       regimeType: z.enum(REGIME_TYPES),
+      documentUrl: z.string().url("Invalid URL format").optional(),
     }),
   })
   .strict()
@@ -109,10 +110,9 @@ const workFromHomeApplicationSchema = z
     ...baseApplicationFields,
     detail: z
       .object({
+        employeeShiftId: z.string().cuid("Invalid shift ID"),
         location: z.string().max(255).optional(),
       })
-      .optional()
-      .default({}),
   })
   .strict()
 
@@ -145,15 +145,31 @@ const lateEarlyApplicationSchema = z
 
 // ─── DISCRIMINATED UNION ─────────────────────────────────────
 
+/** resignation: thôi việc — no specific details */
+const resignationApplicationSchema = z
+  .object({
+    type: z.literal("resignation"),
+    ...baseApplicationFields,
+    detail: z.record(z.string(), z.unknown()).optional().default({}),
+  })
+  .strict()
+
 export const submitApplicationSchema = z.discriminatedUnion("type", [
   leaveApplicationSchema,
   overtimeApplicationSchema,
   workFromHomeApplicationSchema,
   shiftSwapApplicationSchema,
   lateEarlyApplicationSchema,
+  resignationApplicationSchema,
 ])
 
 export type SubmitApplicationSchemaType = z.infer<typeof submitApplicationSchema>
+
+export const submitBulkApplicationsSchema = z.object({
+  forms: z.array(submitApplicationSchema).min(1, "At least one application form is required").max(100, "Maximum 100 applications per bulk submission"),
+})
+
+export type SubmitBulkApplicationsSchemaType = z.infer<typeof submitBulkApplicationsSchema>
 
 // ─── APPROVE ─────────────────────────────────────────────────
 
@@ -177,11 +193,20 @@ export type ApproveApplicationSchemaType = z.infer<typeof approveApplicationSche
 export const rejectApplicationSchema = z
   .object({
     status: z.literal("rejected").optional(),
-    rejectReason: z.string().trim().min(5, "rejectReason must be at least 5 characters").max(500),
+    rejectReason: z.string().trim().min(5, "Lý do từ chối phải có ít nhất 5 ký tự").max(500),
   })
   .strict()
 
 export type RejectApplicationSchemaType = z.infer<typeof rejectApplicationSchema>
+
+export const swapRejectApplicationSchema = z
+  .object({
+    status: z.literal("rejected").optional(),
+    rejectReason: z.string().trim().max(500).optional(),
+  })
+  .strict()
+
+export type SwapRejectApplicationSchemaType = z.infer<typeof swapRejectApplicationSchema>
 
 // ─── CANCEL ──────────────────────────────────────────────────
 

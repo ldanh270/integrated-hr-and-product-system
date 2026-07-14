@@ -89,14 +89,14 @@ export function ApplicationCard({
             )}
             {app.rejectReason && (
               <div className="flex flex-col gap-0.5 p-2 rounded-lg bg-red-50 border border-red-100">
-                <span className="text-red-500 font-semibold">Lý do từ chối</span>
+                <span className="text-red-500 font-semibold">Lý do không duyệt</span>
                 <span className="text-red-700">{app.rejectReason}</span>
               </div>
             )}
-            {app.processor && (
-              <div className="flex flex-col gap-0.5">
-                <span className="text-slate-400 font-medium">Người duyệt</span>
-                <span className="text-slate-700">{app.processor.fullName}</span>
+            {(app.approvedBy || app.assignedTo) && (
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-muted-foreground font-medium">Người duyệt:</span>
+                <span className="text-slate-700">{app.approvedBy?.fullName || app.assignedTo?.fullName}</span>
               </div>
             )}
           </div>
@@ -142,7 +142,7 @@ export function ApplicationCard({
                   className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors disabled:opacity-50"
                 >
                   <X size={14} />
-                  Từ chối
+                  Không duyệt
                 </button>
               </div>
             )}

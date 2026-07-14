@@ -93,6 +93,38 @@ export class ScheduleController {
   }
 
   /**
+   * Gets specific employee shifts within a date range for the current user.
+   */
+  getMyShifts = async (req: AuthRequest, res: Response<ApiResponse<unknown[]>>) => {
+    const accountId = req.user?.empId
+    if (!accountId) {
+      return res.status(HttpStatusCode.UNAUTHORIZED).json({
+        data: null,
+        error: {
+          message: ATTENDANCE_ERROR_MESSAGES.UNAUTHORIZED,
+          code: ATTENDANCE_ERROR_CODES.UNAUTHORIZED,
+        },
+      })
+    }
+    const employeeId = await resolvePersonalEmployeeId(accountId)
+    
+    const startDateQuery = req.query.startDate as string | undefined
+    const endDateQuery = req.query.endDate as string | undefined
+    
+    if (!startDateQuery || !endDateQuery) {
+      return res.status(HttpStatusCode.BAD_REQUEST).json({
+        data: null,
+        error: { message: "startDate and endDate are required", code: ErrorCode.VALIDATION_ERROR }
+      })
+    }
+    
+    // We need to fetch EmployeeShifts directly, but service only has previewGeneratedShifts...
+    // Actually, I should add a method to ScheduleService for this!
+    const shifts = await this.service.getEmployeeShifts(employeeId, new Date(startDateQuery), new Date(endDateQuery))
+    res.status(HttpStatusCode.OK).json({ data: shifts, error: null })
+  }
+
+  /**
    * Retrieves schedule for a specific employee on a given date (admin view).
    * @param req - Request with employeeId in params and optional date query.
    * @param res - API response with the employee's schedule for that date.
@@ -107,6 +139,32 @@ export class ScheduleController {
 
     const schedule = await this.service.getScheduleForEmployee(employeeId, scheduleDate)
     res.status(HttpStatusCode.OK).json({ data: schedule, error: null })
+  }
+
+  /**
+   * Gets EmployeeShifts for a specific employee within a date range (used by shift-swap form).
+   */
+  getShiftsByEmployee = async (
+    req: Request<{ employeeId: string }>,
+    res: Response<ApiResponse<unknown[]>>,
+  ) => {
+    const { employeeId } = req.params
+    const startDateQuery = req.query.startDate as string | undefined
+    const endDateQuery = req.query.endDate as string | undefined
+
+    if (!startDateQuery || !endDateQuery) {
+      return res.status(HttpStatusCode.BAD_REQUEST).json({
+        data: null,
+        error: { message: "startDate and endDate are required", code: ErrorCode.VALIDATION_ERROR },
+      })
+    }
+
+    const shifts = await this.service.getEmployeeShifts(
+      employeeId,
+      new Date(startDateQuery),
+      new Date(endDateQuery),
+    )
+    res.status(HttpStatusCode.OK).json({ data: shifts, error: null })
   }
 
   /**

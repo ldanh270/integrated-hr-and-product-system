@@ -7,6 +7,8 @@ export const PERMISSION_CODE = {
   ROLE_PERMISSION_UPDATE: "role.permission.update",
   EMPLOYEE_ROLE_READ: "employee.role.read",
   EMPLOYEE_ROLE_UPDATE: "employee.role.update",
+  APPLICATION_READ: "application.read",
+  APPLICATION_APPROVE: "application.approve",
 } as const
 
 export const PERMISSION_CODES = [
@@ -18,6 +20,8 @@ export const PERMISSION_CODES = [
   PERMISSION_CODE.ROLE_PERMISSION_UPDATE,
   PERMISSION_CODE.EMPLOYEE_ROLE_READ,
   PERMISSION_CODE.EMPLOYEE_ROLE_UPDATE,
+  PERMISSION_CODE.APPLICATION_READ,
+  PERMISSION_CODE.APPLICATION_APPROVE,
 ] as const
 
 export type PermissionCode = (typeof PERMISSION_CODES)[number]
