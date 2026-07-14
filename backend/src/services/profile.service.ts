@@ -13,8 +13,8 @@ import type {
 } from "@/types/profile.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
-
-import { Readable } from "stream"
+import { CloudinaryUtil } from "@/utils/cloudinary.util.ts"
+import { UPLOAD_CONFIG } from "@/configs/system/upload.config.ts"
 
 const LAYER_NAME = "ProfileService"
 /**
@@ -57,37 +57,6 @@ async function toProfileDto(emp: ProfileEmployeeDocument): Promise<ProfileDto> {
   }
 }
 
-/**
- * Uploads a Buffer to Cloudinary using a stream (avoids temp files)
- * Returns the secure_url and public_id from Cloudinary response
- */
-async function uploadToCloudinary(
-  buffer: Buffer,
-  mimeType: string,
-  publicId?: string,
-): Promise<{ url: string; id: string }> {
-  return new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder: "hrp/avatars",
-        resource_type: "image",
-        public_id: publicId,
-        overwrite: true,
-        format: "webp",
-        transformation: [{ width: 400, height: 400, crop: "fill", gravity: "face" }],
-      },
-      (error, result) => {
-        if (error || !result) return reject(error ?? new Error("Cloudinary upload failed"))
-        resolve({ url: result.secure_url, id: result.public_id })
-      },
-    )
-
-    const readable = new Readable()
-    readable.push(buffer)
-    readable.push(null)
-    readable.pipe(uploadStream)
-  })
-}
 
 /**
  * ProfileService implements business logic for profile read, update, and avatar upload
@@ -150,8 +119,14 @@ export class ProfileService implements IProfileService {
     }
 
     // Upload new image
-    const publicId = `avatar_${empId}`
-    const { url, id } = await uploadToCloudinary(fileBuffer, mimeType, publicId)
+    const { url, id } = await CloudinaryUtil.uploadStream(fileBuffer, {
+      folder: UPLOAD_CONFIG.CLOUDINARY_FOLDERS.AVATARS,
+      resource_type: "image",
+      public_id: `avatar_${Date.now()}_${empId}`,
+      overwrite: true,
+      format: "webp",
+      transformation: [{ width: 400, height: 400, crop: "fill", gravity: "face" }],
+    })
 
     // Persist updated avatar reference
     const updated = await this.repo.updateAvatar(empId, { url, id })

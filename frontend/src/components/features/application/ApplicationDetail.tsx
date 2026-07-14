@@ -1,14 +1,17 @@
-import { APPLICATION_STATUS, APPLICATION_TYPE_LABELS, REGIME_TYPE } from "@/config/entities/attendance.config"
+import { APPLICATION_STATUS, APPLICATION_TYPE_LABELS } from "@/config/entities/attendance.config"
 import type { IApplication } from "@/lib/api/application.api"
-import { Check, FileText, Home, RefreshCw, X } from "lucide-react"
+
+import { ArrowLeft, Check, Home, RefreshCw, X } from "lucide-react"
 
 interface ApplicationDetailProps {
   application: IApplication | null
   isLoading: boolean
-  mode: "mine" | "manage"
+  mode: "mine" | "manage" | "all"
   onBack: () => void
   onApprove?: (app: IApplication) => void
   onReject?: (app: IApplication) => void
+  onSwapConfirm?: (app: IApplication) => void
+  onSwapReject?: (app: IApplication) => void
 }
 
 export function ApplicationDetail({
@@ -18,6 +21,8 @@ export function ApplicationDetail({
   onBack,
   onApprove,
   onReject,
+  onSwapConfirm,
+  onSwapReject,
 }: ApplicationDetailProps) {
   if (isLoading || !application) {
     return (
@@ -29,6 +34,7 @@ export function ApplicationDetail({
   }
 
   const isPending = application.status === APPLICATION_STATUS.PENDING
+  const isPartnerPending = application.status === APPLICATION_STATUS.PARTNER_PENDING
   const typeLabel = APPLICATION_TYPE_LABELS[application.type] || application.type
 
   // Render detail fields dynamically based on application type
@@ -37,10 +43,12 @@ export function ApplicationDetail({
       case "leave":
         return (
           <>
-            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Kiểu nghỉ</th>
-            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Từ ngày</th>
-            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Đến ngày</th>
-            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Chế độ</th>
+            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">
+              Từ ngày
+            </th>
+            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">
+              Đến ngày
+            </th>
             <th className="px-4 py-3 font-medium text-muted-foreground text-left w-full">Lý do</th>
           </>
         )
@@ -51,9 +59,15 @@ export function ApplicationDetail({
       default:
         return (
           <>
-            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Từ ngày</th>
-            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">Đến ngày</th>
-            <th className="px-4 py-3 font-medium text-muted-foreground text-left w-full">Chi tiết / Lý do</th>
+            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">
+              Từ ngày
+            </th>
+            <th className="px-4 py-3 font-medium text-muted-foreground text-left whitespace-nowrap">
+              Đến ngày
+            </th>
+            <th className="px-4 py-3 font-medium text-muted-foreground text-left w-full">
+              Chi tiết / Lý do
+            </th>
           </>
         )
     }
@@ -62,14 +76,13 @@ export function ApplicationDetail({
   const renderDetailRow = () => {
     switch (application.type) {
       case "leave": {
-        const leaveDetail = application.detail as Record<string, unknown>
         return (
           <>
-            <td className="px-4 py-4 font-semibold text-foreground">{String(leaveDetail.leaveType || "-")}</td>
-            <td className="px-4 py-4 text-foreground">{new Date(application.startDate).toLocaleDateString("vi-VN")}</td>
-            <td className="px-4 py-4 text-foreground">{new Date(application.endDate).toLocaleDateString("vi-VN")}</td>
             <td className="px-4 py-4 text-foreground">
-              {leaveDetail.regimeType === REGIME_TYPE.PAID ? "Có lương" : "Không lương"}
+              {new Date(application.startDate).toLocaleDateString("vi-VN")}
+            </td>
+            <td className="px-4 py-4 text-foreground">
+              {new Date(application.endDate).toLocaleDateString("vi-VN")}
             </td>
             <td className="px-4 py-4 text-foreground">{application.reason || "-"}</td>
           </>
@@ -78,8 +91,12 @@ export function ApplicationDetail({
       default:
         return (
           <>
-            <td className="px-4 py-4 text-foreground">{new Date(application.startDate).toLocaleDateString("vi-VN")}</td>
-            <td className="px-4 py-4 text-foreground">{new Date(application.endDate).toLocaleDateString("vi-VN")}</td>
+            <td className="px-4 py-4 text-foreground">
+              {new Date(application.startDate).toLocaleDateString("vi-VN")}
+            </td>
+            <td className="px-4 py-4 text-foreground">
+              {new Date(application.endDate).toLocaleDateString("vi-VN")}
+            </td>
             <td className="px-4 py-4 text-foreground">{application.reason || "-"}</td>
           </>
         )
@@ -95,7 +112,7 @@ export function ApplicationDetail({
             onClick={onBack}
             className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-muted text-muted-foreground transition-colors"
           >
-            <FileText size={18} />
+            <ArrowLeft size={18} />
           </button>
           <span className="text-muted-foreground">Đơn thư</span>
           <span className="text-muted-foreground">›</span>
@@ -105,14 +122,16 @@ export function ApplicationDetail({
         </div>
 
         <div className="flex items-center gap-4">
-          <button className="text-muted-foreground hover:text-foreground">
+          <button onClick={onBack} className="text-muted-foreground hover:text-foreground">
             <Home size={18} />
           </button>
           {/* Actions for Manager */}
           {mode === "manage" && isPending && (
             <div className="flex items-center gap-3 ml-4 border-l border-border pl-4">
               <button
-                onClick={() => { onApprove?.(application); }}
+                onClick={() => {
+                  onApprove?.(application)
+                }}
                 className="flex items-center gap-2 text-sm font-semibold text-emerald-600 hover:bg-emerald-50 px-3 py-1.5 rounded-full border border-transparent hover:border-emerald-200 transition-all"
               >
                 <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
@@ -121,13 +140,42 @@ export function ApplicationDetail({
                 Duyệt đơn
               </button>
               <button
-                onClick={() => { onReject?.(application); }}
+                onClick={() => {
+                  onReject?.(application)
+                }}
                 className="flex items-center gap-2 text-sm font-semibold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-full border border-transparent hover:border-red-200 transition-all"
               >
                 <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center text-red-600">
                   <X size={12} strokeWidth={3} />
                 </div>
                 Không duyệt
+              </button>
+            </div>
+          )}
+          {/* Actions for Swap Partner */}
+          {mode === "manage" && isPartnerPending && (
+            <div className="flex items-center gap-3 ml-4 border-l border-border pl-4">
+              <button
+                onClick={() => {
+                  onSwapConfirm?.(application)
+                }}
+                className="flex items-center gap-2 text-sm font-semibold text-emerald-600 hover:bg-emerald-50 px-3 py-1.5 rounded-full border border-transparent hover:border-emerald-200 transition-all"
+              >
+                <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                  <Check size={12} strokeWidth={3} />
+                </div>
+                Đồng ý đổi ca
+              </button>
+              <button
+                onClick={() => {
+                  onSwapReject?.(application)
+                }}
+                className="flex items-center gap-2 text-sm font-semibold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-full border border-transparent hover:border-red-200 transition-all"
+              >
+                <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+                  <X size={12} strokeWidth={3} />
+                </div>
+                Không duyệt đổi ca
               </button>
             </div>
           )}
@@ -139,12 +187,16 @@ export function ApplicationDetail({
         {/* Section 1: Thông tin đơn */}
         <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-border bg-muted/30">
-            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">Thông tin đơn</h2>
+            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+              Thông tin đơn
+            </h2>
           </div>
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
             <div className="flex flex-col gap-1.5">
               <span className="text-xs text-muted-foreground font-medium">Mã đơn</span>
-              <span className="text-sm font-semibold text-foreground">{application.id.toUpperCase()}</span>
+              <span className="text-sm font-semibold text-foreground">
+                {application.id.toUpperCase()}
+              </span>
             </div>
             <div className="flex flex-col gap-1.5">
               <span className="text-xs text-muted-foreground font-medium">Ngày tạo</span>
@@ -155,25 +207,23 @@ export function ApplicationDetail({
             <div className="flex flex-col gap-1.5">
               <span className="text-xs text-muted-foreground font-medium">Người nộp đơn</span>
               <span className="text-sm font-semibold text-primary">
-                {application.employeeId.substring(0, 10)} - {application.employee?.fullName || "N/A"}
+                {application.employeeId.substring(0, 10)} -{" "}
+                {application.employee?.fullName || "N/A"}
               </span>
             </div>
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs text-muted-foreground font-medium">Người duyệt</span>
-              <span className="text-sm font-semibold text-primary">
-                {application.processor ? application.processor.fullName : "Chưa phân công"}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs text-muted-foreground font-medium">Bộ phận</span>
-              <span className="text-sm font-semibold text-foreground">
-                {application.employee?.department || "N/A"}
+            <div className="flex flex-col">
+              <span className="text-muted-foreground text-xs font-medium">Người duyệt</span>
+              <span className="text-foreground font-semibold mt-1">
+                {application.approvedBy?.fullName ||
+                  application.assignedTo?.fullName ||
+                  "Chưa phân công"}
               </span>
             </div>
             <div className="flex flex-col gap-1.5">
               <span className="text-xs text-muted-foreground font-medium">Ngày duyệt</span>
               <span className="text-sm font-semibold text-foreground">
-                {application.status !== APPLICATION_STATUS.PENDING && application.status !== APPLICATION_STATUS.CANCELLED
+                {application.status !== APPLICATION_STATUS.PENDING &&
+                application.status !== APPLICATION_STATUS.CANCELLED
                   ? new Date(application.updatedAt).toLocaleDateString("vi-VN")
                   : "-"}
               </span>
@@ -185,18 +235,46 @@ export function ApplicationDetail({
             <div className="flex flex-col gap-1.5">
               <span className="text-xs text-muted-foreground font-medium">Trạng thái</span>
               <div>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border border-amber-600 text-amber-600 bg-amber-50">
-                  {application.status === APPLICATION_STATUS.PENDING ? "Chờ duyệt" : application.status}
+                <span
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${
+                    application.status === APPLICATION_STATUS.APPROVED
+                      ? "border-emerald-600 text-emerald-600 bg-emerald-50"
+                      : application.status === APPLICATION_STATUS.REJECTED
+                        ? "border-red-600 text-red-600 bg-red-50"
+                        : application.status === APPLICATION_STATUS.PARTNER_PENDING
+                          ? "border-orange-500 text-orange-500 bg-orange-50"
+                          : "border-amber-600 text-amber-600 bg-amber-50"
+                  }`}
+                >
+                  {application.status === APPLICATION_STATUS.PENDING
+                    ? "Đang duyệt"
+                    : application.status === APPLICATION_STATUS.PARTNER_PENDING
+                      ? "Chờ xác nhận đổi ca"
+                      : application.status === APPLICATION_STATUS.APPROVED
+                        ? "Đã duyệt"
+                        : application.status === APPLICATION_STATUS.REJECTED
+                          ? "Không duyệt"
+                          : application.status}
                 </span>
               </div>
             </div>
+            {application.status === APPLICATION_STATUS.REJECTED && application.rejectReason && (
+              <div className="flex flex-col gap-1.5 md:col-span-2">
+                <span className="text-xs text-muted-foreground font-medium">Lý do không duyệt</span>
+                <span className="text-sm font-semibold text-foreground break-words whitespace-pre-wrap">
+                  {application.rejectReason}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Section 2: Thời gian */}
         <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-border bg-muted/30 flex justify-between items-center">
-            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">Thời gian</h2>
+            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+              Thời gian
+            </h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">

@@ -19,6 +19,7 @@ interface ApiResponse<T> {
 export interface ILeaveDetail {
   leaveType: string
   regimeType?: string
+  documentUrl?: string
 }
 
 export interface IOvertimeDetail {
@@ -79,7 +80,11 @@ export interface IApplication {
     email: string
     department?: string
   }
-  processor?: {
+  assignedTo?: {
+    id: string
+    fullName: string
+  }
+  approvedBy?: {
     id: string
     fullName: string
   }
@@ -135,6 +140,12 @@ export const applicationApi = {
     return response.data.data
   },
 
+  /** Submit multiple applications in bulk */
+  submitBulk: async (forms: ISubmitApplicationDTO[]): Promise<IApplication[]> => {
+    const response = await apiClient.post<ApiResponse<IApplication[]>>("/applications/bulk", { forms })
+    return response.data.data
+  },
+
   /** Cancel a pending application (own) */
   cancel: async (id: string): Promise<IApplication> => {
     const response = await apiClient.patch<ApiResponse<IApplication>>(
@@ -143,11 +154,42 @@ export const applicationApi = {
     return response.data.data
   },
 
+  /** Upload an attachment for an application */
+  uploadAttachment: async (file: File): Promise<{ url: string; id: string }> => {
+    const formData = new FormData()
+    formData.append("attachment", file)
+
+    const response = await apiClient.post<ApiResponse<{ url: string; id: string }>>(
+      "/applications/upload-attachment",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
+    )
+
+    if (response.data.error || !response.data.data) {
+      throw new Error(response.data.error?.message || "Failed to upload attachment")
+    }
+    return response.data.data
+  },
+
   /** List all applications (manager role) */
   listAll: async (
     query?: IListApplicationsQuery,
   ): Promise<{ data: IApplication[]; meta: ApiResponse<IApplication[]>["meta"] }> => {
     const response = await apiClient.get<ApiResponse<IApplication[]>>("/applications", {
+      params: query,
+    })
+    return { data: response.data.data, meta: response.data.meta }
+  },
+
+  /** List applications the user can approve */
+  listApprovals: async (
+    query?: IListApplicationsQuery,
+  ): Promise<{ data: IApplication[]; meta: ApiResponse<IApplication[]>["meta"] }> => {
+    const response = await apiClient.get<ApiResponse<IApplication[]>>("/applications/approvals", {
       params: query,
     })
     return { data: response.data.data, meta: response.data.meta }
@@ -166,6 +208,24 @@ export const applicationApi = {
   reject: async (id: string, rejectReason: string): Promise<IApplication> => {
     const response = await apiClient.patch<ApiResponse<IApplication>>(
       `/applications/${id}/reject`,
+      { rejectReason },
+    )
+    return response.data.data
+  },
+
+  /** Swap partner confirms the shift swap (partner_pending → pending) */
+  swapConfirm: async (id: string): Promise<IApplication> => {
+    const response = await apiClient.patch<ApiResponse<IApplication>>(
+      `/applications/${id}/swap-confirm`,
+      {},
+    )
+    return response.data.data
+  },
+
+  /** Swap partner rejects the shift swap (partner_pending → rejected) */
+  swapReject: async (id: string, rejectReason: string): Promise<IApplication> => {
+    const response = await apiClient.patch<ApiResponse<IApplication>>(
+      `/applications/${id}/swap-reject`,
       { rejectReason },
     )
     return response.data.data

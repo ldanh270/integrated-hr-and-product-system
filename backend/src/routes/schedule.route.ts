@@ -26,6 +26,7 @@ const controller = new ScheduleController(service)
 scheduleRoutes.use(authenticate)
 
 scheduleRoutes.get("/my", controller.getEmployeeSchedule)
+scheduleRoutes.get("/my/shifts", controller.getMyShifts)
 scheduleRoutes.get("/my/all", controller.listEmployeeSchedules)
 
 scheduleRoutes.get(
@@ -37,6 +38,11 @@ scheduleRoutes.get(
   "/employee/:employeeId/all",
   requirePermission("attendance.read"),
   controller.listEmployeeSchedulesById,
+)
+scheduleRoutes.get(
+  "/employee/:employeeId/shifts",
+  authenticate,
+  controller.getShiftsByEmployee,
 )
 
 scheduleRoutes.post(

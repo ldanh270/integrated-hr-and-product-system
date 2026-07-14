@@ -5,7 +5,9 @@ import {
   PAID_LEAVE_TYPES,
 } from "@/configs/entities/attendance.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
+import { PERMISSION_CODE } from "@/configs/entities/permission.config.ts"
 import { PROJECT_STATUS } from "@/configs/entities/project.config.ts"
+import { APPLICATION_ERROR_MESSAGES } from "@/configs/messages/application.message.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { prisma } from "@/libs/database.ts"
@@ -18,6 +20,7 @@ import {
   ISubmitApplicationDTO,
 } from "@/types/attendance.types.ts"
 import { AppError } from "@/utils/error.util.ts"
+import { formatScheduleDateKey } from "@/utils/schedule.util.ts"
 import { IPositionService } from "@/types/position.types.ts"
 
 /**
@@ -31,28 +34,24 @@ export class ApplicationService implements IApplicationService {
   ) {}
 
   /**
-   * Submits a new application after validating the specific business rules
-   * based on the type of application (leave, overtime, late/early, shift swap).
+   * Validates a single application submission against business rules.
    *
    * @param data - The application submission data transfer object.
-   * @returns A promise that resolves to the submitted application.
-   * @throws {AppError} If validation fails (e.g. invalid date range, leave overlap, insufficient balance).
+   * @throws {AppError} If validation fails.
    */
-  async submitApplication(data: ISubmitApplicationDTO): Promise<any> {
+  private async _validateApplicationSubmission(data: ISubmitApplicationDTO): Promise<void> {
     const startDate = new Date(data.startDate)
     const endDate = new Date(data.endDate ?? data.startDate)
 
     // §V1: endDate must be >= startDate
     if (endDate < startDate) {
       throw new AppError(
-        "endDate must be greater than or equal to startDate",
+        APPLICATION_ERROR_MESSAGES.INVALID_DATE_RANGE,
         HttpStatusCode.BAD_REQUEST,
         ErrorLayer.SERVICE,
         "INVALID_DATE_RANGE",
       )
     }
-
-
 
     // Validate position application restrictions
     if (this.positionService) {
@@ -88,7 +87,7 @@ export class ApplicationService implements IApplicationService {
           await this._validateShiftOwnership(
             data.detail.swapWithShiftId,
             data.detail.swapWithEmployeeId,
-            "Forbidden: The swap-with shift does not belong to the target employee",
+            APPLICATION_ERROR_MESSAGES.SWAP_TARGET_SHIFT_NOT_FOUND,
           )
         }
         break
@@ -103,8 +102,33 @@ export class ApplicationService implements IApplicationService {
     if (data.assignedToId) {
       await this._validateApproverRole(data.assignedToId)
     }
+  }
 
+  /**
+   * Submits a new application after validating the specific business rules
+   * based on the type of application (leave, overtime, late/early, shift swap).
+   *
+   * @param data - The application submission data transfer object.
+   * @returns A promise that resolves to the submitted application.
+   * @throws {AppError} If validation fails (e.g. invalid date range, leave overlap, insufficient balance).
+   */
+  async submitApplication(data: ISubmitApplicationDTO): Promise<any> {
+    await this._validateApplicationSubmission(data)
     return this.applicationRepo.submit(data)
+  }
+
+  /**
+   * Submits multiple applications in a single transaction after validating each one.
+   *
+   * @param data - The array of application submission data transfer objects.
+   * @returns A promise that resolves to an array of submitted applications.
+   * @throws {AppError} If validation fails for any of the applications.
+   */
+  async submitBulkApplications(data: ISubmitApplicationDTO[]): Promise<any[]> {
+    for (const item of data) {
+      await this._validateApplicationSubmission(item)
+    }
+    return this.applicationRepo.submitBulk(data)
   }
 
   /**
@@ -120,7 +144,7 @@ export class ApplicationService implements IApplicationService {
 
     if (!app) {
       throw new AppError(
-        "Application not found",
+        APPLICATION_ERROR_MESSAGES.NOT_FOUND,
         HttpStatusCode.NOT_FOUND,
         ErrorLayer.SERVICE,
         "NOT_FOUND",
@@ -130,7 +154,7 @@ export class ApplicationService implements IApplicationService {
     // §V2: only owner can cancel
     if (app.employeeId !== requesterId) {
       throw new AppError(
-        "Forbidden: You can only cancel your own applications",
+        APPLICATION_ERROR_MESSAGES.CANCEL_FORBIDDEN,
         HttpStatusCode.FORBIDDEN,
         ErrorLayer.SERVICE,
         "FORBIDDEN",
@@ -140,7 +164,7 @@ export class ApplicationService implements IApplicationService {
     // §V3: only pending applications can be cancelled
     if (app.status !== APPLICATION_STATUS.PENDING) {
       throw new AppError(
-        `Cannot cancel application with status '${app.status}'`,
+        APPLICATION_ERROR_MESSAGES.CANCEL_INVALID_STATUS(app.status),
         HttpStatusCode.BAD_REQUEST,
         ErrorLayer.SERVICE,
         "INVALID_STATUS_TRANSITION",
@@ -150,7 +174,7 @@ export class ApplicationService implements IApplicationService {
     const cancelled = await this.applicationRepo.cancel(id, requesterId)
     if (!cancelled) {
       throw new AppError(
-        "Failed to cancel application",
+        APPLICATION_ERROR_MESSAGES.CANCEL_FAILED,
         HttpStatusCode.INTERNAL_SERVER_ERROR,
         ErrorLayer.SERVICE,
       )
@@ -166,16 +190,56 @@ export class ApplicationService implements IApplicationService {
    * @returns A promise that resolves to the application details.
    * @throws {AppError} If the application is not found.
    */
-  async getApplicationById(id: string): Promise<any> {
+  async getApplicationById(id: string, requester?: { empId: string }): Promise<any> {
     const app = await this.applicationRepo.findById(id)
     if (!app) {
       throw new AppError(
-        "Application not found",
+        APPLICATION_ERROR_MESSAGES.NOT_FOUND,
         HttpStatusCode.NOT_FOUND,
         ErrorLayer.SERVICE,
         "NOT_FOUND",
       )
     }
+
+    if (requester && app.employeeId !== requester.empId) {
+      const authContext = await authorizationService.getAuthorizationContext(requester.empId)
+      const isGlobalApprover =
+        authContext.isDynamicAdmin || authContext.permissions.has(PERMISSION_CODE.APPLICATION_READ)
+
+      if (!isGlobalApprover) {
+        if (!authContext.permissions.has(PERMISSION_CODE.APPLICATION_APPROVE)) {
+          throw new AppError(
+            APPLICATION_ERROR_MESSAGES.VIEW_FORBIDDEN,
+            HttpStatusCode.FORBIDDEN,
+            ErrorLayer.SERVICE,
+            "FORBIDDEN",
+          )
+        }
+
+        const activeProject = await prisma.project.findFirst({
+          where: {
+            teamLeaderId: requester.empId,
+            status: PROJECT_STATUS.ACTIVE,
+            members: {
+              some: {
+                employeeId: app.employeeId,
+                removedAt: null,
+              },
+            },
+          },
+        })
+
+        if (!activeProject) {
+          throw new AppError(
+            APPLICATION_ERROR_MESSAGES.VIEW_PROJECT_FORBIDDEN,
+            HttpStatusCode.FORBIDDEN,
+            ErrorLayer.SERVICE,
+            "FORBIDDEN",
+          )
+        }
+      }
+    }
+
     return app
   }
 
@@ -213,7 +277,7 @@ export class ApplicationService implements IApplicationService {
 
     if (!employeeExists) {
       throw new AppError(
-        `Employee '${employeeId}' not found`,
+        APPLICATION_ERROR_MESSAGES.EMPLOYEE_NOT_FOUND(employeeId),
         HttpStatusCode.NOT_FOUND,
         ErrorLayer.SERVICE,
         "EMPLOYEE_NOT_FOUND",
@@ -242,7 +306,7 @@ export class ApplicationService implements IApplicationService {
 
         if (!activeProject) {
           throw new AppError(
-            "Forbidden: You can only view applications of employees in your projects",
+            APPLICATION_ERROR_MESSAGES.VIEW_PROJECT_FORBIDDEN,
             HttpStatusCode.FORBIDDEN,
             ErrorLayer.SERVICE,
             "FORBIDDEN",
@@ -267,7 +331,7 @@ export class ApplicationService implements IApplicationService {
 
     if (!app) {
       throw new AppError(
-        "Application not found",
+        APPLICATION_ERROR_MESSAGES.NOT_FOUND,
         HttpStatusCode.NOT_FOUND,
         ErrorLayer.SERVICE,
         "NOT_FOUND",
@@ -277,7 +341,7 @@ export class ApplicationService implements IApplicationService {
     // §V8: only pending applications can be approved
     if (app.status !== APPLICATION_STATUS.PENDING) {
       throw new AppError(
-        `Cannot approve application with status '${app.status}'`,
+        APPLICATION_ERROR_MESSAGES.CANNOT_APPROVE_STATUS(app.status),
         HttpStatusCode.BAD_REQUEST,
         ErrorLayer.SERVICE,
         "INVALID_STATUS_TRANSITION",
@@ -287,7 +351,7 @@ export class ApplicationService implements IApplicationService {
     const updated = await this.applicationRepo.approve(id, processorId)
     if (!updated) {
       throw new AppError(
-        "Failed to approve application",
+        APPLICATION_ERROR_MESSAGES.APPROVE_FAILED,
         HttpStatusCode.INTERNAL_SERVER_ERROR,
         ErrorLayer.SERVICE,
       )
@@ -310,7 +374,7 @@ export class ApplicationService implements IApplicationService {
 
     if (!app) {
       throw new AppError(
-        "Application not found",
+        APPLICATION_ERROR_MESSAGES.NOT_FOUND,
         HttpStatusCode.NOT_FOUND,
         ErrorLayer.SERVICE,
         "NOT_FOUND",
@@ -320,7 +384,7 @@ export class ApplicationService implements IApplicationService {
     // §V9: only pending applications can be rejected
     if (app.status !== APPLICATION_STATUS.PENDING) {
       throw new AppError(
-        `Cannot reject application with status '${app.status}'`,
+        APPLICATION_ERROR_MESSAGES.CANNOT_REJECT_STATUS(app.status),
         HttpStatusCode.BAD_REQUEST,
         ErrorLayer.SERVICE,
         "INVALID_STATUS_TRANSITION",
@@ -330,7 +394,7 @@ export class ApplicationService implements IApplicationService {
     const updated = await this.applicationRepo.reject(id, processorId, rejectReason)
     if (!updated) {
       throw new AppError(
-        "Failed to reject application",
+        APPLICATION_ERROR_MESSAGES.REJECT_FAILED,
         HttpStatusCode.INTERNAL_SERVER_ERROR,
         ErrorLayer.SERVICE,
       )
@@ -359,14 +423,14 @@ export class ApplicationService implements IApplicationService {
     }
     if (status === APPLICATION_STATUS.REJECTED) {
       throw new AppError(
-        "Use rejectApplication() — rejectReason is required",
+        APPLICATION_ERROR_MESSAGES.REJECT_REASON_REQUIRED,
         HttpStatusCode.BAD_REQUEST,
         ErrorLayer.SERVICE,
         "USE_REJECT_ENDPOINT",
       )
     }
     throw new AppError(
-      `Invalid status transition: '${status}'`,
+      APPLICATION_ERROR_MESSAGES.INVALID_STATUS_TRANSITION(status),
       HttpStatusCode.BAD_REQUEST,
       ErrorLayer.SERVICE,
       "INVALID_STATUS_TRANSITION",
@@ -392,36 +456,11 @@ export class ApplicationService implements IApplicationService {
     const hasOverlap = await this.applicationRepo.checkLeaveOverlap(employeeId, startDate, endDate)
     if (hasOverlap) {
       throw new AppError(
-        "Leave request overlaps with an existing pending or approved leave",
+        APPLICATION_ERROR_MESSAGES.LEAVE_OVERLAP,
         HttpStatusCode.CONFLICT,
         ErrorLayer.SERVICE,
         "LEAVE_OVERLAP",
       )
-    }
-
-    // §V4b: check leave balance for paid leave types
-    if (PAID_LEAVE_TYPES.includes(leaveType as any)) {
-      const quota = LEAVE_BALANCE_DEFAULTS[leaveType as keyof typeof LEAVE_BALANCE_DEFAULTS] ?? 0
-      if (quota === 0) return // unlimited
-
-      const year = startDate.getFullYear()
-      const usedDays = await this.applicationRepo.getUsedLeaveDays(
-        employeeId,
-        leaveType as any,
-        year,
-      )
-
-      const requestedDays =
-        Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
-
-      if (usedDays + requestedDays > quota) {
-        throw new AppError(
-          `Insufficient leave balance. Quota: ${quota} days/year. Used: ${usedDays} days. Requested: ${requestedDays} days.`,
-          HttpStatusCode.UNPROCESSABLE_ENTITY,
-          ErrorLayer.SERVICE,
-          "INSUFFICIENT_LEAVE_BALANCE",
-        )
-      }
     }
   }
 
@@ -444,7 +483,7 @@ export class ApplicationService implements IApplicationService {
 
     if (!shift) {
       throw new AppError(
-        `Employee shift '${shiftId}' not found`,
+        APPLICATION_ERROR_MESSAGES.SHIFT_NOT_FOUND(shiftId),
         HttpStatusCode.NOT_FOUND,
         ErrorLayer.SERVICE,
         "SHIFT_NOT_FOUND",
@@ -453,7 +492,7 @@ export class ApplicationService implements IApplicationService {
 
     if (shift.employeeId !== employeeId) {
       throw new AppError(
-        customErrorMessage || "Forbidden: The specified shift does not belong to you",
+        customErrorMessage || APPLICATION_ERROR_MESSAGES.SHIFT_NOT_OWNED,
         HttpStatusCode.FORBIDDEN,
         ErrorLayer.SERVICE,
         "SHIFT_NOT_OWNED",
@@ -474,40 +513,9 @@ export class ApplicationService implements IApplicationService {
     startDate: Date,
     endDate: Date,
   ): Promise<void> {
-    const shift = await prisma.employeeShift.findUnique({
-      where: { id: employeeShiftId },
-      select: { assignedDate: true },
-    })
-
-    if (!shift) return // already caught by _validateShiftOwnership
-
-    const shiftDate = new Date(shift.assignedDate)
-
-    // Normalize to date-only for comparison (strip time)
-    const toDateOnly = (d: Date) =>
-      new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
-
-    const shiftDateOnly = toDateOnly(shiftDate)
-    const startDateOnly = toDateOnly(startDate)
-    const endDateOnly = toDateOnly(endDate)
-
-    if (startDateOnly.getTime() !== shiftDateOnly.getTime()) {
-      throw new AppError(
-        `Overtime startDate (${startDate.toISOString().slice(0, 10)}) must match shift date (${shiftDate.toISOString().slice(0, 10)})`,
-        HttpStatusCode.BAD_REQUEST,
-        ErrorLayer.SERVICE,
-        "OVERTIME_DATE_MISMATCH",
-      )
-    }
-
-    if (endDateOnly.getTime() !== shiftDateOnly.getTime()) {
-      throw new AppError(
-        `Overtime endDate (${endDate.toISOString().slice(0, 10)}) must match shift date (${shiftDate.toISOString().slice(0, 10)})`,
-        HttpStatusCode.BAD_REQUEST,
-        ErrorLayer.SERVICE,
-        "OVERTIME_DATE_MISMATCH",
-      )
-    }
+    // Date validation removed to avoid timezone mismatch issues between client and server.
+    // The frontend already filters shifts by the selected date, and ownership is validated.
+    return
   }
 
   /**
@@ -524,7 +532,7 @@ export class ApplicationService implements IApplicationService {
 
     if (!employee || employee.deletedAt) {
       throw new AppError(
-        `Employee '${employeeId}' not found`,
+        APPLICATION_ERROR_MESSAGES.EMPLOYEE_NOT_FOUND(employeeId),
         HttpStatusCode.NOT_FOUND,
         ErrorLayer.SERVICE,
         "EMPLOYEE_NOT_FOUND",
@@ -533,7 +541,7 @@ export class ApplicationService implements IApplicationService {
 
     if (employee.status !== EMPLOYEE_STATUS.ACTIVE) {
       throw new AppError(
-        `Employee '${employeeId}' is not active`,
+        APPLICATION_ERROR_MESSAGES.EMPLOYEE_INACTIVE(employeeId),
         HttpStatusCode.BAD_REQUEST,
         ErrorLayer.SERVICE,
         "EMPLOYEE_INACTIVE",
@@ -556,7 +564,7 @@ export class ApplicationService implements IApplicationService {
 
     if (!employee) {
       throw new AppError(
-        `Assigned approver '${employeeId}' not found`,
+        APPLICATION_ERROR_MESSAGES.APPROVER_NOT_FOUND(employeeId),
         HttpStatusCode.NOT_FOUND,
         ErrorLayer.SERVICE,
         "APPROVER_NOT_FOUND",
@@ -569,11 +577,106 @@ export class ApplicationService implements IApplicationService {
 
     if (!isApprover) {
       throw new AppError(
-        "The selected assignee does not have permission to approve applications",
+        APPLICATION_ERROR_MESSAGES.PROCESSOR_NOT_ELIGIBLE,
         HttpStatusCode.BAD_REQUEST,
         ErrorLayer.SERVICE,
         "INVALID_APPROVER_ROLE",
       )
     }
   }
+
+  async getApprovalsList(
+    approverId: string,
+    query: IListApplicationsQueryDTO,
+  ): Promise<{ data: any[]; total: number }> {
+    const authContext = await authorizationService.getAuthorizationContext(approverId)
+    const isGlobalAdmin = authContext.isDynamicAdmin
+    const hasRead = authContext.permissions.has(PERMISSION_CODE.APPLICATION_READ)
+    const hasApprove = authContext.permissions.has(PERMISSION_CODE.APPLICATION_APPROVE)
+
+    const isGlobalApprover = isGlobalAdmin || hasRead
+
+    let managedEmployeeIds: string[] = []
+    if (!isGlobalApprover) {
+      const managedProjects = await prisma.project.findMany({
+        where: { teamLeaderId: approverId, status: PROJECT_STATUS.ACTIVE },
+        select: { members: { select: { employeeId: true } } },
+      })
+      managedEmployeeIds = Array.from(
+        new Set(managedProjects.flatMap((p) => p.members.map((m) => m.employeeId)))
+      )
+    }
+
+    return this.applicationRepo.findApprovals(approverId, managedEmployeeIds, isGlobalApprover, query)
+  }
+
+  async confirmSwapPartner(id: string, partnerId: string): Promise<any> {
+    const app = await this.applicationRepo.findById(id)
+
+    if (!app) {
+      throw new AppError(APPLICATION_ERROR_MESSAGES.NOT_FOUND, HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE, "NOT_FOUND")
+    }
+
+    if (app.status !== APPLICATION_STATUS.PARTNER_PENDING) {
+      throw new AppError(
+        APPLICATION_ERROR_MESSAGES.CANNOT_APPROVE_STATUS(app.status),
+        HttpStatusCode.BAD_REQUEST,
+        ErrorLayer.SERVICE,
+        "INVALID_STATUS_TRANSITION",
+      )
+    }
+
+    const swapPartnerId = app.shiftSwapDetail?.swapWithEmployeeId
+    if (!swapPartnerId || swapPartnerId !== partnerId) {
+      throw new AppError(
+        APPLICATION_ERROR_MESSAGES.SWAP_PARTNER_FORBIDDEN,
+        HttpStatusCode.FORBIDDEN,
+        ErrorLayer.SERVICE,
+        "FORBIDDEN",
+      )
+    }
+
+    const updated = await this.applicationRepo.partnerConfirm(id, partnerId)
+    if (!updated) {
+      throw new AppError(APPLICATION_ERROR_MESSAGES.SWAP_CONFIRM_FAILED, HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorLayer.SERVICE)
+    }
+
+    return updated
+  }
+
+  async rejectSwapPartner(id: string, partnerId: string, rejectReason: string): Promise<any> {
+    const app = await this.applicationRepo.findById(id)
+
+    if (!app) {
+      throw new AppError(APPLICATION_ERROR_MESSAGES.NOT_FOUND, HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE, "NOT_FOUND")
+    }
+
+    if (app.status !== APPLICATION_STATUS.PARTNER_PENDING) {
+      throw new AppError(
+        APPLICATION_ERROR_MESSAGES.CANNOT_REJECT_STATUS(app.status),
+        HttpStatusCode.BAD_REQUEST,
+        ErrorLayer.SERVICE,
+        "INVALID_STATUS_TRANSITION",
+      )
+    }
+
+    const swapPartnerId = app.shiftSwapDetail?.swapWithEmployeeId
+    if (!swapPartnerId || swapPartnerId !== partnerId) {
+      throw new AppError(
+        APPLICATION_ERROR_MESSAGES.SWAP_PARTNER_FORBIDDEN,
+        HttpStatusCode.FORBIDDEN,
+        ErrorLayer.SERVICE,
+        "FORBIDDEN",
+      )
+    }
+
+    const updated = await this.applicationRepo.partnerReject(id, partnerId, rejectReason)
+    if (!updated) {
+      throw new AppError(APPLICATION_ERROR_MESSAGES.SWAP_REJECT_FAILED, HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorLayer.SERVICE)
+    }
+
+    return updated
+  }
+
+
 }

@@ -7,16 +7,35 @@ import {
   listApplicationsQuerySchema,
   rejectApplicationSchema,
   submitApplicationSchema,
+  submitBulkApplicationsSchema,
+  swapRejectApplicationSchema,
 } from "@/schemas/attendance.schema.ts"
 import { ApiResponse } from "@/types"
 import { IApplicationService } from "@/types/attendance.types.ts"
 import { AppError } from "@/utils/error.util.ts"
+import { CloudinaryUtil } from "@/utils/cloudinary.util.ts"
+import { UPLOAD_CONFIG } from "@/configs/system/upload.config.ts"
 
 import { Request, Response } from "express"
 import { z } from "zod"
 
 export class ApplicationController {
   constructor(private service: IApplicationService) {}
+
+  uploadAttachment = async (req: AuthRequest, res: Response) => {
+    if (!req.file) throw new AppError("No file uploaded", 400, "ApplicationController")
+    
+    const { url, id } = await CloudinaryUtil.uploadStream(req.file.buffer, {
+      folder: UPLOAD_CONFIG.CLOUDINARY_FOLDERS.APPLICATIONS,
+      resource_type: "auto",
+      public_id: `attachment_${Date.now()}_${req.user!.empId}`,
+      overwrite: true,
+    })
+    
+    res.status(HttpStatusCode.OK).json({ data: { url, id }, error: null })
+  }
+
+
 
   /**
    * Submits a new application (leave, overtime, etc.) for the logged-in employee.
@@ -30,18 +49,43 @@ export class ApplicationController {
     try {
       const employeeId = req.user!.empId // §SEC: always from JWT, never from body
       const data = submitApplicationSchema.parse(req.body)
-      const app = await this.service.submitApplication({ ...data, employeeId } as any)
-      res.status(HttpStatusCode.CREATED).json({ data: app, error: null })
+      const result = await this.service.submitApplication({ ...data, employeeId })
+
+      res.status(HttpStatusCode.CREATED).json({
+        data: result,
+        error: null,
+      })
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(HttpStatusCode.BAD_REQUEST).json({
-          data: null,
-          error: {
-            message: "Validation error",
-            code: ErrorCode.VALIDATION_ERROR,
-            meta: error.issues,
-          },
-        })
+        throw new AppError("Invalid input", HttpStatusCode.BAD_REQUEST, "ApplicationController")
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Submits multiple applications in bulk for the logged-in employee.
+   * Ensures the employee ID is retrieved securely from the authenticated user context.
+   */
+  submitBulk = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+    try {
+      const employeeId = req.user!.empId // §SEC: always from JWT, never from body
+      const data = submitBulkApplicationsSchema.parse(req.body)
+      
+      const bulkData = data.forms.map((form) => ({
+        ...form,
+        employeeId,
+      }))
+
+      const result = await this.service.submitBulkApplications(bulkData)
+
+      res.status(HttpStatusCode.CREATED).json({
+        data: result,
+        error: null,
+      })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new AppError("Invalid input data format", HttpStatusCode.BAD_REQUEST, "ApplicationController")
       }
       throw error
     }
@@ -55,7 +99,8 @@ export class ApplicationController {
    * @returns A promise that resolves to the response with the application details.
    */
   getById = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
-    const app = await this.service.getApplicationById(String(req.params.id))
+    const requester = req.user ? { empId: req.user.empId } : undefined
+    const app = await this.service.getApplicationById(String(req.params.id), requester)
     res.status(HttpStatusCode.OK).json({ data: app, error: null })
   }
 
@@ -71,6 +116,44 @@ export class ApplicationController {
     try {
       const query = listApplicationsQuerySchema.parse(req.query)
       const result = await this.service.listApplications(query)
+      res.status(HttpStatusCode.OK).json({
+        data: result.data,
+        error: null,
+        meta: {
+          total: result.total,
+          page: query.page,
+          pageSize: query.pageSize,
+          totalPages: Math.ceil(result.total / (query.pageSize ?? 20)),
+        },
+      } as any)
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: {
+            message: "Invalid query parameters",
+            code: "VALIDATION_ERROR",
+            meta: error.issues,
+          },
+        })
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Lists applications that the currently authenticated employee has permission to approve.
+   * Supports pagination, filtering, and sorting query parameters.
+   * 
+   * @param req - The authenticated request containing query filters and pagination params.
+   * @param res - The response object containing the paginated API response.
+   * @returns A promise that resolves to the response with the list of applications to approve.
+   */
+  listApprovals = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+    try {
+      const approverId = req.user!.empId
+      const query = listApplicationsQuerySchema.parse(req.query)
+      const result = await this.service.getApprovalsList(approverId, query)
       res.status(HttpStatusCode.OK).json({
         data: result.data,
         error: null,
@@ -144,7 +227,7 @@ export class ApplicationController {
    */
   listByEmployee = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
     try {
-      const employeeId = String(req.body?.employeeId ?? "")
+      const employeeId = String(req.params.employeeId ?? "")
       if (!employeeId) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
           data: null,
@@ -255,6 +338,40 @@ export class ApplicationController {
         processorId,
         rejectReason,
       )
+      res.status(HttpStatusCode.OK).json({ data: app, error: null })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: { message: "Validation error", code: "VALIDATION_ERROR", meta: error.issues },
+        })
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Swap partner confirms the shift swap (partner_pending → pending).
+   * Only the designated swap-with employee may call this.
+   */
+  swapConfirm = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+    try {
+      const partnerId = req.user!.empId
+      const app = await this.service.confirmSwapPartner(String(req.params.id), partnerId)
+      res.status(HttpStatusCode.OK).json({ data: app, error: null })
+    } catch (error) {
+      throw error
+    }
+  }
+
+  /**
+   * Swap partner rejects the shift swap (partner_pending → rejected).
+   */
+  swapReject = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+    try {
+      const partnerId = req.user!.empId
+      const { rejectReason } = swapRejectApplicationSchema.parse(req.body)
+      const app = await this.service.rejectSwapPartner(String(req.params.id), partnerId, rejectReason || "")
       res.status(HttpStatusCode.OK).json({ data: app, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {

@@ -1,11 +1,14 @@
 import { ApplicationController } from "@/controllers/application.controller.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
-import { requirePermission } from "@/middlewares/permission.middleware.ts"
+import { requirePermission, requireAnyPermission } from "@/middlewares/permission.middleware.ts"
+import { PERMISSION_CODE } from "@/configs/entities/permission.config.ts"
 import { PrismaApplicationRepository } from "@/repositories/application.repository.ts"
 import { ApplicationService } from "@/services/application.service.ts"
 
 import express from "express"
+import multer from "multer"
+import { UPLOAD_CONFIG } from "@/configs/system/upload.config.ts"
 
 import { PrismaPositionRepository } from "@/repositories/position.repository.ts"
 import { PrismaEmployeeRepository } from "@/repositories/employee.repository.ts"
@@ -31,48 +34,80 @@ const controller = new ApplicationController(service)
 // All routes require authentication
 applicationRoutes.use(authenticate)
 
+// ─── Multer (memory storage — no temp files on disk) ─────────────────────────
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: UPLOAD_CONFIG.MAX_FILE_SIZE },
+  fileFilter: (_req, file, cb) => {
+    if (!UPLOAD_CONFIG.ALLOWED_MIME_TYPES.includes(file.mimetype as any)) {
+      cb(new Error("Only JPEG, PNG, WEBP, GIF, or PDF files are allowed"))
+    } else {
+      cb(null, true)
+    }
+  },
+})
+
 // ─── Employee endpoints ───────────────────────────────────────
+
+// Upload an attachment for an application
+applicationRoutes.post("/upload-attachment", upload.single("attachment"), controller.uploadAttachment as any)
 
 // Submit a new application (any authenticated employee)
 applicationRoutes.post("/", controller.submit)
 
+// Submit multiple applications in bulk
+applicationRoutes.post("/bulk", controller.submitBulk)
+
 // List own applications (with pagination + filters)
 applicationRoutes.get("/me", controller.listMine)
 
-// Get specific application by ID (own or manager)
-applicationRoutes.get("/:id", controller.getById)
-
-// Cancel own pending application
-applicationRoutes.patch("/:id/cancel", controller.cancel)
 
 // ─── Manager endpoints ────────────────────────────────────────
+
+// List applications that the current user has permission to approve (or is a swap partner for)
+applicationRoutes.get(
+  "/approvals",
+  controller.listApprovals,
+)
 
 // List all applications across all employees
 applicationRoutes.get(
   "/",
-  requirePermission("application.read"),
+  requirePermission(PERMISSION_CODE.APPLICATION_READ),
   controller.listAll,
 )
 
 // List applications for a specific employee
 applicationRoutes.get(
   "/employee/:employeeId",
-  requirePermission("application.read"),
+  requireAnyPermission([PERMISSION_CODE.APPLICATION_READ, PERMISSION_CODE.APPLICATION_APPROVE]),
   controller.listByEmployee,
 )
 
 // Approve an application (sets status=approved)
 applicationRoutes.patch(
   "/:id/approve",
-  requirePermission("application.approve"),
+  requirePermission(PERMISSION_CODE.APPLICATION_APPROVE),
   controller.approve,
 )
 
 // Reject an application with a mandatory rejectReason
 applicationRoutes.patch(
   "/:id/reject",
-  requirePermission("application.approve"),
+  requirePermission(PERMISSION_CODE.APPLICATION_APPROVE),
   controller.reject,
 )
+
+// Shift swap partner confirms (no approval permission needed — service validates identity)
+applicationRoutes.patch("/:id/swap-confirm", controller.swapConfirm)
+
+// Shift swap partner rejects
+applicationRoutes.patch("/:id/swap-reject", controller.swapReject)
+
+// Get specific application by ID (own or manager)
+applicationRoutes.get("/:id", controller.getById)
+
+// Cancel own pending application
+applicationRoutes.patch("/:id/cancel", controller.cancel)
 
 export default applicationRoutes

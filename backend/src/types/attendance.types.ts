@@ -47,6 +47,7 @@ export interface IAttendanceRecordQueryDTO {
 export interface ILeaveDetailDTO {
   leaveType: ILeaveType
   regimeType: IRegimeType
+  documentUrl?: string
 }
 
 export interface IOvertimeDetailDTO {
@@ -54,7 +55,7 @@ export interface IOvertimeDetailDTO {
 }
 
 export interface IWorkFromHomeDetailDTO {
-  location?: string
+  employeeShiftId: string
 }
 
 export interface IShiftSwapDetailDTO {
@@ -89,7 +90,7 @@ export interface IRegimeDetailDTO {
 interface IBaseApplicationDTO {
   employeeId: string
   startDate: string | Date
-  endDate: string | Date
+  endDate?: string | Date
   reason?: string
   note?: string
   assignedToId?: string
@@ -152,6 +153,7 @@ export interface IRealShiftDTO {
   actualStartTime: number
   actualEndTime?: number | null
   isMatched: boolean
+  isPaidLeave?: boolean
 }
 
 export interface IRealShiftUpsertDTO {
@@ -246,17 +248,29 @@ export interface IAttendanceRepository {
 export interface IApplicationRepository {
   /** Submits a new application. */
   submit(data: ISubmitApplicationDTO): Promise<any>
+  /** Submits multiple applications in a transaction. */
+  submitBulk(data: ISubmitApplicationDTO[]): Promise<any[]>
   findById(id: string): Promise<any | null>
   findByEmployee(
     employeeId: string,
     query: IListApplicationsQueryDTO,
   ): Promise<{ data: any[]; total: number }>
   findAll(query: IListApplicationsQueryDTO): Promise<{ data: any[]; total: number }>
+  findApprovals(
+    approverId: string,
+    managedEmployeeIds: string[],
+    isGlobalApprover: boolean,
+    query: IListApplicationsQueryDTO,
+  ): Promise<{ data: any[]; total: number }>
   cancel(id: string, employeeId: string): Promise<any | null>
   /** Approves an application (sets status=approved). */
   approve(id: string, approvedBy: string): Promise<any | null>
   /** Rejects an application with a mandatory reason. */
   reject(id: string, rejectedBy: string, rejectReason: string): Promise<any | null>
+  /** Partner confirms (agree) a shift_swap application (partner_pending → pending). */
+  partnerConfirm(id: string, partnerId: string): Promise<any | null>
+  /** Partner rejects a shift_swap application (partner_pending → rejected). */
+  partnerReject(id: string, partnerId: string, rejectReason: string): Promise<any | null>
   checkLeaveOverlap(
     employeeId: string,
     startDate: string | Date,
@@ -315,9 +329,15 @@ export interface IAttendanceService {
 export interface IApplicationService {
   /** Submits an application. */
   submitApplication(data: ISubmitApplicationDTO): Promise<any>
+  /** Submits multiple applications in bulk. */
+  submitBulkApplications(data: ISubmitApplicationDTO[]): Promise<any[]>
   cancelApplication(id: string, requesterId: string): Promise<any>
-  getApplicationById(id: string): Promise<any>
+  getApplicationById(id: string, requester?: { empId: string }): Promise<any>
   listApplications(query: IListApplicationsQueryDTO): Promise<{ data: any[]; total: number }>
+  getApprovalsList(
+    approverId: string,
+    query: IListApplicationsQueryDTO,
+  ): Promise<{ data: any[]; total: number }>
   getEmployeeApplications(
     employeeId: string,
     query: IListApplicationsQueryDTO,
@@ -327,6 +347,10 @@ export interface IApplicationService {
   approveApplication(id: string, processorId: string): Promise<any>
   /** Rejects a pending application with a mandatory reason. */
   rejectApplication(id: string, processorId: string, rejectReason: string): Promise<any>
+  /** Partner confirms a shift swap (partner_pending → pending). */
+  confirmSwapPartner(id: string, partnerId: string): Promise<any>
+  /** Partner rejects a shift swap (partner_pending → rejected). */
+  rejectSwapPartner(id: string, partnerId: string, rejectReason: string): Promise<any>
   /** @deprecated Use approveApplication / rejectApplication instead. */
   processApplication(
     id: string,

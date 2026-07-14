@@ -15,6 +15,7 @@ const APPLICATION_INCLUDE = {
   employee: {
     select: { id: true, fullName: true, email: true, position: true, avatarUrl: true },
   },
+  assignedTo: { select: { id: true, fullName: true } },
   approvedBy: { select: { id: true, fullName: true } },
   leaveDetail: true,
   overtimeDetail: { include: { employeeShift: { include: { shift: true } } } },
@@ -46,11 +47,17 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
   async submit(data: ISubmitApplicationDTO): Promise<any> {
     const { employeeId, type, startDate, endDate, reason, note, assignedToId, detail } = data
 
+    // shift_swap starts at partner_pending — the swap partner must confirm first
+    const isShiftSwap = type === ApplicationType.shift_swap
+    const initialStatus = isShiftSwap
+      ? ApplicationStatus.partner_pending
+      : ApplicationStatus.pending
+
     return this.prisma.application.create({
       data: {
         employeeId,
         type: type as ApplicationType,
-        status: ApplicationStatus.pending,
+        status: initialStatus,
         startDate: new Date(startDate),
         endDate: new Date(endDate ?? startDate),
         reason,
@@ -60,6 +67,40 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
       },
       include: APPLICATION_INCLUDE,
     })
+  }
+
+  /**
+   * Creates and submits multiple applications in a single transaction.
+   *
+   * @param data - Array of application details.
+   * @returns A promise that resolves to an array of created applications.
+   */
+  async submitBulk(data: ISubmitApplicationDTO[]): Promise<any[]> {
+    const creates = data.map((item) => {
+      const { employeeId, type, startDate, endDate, reason, note, assignedToId } = item
+
+      const isShiftSwap = type === ApplicationType.shift_swap
+      const initialStatus = isShiftSwap
+        ? ApplicationStatus.partner_pending
+        : ApplicationStatus.pending
+
+      return this.prisma.application.create({
+        data: {
+          employeeId,
+          type: type as ApplicationType,
+          status: initialStatus,
+          startDate: new Date(startDate),
+          endDate: new Date(endDate ?? startDate),
+          reason,
+          note,
+          assignedToId: assignedToId ?? null,
+          ...this._buildDetailCreate(item),
+        },
+        include: APPLICATION_INCLUDE,
+      })
+    })
+
+    return this.prisma.$transaction(creates)
   }
 
   /**
@@ -98,6 +139,52 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    */
   async findAll(query: IListApplicationsQueryDTO): Promise<{ data: any[]; total: number }> {
     const where = this._buildWhere(query)
+    return this._paginate(where, query)
+  }
+
+  /**
+   * Retrieves a paginated list of applications that the specified approver can approve.
+   */
+  async findApprovals(
+    approverId: string,
+    managedEmployeeIds: string[],
+    isGlobalApprover: boolean,
+    query: IListApplicationsQueryDTO,
+  ): Promise<{ data: any[]; total: number }> {
+    const baseWhere = this._buildWhere(query)
+
+    // Swap partner condition: partner_pending shift_swap where approverId is the swap target
+    const partnerPendingCondition = {
+      status: ApplicationStatus.partner_pending,
+      shiftSwapDetail: { swapWithEmployeeId: approverId },
+    }
+
+    const assignedOrManaged = [
+      { assignedToId: approverId },
+      ...(managedEmployeeIds.length > 0 ? [{ employeeId: { in: managedEmployeeIds } }] : []),
+    ]
+
+    let where: Record<string, any> = {}
+
+    if (query.status === ApplicationStatus.pending) {
+      const { status, ...restWhere } = baseWhere
+      where = {
+        ...restWhere,
+        OR: [
+          {
+            status: ApplicationStatus.pending,
+            OR: assignedOrManaged
+          },
+          partnerPendingCondition
+        ]
+      }
+    } else {
+      where = {
+        ...baseWhere,
+        OR: assignedOrManaged
+      }
+    }
+
     return this._paginate(where, query)
   }
 
@@ -255,6 +342,48 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
   }
 
   /**
+   * Partner (swap target) confirms the shift swap request.
+   * Transitions status from partner_pending → pending so the manager can approve.
+   */
+  async partnerConfirm(id: string, partnerId: string): Promise<any | null> {
+    try {
+      return await this.prisma.application.update({
+        where: { id, status: ApplicationStatus.partner_pending },
+        data: {
+          status: ApplicationStatus.pending,
+          partnerApprovedById: partnerId,
+          partnerApprovedAt: new Date(),
+          partnerRejectReason: null,
+        },
+        include: APPLICATION_INCLUDE,
+      })
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * Partner (swap target) rejects the shift swap request.
+   * Transitions status from partner_pending → rejected.
+   */
+  async partnerReject(id: string, partnerId: string, rejectReason: string): Promise<any | null> {
+    try {
+      return await this.prisma.application.update({
+        where: { id, status: ApplicationStatus.partner_pending },
+        data: {
+          status: ApplicationStatus.rejected,
+          partnerApprovedById: partnerId,
+          partnerApprovedAt: new Date(),
+          partnerRejectReason: rejectReason,
+        },
+        include: APPLICATION_INCLUDE,
+      })
+    } catch {
+      return null
+    }
+  }
+
+  /**
    * Checks if an employee has any pending or approved leave applications overlapping with the specified range.
    *
    * @param employeeId - The employee's ID.
@@ -336,6 +465,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
             create: {
               leaveType: data.detail.leaveType,
               regimeType: data.detail.regimeType,
+              documentUrl: data.detail.documentUrl ?? null,
             },
           },
         }
@@ -350,7 +480,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
       case APPLICATION_TYPES.WORK_FROM_HOME.LABEL:
         return {
           workFromHomeDetail: {
-            create: { location: data.detail?.location },
+            create: { employeeShiftId: data.detail.employeeShiftId },
           },
         }
 

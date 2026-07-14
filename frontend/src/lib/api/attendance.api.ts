@@ -89,6 +89,23 @@ export const schedulesApi = {
     return res.data.data
   },
 
+  /** Fetches specific employee shifts for the authenticated user within a date range. */
+  getMyShifts: async (startDate: string, endDate: string): Promise<any[]> => {
+    const res = await apiClient.get<ApiResponse<any[]>>(API_ENDPOINTS.SCHEDULES.MY_SHIFTS, {
+      params: { startDate, endDate },
+    })
+    return res.data.data
+  },
+
+  /** Fetches EmployeeShifts for a specific employee (used for shift-swap partner ca selection). */
+  getShiftsByEmployee: async (employeeId: string, startDate: string, endDate: string): Promise<any[]> => {
+    const res = await apiClient.get<ApiResponse<any[]>>(
+      API_ENDPOINTS.SCHEDULES.EMPLOYEE_SHIFTS(employeeId),
+      { params: { startDate, endDate } },
+    )
+    return res.data.data
+  },
+
   /** Fetches the planned schedule for a specific employee. */
   getByEmployee: async (employeeId: string, date?: string): Promise<ISchedule | null> => {
     const res = await apiClient.get<ApiResponse<ISchedule | null>>(

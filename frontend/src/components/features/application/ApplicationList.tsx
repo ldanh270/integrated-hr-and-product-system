@@ -6,6 +6,7 @@ import {
 import { useManageApplications } from "@/hooks/application/useManageApplications"
 import { useMyApplications } from "@/hooks/application/useMyApplications"
 import type { IApplication } from "@/lib/api/application.api"
+import { useAllApplications } from "@/hooks/application/useAllApplications"
 
 import { useState } from "react"
 
@@ -13,7 +14,11 @@ import { ChevronLeft, ChevronRight, FileText, Filter, RefreshCw } from "lucide-r
 
 const STATUS_LABELS: Record<string, { label: string; colorClass: string } | undefined> = {
   [APPLICATION_STATUS.PENDING]: {
-    label: "Chờ duyệt",
+    label: "Đang duyệt",
+    colorClass: "text-amber-600 border-amber-600 font-medium",
+  },
+  [APPLICATION_STATUS.PARTNER_PENDING]: {
+    label: "Chờ xác nhận đổi ca",
     colorClass: "text-amber-600 border-amber-600 font-medium",
   },
   [APPLICATION_STATUS.APPROVED]: {
@@ -31,9 +36,9 @@ const STATUS_LABELS: Record<string, { label: string; colorClass: string } | unde
 }
 
 interface ApplicationListProps {
-  mode: "mine" | "manage"
+  mode: "mine" | "manage" | "all"
   onRowClick: (app: IApplication) => void
-  hookState: ReturnType<typeof useMyApplications> | ReturnType<typeof useManageApplications>
+  hookState: ReturnType<typeof useMyApplications> | ReturnType<typeof useManageApplications> | ReturnType<typeof useAllApplications>
 }
 
 export function ApplicationList({ mode, onRowClick, hookState }: ApplicationListProps) {
@@ -53,7 +58,7 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
     total,
     stats,
   } = currentHooks as ReturnType<typeof useMyApplications> &
-    ReturnType<typeof useManageApplications>
+    ReturnType<typeof useManageApplications> & ReturnType<typeof useAllApplications>
 
   const [localKeyword, setLocalKeyword] = useState(keyword)
 
@@ -66,107 +71,113 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
 
   return (
     <div className="flex flex-col gap-6 w-full animate-in fade-in duration-300">
-      {/* Top Tabs */}
-      <div className="flex items-center gap-6 border-b border-border">
-        {STATUS_TABS.map((tab) => {
-          const isActive = statusFilter === tab.value
-          return (
-            <button
-              key={tab.value}
-              onClick={() => {
-                setStatusFilter(
-                  tab.value as "all" | "pending" | "approved" | "rejected" | "cancelled",
+        <>
+          {/* Top Tabs */}
+          {mode !== "manage" && (
+            <div className="flex items-center gap-6 border-b border-border">
+              {STATUS_TABS.map((tab) => {
+                const isActive = statusFilter === tab.value
+                return (
+                  <button
+                    key={tab.value}
+                    onClick={() => {
+                      setStatusFilter(
+                        tab.value as "all" | "pending" | "approved" | "rejected" | "cancelled",
+                      )
+                      setPage(1)
+                    }}
+                    className={`relative flex items-center gap-2 py-4 transition-all font-medium text-[13px] ${
+                      isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {tab.label}
+                    <span
+                      className={`inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full text-[11px] font-bold px-1.5 border ${
+                        isActive
+                          ? "bg-primary border-primary text-primary-foreground"
+                          : "bg-background border-border text-muted-foreground"
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                    {isActive && (
+                      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-t-full" />
+                    )}
+                  </button>
                 )
-                setPage(1)
-              }}
-              className={`relative flex items-center gap-2 py-4 transition-all font-medium text-[13px] ${
-                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tab.label}
-              <span
-                className={`inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full text-[11px] font-bold px-1.5 border ${
-                  isActive
-                    ? "bg-primary border-primary text-primary-foreground"
-                    : "bg-background border-border text-muted-foreground"
-                }`}
-              >
-                {tab.count}
-              </span>
-              {isActive && (
-                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-t-full" />
-              )}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Filters and Actions */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex flex-1 items-center gap-3 w-full sm:w-auto">
-          {/* Search */}
-          <div className="relative flex-1 sm:max-w-[280px]">
-            <input
-              type="text"
-              value={localKeyword}
-              onChange={(e) => { setLocalKeyword(e.target.value); }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  setKeyword(localKeyword)
-                  setPage(1)
-                }
-              }}
-              placeholder="Tìm kiếm họ và tên, người duyệt, mã đơn, mã nhân sự"
-              className="w-full pl-4 pr-9 py-2 text-[13px] border border-input rounded-md bg-background focus:outline-none focus:border-primary transition-all text-foreground"
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <Filter className="text-muted-foreground" size={14} />
+              })}
             </div>
-          </div>
+          )}
 
-          <div className="relative min-w-[160px]">
-            <select
-              value={typeFilter}
-              onChange={(e) => {
-                setTypeFilter(e.target.value)
-                setPage(1)
-              }}
-              className="w-full appearance-none pl-4 pr-9 py-2 text-[13px] border border-input rounded-md bg-background focus:outline-none focus:border-primary transition-all text-foreground"
-            >
-              <option value="all">Loại đơn</option>
-              {Object.values(APPLICATION_TYPES).map((t) => (
-                <option key={t.LABEL} value={t.LABEL}>
-                  {t.DESCRIPTION}
-                </option>
-              ))}
-            </select>
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <ChevronRight className="text-muted-foreground rotate-90" size={14} />
+          {/* Filters and Actions */}
+          {mode !== "manage" && (
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="flex flex-1 items-center gap-3 w-full sm:w-auto">
+                {/* Search */}
+                <div className="relative flex-1 sm:max-w-[280px]">
+                  <input
+                    type="text"
+                    value={localKeyword}
+                    onChange={(e) => { setLocalKeyword(e.target.value); }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        setKeyword(localKeyword)
+                        setPage(1)
+                      }
+                    }}
+                    placeholder="Tìm kiếm họ và tên, người duyệt, mã"
+                    className="w-full pl-4 pr-9 py-2 text-[13px] border border-input rounded-md bg-background focus:outline-none focus:border-primary transition-all text-foreground"
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Filter className="text-muted-foreground" size={14} />
+                  </div>
+                </div>
+
+                <div className="relative min-w-[160px]">
+                  <select
+                    value={typeFilter}
+                    onChange={(e) => {
+                      setTypeFilter(e.target.value)
+                      setPage(1)
+                    }}
+                    className="w-full appearance-none pl-4 pr-9 py-2 text-[13px] border border-input rounded-md bg-background focus:outline-none focus:border-primary transition-all text-foreground"
+                  >
+                    <option value="all">Loại đơn</option>
+                    {Object.values(APPLICATION_TYPES).map((t) => (
+                      <option key={t.LABEL} value={t.LABEL}>
+                        {t.DESCRIPTION}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <ChevronRight className="text-muted-foreground rotate-90" size={14} />
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setLocalKeyword("")
+                    setKeyword("")
+                    setTypeFilter("all")
+                    setPage(1)
+                  }}
+                  className="text-[13px] font-medium text-foreground bg-muted hover:bg-muted/80 transition-colors px-4 py-2 rounded-md"
+                >
+                  Thiết lập lại
+                </button>
+                <button
+                  onClick={() => {
+                    setKeyword(localKeyword)
+                    setPage(1)
+                  }}
+                  className="px-6 py-2 bg-primary hover:bg-primary/90 text-white text-[13px] font-medium rounded-md shadow-sm transition-all"
+                >
+                  Tìm kiếm
+                </button>
+              </div>
             </div>
-          </div>
-
-          <button
-            onClick={() => {
-              setLocalKeyword("")
-              setKeyword("")
-              setTypeFilter("all")
-              setPage(1)
-            }}
-            className="text-[13px] font-medium text-foreground bg-muted hover:bg-muted/80 transition-colors px-4 py-2 rounded-md"
-          >
-            Thiết lập lại
-          </button>
-          <button
-            onClick={() => {
-              setKeyword(localKeyword)
-              setPage(1)
-            }}
-            className="px-6 py-2 bg-primary hover:bg-primary/90 text-white text-[13px] font-medium rounded-md shadow-sm transition-all"
-          >
-            Tìm kiếm
-          </button>
-        </div>
-      </div>
+          )}
+        </>
 
       {/* Table Area */}
       <div className="bg-background flex flex-col">
@@ -175,19 +186,19 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
             <thead className="bg-muted/50 border-y border-border text-muted-foreground font-semibold whitespace-nowrap">
               <tr>
                 <th className="px-4 py-4 w-[15%]">Mã đơn</th>
-                {mode === "manage" && <th className="px-4 py-4 w-[15%]">Họ và tên</th>}
-                {mode === "manage" && <th className="px-4 py-4 w-[10%]">Mã nhân sự</th>}
+                {(mode === "manage" || mode === "all") && <th className="px-4 py-4 w-[15%]">Họ và tên</th>}
+                {(mode === "manage" || mode === "all") && <th className="px-4 py-4 w-[10%]">Mã nhân sự</th>}
                 <th className="px-4 py-4 w-[15%]">Loại đơn</th>
-                <th className="px-4 py-4 w-[10%] text-center">Trạng thái</th>
+                <th className="px-4 py-4 w-[10%]">Trạng thái</th>
                 <th className="px-4 py-4 w-[10%]">Ngày tạo</th>
-                <th className="px-4 py-4 w-[15%] text-center">Người tạo</th>
-                <th className="px-4 py-4 w-[15%] text-center">Người duyệt</th>
+                <th className="px-4 py-4 w-[15%]">Người tạo</th>
+                <th className="px-4 py-4 w-[15%]">Người duyệt</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {isLoading ? (
                 <tr>
-                  <td colSpan={mode === "manage" ? 8 : 6} className="h-[400px] text-center">
+                  <td colSpan={(mode === "manage" || mode === "all") ? 8 : 6} className="h-[400px] text-center">
                     <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground/70">
                       <RefreshCw className="animate-spin" size={24} />
                       <p>Đang tải dữ liệu...</p>
@@ -196,7 +207,7 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
                 </tr>
               ) : applications.length === 0 ? (
                 <tr>
-                  <td colSpan={mode === "manage" ? 8 : 6} className="h-[400px] text-center">
+                  <td colSpan={(mode === "manage" || mode === "all") ? 8 : 6} className="h-[400px] text-center">
                     <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground/70">
                       <div className="relative flex items-center justify-center w-24 h-24">
                         <div className="absolute top-0 right-0 w-2 h-2 rounded-full bg-red-400"></div>
@@ -226,12 +237,12 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
                     <td className="px-4 py-4 text-foreground font-medium">
                       {app.id.substring(0, 8).toUpperCase()}
                     </td>
-                    {mode === "manage" && (
+                    {(mode === "manage" || mode === "all") && (
                       <td className="px-4 py-4 font-medium text-foreground whitespace-nowrap">
                         {app.employee?.fullName || "N/A"}
                       </td>
                     )}
-                    {mode === "manage" && (
+                    {(mode === "manage" || mode === "all") && (
                       <td className="px-4 py-4 text-primary font-medium group-hover:underline">
                         {app.employeeId.substring(0, 10)}
                       </td>
@@ -239,8 +250,8 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
                     <td className="px-4 py-4 text-foreground font-medium">
                       {APPLICATION_TYPE_LABELS[app.type] || app.type}
                     </td>
-                    <td className="px-4 py-4 text-center">
-                      <div className="flex justify-center">
+                    <td className="px-4 py-4">
+                      <div className="flex justify-start">
                         <span
                           className={`inline-flex items-center justify-center px-4 py-1.5 text-[11px] font-bold border rounded-full bg-transparent whitespace-nowrap ${
                             STATUS_LABELS[app.status]?.colorClass ||
@@ -254,8 +265,8 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
                     <td className="px-4 py-4 text-muted-foreground">
                       {new Date(app.createdAt).toLocaleDateString("vi-VN")}
                     </td>
-                    <td className="px-4 py-4 text-center">
-                      <div className="flex flex-col items-center justify-center">
+                    <td className="px-4 py-4">
+                      <div className="flex flex-col">
                         <span className="text-primary font-medium">
                           {app.employeeId.substring(0, 10)}
                         </span>
@@ -264,8 +275,8 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-center text-muted-foreground">
-                      {app.processor ? app.processor.fullName : "-"}
+                    <td className="px-4 py-4 text-muted-foreground">
+                      {app.approvedBy?.fullName || app.assignedTo?.fullName || "-"}
                     </td>
                   </tr>
                 ))
