@@ -149,4 +149,6 @@ package-lock.json
 yarn.lock
 pnpm-lock.yaml
 bun.lock
+pnpm-workspace.yaml
+
 /src/generated/prisma

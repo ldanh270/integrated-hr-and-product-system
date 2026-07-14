@@ -31,6 +31,7 @@
   },
   "devDependencies": {
     "@antfu/ni": "^30.1.0",
+    "@ldanh270/aatest": "1.0.14",
     "concurrently": "^9.2.1"
   }
 }
