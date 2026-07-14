@@ -70,9 +70,9 @@ describe('ProjectTaskStatusService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     service = new ProjectTaskStatusService(
-      mockStatusRepository as any,
-      mockProjectRepository as any,
-      mockTaskRepository as any
+      mockStatusRepository as never,
+      mockProjectRepository as never,
+      mockTaskRepository as never
     );
   });
 

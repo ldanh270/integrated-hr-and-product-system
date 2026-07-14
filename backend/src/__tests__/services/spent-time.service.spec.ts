@@ -61,10 +61,10 @@ import { AppError } from '@/utils/error.util.ts';
 
 describe('SpentTimeService', () => {
   let service: SpentTimeService;
-  let mockSpentTimeRepo: any;
-  let mockTaskRepo: any;
-  let mockProjectRepo: any;
-  let mockAttendanceRepo: any;
+  let mockSpentTimeRepo: Record<string, jest.Mock>;
+  let mockTaskRepo: Record<string, jest.Mock>;
+  let mockProjectRepo: Record<string, jest.Mock>;
+  let mockAttendanceRepo: Record<string, jest.Mock>;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -95,10 +95,10 @@ describe('SpentTimeService', () => {
     };
 
     service = new SpentTimeService(
-      mockSpentTimeRepo,
-      mockTaskRepo,
-      mockProjectRepo,
-      mockAttendanceRepo
+      mockSpentTimeRepo as never,
+      mockTaskRepo as never,
+      mockProjectRepo as never,
+      mockAttendanceRepo as never
     );
   });
 
@@ -110,9 +110,9 @@ describe('SpentTimeService', () => {
       const mockRecord = { id: recordId, employeeId: userId, taskId: 'task-123', hours: 4 };
 
       mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      jest.mocked(authorizationService.getAuthorizationContext).mockResolvedValue({
         permissions: new Set()
-      });
+      } as never);
 
       // Act
       const result = await service.getSpentTime(recordId, userId);
@@ -247,15 +247,15 @@ describe('SpentTimeService', () => {
     it('should create spent time successfully for valid inputs (Happy Path)', async () => {
       // Arrange
       const userId = 'user-123';
-      const dto = { taskId: 'task-123', hours: 4, date: '2023-10-10', activity: 'DEVELOPMENT' as any };
+      const dto = { taskId: 'task-123', hours: 4, date: '2023-10-10', activity: 'DEVELOPMENT' as never };
       const mockTask = { id: 'task-123', projectId: 'project-123', estimatedTime: 10 };
       const mockProject = { id: 'project-123', teamLeaderId: 'tl-123' };
       const mockCreated = { id: 'record-1', ...dto, employeeId: userId };
 
       mockTaskRepo.findById.mockResolvedValue(mockTask);
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      jest.mocked(authorizationService.getAuthorizationContext).mockResolvedValue({
         permissions: new Set()
-      });
+      } as never);
       mockProjectRepo.findById.mockResolvedValue(mockProject);
       mockProjectRepo.isMember.mockResolvedValue(true);
       mockSpentTimeRepo.sumTaskHours.mockResolvedValue(0);
@@ -272,7 +272,7 @@ describe('SpentTimeService', () => {
 
     it('should throw NOT_FOUND when creating spent time for a non-existing task', async () => {
       // Arrange
-      const dto = { taskId: 'missing-task', hours: 4, date: '2023-10-10', activity: 'DEVELOPMENT' as any };
+      const dto = { taskId: 'missing-task', hours: 4, date: '2023-10-10', activity: 'DEVELOPMENT' as never };
       mockTaskRepo.findById.mockResolvedValue(null);
 
       // Act & Assert
@@ -283,14 +283,14 @@ describe('SpentTimeService', () => {
 
     it('should throw FORBIDDEN when user has no access to the project to log time', async () => {
       // Arrange
-      const dto = { taskId: 'task-123', hours: 4, date: '2023-10-10', activity: 'DEVELOPMENT' as any };
+      const dto = { taskId: 'task-123', hours: 4, date: '2023-10-10', activity: 'DEVELOPMENT' as never };
       const mockTask = { id: 'task-123', projectId: 'project-123' };
       const mockProject = { id: 'project-123', teamLeaderId: 'tl-123' };
 
       mockTaskRepo.findById.mockResolvedValue(mockTask);
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      jest.mocked(authorizationService.getAuthorizationContext).mockResolvedValue({
         permissions: new Set()
-      });
+      } as never);
       mockProjectRepo.findById.mockResolvedValue(mockProject);
       mockProjectRepo.isMember.mockResolvedValue(false);
 
@@ -302,14 +302,14 @@ describe('SpentTimeService', () => {
 
     it('should throw UNPROCESSABLE_ENTITY when total logged hours exceeds task estimated time cap', async () => {
       // Arrange
-      const dto = { taskId: 'task-123', hours: 5, date: '2023-10-10', activity: 'DEVELOPMENT' as any };
+      const dto = { taskId: 'task-123', hours: 5, date: '2023-10-10', activity: 'DEVELOPMENT' as never };
       const mockTask = { id: 'task-123', projectId: 'project-123', estimatedTime: 8 };
       const mockProject = { id: 'project-123', teamLeaderId: 'tl-123' };
 
       mockTaskRepo.findById.mockResolvedValue(mockTask);
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      jest.mocked(authorizationService.getAuthorizationContext).mockResolvedValue({
         permissions: new Set()
-      });
+      } as never);
       mockProjectRepo.findById.mockResolvedValue(mockProject);
       mockProjectRepo.isMember.mockResolvedValue(true);
       mockSpentTimeRepo.sumTaskHours.mockResolvedValue(4); // 4 + 5 = 9 > 8

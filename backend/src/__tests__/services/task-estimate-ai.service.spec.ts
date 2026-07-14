@@ -36,11 +36,11 @@ jest.mock('@/configs/system/error-code.config.ts', () => ({
 }), { virtual: true });
 
 describe('TaskEstimateAiService', () => {
-  let taskRepository: any;
-  let projectRepository: any;
-  let employeeRepository: any;
-  let applicationRepository: any;
-  let spentTimeRepository: any;
+  let taskRepository: Record<string, jest.Mock>;
+  let projectRepository: Record<string, jest.Mock>;
+  let employeeRepository: Record<string, jest.Mock>;
+  let applicationRepository: Record<string, jest.Mock>;
+  let spentTimeRepository: Record<string, jest.Mock>;
   let service: TaskEstimateAiService;
   let mockGenerateJson: jest.Mock;
 
@@ -66,11 +66,11 @@ describe('TaskEstimateAiService', () => {
     };
 
     service = new TaskEstimateAiService(
-      taskRepository,
-      projectRepository,
-      employeeRepository,
-      applicationRepository,
-      spentTimeRepository
+      taskRepository as never,
+      projectRepository as never,
+      employeeRepository as never,
+      applicationRepository as never,
+      spentTimeRepository as never
     );
 
     mockGenerateJson = aiClient.generateJson as jest.Mock;

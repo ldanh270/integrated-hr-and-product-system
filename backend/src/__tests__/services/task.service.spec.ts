@@ -96,11 +96,11 @@ describe('TaskService Suite', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     taskService = new TaskService(
-      mockTaskRepository as any,
-      mockProjectRepository as any,
-      mockEmployeeRepository as any,
-      mockStatusRepository as any,
-      mockPositionService as any
+      mockTaskRepository as never,
+      mockProjectRepository as never,
+      mockEmployeeRepository as never,
+      mockStatusRepository as never,
+      mockPositionService as never
     );
 
     // Default status mapping implementation helper returning lowercase statuses
@@ -130,7 +130,7 @@ describe('TaskService Suite', () => {
       mockTaskRepository.findById.mockResolvedValue(mockTask);
       authorizationService.getAuthorizationContext.mockResolvedValue({
         permissions: new Set(['project.update']),
-      } as any);
+      } as never);
 
       // Act
       const result = await taskService.getTask('task-1', 'user-1');
@@ -414,7 +414,7 @@ describe('TaskService Suite', () => {
 
       mockTaskRepository.findById.mockResolvedValue(originalTask);
       mockProjectRepository.findById.mockResolvedValue({ id: 'project-1', teamLeaderId: 'leader-1' });
-      authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as any);
+      authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as never);
       mockEmployeeRepository.findById.mockResolvedValue({ id: 'user-1', position: 'developer' });
       mockTaskRepository.updateTask.mockResolvedValue(updatedTaskResult);
 

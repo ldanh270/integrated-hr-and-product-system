@@ -35,8 +35,8 @@ import { ErrorLayer } from '@/configs/system/error-code.config.ts';
 
 describe('ProjectTrackerService', () => {
   let service: ProjectTrackerService;
-  let mockProjectTrackerRepository: any;
-  let mockProjectRepository: any;
+  let mockProjectTrackerRepository: Record<string, jest.Mock>;
+  let mockProjectRepository: Record<string, jest.Mock>;
 
   beforeEach(() => {
     mockProjectTrackerRepository = {
@@ -53,8 +53,8 @@ describe('ProjectTrackerService', () => {
     };
 
     service = new ProjectTrackerService(
-      mockProjectTrackerRepository,
-      mockProjectRepository
+      mockProjectTrackerRepository as never,
+      mockProjectRepository as never
     );
   });
 
@@ -167,7 +167,7 @@ describe('ProjectTrackerService', () => {
       const mockProject = { id: projectId, name: 'Project 1' };
       mockProjectRepository.findById.mockResolvedValue(mockProject);
       mockProjectTrackerRepository.list.mockResolvedValue([]);
-      mockProjectTrackerRepository.create.mockImplementation((projId: any, data: any) => Promise.resolve({ id: 'tracker-id', ...data }));
+      mockProjectTrackerRepository.create.mockImplementation((projId: string, data: Record<string, unknown>) => Promise.resolve({ id: 'tracker-id', ...data }));
 
       // Act
       const result = await service.create(projectId, dto);

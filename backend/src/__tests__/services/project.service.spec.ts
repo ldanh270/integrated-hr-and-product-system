@@ -68,10 +68,10 @@ jest.mock('@prisma/client', () => {
 
 describe('ProjectService', () => {
   let projectService: ProjectService;
-  let mockProjectRepository: any;
-  let mockEmployeeRepository: any;
-  let mockPrismaClient: any;
-  let mockStatusService: any;
+  let mockProjectRepository: Record<string, jest.Mock>;
+  let mockEmployeeRepository: Record<string, jest.Mock>;
+  let mockPrismaClient: unknown;
+  let mockStatusService: Record<string, jest.Mock>;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -99,10 +99,10 @@ describe('ProjectService', () => {
     mockStatusService = {};
 
     projectService = new ProjectService(
-      mockProjectRepository,
-      mockEmployeeRepository,
-      mockPrismaClient,
-      mockStatusService
+      mockProjectRepository as never,
+      mockEmployeeRepository as never,
+      mockPrismaClient as never,
+      mockStatusService as never
     );
   });
 
@@ -290,7 +290,7 @@ describe('ProjectService', () => {
       const txProjectCreateMock = jest.fn().mockResolvedValue(createdProjectMock);
       const txTaskStatusCreateMock = jest.fn().mockResolvedValue({});
 
-      mockPrismaClient.$transaction.mockImplementation(async (callback: (tx: any) => Promise<any>) => {
+      ((mockPrismaClient as { $transaction: jest.Mock }).$transaction).mockImplementation(async (callback: (tx: { project: { create: jest.Mock }; projectTaskStatus: { create: jest.Mock } }) => Promise<unknown>) => {
         const tx = {
           project: {
             create: txProjectCreateMock
@@ -303,7 +303,7 @@ describe('ProjectService', () => {
       });
 
       // Act
-      const result = await projectService.createProject(createData as any, userId);
+      const result = await projectService.createProject(createData as never, userId);
 
       // Assert
       expect(result).toEqual(createdProjectMock);
@@ -328,7 +328,7 @@ describe('ProjectService', () => {
       mockUserPermission(false);
 
       // Act & Assert
-      await expect(projectService.createProject({ name: 'Alpha' } as any, 'non-admin')).rejects.toThrow(
+      await expect(projectService.createProject({ name: 'Alpha' } as never, 'non-admin')).rejects.toThrow(
         expect.objectContaining({
           message: 'Only General Managers or Admins can create projects',
           statusCode: 403
@@ -343,7 +343,7 @@ describe('ProjectService', () => {
 
       // Act & Assert
       await expect(
-        projectService.createProject({ name: 'Alpha', teamLeaderId: 'unknown-tl' } as any, 'admin-id')
+        projectService.createProject({ name: 'Alpha', teamLeaderId: 'unknown-tl' } as never, 'admin-id')
       ).rejects.toThrow(
         expect.objectContaining({
           message: 'Team Leader employee not found',
@@ -360,7 +360,7 @@ describe('ProjectService', () => {
 
       // Act & Assert
       await expect(
-        projectService.createProject({ name: 'Duplicate Name', teamLeaderId: 'tl-1' } as any, 'admin-id')
+        projectService.createProject({ name: 'Duplicate Name', teamLeaderId: 'tl-1' } as never, 'admin-id')
       ).rejects.toThrow(
         expect.objectContaining({
           message: 'Project name already exists',
@@ -383,7 +383,7 @@ describe('ProjectService', () => {
             startDate: '2023-12-31',
             expectedEndDate: '2023-01-01',
             teamLeaderId: 'tl-1'
-          } as any,
+          } as never,
           'admin-id'
         )
       ).rejects.toThrow(
