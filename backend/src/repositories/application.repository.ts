@@ -1,12 +1,13 @@
 import { APPLICATION_TYPES, PAID_LEAVE_TYPES } from "@/configs/entities/attendance.config.ts"
 import {
   IApplicationRepository,
+  IApplicationEntity,
   ILeaveType,
   IListApplicationsQueryDTO,
   ISubmitApplicationDTO,
 } from "@/types/attendance.types.ts"
 
-import { ApplicationStatus, ApplicationType, AttendanceStatus, PrismaClient } from "@prisma/client"
+import { ApplicationStatus, ApplicationType, AttendanceStatus, PrismaClient, LeaveType } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
@@ -44,7 +45,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    * @param data - The application details and parameters.
    * @returns A promise that resolves to the newly created application with all included relations.
    */
-  async submit(data: ISubmitApplicationDTO): Promise<unknown> {
+  async submit(data: ISubmitApplicationDTO): Promise<IApplicationEntity> {
     const { employeeId, type, startDate, endDate, reason, note, assignedToId, detail } = data
 
     // shift_swap starts at partner_pending — the swap partner must confirm first
@@ -75,7 +76,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    * @param data - Array of application details.
    * @returns A promise that resolves to an array of created applications.
    */
-  async submitBulk(data: ISubmitApplicationDTO[]): Promise<unknown[]> {
+  async submitBulk(data: ISubmitApplicationDTO[]): Promise<IApplicationEntity[]> {
     const creates = data.map((item) => {
       const { employeeId, type, startDate, endDate, reason, note, assignedToId } = item
 
@@ -109,7 +110,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    * @param id - The application ID.
    * @returns A promise that resolves to the application details or null if not found.
    */
-  async findById(id: string): Promise<unknown | null> {
+  async findById(id: string): Promise<IApplicationEntity | null> {
     return this.prisma.application.findUnique({
       where: { id },
       include: APPLICATION_INCLUDE,
@@ -126,7 +127,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
   async findByEmployee(
     employeeId: string,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: unknown[]; total: number }> {
+  ): Promise<{ data: IApplicationEntity[]; total: number }> {
     const where = this._buildWhere({ ...query, employeeId })
     return this._paginate(where, query)
   }
@@ -137,7 +138,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    * @param query - The pagination and filter parameters.
    * @returns A promise that resolves to the matching applications and total count.
    */
-  async findAll(query: IListApplicationsQueryDTO): Promise<{ data: unknown[]; total: number }> {
+  async findAll(query: IListApplicationsQueryDTO): Promise<{ data: IApplicationEntity[]; total: number }> {
     const where = this._buildWhere(query)
     return this._paginate(where, query)
   }
@@ -150,7 +151,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     managedEmployeeIds: string[],
     isGlobalApprover: boolean,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: unknown[]; total: number }> {
+  ): Promise<{ data: IApplicationEntity[]; total: number }> {
     const baseWhere = this._buildWhere(query)
 
     // Swap partner condition: partner_pending shift_swap where approverId is the swap target
@@ -195,7 +196,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    * @param employeeId - The ID of the employee owning the application.
    * @returns A promise that resolves to the updated application, or null if update failed.
    */
-  async cancel(id: string, employeeId: string): Promise<unknown | null> {
+  async cancel(id: string, employeeId: string): Promise<IApplicationEntity | null> {
     try {
       return await this.prisma.application.update({
         where: {
@@ -219,7 +220,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    * @param approvedBy - The ID of the processor approving the application.
    * @returns A promise that resolves to the updated application, or null if update failed.
    */
-  async approve(id: string, approvedBy: string): Promise<unknown | null> {
+  async approve(id: string, approvedBy: string): Promise<IApplicationEntity | null> {
     try {
       return await this.prisma.$transaction(
         async (tx) => {
@@ -324,7 +325,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    * @param rejectReason - The explanation for rejection.
    * @returns A promise that resolves to the updated application, or null if update failed.
    */
-  async reject(id: string, rejectedBy: string, rejectReason: string): Promise<unknown | null> {
+  async reject(id: string, rejectedBy: string, rejectReason: string): Promise<IApplicationEntity | null> {
     try {
       return await this.prisma.application.update({
         where: { id, status: ApplicationStatus.pending },
@@ -345,7 +346,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    * Partner (swap target) confirms the shift swap request.
    * Transitions status from partner_pending → pending so the manager can approve.
    */
-  async partnerConfirm(id: string, partnerId: string): Promise<unknown | null> {
+  async partnerConfirm(id: string, partnerId: string): Promise<IApplicationEntity | null> {
     try {
       return await this.prisma.application.update({
         where: { id, status: ApplicationStatus.partner_pending },
@@ -366,7 +367,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    * Partner (swap target) rejects the shift swap request.
    * Transitions status from partner_pending → rejected.
    */
-  async partnerReject(id: string, partnerId: string, rejectReason: string): Promise<unknown | null> {
+  async partnerReject(id: string, partnerId: string, rejectReason: string): Promise<IApplicationEntity | null> {
     try {
       return await this.prisma.application.update({
         where: { id, status: ApplicationStatus.partner_pending },
@@ -431,7 +432,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     // Query ApplicationLeaveDetail directly — cleaner than include + type-cast
     const leaveDetails = await this.prisma.applicationLeaveDetail.findMany({
       where: {
-        leaveType: leaveType as unknown as string,
+        leaveType: leaveType as unknown as LeaveType,
         application: {
           employeeId,
           status: ApplicationStatus.approved,
@@ -528,9 +529,10 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     if (query.type) where.type = query.type
     if (query.status) where.status = query.status
     if (query.startDate || query.endDate) {
-      where.startDate = {}
-      if (query.startDate) where.startDate.gte = new Date(query.startDate)
-      if (query.endDate) where.startDate.lte = new Date(query.endDate)
+      const startDateFilter: Record<string, Date> = {}
+      if (query.startDate) startDateFilter.gte = new Date(query.startDate)
+      if (query.endDate) startDateFilter.lte = new Date(query.endDate)
+      where.startDate = startDateFilter
     }
 
     if (query.keyword) {
@@ -556,7 +558,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
   private async _paginate(
     where: Record<string, unknown>,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: unknown[]; total: number }> {
+  ): Promise<{ data: IApplicationEntity[]; total: number }> {
     const page = query.page ?? 1
     const pageSize = query.pageSize ?? 20
     const skip = (page - 1) * pageSize

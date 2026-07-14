@@ -39,7 +39,7 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: UPLOAD_CONFIG.MAX_FILE_SIZE },
   fileFilter: (_req, file, cb) => {
-    if (!UPLOAD_CONFIG.ALLOWED_MIME_TYPES.includes(file.mimetype as unknown as string)) {
+    if (!(UPLOAD_CONFIG.ALLOWED_MIME_TYPES as readonly string[]).includes(file.mimetype)) {
       cb(new Error("Only JPEG, PNG, WEBP, GIF, or PDF files are allowed"))
     } else {
       cb(null, true)
