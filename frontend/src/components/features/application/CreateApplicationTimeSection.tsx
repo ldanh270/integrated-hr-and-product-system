@@ -2,7 +2,7 @@
 
 import { LEAVE_TYPE_OPTIONS } from "@/components/attendance/attendance-ui.meta"
 import { APPLICATION_TYPES } from "@/config/entities/attendance.config"
-import type { IWorkingShift } from "@/types/attendance.types"
+
 import type { Employee } from "@/types/employee.types"
 import type { ApplicationFormState } from "@/hooks/application/useCreateApplicationForm"
 
@@ -22,9 +22,21 @@ interface Props {
   onRemove?: () => void
 }
 
+interface IEmployeeShiftOption {
+  id: string;
+  name?: string;
+  startTime?: number;
+  endTime?: number;
+  shift?: {
+    name: string;
+    startTime: number;
+    endTime: number;
+  };
+}
+
 export function CreateApplicationTimeSection({ type, form, set, employees, formIndex, onRemove }: Props) {
-  const [shifts, setShifts] = useState<IWorkingShift[]>([])
-  const [partnerShifts, setPartnerShifts] = useState<IWorkingShift[]>([])
+  const [shifts, setShifts] = useState<IEmployeeShiftOption[]>([])
+  const [partnerShifts, setPartnerShifts] = useState<IEmployeeShiftOption[]>([])
   useEffect(() => {
     if (
       form.startDate &&
@@ -96,7 +108,7 @@ export function CreateApplicationTimeSection({ type, form, set, employees, formI
           {type === APPLICATION_TYPES.LATE_EARLY.LABEL && "Đi muộn / Về sớm"}
           {type === APPLICATION_TYPES.SHIFT_SWAP.LABEL && "Đổi ca"}
           {type === APPLICATION_TYPES.WORK_FROM_HOME.LABEL && "Làm việc từ xa"}
-          {![APPLICATION_TYPES.LEAVE.LABEL, APPLICATION_TYPES.OVERTIME.LABEL, APPLICATION_TYPES.LATE_EARLY.LABEL, APPLICATION_TYPES.SHIFT_SWAP.LABEL, APPLICATION_TYPES.WORK_FROM_HOME.LABEL].includes(type as string) && "Thời gian"}
+          {!([APPLICATION_TYPES.LEAVE.LABEL, APPLICATION_TYPES.OVERTIME.LABEL, APPLICATION_TYPES.LATE_EARLY.LABEL, APPLICATION_TYPES.SHIFT_SWAP.LABEL, APPLICATION_TYPES.WORK_FROM_HOME.LABEL] as string[]).includes(type) && "Thời gian"}
         </h3>
         {onRemove && (
           <button
@@ -253,7 +265,7 @@ export function CreateApplicationTimeSection({ type, form, set, employees, formI
                   className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 >
                   <option value="">-- Chọn ca làm việc --</option>
-                  {shifts.map((s: { id: string; shift?: { name: string; startTime: string; endTime: string } }) => (
+                  {shifts.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.shift ? `${s.shift.name} (${formatTime(s.shift.startTime)} - ${formatTime(s.shift.endTime)})` : 'Không xác định'}
                     </option>
@@ -335,9 +347,9 @@ export function CreateApplicationTimeSection({ type, form, set, employees, formI
                   >
                     <option value="">-- Chọn ca làm việc --</option>
                     {partnerShifts.length > 0
-                      ? partnerShifts.map((s: { id: string; shift?: { name: string; startTime: string; endTime: string }; name?: string; startTime?: string; endTime?: string }) => (
+                      ? partnerShifts.map((s) => (
                           <option key={s.id} value={s.id}>
-                            {s.shift?.name ?? s.name} ({formatTime(s.shift?.startTime ?? s.startTime)} - {formatTime(s.shift?.endTime ?? s.endTime)})
+                            {s.shift?.name ?? s.name} ({formatTime(s.shift?.startTime ?? s.startTime ?? 0)} - {formatTime(s.shift?.endTime ?? s.endTime ?? 0)})
                           </option>
                         ))
                       : form.swapWithDate && form.swapWithEmployeeId

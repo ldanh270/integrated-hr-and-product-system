@@ -7,7 +7,11 @@ import {
   IRegimeType,
 } from "@/configs/entities/attendance.config.ts"
 
-import type { HolidayCalendar } from "@prisma/client"
+import type { HolidayCalendar, Application, ApplicationShiftSwapDetail } from "@prisma/client"
+
+export interface IApplicationEntity extends Application {
+  shiftSwapDetail?: ApplicationShiftSwapDetail | null;
+}
 
 // Re-export for consumers that import from this module
 export type {
@@ -247,30 +251,30 @@ export interface IAttendanceRepository {
  */
 export interface IApplicationRepository {
   /** Submits a new application. */
-  submit(data: ISubmitApplicationDTO): Promise<unknown>
+  submit(data: ISubmitApplicationDTO): Promise<IApplicationEntity>
   /** Submits multiple applications in a transaction. */
-  submitBulk(data: ISubmitApplicationDTO[]): Promise<unknown[]>
-  findById(id: string): Promise<unknown | null>
+  submitBulk(data: ISubmitApplicationDTO[]): Promise<IApplicationEntity[]>
+  findById(id: string): Promise<IApplicationEntity | null>
   findByEmployee(
     employeeId: string,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: unknown[]; total: number }>
-  findAll(query: IListApplicationsQueryDTO): Promise<{ data: unknown[]; total: number }>
+  ): Promise<{ data: IApplicationEntity[]; total: number }>
+  findAll(query: IListApplicationsQueryDTO): Promise<{ data: IApplicationEntity[]; total: number }>
   findApprovals(
     approverId: string,
     managedEmployeeIds: string[],
     isGlobalApprover: boolean,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: unknown[]; total: number }>
-  cancel(id: string, employeeId: string): Promise<unknown | null>
+  ): Promise<{ data: IApplicationEntity[]; total: number }>
+  cancel(id: string, employeeId: string): Promise<IApplicationEntity | null>
   /** Approves an application (sets status=approved). */
-  approve(id: string, approvedBy: string): Promise<unknown | null>
+  approve(id: string, approvedBy: string): Promise<IApplicationEntity | null>
   /** Rejects an application with a mandatory reason. */
-  reject(id: string, rejectedBy: string, rejectReason: string): Promise<unknown | null>
+  reject(id: string, rejectedBy: string, rejectReason: string): Promise<IApplicationEntity | null>
   /** Partner confirms (agree) a shift_swap application (partner_pending → pending). */
-  partnerConfirm(id: string, partnerId: string): Promise<unknown | null>
+  partnerConfirm(id: string, partnerId: string): Promise<IApplicationEntity | null>
   /** Partner rejects a shift_swap application (partner_pending → rejected). */
-  partnerReject(id: string, partnerId: string, rejectReason: string): Promise<unknown | null>
+  partnerReject(id: string, partnerId: string, rejectReason: string): Promise<IApplicationEntity | null>
   checkLeaveOverlap(
     employeeId: string,
     startDate: string | Date,

@@ -16,6 +16,7 @@ import {
   IApplicationRepository,
   IApplicationService,
   IApplicationStatus,
+  IApplicationType,
   IListApplicationsQueryDTO,
   ISubmitApplicationDTO,
 } from "@/types/attendance.types.ts"
@@ -55,7 +56,7 @@ export class ApplicationService implements IApplicationService {
 
     // Validate position application restrictions
     if (this.positionService) {
-      await this.positionService.validateApplicationSubmission(data.employeeId, data.type as unknown as string)
+      await this.positionService.validateApplicationSubmission(data.employeeId, data.type as IApplicationType)
     }
 
     // Type-specific business rule validation
@@ -271,7 +272,7 @@ export class ApplicationService implements IApplicationService {
   ): Promise<{ data: unknown[]; total: number }> {
     // Verify target employee exists and is not soft-deleted
     const employeeExists = await prisma.employee.findFirst({
-      where: { id: employeeId, deletedAt: null } as unknown as any,
+      where: { id: employeeId, deletedAt: null },
       select: { id: true },
     })
 

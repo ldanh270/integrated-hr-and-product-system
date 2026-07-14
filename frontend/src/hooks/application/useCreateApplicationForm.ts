@@ -206,9 +206,9 @@ export function useCreateApplicationForm(type: string) {
 
       let success = false
       if (payload.length === 1) {
-        success = await submitApplication(payload[0])
+        success = await submitApplication(payload[0] as Parameters<typeof submitApplication>[0])
       } else {
-        success = await submitBulkApplications(payload)
+        success = await submitBulkApplications(payload as Parameters<typeof submitBulkApplications>[0])
       }
 
       if (success) {
