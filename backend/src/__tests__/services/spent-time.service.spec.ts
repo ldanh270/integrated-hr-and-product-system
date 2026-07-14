@@ -142,7 +142,7 @@ describe('SpentTimeService', () => {
       const mockProject = { id: 'project-123', teamLeaderId: 'another-tl' };
 
       mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         permissions: new Set()
       });
       mockTaskRepo.findById.mockResolvedValue(mockTask);
@@ -160,7 +160,7 @@ describe('SpentTimeService', () => {
       const mockRecord = { id: recordId, employeeId: 'other-user', taskId: 'missing-task' };
 
       mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         permissions: new Set()
       });
       mockTaskRepo.findById.mockResolvedValue(null);
@@ -179,7 +179,7 @@ describe('SpentTimeService', () => {
       const query = { projectId: 'project-123' };
       const mockList = [{ id: 'record-1', hours: 8 }];
 
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         permissions: new Set(['project.update'])
       });
       mockSpentTimeRepo.list.mockResolvedValue(mockList);
@@ -197,7 +197,7 @@ describe('SpentTimeService', () => {
       const userId = 'user-123';
       const query = { projectId: 'missing-project' };
 
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         permissions: new Set()
       });
       mockProjectRepo.findById.mockResolvedValue(null);
@@ -214,7 +214,7 @@ describe('SpentTimeService', () => {
       const query = { projectId: 'project-123' };
       const mockProject = { id: 'project-123', teamLeaderId: 'tl-456' };
 
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         permissions: new Set()
       });
       mockProjectRepo.findById.mockResolvedValue(mockProject);
@@ -231,7 +231,7 @@ describe('SpentTimeService', () => {
       const userId = 'user-123';
       const query = { taskId: 'missing-task' };
 
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         permissions: new Set()
       });
       mockTaskRepo.findById.mockResolvedValue(null);
@@ -322,12 +322,12 @@ describe('SpentTimeService', () => {
 
     it('should throw UNPROCESSABLE_ENTITY when onsite member has no check-in on record', async () => {
       // Arrange
-      const dto = { taskId: 'task-123', hours: 4, date: '2023-10-10', activity: 'DEVELOPMENT' as any };
+      const dto = { taskId: 'task-123', hours: 4, date: '2023-10-10', activity: 'DEVELOPMENT' as never };
       const mockTask = { id: 'task-123', projectId: 'project-123', estimatedTime: null };
       const mockProject = { id: 'project-123', teamLeaderId: 'tl-123' };
 
       mockTaskRepo.findById.mockResolvedValue(mockTask);
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         permissions: new Set()
       });
       mockProjectRepo.findById.mockResolvedValue(mockProject);
@@ -354,7 +354,7 @@ describe('SpentTimeService', () => {
       const mockUpdated = { ...mockRecord, hours: 6 };
 
       mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         permissions: new Set()
       });
       mockTaskRepo.findById.mockResolvedValue(mockTask);
@@ -397,7 +397,7 @@ describe('SpentTimeService', () => {
       const mockRecord = { id: recordId, status: SPENT_TIME_STATUS.PENDING, employeeId: 'other-user' };
 
       mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         permissions: new Set()
       });
 
@@ -416,7 +416,7 @@ describe('SpentTimeService', () => {
       const mockRecord = { id: recordId, status: SPENT_TIME_STATUS.PENDING, employeeId: userId };
 
       mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         permissions: new Set()
       });
       mockSpentTimeRepo.delete.mockResolvedValue(true);
@@ -457,7 +457,7 @@ describe('SpentTimeService', () => {
       const mockRecord = { id: recordId, status: SPENT_TIME_STATUS.PENDING, employeeId: 'other-user' };
 
       mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         permissions: new Set()
       });
 
@@ -480,7 +480,7 @@ describe('SpentTimeService', () => {
 
       mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
       mockTaskRepo.findById.mockResolvedValue(mockTask);
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         permissions: new Set()
       });
       mockProjectRepo.findById.mockResolvedValue(mockProject);
@@ -527,7 +527,7 @@ describe('SpentTimeService', () => {
 
       mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
       mockTaskRepo.findById.mockResolvedValue(mockTask);
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         permissions: new Set()
       });
       mockProjectRepo.findById.mockResolvedValue(mockProject);
@@ -548,7 +548,7 @@ describe('SpentTimeService', () => {
 
       mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
       mockTaskRepo.findById.mockResolvedValue(mockTask);
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         permissions: new Set()
       });
       mockProjectRepo.findById.mockResolvedValue(mockProject);
@@ -573,7 +573,7 @@ describe('SpentTimeService', () => {
 
       mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
       mockTaskRepo.findById.mockResolvedValue(mockTask);
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         permissions: new Set()
       });
       mockProjectRepo.findById.mockResolvedValue(mockProject);
@@ -620,7 +620,7 @@ describe('SpentTimeService', () => {
 
       mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
       mockTaskRepo.findById.mockResolvedValue(mockTask);
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         permissions: new Set()
       });
       mockProjectRepo.findById.mockResolvedValue(mockProject);
@@ -641,7 +641,7 @@ describe('SpentTimeService', () => {
 
       mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
       mockTaskRepo.findById.mockResolvedValue(mockTask);
-      (authorizationService.getAuthorizationContext as any).mockResolvedValue({
+      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
         permissions: new Set()
       });
       mockProjectRepo.findById.mockResolvedValue(mockProject);

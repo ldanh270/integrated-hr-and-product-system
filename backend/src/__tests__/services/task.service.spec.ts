@@ -155,7 +155,7 @@ describe('TaskService Suite', () => {
       mockTaskRepository.findById.mockResolvedValue(mockTask);
       authorizationService.getAuthorizationContext.mockResolvedValue({
         permissions: new Set(),
-      } as any);
+      } as never);
       mockProjectRepository.findById.mockResolvedValue(null);
 
       // Act & Assert
@@ -169,7 +169,7 @@ describe('TaskService Suite', () => {
       mockTaskRepository.findById.mockResolvedValue(mockTask);
       authorizationService.getAuthorizationContext.mockResolvedValue({
         permissions: new Set(),
-      } as any);
+      } as never);
       mockProjectRepository.findById.mockResolvedValue({
         id: 'project-1',
         teamLeaderId: 'leader-1',
@@ -192,7 +192,7 @@ describe('TaskService Suite', () => {
       const expectedOutput = { tasks: [], total: 0 };
       authorizationService.getAuthorizationContext.mockResolvedValue({
         permissions: new Set(['project.update']),
-      } as any);
+      } as never);
       mockTaskRepository.listTasks.mockResolvedValue(expectedOutput);
 
       // Act
@@ -207,7 +207,7 @@ describe('TaskService Suite', () => {
       const query = { page: 1, limit: 10 };
       authorizationService.getAuthorizationContext.mockResolvedValue({
         permissions: new Set(),
-      } as any);
+      } as never);
 
       // Act & Assert
       await expect(taskService.listTasks(query, 'user-1'))
@@ -219,7 +219,7 @@ describe('TaskService Suite', () => {
       const query = { projectId: 'project-1', page: 1, limit: 10 };
       authorizationService.getAuthorizationContext.mockResolvedValue({
         permissions: new Set(),
-      } as any);
+      } as never);
       mockProjectRepository.findById.mockResolvedValue(null);
 
       // Act & Assert
@@ -232,7 +232,7 @@ describe('TaskService Suite', () => {
       const query = { projectId: 'project-1', page: 1, limit: 10 };
       authorizationService.getAuthorizationContext.mockResolvedValue({
         permissions: new Set(),
-      } as any);
+      } as never);
       mockProjectRepository.findById.mockResolvedValue({
         id: 'project-1',
         teamLeaderId: 'leader-1',
@@ -260,7 +260,7 @@ describe('TaskService Suite', () => {
       });
       authorizationService.getAuthorizationContext.mockResolvedValue({
         permissions: new Set(),
-      } as any);
+      } as never);
       mockProjectRepository.isMember.mockResolvedValue(true);
       mockStatusRepository.findDefaultStatus.mockResolvedValue({
         id: 'status-1',
@@ -295,7 +295,7 @@ describe('TaskService Suite', () => {
       });
       authorizationService.getAuthorizationContext.mockResolvedValue({
         permissions: new Set(),
-      } as any);
+      } as never);
       mockProjectRepository.isMember.mockResolvedValue(false);
 
       // Act & Assert
@@ -313,7 +313,7 @@ describe('TaskService Suite', () => {
       });
       authorizationService.getAuthorizationContext.mockResolvedValue({
         permissions: new Set(),
-      } as any);
+      } as never);
       mockProjectRepository.isMember.mockResolvedValue(true);
 
       // Act & Assert
@@ -331,7 +331,7 @@ describe('TaskService Suite', () => {
       });
       authorizationService.getAuthorizationContext.mockResolvedValue({
         permissions: new Set(),
-      } as any);
+      } as never);
       mockProjectRepository.isMember.mockResolvedValue(true);
       mockEmployeeRepository.findById.mockResolvedValue(null);
 
@@ -350,7 +350,7 @@ describe('TaskService Suite', () => {
       });
       authorizationService.getAuthorizationContext.mockResolvedValue({
         permissions: new Set(),
-      } as any);
+      } as never);
       mockProjectRepository.isMember.mockImplementation((projId: string, uId: string) => {
         if (uId === 'user-1') return Promise.resolve(true); // Creator is member
         if (uId === 'assignee-1') return Promise.resolve(false); // Assignee is not member
@@ -373,7 +373,7 @@ describe('TaskService Suite', () => {
       });
       authorizationService.getAuthorizationContext.mockResolvedValue({
         permissions: new Set(),
-      } as any);
+      } as never);
       mockProjectRepository.isMember.mockResolvedValue(true);
       mockTaskRepository.findById.mockResolvedValue(null);
 
@@ -392,7 +392,7 @@ describe('TaskService Suite', () => {
       });
       authorizationService.getAuthorizationContext.mockResolvedValue({
         permissions: new Set(),
-      } as any);
+      } as never);
       mockProjectRepository.isMember.mockResolvedValue(true);
       mockStatusRepository.findById.mockResolvedValue(null);
 
@@ -449,7 +449,7 @@ describe('TaskService Suite', () => {
       const originalTask = { id: 'task-1', projectId: 'project-1', createdById: 'creator-1', assigneeId: 'assignee-1' };
       mockTaskRepository.findById.mockResolvedValue(originalTask);
       mockProjectRepository.findById.mockResolvedValue({ id: 'project-1', teamLeaderId: 'leader-1' });
-      authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as any);
+      authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as never);
 
       // Act & Assert
       await expect(taskService.updateTask('task-1', { title: 'Update' }, 'user-stranger'))
@@ -461,7 +461,7 @@ describe('TaskService Suite', () => {
       const originalTask = { id: 'task-1', projectId: 'project-1', createdById: 'user-1' };
       mockTaskRepository.findById.mockResolvedValue(originalTask);
       mockProjectRepository.findById.mockResolvedValue({ id: 'project-1', teamLeaderId: 'leader-1' });
-      authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as any);
+      authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as never);
       mockEmployeeRepository.findById.mockImplementation((id: string) => {
         if (id === 'user-1') return Promise.resolve({ id: 'user-1', position: 'developer' });
         return Promise.resolve(null);
@@ -477,7 +477,7 @@ describe('TaskService Suite', () => {
       const originalTask = { id: 'task-1', projectId: 'project-1', createdById: 'user-1' };
       mockTaskRepository.findById.mockResolvedValue(originalTask);
       mockProjectRepository.findById.mockResolvedValue({ id: 'project-1', teamLeaderId: 'leader-1' });
-      authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as any);
+      authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as never);
       mockEmployeeRepository.findById.mockImplementation((id: string) => {
         if (id === 'user-1') return Promise.resolve({ id: 'user-1', position: 'developer' });
         if (id === 'assignee-1') return Promise.resolve({ id: 'assignee-1' });
@@ -495,7 +495,7 @@ describe('TaskService Suite', () => {
       const originalTask = { id: 'task-1', projectId: 'project-1', createdById: 'user-1' };
       mockTaskRepository.findById.mockResolvedValue(originalTask);
       mockProjectRepository.findById.mockResolvedValue({ id: 'project-1', teamLeaderId: 'leader-1' });
-      authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as any);
+      authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as never);
       mockEmployeeRepository.findById.mockResolvedValue({ id: 'user-1', position: 'developer' });
 
       // Act & Assert
@@ -514,7 +514,7 @@ describe('TaskService Suite', () => {
       };
       mockTaskRepository.findById.mockResolvedValue(originalTask);
       mockProjectRepository.findById.mockResolvedValue({ id: 'project-1', teamLeaderId: 'leader-1' });
-      authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as any);
+      authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as never);
       mockEmployeeRepository.findById.mockResolvedValue({ id: 'user-1', position: 'developer' }); // not tester
 
       mockStatusRepository.findById.mockImplementation((id: string) => {
@@ -533,7 +533,7 @@ describe('TaskService Suite', () => {
       const originalTask = { id: 'task-1', projectId: 'project-1', createdById: 'user-1', status: 'in_progress' };
       mockTaskRepository.findById.mockResolvedValue(originalTask);
       mockProjectRepository.findById.mockResolvedValue({ id: 'project-1', teamLeaderId: 'leader-1' });
-      authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as any);
+      authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as never);
       mockEmployeeRepository.findById.mockResolvedValue({ id: 'user-1', position: 'developer' });
 
       // Act & Assert
@@ -553,7 +553,7 @@ describe('TaskService Suite', () => {
       };
       mockTaskRepository.findById.mockResolvedValue(originalTask);
       mockProjectRepository.findById.mockResolvedValue({ id: 'project-1', teamLeaderId: 'leader-1' });
-      authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as any);
+      authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as never);
       mockEmployeeRepository.findById.mockResolvedValue({ id: 'user-1', position: 'developer' });
 
       // Act & Assert
@@ -571,7 +571,7 @@ describe('TaskService Suite', () => {
       const mockTask = { id: 'task-1', projectId: 'project-1', createdById: 'user-1' };
       mockTaskRepository.findById.mockResolvedValue(mockTask);
       mockProjectRepository.findById.mockResolvedValue({ id: 'project-1', teamLeaderId: 'leader-1' });
-      authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as any);
+      authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as never);
       mockTaskRepository.deleteTask.mockResolvedValue(true);
 
       // Act
@@ -607,7 +607,7 @@ describe('TaskService Suite', () => {
       const mockTask = { id: 'task-1', projectId: 'project-1', createdById: 'creator-1' };
       mockTaskRepository.findById.mockResolvedValue(mockTask);
       mockProjectRepository.findById.mockResolvedValue({ id: 'project-1', teamLeaderId: 'leader-1' });
-      authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as any);
+      authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as never);
 
       // Act & Assert
       await expect(taskService.deleteTask('task-1', 'user-stranger'))
