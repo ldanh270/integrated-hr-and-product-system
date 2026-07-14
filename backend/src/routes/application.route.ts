@@ -39,7 +39,7 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: UPLOAD_CONFIG.MAX_FILE_SIZE },
   fileFilter: (_req, file, cb) => {
-    if (!UPLOAD_CONFIG.ALLOWED_MIME_TYPES.includes(file.mimetype as any)) {
+    if (!UPLOAD_CONFIG.ALLOWED_MIME_TYPES.includes(file.mimetype as unknown as string)) {
       cb(new Error("Only JPEG, PNG, WEBP, GIF, or PDF files are allowed"))
     } else {
       cb(null, true)
@@ -50,7 +50,7 @@ const upload = multer({
 // ─── Employee endpoints ───────────────────────────────────────
 
 // Upload an attachment for an application
-applicationRoutes.post("/upload-attachment", upload.single("attachment"), controller.uploadAttachment as any)
+applicationRoutes.post("/upload-attachment", upload.single("attachment"), controller.uploadAttachment as unknown as express.RequestHandler)
 
 // Submit a new application (any authenticated employee)
 applicationRoutes.post("/", controller.submit)

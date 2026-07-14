@@ -14,8 +14,7 @@
     "seed:admin": "tsx src/scripts/seed-admin.ts",
     "clear": "tsx src/scripts/clear-db.ts",
     "repair:admin": "tsx src/scripts/repair-admin.ts",
-    "hash-password": "tsx src/scripts/hash-password.ts",
-    "test": "jest"
+    "hash-password": "tsx src/scripts/hash-password.ts"
   },
   "type": "module",
   "author": "ldanh270",

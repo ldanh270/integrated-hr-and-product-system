@@ -137,8 +137,8 @@ export function useAllApplications(): UseAllApplicationsReturn {
     activeRef.current = true
     const timer = setTimeout(() => {
       if (activeRef.current) {
-        fetchApplications(true)
-        fetchStats()
+        void fetchApplications(true)
+        void fetchStats()
       }
     }, 0)
     return () => {
@@ -148,8 +148,8 @@ export function useAllApplications(): UseAllApplicationsReturn {
   }, [fetchApplications, fetchStats])
 
   const refetch = useCallback(() => {
-    fetchApplications(false)
-    fetchStats()
+    void fetchApplications(false)
+    void fetchStats()
   }, [fetchApplications, fetchStats])
 
   const handleApprove = async (id: string) => {

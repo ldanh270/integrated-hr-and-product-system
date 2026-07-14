@@ -39,7 +39,7 @@ export function RejectDialog({
       onClick={onCancel}
     >
       <div
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => { e.stopPropagation() }}
         className="bg-background w-full max-w-md rounded-2xl shadow-2xl p-6 flex flex-col gap-5"
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

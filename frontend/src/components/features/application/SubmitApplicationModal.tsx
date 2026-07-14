@@ -138,7 +138,7 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
       onClick={onClose}
     >
       <div
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => { e.stopPropagation() }}
         className={`bg-background w-full ${step === "type" ? "max-w-3xl" : "max-w-lg"} rounded-2xl shadow-2xl shadow-slate-900/20 overflow-hidden flex flex-col max-h-[90vh] transition-all duration-300`}
       >
         {/* Header */}

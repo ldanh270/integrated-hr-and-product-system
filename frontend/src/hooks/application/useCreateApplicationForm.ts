@@ -65,9 +65,9 @@ export function useCreateApplicationForm(type: string) {
       .catch(() => {})
   }, [])
 
-  const addForm = () => setForms((prev) => [...prev, getInitialFormState()])
+  const addForm = () => { setForms((prev) => [...prev, getInitialFormState()]) }
   
-  const removeForm = (index: number) => setForms((prev) => prev.filter((_, i) => i !== index))
+  const removeForm = (index: number) => { setForms((prev) => prev.filter((_, i) => i !== index)) }
 
   const updateForm = <K extends keyof ApplicationFormState>(index: number, k: K, v: ApplicationFormState[K]) => {
     setForms((prev) => prev.map((f, i) => (i === index ? { ...f, [k]: v } : f)))
@@ -152,7 +152,7 @@ export function useCreateApplicationForm(type: string) {
     }
 
     try {
-      const payload: any[] = forms.map((form) => {
+      const payload: unknown[] = forms.map((form) => {
         let detail: Record<string, unknown> = {}
 
         switch (type) {
@@ -214,7 +214,7 @@ export function useCreateApplicationForm(type: string) {
       if (success) {
         navigate(-1)
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // isSubmitting handles the toast
     }
   }

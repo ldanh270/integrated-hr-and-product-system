@@ -24,11 +24,12 @@ export class ApplicationController {
 
   uploadAttachment = async (req: AuthRequest, res: Response) => {
     if (!req.file) throw new AppError("No file uploaded", 400, "ApplicationController")
+    if (!req.user) throw new AppError("Unauthorized", 401, "ApplicationController")
     
     const { url, id } = await CloudinaryUtil.uploadStream(req.file.buffer, {
       folder: UPLOAD_CONFIG.CLOUDINARY_FOLDERS.APPLICATIONS,
       resource_type: "auto",
-      public_id: `attachment_${Date.now()}_${req.user!.empId}`,
+      public_id: `attachment_${Date.now()}_${req.user.empId}`,
       overwrite: true,
     })
     
@@ -45,9 +46,10 @@ export class ApplicationController {
    * @param res - The response object containing the API response envelope.
    * @returns A promise that resolves to the response with the created application.
    */
-  submit = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  submit = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
-      const employeeId = req.user!.empId // §SEC: always from JWT, never from body
+      if (!req.user) throw new AppError("Unauthorized", 401, "ApplicationController")
+      const employeeId = req.user.empId // §SEC: always from JWT, never from body
       const data = submitApplicationSchema.parse(req.body)
       const result = await this.service.submitApplication({ ...data, employeeId })
 
@@ -67,9 +69,10 @@ export class ApplicationController {
    * Submits multiple applications in bulk for the logged-in employee.
    * Ensures the employee ID is retrieved securely from the authenticated user context.
    */
-  submitBulk = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  submitBulk = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
-      const employeeId = req.user!.empId // §SEC: always from JWT, never from body
+      if (!req.user) throw new AppError("Unauthorized", 401, "ApplicationController")
+      const employeeId = req.user.empId // §SEC: always from JWT, never from body
       const data = submitBulkApplicationsSchema.parse(req.body)
       
       const bulkData = data.forms.map((form) => ({
@@ -98,7 +101,7 @@ export class ApplicationController {
    * @param res - The response object containing the API response envelope.
    * @returns A promise that resolves to the response with the application details.
    */
-  getById = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  getById = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     const requester = req.user ? { empId: req.user.empId } : undefined
     const app = await this.service.getApplicationById(String(req.params.id), requester)
     res.status(HttpStatusCode.OK).json({ data: app, error: null })
@@ -112,7 +115,7 @@ export class ApplicationController {
    * @param res - The response object containing the paginated API response.
    * @returns A promise that resolves to the response with the list of applications.
    */
-  listAll = async (req: Request, res: Response<ApiResponse<any>>) => {
+  listAll = async (req: Request, res: Response<ApiResponse<unknown>>) => {
     try {
       const query = listApplicationsQuerySchema.parse(req.query)
       const result = await this.service.listApplications(query)
@@ -149,9 +152,10 @@ export class ApplicationController {
    * @param res - The response object containing the paginated API response.
    * @returns A promise that resolves to the response with the list of applications to approve.
    */
-  listApprovals = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  listApprovals = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
-      const approverId = req.user!.empId
+      if (!req.user) throw new AppError("Unauthorized", 401, "ApplicationController")
+      const approverId = req.user.empId
       const query = listApplicationsQuerySchema.parse(req.query)
       const result = await this.service.getApprovalsList(approverId, query)
       res.status(HttpStatusCode.OK).json({
@@ -187,9 +191,10 @@ export class ApplicationController {
    * @param res - The response object containing the paginated API response.
    * @returns A promise that resolves to the response with the employee's own applications.
    */
-  listMine = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  listMine = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
-      const employeeId = req.user!.empId
+      if (!req.user) throw new AppError("Unauthorized", 401, "ApplicationController")
+      const employeeId = req.user.empId
       const query = listApplicationsQuerySchema.parse(req.query)
       const result = await this.service.getEmployeeApplications(employeeId, query)
       res.status(HttpStatusCode.OK).json({
@@ -225,7 +230,7 @@ export class ApplicationController {
    * @param res - The response object containing the paginated API response.
    * @returns A promise that resolves to the response with the employee's applications.
    */
-  listByEmployee = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  listByEmployee = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
       const employeeId = String(req.params.employeeId ?? "")
       if (!employeeId) {
@@ -273,9 +278,10 @@ export class ApplicationController {
    * @param res - The response object containing the API response envelope.
    * @returns A promise that resolves to the response with the updated application status.
    */
-  cancel = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  cancel = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
-      const employeeId = req.user!.empId
+      if (!req.user) throw new AppError("Unauthorized", 401, "ApplicationController")
+      const employeeId = req.user.empId
       cancelApplicationSchema.parse(req.body ?? {}) // validates optional reason field
       const app = await this.service.cancelApplication(String(req.params.id), employeeId)
       res.status(HttpStatusCode.OK).json({ data: app, error: null })
@@ -302,9 +308,10 @@ export class ApplicationController {
    * @param res - The response object containing the API response envelope.
    * @returns A promise that resolves to the response with the approved application.
    */
-  approve = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  approve = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
-      const processorId = req.user!.empId // §SEC: from JWT
+      if (!req.user) throw new AppError("Unauthorized", 401, "ApplicationController")
+      const processorId = req.user.empId // §SEC: from JWT
       approveApplicationSchema.parse(req.body) // validates status=approved only
 
       const app = await this.service.approveApplication(String(req.params.id), processorId)
@@ -328,9 +335,10 @@ export class ApplicationController {
    * @param res - The response object containing the API response envelope.
    * @returns A promise that resolves to the response with the rejected application.
    */
-  reject = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  reject = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
-      const processorId = req.user!.empId // §SEC: from JWT
+      if (!req.user) throw new AppError("Unauthorized", 401, "ApplicationController")
+      const processorId = req.user.empId // §SEC: from JWT
       const { rejectReason } = rejectApplicationSchema.parse(req.body)
 
       const app = await this.service.rejectApplication(
@@ -354,9 +362,10 @@ export class ApplicationController {
    * Swap partner confirms the shift swap (partner_pending → pending).
    * Only the designated swap-with employee may call this.
    */
-  swapConfirm = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  swapConfirm = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
-      const partnerId = req.user!.empId
+      if (!req.user) throw new AppError("Unauthorized", 401, "ApplicationController")
+      const partnerId = req.user.empId
       const app = await this.service.confirmSwapPartner(String(req.params.id), partnerId)
       res.status(HttpStatusCode.OK).json({ data: app, error: null })
     } catch (error) {
@@ -367,9 +376,10 @@ export class ApplicationController {
   /**
    * Swap partner rejects the shift swap (partner_pending → rejected).
    */
-  swapReject = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  swapReject = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
-      const partnerId = req.user!.empId
+      if (!req.user) throw new AppError("Unauthorized", 401, "ApplicationController")
+      const partnerId = req.user.empId
       const { rejectReason } = swapRejectApplicationSchema.parse(req.body)
       const app = await this.service.rejectSwapPartner(String(req.params.id), partnerId, rejectReason || "")
       res.status(HttpStatusCode.OK).json({ data: app, error: null })

@@ -37,8 +37,8 @@ export function CreateApplicationTimeSection({ type, form, set, employees, formI
     ) {
       schedulesApi
         .getMyShifts(form.startDate, form.startDate)
-        .then((data) => setShifts(data))
-        .catch(() => setShifts([]))
+        .then((data) => { setShifts(data) })
+        .catch(() => { setShifts([]) })
     } else {
       setShifts([])
     }
@@ -52,8 +52,8 @@ export function CreateApplicationTimeSection({ type, form, set, employees, formI
     ) {
       schedulesApi
         .getShiftsByEmployee(form.swapWithEmployeeId, form.swapWithDate, form.swapWithDate)
-        .then(setPartnerShifts)
-        .catch(() => setPartnerShifts([]))
+        .then((data) => { setPartnerShifts(data) })
+        .catch(() => { setPartnerShifts([]) })
     } else {
       setPartnerShifts([])
     }
@@ -96,7 +96,7 @@ export function CreateApplicationTimeSection({ type, form, set, employees, formI
           {type === APPLICATION_TYPES.LATE_EARLY.LABEL && "Đi muộn / Về sớm"}
           {type === APPLICATION_TYPES.SHIFT_SWAP.LABEL && "Đổi ca"}
           {type === APPLICATION_TYPES.WORK_FROM_HOME.LABEL && "Làm việc từ xa"}
-          {![APPLICATION_TYPES.LEAVE.LABEL, APPLICATION_TYPES.OVERTIME.LABEL, APPLICATION_TYPES.LATE_EARLY.LABEL, APPLICATION_TYPES.SHIFT_SWAP.LABEL, APPLICATION_TYPES.WORK_FROM_HOME.LABEL].includes(type as any) && "Thời gian"}
+          {![APPLICATION_TYPES.LEAVE.LABEL, APPLICATION_TYPES.OVERTIME.LABEL, APPLICATION_TYPES.LATE_EARLY.LABEL, APPLICATION_TYPES.SHIFT_SWAP.LABEL, APPLICATION_TYPES.WORK_FROM_HOME.LABEL].includes(type as string) && "Thời gian"}
         </h3>
         {onRemove && (
           <button
@@ -178,7 +178,7 @@ export function CreateApplicationTimeSection({ type, form, set, employees, formI
                 <span className="text-muted-foreground font-normal">(Hỗ trợ định dạng: JPEG, PNG, WEBP, GIF, PDF. Tối đa 10MB)</span>
               </label>
               <FileUploader
-                onUploadSuccess={(url) => set("documentUrl", url)}
+                onUploadSuccess={(url) => { set("documentUrl", url) }}
               />
             </div>
           </>
@@ -253,7 +253,7 @@ export function CreateApplicationTimeSection({ type, form, set, employees, formI
                   className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 >
                   <option value="">-- Chọn ca làm việc --</option>
-                  {shifts.map((s: any) => (
+                  {shifts.map((s: { id: string; shift?: { name: string; startTime: string; endTime: string } }) => (
                     <option key={s.id} value={s.id}>
                       {s.shift ? `${s.shift.name} (${formatTime(s.shift.startTime)} - ${formatTime(s.shift.endTime)})` : 'Không xác định'}
                     </option>
@@ -335,7 +335,7 @@ export function CreateApplicationTimeSection({ type, form, set, employees, formI
                   >
                     <option value="">-- Chọn ca làm việc --</option>
                     {partnerShifts.length > 0
-                      ? partnerShifts.map((s: any) => (
+                      ? partnerShifts.map((s: { id: string; shift?: { name: string; startTime: string; endTime: string }; name?: string; startTime?: string; endTime?: string }) => (
                           <option key={s.id} value={s.id}>
                             {s.shift?.name ?? s.name} ({formatTime(s.shift?.startTime ?? s.startTime)} - {formatTime(s.shift?.endTime ?? s.endTime)})
                           </option>

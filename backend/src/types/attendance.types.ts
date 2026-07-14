@@ -247,30 +247,30 @@ export interface IAttendanceRepository {
  */
 export interface IApplicationRepository {
   /** Submits a new application. */
-  submit(data: ISubmitApplicationDTO): Promise<any>
+  submit(data: ISubmitApplicationDTO): Promise<unknown>
   /** Submits multiple applications in a transaction. */
-  submitBulk(data: ISubmitApplicationDTO[]): Promise<any[]>
-  findById(id: string): Promise<any | null>
+  submitBulk(data: ISubmitApplicationDTO[]): Promise<unknown[]>
+  findById(id: string): Promise<unknown | null>
   findByEmployee(
     employeeId: string,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: any[]; total: number }>
-  findAll(query: IListApplicationsQueryDTO): Promise<{ data: any[]; total: number }>
+  ): Promise<{ data: unknown[]; total: number }>
+  findAll(query: IListApplicationsQueryDTO): Promise<{ data: unknown[]; total: number }>
   findApprovals(
     approverId: string,
     managedEmployeeIds: string[],
     isGlobalApprover: boolean,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: any[]; total: number }>
-  cancel(id: string, employeeId: string): Promise<any | null>
+  ): Promise<{ data: unknown[]; total: number }>
+  cancel(id: string, employeeId: string): Promise<unknown | null>
   /** Approves an application (sets status=approved). */
-  approve(id: string, approvedBy: string): Promise<any | null>
+  approve(id: string, approvedBy: string): Promise<unknown | null>
   /** Rejects an application with a mandatory reason. */
-  reject(id: string, rejectedBy: string, rejectReason: string): Promise<any | null>
+  reject(id: string, rejectedBy: string, rejectReason: string): Promise<unknown | null>
   /** Partner confirms (agree) a shift_swap application (partner_pending → pending). */
-  partnerConfirm(id: string, partnerId: string): Promise<any | null>
+  partnerConfirm(id: string, partnerId: string): Promise<unknown | null>
   /** Partner rejects a shift_swap application (partner_pending → rejected). */
-  partnerReject(id: string, partnerId: string, rejectReason: string): Promise<any | null>
+  partnerReject(id: string, partnerId: string, rejectReason: string): Promise<unknown | null>
   checkLeaveOverlap(
     employeeId: string,
     startDate: string | Date,
@@ -328,35 +328,35 @@ export interface IAttendanceService {
  */
 export interface IApplicationService {
   /** Submits an application. */
-  submitApplication(data: ISubmitApplicationDTO): Promise<any>
+  submitApplication(data: ISubmitApplicationDTO): Promise<unknown>
   /** Submits multiple applications in bulk. */
-  submitBulkApplications(data: ISubmitApplicationDTO[]): Promise<any[]>
-  cancelApplication(id: string, requesterId: string): Promise<any>
-  getApplicationById(id: string, requester?: { empId: string }): Promise<any>
-  listApplications(query: IListApplicationsQueryDTO): Promise<{ data: any[]; total: number }>
+  submitBulkApplications(data: ISubmitApplicationDTO[]): Promise<unknown[]>
+  cancelApplication(id: string, requesterId: string): Promise<unknown>
+  getApplicationById(id: string, requester?: { empId: string }): Promise<unknown>
+  listApplications(query: IListApplicationsQueryDTO): Promise<{ data: unknown[]; total: number }>
   getApprovalsList(
     approverId: string,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: any[]; total: number }>
+  ): Promise<{ data: unknown[]; total: number }>
   getEmployeeApplications(
     employeeId: string,
     query: IListApplicationsQueryDTO,
     requester?: { empId: string },
-  ): Promise<{ data: any[]; total: number }>
+  ): Promise<{ data: unknown[]; total: number }>
   /** Approves a pending application. */
-  approveApplication(id: string, processorId: string): Promise<any>
+  approveApplication(id: string, processorId: string): Promise<unknown>
   /** Rejects a pending application with a mandatory reason. */
-  rejectApplication(id: string, processorId: string, rejectReason: string): Promise<any>
+  rejectApplication(id: string, processorId: string, rejectReason: string): Promise<unknown>
   /** Partner confirms a shift swap (partner_pending → pending). */
-  confirmSwapPartner(id: string, partnerId: string): Promise<any>
+  confirmSwapPartner(id: string, partnerId: string): Promise<unknown>
   /** Partner rejects a shift swap (partner_pending → rejected). */
-  rejectSwapPartner(id: string, partnerId: string, rejectReason: string): Promise<any>
+  rejectSwapPartner(id: string, partnerId: string, rejectReason: string): Promise<unknown>
   /** @deprecated Use approveApplication / rejectApplication instead. */
   processApplication(
     id: string,
     status: IApplicationStatus,
     processorId: string,
-  ): Promise<any | null>
+  ): Promise<unknown | null>
 }
 
 /**

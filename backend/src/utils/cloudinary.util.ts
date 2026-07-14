@@ -13,7 +13,10 @@ export class CloudinaryUtil {
   ): Promise<{ url: string; id: string }> {
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(options, (error, result) => {
-        if (error || !result) return reject(error ?? new Error("Cloudinary upload failed"))
+        if (error || !result) {
+          reject(error instanceof Error ? error : new Error(error?.message || "Cloudinary upload failed"))
+          return
+        }
         resolve({ url: result.secure_url, id: result.public_id })
       })
 

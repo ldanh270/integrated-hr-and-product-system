@@ -55,7 +55,7 @@ export class ApplicationService implements IApplicationService {
 
     // Validate position application restrictions
     if (this.positionService) {
-      await this.positionService.validateApplicationSubmission(data.employeeId, data.type as any)
+      await this.positionService.validateApplicationSubmission(data.employeeId, data.type as unknown as string)
     }
 
     // Type-specific business rule validation
@@ -112,7 +112,7 @@ export class ApplicationService implements IApplicationService {
    * @returns A promise that resolves to the submitted application.
    * @throws {AppError} If validation fails (e.g. invalid date range, leave overlap, insufficient balance).
    */
-  async submitApplication(data: ISubmitApplicationDTO): Promise<any> {
+  async submitApplication(data: ISubmitApplicationDTO): Promise<unknown> {
     await this._validateApplicationSubmission(data)
     return this.applicationRepo.submit(data)
   }
@@ -124,7 +124,7 @@ export class ApplicationService implements IApplicationService {
    * @returns A promise that resolves to an array of submitted applications.
    * @throws {AppError} If validation fails for any of the applications.
    */
-  async submitBulkApplications(data: ISubmitApplicationDTO[]): Promise<any[]> {
+  async submitBulkApplications(data: ISubmitApplicationDTO[]): Promise<unknown[]> {
     for (const item of data) {
       await this._validateApplicationSubmission(item)
     }
@@ -139,7 +139,7 @@ export class ApplicationService implements IApplicationService {
    * @returns A promise that resolves to the cancelled application.
    * @throws {AppError} If application is not found, requester is not the owner, or application status is not pending.
    */
-  async cancelApplication(id: string, requesterId: string): Promise<any> {
+  async cancelApplication(id: string, requesterId: string): Promise<unknown> {
     const app = await this.applicationRepo.findById(id)
 
     if (!app) {
@@ -190,7 +190,7 @@ export class ApplicationService implements IApplicationService {
    * @returns A promise that resolves to the application details.
    * @throws {AppError} If the application is not found.
    */
-  async getApplicationById(id: string, requester?: { empId: string }): Promise<any> {
+  async getApplicationById(id: string, requester?: { empId: string }): Promise<unknown> {
     const app = await this.applicationRepo.findById(id)
     if (!app) {
       throw new AppError(
@@ -251,7 +251,7 @@ export class ApplicationService implements IApplicationService {
    */
   async listApplications(
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: any[]; total: number }> {
+  ): Promise<{ data: unknown[]; total: number }> {
     return this.applicationRepo.findAll(query)
   }
 
@@ -268,10 +268,10 @@ export class ApplicationService implements IApplicationService {
     employeeId: string,
     query: IListApplicationsQueryDTO,
     requester?: { empId: string },
-  ): Promise<{ data: any[]; total: number }> {
+  ): Promise<{ data: unknown[]; total: number }> {
     // Verify target employee exists and is not soft-deleted
     const employeeExists = await prisma.employee.findFirst({
-      where: { id: employeeId, deletedAt: null } as any,
+      where: { id: employeeId, deletedAt: null } as unknown as any,
       select: { id: true },
     })
 
@@ -326,7 +326,7 @@ export class ApplicationService implements IApplicationService {
    * @returns A promise that resolves to the approved application.
    * @throws {AppError} If the application is not found or is not in pending status.
    */
-  async approveApplication(id: string, processorId: string): Promise<any> {
+  async approveApplication(id: string, processorId: string): Promise<unknown> {
     const app = await this.applicationRepo.findById(id)
 
     if (!app) {
@@ -369,7 +369,7 @@ export class ApplicationService implements IApplicationService {
    * @returns A promise that resolves to the rejected application.
    * @throws {AppError} If the application is not found or is not in pending status.
    */
-  async rejectApplication(id: string, processorId: string, rejectReason: string): Promise<any> {
+  async rejectApplication(id: string, processorId: string, rejectReason: string): Promise<unknown> {
     const app = await this.applicationRepo.findById(id)
 
     if (!app) {
@@ -588,7 +588,7 @@ export class ApplicationService implements IApplicationService {
   async getApprovalsList(
     approverId: string,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: any[]; total: number }> {
+  ): Promise<{ data: unknown[]; total: number }> {
     const authContext = await authorizationService.getAuthorizationContext(approverId)
     const isGlobalAdmin = authContext.isDynamicAdmin
     const hasRead = authContext.permissions.has(PERMISSION_CODE.APPLICATION_READ)
@@ -610,7 +610,7 @@ export class ApplicationService implements IApplicationService {
     return this.applicationRepo.findApprovals(approverId, managedEmployeeIds, isGlobalApprover, query)
   }
 
-  async confirmSwapPartner(id: string, partnerId: string): Promise<any> {
+  async confirmSwapPartner(id: string, partnerId: string): Promise<unknown> {
     const app = await this.applicationRepo.findById(id)
 
     if (!app) {
@@ -644,7 +644,7 @@ export class ApplicationService implements IApplicationService {
     return updated
   }
 
-  async rejectSwapPartner(id: string, partnerId: string, rejectReason: string): Promise<any> {
+  async rejectSwapPartner(id: string, partnerId: string, rejectReason: string): Promise<unknown> {
     const app = await this.applicationRepo.findById(id)
 
     if (!app) {

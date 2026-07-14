@@ -31,8 +31,8 @@ export function FileUploader({ onUploadSuccess, disabled }: FileUploaderProps) {
       const { url } = await applicationApi.uploadAttachment(selected)
       setFile({ name: selected.name, url })
       onUploadSuccess(url)
-    } catch (err: any) {
-      setError(err.message || "Lỗi tải lên tệp")
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Lỗi tải lên tệp")
     } finally {
       setIsUploading(false)
       // reset input
@@ -55,7 +55,7 @@ export function FileUploader({ onUploadSuccess, disabled }: FileUploaderProps) {
           type="file"
           ref={fileInputRef}
           className="hidden"
-          onChange={handleFileChange}
+          onChange={(e) => { void handleFileChange(e) }}
           accept={SYSTEM_CONFIG.UPLOAD.ALLOWED_MIME_TYPES}
           disabled={disabled || isUploading}
         />
