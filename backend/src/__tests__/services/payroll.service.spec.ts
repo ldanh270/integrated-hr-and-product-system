@@ -22,6 +22,10 @@ jest.mock('@/configs/entities/employee.config.ts', () => ({
     PART_TIME: 'PART_TIME',
     FULL_TIME: 'FULL_TIME',
   },
+  WORK_SCHEDULE_TYPE: {
+    FULL_TIME: 'FULL_TIME',
+    PART_TIME: 'PART_TIME',
+  },
 }));
 
 jest.mock('@/configs/entities/project.config.ts', () => ({
@@ -44,6 +48,11 @@ jest.mock('@/configs/rules/project.config.ts', () => ({
   SPENT_TIME_OT_MULTIPLIERS: {
     WORKING_DAY: 1.0,
     OVERTIME: 1.5,
+  },
+  SPENT_TIME_RULES: {
+    ENFORCE_ESTIMATE_CAP: true,
+    OVERTIME_MULTIPLIER: 1.5,
+    MONTHLY_HOURS_DIVISOR: 176,
   },
 }));
 
