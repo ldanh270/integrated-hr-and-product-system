@@ -1,4 +1,5 @@
 /// <reference types="jest" />
+/* eslint-disable @typescript-eslint/unbound-method */
 import { RoleService } from '../../services/role.service';
 import { prisma } from '@/libs/database';
 import { authorizationService } from '../../services/authorization.service';

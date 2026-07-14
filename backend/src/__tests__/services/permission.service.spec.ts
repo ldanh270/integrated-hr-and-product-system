@@ -1,4 +1,5 @@
 /// <reference types="jest" />
+/* eslint-disable @typescript-eslint/unbound-method */
 import { PermissionService } from '../../services/permission.service';
 import { auditService } from '../../services/audit.service';
 import { authorizationService } from '../../services/authorization.service';

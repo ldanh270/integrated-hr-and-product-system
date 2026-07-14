@@ -1,4 +1,5 @@
 /// <reference types="jest" />
+/* eslint-disable @typescript-eslint/unbound-method */
 import { AuthorizationService } from '../../services/authorization.service.ts';
 import { prisma } from '../../libs/database.ts';
 import { cacheService } from '../../services/cache.service.ts';

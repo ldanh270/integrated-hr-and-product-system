@@ -113,7 +113,7 @@ describe('AuditService', () => {
       mockRepository.createLog.mockRejectedValue(dbError);
 
       // Act
-      await service.log(event as any);
+      await service.log(event as CreateAuditLogDto);
 
       // Assert
       expect(setImmediateSpy).toHaveBeenCalled();
@@ -135,7 +135,7 @@ describe('AuditService', () => {
       mockRepository.createLog.mockRejectedValue(validationError);
 
       // Act
-      await service.log(event as any);
+      await service.log(event as CreateAuditLogDto);
 
       // Assert
       expect(setImmediateSpy).toHaveBeenCalled();
