@@ -27,6 +27,11 @@ import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { CalendarDays, ChevronLeft, ChevronRight, Loader2, Pencil, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
+import { isAxiosError } from "axios"
+
+interface IApiErrorResponse {
+  error?: { message?: string }
+}
 
 function getScopeLabel(holiday: IHoliday): string {
   const scope = (holiday.scope as IHolidayScope) || HOLIDAY_SCOPE.ALL
@@ -71,8 +76,11 @@ export default function Holidays() {
       invalidateHolidays()
       closeDialog()
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.error?.message || "Thêm ngày lễ thất bại")
+    onError: (error: unknown) => {
+      const message = isAxiosError<IApiErrorResponse>(error)
+        ? error.response?.data?.error?.message
+        : undefined
+      toast.error(message ?? "Thêm ngày lễ thất bại")
     },
   })
 
@@ -141,7 +149,9 @@ export default function Holidays() {
               variant="outline"
               size="icon"
               className="h-8 w-8"
-              onClick={() => setYear((y) => y - 1)}
+              onClick={() => {
+                setYear((y) => y - 1)
+              }}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -149,7 +159,9 @@ export default function Holidays() {
               variant="outline"
               size="icon"
               className="h-8 w-8"
-              onClick={() => setYear((y) => y + 1)}
+              onClick={() => {
+                setYear((y) => y + 1)
+              }}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -178,7 +190,9 @@ export default function Holidays() {
                         variant="ghost"
                         size="icon-xs"
                         aria-label="Sửa ngày lễ"
-                        onClick={() => openEditDialog(holiday)}
+                        onClick={() => {
+                          openEditDialog(holiday)
+                        }}
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
@@ -186,7 +200,9 @@ export default function Holidays() {
                         variant="destructive"
                         size="icon-xs"
                         aria-label="Xóa ngày lễ"
-                        onClick={() => setDeletingHoliday(holiday)}
+                        onClick={() => {
+                          setDeletingHoliday(holiday)
+                        }}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -207,6 +223,7 @@ export default function Holidays() {
       </PageCard>
 
       <HolidayFormDialog
+        key={`${editingHoliday?.id ?? "new"}:${isDialogOpen ? "open" : "closed"}`}
         open={isDialogOpen}
         editingHoliday={editingHoliday}
         isSaving={isSaving}
@@ -214,13 +231,19 @@ export default function Holidays() {
           if (!open) closeDialog()
           else setIsDialogOpen(true)
         }}
-        onSubmitCreate={(payload) => createMutation.mutate(payload)}
-        onSubmitUpdate={(id, data) => updateMutation.mutate({ id, data })}
+        onSubmitCreate={(payload) => {
+          createMutation.mutate(payload)
+        }}
+        onSubmitUpdate={(id, data) => {
+          updateMutation.mutate({ id, data })
+        }}
       />
 
       <AlertDialog
         open={Boolean(deletingHoliday)}
-        onOpenChange={() => setDeletingHoliday(null)}
+        onOpenChange={() => {
+          setDeletingHoliday(null)
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>

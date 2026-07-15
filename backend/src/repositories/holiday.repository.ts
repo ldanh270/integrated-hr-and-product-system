@@ -4,6 +4,7 @@ import {
 } from "@/configs/entities/attendance.config.ts"
 import {
   ICreateHolidayDTO,
+  IHolidayCalendarDTO,
   IHolidayRepository,
   IListHolidaysQueryDTO,
   IUpdateHolidayDTO,
@@ -38,7 +39,7 @@ export class PrismaHolidayRepository extends BaseRepository implements IHolidayR
     super(prisma)
   }
 
-  async listHolidays(query?: IListHolidaysQueryDTO): Promise<any[]> {
+  async listHolidays(query?: IListHolidaysQueryDTO): Promise<IHolidayCalendarDTO[]> {
     const where: { date?: { gte?: Date; lte?: Date } } = {}
 
     if (query?.year) {
@@ -62,9 +63,14 @@ export class PrismaHolidayRepository extends BaseRepository implements IHolidayR
     })
   }
 
-  async createHolidayRange(data: ICreateHolidayDTO, createdById: string): Promise<any[]> {
-    const start = this.normalizeDate(data.startDate ?? data.date!)
-    const end = this.normalizeDate(data.endDate ?? data.startDate ?? data.date!)
+  async createHolidayRange(
+    data: ICreateHolidayDTO,
+    createdById: string,
+  ): Promise<IHolidayCalendarDTO[]> {
+    const startInput = data.startDate ?? data.date
+    if (!startInput) throw new Error("Holiday start date is required")
+    const start = this.normalizeDate(startInput)
+    const end = this.normalizeDate(data.endDate ?? startInput)
     const dates = expandDateRange(start, end)
     const scope = (data.scope ?? HOLIDAY_SCOPE.ALL) as HolidayScope
     const batchId =
@@ -75,7 +81,7 @@ export class PrismaHolidayRepository extends BaseRepository implements IHolidayR
       scope === HOLIDAY_SCOPE.EMPLOYEES ? [...new Set(data.employeeIds ?? [])] : []
 
     return this.prisma.$transaction(async (tx) => {
-      const created: any[] = []
+      const created: IHolidayCalendarDTO[] = []
 
       for (const day of dates) {
         if (scope === HOLIDAY_SCOPE.ALL) {
@@ -103,7 +109,7 @@ export class PrismaHolidayRepository extends BaseRepository implements IHolidayR
             name: data.name,
             type: data.type as HolidayType,
             scope,
-            positionId: scope === HOLIDAY_SCOPE.POSITION ? data.positionId! : null,
+            positionId: scope === HOLIDAY_SCOPE.POSITION ? (data.positionId ?? null) : null,
             batchId,
             createdById,
             ...(scope === HOLIDAY_SCOPE.EMPLOYEES
@@ -131,7 +137,7 @@ export class PrismaHolidayRepository extends BaseRepository implements IHolidayR
     })
   }
 
-  async updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<any> {
+  async updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<IHolidayCalendarDTO> {
     return this.prisma.holidayCalendar.update({
       where: { id },
       data: {

@@ -255,7 +255,9 @@ const mockShiftFitsAvailabilityDay = shiftFitsAvailabilityDay as jest.MockedFunc
 const mockBuildAssignedDaySummaries = buildAssignedDaySummaries as jest.MockedFunction<
   typeof buildAssignedDaySummaries
 >;
-const mockAuditLog = auditService.log as jest.MockedFunction<typeof auditService.log>;
+const { log: mockAuditLog } = auditService as unknown as {
+  log: jest.MockedFunction<typeof auditService.log>;
+};
 
 function createServiceBundle(): ServiceBundle {
   const availabilityRepo: AvailabilityRepoMock = {
@@ -852,13 +854,13 @@ describe('PartTimeAvailabilityService.assignShifts', () => {
       { id: 'shift-existing', startTime: 540, endTime: 720 },
     ]);
     mockMinutesToTime.mockImplementation((minutesValue: number) => {
-      const map: Record<number, string> = {
-        540: '09:00',
-        720: '12:00',
-        780: '13:00',
-        1020: '17:00',
-      };
-      return (map[minutesValue] ?? '00:00') as never;
+      const timeByMinutes = new Map<number, string>([
+        [540, '09:00'],
+        [720, '12:00'],
+        [780, '13:00'],
+        [1020, '17:00'],
+      ]);
+      return (timeByMinutes.get(minutesValue) ?? '00:00') as never;
     });
   });
 
@@ -875,8 +877,11 @@ describe('PartTimeAvailabilityService.assignShifts', () => {
       ],
     });
     mockParseTimeToMinutes.mockImplementation((value: string) => {
-      const map: Record<string, number> = { '09:00': 540, '12:00': 720 };
-      return map[value] as never;
+      const minutesByTime = new Map<string, number>([
+        ['09:00', 540],
+        ['12:00', 720],
+      ]);
+      return minutesByTime.get(value) as never;
     });
     employeeShiftRepo.replacePartTimeOverrides.mockResolvedValue(undefined);
     mockAuditLog.mockResolvedValue(undefined as never);
@@ -938,8 +943,11 @@ describe('PartTimeAvailabilityService.assignShifts', () => {
       days: [{ dayOfWeek: 1, isBusyAllDay: false, slots: [{ startTime: 540, endTime: 720 }] }],
     });
     mockParseTimeToMinutes.mockImplementation((value: string) => {
-      const map: Record<string, number> = { '12:00': 720, '09:00': 540 };
-      return map[value] as never;
+      const minutesByTime = new Map<string, number>([
+        ['12:00', 720],
+        ['09:00', 540],
+      ]);
+      return minutesByTime.get(value) as never;
     });
 
     // Act
@@ -967,8 +975,11 @@ describe('PartTimeAvailabilityService.assignShifts', () => {
       days: [{ dayOfWeek: 1, isBusyAllDay: false, slots: [{ startTime: 540, endTime: 720 }] }],
     });
     mockParseTimeToMinutes.mockImplementation((value: string) => {
-      const map: Record<string, number> = { '09:00': 540, '12:00': 720 };
-      return map[value] as never;
+      const minutesByTime = new Map<string, number>([
+        ['09:00', 540],
+        ['12:00', 720],
+      ]);
+      return minutesByTime.get(value) as never;
     });
     mockShiftFitsAvailabilityDay.mockReturnValue(false as never);
 

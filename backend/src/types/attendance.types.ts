@@ -153,6 +153,24 @@ export interface IUpdateHolidayDTO {
   type?: IHolidayType
 }
 
+export interface IHolidayCalendarDTO {
+  id: string
+  name: string
+  date: Date
+  type: IHolidayType
+  scope: string
+  positionId: string | null
+  batchId: string | null
+  createdById: string
+  createdAt: Date
+  updatedAt: Date
+  position: { id: string; name: string; code: string } | null
+  assignees: Array<{
+    employeeId: string
+    employee: { id: string; fullName: string; email: string }
+  }>
+}
+
 // ─── REPOSITORY INTERFACES ────────────────────────────────────
 export interface IAttendanceMetricsDTO {
   status?: IAttendanceStatus
@@ -302,11 +320,11 @@ export interface IApplicationRepository {
  */
 export interface IHolidayRepository {
   /** Lists holiday records. */
-  listHolidays(query?: IListHolidaysQueryDTO): Promise<any[]>
+  listHolidays(query?: IListHolidaysQueryDTO): Promise<IHolidayCalendarDTO[]>
   /** Creates holiday day rows for a date range + scope. */
-  createHolidayRange(data: ICreateHolidayDTO, createdById: string): Promise<any[]>
+  createHolidayRange(data: ICreateHolidayDTO, createdById: string): Promise<IHolidayCalendarDTO[]>
   /** Updates a holiday record. */
-  updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<any>
+  updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<IHolidayCalendarDTO>
   /** Deletes a holiday record (and batch siblings when batchId set). */
   deleteHoliday(id: string, deleteBatch?: boolean): Promise<void>
   /** Checks if a specific date is a company-wide holiday. */
@@ -376,11 +394,11 @@ export interface IApplicationService {
  */
 export interface IHolidayService {
   /** Lists holidays. */
-  listHolidays(query?: IListHolidaysQueryDTO): Promise<any[]>
+  listHolidays(query?: IListHolidaysQueryDTO): Promise<IHolidayCalendarDTO[]>
   /** Creates holiday day rows for a date range + scope. */
-  createHoliday(data: ICreateHolidayDTO, createdById: string): Promise<any[]>
+  createHoliday(data: ICreateHolidayDTO, createdById: string): Promise<IHolidayCalendarDTO[]>
   /** Updates a holiday. */
-  updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<any>
+  updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<IHolidayCalendarDTO>
   /** Deletes a holiday (optionally whole batch). */
   deleteHoliday(id: string, deleteBatch?: boolean): Promise<void>
   /** Checks if a date is a company-wide holiday. */

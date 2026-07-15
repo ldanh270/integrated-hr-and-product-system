@@ -5,6 +5,7 @@ import {
   DAY_OF_WEEK_VALUES,
   SCHEDULE_INSIGHTS,
 } from "@/configs/entities/attendance.config.ts"
+
 import type { IAttendanceRecordDTO } from "@/types/attendance.types.ts"
 import type {
   IScheduleInsightDayBucket,
@@ -12,6 +13,13 @@ import type {
   IScheduleInsightsResult,
 } from "@/types/shift.types.ts"
 import { formatScheduleDateKey } from "@/utils/schedule.util.ts"
+
+const SHORT_LABEL_BY_DAY = new Map(
+  Object.entries(DAY_OF_WEEK_SHORT_LABELS).map(([day, label]) => [Number(day), label]),
+)
+const FULL_LABEL_BY_DAY = new Map(
+  Object.entries(DAY_OF_WEEK_FULL_LABELS).map(([day, label]) => [Number(day), label]),
+)
 
 /**
  * Aggregates attendance records into day-of-week insights + hotspot hints (no ML).
@@ -64,12 +72,13 @@ export function buildScheduleInsights(options: {
   }
 
   const byDayOfWeek: IScheduleInsightDayBucket[] = DAY_OF_WEEK_VALUES.map((dayOfWeek) => {
-    const bucket = buckets.get(dayOfWeek)!
+    const bucket = buckets.get(dayOfWeek)
+    if (!bucket) throw new Error(`Missing insight bucket for day ${dayOfWeek}`)
     const lateRate = bucket.total > 0 ? bucket.late / bucket.total : 0
     const absentRate = bucket.total > 0 ? bucket.absent / bucket.total : 0
     return {
       dayOfWeek,
-      label: DAY_OF_WEEK_SHORT_LABELS[dayOfWeek] ?? `D${dayOfWeek}`,
+      label: SHORT_LABEL_BY_DAY.get(dayOfWeek) ?? `D${dayOfWeek}`,
       total: bucket.total,
       late: bucket.late,
       absent: bucket.absent,
@@ -103,7 +112,7 @@ function buildHotspots(byDayOfWeek: IScheduleInsightDayBucket[]): IScheduleInsig
 
   for (const day of byDayOfWeek) {
     if (day.total === 0) continue
-    const fullLabel = DAY_OF_WEEK_FULL_LABELS[day.dayOfWeek] ?? day.label
+    const fullLabel = FULL_LABEL_BY_DAY.get(day.dayOfWeek) ?? day.label
 
     if (day.lateRate >= SCHEDULE_INSIGHTS.LATE_RATE_THRESHOLD) {
       candidates.push({

@@ -2,6 +2,7 @@
 import { jest } from '@jest/globals'
 import type {
   ICreateHolidayDTO,
+  IHolidayCalendarDTO,
   IHolidayRepository,
   IListHolidaysQueryDTO,
   IUpdateHolidayDTO,
@@ -82,6 +83,26 @@ type MockedHolidayRepository = {
   checkIsHoliday: jest.MockedFunction<IHolidayRepository['checkIsHoliday']>
 }
 
+function createHolidayResult(
+  overrides: Partial<IHolidayCalendarDTO> = {},
+): IHolidayCalendarDTO {
+  return {
+    id: 'holiday-1',
+    name: 'Company Holiday',
+    date: new Date('2025-12-25T00:00:00.000Z'),
+    type: 'national',
+    scope: 'all',
+    positionId: null,
+    batchId: null,
+    createdById: 'user-1',
+    createdAt: new Date('2025-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2025-01-01T00:00:00.000Z'),
+    position: null,
+    assignees: [],
+    ...overrides,
+  }
+}
+
 describe('HolidayService', () => {
   let holidayRepo: MockedHolidayRepository
   let holidayService: HolidayService
@@ -119,8 +140,8 @@ describe('HolidayService', () => {
       // Arrange
       const query = { year: 2025, scope: HOLIDAY_SCOPE.ALL } as IListHolidaysQueryDTO
       const mockResult = [
-        { id: 'holiday-1', name: 'New Year', deletedAt: null },
-        { id: 'holiday-2', name: 'Labor Day', deletedAt: null },
+        createHolidayResult({ name: 'New Year' }),
+        createHolidayResult({ id: 'holiday-2', name: 'Labor Day' }),
       ]
       holidayRepo.listHolidays.mockResolvedValue(mockResult)
 
@@ -180,7 +201,7 @@ describe('HolidayService', () => {
         date: '2025-12-25',
       } as ICreateHolidayDTO
       const createdById = 'user-1'
-      const mockResult = [{ id: 'holiday-1', name: 'Company Holiday', deletedAt: null }]
+      const mockResult = [createHolidayResult()]
       holidayRepo.createHolidayRange.mockResolvedValue(mockResult)
 
       // Act
@@ -300,7 +321,7 @@ describe('HolidayService', () => {
         positionId: 'position-1',
       } as ICreateHolidayDTO
       const createdById = 'user-3'
-      const mockResult = [{ id: 'holiday-2', name: 'Position Holiday', deletedAt: null }]
+      const mockResult = [createHolidayResult({ id: 'holiday-2', name: 'Position Holiday' })]
       positionFindFirstMock.mockResolvedValue({
         id: 'position-1',
         code: 'POS-001',
@@ -367,7 +388,7 @@ describe('HolidayService', () => {
       // Arrange
       const id = 'holiday-1'
       const data = { name: 'Updated Holiday Name' } as IUpdateHolidayDTO
-      const mockResult = { id, name: 'Updated Holiday Name', deletedAt: null }
+      const mockResult = createHolidayResult({ id, name: 'Updated Holiday Name' })
       holidayRepo.updateHoliday.mockResolvedValue(mockResult)
 
       // Act
@@ -427,12 +448,11 @@ describe('HolidayService', () => {
       holidayRepo.deleteHoliday.mockResolvedValue(undefined)
 
       // Act
-      const result = await holidayService.deleteHoliday(id)
+      await holidayService.deleteHoliday(id)
 
       // Assert
       expect(holidayRepo.deleteHoliday).toHaveBeenCalledTimes(1)
       expect(holidayRepo.deleteHoliday).toHaveBeenCalledWith(id, true)
-      expect(result).toBeUndefined()
     })
 
     it('UTCID02 - propagates a not found error when holiday does not exist', async () => {

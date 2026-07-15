@@ -7,7 +7,7 @@ import {
   updateHolidaySchema,
 } from "@/schemas/attendance.schema.ts"
 import { ApiResponse } from "@/types"
-import { IHolidayService } from "@/types/attendance.types.ts"
+import { IHolidayCalendarDTO, IHolidayService } from "@/types/attendance.types.ts"
 
 import { Request, Response } from "express"
 import { z } from "zod"
@@ -18,13 +18,13 @@ import { z } from "zod"
 export class HolidayController {
   constructor(private service: IHolidayService) {}
 
-  list = async (req: Request, res: Response<ApiResponse<any[]>>) => {
+  list = async (req: Request, res: Response<ApiResponse<IHolidayCalendarDTO[]>>) => {
     const query = listHolidayQuerySchema.parse(req.query)
     const holidays = await this.service.listHolidays(query)
     res.status(HttpStatusCode.OK).json({ data: holidays, error: null })
   }
 
-  create = async (req: AuthRequest, res: Response<ApiResponse<any>>) => {
+  create = async (req: AuthRequest, res: Response<ApiResponse<IHolidayCalendarDTO[]>>) => {
     try {
       const data = createHolidaySchema.parse(req.body)
       const createdById = req.user?.empId
@@ -51,7 +51,7 @@ export class HolidayController {
     }
   }
 
-  update = async (req: Request<{ id: string }>, res: Response<ApiResponse<any>>) => {
+  update = async (req: Request<{ id: string }>, res: Response<ApiResponse<IHolidayCalendarDTO>>) => {
     const data = updateHolidaySchema.parse(req.body)
     const holiday = await this.service.updateHoliday(req.params.id, data)
     res.status(HttpStatusCode.OK).json({ data: holiday, error: null })

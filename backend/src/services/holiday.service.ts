@@ -5,6 +5,7 @@ import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { prisma } from "@/libs/database.ts"
 import {
   ICreateHolidayDTO,
+  IHolidayCalendarDTO,
   IHolidayRepository,
   IHolidayService,
   IListHolidaysQueryDTO,
@@ -18,13 +19,20 @@ import { AppError } from "@/utils/error.util.ts"
 export class HolidayService implements IHolidayService {
   constructor(private holidayRepo: IHolidayRepository) {}
 
-  async listHolidays(query?: IListHolidaysQueryDTO): Promise<any[]> {
+  async listHolidays(query?: IListHolidaysQueryDTO): Promise<IHolidayCalendarDTO[]> {
     return this.holidayRepo.listHolidays(query)
   }
 
-  async createHoliday(data: ICreateHolidayDTO, createdById: string): Promise<any[]> {
-    const start = new Date(data.startDate ?? data.date!)
-    const end = new Date(data.endDate ?? data.startDate ?? data.date!)
+  async createHoliday(
+    data: ICreateHolidayDTO,
+    createdById: string,
+  ): Promise<IHolidayCalendarDTO[]> {
+    const startInput = data.startDate ?? data.date
+    if (!startInput) {
+      throw new AppError("Holiday start date is required", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE)
+    }
+    const start = new Date(startInput)
+    const end = new Date(data.endDate ?? startInput)
 
     if (end < start) {
       throw new AppError(
@@ -44,7 +52,7 @@ export class HolidayService implements IHolidayService {
     )
   }
 
-  async updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<any> {
+  async updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<IHolidayCalendarDTO> {
     return this.holidayRepo.updateHoliday(id, data)
   }
 
@@ -61,8 +69,11 @@ export class HolidayService implements IHolidayService {
     data: ICreateHolidayDTO,
   ): Promise<void> {
     if (scope === HOLIDAY_SCOPE.POSITION) {
+      if (!data.positionId) {
+        throw new AppError("Position is required", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE)
+      }
       const position = await prisma.position.findFirst({
-        where: { id: data.positionId!, deletedAt: null },
+        where: { id: data.positionId, deletedAt: null },
         select: { id: true },
       })
       if (!position) {

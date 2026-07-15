@@ -4,6 +4,7 @@ import {
   DAY_OF_WEEK_VALUES,
   SCHEDULE_INSIGHTS,
 } from "@/configs/entities/attendance.config.ts"
+
 import type {
   IScheduleInsightDayBucket,
   IScheduleInsightsResult,
@@ -12,6 +13,13 @@ import type {
   ISuggestedWeeklyTemplateCandidate,
   ISuggestWeeklyTemplatesResult,
 } from "@/types/shift.types.ts"
+
+const SHORT_LABEL_BY_DAY = new Map(
+  Object.entries(DAY_OF_WEEK_SHORT_LABELS).map(([day, label]) => [Number(day), label]),
+)
+const FULL_LABEL_BY_DAY = new Map(
+  Object.entries(DAY_OF_WEEK_FULL_LABELS).map(([day, label]) => [Number(day), label]),
+)
 
 interface IShiftOption {
   id: string
@@ -187,7 +195,8 @@ export function simulateWeeklyTemplateDraft(options: {
       offSlots += cyclesInHorizon
     }
 
-    const fullLabel = DAY_OF_WEEK_FULL_LABELS[dayOfWeek] ?? DAY_OF_WEEK_SHORT_LABELS[dayOfWeek]
+    const fullLabel =
+      FULL_LABEL_BY_DAY.get(dayOfWeek) ?? SHORT_LABEL_BY_DAY.get(dayOfWeek) ?? `D${dayOfWeek}`
     let note = hasAssignment ? "Có ca trong draft" : "Nghỉ trong draft"
     if (hasAssignment && lateRate >= SCHEDULE_INSIGHTS.LATE_RATE_THRESHOLD) {
       note = `${fullLabel}: rủi ro muộn cao (${Math.round(lateRate * 100)}%) nếu giữ ca này`
@@ -197,7 +206,7 @@ export function simulateWeeklyTemplateDraft(options: {
 
     return {
       dayOfWeek,
-      label: DAY_OF_WEEK_SHORT_LABELS[dayOfWeek] ?? `D${dayOfWeek}`,
+      label: SHORT_LABEL_BY_DAY.get(dayOfWeek) ?? `D${dayOfWeek}`,
       assignedShifts,
       historicalLateRate: lateRate,
       historicalAbsentRate: absentRate,

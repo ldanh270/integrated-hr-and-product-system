@@ -29,7 +29,7 @@ import { usePositions } from "@/hooks/use-position-query"
 import type { IHoliday, IHolidayPayload } from "@/types/attendance.types"
 import { getHolidayTypeLabel } from "@/utils/attendance/get-holiday-type-label"
 
-import { type FormEvent, useEffect, useState } from "react"
+import { type FormEvent, useState } from "react"
 
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
@@ -67,6 +67,20 @@ function toDateInputValue(date: string) {
   return new Date(date).toISOString().slice(0, 10)
 }
 
+function createInitialForm(editingHoliday: IHoliday | null): FormState {
+  if (!editingHoliday) return DEFAULT_FORM
+  const day = toDateInputValue(editingHoliday.date)
+  return {
+    name: editingHoliday.name,
+    startDate: day,
+    endDate: day,
+    type: editingHoliday.type,
+    scope: (editingHoliday.scope as IHolidayScope) || HOLIDAY_SCOPE.ALL,
+    positionId: editingHoliday.positionId || "",
+    employeeIds: editingHoliday.assignees?.map((assignee) => assignee.employeeId) || [],
+  }
+}
+
 /**
  * Create/edit dialog for holiday calendar — supports date range + scope.
  */
@@ -78,31 +92,12 @@ export function HolidayFormDialog({
   onSubmitCreate,
   onSubmitUpdate,
 }: Props) {
-  const [form, setForm] = useState<FormState>(DEFAULT_FORM)
+  const [form, setForm] = useState<FormState>(() => createInitialForm(editingHoliday))
   const [employeeSearch, setEmployeeSearch] = useState("")
   const { data: positions = [] } = usePositions()
   const { data: employeeData } = useEmployees({ limit: 200, status: "active" })
   const employees = employeeData?.data ?? []
   const isEdit = Boolean(editingHoliday)
-
-  useEffect(() => {
-    if (!open) return
-    if (editingHoliday) {
-      const day = toDateInputValue(editingHoliday.date)
-      setForm({
-        name: editingHoliday.name,
-        startDate: day,
-        endDate: day,
-        type: editingHoliday.type,
-        scope: (editingHoliday.scope as IHolidayScope) || HOLIDAY_SCOPE.ALL,
-        positionId: editingHoliday.positionId || "",
-        employeeIds: editingHoliday.assignees?.map((a) => a.employeeId) || [],
-      })
-      return
-    }
-    setForm(DEFAULT_FORM)
-    setEmployeeSearch("")
-  }, [open, editingHoliday])
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -159,7 +154,9 @@ export function HolidayFormDialog({
             <Input
               id="holiday-name"
               value={form.name}
-              onChange={(e) => setForm((c) => ({ ...c, name: e.target.value }))}
+              onChange={(e) => {
+                setForm((c) => ({ ...c, name: e.target.value }))
+              }}
               placeholder="Ví dụ: Nghỉ team building"
             />
           </div>
@@ -172,7 +169,9 @@ export function HolidayFormDialog({
                 type="date"
                 value={form.startDate}
                 disabled={isEdit}
-                onChange={(e) => setForm((c) => ({ ...c, startDate: e.target.value }))}
+                onChange={(e) => {
+                  setForm((c) => ({ ...c, startDate: e.target.value }))
+                }}
               />
             </div>
             <div className="space-y-2">
@@ -182,7 +181,9 @@ export function HolidayFormDialog({
                 type="date"
                 value={form.endDate}
                 disabled={isEdit}
-                onChange={(e) => setForm((c) => ({ ...c, endDate: e.target.value }))}
+                onChange={(e) => {
+                  setForm((c) => ({ ...c, endDate: e.target.value }))
+                }}
               />
             </div>
           </div>
@@ -191,7 +192,9 @@ export function HolidayFormDialog({
             <Label>Loại ngày nghỉ</Label>
             <Select
               value={form.type}
-              onValueChange={(value) => setForm((c) => ({ ...c, type: value as IHolidayType }))}
+              onValueChange={(value) => {
+                setForm((c) => ({ ...c, type: value as IHolidayType }))
+              }}
             >
               <SelectTrigger className="h-12 w-full rounded-full bg-transparent px-6">
                 <SelectValue placeholder="Chọn loại" />
@@ -212,9 +215,9 @@ export function HolidayFormDialog({
                 <Label>Phạm vi áp dụng</Label>
                 <Select
                   value={form.scope}
-                  onValueChange={(value) =>
+                  onValueChange={(value) => {
                     setForm((c) => ({ ...c, scope: value as IHolidayScope }))
-                  }
+                  }}
                 >
                   <SelectTrigger className="h-12 w-full rounded-full bg-transparent px-6">
                     <SelectValue />
@@ -234,7 +237,9 @@ export function HolidayFormDialog({
                   <Label>Chức danh</Label>
                   <Select
                     value={form.positionId || undefined}
-                    onValueChange={(value) => setForm((c) => ({ ...c, positionId: value }))}
+                    onValueChange={(value) => {
+                      setForm((c) => ({ ...c, positionId: value }))
+                    }}
                   >
                     <SelectTrigger className="h-12 w-full rounded-full bg-transparent px-6">
                       <SelectValue placeholder="Chọn chức danh" />
@@ -256,21 +261,27 @@ export function HolidayFormDialog({
                   selectedIds={form.employeeIds}
                   search={employeeSearch}
                   onSearchChange={setEmployeeSearch}
-                  onToggle={(id) =>
+                  onToggle={(id) => {
                     setForm((c) => ({
                       ...c,
                       employeeIds: c.employeeIds.includes(id)
                         ? c.employeeIds.filter((x) => x !== id)
                         : [...c.employeeIds, id],
                     }))
-                  }
+                  }}
                 />
               )}
             </>
           )}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                onOpenChange(false)
+              }}
+            >
               Hủy
             </Button>
             <Button type="submit" disabled={isSaving}>

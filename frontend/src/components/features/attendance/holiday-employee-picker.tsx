@@ -38,7 +38,9 @@ export function HolidayEmployeePicker({
           className="pl-9 rounded-full"
           placeholder="Tìm nhân viên..."
           value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
+          onChange={(e) => {
+            onSearchChange(e.target.value)
+          }}
         />
       </div>
       <div className="max-h-40 overflow-y-auto rounded-lg border border-border divide-y divide-border">
@@ -48,7 +50,9 @@ export function HolidayEmployeePicker({
             <button
               key={emp.id}
               type="button"
-              onClick={() => onToggle(emp.id)}
+              onClick={() => {
+                onToggle(emp.id)
+              }}
               className={cn(
                 "w-full text-left px-3 py-2 text-sm transition-colors",
                 selected ? "bg-primary/10 text-primary" : "hover:bg-muted",
