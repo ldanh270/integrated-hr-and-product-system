@@ -138,15 +138,18 @@ function scoreTemplateAgainstInsights(
   days: Array<{ dayOfWeek: number; shiftId: string | null }>,
   dayMap: Map<number, IScheduleInsightDayBucket>,
 ): number {
-  let score = 88
+  let score = SCHEDULE_INSIGHTS.TEMPLATE_BASE_SCORE
   for (const day of days) {
     if (!day.shiftId) continue
     const bucket = dayMap.get(day.dayOfWeek)
     if (!bucket || bucket.total === 0) continue
-    score -= Math.round(bucket.lateRate * 25)
-    score -= Math.round(bucket.absentRate * 20)
+    score -= Math.round(bucket.lateRate * SCHEDULE_INSIGHTS.LATE_RISK_PENALTY)
+    score -= Math.round(bucket.absentRate * SCHEDULE_INSIGHTS.ABSENCE_RISK_PENALTY)
   }
-  return Math.max(40, Math.min(99, score))
+  return Math.max(
+    SCHEDULE_INSIGHTS.MIN_COVERAGE_SCORE,
+    Math.min(SCHEDULE_INSIGHTS.MAX_COVERAGE_SCORE, score),
+  )
 }
 
 /**
@@ -157,7 +160,13 @@ export function simulateWeeklyTemplateDraft(options: {
   insights: IScheduleInsightsResult
   shiftNamesById: Map<string, string>
 }): ISimulateWeeklyTemplateResult {
-  const simulateWeeks = Math.min(8, Math.max(1, options.draft.simulateWeeks ?? 4))
+  const simulateWeeks = Math.min(
+    SCHEDULE_INSIGHTS.MAX_SIMULATION_WEEKS,
+    Math.max(
+      SCHEDULE_INSIGHTS.MIN_SIMULATION_WEEKS,
+      options.draft.simulateWeeks ?? SCHEDULE_INSIGHTS.DEFAULT_SIMULATION_WEEKS,
+    ),
+  )
   const dayMap = new Map(options.insights.byDayOfWeek.map((day) => [day.dayOfWeek, day]))
 
   const assignedByDay = new Map<number, number>()
@@ -253,9 +262,13 @@ export function simulateWeeklyTemplateDraft(options: {
       totalAssignedSlots,
       offSlots,
       avgProjectedLateRisk:
-        riskDays > 0 ? Number((lateRiskSum / riskDays).toFixed(3)) : 0,
+        riskDays > 0
+          ? Number((lateRiskSum / riskDays).toFixed(SCHEDULE_INSIGHTS.RATE_PRECISION))
+          : 0,
       avgProjectedAbsentRisk:
-        riskDays > 0 ? Number((absentRiskSum / riskDays).toFixed(3)) : 0,
+        riskDays > 0
+          ? Number((absentRiskSum / riskDays).toFixed(SCHEDULE_INSIGHTS.RATE_PRECISION))
+          : 0,
     },
     byDayOfWeek,
     messages,

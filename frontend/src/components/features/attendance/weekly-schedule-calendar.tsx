@@ -4,7 +4,9 @@ import { WeekPickerActions } from "@/components/features/attendance/calendar/wee
 import { PageCard, SectionHeader } from "@/components/common"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CALENDAR_WEEK_DAY_COUNT, type CalendarTab } from "@/config/rules/calendar.config"
+import { ATTENDANCE_QUERY_KEYS } from "@/config/entities/attendance.config"
 import { useAttendanceRecords } from "@/hooks/attendance/use-attendance"
+import { useProfile } from "@/hooks/use-profile"
 import { holidaysApi, schedulesApi, shiftsApi } from "@/lib/api/attendance.api"
 import { cn } from "@/lib/utils"
 import { formatDateParam } from "@/utils/attendance/format-date-param"
@@ -48,19 +50,20 @@ export function WeeklyScheduleCalendar({
   const weekStartIso = formatDateParam(weekStart)
   const weekEndIso = weekDays[CALENDAR_WEEK_DAY_COUNT - 1].dateKey
   const weekRangeLabel = getWeekRangeLabel(weekDays)
+  const { data: profile } = useProfile()
 
   const { data: plannedWeek, isLoading: isPlannedWeekLoading } = useQuery({
-    queryKey: ["my-planned-week", weekStartIso],
+    queryKey: ATTENDANCE_QUERY_KEYS.MY_PLANNED_WEEK(weekStartIso),
     queryFn: () => schedulesApi.getMyPlannedWeek(weekStartIso),
   })
 
   const { data: schedule, isLoading: isScheduleLoading } = useQuery({
-    queryKey: ["my-schedule", weekStartIso],
+    queryKey: ATTENDANCE_QUERY_KEYS.MY_SCHEDULE(weekStartIso),
     queryFn: () => schedulesApi.getMy(weekStartIso),
   })
 
   const { data: shifts, isLoading: isShiftsLoading } = useQuery({
-    queryKey: ["shifts"],
+    queryKey: ATTENDANCE_QUERY_KEYS.SHIFTS,
     queryFn: shiftsApi.getAll,
     enabled: showAllShifts,
   })
@@ -72,7 +75,7 @@ export function WeeklyScheduleCalendar({
   })
 
   const { data: holidays, isLoading: isHolidaysLoading } = useQuery({
-    queryKey: ["holidays", weekStartIso, weekEndIso],
+    queryKey: ATTENDANCE_QUERY_KEYS.HOLIDAYS_RANGE(weekStartIso, weekEndIso),
     queryFn: () => holidaysApi.getAll({ startDate: weekStartIso, endDate: weekEndIso }),
   })
 
@@ -95,7 +98,8 @@ export function WeeklyScheduleCalendar({
       const applicable = list.filter((h) =>
         doesHolidayApplyToEmployee(h, {
           id: user?.id ?? "",
-          positionId: null,
+          // Position scope is resolved from the authenticated employee profile.
+          positionId: profile?.positionId,
         }),
       )
       return applicable[0] ? [[dateKey, applicable[0]] as const] : []

@@ -2,6 +2,7 @@ import type {
   IApplicationStatus,
   IApplicationType,
   IAttendanceStatus,
+  IHolidayScope,
   IHolidayType,
 } from "@/config/entities/attendance.config"
 
@@ -247,7 +248,7 @@ export interface IHoliday {
   name: string
   date: string
   type: IHolidayType
-  scope?: "all" | "position" | "employees"
+  scope?: IHolidayScope
   positionId?: string | null
   position?: { id: string; name: string; code: string } | null
   batchId?: string | null
@@ -273,7 +274,7 @@ export interface IHolidayPayload {
   startDate: string
   endDate: string
   type: IHolidayType
-  scope: "all" | "position" | "employees"
+  scope: IHolidayScope
   positionId?: string
   employeeIds?: string[]
 }

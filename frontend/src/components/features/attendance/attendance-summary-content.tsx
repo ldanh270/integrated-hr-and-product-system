@@ -1,7 +1,10 @@
 import { AttendanceMonthPicker } from "@/components/features/attendance/attendance-month-picker"
 import { AttendanceSummaryStatCard } from "@/components/features/attendance/attendance-summary-stat-card"
 import { PageCard } from "@/components/common"
+import { ATTENDANCE_QUERY_KEYS } from "@/config/entities/attendance.config"
 import { useAttendanceRecords } from "@/hooks/attendance/use-attendance"
+import { useEmployee } from "@/hooks/employees/queries/useEmployeeQuery"
+import { useProfile } from "@/hooks/use-profile"
 import { holidaysApi, schedulesApi } from "@/lib/api/attendance.api"
 import { countScheduledShiftsInMonth } from "@/utils/attendance/count-scheduled-shifts-in-month"
 import { formatHours } from "@/utils/attendance/format-hours"
@@ -34,6 +37,8 @@ export function AttendanceSummaryContent({ employeeId }: AttendanceSummaryConten
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth())
   const { startDate, endDate } = getMonthRange(year, month)
+  const { data: profile } = useProfile()
+  const { data: selectedEmployee } = useEmployee(employeeId ?? "")
 
   const { data: records, isLoading: isRecordsLoading } = useAttendanceRecords({
     startDate,
@@ -41,13 +46,15 @@ export function AttendanceSummaryContent({ employeeId }: AttendanceSummaryConten
     ...(employeeId ? { employeeId } : { personalOnly: true }),
   })
   const { data: schedule, isLoading: isScheduleLoading } = useQuery({
-    queryKey: employeeId ? ["employee-schedule", employeeId, startDate] : ["my-schedule", startDate],
+    queryKey: employeeId
+      ? ATTENDANCE_QUERY_KEYS.EMPLOYEE_SCHEDULE(employeeId, startDate)
+      : ATTENDANCE_QUERY_KEYS.MY_SCHEDULE(startDate),
     queryFn: () =>
       employeeId ? schedulesApi.getByEmployee(employeeId, startDate) : schedulesApi.getMy(startDate),
     enabled: employeeId ? Boolean(employeeId) : true,
   })
   const { data: holidays, isLoading: isHolidaysLoading } = useQuery({
-    queryKey: ["holidays", startDate, endDate],
+    queryKey: ATTENDANCE_QUERY_KEYS.HOLIDAYS_RANGE(startDate, endDate),
     queryFn: () => holidaysApi.getAll({ startDate, endDate }),
   })
 
@@ -65,7 +72,8 @@ export function AttendanceSummaryContent({ employeeId }: AttendanceSummaryConten
       const applicable = list.filter((h) =>
         doesHolidayApplyToEmployee(h, {
           id: targetEmployeeId,
-          positionId: null,
+          // Scoped holidays must use the viewed employee's position, not only their ID.
+          positionId: employeeId ? selectedEmployee?.positionId : profile?.positionId,
         }),
       )
       return applicable[0] ? [[dateKey, applicable[0]] as const] : []

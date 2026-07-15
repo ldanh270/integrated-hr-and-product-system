@@ -73,6 +73,7 @@ export class PrismaHolidayRepository extends BaseRepository implements IHolidayR
     const end = this.normalizeDate(data.endDate ?? startInput)
     const dates = expandDateRange(start, end)
     const scope = (data.scope ?? HOLIDAY_SCOPE.ALL) as HolidayScope
+    // A shared batch lets range/scoped holidays be managed as one user action.
     const batchId =
       dates.length > 1 || scope !== HOLIDAY_SCOPE.ALL
         ? randomBytes(12).toString("hex")
@@ -80,10 +81,12 @@ export class PrismaHolidayRepository extends BaseRepository implements IHolidayR
     const employeeIds =
       scope === HOLIDAY_SCOPE.EMPLOYEES ? [...new Set(data.employeeIds ?? [])] : []
 
+    // Keep holiday rows, assignees, and affected shifts consistent on failure.
     return this.prisma.$transaction(async (tx) => {
       const created: IHolidayCalendarDTO[] = []
 
       for (const day of dates) {
+        // Global dates retain the legacy one-row-per-date behavior through an upsert-like update.
         if (scope === HOLIDAY_SCOPE.ALL) {
           const existing = await tx.holidayCalendar.findFirst({
             where: { date: day, scope: HolidayScope.all },
@@ -153,6 +156,7 @@ export class PrismaHolidayRepository extends BaseRepository implements IHolidayR
     const holiday = await this.prisma.holidayCalendar.findUnique({ where: { id } })
     if (!holiday) return
 
+    // Range holidays default to atomic deletion to avoid leaving partial ranges behind.
     if (deleteBatch && holiday.batchId) {
       await this.prisma.holidayCalendar.deleteMany({ where: { batchId: holiday.batchId } })
       return
@@ -187,6 +191,7 @@ export class PrismaHolidayRepository extends BaseRepository implements IHolidayR
           ? { employee: { positionId: options.positionId } }
           : { employeeId: { in: options.employeeIds } }
 
+    // Preserve assignments for audit/planning while preventing holiday shifts from acting scheduled.
     await tx.employeeShift.updateMany({
       where: {
         ...employeeFilter,

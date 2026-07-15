@@ -1,3 +1,4 @@
+import { HOLIDAY_SCOPE } from "@/configs/entities/attendance.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
 import { ISeeder } from "@/scripts/seeders/seeder.interface.ts"
@@ -80,7 +81,7 @@ export class HolidayCalendarsSeeder implements ISeeder {
         const results = []
         for (const data of holidaysToCreate) {
           const existing = await tx.holidayCalendar.findFirst({
-            where: { date: data.date, scope: "all" },
+            where: { date: data.date, scope: HOLIDAY_SCOPE.ALL },
           })
           if (existing) {
             results.push(
@@ -92,7 +93,7 @@ export class HolidayCalendarsSeeder implements ISeeder {
           } else {
             results.push(
               await tx.holidayCalendar.create({
-                data: { ...data, scope: "all" },
+                data: { ...data, scope: HOLIDAY_SCOPE.ALL },
               }),
             )
           }

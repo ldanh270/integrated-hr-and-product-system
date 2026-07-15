@@ -1,7 +1,10 @@
 import { PageCard } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { WORK_WEEK_DISPLAY_DAY_ORDER } from "@/config/entities/attendance.config"
+import {
+  SCHEDULE_INSIGHTS_UI,
+  WORK_WEEK_DISPLAY_DAY_ORDER,
+} from "@/config/entities/attendance.config"
 import {
   useScheduleInsights,
   useSimulateWeeklyTemplate,
@@ -22,8 +25,6 @@ import {
   Sparkles,
   Users,
 } from "lucide-react"
-
-const LOOKBACK_OPTIONS = [30, 60, 90] as const
 
 function DayRateBar({ day }: { day: IScheduleInsightDayBucket }) {
   const latePct = Math.round(day.lateRate * 100)
@@ -73,7 +74,9 @@ function formatCandidateDays(candidate: ISuggestedWeeklyTemplateCandidate): stri
 
 /** Weekly Schedule Copilot — Insights + Suggest + What-if (no LLM). */
 export function ScheduleInsightsPanel() {
-  const [lookbackDays, setLookbackDays] = useState<(typeof LOOKBACK_OPTIONS)[number]>(90)
+  const [lookbackDays, setLookbackDays] = useState<
+    (typeof SCHEDULE_INSIGHTS_UI.LOOKBACK_OPTIONS)[number]
+  >(SCHEDULE_INSIGHTS_UI.DEFAULT_LOOKBACK_DAYS)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null)
 
@@ -134,10 +137,13 @@ export function ScheduleInsightsPanel() {
           })),
         })),
         lookbackDays,
-        simulateWeeks: 4,
+        simulateWeeks: SCHEDULE_INSIGHTS_UI.DEFAULT_SIMULATION_WEEKS,
       },
       {
-        onSuccess: () => toast.success("Đã mô phỏng what-if 4 tuần"),
+        onSuccess: () =>
+          toast.success(
+            `Đã mô phỏng what-if ${SCHEDULE_INSIGHTS_UI.DEFAULT_SIMULATION_WEEKS} tuần`,
+          ),
         onError: (error) =>
           toast.error(error instanceof Error ? error.message : "Không mô phỏng được"),
       },
@@ -154,7 +160,7 @@ export function ScheduleInsightsPanel() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {LOOKBACK_OPTIONS.map((days) => (
+          {SCHEDULE_INSIGHTS_UI.LOOKBACK_OPTIONS.map((days) => (
             <Button
               key={days}
               type="button"

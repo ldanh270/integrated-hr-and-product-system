@@ -20,10 +20,13 @@ import {
 import {
   HOLIDAY_SCOPE,
   HOLIDAY_SCOPE_LABELS,
+  HOLIDAY_TYPE,
   HOLIDAY_TYPES,
+  SCHEDULE_INSIGHTS_UI,
   type IHolidayScope,
   type IHolidayType,
 } from "@/config/entities/attendance.config"
+import { EMPLOYEE_STATUS } from "@/config/entities/employee.config"
 import { useEmployees } from "@/hooks/employees/queries/useEmployeeQuery"
 import { usePositions } from "@/hooks/use-position-query"
 import type { IHoliday, IHolidayPayload } from "@/types/attendance.types"
@@ -57,7 +60,7 @@ const DEFAULT_FORM: FormState = {
   name: "",
   startDate: "",
   endDate: "",
-  type: "national",
+  type: HOLIDAY_TYPE.NATIONAL,
   scope: HOLIDAY_SCOPE.ALL,
   positionId: "",
   employeeIds: [],
@@ -95,7 +98,10 @@ export function HolidayFormDialog({
   const [form, setForm] = useState<FormState>(() => createInitialForm(editingHoliday))
   const [employeeSearch, setEmployeeSearch] = useState("")
   const { data: positions = [] } = usePositions()
-  const { data: employeeData } = useEmployees({ limit: 200, status: "active" })
+  const { data: employeeData } = useEmployees({
+    limit: SCHEDULE_INSIGHTS_UI.EMPLOYEE_PICKER_LIMIT,
+    status: EMPLOYEE_STATUS.ACTIVE,
+  })
   const employees = employeeData?.data ?? []
   const isEdit = Boolean(editingHoliday)
 

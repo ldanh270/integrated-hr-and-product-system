@@ -6,7 +6,11 @@ export const EMPLOYEE_SHIFT_STATUSES = [
 ] as const
 export type IEmployeeShiftStatus = (typeof EMPLOYEE_SHIFT_STATUSES)[number]
 
-export const HOLIDAY_TYPES = ["national", "company"] as const
+export const HOLIDAY_TYPE = {
+  NATIONAL: "national",
+  COMPANY: "company",
+} as const
+export const HOLIDAY_TYPES = [HOLIDAY_TYPE.NATIONAL, HOLIDAY_TYPE.COMPANY] as const
 export type IHolidayType = (typeof HOLIDAY_TYPES)[number]
 
 /** Who the holiday applies to. */
@@ -25,10 +29,28 @@ export const HOLIDAY_SCOPE_VALUES = [
 export type IHolidayScope = (typeof HOLIDAY_SCOPE_VALUES)[number]
 
 export const HOLIDAY_SCOPE_LABELS: Record<IHolidayScope, string> = {
-  all: "Toàn công ty",
-  position: "Theo chức danh",
-  employees: "Nhóm nhân viên",
+  [HOLIDAY_SCOPE.ALL]: "Toàn công ty",
+  [HOLIDAY_SCOPE.POSITION]: "Theo chức danh",
+  [HOLIDAY_SCOPE.EMPLOYEES]: "Nhóm nhân viên",
 }
+
+export const ATTENDANCE_QUERY_KEYS = {
+  HOLIDAYS: ["holidays"] as const,
+  HOLIDAYS_RANGE: (startDate: string, endDate: string) =>
+    ["holidays", startDate, endDate] as const,
+  MY_SCHEDULE: (date: string) => ["my-schedule", date] as const,
+  MY_PLANNED_WEEK: (weekStart: string) => ["my-planned-week", weekStart] as const,
+  EMPLOYEE_SCHEDULE: (employeeId: string, date: string) =>
+    ["employee-schedule", employeeId, date] as const,
+  SHIFTS: ["shifts"] as const,
+} as const
+
+export const SCHEDULE_INSIGHTS_UI = {
+  DEFAULT_LOOKBACK_DAYS: 90,
+  LOOKBACK_OPTIONS: [30, 60, 90, 180] as const,
+  DEFAULT_SIMULATION_WEEKS: 4,
+  EMPLOYEE_PICKER_LIMIT: 200,
+} as const
 
 export const ATTENDANCE_STATUSES = ["on_time", "late", "early_leave", "absent", "overtime"] as const
 export type IAttendanceStatus = (typeof ATTENDANCE_STATUSES)[number]
@@ -161,8 +183,8 @@ export const APPLICATION_STATUS_VARIANTS: Record<
 
 /** Vietnamese display labels for holiday type enums. */
 export const HOLIDAY_TYPE_LABELS = new Map<IHolidayType, string>([
-  ["national", "Ngày lễ quốc gia"],
-  ["company", "Ngày nghỉ công ty"],
+  [HOLIDAY_TYPE.NATIONAL, "Ngày lễ quốc gia"],
+  [HOLIDAY_TYPE.COMPANY, "Ngày nghỉ công ty"],
 ])
 
 export const UNKNOWN_HOLIDAY_TYPE_LABEL = "Ngày nghỉ"

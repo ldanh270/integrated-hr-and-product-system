@@ -1,3 +1,4 @@
+import { SCHEDULE_INSIGHTS } from "@/configs/entities/attendance.config.ts"
 import {
   eachScheduleDate,
   formatScheduleDateKey,
@@ -64,7 +65,7 @@ function mapTemplateShift(
       name: shift.name ?? "Ca làm",
       startTime: shift.startTime,
       endTime: shift.endTime,
-      gracePeriodMinutes: 0,
+      gracePeriodMinutes: SCHEDULE_INSIGHTS.DEFAULT_GRACE_PERIOD_MINUTES,
       gpsLat: null,
       gpsLng: null,
       gpsRadiusMeters: null,
@@ -81,7 +82,7 @@ export function buildPlannedWeek(params: {
   const { weekStart, employeeShifts, getScheduleForDate } = params
   const start = normalizeScheduleDate(weekStart)
   const end = new Date(start)
-  end.setDate(end.getDate() + 6)
+  end.setDate(end.getDate() + SCHEDULE_INSIGHTS.WEEK_END_OFFSET_DAYS)
 
   const shiftsByDate = new Map<string, IEmployeeShiftWithShift[]>()
   for (const row of employeeShifts) {

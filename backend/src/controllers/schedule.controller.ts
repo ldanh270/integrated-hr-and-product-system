@@ -1,8 +1,11 @@
 import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { ATTENDANCE_ERROR_CODES } from "@/constants/attendance.constants.ts"
+import {
+  SCHEDULE_INSIGHTS,
+  SCHEDULE_VALIDATION_MESSAGES,
+} from "@/configs/entities/attendance.config.ts"
 import { ATTENDANCE_ERROR_MESSAGES } from "@/configs/messages/attendance.message.ts"
-import { SCHEDULE_INSIGHTS } from "@/configs/entities/attendance.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import { assignShiftScheduleSchema, generateShiftsSchema, overrideEmployeeShiftSchema } from "@/schemas/shift.schema.ts"
 import { ApiResponse } from "@/types"
@@ -122,7 +125,10 @@ export class ScheduleController {
     if (!weekStart) {
       return res.status(HttpStatusCode.BAD_REQUEST).json({
         data: null,
-        error: { message: "weekStart is required", code: ErrorCode.VALIDATION_ERROR },
+        error: {
+          message: SCHEDULE_VALIDATION_MESSAGES.WEEK_START_REQUIRED,
+          code: ErrorCode.VALIDATION_ERROR,
+        },
       })
     }
 
@@ -230,7 +236,10 @@ export class ScheduleController {
     if (!weekStart) {
       return res.status(HttpStatusCode.BAD_REQUEST).json({
         data: null,
-        error: { message: "weekStart is required", code: ErrorCode.VALIDATION_ERROR },
+        error: {
+          message: SCHEDULE_VALIDATION_MESSAGES.WEEK_START_REQUIRED,
+          code: ErrorCode.VALIDATION_ERROR,
+        },
       })
     }
 

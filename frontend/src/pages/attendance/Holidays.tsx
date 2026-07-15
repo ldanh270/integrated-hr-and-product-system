@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import {
   HOLIDAY_SCOPE,
   HOLIDAY_SCOPE_LABELS,
+  ATTENDANCE_QUERY_KEYS,
   type IHolidayScope,
 } from "@/config/entities/attendance.config"
 import { usePermission } from "@/hooks/use-permission"
@@ -58,7 +59,7 @@ export default function Holidays() {
   const [editingHoliday, setEditingHoliday] = useState<IHoliday | null>(null)
   const [deletingHoliday, setDeletingHoliday] = useState<IHoliday | null>(null)
   const queryClient = useQueryClient()
-  const holidaysQueryKey = ["holidays", year]
+  const holidaysQueryKey = [...ATTENDANCE_QUERY_KEYS.HOLIDAYS, year] as const
 
   const { data: holidays, isLoading } = useQuery({
     queryKey: holidaysQueryKey,
@@ -66,7 +67,7 @@ export default function Holidays() {
   })
 
   const invalidateHolidays = () => {
-    void queryClient.invalidateQueries({ queryKey: ["holidays"] })
+    void queryClient.invalidateQueries({ queryKey: ATTENDANCE_QUERY_KEYS.HOLIDAYS })
   }
 
   const createMutation = useMutation({
@@ -148,7 +149,7 @@ export default function Holidays() {
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 rounded-full"
               onClick={() => {
                 setYear((y) => y - 1)
               }}
@@ -158,7 +159,7 @@ export default function Holidays() {
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 rounded-full"
               onClick={() => {
                 setYear((y) => y + 1)
               }}

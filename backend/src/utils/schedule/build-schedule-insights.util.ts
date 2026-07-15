@@ -83,8 +83,8 @@ export function buildScheduleInsights(options: {
       late: bucket.late,
       absent: bucket.absent,
       onTime: bucket.onTime,
-      lateRate: Number(lateRate.toFixed(3)),
-      absentRate: Number(absentRate.toFixed(3)),
+      lateRate: Number(lateRate.toFixed(SCHEDULE_INSIGHTS.RATE_PRECISION)),
+      absentRate: Number(absentRate.toFixed(SCHEDULE_INSIGHTS.RATE_PRECISION)),
       avgLateMinutes: bucket.late > 0 ? Math.round(bucket.lateMinutesSum / bucket.late) : 0,
     }
   })

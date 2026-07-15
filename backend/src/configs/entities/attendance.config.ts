@@ -13,7 +13,11 @@ export const EMPLOYEE_SHIFT_STATUSES = [
 ] as const
 export type IEmployeeShiftStatus = (typeof EMPLOYEE_SHIFT_STATUSES)[number]
 
-export const HOLIDAY_TYPES = ["national", "company"] as const
+export const HOLIDAY_TYPE = {
+  NATIONAL: "national",
+  COMPANY: "company",
+} as const
+export const HOLIDAY_TYPES = [HOLIDAY_TYPE.NATIONAL, HOLIDAY_TYPE.COMPANY] as const
 export type IHolidayType = (typeof HOLIDAY_TYPES)[number]
 
 /** Who the holiday applies to — all staff, one position, or hand-picked employees. */
@@ -163,6 +167,21 @@ export const SCHEDULE_INSIGHTS = {
   ABSENT_RATE_THRESHOLD: 0.08,
   WORK_DAYS: [1, 2, 3, 4, 5] as const,
   CANDIDATE_LIMIT: 2,
+  RATE_PRECISION: 3,
+  TEMPLATE_BASE_SCORE: 88,
+  LATE_RISK_PENALTY: 25,
+  ABSENCE_RISK_PENALTY: 20,
+  MIN_COVERAGE_SCORE: 40,
+  MAX_COVERAGE_SCORE: 99,
+  MIN_SIMULATION_WEEKS: 1,
+  MAX_SIMULATION_WEEKS: 8,
+  DEFAULT_SIMULATION_WEEKS: 4,
+  WEEK_END_OFFSET_DAYS: 6,
+  DEFAULT_GRACE_PERIOD_MINUTES: 0,
+} as const
+
+export const SCHEDULE_VALIDATION_MESSAGES = {
+  WEEK_START_REQUIRED: "weekStart is required",
 } as const
 
 /** Short day labels for insights API (0=CN … 6=T7). */

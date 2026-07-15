@@ -119,7 +119,7 @@ export default function WeeklySchedules() {
                           onClick={() => {
                             handleEdit(template)
                           }}
-                          className="text-left font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                          className="rounded-full text-left font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                           {template.name}
                         </button>
