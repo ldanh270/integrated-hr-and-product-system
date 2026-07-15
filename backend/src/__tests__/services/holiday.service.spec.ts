@@ -1,5 +1,11 @@
 /// <reference types="jest" />
-import { HolidayService } from '../../services/holiday.service';
+import { jest } from '@jest/globals'
+import type {
+  ICreateHolidayDTO,
+  IHolidayRepository,
+  IListHolidaysQueryDTO,
+  IUpdateHolidayDTO,
+} from '@/types/attendance.types.ts'
 
 jest.mock('@/configs/entities/attendance.config.ts', () => ({
   HOLIDAY_SCOPE: {
@@ -7,20 +13,20 @@ jest.mock('@/configs/entities/attendance.config.ts', () => ({
     POSITION: 'POSITION',
     EMPLOYEES: 'EMPLOYEES',
   },
-}));
+}))
 
 jest.mock('@/configs/entities/employee.config.ts', () => ({
   EMPLOYEE_STATUS: {
     ACTIVE: 'ACTIVE',
     ON_LEAVE: 'ON_LEAVE',
   },
-}));
+}))
 
 jest.mock('@/configs/system/error-code.config.ts', () => ({
   ErrorLayer: {
     SERVICE: 'SERVICE',
   },
-}));
+}))
 
 jest.mock('@/configs/system/http.config.ts', () => ({
   HttpStatusCode: {
@@ -29,7 +35,7 @@ jest.mock('@/configs/system/http.config.ts', () => ({
     UNPROCESSABLE_ENTITY: 422,
     INTERNAL_SERVER_ERROR: 500,
   },
-}));
+}))
 
 jest.mock('@/libs/database.ts', () => ({
   prisma: {
@@ -40,108 +46,131 @@ jest.mock('@/libs/database.ts', () => ({
       count: jest.fn(),
     },
   },
-}));
-
-jest.mock('@/types/attendance.types.ts', () => ({}));
+}))
 
 jest.mock('@/utils/error.util.ts', () => ({
-  AppError: class MockAppError extends Error {
-    statusCode: number;
-    layer: string;
-    code: string;
+  AppError: class AppError extends Error {
+    statusCode: number
+
+    layer: string
+
+    code: string
 
     constructor(message: string, statusCode: number, layer: string, code: string) {
-      super(message);
-      this.name = 'AppError';
-      this.statusCode = statusCode;
-      this.layer = layer;
-      this.code = code;
+      super(message)
+      this.name = 'AppError'
+      this.statusCode = statusCode
+      this.layer = layer
+      this.code = code
     }
   },
-}));
+}))
 
-import { HOLIDAY_SCOPE } from '@/configs/entities/attendance.config.ts';
-import { EMPLOYEE_STATUS } from '@/configs/entities/employee.config.ts';
-import { ErrorLayer } from '@/configs/system/error-code.config.ts';
-import { HttpStatusCode } from '@/configs/system/http.config.ts';
-import { prisma } from '@/libs/database.ts';
-import type { IHolidayRepository } from '@/types/attendance.types.ts';
-import { AppError } from '@/utils/error.util.ts';
+import { HolidayService } from '../../services/holiday.service'
+import { HOLIDAY_SCOPE } from '@/configs/entities/attendance.config.ts'
+import { EMPLOYEE_STATUS } from '@/configs/entities/employee.config.ts'
+import { ErrorLayer } from '@/configs/system/error-code.config.ts'
+import { HttpStatusCode } from '@/configs/system/http.config.ts'
+import { prisma } from '@/libs/database.ts'
+import { AppError } from '@/utils/error.util.ts'
+
+type MockedHolidayRepository = {
+  listHolidays: jest.MockedFunction<IHolidayRepository['listHolidays']>
+  createHolidayRange: jest.MockedFunction<IHolidayRepository['createHolidayRange']>
+  updateHoliday: jest.MockedFunction<IHolidayRepository['updateHoliday']>
+  deleteHoliday: jest.MockedFunction<IHolidayRepository['deleteHoliday']>
+  checkIsHoliday: jest.MockedFunction<IHolidayRepository['checkIsHoliday']>
+}
 
 describe('HolidayService', () => {
-  let holidayRepo: {
-    listHolidays: jest.Mock;
-    createHolidayRange: jest.Mock;
-    updateHoliday: jest.Mock;
-    deleteHoliday: jest.Mock;
-    checkIsHoliday: jest.Mock;
-  };
-
-  let service: HolidayService;
+  let holidayRepo: MockedHolidayRepository
+  let holidayService: HolidayService
+  let positionFindFirstMock: jest.MockedFunction<typeof prisma.position.findFirst>
+  let employeeCountMock: jest.MockedFunction<typeof prisma.employee.count>
 
   beforeEach(() => {
+    // Arrange
     holidayRepo = {
-      listHolidays: jest.fn(),
-      createHolidayRange: jest.fn(),
-      updateHoliday: jest.fn(),
-      deleteHoliday: jest.fn(),
-      checkIsHoliday: jest.fn(),
-    };
+      listHolidays: jest.fn<IHolidayRepository['listHolidays']>(),
+      createHolidayRange: jest.fn<IHolidayRepository['createHolidayRange']>(),
+      updateHoliday: jest.fn<IHolidayRepository['updateHoliday']>(),
+      deleteHoliday: jest.fn<IHolidayRepository['deleteHoliday']>(),
+      checkIsHoliday: jest.fn<IHolidayRepository['checkIsHoliday']>(),
+    }
 
-    service = new HolidayService(holidayRepo as unknown as IHolidayRepository);
+    jest.clearAllMocks()
 
-    jest.clearAllMocks();
-  });
+    positionFindFirstMock = prisma.position.findFirst as jest.MockedFunction<
+      typeof prisma.position.findFirst
+    >
+    employeeCountMock = prisma.employee.count as jest.MockedFunction<
+      typeof prisma.employee.count
+    >
+
+    // Act
+    holidayService = new HolidayService(holidayRepo as unknown as IHolidayRepository)
+
+    // Assert
+    expect(holidayService).toBeInstanceOf(HolidayService)
+  })
 
   describe('listHolidays', () => {
-    it('UTCID01 - returns holidays for a valid query', async () => {
+    it('UTCID01 - returns holidays for the provided query', async () => {
       // Arrange
-      const query = { year: 2025, scope: HOLIDAY_SCOPE.ALL };
-      const holidays = [{ id: 'h1', name: 'New Year', deletedAt: null }];
-      holidayRepo.listHolidays.mockResolvedValue(holidays);
+      const query = { year: 2025, scope: HOLIDAY_SCOPE.ALL } as IListHolidaysQueryDTO
+      const mockResult = [
+        { id: 'holiday-1', name: 'New Year', deletedAt: null },
+        { id: 'holiday-2', name: 'Labor Day', deletedAt: null },
+      ]
+      holidayRepo.listHolidays.mockResolvedValue(mockResult)
 
       // Act
-      const result = await service.listHolidays(query as never);
+      const result = await holidayService.listHolidays(query)
 
       // Assert
-      expect(holidayRepo.listHolidays).toHaveBeenCalledTimes(1);
-      expect(holidayRepo.listHolidays).toHaveBeenCalledWith(query);
-      expect(result).toEqual(holidays);
-    });
+      expect(holidayRepo.listHolidays).toHaveBeenCalledTimes(1)
+      expect(holidayRepo.listHolidays).toHaveBeenCalledWith(query)
+      expect(result).toEqual(mockResult)
+    })
 
-    it('UTCID02 - propagates repository AppError failure', async () => {
+    it('UTCID02 - propagates a not found style repository error', async () => {
       // Arrange
-      const query = { year: 2025 };
-      const error = new AppError(
-        'Invalid holiday filter',
-        HttpStatusCode.BAD_REQUEST,
+      const query = { year: 1999 } as IListHolidaysQueryDTO
+      const repoError = new AppError(
+        'Holiday records not found',
+        HttpStatusCode.NOT_FOUND,
         ErrorLayer.SERVICE,
-        'INVALID_FILTER',
-      );
-      holidayRepo.listHolidays.mockRejectedValue(error);
+        'HOLIDAYS_NOT_FOUND',
+      )
+      holidayRepo.listHolidays.mockRejectedValue(repoError)
 
       // Act
-      const act = service.listHolidays(query as never);
+      const act = holidayService.listHolidays(query)
 
       // Assert
-      await expect(act).rejects.toBe(error);
-      expect(holidayRepo.listHolidays).toHaveBeenCalledWith(query);
-    });
+      await expect(act).rejects.toBe(repoError)
+      expect(holidayRepo.listHolidays).toHaveBeenCalledWith(query)
+    })
 
-    it('UTCID03 - propagates repository internal failure', async () => {
+    it('UTCID03 - propagates an internal repository error', async () => {
       // Arrange
-      const query = { scope: HOLIDAY_SCOPE.EMPLOYEES };
-      const error = new Error('database failure');
-      holidayRepo.listHolidays.mockRejectedValue(error);
+      const query = { year: 2025 } as IListHolidaysQueryDTO
+      const repoError = new AppError(
+        'Database failure',
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
+        ErrorLayer.SERVICE,
+        'DB_ERROR',
+      )
+      holidayRepo.listHolidays.mockRejectedValue(repoError)
 
       // Act
-      const act = service.listHolidays(query as never);
+      const act = holidayService.listHolidays(query)
 
       // Assert
-      await expect(act).rejects.toThrow('database failure');
-      expect(holidayRepo.listHolidays).toHaveBeenCalledWith(query);
-    });
-  });
+      await expect(act).rejects.toBe(repoError)
+      expect(holidayRepo.listHolidays).toHaveBeenCalledTimes(1)
+    })
+  })
 
   describe('createHoliday', () => {
     it('UTCID01 - creates a holiday range with default ALL scope and normalized dates', async () => {
@@ -149,38 +178,42 @@ describe('HolidayService', () => {
       const data = {
         name: 'Company Holiday',
         date: '2025-12-25',
-      };
-      const createdById = 'user-1';
-      const repoResult = [{ id: 'h1', deletedAt: null }];
-      holidayRepo.createHolidayRange.mockResolvedValue(repoResult);
+      } as ICreateHolidayDTO
+      const createdById = 'user-1'
+      const mockResult = [{ id: 'holiday-1', name: 'Company Holiday', deletedAt: null }]
+      holidayRepo.createHolidayRange.mockResolvedValue(mockResult)
 
       // Act
-      const result = await service.createHoliday(data as never, createdById);
+      const result = await holidayService.createHoliday(data, createdById)
 
       // Assert
-      expect(holidayRepo.createHolidayRange).toHaveBeenCalledTimes(1);
+      expect(holidayRepo.createHolidayRange).toHaveBeenCalledTimes(1)
       expect(holidayRepo.createHolidayRange).toHaveBeenCalledWith(
-        expect.objectContaining({
+        {
           ...data,
           scope: HOLIDAY_SCOPE.ALL,
           startDate: new Date('2025-12-25'),
           endDate: new Date('2025-12-25'),
-        }),
+        },
         createdById,
-      );
-      expect(result).toEqual(repoResult);
-    });
+      )
+      expect(result).toEqual(mockResult)
+      expect(positionFindFirstMock).not.toHaveBeenCalled()
+      expect(employeeCountMock).not.toHaveBeenCalled()
+    })
 
-    it('UTCID02 - throws BAD_REQUEST when endDate is before startDate', async () => {
+    it('UTCID02 - throws bad request when endDate is earlier than startDate', async () => {
       // Arrange
       const data = {
         name: 'Invalid Range Holiday',
         startDate: '2025-12-31',
-        endDate: '2025-12-30',
-      };
+        endDate: '2025-12-01',
+        scope: HOLIDAY_SCOPE.ALL,
+      } as ICreateHolidayDTO
+      const createdById = 'user-1'
 
       // Act
-      const act = service.createHoliday(data as never, 'user-1');
+      const act = holidayService.createHoliday(data, createdById)
 
       // Assert
       await expect(act).rejects.toMatchObject({
@@ -188,23 +221,26 @@ describe('HolidayService', () => {
         statusCode: HttpStatusCode.BAD_REQUEST,
         layer: ErrorLayer.SERVICE,
         code: 'INVALID_DATE_RANGE',
-      });
-      expect(holidayRepo.createHolidayRange).not.toHaveBeenCalled();
-    });
+      })
+      expect(holidayRepo.createHolidayRange).not.toHaveBeenCalled()
+      expect(positionFindFirstMock).not.toHaveBeenCalled()
+      expect(employeeCountMock).not.toHaveBeenCalled()
+    })
 
-    it('UTCID03 - throws NOT_FOUND when POSITION scope target does not exist', async () => {
+    it('UTCID03 - throws not found when POSITION scope target does not exist', async () => {
       // Arrange
       const data = {
         name: 'Position Holiday',
-        startDate: '2025-01-01',
-        endDate: '2025-01-01',
+        startDate: '2025-06-01',
+        endDate: '2025-06-02',
         scope: HOLIDAY_SCOPE.POSITION,
-        positionId: 'pos-1',
-      };
-      (prisma.position.findFirst as jest.Mock).mockResolvedValue(null);
+        positionId: 'position-1',
+      } as ICreateHolidayDTO
+      const createdById = 'user-1'
+      positionFindFirstMock.mockResolvedValue(null)
 
       // Act
-      const act = service.createHoliday(data as never, 'user-1');
+      const act = holidayService.createHoliday(data, createdById)
 
       // Assert
       await expect(act).rejects.toMatchObject({
@@ -212,27 +248,29 @@ describe('HolidayService', () => {
         statusCode: HttpStatusCode.NOT_FOUND,
         layer: ErrorLayer.SERVICE,
         code: 'POSITION_NOT_FOUND',
-      });
-      expect(prisma.position.findFirst).toHaveBeenCalledWith({
-        where: { id: 'pos-1', deletedAt: null },
+      })
+      expect(positionFindFirstMock).toHaveBeenCalledTimes(1)
+      expect(positionFindFirstMock).toHaveBeenCalledWith({
+        where: { id: 'position-1', deletedAt: null },
         select: { id: true },
-      });
-      expect(holidayRepo.createHolidayRange).not.toHaveBeenCalled();
-    });
+      })
+      expect(holidayRepo.createHolidayRange).not.toHaveBeenCalled()
+    })
 
-    it('UTCID04 - throws UNPROCESSABLE_ENTITY when EMPLOYEES scope has no active employees', async () => {
+    it('UTCID04 - throws unprocessable entity when EMPLOYEES scope has no active employee targets', async () => {
       // Arrange
       const data = {
         name: 'Employee Holiday',
-        startDate: '2025-05-01',
-        endDate: '2025-05-02',
+        startDate: '2025-08-10',
+        endDate: '2025-08-10',
         scope: HOLIDAY_SCOPE.EMPLOYEES,
         employeeIds: ['emp-1', 'emp-1', 'emp-2'],
-      };
-      (prisma.employee.count as jest.Mock).mockResolvedValue(0);
+      } as ICreateHolidayDTO
+      const createdById = 'user-2'
+      employeeCountMock.mockResolvedValue(0)
 
       // Act
-      const act = service.createHoliday(data as never, 'user-1');
+      const act = holidayService.createHoliday(data, createdById)
 
       // Assert
       await expect(act).rejects.toMatchObject({
@@ -240,191 +278,253 @@ describe('HolidayService', () => {
         statusCode: HttpStatusCode.UNPROCESSABLE_ENTITY,
         layer: ErrorLayer.SERVICE,
         code: 'NO_TARGET_EMPLOYEES',
-      });
-      expect(prisma.employee.count).toHaveBeenCalledWith({
+      })
+      expect(employeeCountMock).toHaveBeenCalledTimes(1)
+      expect(employeeCountMock).toHaveBeenCalledWith({
         where: {
           id: { in: ['emp-1', 'emp-2'] },
           deletedAt: null,
           status: { in: [EMPLOYEE_STATUS.ACTIVE, EMPLOYEE_STATUS.ON_LEAVE] },
         },
-      });
-      expect(holidayRepo.createHolidayRange).not.toHaveBeenCalled();
-    });
+      })
+      expect(holidayRepo.createHolidayRange).not.toHaveBeenCalled()
+    })
 
-    it('UTCID05 - propagates repository internal failure after successful scope validation', async () => {
+    it('UTCID05 - creates a holiday for POSITION scope when the position exists', async () => {
       // Arrange
       const data = {
-        name: 'All Scope Holiday',
-        startDate: '2025-03-10',
-        endDate: '2025-03-12',
-        scope: HOLIDAY_SCOPE.ALL,
-      };
-      const error = new Error('insert failed');
-      holidayRepo.createHolidayRange.mockRejectedValue(error);
+        name: 'Position Holiday',
+        startDate: '2025-09-01',
+        endDate: '2025-09-03',
+        scope: HOLIDAY_SCOPE.POSITION,
+        positionId: 'position-1',
+      } as ICreateHolidayDTO
+      const createdById = 'user-3'
+      const mockResult = [{ id: 'holiday-2', name: 'Position Holiday', deletedAt: null }]
+      positionFindFirstMock.mockResolvedValue({
+        id: 'position-1',
+        code: 'POS-001',
+        name: 'Engineer',
+        description: null,
+        createdAt: new Date('2025-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2025-01-02T00:00:00.000Z'),
+        deletedAt: null,
+        allowedTaskTrackers: [],
+        allowedApplicationTypes: [],
+      })
+      holidayRepo.createHolidayRange.mockResolvedValue(mockResult)
 
       // Act
-      const act = service.createHoliday(data as never, 'user-1');
+      const result = await holidayService.createHoliday(data, createdById)
 
       // Assert
-      await expect(act).rejects.toThrow('insert failed');
+      expect(positionFindFirstMock).toHaveBeenCalledWith({
+        where: { id: 'position-1', deletedAt: null },
+        select: { id: true },
+      })
       expect(holidayRepo.createHolidayRange).toHaveBeenCalledWith(
-        expect.objectContaining({
+        {
           ...data,
-          startDate: new Date('2025-03-10'),
-          endDate: new Date('2025-03-12'),
-        }),
-        'user-1',
-      );
-    });
-  });
+          startDate: new Date('2025-09-01'),
+          endDate: new Date('2025-09-03'),
+        },
+        createdById,
+      )
+      expect(result).toEqual(mockResult)
+    })
+
+    it('UTCID06 - propagates repository internal error after successful scope validation', async () => {
+      // Arrange
+      const data = {
+        name: 'Validated Holiday',
+        startDate: '2025-10-01',
+        endDate: '2025-10-02',
+        scope: HOLIDAY_SCOPE.EMPLOYEES,
+        employeeIds: ['emp-1'],
+      } as ICreateHolidayDTO
+      const createdById = 'user-4'
+      const repoError = new AppError(
+        'Insert failed',
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
+        ErrorLayer.SERVICE,
+        'INSERT_FAILED',
+      )
+      employeeCountMock.mockResolvedValue(1)
+      holidayRepo.createHolidayRange.mockRejectedValue(repoError)
+
+      // Act
+      const act = holidayService.createHoliday(data, createdById)
+
+      // Assert
+      await expect(act).rejects.toBe(repoError)
+      expect(employeeCountMock).toHaveBeenCalledTimes(1)
+      expect(holidayRepo.createHolidayRange).toHaveBeenCalledTimes(1)
+    })
+  })
 
   describe('updateHoliday', () => {
     it('UTCID01 - updates a holiday successfully', async () => {
       // Arrange
-      const id = 'holiday-1';
-      const data = { name: 'Updated Holiday' };
-      const updatedHoliday = { id, name: 'Updated Holiday', deletedAt: null };
-      holidayRepo.updateHoliday.mockResolvedValue(updatedHoliday);
+      const id = 'holiday-1'
+      const data = { name: 'Updated Holiday Name' } as IUpdateHolidayDTO
+      const mockResult = { id, name: 'Updated Holiday Name', deletedAt: null }
+      holidayRepo.updateHoliday.mockResolvedValue(mockResult)
 
       // Act
-      const result = await service.updateHoliday(id, data as never);
+      const result = await holidayService.updateHoliday(id, data)
 
       // Assert
-      expect(holidayRepo.updateHoliday).toHaveBeenCalledTimes(1);
-      expect(holidayRepo.updateHoliday).toHaveBeenCalledWith(id, data);
-      expect(result).toEqual(updatedHoliday);
-    });
+      expect(holidayRepo.updateHoliday).toHaveBeenCalledTimes(1)
+      expect(holidayRepo.updateHoliday).toHaveBeenCalledWith(id, data)
+      expect(result).toEqual(mockResult)
+    })
 
-    it('UTCID02 - propagates repository not found AppError', async () => {
+    it('UTCID02 - propagates a not found error from repository', async () => {
       // Arrange
-      const id = 'missing-holiday';
-      const data = { name: 'Updated Holiday' };
-      const error = new AppError(
+      const id = 'missing-holiday'
+      const data = { name: 'Missing Holiday' } as IUpdateHolidayDTO
+      const repoError = new AppError(
         'Holiday not found',
-        404,
+        HttpStatusCode.NOT_FOUND,
         ErrorLayer.SERVICE,
         'HOLIDAY_NOT_FOUND',
-      );
-      holidayRepo.updateHoliday.mockRejectedValue(error);
+      )
+      holidayRepo.updateHoliday.mockRejectedValue(repoError)
 
       // Act
-      const act = service.updateHoliday(id, data as never);
+      const act = holidayService.updateHoliday(id, data)
 
       // Assert
-      await expect(act).rejects.toBe(error);
-      expect(holidayRepo.updateHoliday).toHaveBeenCalledWith(id, data);
-    });
+      await expect(act).rejects.toBe(repoError)
+      expect(holidayRepo.updateHoliday).toHaveBeenCalledWith(id, data)
+    })
 
-    it('UTCID03 - propagates repository internal failure', async () => {
+    it('UTCID03 - propagates an internal server error from repository', async () => {
       // Arrange
-      const id = 'holiday-1';
-      const data = { name: 'Updated Holiday' };
-      const error = new Error('update failed');
-      holidayRepo.updateHoliday.mockRejectedValue(error);
+      const id = 'holiday-2'
+      const data = { name: 'Broken Update' } as IUpdateHolidayDTO
+      const repoError = new AppError(
+        'Update failed',
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
+        ErrorLayer.SERVICE,
+        'UPDATE_FAILED',
+      )
+      holidayRepo.updateHoliday.mockRejectedValue(repoError)
 
       // Act
-      const act = service.updateHoliday(id, data as never);
+      const act = holidayService.updateHoliday(id, data)
 
       // Assert
-      await expect(act).rejects.toThrow('update failed');
-      expect(holidayRepo.updateHoliday).toHaveBeenCalledWith(id, data);
-    });
-  });
+      await expect(act).rejects.toBe(repoError)
+      expect(holidayRepo.updateHoliday).toHaveBeenCalledTimes(1)
+    })
+  })
 
   describe('deleteHoliday', () => {
-    it('UTCID01 - deletes a holiday successfully with default deleteBatch true', async () => {
+    it('UTCID01 - deletes a holiday with default deleteBatch behavior', async () => {
       // Arrange
-      const id = 'holiday-1';
-      holidayRepo.deleteHoliday.mockResolvedValue(undefined);
+      const id = 'holiday-1'
+      holidayRepo.deleteHoliday.mockResolvedValue(undefined)
 
       // Act
-      await service.deleteHoliday(id);
+      const result = await holidayService.deleteHoliday(id)
 
       // Assert
-      expect(holidayRepo.deleteHoliday).toHaveBeenCalledTimes(1);
-      expect(holidayRepo.deleteHoliday).toHaveBeenCalledWith(id, true);
-    });
+      expect(holidayRepo.deleteHoliday).toHaveBeenCalledTimes(1)
+      expect(holidayRepo.deleteHoliday).toHaveBeenCalledWith(id, true)
+      expect(result).toBeUndefined()
+    })
 
-    it('UTCID02 - propagates repository not found AppError', async () => {
+    it('UTCID02 - propagates a not found error when holiday does not exist', async () => {
       // Arrange
-      const id = 'missing-holiday';
-      const error = new AppError(
+      const id = 'missing-holiday'
+      const repoError = new AppError(
         'Holiday not found',
-        404,
+        HttpStatusCode.NOT_FOUND,
         ErrorLayer.SERVICE,
         'HOLIDAY_NOT_FOUND',
-      );
-      holidayRepo.deleteHoliday.mockRejectedValue(error);
+      )
+      holidayRepo.deleteHoliday.mockRejectedValue(repoError)
 
       // Act
-      const act = service.deleteHoliday(id, false);
+      const act = holidayService.deleteHoliday(id, false)
 
       // Assert
-      await expect(act).rejects.toBe(error);
-      expect(holidayRepo.deleteHoliday).toHaveBeenCalledWith(id, false);
-    });
+      await expect(act).rejects.toBe(repoError)
+      expect(holidayRepo.deleteHoliday).toHaveBeenCalledWith(id, false)
+    })
 
-    it('UTCID03 - propagates repository internal failure', async () => {
+    it('UTCID03 - propagates an internal server error during deletion', async () => {
       // Arrange
-      const id = 'holiday-1';
-      const error = new Error('delete failed');
-      holidayRepo.deleteHoliday.mockRejectedValue(error);
+      const id = 'holiday-3'
+      const repoError = new AppError(
+        'Delete failed',
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
+        ErrorLayer.SERVICE,
+        'DELETE_FAILED',
+      )
+      holidayRepo.deleteHoliday.mockRejectedValue(repoError)
 
       // Act
-      const act = service.deleteHoliday(id, true);
+      const act = holidayService.deleteHoliday(id, true)
 
       // Assert
-      await expect(act).rejects.toThrow('delete failed');
-      expect(holidayRepo.deleteHoliday).toHaveBeenCalledWith(id, true);
-    });
-  });
+      await expect(act).rejects.toBe(repoError)
+      expect(holidayRepo.deleteHoliday).toHaveBeenCalledTimes(1)
+    })
+  })
 
   describe('isHoliday', () => {
-    it('UTCID01 - returns true when the date is a holiday', async () => {
+    it('UTCID01 - returns true when the provided date is a holiday', async () => {
       // Arrange
-      const date = '2025-12-25';
-      holidayRepo.checkIsHoliday.mockResolvedValue(true);
+      const date = '2025-12-25'
+      holidayRepo.checkIsHoliday.mockResolvedValue(true)
 
       // Act
-      const result = await service.isHoliday(date);
+      const result = await holidayService.isHoliday(date)
 
       // Assert
-      expect(holidayRepo.checkIsHoliday).toHaveBeenCalledTimes(1);
-      expect(holidayRepo.checkIsHoliday).toHaveBeenCalledWith(date);
-      expect(result).toBe(true);
-    });
+      expect(holidayRepo.checkIsHoliday).toHaveBeenCalledTimes(1)
+      expect(holidayRepo.checkIsHoliday).toHaveBeenCalledWith(date)
+      expect(result).toBe(true)
+    })
 
-    it('UTCID02 - propagates repository bad request AppError for invalid date', async () => {
+    it('UTCID02 - propagates a bad request style error for invalid date input', async () => {
       // Arrange
-      const date = 'invalid-date';
-      const error = new AppError(
+      const date = 'invalid-date'
+      const repoError = new AppError(
         'Invalid date',
         HttpStatusCode.BAD_REQUEST,
         ErrorLayer.SERVICE,
         'INVALID_DATE',
-      );
-      holidayRepo.checkIsHoliday.mockRejectedValue(error);
+      )
+      holidayRepo.checkIsHoliday.mockRejectedValue(repoError)
 
       // Act
-      const act = service.isHoliday(date);
+      const act = holidayService.isHoliday(date)
 
       // Assert
-      await expect(act).rejects.toBe(error);
-      expect(holidayRepo.checkIsHoliday).toHaveBeenCalledWith(date);
-    });
+      await expect(act).rejects.toBe(repoError)
+      expect(holidayRepo.checkIsHoliday).toHaveBeenCalledWith(date)
+    })
 
-    it('UTCID03 - propagates repository internal failure', async () => {
+    it('UTCID03 - propagates an internal server error from repository', async () => {
       // Arrange
-      const date = new Date('2025-12-25');
-      const error = new Error('lookup failed');
-      holidayRepo.checkIsHoliday.mockRejectedValue(error);
+      const date = new Date('2025-01-01')
+      const repoError = new AppError(
+        'Query failed',
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
+        ErrorLayer.SERVICE,
+        'QUERY_FAILED',
+      )
+      holidayRepo.checkIsHoliday.mockRejectedValue(repoError)
 
       // Act
-      const act = service.isHoliday(date);
+      const act = holidayService.isHoliday(date)
 
       // Assert
-      await expect(act).rejects.toThrow('lookup failed');
-      expect(holidayRepo.checkIsHoliday).toHaveBeenCalledWith(date);
-    });
-  });
-});
+      await expect(act).rejects.toBe(repoError)
+      expect(holidayRepo.checkIsHoliday).toHaveBeenCalledTimes(1)
+    })
+  })
+})
