@@ -90,7 +90,7 @@ export function AdminPartTimeAvailabilityAssignPanelForm({
     <>
       <div className="flex-1 overflow-y-auto px-6 py-5">
         {isAllBusyWeek ? (
-          <div className="flex h-full min-h-[12rem] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 px-6 text-center">
+          <div className="flex h-full min-h-48 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 px-6 text-center">
             <p className="text-sm font-medium text-foreground">
               {PART_TIME_AVAILABILITY_ASSIGN_LABELS.ALL_BUSY_WEEK}
             </p>
@@ -100,7 +100,7 @@ export function AdminPartTimeAvailabilityAssignPanelForm({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <div className="min-w-[77rem] grid grid-cols-7 gap-3 pb-2">
+            <div className="grid min-w-308 grid-cols-7 gap-3 pb-2">
               {WORK_WEEK_DISPLAY_DAY_ORDER.map((dayOfWeek) => {
                 const assignment = assignments.find((entry) => entry.dayOfWeek === dayOfWeek)
                 const weekDay = weekDates.find((entry) => entry.dayOfWeek === dayOfWeek)

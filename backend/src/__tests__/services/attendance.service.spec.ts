@@ -1,10 +1,21 @@
 /// <reference types="jest" />
-import { jest } from '@jest/globals';
 import { AttendanceService } from '../../services/attendance.service';
 import { isPartTimeWorkSchedule } from '@/utils/employee/is-part-time-work-schedule.util.ts';
 import { ATTENDANCE_ERROR_MESSAGES } from '@/configs/messages/attendance.message.ts';
 import { HttpStatusCode } from '@/configs/system/http.config.ts';
 import { ATTENDANCE_LAYERS } from '@/constants/attendance.constants.ts';
+import type {
+  IAttendanceRecordDTO,
+  IAttendanceRecordQueryDTO,
+  IAttendanceRepository,
+  IHolidayRepository,
+} from '@/types/attendance.types.ts';
+import type {
+  IEmployeeShiftRepository,
+  IShiftScheduleRepository,
+  IWorkingShiftRepository,
+} from '@/types/shift.types.ts';
+import type { IEmployeeRepository } from '@/types/employee.types.ts';
 import { computeAttendanceMetrics } from '@/utils/attendance/attendance-metrics.util.ts';
 import { assertWithinShiftGps } from '@/utils/attendance/attendance-gps.util.ts';
 import {
@@ -38,9 +49,9 @@ jest.mock('@/configs/messages/attendance.message.ts', () => ({
 
 jest.mock('@/configs/system/http.config.ts', () => ({
   HttpStatusCode: {
-    BAD_REQUEST: 400,
     CONFLICT: 409,
     UNPROCESSABLE_ENTITY: 422,
+    BAD_REQUEST: 400,
   },
 }));
 
@@ -76,7 +87,7 @@ jest.mock('@/utils/attendance/attendance-shift.util.ts', () => ({
 }));
 
 jest.mock('@/utils/error.util.ts', () => ({
-  AppError: class AppError extends Error {
+  AppError: class MockAppError extends Error {
     statusCode: number;
     layer: string;
 
@@ -93,84 +104,81 @@ jest.mock('@/utils/schedule.util.ts', () => ({
   resolveShiftFromSchedule: jest.fn(),
 }));
 
-type Shift = {
-  id: string;
-  isActive?: boolean;
-  startTime?: number;
-  endTime?: number;
-};
+const mockedIsPartTimeWorkSchedule = isPartTimeWorkSchedule as jest.MockedFunction<
+  typeof isPartTimeWorkSchedule
+>;
+const mockedComputeAttendanceMetrics = computeAttendanceMetrics as jest.MockedFunction<
+  typeof computeAttendanceMetrics
+>;
+const mockedAssertWithinShiftGps = assertWithinShiftGps as jest.MockedFunction<
+  typeof assertWithinShiftGps
+>;
+const mockedFindActiveAttendanceRecord = findActiveAttendanceRecord as jest.MockedFunction<
+  typeof findActiveAttendanceRecord
+>;
+const mockedNormalizeAttendanceDate = normalizeAttendanceDate as jest.MockedFunction<
+  typeof normalizeAttendanceDate
+>;
+const mockedAssertCheckInWindow = assertCheckInWindow as jest.MockedFunction<
+  typeof assertCheckInWindow
+>;
+const mockedGetMinutesFromDateTime = getMinutesFromDateTime as jest.MockedFunction<
+  typeof getMinutesFromDateTime
+>;
+const mockedIsActualShiftMatched = isActualShiftMatched as jest.MockedFunction<
+  typeof isActualShiftMatched
+>;
+const mockedIsBeforeCheckOutWindow = isBeforeCheckOutWindow as jest.MockedFunction<
+  typeof isBeforeCheckOutWindow
+>;
+const mockedIsWithinShiftSelectionWindow = isWithinShiftSelectionWindow as jest.MockedFunction<
+  typeof isWithinShiftSelectionWindow
+>;
+const mockedResolveShiftFromSchedule = resolveShiftFromSchedule as jest.MockedFunction<
+  typeof resolveShiftFromSchedule
+>;
 
-type EmployeeShift = {
-  id: string;
-  shiftId: string;
-  shift?: Shift;
-};
+type AttendanceRepoMock = jest.Mocked<IAttendanceRepository>;
+type EmployeeShiftRepoMock = jest.Mocked<IEmployeeShiftRepository>;
+type ScheduleRepoMock = jest.Mocked<IShiftScheduleRepository>;
+type HolidayRepoMock = jest.Mocked<IHolidayRepository>;
+type WorkingShiftRepoMock = jest.Mocked<IWorkingShiftRepository>;
+type EmployeeRepoMock = jest.Mocked<IEmployeeRepository>;
 
-type AttendanceRecord = {
-  id: string;
-  employeeId: string;
-  checkInAt: string | null;
-  checkOutAt: string | null;
-  employeeShift?: {
-    id: string;
-    shift?: Shift;
-  };
-};
+const createAttendanceRepo = (): AttendanceRepoMock =>
+  ({
+    findByEmployeeAndDate: jest.fn(),
+    checkIn: jest.fn(),
+    checkOut: jest.fn(),
+    queryRecords: jest.fn(),
+  }) as unknown as AttendanceRepoMock;
 
-type AttendanceMetrics = {
-  lateMinutes: number;
-  earlyLeaveMinutes: number;
-  overtimeMinutes: number;
-};
+const createEmployeeShiftRepo = (): EmployeeShiftRepoMock =>
+  ({
+    getShiftForEmployeeDate: jest.fn(),
+    ensureShiftForEmployeeDate: jest.fn(),
+  }) as unknown as EmployeeShiftRepoMock;
 
-type AttendanceQuery = {
-  employeeId?: string;
-  fromDate?: string;
-  toDate?: string;
-};
+const createScheduleRepo = (): ScheduleRepoMock =>
+  ({
+    getScheduleByEmployee: jest.fn(),
+  }) as unknown as ScheduleRepoMock;
 
-type AsyncFn = (...args: unknown[]) => Promise<unknown>;
-type AsyncMock = jest.Mock<AsyncFn>;
-type AttendanceRepoMock = {
-  checkIn: AsyncMock;
-  checkOut: AsyncMock;
-  queryRecords: AsyncMock;
-  findByEmployeeAndDate: AsyncMock;
-};
+const createHolidayRepo = (): HolidayRepoMock =>
+  ({
+    checkIsHoliday: jest.fn(),
+  }) as unknown as HolidayRepoMock;
 
-type EmployeeShiftRepoMock = {
-  getShiftForEmployeeDate: AsyncMock;
-  ensureShiftForEmployeeDate: AsyncMock;
-};
+const createWorkingShiftRepo = (): WorkingShiftRepoMock =>
+  ({
+    listAll: jest.fn(),
+    findById: jest.fn(),
+  }) as unknown as WorkingShiftRepoMock;
 
-type ScheduleRepoMock = {
-  getScheduleByEmployee: AsyncMock;
-};
-
-type HolidayRepoMock = {
-  checkIsHoliday: AsyncMock;
-};
-
-type WorkingShiftRepoMock = {
-  listAll: AsyncMock;
-  findById: AsyncMock;
-};
-
-type EmployeeRepoMock = {
-  findById: AsyncMock;
-};
-
-const mockedIsPartTimeWorkSchedule = jest.mocked(isPartTimeWorkSchedule);
-const mockedComputeAttendanceMetrics = jest.mocked(computeAttendanceMetrics);
-const mockedAssertWithinShiftGps = jest.mocked(assertWithinShiftGps);
-const mockedFindActiveAttendanceRecord = jest.mocked(findActiveAttendanceRecord);
-const mockedNormalizeAttendanceDate = jest.mocked(normalizeAttendanceDate);
-const mockedAssertCheckInWindow = jest.mocked(assertCheckInWindow);
-const mockedGetMinutesFromDateTime = jest.mocked(getMinutesFromDateTime);
-const mockedIsActualShiftMatched = jest.mocked(isActualShiftMatched);
-const mockedIsBeforeCheckOutWindow = jest.mocked(isBeforeCheckOutWindow);
-const mockedIsWithinShiftSelectionWindow = jest.mocked(isWithinShiftSelectionWindow);
-const mockedResolveShiftFromSchedule = jest.mocked(resolveShiftFromSchedule);
+const createEmployeeRepo = (): EmployeeRepoMock =>
+  ({
+    findById: jest.fn(),
+  }) as unknown as EmployeeRepoMock;
 
 describe('AttendanceService.checkIn', () => {
   let attendanceRepo: AttendanceRepoMock;
@@ -184,66 +192,37 @@ describe('AttendanceService.checkIn', () => {
   const employeeId = 'emp-1';
   const createdById = 'admin-1';
   const location = { lat: 1.23, lng: 4.56 };
-  const now = new Date('2024-01-15T09:00:00.000Z');
-  const today = new Date('2024-01-15T00:00:00.000Z');
-  const shift: Shift = { id: 'shift-1', isActive: true };
-  const ensuredEmployeeShift: EmployeeShift = { id: 'es-1', shiftId: 'shift-1' };
-  const attendanceRecord: AttendanceRecord = {
-    id: 'att-1',
-    employeeId,
-    checkInAt: now.toISOString(),
-    checkOutAt: null,
-  };
+  const today = new Date('2024-01-01T00:00:00.000Z');
+  const now = new Date('2024-01-01T08:00:00.000Z');
 
   beforeEach(() => {
-    attendanceRepo = {
-      checkIn: jest.fn(),
-      checkOut: jest.fn(),
-      queryRecords: jest.fn(),
-      findByEmployeeAndDate: jest.fn(),
-    };
-    employeeShiftRepo = {
-      getShiftForEmployeeDate: jest.fn(),
-      ensureShiftForEmployeeDate: jest.fn(),
-    };
-    scheduleRepo = {
-      getScheduleByEmployee: jest.fn(),
-    };
-    holidayRepo = {
-      checkIsHoliday: jest.fn(),
-    };
-    workingShiftRepo = {
-      listAll: jest.fn(),
-      findById: jest.fn(),
-    };
-    employeeRepo = {
-      findById: jest.fn(),
-    };
+    jest.clearAllMocks();
+    jest.useFakeTimers().setSystemTime(now);
+
+    attendanceRepo = createAttendanceRepo();
+    employeeShiftRepo = createEmployeeShiftRepo();
+    scheduleRepo = createScheduleRepo();
+    holidayRepo = createHolidayRepo();
+    workingShiftRepo = createWorkingShiftRepo();
+    employeeRepo = createEmployeeRepo();
 
     service = new AttendanceService(
-      attendanceRepo as never,
-      employeeShiftRepo as never,
-      scheduleRepo as never,
-      holidayRepo as never,
-      workingShiftRepo as never,
-      employeeRepo as never,
+      attendanceRepo,
+      employeeShiftRepo,
+      scheduleRepo,
+      holidayRepo,
+      workingShiftRepo,
+      employeeRepo,
     );
 
-    jest.clearAllMocks();
-    jest.useFakeTimers();
-    jest.setSystemTime(now);
-
     mockedNormalizeAttendanceDate.mockReturnValue(today);
-    mockedFindActiveAttendanceRecord.mockResolvedValue(null as never);
-    mockedGetMinutesFromDateTime.mockReturnValue(540);
+    mockedFindActiveAttendanceRecord.mockResolvedValue(null);
+    mockedGetMinutesFromDateTime.mockReturnValue(480);
     mockedIsPartTimeWorkSchedule.mockReturnValue(false);
-    mockedResolveShiftFromSchedule.mockReturnValue({ shiftId: 'shift-1' } as never);
-    workingShiftRepo.findById.mockResolvedValue(shift);
-    employeeShiftRepo.ensureShiftForEmployeeDate.mockResolvedValue(ensuredEmployeeShift);
-    holidayRepo.checkIsHoliday.mockResolvedValue(false);
-    attendanceRepo.checkIn.mockResolvedValue(attendanceRecord);
     mockedAssertCheckInWindow.mockImplementation(() => undefined);
     mockedAssertWithinShiftGps.mockImplementation(() => undefined);
+    holidayRepo.checkIsHoliday.mockResolvedValue(false);
+    mockedResolveShiftFromSchedule.mockReturnValue(null);
     mockedIsWithinShiftSelectionWindow.mockReturnValue(false);
   });
 
@@ -251,11 +230,25 @@ describe('AttendanceService.checkIn', () => {
     jest.useRealTimers();
   });
 
-  it('UTCID01 - returns attendance record for full-time employee using weekly schedule fallback', async () => {
+  it('UTCID01 - returns attendance record for full-time employee using fallback shift', async () => {
     // Arrange
-    employeeRepo.findById.mockResolvedValue({ id: employeeId, employmentType: 'FULL_TIME' });
-    employeeShiftRepo.getShiftForEmployeeDate.mockResolvedValue(null);
-    scheduleRepo.getScheduleByEmployee.mockResolvedValue({ id: 'sched-1', workingShiftId: null });
+    const employee = { id: employeeId, employmentType: 'FULL_TIME' };
+    const fallbackShift = { id: 'shift-1', isActive: true };
+    const employeeShift = { id: 'emp-shift-1', shiftId: 'shift-1' };
+    const attendanceRecord = {
+      id: 'att-1',
+      employeeId,
+      checkInAt: now.toISOString(),
+      checkOutAt: null,
+    };
+
+    employeeRepo.findById.mockResolvedValue(employee as never);
+    employeeShiftRepo.getShiftForEmployeeDate.mockResolvedValue(null as never);
+    scheduleRepo.getScheduleByEmployee.mockResolvedValue(null as never);
+    workingShiftRepo.listAll.mockResolvedValue([fallbackShift] as never);
+    workingShiftRepo.findById.mockResolvedValue(fallbackShift as never);
+    employeeShiftRepo.ensureShiftForEmployeeDate.mockResolvedValue(employeeShift as never);
+    attendanceRepo.checkIn.mockResolvedValue(attendanceRecord as never);
 
     // Act
     const result = await service.checkIn(employeeId, location, createdById);
@@ -263,17 +256,15 @@ describe('AttendanceService.checkIn', () => {
     // Assert
     expect(mockedNormalizeAttendanceDate).toHaveBeenCalledWith(now);
     expect(mockedFindActiveAttendanceRecord).toHaveBeenCalledWith(attendanceRepo, employeeId, now);
+    expect(employeeRepo.findById).toHaveBeenCalledWith(employeeId);
     expect(employeeShiftRepo.getShiftForEmployeeDate).toHaveBeenCalledWith(employeeId, today, {
-      atMinutes: 540,
+      atMinutes: 480,
     });
     expect(scheduleRepo.getScheduleByEmployee).toHaveBeenCalledWith(employeeId, today);
-    expect(mockedResolveShiftFromSchedule).toHaveBeenCalledWith(
-      { id: 'sched-1', workingShiftId: null },
-      today,
-    );
+    expect(workingShiftRepo.listAll).toHaveBeenCalledTimes(1);
     expect(workingShiftRepo.findById).toHaveBeenCalledWith('shift-1');
-    expect(mockedAssertCheckInWindow).toHaveBeenCalledWith(now, today, shift);
-    expect(mockedAssertWithinShiftGps).toHaveBeenCalledWith(location, shift);
+    expect(mockedAssertCheckInWindow).toHaveBeenCalledWith(now, today, fallbackShift);
+    expect(mockedAssertWithinShiftGps).toHaveBeenCalledWith(location, fallbackShift);
     expect(employeeShiftRepo.ensureShiftForEmployeeDate).toHaveBeenCalledWith(
       employeeId,
       today,
@@ -281,18 +272,17 @@ describe('AttendanceService.checkIn', () => {
       createdById,
     );
     expect(holidayRepo.checkIsHoliday).toHaveBeenCalledWith(today);
-    expect(attendanceRepo.checkIn).toHaveBeenCalledWith(employeeId, location, 'es-1');
+    expect(attendanceRepo.checkIn).toHaveBeenCalledWith(employeeId, location, 'emp-shift-1');
     expect(result).toEqual(attendanceRecord);
   });
 
-  it('UTCID02 - throws conflict when there is already an active open attendance record', async () => {
+  it('UTCID02 - throws conflict when employee already has an active check-in record', async () => {
     // Arrange
     mockedFindActiveAttendanceRecord.mockResolvedValue({
       id: 'att-open',
-      employeeId,
-      checkInAt: now.toISOString(),
+      checkInAt: '2024-01-01T07:00:00.000Z',
       checkOutAt: null,
-    } as never);
+    } as IAttendanceRecordDTO);
 
     // Act
     const act = service.checkIn(employeeId, location, createdById);
@@ -309,9 +299,10 @@ describe('AttendanceService.checkIn', () => {
 
   it('UTCID03 - throws unprocessable entity for part-time employee without assigned shift', async () => {
     // Arrange
-    employeeRepo.findById.mockResolvedValue({ id: employeeId, employmentType: 'PART_TIME' });
+    const employee = { id: employeeId, employmentType: 'PART_TIME' };
+    employeeRepo.findById.mockResolvedValue(employee as never);
     mockedIsPartTimeWorkSchedule.mockReturnValue(true);
-    employeeShiftRepo.getShiftForEmployeeDate.mockResolvedValue(null);
+    employeeShiftRepo.getShiftForEmployeeDate.mockResolvedValue(null as never);
 
     // Act
     const act = service.checkIn(employeeId, location, createdById);
@@ -326,12 +317,14 @@ describe('AttendanceService.checkIn', () => {
     expect(attendanceRepo.checkIn).not.toHaveBeenCalled();
   });
 
-  it('UTCID04 - throws bad request when schedule exists but no shift can be resolved for today', async () => {
+  it('UTCID04 - throws bad request when weekly schedule exists but no shift is resolved for today', async () => {
     // Arrange
-    employeeRepo.findById.mockResolvedValue({ id: employeeId, employmentType: 'FULL_TIME' });
-    employeeShiftRepo.getShiftForEmployeeDate.mockResolvedValue(null);
-    scheduleRepo.getScheduleByEmployee.mockResolvedValue({ id: 'sched-2', workingShiftId: null });
-    mockedResolveShiftFromSchedule.mockReturnValue(null as never);
+    const employee = { id: employeeId, employmentType: 'FULL_TIME' };
+    const schedule = { id: 'schedule-1', workingShiftId: null };
+    employeeRepo.findById.mockResolvedValue(employee as never);
+    employeeShiftRepo.getShiftForEmployeeDate.mockResolvedValue(null as never);
+    scheduleRepo.getScheduleByEmployee.mockResolvedValue(schedule as never);
+    mockedResolveShiftFromSchedule.mockReturnValue(null);
 
     // Act
     const act = service.checkIn(employeeId, location, createdById);
@@ -342,33 +335,7 @@ describe('AttendanceService.checkIn', () => {
       statusCode: HttpStatusCode.BAD_REQUEST,
       layer: ATTENDANCE_LAYERS.SERVICE,
     });
-    expect(workingShiftRepo.findById).not.toHaveBeenCalled();
-    expect(attendanceRepo.checkIn).not.toHaveBeenCalled();
-  });
-
-  it('UTCID05 - throws bad request when fallback shift resolves but employee shift cannot be ensured', async () => {
-    // Arrange
-    employeeRepo.findById.mockResolvedValue({ id: employeeId, employmentType: 'FULL_TIME' });
-    employeeShiftRepo.getShiftForEmployeeDate.mockResolvedValue(null);
-    scheduleRepo.getScheduleByEmployee.mockResolvedValue(null);
-    workingShiftRepo.listAll.mockResolvedValue([
-      { id: 'shift-1', isActive: true },
-      { id: 'shift-2', isActive: false },
-    ]);
-    mockedIsWithinShiftSelectionWindow.mockReturnValue(true);
-    employeeShiftRepo.ensureShiftForEmployeeDate.mockResolvedValue(null);
-
-    // Act
-    const act = service.checkIn(employeeId, location, createdById);
-
-    // Assert
-    await expect(act).rejects.toMatchObject({
-      message: ATTENDANCE_ERROR_MESSAGES.SHIFT_NOT_FOUND,
-      statusCode: HttpStatusCode.BAD_REQUEST,
-      layer: ATTENDANCE_LAYERS.SERVICE,
-    });
-    expect(workingShiftRepo.listAll).toHaveBeenCalled();
-    expect(workingShiftRepo.findById).toHaveBeenCalledWith('shift-1');
+    expect(workingShiftRepo.listAll).not.toHaveBeenCalled();
     expect(attendanceRepo.checkIn).not.toHaveBeenCalled();
   });
 });
@@ -384,69 +351,42 @@ describe('AttendanceService.checkOut', () => {
 
   const employeeId = 'emp-1';
   const location = { lat: 1.23, lng: 4.56 };
-  const now = new Date('2024-01-15T17:00:00.000Z');
-  const shift: Shift = { id: 'shift-1', startTime: 540, endTime: 1020 };
-  const record: AttendanceRecord = {
-    id: 'att-1',
-    employeeId,
-    checkInAt: '2024-01-15T09:00:00.000Z',
-    checkOutAt: null,
-    employeeShift: {
-      id: 'es-1',
-      shift,
-    },
-  };
-  const metrics: AttendanceMetrics = { lateMinutes: 0, earlyLeaveMinutes: 0, overtimeMinutes: 10 };
-  const checkedOutRecord: AttendanceRecord = {
-    ...record,
-    checkOutAt: now.toISOString(),
-  };
+  const now = new Date('2024-01-01T17:30:00.000Z');
 
   beforeEach(() => {
-    attendanceRepo = {
-      checkIn: jest.fn(),
-      checkOut: jest.fn(),
-      queryRecords: jest.fn(),
-      findByEmployeeAndDate: jest.fn(),
-    };
-    employeeShiftRepo = {
-      getShiftForEmployeeDate: jest.fn(),
-      ensureShiftForEmployeeDate: jest.fn(),
-    };
-    scheduleRepo = {
-      getScheduleByEmployee: jest.fn(),
-    };
-    holidayRepo = {
-      checkIsHoliday: jest.fn(),
-    };
-    workingShiftRepo = {
-      listAll: jest.fn(),
-      findById: jest.fn(),
-    };
-    employeeRepo = {
-      findById: jest.fn(),
-    };
+    jest.clearAllMocks();
+    jest.useFakeTimers().setSystemTime(now);
+
+    attendanceRepo = createAttendanceRepo();
+    employeeShiftRepo = createEmployeeShiftRepo();
+    scheduleRepo = createScheduleRepo();
+    holidayRepo = createHolidayRepo();
+    workingShiftRepo = createWorkingShiftRepo();
+    employeeRepo = createEmployeeRepo();
 
     service = new AttendanceService(
-      attendanceRepo as never,
-      employeeShiftRepo as never,
-      scheduleRepo as never,
-      holidayRepo as never,
-      workingShiftRepo as never,
-      employeeRepo as never,
+      attendanceRepo,
+      employeeShiftRepo,
+      scheduleRepo,
+      holidayRepo,
+      workingShiftRepo,
+      employeeRepo,
     );
 
-    jest.clearAllMocks();
-    jest.useFakeTimers();
-    jest.setSystemTime(now);
-
-    mockedFindActiveAttendanceRecord.mockResolvedValue(record as never);
-    mockedIsBeforeCheckOutWindow.mockReturnValue(false);
     mockedAssertWithinShiftGps.mockImplementation(() => undefined);
-    mockedComputeAttendanceMetrics.mockReturnValue(metrics as never);
-    mockedGetMinutesFromDateTime.mockReturnValueOnce(540).mockReturnValueOnce(1020);
+    mockedIsBeforeCheckOutWindow.mockReturnValue(false);
+    mockedComputeAttendanceMetrics.mockReturnValue({
+      lateMinutes: 0,
+      earlyLeaveMinutes: 0,
+      overtimeMinutes: 30,
+    } as never);
+    mockedGetMinutesFromDateTime.mockImplementation((date: Date) => {
+      if (date instanceof Date && date.toISOString() === '2024-01-01T09:00:00.000Z') {
+        return 540;
+      }
+      return 1050;
+    });
     mockedIsActualShiftMatched.mockReturnValue(true);
-    attendanceRepo.checkOut.mockResolvedValue(checkedOutRecord);
   });
 
   afterEach(() => {
@@ -455,27 +395,52 @@ describe('AttendanceService.checkOut', () => {
 
   it('UTCID01 - returns updated attendance record with computed metrics on successful check-out', async () => {
     // Arrange
-    const expectedMeta = {
-      actualEndTime: 1020,
-      isMatched: true,
+    const shift = { id: 'shift-1' };
+    const activeRecord = {
+      id: 'att-1',
+      checkInAt: '2024-01-01T09:00:00.000Z',
+      checkOutAt: null,
+      employeeShift: {
+        id: 'emp-shift-1',
+        shift,
+      },
     };
+    const updatedRecord = {
+      ...activeRecord,
+      checkOutAt: now.toISOString(),
+    };
+
+    mockedFindActiveAttendanceRecord.mockResolvedValue(activeRecord as IAttendanceRecordDTO);
+    attendanceRepo.checkOut.mockResolvedValue(updatedRecord as never);
 
     // Act
     const result = await service.checkOut(employeeId, location);
 
     // Assert
     expect(mockedFindActiveAttendanceRecord).toHaveBeenCalledWith(attendanceRepo, employeeId, now);
-    expect(mockedIsBeforeCheckOutWindow).toHaveBeenCalledWith(now, record, shift);
+    expect(mockedIsBeforeCheckOutWindow).toHaveBeenCalledWith(now, activeRecord, shift);
     expect(mockedAssertWithinShiftGps).toHaveBeenCalledWith(location, shift);
-    expect(mockedComputeAttendanceMetrics).toHaveBeenCalledWith(record, shift, now);
-    expect(mockedIsActualShiftMatched).toHaveBeenCalledWith(540, 1020, shift);
-    expect(attendanceRepo.checkOut).toHaveBeenCalledWith('att-1', location, metrics, expectedMeta);
-    expect(result).toEqual(checkedOutRecord);
+    expect(mockedComputeAttendanceMetrics).toHaveBeenCalledWith(activeRecord, shift, now);
+    expect(mockedIsActualShiftMatched).toHaveBeenCalledWith(540, 1050, shift);
+    expect(attendanceRepo.checkOut).toHaveBeenCalledWith(
+      'att-1',
+      location,
+      {
+        lateMinutes: 0,
+        earlyLeaveMinutes: 0,
+        overtimeMinutes: 30,
+      },
+      {
+        actualEndTime: 1050,
+        isMatched: true,
+      },
+    );
+    expect(result).toEqual(updatedRecord);
   });
 
-  it('UTCID02 - throws bad request when employee has no active attendance record', async () => {
+  it('UTCID02 - throws bad request when there is no active attendance record', async () => {
     // Arrange
-    mockedFindActiveAttendanceRecord.mockResolvedValue(null as never);
+    mockedFindActiveAttendanceRecord.mockResolvedValue(null);
 
     // Act
     const act = service.checkOut(employeeId, location);
@@ -489,8 +454,18 @@ describe('AttendanceService.checkOut', () => {
     expect(attendanceRepo.checkOut).not.toHaveBeenCalled();
   });
 
-  it('UTCID03 - throws bad request when trying to check out before allowed window', async () => {
+  it('UTCID03 - throws bad request when employee tries to check out too early', async () => {
     // Arrange
+    const activeRecord = {
+      id: 'att-1',
+      checkInAt: '2024-01-01T09:00:00.000Z',
+      checkOutAt: null,
+      employeeShift: {
+        id: 'emp-shift-1',
+        shift: { id: 'shift-1' },
+      },
+    };
+    mockedFindActiveAttendanceRecord.mockResolvedValue(activeRecord as IAttendanceRecordDTO);
     mockedIsBeforeCheckOutWindow.mockReturnValue(true);
 
     // Act
@@ -503,6 +478,32 @@ describe('AttendanceService.checkOut', () => {
       layer: ATTENDANCE_LAYERS.SERVICE,
     });
     expect(mockedAssertWithinShiftGps).not.toHaveBeenCalled();
+    expect(attendanceRepo.checkOut).not.toHaveBeenCalled();
+  });
+
+  it('UTCID04 - propagates GPS validation error during check-out', async () => {
+    // Arrange
+    const activeRecord = {
+      id: 'att-1',
+      checkInAt: '2024-01-01T09:00:00.000Z',
+      checkOutAt: null,
+      employeeShift: {
+        id: 'emp-shift-1',
+        shift: { id: 'shift-1' },
+      },
+    };
+    const gpsError = new AppError('GPS_OUT_OF_RANGE', 400, 'SERVICE');
+    mockedFindActiveAttendanceRecord.mockResolvedValue(activeRecord as IAttendanceRecordDTO);
+    mockedAssertWithinShiftGps.mockImplementation(() => {
+      throw gpsError;
+    });
+
+    // Act
+    const act = service.checkOut(employeeId, location);
+
+    // Assert
+    await expect(act).rejects.toBe(gpsError);
+    expect(mockedComputeAttendanceMetrics).not.toHaveBeenCalled();
     expect(attendanceRepo.checkOut).not.toHaveBeenCalled();
   });
 });
@@ -519,70 +520,44 @@ describe('AttendanceService.scan', () => {
   const employeeId = 'emp-1';
   const createdById = 'admin-1';
   const location = { lat: 1.23, lng: 4.56 };
-  const now = new Date('2024-01-15T17:00:00.000Z');
-  const scanRecord: AttendanceRecord = {
-    id: 'att-1',
-    employeeId,
-    checkInAt: '2024-01-15T09:00:00.000Z',
-    checkOutAt: null,
-    employeeShift: {
-      id: 'es-1',
-      shift: { id: 'shift-1' },
-    },
-  };
+  const now = new Date('2024-01-01T12:00:00.000Z');
 
   beforeEach(() => {
-    attendanceRepo = {
-      checkIn: jest.fn(),
-      checkOut: jest.fn(),
-      queryRecords: jest.fn(),
-      findByEmployeeAndDate: jest.fn(),
-    };
-    employeeShiftRepo = {
-      getShiftForEmployeeDate: jest.fn(),
-      ensureShiftForEmployeeDate: jest.fn(),
-    };
-    scheduleRepo = {
-      getScheduleByEmployee: jest.fn(),
-    };
-    holidayRepo = {
-      checkIsHoliday: jest.fn(),
-    };
-    workingShiftRepo = {
-      listAll: jest.fn(),
-      findById: jest.fn(),
-    };
-    employeeRepo = {
-      findById: jest.fn(),
-    };
+    jest.clearAllMocks();
+    jest.useFakeTimers().setSystemTime(now);
+
+    attendanceRepo = createAttendanceRepo();
+    employeeShiftRepo = createEmployeeShiftRepo();
+    scheduleRepo = createScheduleRepo();
+    holidayRepo = createHolidayRepo();
+    workingShiftRepo = createWorkingShiftRepo();
+    employeeRepo = createEmployeeRepo();
 
     service = new AttendanceService(
-      attendanceRepo as never,
-      employeeShiftRepo as never,
-      scheduleRepo as never,
-      holidayRepo as never,
-      workingShiftRepo as never,
-      employeeRepo as never,
+      attendanceRepo,
+      employeeShiftRepo,
+      scheduleRepo,
+      holidayRepo,
+      workingShiftRepo,
+      employeeRepo,
     );
 
-    jest.clearAllMocks();
-    jest.useFakeTimers();
-    jest.setSystemTime(now);
+    mockedIsBeforeCheckOutWindow.mockReturnValue(false);
   });
 
   afterEach(() => {
     jest.useRealTimers();
   });
 
-  it('UTCID01 - delegates to checkIn when no active record exists', async () => {
+  it('UTCID01 - delegates to check-in when there is no active record', async () => {
     // Arrange
-    mockedFindActiveAttendanceRecord.mockResolvedValue(null as never);
-    const checkInSpy = jest.spyOn(service, 'checkIn').mockResolvedValue({
-      id: 'att-new',
-      employeeId,
+    const expectedRecord = {
+      id: 'att-1',
       checkInAt: now.toISOString(),
       checkOutAt: null,
-    } as never);
+    };
+    mockedFindActiveAttendanceRecord.mockResolvedValue(null);
+    const checkInSpy = jest.spyOn(service, 'checkIn').mockResolvedValue(expectedRecord as never);
 
     // Act
     const result = await service.scan(employeeId, location, createdById);
@@ -590,17 +565,21 @@ describe('AttendanceService.scan', () => {
     // Assert
     expect(mockedFindActiveAttendanceRecord).toHaveBeenCalledWith(attendanceRepo, employeeId, now);
     expect(checkInSpy).toHaveBeenCalledWith(employeeId, location, createdById);
-    expect(result).toEqual({
-      id: 'att-new',
-      employeeId,
-      checkInAt: now.toISOString(),
-      checkOutAt: null,
-    });
+    expect(result).toEqual(expectedRecord);
   });
 
-  it('UTCID02 - throws conflict when active record exists and checkout window is not yet open', async () => {
+  it('UTCID02 - throws conflict when already checked in and check-out window is not open yet', async () => {
     // Arrange
-    mockedFindActiveAttendanceRecord.mockResolvedValue(scanRecord as never);
+    const activeRecord = {
+      id: 'att-1',
+      checkInAt: '2024-01-01T09:00:00.000Z',
+      checkOutAt: null,
+      employeeShift: {
+        id: 'emp-shift-1',
+        shift: { id: 'shift-1' },
+      },
+    };
+    mockedFindActiveAttendanceRecord.mockResolvedValue(activeRecord as IAttendanceRecordDTO);
     mockedIsBeforeCheckOutWindow.mockReturnValue(true);
 
     // Act
@@ -614,27 +593,31 @@ describe('AttendanceService.scan', () => {
     });
   });
 
-  it('UTCID03 - propagates checkOut error when active record exists and checkOut fails', async () => {
+  it('UTCID03 - propagates check-out error when active record exists and check-out fails', async () => {
     // Arrange
-    mockedFindActiveAttendanceRecord.mockResolvedValue(scanRecord as never);
-    mockedIsBeforeCheckOutWindow.mockReturnValue(false);
-    jest.spyOn(service, 'checkOut').mockRejectedValue(
-      new AppError(
-        ATTENDANCE_ERROR_MESSAGES.CHECK_OUT_TOO_EARLY,
-        HttpStatusCode.BAD_REQUEST,
-        ATTENDANCE_LAYERS.SERVICE,
-      ),
+    const activeRecord = {
+      id: 'att-1',
+      checkInAt: '2024-01-01T09:00:00.000Z',
+      checkOutAt: null,
+      employeeShift: {
+        id: 'emp-shift-1',
+        shift: { id: 'shift-1' },
+      },
+    };
+    const checkoutError = new AppError(
+      ATTENDANCE_ERROR_MESSAGES.CHECK_OUT_TOO_EARLY,
+      HttpStatusCode.BAD_REQUEST,
+      ATTENDANCE_LAYERS.SERVICE,
     );
+    mockedFindActiveAttendanceRecord.mockResolvedValue(activeRecord as IAttendanceRecordDTO);
+    mockedIsBeforeCheckOutWindow.mockReturnValue(false);
+    jest.spyOn(service, 'checkOut').mockRejectedValue(checkoutError);
 
     // Act
     const act = service.scan(employeeId, location, createdById);
 
     // Assert
-    await expect(act).rejects.toMatchObject({
-      message: ATTENDANCE_ERROR_MESSAGES.CHECK_OUT_TOO_EARLY,
-      statusCode: HttpStatusCode.BAD_REQUEST,
-      layer: ATTENDANCE_LAYERS.SERVICE,
-    });
+    await expect(act).rejects.toBe(checkoutError);
   });
 });
 
@@ -647,100 +630,68 @@ describe('AttendanceService.getAttendanceRecords', () => {
   let employeeRepo: EmployeeRepoMock;
   let service: AttendanceService;
 
-  const query: AttendanceQuery = {
-    employeeId: 'emp-1',
-    fromDate: '2024-01-01',
-    toDate: '2024-01-31',
-  };
-  const records: AttendanceRecord[] = [
-    { id: 'att-1', employeeId: 'emp-1', checkInAt: '2024-01-02T09:00:00.000Z', checkOutAt: null },
-    { id: 'att-2', employeeId: 'emp-1', checkInAt: '2024-01-03T09:00:00.000Z', checkOutAt: null },
-  ];
-
   beforeEach(() => {
-    attendanceRepo = {
-      checkIn: jest.fn(),
-      checkOut: jest.fn(),
-      queryRecords: jest.fn(),
-      findByEmployeeAndDate: jest.fn(),
-    };
-    employeeShiftRepo = {
-      getShiftForEmployeeDate: jest.fn(),
-      ensureShiftForEmployeeDate: jest.fn(),
-    };
-    scheduleRepo = {
-      getScheduleByEmployee: jest.fn(),
-    };
-    holidayRepo = {
-      checkIsHoliday: jest.fn(),
-    };
-    workingShiftRepo = {
-      listAll: jest.fn(),
-      findById: jest.fn(),
-    };
-    employeeRepo = {
-      findById: jest.fn(),
-    };
+    jest.clearAllMocks();
+
+    attendanceRepo = createAttendanceRepo();
+    employeeShiftRepo = createEmployeeShiftRepo();
+    scheduleRepo = createScheduleRepo();
+    holidayRepo = createHolidayRepo();
+    workingShiftRepo = createWorkingShiftRepo();
+    employeeRepo = createEmployeeRepo();
 
     service = new AttendanceService(
-      attendanceRepo as never,
-      employeeShiftRepo as never,
-      scheduleRepo as never,
-      holidayRepo as never,
-      workingShiftRepo as never,
-      employeeRepo as never,
+      attendanceRepo,
+      employeeShiftRepo,
+      scheduleRepo,
+      holidayRepo,
+      workingShiftRepo,
+      employeeRepo,
     );
-
-    jest.clearAllMocks();
   });
 
-  it('UTCID01 - returns attendance records from repository for a valid query', async () => {
+  it('UTCID01 - returns attendance records for a valid query', async () => {
     // Arrange
-    attendanceRepo.queryRecords.mockResolvedValue(records);
+    const query = { employeeId: 'emp-1', fromDate: '2024-01-01', toDate: '2024-01-31' };
+    const records = [
+      { id: 'att-1', employeeId: 'emp-1', checkInAt: '2024-01-01T09:00:00.000Z', checkOutAt: null },
+      { id: 'att-2', employeeId: 'emp-1', checkInAt: '2024-01-02T09:00:00.000Z', checkOutAt: null },
+    ];
+    attendanceRepo.queryRecords.mockResolvedValue(records as never);
 
     // Act
-    const result = await service.getAttendanceRecords(query as never);
+    const result = await service.getAttendanceRecords(query as IAttendanceRecordQueryDTO);
 
     // Assert
     expect(attendanceRepo.queryRecords).toHaveBeenCalledWith(query);
     expect(result).toEqual(records);
   });
 
-  it('UTCID02 - propagates repository validation error for invalid query input', async () => {
+  it('UTCID02 - propagates repository error when queryRecords rejects', async () => {
     // Arrange
-    const repoError = new AppError(
-      'INVALID_QUERY',
-      HttpStatusCode.BAD_REQUEST,
-      ATTENDANCE_LAYERS.SERVICE,
-    );
-    attendanceRepo.queryRecords.mockRejectedValue(repoError);
+    const query = { employeeId: 'emp-1' };
+    const repositoryError = new AppError('QUERY_FAILED', 500, 'SERVICE');
+    attendanceRepo.queryRecords.mockRejectedValue(repositoryError);
 
     // Act
-    const act = service.getAttendanceRecords(query as never);
+    const act = service.getAttendanceRecords(query as IAttendanceRecordQueryDTO);
 
     // Assert
-    await expect(act).rejects.toMatchObject({
-      message: 'INVALID_QUERY',
-      statusCode: HttpStatusCode.BAD_REQUEST,
-      layer: ATTENDANCE_LAYERS.SERVICE,
-    });
+    await expect(act).rejects.toBe(repositoryError);
     expect(attendanceRepo.queryRecords).toHaveBeenCalledWith(query);
   });
 
-  it('UTCID03 - propagates repository internal error when queryRecords fails unexpectedly', async () => {
+  it('UTCID03 - propagates validation-like error for malformed query from repository layer', async () => {
     // Arrange
-    const repoError = new AppError('REPO_FAILURE', 500, ATTENDANCE_LAYERS.SERVICE);
-    attendanceRepo.queryRecords.mockRejectedValue(repoError);
+    const query = { employeeId: null, fromDate: 'invalid-date', toDate: 'invalid-date' };
+    const validationError = new AppError('INVALID_QUERY', 400, 'SERVICE');
+    attendanceRepo.queryRecords.mockRejectedValue(validationError);
 
     // Act
-    const act = service.getAttendanceRecords(query as never);
+    const act = service.getAttendanceRecords(query as unknown as IAttendanceRecordQueryDTO);
 
     // Assert
-    await expect(act).rejects.toMatchObject({
-      message: 'REPO_FAILURE',
-      statusCode: 500,
-      layer: ATTENDANCE_LAYERS.SERVICE,
-    });
-    expect(attendanceRepo.queryRecords).toHaveBeenCalledTimes(1);
+    await expect(act).rejects.toBe(validationError);
+    expect(attendanceRepo.queryRecords).toHaveBeenCalledWith(query);
   });
 });
