@@ -78,7 +78,7 @@ export default function Holidays() {
     },
     onError: (error: unknown) => {
       const message = isAxiosError<IApiErrorResponse>(error)
-        ? error.response?.data?.error?.message
+        ? error.response?.data.error?.message
         : undefined
       toast.error(message ?? "Thêm ngày lễ thất bại")
     },

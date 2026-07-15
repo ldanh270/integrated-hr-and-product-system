@@ -14,11 +14,15 @@ import type {
   ISuggestWeeklyTemplatesResult,
 } from "@/types/shift.types.ts"
 
-const SHORT_LABEL_BY_DAY = new Map(
-  Object.entries(DAY_OF_WEEK_SHORT_LABELS).map(([day, label]) => [Number(day), label]),
+const SHORT_LABEL_BY_DAY = new Map<number, string>(
+  Object.entries(DAY_OF_WEEK_SHORT_LABELS).map(
+    ([day, label]): [number, string] => [Number(day), label],
+  ),
 )
-const FULL_LABEL_BY_DAY = new Map(
-  Object.entries(DAY_OF_WEEK_FULL_LABELS).map(([day, label]) => [Number(day), label]),
+const FULL_LABEL_BY_DAY = new Map<number, string>(
+  Object.entries(DAY_OF_WEEK_FULL_LABELS).map(
+    ([day, label]): [number, string] => [Number(day), label],
+  ),
 )
 
 interface IShiftOption {
