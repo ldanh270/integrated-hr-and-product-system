@@ -247,7 +247,7 @@ describe("ProfileService", () => {
         process.nextTick(() =>
           callback(null, {
             secure_url: "https://cloudinary.com/new.webp",
-            public_id: "old_avatar_id",
+            public_id: "avatar_emp-123",
           }),
         )
         return mockWritable
@@ -256,7 +256,7 @@ describe("ProfileService", () => {
       const updatedEmployee = {
         ...mockEmployee,
         avatarUrl: "https://cloudinary.com/new.webp",
-        avatarid: "old_avatar_id",
+        avatarId: "avatar_emp-123",
       }
       mockRepo.updateAvatar.mockResolvedValue(updatedEmployee)
       ;(authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
@@ -273,16 +273,19 @@ describe("ProfileService", () => {
       expect(cloudinary.uploader.upload_stream).toHaveBeenCalledWith(
         expect.objectContaining({
           folder: "hrp/avatars",
-          public_id: expect.stringMatching(/^avatar_\d+_emp-123$/),
+          public_id: "avatar_emp-123",
           overwrite: true,
           format: "webp",
         }),
         expect.any(Function),
       )
-      expect(mockRepo.updateAvatar).toHaveBeenCalledWith("emp-123", { url: "https://cloudinary.com/new.webp", id: "old_avatar_id", })
+      expect(mockRepo.updateAvatar).toHaveBeenCalledWith("emp-123", {
+        url: "https://cloudinary.com/new.webp",
+        id: "avatar_emp-123",
+      })
       expect(result.avatar).toEqual({
         url: "https://cloudinary.com/new.webp",
-        id: "old_avatar_id",
+        id: "avatar_emp-123",
       })
     })
 
@@ -332,7 +335,7 @@ describe("ProfileService", () => {
         process.nextTick(() =>
           callback(null, {
             secure_url: "https://cloudinary.com/new.webp",
-            public_id: "old_avatar_id",
+            public_id: "avatar_emp-123",
           }),
         )
         return mockWritable
@@ -571,4 +574,3 @@ describe("ProfileService", () => {
     })
   })
 })
-

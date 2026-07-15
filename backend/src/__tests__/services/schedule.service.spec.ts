@@ -23,7 +23,9 @@ jest.mock('@/utils/schedule.util.ts', () => ({
   resolveShiftFromSchedule: jest.fn(),
 }));
 
-
+jest.mock('@/utils/schedule/build-planned-week.util.ts', () => ({
+  buildPlannedWeek: jest.fn(),
+}));
 
 jest.mock('@/configs/system/http.config.ts', () => ({
   HttpStatusCode: {
@@ -39,7 +41,7 @@ import {
   normalizeScheduleDate,
   resolveShiftFromSchedule,
 } from '@/utils/schedule.util.ts';
-
+import { buildPlannedWeek } from '@/utils/schedule/build-planned-week.util.ts';
 import { HttpStatusCode } from '@/configs/system/http.config.ts';
 import type {
   IEmployeeShiftRepository,
@@ -56,13 +58,13 @@ const mockedNormalizeScheduleDate = normalizeScheduleDate as jest.MockedFunction
 const mockedResolveShiftFromSchedule = resolveShiftFromSchedule as jest.MockedFunction<
   typeof resolveShiftFromSchedule
 >;
-
+const mockedBuildPlannedWeek = buildPlannedWeek as jest.MockedFunction<typeof buildPlannedWeek>;
 
 type AssignScheduleInput = Parameters<ScheduleService['assignSchedule']>[0];
 type AssignScheduleOutput = Awaited<ReturnType<ScheduleService['assignSchedule']>>;
 type GetScheduleOutput = Awaited<ReturnType<ScheduleService['getScheduleForEmployee']>>;
 type ListSchedulesOutput = Awaited<ReturnType<ScheduleService['listSchedulesForEmployee']>>;
-
+type PlannedWeekOutput = Awaited<ReturnType<ScheduleService['getPlannedWeekForEmployee']>>;
 type OverrideInput = Parameters<ScheduleService['overrideEmployeeShift']>[0];
 type PreviewInput = Parameters<ScheduleService['previewGeneratedShifts']>[0];
 type PreviewOutput = Awaited<ReturnType<ScheduleService['previewGeneratedShifts']>>;
@@ -73,7 +75,7 @@ type ScheduleWithDays = NonNullable<GetScheduleOutput>;
 type EmployeeShiftWithShift = Awaited<
   ReturnType<IEmployeeShiftRepository['listByEmployeesAndDateRange']>
 >[number];
-
+type PlannedWeekResult = PlannedWeekOutput;
 type PreviewResult = PreviewOutput;
 type GenerateShiftAction = Awaited<ReturnType<IEmployeeShiftRepository['generateShiftForDate']>>;
 type OverrideRepoResult = Awaited<ReturnType<IEmployeeShiftRepository['overrideShift']>>;
@@ -406,6 +408,245 @@ describe('ScheduleService.listSchedulesForEmployee', () => {
   });
 });
 
+describe('ScheduleService.getPlannedWeekForEmployee', () => {
+  let scheduleRepo: ScheduleRepoMock;
+  let employeeShiftRepo: EmployeeShiftRepoMock;
+  let service: ScheduleService;
+
+  beforeEach(() => {
+    // Arrange
+    jest.clearAllMocks();
+    scheduleRepo = createScheduleRepo();
+    employeeShiftRepo = createEmployeeShiftRepo();
+    service = createService(scheduleRepo, employeeShiftRepo);
+
+    // Act
+
+    // Assert
+  });
+
+  it('UTCID01 - builds planned week from normalized date range and employee shifts', async () => {
+    // Arrange
+    const employeeId = 'emp-1';
+    const weekStart = '2024-01-15';
+    const normalizedStart = new Date('2024-01-15T00:00:00.000Z');
+    const employeeShifts = [
+      {
+        id: 'es-1',
+        employeeId,
+        shiftId: 'shift-1',
+        scheduleId: 'schedule-1',
+        assignedDate: '2024-01-15',
+        isOverride: false,
+        revokedAt: null,
+        createdAt: new Date('2024-01-15T00:00:00.000Z'),
+        updatedAt: new Date('2024-01-15T00:00:00.000Z'),
+        createdById: 'admin-1',
+        shift: {
+          id: 'shift-1',
+          name: 'Morning',
+          startTime: 480,
+          endTime: 1020,
+          createdAt: new Date('2024-01-01T00:00:00.000Z'),
+          updatedAt: new Date('2024-01-01T00:00:00.000Z'),
+          gracePeriodMinutes: 10,
+          gpsLat: null,
+          gpsLng: null,
+          gpsRadiusMeters: 100,
+          isActive: true,
+          createdById: 'admin-1',
+        },
+      },
+    ] as unknown as EmployeeShiftWithShift[];
+    const plannedWeek = {
+      weekStart: '2024-01-15',
+      days: [],
+    } as unknown as PlannedWeekResult;
+
+    mockedNormalizeScheduleDate.mockReturnValue(normalizedStart);
+    employeeShiftRepo.listByEmployeesAndDateRange.mockResolvedValue(employeeShifts);
+    mockedBuildPlannedWeek.mockResolvedValue(plannedWeek);
+
+    // Act
+    const result = await service.getPlannedWeekForEmployee(employeeId, weekStart);
+
+    // Assert
+    expect(mockedNormalizeScheduleDate).toHaveBeenCalledTimes(1);
+    expect(employeeShiftRepo.listByEmployeesAndDateRange).toHaveBeenCalledTimes(1);
+    expect(employeeShiftRepo.listByEmployeesAndDateRange).toHaveBeenCalledWith(
+      [employeeId],
+      normalizedStart,
+      expect.any(Date),
+    );
+    const endDateArg = employeeShiftRepo.listByEmployeesAndDateRange.mock.calls[0][2] as Date;
+    expect(endDateArg.toISOString()).toBe('2024-01-21T00:00:00.000Z');
+    expect(mockedBuildPlannedWeek).toHaveBeenCalledTimes(1);
+    expect(mockedBuildPlannedWeek).toHaveBeenCalledWith({
+      weekStart: normalizedStart,
+      employeeShifts,
+      getScheduleForDate: expect.any(Function),
+    });
+    expect(result).toEqual(plannedWeek);
+  });
+
+  it('UTCID02 - throws when employee shift repository fails', async () => {
+    // Arrange
+    const employeeId = 'emp-1';
+    const weekStart = '2024-01-15';
+    const normalizedStart = new Date('2024-01-15T00:00:00.000Z');
+    const error = new Error('Shift lookup failure');
+
+    mockedNormalizeScheduleDate.mockReturnValue(normalizedStart);
+    employeeShiftRepo.listByEmployeesAndDateRange.mockRejectedValue(error);
+
+    // Act
+    const act = service.getPlannedWeekForEmployee(employeeId, weekStart);
+
+    // Assert
+    await expect(act).rejects.toThrow('Shift lookup failure');
+    expect(employeeShiftRepo.listByEmployeesAndDateRange).toHaveBeenCalledWith(
+      [employeeId],
+      normalizedStart,
+      expect.any(Date),
+    );
+  });
+
+  it('UTCID03 - throws when planned week builder fails', async () => {
+    // Arrange
+    const employeeId = 'emp-1';
+    const weekStart = '2024-01-15';
+    const normalizedStart = new Date('2024-01-15T00:00:00.000Z');
+    const employeeShifts = [] as unknown as EmployeeShiftWithShift[];
+    const error = new Error('Planner failure');
+
+    mockedNormalizeScheduleDate.mockReturnValue(normalizedStart);
+    employeeShiftRepo.listByEmployeesAndDateRange.mockResolvedValue(employeeShifts);
+    mockedBuildPlannedWeek.mockRejectedValue(error);
+
+    // Act
+    const act = service.getPlannedWeekForEmployee(employeeId, weekStart);
+
+    // Assert
+    await expect(act).rejects.toThrow('Planner failure');
+    expect(mockedBuildPlannedWeek).toHaveBeenCalledWith({
+      weekStart: normalizedStart,
+      employeeShifts,
+      getScheduleForDate: expect.any(Function),
+    });
+  });
+
+  describe('getScheduleForDate callback passed to buildPlannedWeek', () => {
+    let localScheduleRepo: ScheduleRepoMock;
+    let localEmployeeShiftRepo: EmployeeShiftRepoMock;
+    let localService: ScheduleService;
+
+    beforeEach(() => {
+      // Arrange
+      jest.clearAllMocks();
+      localScheduleRepo = createScheduleRepo();
+      localEmployeeShiftRepo = createEmployeeShiftRepo();
+      localService = createService(localScheduleRepo, localEmployeeShiftRepo);
+
+      // Act
+
+      // Assert
+    });
+
+    it('UTCID01 - uses callback to load schedule for a requested date', async () => {
+      // Arrange
+      const employeeId = 'emp-1';
+      const weekStart = '2024-01-15';
+      const normalizedStart = new Date('2024-01-15T00:00:00.000Z');
+      const callbackDate = new Date('2024-01-16T00:00:00.000Z');
+      const schedule = {
+        id: 'schedule-1',
+        employeeId,
+        templateId: 'tpl-1',
+        validFrom: new Date('2024-01-01T00:00:00.000Z'),
+        validTo: null,
+        createdById: 'admin-1',
+        createdAt: new Date('2024-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2024-01-01T00:00:00.000Z'),
+        cycleWeeks: 1,
+        days: [],
+      } as unknown as ScheduleWithDays;
+      let capturedCallback: GetScheduleForDateCallback | null = null;
+
+      mockedNormalizeScheduleDate.mockReturnValue(normalizedStart);
+      localEmployeeShiftRepo.listByEmployeesAndDateRange.mockResolvedValue([]);
+      localScheduleRepo.getScheduleByEmployee.mockResolvedValue(schedule);
+      mockedBuildPlannedWeek.mockImplementation(async (args) => {
+        capturedCallback = args.getScheduleForDate as GetScheduleForDateCallback;
+        return { weekStart: '2024-01-15', days: [] } as unknown as PlannedWeekResult;
+      });
+
+      // Act
+      await localService.getPlannedWeekForEmployee(employeeId, weekStart);
+
+      // Assert
+      expect(capturedCallback).not.toBeNull();
+      const callback = capturedCallback as unknown as GetScheduleForDateCallback;
+      const callbackResult = await callback(callbackDate);
+      expect(localScheduleRepo.getScheduleByEmployee).toHaveBeenCalledWith(employeeId, callbackDate);
+      expect(callbackResult).toEqual(schedule);
+    });
+
+    it('UTCID02 - propagates callback error when schedule fetch fails', async () => {
+      // Arrange
+      const employeeId = 'emp-1';
+      const weekStart = '2024-01-15';
+      const normalizedStart = new Date('2024-01-15T00:00:00.000Z');
+      const callbackDate = new Date('2024-01-16T00:00:00.000Z');
+      const error = new Error('Schedule callback failure');
+      let capturedCallback: GetScheduleForDateCallback | null = null;
+
+      mockedNormalizeScheduleDate.mockReturnValue(normalizedStart);
+      localEmployeeShiftRepo.listByEmployeesAndDateRange.mockResolvedValue([]);
+      localScheduleRepo.getScheduleByEmployee.mockRejectedValue(error);
+      mockedBuildPlannedWeek.mockImplementation(async (args) => {
+        capturedCallback = args.getScheduleForDate as GetScheduleForDateCallback;
+        return { weekStart: '2024-01-15', days: [] } as unknown as PlannedWeekResult;
+      });
+
+      // Act
+      await localService.getPlannedWeekForEmployee(employeeId, weekStart);
+
+      // Assert
+      expect(capturedCallback).not.toBeNull();
+      const callback = capturedCallback as unknown as GetScheduleForDateCallback;
+      const act = callback(callbackDate);
+      await expect(act).rejects.toThrow('Schedule callback failure');
+      expect(localScheduleRepo.getScheduleByEmployee).toHaveBeenCalledWith(employeeId, callbackDate);
+    });
+
+    it('UTCID03 - returns null from callback when no schedule exists for requested date', async () => {
+      // Arrange
+      const employeeId = 'emp-1';
+      const weekStart = '2024-01-15';
+      const normalizedStart = new Date('2024-01-15T00:00:00.000Z');
+      const callbackDate = new Date('2024-01-16T00:00:00.000Z');
+      let capturedCallback: GetScheduleForDateCallback | null = null;
+
+      mockedNormalizeScheduleDate.mockReturnValue(normalizedStart);
+      localEmployeeShiftRepo.listByEmployeesAndDateRange.mockResolvedValue([]);
+      localScheduleRepo.getScheduleByEmployee.mockResolvedValue(null);
+      mockedBuildPlannedWeek.mockImplementation(async (args) => {
+        capturedCallback = args.getScheduleForDate as GetScheduleForDateCallback;
+        return { weekStart: '2024-01-15', days: [] } as unknown as PlannedWeekResult;
+      });
+
+      // Act
+      await localService.getPlannedWeekForEmployee(employeeId, weekStart);
+
+      // Assert
+      expect(capturedCallback).not.toBeNull();
+      const callback = capturedCallback as unknown as GetScheduleForDateCallback;
+      const callbackResult = await callback(callbackDate);
+      expect(localScheduleRepo.getScheduleByEmployee).toHaveBeenCalledWith(employeeId, callbackDate);
+      expect(callbackResult).toBeNull();
+    });
+  });
+});
 
 describe('ScheduleService.overrideEmployeeShift', () => {
   let scheduleRepo: ScheduleRepoMock;
@@ -1034,4 +1275,3 @@ describe('ScheduleService.generateShifts', () => {
     expect(result).toEqual({ created: 0, updated: 0, skipped: 2 });
   });
 });
-

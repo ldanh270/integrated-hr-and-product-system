@@ -62,7 +62,9 @@ jest.mock('@/utils/part-time-availability.util.ts', () => ({
   shiftFitsAvailabilityDay: jest.fn(),
 }));
 
-
+jest.mock('@/utils/part-time-availability/build-assigned-day-summaries.util.ts', () => ({
+  buildAssignedDaySummaries: jest.fn(),
+}));
 
 jest.mock('@/utils/error.util.ts', () => ({
   AppError: class AppError extends Error {
@@ -102,7 +104,7 @@ import {
   parseTimeToMinutes,
   shiftFitsAvailabilityDay,
 } from '@/utils/part-time-availability.util.ts';
-
+import { buildAssignedDaySummaries } from '@/utils/part-time-availability/build-assigned-day-summaries.util.ts';
 import { auditService } from '../../services/audit.service';
 
 type MockFn = jest.Mock;
@@ -143,7 +145,7 @@ const mockedMinutesToTime = minutesToTime as unknown as MockFn;
 const mockedNormalizeWeekStart = normalizeWeekStart as unknown as MockFn;
 const mockedParseTimeToMinutes = parseTimeToMinutes as unknown as MockFn;
 const mockedShiftFitsAvailabilityDay = shiftFitsAvailabilityDay as unknown as MockFn;
-
+const mockedBuildAssignedDaySummaries = buildAssignedDaySummaries as unknown as MockFn;
 const mockedAuditServiceLog = (auditService as unknown as { log: MockFn }).log;
 
 const createService = (): {
@@ -395,32 +397,69 @@ describe('PartTimeAvailabilityService.listForWeek', () => {
 
     jest.clearAllMocks();
     mockedNormalizeWeekStart.mockReset();
+    mockedGetDateForWeekDay.mockReset();
+    mockedBuildAssignedDaySummaries.mockReset();
 
     mockedNormalizeWeekStart.mockReturnValue('2025-02-10');
+    mockedGetDateForWeekDay.mockImplementation((_weekStartArg: string, dayOfWeek: number) => `date-${dayOfWeek}`);
   });
 
-  it('UTCID01 - returns weekly availabilities', async () => {
+  it('UTCID01 - returns weekly availabilities enriched with assigned summaries', async () => {
     const items = [
       { id: 'avail-1', employeeId: 'emp-1', weekStart: '2025-02-10', days: [] },
       { id: 'avail-2', employeeId: 'emp-2', weekStart: '2025-02-10', days: [] },
     ];
+    const shifts = [
+      { employeeId: 'emp-1', assignedDate: 'date-1', shiftId: 'shift-1' },
+      { employeeId: 'emp-2', assignedDate: 'date-2', shiftId: 'shift-2' },
+    ];
 
     availabilityRepo.listByWeek.mockResolvedValue(items);
+    employeeShiftRepo.listByEmployeesAndDateRange.mockResolvedValue(shifts);
+    mockedBuildAssignedDaySummaries
+      .mockReturnValueOnce({ summaries: [{ dayOfWeek: 1 }], hasAssigned: true })
+      .mockReturnValueOnce({ summaries: [{ dayOfWeek: 2 }], hasAssigned: false });
 
     const result = await service.listForWeek('2025-02-11');
 
     expect(mockedNormalizeWeekStart).toHaveBeenCalledWith('2025-02-11');
     expect(availabilityRepo.listByWeek).toHaveBeenCalledWith('2025-02-10');
-    expect(result).toEqual(items);
+    expect(employeeShiftRepo.listByEmployeesAndDateRange).toHaveBeenCalledWith(
+      ['emp-1', 'emp-2'],
+      'date-1',
+      'date-7',
+    );
+    expect(mockedBuildAssignedDaySummaries).toHaveBeenNthCalledWith(1, '2025-02-10', [shifts[0]]);
+    expect(mockedBuildAssignedDaySummaries).toHaveBeenNthCalledWith(2, '2025-02-10', [shifts[1]]);
+    expect(result).toEqual([
+      {
+        id: 'avail-1',
+        employeeId: 'emp-1',
+        weekStart: '2025-02-10',
+        days: [],
+        assignedDaySummaries: [{ dayOfWeek: 1 }],
+        hasAssignedShifts: true,
+      },
+      {
+        id: 'avail-2',
+        employeeId: 'emp-2',
+        weekStart: '2025-02-10',
+        days: [],
+        assignedDaySummaries: [{ dayOfWeek: 2 }],
+        hasAssignedShifts: false,
+      },
+    ]);
   });
 
-  it('UTCID02 - returns empty list when no availability exists', async () => {
+  it('UTCID02 - returns empty list without querying shifts when no availability exists', async () => {
     availabilityRepo.listByWeek.mockResolvedValue([]);
 
     const result = await service.listForWeek('2025-02-11');
 
     expect(mockedNormalizeWeekStart).toHaveBeenCalledWith('2025-02-11');
     expect(availabilityRepo.listByWeek).toHaveBeenCalledWith('2025-02-10');
+    expect(employeeShiftRepo.listByEmployeesAndDateRange).not.toHaveBeenCalled();
+    expect(mockedBuildAssignedDaySummaries).not.toHaveBeenCalled();
     expect(result).toEqual([]);
   });
 
@@ -430,6 +469,7 @@ describe('PartTimeAvailabilityService.listForWeek', () => {
     await expect(service.listForWeek('2025-02-11')).rejects.toThrow('list failed');
 
     expect(availabilityRepo.listByWeek).toHaveBeenCalledWith('2025-02-10');
+    expect(employeeShiftRepo.listByEmployeesAndDateRange).not.toHaveBeenCalled();
   });
 });
 
@@ -846,4 +886,3 @@ describe('PartTimeAvailabilityService.assignShifts', () => {
     expect(employeeShiftRepo.replacePartTimeOverrides).not.toHaveBeenCalled();
   });
 });
-
