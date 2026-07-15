@@ -9,8 +9,11 @@ import { prisma } from "@/libs/database.ts"
 import { getDefaultWeeklyScheduleSettings } from "@/libs/weekly-schedule-cron.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
 import { requirePermission } from "@/middlewares/permission.middleware.ts"
+import { PrismaAttendanceRepository } from "@/repositories/attendance.repository.ts"
 import { PrismaEmployeeShiftRepository } from "@/repositories/employee-shift.repository.ts"
 import { PrismaShiftScheduleRepository } from "@/repositories/schedule.repository.ts"
+import { PrismaWorkingShiftRepository } from "@/repositories/shift.repository.ts"
+import { ScheduleInsightsService } from "@/services/schedule-insights.service.ts"
 import { ScheduleService } from "@/services/schedule.service.ts"
 import { AppError } from "@/utils/error.util.ts"
 
@@ -20,19 +23,44 @@ const scheduleRoutes = express.Router()
 
 const scheduleRepo = new PrismaShiftScheduleRepository(prisma)
 const employeeShiftRepo = new PrismaEmployeeShiftRepository(prisma)
+const attendanceRepo = new PrismaAttendanceRepository(prisma)
+const workingShiftRepo = new PrismaWorkingShiftRepository(prisma)
 const service = new ScheduleService(scheduleRepo, employeeShiftRepo)
-const controller = new ScheduleController(service)
+const insightsService = new ScheduleInsightsService(scheduleRepo, attendanceRepo, workingShiftRepo)
+const controller = new ScheduleController(service, insightsService)
 
 scheduleRoutes.use(authenticate)
 
 scheduleRoutes.get("/my", controller.getEmployeeSchedule)
 scheduleRoutes.get("/my/shifts", controller.getMyShifts)
+scheduleRoutes.get("/my/week", controller.getEmployeePlannedWeek)
 scheduleRoutes.get("/my/all", controller.listEmployeeSchedules)
+
+scheduleRoutes.get(
+  "/insights",
+  requirePermission("attendance.read"),
+  controller.getInsights,
+)
+scheduleRoutes.get(
+  "/suggest-templates",
+  requirePermission("attendance.read"),
+  controller.suggestTemplates,
+)
+scheduleRoutes.post(
+  "/simulate-template",
+  requirePermission("attendance.read"),
+  controller.simulateTemplate,
+)
 
 scheduleRoutes.get(
   "/employee/:employeeId",
   requirePermission("attendance.read"),
   controller.getEmployeeScheduleById,
+)
+scheduleRoutes.get(
+  "/employee/:employeeId/week",
+  requirePermission("attendance.read"),
+  controller.getEmployeePlannedWeekById,
 )
 scheduleRoutes.get(
   "/employee/:employeeId/all",

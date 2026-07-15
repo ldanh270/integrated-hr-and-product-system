@@ -6,6 +6,7 @@ import {
   IGeneratedShiftPreview,
   IGenerateShiftsResult,
   IOverrideEmployeeShiftDTO,
+  IPlannedWeek,
   IScheduleService,
   IShiftScheduleRepository,
   ShiftGenerateItemStatus,
@@ -21,6 +22,7 @@ import {
   normalizeScheduleDate,
   resolveShiftFromSchedule,
 } from "@/utils/schedule.util.ts"
+import { buildPlannedWeek } from "@/utils/schedule/build-planned-week.util.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 
 /**
@@ -53,6 +55,27 @@ export class ScheduleService implements IScheduleService {
     endDate: Date,
   ): Promise<IEmployeeShiftWithShift[]> {
     return this.employeeShiftRepo.listByEmployeesAndDateRange([employeeId], startDate, endDate)
+  }
+
+  async getPlannedWeekForEmployee(
+    employeeId: string,
+    weekStart: string | Date,
+  ): Promise<IPlannedWeek> {
+    const start = normalizeScheduleDate(new Date(weekStart))
+    const end = new Date(start)
+    end.setDate(end.getDate() + 6)
+
+    const employeeShifts = await this.employeeShiftRepo.listByEmployeesAndDateRange(
+      [employeeId],
+      start,
+      end,
+    )
+
+    return buildPlannedWeek({
+      weekStart: start,
+      employeeShifts,
+      getScheduleForDate: (date) => this.scheduleRepo.getScheduleByEmployee(employeeId, date),
+    })
   }
 
   async overrideEmployeeShift(data: IOverrideEmployeeShiftDTO): Promise<unknown> {

@@ -14,7 +14,12 @@ import { getWeekDates } from "@/utils/attendance/get-week-dates"
 import { getWeekRangeLabel } from "@/utils/attendance/get-week-range-label"
 import { getWeekStart } from "@/utils/attendance/get-week-start"
 import { resolveScheduleDay } from "@/utils/attendance/resolve-schedule-day"
-import type { IScheduleDay } from "@/types/attendance.types"
+import { mapPlannedWeekToScheduleDays } from "@/utils/attendance/map-planned-week-to-schedule-days.util"
+import {
+  doesHolidayApplyToEmployee,
+  groupHolidaysByDate,
+} from "@/utils/attendance/pick-holiday-for-employee.util"
+import { useAuthStore } from "@/store/auth-store"
 
 import { useState } from "react"
 
@@ -44,7 +49,12 @@ export function WeeklyScheduleCalendar({
   const weekEndIso = weekDays[CALENDAR_WEEK_DAY_COUNT - 1].dateKey
   const weekRangeLabel = getWeekRangeLabel(weekDays)
 
-  const { data: schedule, isLoading } = useQuery({
+  const { data: plannedWeek, isLoading: isPlannedWeekLoading } = useQuery({
+    queryKey: ["my-planned-week", weekStartIso],
+    queryFn: () => schedulesApi.getMyPlannedWeek(weekStartIso),
+  })
+
+  const { data: schedule, isLoading: isScheduleLoading } = useQuery({
     queryKey: ["my-schedule", weekStartIso],
     queryFn: () => schedulesApi.getMy(weekStartIso),
   })
@@ -66,22 +76,39 @@ export function WeeklyScheduleCalendar({
     queryFn: () => holidaysApi.getAll({ startDate: weekStartIso, endDate: weekEndIso }),
   })
 
-  const scheduleDaysByDay = new Map<number, IScheduleDay>()
-  for (const day of weekDays) {
-    const scheduleDay = resolveScheduleDay(schedule, day.date)
-    if (scheduleDay) {
-      scheduleDaysByDay.set(day.dayOfWeek, scheduleDay)
+  const scheduleDaysByDay = mapPlannedWeekToScheduleDays(plannedWeek)
+  if (scheduleDaysByDay.size === 0) {
+    for (const day of weekDays) {
+      const scheduleDay = resolveScheduleDay(schedule, day.date)
+      if (scheduleDay) {
+        scheduleDaysByDay.set(day.dayOfWeek, scheduleDay)
+      }
     }
   }
   const activeShifts =
     shifts?.filter((shift) => shift.isActive).toSorted((a, b) => a.startTime - b.startTime) ?? []
+  const user = useAuthStore((state) => state.user)
   const recordsByDate = new Map(records?.map((record) => [getRecordDateKey(record), record]) ?? [])
+  const holidayGroups = groupHolidaysByDate(holidays ?? [])
   const holidaysByDate = new Map(
-    holidays?.map((holiday) => [formatDateParam(new Date(holiday.date)), holiday]) ?? [],
+    [...holidayGroups.entries()].flatMap(([dateKey, list]) => {
+      const applicable = list.filter((h) =>
+        doesHolidayApplyToEmployee(h, {
+          id: user?.id ?? "",
+          positionId: null,
+        }),
+      )
+      return applicable[0] ? [[dateKey, applicable[0]] as const] : []
+    }),
   )
   const isCalendarLoading =
-    isLoading || isRecordsLoading || isHolidaysLoading || (showAllShifts && isShiftsLoading)
-  const hasPlannedSchedule = showAllShifts ? activeShifts.length > 0 : Boolean(schedule?.days.length)
+    isPlannedWeekLoading ||
+    isScheduleLoading ||
+    isRecordsLoading ||
+    isHolidaysLoading ||
+    (showAllShifts && isShiftsLoading)
+  const hasPlannedSchedule =
+    showAllShifts ? activeShifts.length > 0 : scheduleDaysByDay.size > 0
   const hasActualRecords = Boolean(records?.length)
   const hasHoliday = holidaysByDate.size > 0
   const isCalendarEmpty =

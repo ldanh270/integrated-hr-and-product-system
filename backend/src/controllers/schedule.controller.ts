@@ -2,10 +2,19 @@ import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { ATTENDANCE_ERROR_CODES } from "@/constants/attendance.constants.ts"
 import { ATTENDANCE_ERROR_MESSAGES } from "@/configs/messages/attendance.message.ts"
+import { SCHEDULE_INSIGHTS } from "@/configs/entities/attendance.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import { assignShiftScheduleSchema, generateShiftsSchema, overrideEmployeeShiftSchema } from "@/schemas/shift.schema.ts"
 import { ApiResponse } from "@/types"
-import { IScheduleService } from "@/types/shift.types.ts"
+import {
+  IPlannedWeek,
+  IScheduleInsightsResult,
+  IScheduleInsightsService,
+  IScheduleService,
+  ISimulateWeeklyTemplateDraft,
+  ISimulateWeeklyTemplateResult,
+  ISuggestWeeklyTemplatesResult,
+} from "@/types/shift.types.ts"
 import { resolvePersonalEmployeeId } from "@/utils/attendance/resolve-personal-employee-id.ts"
 
 import { Request, Response } from "express"
@@ -18,8 +27,12 @@ export class ScheduleController {
   /**
    * Creates a new ScheduleController instance.
    * @param service - The schedule service implementation.
+   * @param insightsService - Optional read-only attendance pattern insights.
    */
-  constructor(private service: IScheduleService) {}
+  constructor(
+    private service: IScheduleService,
+    private insightsService: IScheduleInsightsService,
+  ) {}
 
   /**
    * Assigns a shift schedule to an employee or a group of employees.
@@ -90,6 +103,32 @@ export class ScheduleController {
     const employeeId = await resolvePersonalEmployeeId(accountId)
     const schedules = await this.service.listSchedulesForEmployee(employeeId)
     res.status(HttpStatusCode.OK).json({ data: schedules, error: null })
+  }
+
+  /** Planned week — merges EmployeeShift overrides with template for calendar display. */
+  getEmployeePlannedWeek = async (req: AuthRequest, res: Response<ApiResponse<IPlannedWeek>>) => {
+    const accountId = req.user?.empId
+    if (!accountId) {
+      return res.status(HttpStatusCode.UNAUTHORIZED).json({
+        data: null,
+        error: {
+          message: ATTENDANCE_ERROR_MESSAGES.UNAUTHORIZED,
+          code: ATTENDANCE_ERROR_CODES.UNAUTHORIZED,
+        },
+      })
+    }
+
+    const weekStart = String(req.query.weekStart ?? "")
+    if (!weekStart) {
+      return res.status(HttpStatusCode.BAD_REQUEST).json({
+        data: null,
+        error: { message: "weekStart is required", code: ErrorCode.VALIDATION_ERROR },
+      })
+    }
+
+    const employeeId = await resolvePersonalEmployeeId(accountId)
+    const plannedWeek = await this.service.getPlannedWeekForEmployee(employeeId, weekStart)
+    res.status(HttpStatusCode.OK).json({ data: plannedWeek, error: null })
   }
 
   /**
@@ -182,6 +221,23 @@ export class ScheduleController {
     res.status(HttpStatusCode.OK).json({ data: schedules, error: null })
   }
 
+  /** Admin: planned week for one employee (PT assign form + roster summary). */
+  getEmployeePlannedWeekById = async (
+    req: Request<{ employeeId: string }>,
+    res: Response<ApiResponse<IPlannedWeek>>,
+  ) => {
+    const weekStart = String(req.query.weekStart ?? "")
+    if (!weekStart) {
+      return res.status(HttpStatusCode.BAD_REQUEST).json({
+        data: null,
+        error: { message: "weekStart is required", code: ErrorCode.VALIDATION_ERROR },
+      })
+    }
+
+    const plannedWeek = await this.service.getPlannedWeekForEmployee(req.params.employeeId, weekStart)
+    res.status(HttpStatusCode.OK).json({ data: plannedWeek, error: null })
+  }
+
   /**
    * Overrides an employee's shift for a specific date.
    * @param req - Authenticated request with override data in body.
@@ -249,4 +305,42 @@ export class ScheduleController {
       throw error
     }
   }
+
+  /** Read-only day-of-week attendance patterns for FT employees on active templates. */
+  getInsights = async (req: Request, res: Response<ApiResponse<IScheduleInsightsResult>>) => {
+    const lookbackDays = parseLookbackDays(req.query[SCHEDULE_INSIGHTS.LOOKBACK_QUERY_PARAM])
+    const data = await this.insightsService.getInsights(lookbackDays)
+    res.status(HttpStatusCode.OK).json({ data, error: null })
+  }
+
+  /** Heuristic template candidates from insights + WorkingShift catalog. */
+  suggestTemplates = async (
+    req: Request,
+    res: Response<ApiResponse<ISuggestWeeklyTemplatesResult>>,
+  ) => {
+    const lookbackDays = parseLookbackDays(req.query[SCHEDULE_INSIGHTS.LOOKBACK_QUERY_PARAM])
+    const data = await this.insightsService.suggestTemplates(lookbackDays)
+    res.status(HttpStatusCode.OK).json({ data, error: null })
+  }
+
+  /** What-if risk projection for a draft weekly template. */
+  simulateTemplate = async (
+    req: Request,
+    res: Response<ApiResponse<ISimulateWeeklyTemplateResult>>,
+  ) => {
+    const body = req.body as ISimulateWeeklyTemplateDraft
+    const draft: ISimulateWeeklyTemplateDraft = {
+      cycleWeeks: Number(body.cycleWeeks) || 1,
+      weeks: Array.isArray(body.weeks) ? body.weeks : [],
+      lookbackDays: body.lookbackDays,
+      simulateWeeks: body.simulateWeeks,
+    }
+    const data = await this.insightsService.simulateTemplate(draft)
+    res.status(HttpStatusCode.OK).json({ data, error: null })
+  }
+}
+
+function parseLookbackDays(raw: unknown): number | undefined {
+  if (raw === undefined || raw === "") return undefined
+  return Number(Array.isArray(raw) ? raw[0] : raw)
 }
