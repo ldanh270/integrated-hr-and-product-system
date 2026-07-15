@@ -37,6 +37,7 @@ function countAssignedDays(template: IWeeklyScheduleTemplate): number {
   )
 }
 
+/** Keeps template management separate from read-only workforce-planning insights. */
 export default function WeeklySchedules() {
   const { data: templates = [], isLoading, isError } = useWeeklyScheduleTemplates()
   const deleteMutation = useDeleteWeeklyScheduleTemplate()

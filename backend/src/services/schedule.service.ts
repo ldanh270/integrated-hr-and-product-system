@@ -58,6 +58,7 @@ export class ScheduleService implements IScheduleService {
     return this.employeeShiftRepo.listByEmployeesAndDateRange([employeeId], startDate, endDate)
   }
 
+  /** Combines explicit employee shifts with the reusable template fallback for one calendar week. */
   async getPlannedWeekForEmployee(
     employeeId: string,
     weekStart: string | Date,

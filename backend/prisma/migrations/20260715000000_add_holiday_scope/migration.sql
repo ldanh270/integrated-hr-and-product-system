@@ -1,3 +1,5 @@
+-- Extend holidays from company-wide dates to position- and employee-scoped ranges.
+-- Guards keep this migration safe when environments previously applied the manual SQL.
 DO $$ BEGIN
   CREATE TYPE "HolidayScope" AS ENUM ('all', 'position', 'employees');
 EXCEPTION
@@ -6,6 +8,7 @@ END $$;
 
 ALTER TABLE "HolidayCalendar" DROP CONSTRAINT IF EXISTS "HolidayCalendar_date_key";
 
+-- batchId groups every date generated from one range so the range can be deleted atomically.
 ALTER TABLE "HolidayCalendar"
   ADD COLUMN IF NOT EXISTS "scope" "HolidayScope" NOT NULL DEFAULT 'all',
   ADD COLUMN IF NOT EXISTS "positionId" TEXT,
@@ -17,6 +20,7 @@ CREATE TABLE IF NOT EXISTS "HolidayCalendarAssignee" (
   CONSTRAINT "HolidayCalendarAssignee_pkey" PRIMARY KEY ("holidayId","employeeId")
 );
 
+-- Scoped references deliberately cascade assignees but retain holidays when a position is removed.
 DO $$ BEGIN
   ALTER TABLE "HolidayCalendar" ADD CONSTRAINT "HolidayCalendar_positionId_fkey"
     FOREIGN KEY ("positionId") REFERENCES "positions"("id") ON DELETE SET NULL ON UPDATE CASCADE;

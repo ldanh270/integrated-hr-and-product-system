@@ -26,6 +26,7 @@ const employeeShiftRepo = new PrismaEmployeeShiftRepository(prisma)
 const attendanceRepo = new PrismaAttendanceRepository(prisma)
 const workingShiftRepo = new PrismaWorkingShiftRepository(prisma)
 const service = new ScheduleService(scheduleRepo, employeeShiftRepo)
+// Insights reuse the schedule, attendance, and shift repositories without coupling them to writes.
 const insightsService = new ScheduleInsightsService(scheduleRepo, attendanceRepo, workingShiftRepo)
 const controller = new ScheduleController(service, insightsService)
 
@@ -36,6 +37,7 @@ scheduleRoutes.get("/my/shifts", controller.getMyShifts)
 scheduleRoutes.get("/my/week", controller.getEmployeePlannedWeek)
 scheduleRoutes.get("/my/all", controller.listEmployeeSchedules)
 
+// Workforce-planning analysis is read-protected; simulation does not persist a template.
 scheduleRoutes.get(
   "/insights",
   requirePermission("attendance.read"),

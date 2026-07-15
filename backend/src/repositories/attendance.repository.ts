@@ -157,6 +157,7 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
   async queryRecords(query: IAttendanceRecordQueryDTO): Promise<any[]> {
     const where: Prisma.AttendanceRecordWhereInput = {}
 
+    // Batch employee filtering takes precedence for workforce insights; legacy callers use employeeId.
     if (query.employeeIds && query.employeeIds.length > 0) {
       where.employeeId = { in: query.employeeIds }
     } else if (query.employeeId) {

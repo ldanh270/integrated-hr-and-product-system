@@ -80,6 +80,7 @@ export class HolidayCalendarsSeeder implements ISeeder {
       async (tx) => {
         const results = []
         for (const data of holidaysToCreate) {
+          // Date is no longer globally unique, so seed only the company-wide row for that date.
           const existing = await tx.holidayCalendar.findFirst({
             where: { date: data.date, scope: HOLIDAY_SCOPE.ALL },
           })

@@ -56,6 +56,7 @@ export function CompanyWorkSchedulesView() {
   })
   const isSchedulesLoading = scheduleQueries.some((query) => query.isLoading)
   const isSchedulesError = scheduleQueries.some((query) => query.isError)
+  // Preserve every scoped holiday on a date; the employee row chooses the applicable one later.
   const holidaysByDate = groupHolidaysByDate(holidays ?? [])
   const schedulesByEmployeeId = getScheduleByEmployeeId(
     scheduleQueries.map((query) => query.data),

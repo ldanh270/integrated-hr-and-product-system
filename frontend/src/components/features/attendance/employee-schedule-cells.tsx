@@ -26,6 +26,7 @@ export function EmployeeScheduleCells({
         <p className="text-xs text-muted-foreground">{employee.email}</p>
       </TableCell>
       {weekDates.map((day) => {
+        // Resolve scope per employee instead of treating the first holiday on a date as global.
         const holiday = pickHolidayForEmployee(holidaysByDate.get(day.dateKey), employee)
         const scheduleDay = resolveScheduleDay(schedule, day.date)
         const shift = scheduleDay?.shift

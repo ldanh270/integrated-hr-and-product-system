@@ -19,10 +19,12 @@ import { AppError } from "@/utils/error.util.ts"
 export class HolidayService implements IHolidayService {
   constructor(private holidayRepo: IHolidayRepository) {}
 
+  /** Lists holidays using the repository's year, date-range, and scope filters. */
   async listHolidays(query?: IListHolidaysQueryDTO): Promise<IHolidayCalendarDTO[]> {
     return this.holidayRepo.listHolidays(query)
   }
 
+  /** Validates range/scope targets before persisting every date as one holiday batch. */
   async createHoliday(
     data: ICreateHolidayDTO,
     createdById: string,
@@ -52,14 +54,17 @@ export class HolidayService implements IHolidayService {
     )
   }
 
+  /** Updates fields that do not alter the original holiday scope assignment. */
   async updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<IHolidayCalendarDTO> {
     return this.holidayRepo.updateHoliday(id, data)
   }
 
+  /** Deletes the complete generated range by default; callers may delete only one row. */
   async deleteHoliday(id: string, deleteBatch = true): Promise<void> {
     return this.holidayRepo.deleteHoliday(id, deleteBatch)
   }
 
+  /** Checks only company-wide holidays for legacy attendance calculations. */
   async isHoliday(date: string | Date): Promise<boolean> {
     return this.holidayRepo.checkIsHoliday(date)
   }
@@ -68,6 +73,7 @@ export class HolidayService implements IHolidayService {
     scope: string,
     data: ICreateHolidayDTO,
   ): Promise<void> {
+    // Reject stale/deleted targets before a transaction creates partially unusable holidays.
     if (scope === HOLIDAY_SCOPE.POSITION) {
       if (!data.positionId) {
         throw new AppError("Position is required", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE)
@@ -88,6 +94,7 @@ export class HolidayService implements IHolidayService {
     }
 
     if (scope === HOLIDAY_SCOPE.EMPLOYEES) {
+      // Duplicate IDs must not inflate validation, and inactive employees are not assignable.
       const ids = [...new Set(data.employeeIds ?? [])]
       const count = await prisma.employee.count({
         where: {
