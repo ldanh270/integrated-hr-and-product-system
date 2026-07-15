@@ -77,6 +77,23 @@ export interface ISchedule {
   days: IScheduleDay[]
 }
 
+export interface IPlannedWeekShift {
+  shiftId: string
+  isOverride: boolean
+  shift: Pick<IWorkingShift, "id" | "name" | "startTime" | "endTime">
+}
+
+export interface IPlannedWeekDay {
+  date: string
+  dayOfWeek: number
+  shifts: IPlannedWeekShift[]
+}
+
+export interface IPlannedWeek {
+  weekStart: string
+  days: IPlannedWeekDay[]
+}
+
 export interface IAssignSchedulePayload {
   employeeId: string
   days: { dayOfWeek: number; weekIndex?: number; shiftId: string }[]

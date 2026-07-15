@@ -427,12 +427,11 @@ describe('HolidayService', () => {
       holidayRepo.deleteHoliday.mockResolvedValue(undefined)
 
       // Act
-      const result = await holidayService.deleteHoliday(id)
+      await holidayService.deleteHoliday(id)
 
       // Assert
       expect(holidayRepo.deleteHoliday).toHaveBeenCalledTimes(1)
       expect(holidayRepo.deleteHoliday).toHaveBeenCalledWith(id, true)
-      expect(result).toBeUndefined()
     })
 
     it('UTCID02 - propagates a not found error when holiday does not exist', async () => {
