@@ -13,7 +13,6 @@ import type {
   IHolidayQuery,
   IOverrideShiftPayload,
   IProcessApprovalPayload,
-  IPlannedWeek,
   ISchedule,
   IShiftChangeRequest,
   ISubmitShiftChangeRequestPayload,
@@ -112,15 +111,6 @@ export const schedulesApi = {
     const res = await apiClient.get<ApiResponse<ISchedule | null>>(
       API_ENDPOINTS.SCHEDULES.EMPLOYEE(employeeId),
       { params: date ? { [ATTENDANCE_QUERY_PARAMS.DATE]: date } : undefined },
-    )
-    return res.data.data
-  },
-
-  /** Fetches merged planned shifts for a specific employee week. */
-  getEmployeePlannedWeek: async (employeeId: string, weekStart: string): Promise<IPlannedWeek> => {
-    const res = await apiClient.get<ApiResponse<IPlannedWeek>>(
-      API_ENDPOINTS.SCHEDULES.EMPLOYEE_WEEK(employeeId),
-      { params: { [ATTENDANCE_QUERY_PARAMS.WEEK_START]: weekStart } },
     )
     return res.data.data
   },

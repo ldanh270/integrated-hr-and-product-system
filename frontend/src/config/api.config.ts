@@ -38,7 +38,6 @@ export const API_ENDPOINTS = {
     GENERATE: "/schedules/generate",
     SETTINGS: "/schedules/settings",
     EMPLOYEE: (employeeId: string) => `/schedules/employee/${employeeId}`,
-    EMPLOYEE_WEEK: (employeeId: string) => `/schedules/employee/${employeeId}/week`,
     EMPLOYEE_ALL: (employeeId: string) => `/schedules/employee/${employeeId}/all`,
     EMPLOYEE_SHIFTS: (employeeId: string) => `/schedules/employee/${employeeId}/shifts`,
   },
@@ -64,7 +63,6 @@ export const API_ENDPOINTS = {
     EMPLOYEE: (employeeId: string) => `/part-time-availabilities/employee/${employeeId}`,
     APPROVE: (id: string) => `/part-time-availabilities/${id}/approve`,
     REJECT: (id: string) => `/part-time-availabilities/${id}/reject`,
-    SUGGEST: "/part-time-availabilities/suggest",
     /** Admin creates EmployeeShift rows from submitted availability. */
     ASSIGN_SHIFTS: (id: string) => `/part-time-availabilities/${id}/assign-shifts`,
   },
