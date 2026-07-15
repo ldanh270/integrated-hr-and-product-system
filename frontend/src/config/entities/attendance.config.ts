@@ -9,6 +9,27 @@ export type IEmployeeShiftStatus = (typeof EMPLOYEE_SHIFT_STATUSES)[number]
 export const HOLIDAY_TYPES = ["national", "company"] as const
 export type IHolidayType = (typeof HOLIDAY_TYPES)[number]
 
+/** Who the holiday applies to. */
+export const HOLIDAY_SCOPE = {
+  ALL: "all",
+  POSITION: "position",
+  EMPLOYEES: "employees",
+} as const
+
+export const HOLIDAY_SCOPE_VALUES = [
+  HOLIDAY_SCOPE.ALL,
+  HOLIDAY_SCOPE.POSITION,
+  HOLIDAY_SCOPE.EMPLOYEES,
+] as const
+
+export type IHolidayScope = (typeof HOLIDAY_SCOPE_VALUES)[number]
+
+export const HOLIDAY_SCOPE_LABELS: Record<IHolidayScope, string> = {
+  all: "Toàn công ty",
+  position: "Theo chức danh",
+  employees: "Nhóm nhân viên",
+}
+
 export const ATTENDANCE_STATUSES = ["on_time", "late", "early_leave", "absent", "overtime"] as const
 export type IAttendanceStatus = (typeof ATTENDANCE_STATUSES)[number]
 

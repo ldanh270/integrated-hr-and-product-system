@@ -1,76 +1,98 @@
+import { HOLIDAY_SCOPE } from "@/configs/entities/attendance.config.ts"
+import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
+import { ErrorLayer } from "@/configs/system/error-code.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { prisma } from "@/libs/database.ts"
 import {
+  ICreateHolidayDTO,
   IHolidayRepository,
   IHolidayService,
   IListHolidaysQueryDTO,
   IUpdateHolidayDTO,
-  type IHolidayType,
 } from "@/types/attendance.types.ts"
-
-import type { HolidayCalendar } from "@prisma/client"
+import { AppError } from "@/utils/error.util.ts"
 
 /**
  * Service for holiday calendar operations used by attendance scheduling.
  */
 export class HolidayService implements IHolidayService {
-  /**
-   * Creates a new HolidayService instance.
-   * @param holidayRepo - Repository for holiday calendar data.
-   */
   constructor(private holidayRepo: IHolidayRepository) {}
 
-  /**
-   * Lists holidays matching optional year or date-range filters.
-   * @param query - Optional filter criteria.
-   * @returns Holiday records ordered by date.
-   */
-  async listHolidays(query?: IListHolidaysQueryDTO): Promise<HolidayCalendar[]> {
+  async listHolidays(query?: IListHolidaysQueryDTO): Promise<any[]> {
     return this.holidayRepo.listHolidays(query)
   }
 
-  /**
-   * Creates or updates a holiday on the given date.
-   * @param name - Display name of the holiday.
-   * @param date - Holiday date.
-   * @param type - Holiday category (national or company).
-   * @param createdById - Employee ID of the creator.
-   * @returns The persisted holiday record.
-   */
-  async createHoliday(
-    name: string,
-    date: string | Date,
-    type: IHolidayType,
-    createdById: string,
-  ): Promise<HolidayCalendar> {
-    return this.holidayRepo.createHoliday(name, date, type, createdById)
+  async createHoliday(data: ICreateHolidayDTO, createdById: string): Promise<any[]> {
+    const start = new Date(data.startDate ?? data.date!)
+    const end = new Date(data.endDate ?? data.startDate ?? data.date!)
+
+    if (end < start) {
+      throw new AppError(
+        "endDate must be greater than or equal to startDate",
+        HttpStatusCode.BAD_REQUEST,
+        ErrorLayer.SERVICE,
+        "INVALID_DATE_RANGE",
+      )
+    }
+
+    const scope = data.scope ?? HOLIDAY_SCOPE.ALL
+    await this.validateScopeTargets(scope, data)
+
+    return this.holidayRepo.createHolidayRange(
+      { ...data, scope, startDate: start, endDate: end },
+      createdById,
+    )
   }
 
-  /**
-   * Updates an existing holiday record.
-   * @param id - Holiday record ID.
-   * @param data - Partial fields to update.
-   * @returns The updated holiday record.
-   */
-  async updateHoliday(
-    id: string,
-    data: IUpdateHolidayDTO,
-  ): Promise<HolidayCalendar> {
+  async updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<any> {
     return this.holidayRepo.updateHoliday(id, data)
   }
 
-  /**
-   * Deletes a holiday by ID.
-   * @param id - Holiday record ID.
-   */
-  async deleteHoliday(id: string): Promise<void> {
-    return this.holidayRepo.deleteHoliday(id)
+  async deleteHoliday(id: string, deleteBatch = true): Promise<void> {
+    return this.holidayRepo.deleteHoliday(id, deleteBatch)
   }
 
-  /**
-   * Checks whether a date exists in the holiday calendar.
-   * @param date - Date to evaluate.
-   * @returns True when the date is a configured holiday.
-   */
   async isHoliday(date: string | Date): Promise<boolean> {
     return this.holidayRepo.checkIsHoliday(date)
+  }
+
+  private async validateScopeTargets(
+    scope: string,
+    data: ICreateHolidayDTO,
+  ): Promise<void> {
+    if (scope === HOLIDAY_SCOPE.POSITION) {
+      const position = await prisma.position.findFirst({
+        where: { id: data.positionId!, deletedAt: null },
+        select: { id: true },
+      })
+      if (!position) {
+        throw new AppError(
+          "Position not found",
+          HttpStatusCode.NOT_FOUND,
+          ErrorLayer.SERVICE,
+          "POSITION_NOT_FOUND",
+        )
+      }
+      return
+    }
+
+    if (scope === HOLIDAY_SCOPE.EMPLOYEES) {
+      const ids = [...new Set(data.employeeIds ?? [])]
+      const count = await prisma.employee.count({
+        where: {
+          id: { in: ids },
+          deletedAt: null,
+          status: { in: [EMPLOYEE_STATUS.ACTIVE, EMPLOYEE_STATUS.ON_LEAVE] },
+        },
+      })
+      if (count === 0) {
+        throw new AppError(
+          "No active employees found for the provided ids",
+          HttpStatusCode.UNPROCESSABLE_ENTITY,
+          ErrorLayer.SERVICE,
+          "NO_TARGET_EMPLOYEES",
+        )
+      }
+    }
   }
 }

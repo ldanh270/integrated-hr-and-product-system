@@ -1,4 +1,5 @@
 import { PageCard, PageHeader } from "@/components/common"
+import { HolidayFormDialog } from "@/components/features/attendance/holiday-form-dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,50 +12,38 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { HOLIDAY_TYPES, type IHolidayType } from "@/config/entities/attendance.config"
+  HOLIDAY_SCOPE,
+  HOLIDAY_SCOPE_LABELS,
+  type IHolidayScope,
+} from "@/config/entities/attendance.config"
 import { usePermission } from "@/hooks/use-permission"
 import { holidaysApi } from "@/lib/api/attendance.api"
 import { formatDate } from "@/lib/utils"
 import type { IHoliday, IHolidayPayload } from "@/types/attendance.types"
 import { getHolidayTypeLabel } from "@/utils/attendance/get-holiday-type-label"
 
-import { type FormEvent, useState } from "react"
+import { useState } from "react"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { CalendarDays, ChevronLeft, ChevronRight, Loader2, Pencil, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
-const DEFAULT_FORM: IHolidayPayload = {
-  name: "",
-  date: "",
-  type: "national",
+function getScopeLabel(holiday: IHoliday): string {
+  const scope = (holiday.scope as IHolidayScope) || HOLIDAY_SCOPE.ALL
+  if (scope === HOLIDAY_SCOPE.POSITION) {
+    return holiday.position?.name
+      ? `Chức danh: ${holiday.position.name}`
+      : HOLIDAY_SCOPE_LABELS.position
+  }
+  if (scope === HOLIDAY_SCOPE.EMPLOYEES) {
+    const count = holiday.assignees?.length ?? 0
+    return `Nhóm ${count} nhân viên`
+  }
+  return HOLIDAY_SCOPE_LABELS.all
 }
 
 /**
- * Helper function for toDateInputValue.
- */
-function toDateInputValue(date: string) {
-  return new Date(date).toISOString().slice(0, 10)
-}
-
-/**
- * Holidays Component.
+ * Holidays admin page — company-wide or scoped date-range holidays.
  */
 export default function Holidays() {
   const { hasPermission } = usePermission()
@@ -63,9 +52,9 @@ export default function Holidays() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingHoliday, setEditingHoliday] = useState<IHoliday | null>(null)
   const [deletingHoliday, setDeletingHoliday] = useState<IHoliday | null>(null)
-  const [form, setForm] = useState<IHolidayPayload>(DEFAULT_FORM)
   const queryClient = useQueryClient()
   const holidaysQueryKey = ["holidays", year]
+
   const { data: holidays, isLoading } = useQuery({
     queryKey: holidaysQueryKey,
     queryFn: () => holidaysApi.getAll({ year }),
@@ -77,16 +66,24 @@ export default function Holidays() {
 
   const createMutation = useMutation({
     mutationFn: holidaysApi.create,
-    onSuccess: () => {
-      toast.success("Đã thêm ngày lễ")
+    onSuccess: (created) => {
+      toast.success(`Đã thêm ${created.length} ngày nghỉ`)
       invalidateHolidays()
       closeDialog()
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.error?.message || "Thêm ngày lễ thất bại")
     },
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: IHolidayPayload }) =>
-      holidaysApi.update(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string
+      data: Pick<IHolidayPayload, "name" | "date" | "type">
+    }) => holidaysApi.update(id, data),
     onSuccess: () => {
       toast.success("Đã cập nhật ngày lễ")
       invalidateHolidays()
@@ -107,40 +104,17 @@ export default function Holidays() {
 
   const openCreateDialog = () => {
     setEditingHoliday(null)
-    setForm(DEFAULT_FORM)
     setIsDialogOpen(true)
   }
 
   const openEditDialog = (holiday: IHoliday) => {
     setEditingHoliday(holiday)
-    setForm({
-      name: holiday.name,
-      date: toDateInputValue(holiday.date),
-      type: holiday.type,
-    })
     setIsDialogOpen(true)
   }
 
   const closeDialog = () => {
     setIsDialogOpen(false)
     setEditingHoliday(null)
-    setForm(DEFAULT_FORM)
-  }
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-
-    if (!form.name.trim() || !form.date) {
-      toast.error("Vui lòng nhập đủ tên và ngày lễ")
-      return
-    }
-
-    if (editingHoliday) {
-      updateMutation.mutate({ id: editingHoliday.id, data: form })
-      return
-    }
-
-    createMutation.mutate(form)
   }
 
   return (
@@ -158,7 +132,7 @@ export default function Holidays() {
           </div>
           <div className="flex items-center gap-2">
             {isAdmin ? (
-              <Button size="sm" className="h-8 px-4" onClick={openCreateDialog}>
+              <Button size="sm" className="h-8 px-4 rounded-full" onClick={openCreateDialog}>
                 <Plus className="h-4 w-4" />
                 Thêm ngày lễ
               </Button>
@@ -167,9 +141,7 @@ export default function Holidays() {
               variant="outline"
               size="icon"
               className="h-8 w-8"
-              onClick={() => {
-                setYear((currentYear) => currentYear - 1)
-              }}
+              onClick={() => setYear((y) => y - 1)}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -177,9 +149,7 @@ export default function Holidays() {
               variant="outline"
               size="icon"
               className="h-8 w-8"
-              onClick={() => {
-                setYear((currentYear) => currentYear + 1)
-              }}
+              onClick={() => setYear((y) => y + 1)}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -200,6 +170,7 @@ export default function Holidays() {
                     <p className="mt-1 text-xs font-medium text-muted-foreground">
                       {formatDate(holiday.date)}
                     </p>
+                    <p className="mt-1 text-xs text-muted-foreground">{getScopeLabel(holiday)}</p>
                   </div>
                   {isAdmin ? (
                     <div className="flex items-center gap-1">
@@ -207,9 +178,7 @@ export default function Holidays() {
                         variant="ghost"
                         size="icon-xs"
                         aria-label="Sửa ngày lễ"
-                        onClick={() => {
-                          openEditDialog(holiday)
-                        }}
+                        onClick={() => openEditDialog(holiday)}
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
@@ -217,9 +186,7 @@ export default function Holidays() {
                         variant="destructive"
                         size="icon-xs"
                         aria-label="Xóa ngày lễ"
-                        onClick={() => {
-                          setDeletingHoliday(holiday)
-                        }}
+                        onClick={() => setDeletingHoliday(holiday)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -239,93 +206,27 @@ export default function Holidays() {
         )}
       </PageCard>
 
-      <Dialog
+      <HolidayFormDialog
         open={isDialogOpen}
-        onOpenChange={(isOpen) => {
-          if (isOpen) {
-            setIsDialogOpen(true)
-            return
-          }
-
-          closeDialog()
+        editingHoliday={editingHoliday}
+        isSaving={isSaving}
+        onOpenChange={(open) => {
+          if (!open) closeDialog()
+          else setIsDialogOpen(true)
         }}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editingHoliday ? "Sửa ngày lễ" : "Thêm ngày lễ"}</DialogTitle>
-            <DialogDescription>Ngày được chọn sẽ hiển thị trong lịch làm việc của nhân viên.</DialogDescription>
-          </DialogHeader>
-
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="space-y-2">
-              <Label htmlFor="holiday-name">Tên ngày lễ</Label>
-              <Input
-                id="holiday-name"
-                value={form.name}
-                onChange={(event) => {
-                  setForm((current) => ({ ...current, name: event.target.value }))
-                }}
-                placeholder="Ví dụ: Giải phóng miền Nam"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="holiday-date">Ngày nghỉ</Label>
-              <Input
-                id="holiday-date"
-                type="date"
-                value={form.date}
-                onChange={(event) => {
-                  setForm((current) => ({ ...current, date: event.target.value }))
-                }}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Loại ngày nghỉ</Label>
-              <Select
-                value={form.type}
-                onValueChange={(value) => {
-                  setForm((current) => ({ ...current, type: value as IHolidayType }))
-                }}
-              >
-                <SelectTrigger className="h-12 w-full rounded-full bg-transparent px-6">
-                  <SelectValue placeholder="Chọn loại ngày nghỉ" />
-                </SelectTrigger>
-                <SelectContent>
-                  {HOLIDAY_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {getHolidayTypeLabel(type)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={closeDialog}>
-                Hủy
-              </Button>
-              <Button type="submit" disabled={isSaving}>
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                Lưu
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+        onSubmitCreate={(payload) => createMutation.mutate(payload)}
+        onSubmitUpdate={(id, data) => updateMutation.mutate({ id, data })}
+      />
 
       <AlertDialog
         open={Boolean(deletingHoliday)}
-        onOpenChange={() => {
-          setDeletingHoliday(null)
-        }}
+        onOpenChange={() => setDeletingHoliday(null)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Xóa ngày lễ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Ngày lễ này sẽ không còn hiển thị trong lịch làm việc của nhân viên.
+              Nếu ngày này thuộc khoảng ngày đã tạo, toàn bộ khoảng sẽ bị xóa.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -335,7 +236,6 @@ export default function Holidays() {
               disabled={deleteMutation.isPending}
               onClick={() => {
                 if (!deletingHoliday) return
-
                 deleteMutation.mutate(deletingHoliday.id)
               }}
             >

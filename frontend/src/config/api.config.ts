@@ -30,6 +30,7 @@ export const API_ENDPOINTS = {
   SCHEDULES: {
     BASE: "/schedules",
     MY: "/schedules/my",
+    MY_WEEK: "/schedules/my/week",
     MY_ALL: "/schedules/my/all",
     MY_SHIFTS: "/schedules/my/shifts",
     ASSIGN: "/schedules/assign",
@@ -37,7 +38,12 @@ export const API_ENDPOINTS = {
     GENERATE_PREVIEW: "/schedules/generate/preview",
     GENERATE: "/schedules/generate",
     SETTINGS: "/schedules/settings",
+    /** FT template attendance patterns — Weekly Schedule Copilot Mode A. */
+    INSIGHTS: "/schedules/insights",
+    SUGGEST_TEMPLATES: "/schedules/suggest-templates",
+    SIMULATE_TEMPLATE: "/schedules/simulate-template",
     EMPLOYEE: (employeeId: string) => `/schedules/employee/${employeeId}`,
+    EMPLOYEE_WEEK: (employeeId: string) => `/schedules/employee/${employeeId}/week`,
     EMPLOYEE_ALL: (employeeId: string) => `/schedules/employee/${employeeId}/all`,
     EMPLOYEE_SHIFTS: (employeeId: string) => `/schedules/employee/${employeeId}/shifts`,
   },
@@ -63,6 +69,8 @@ export const API_ENDPOINTS = {
     EMPLOYEE: (employeeId: string) => `/part-time-availabilities/employee/${employeeId}`,
     APPROVE: (id: string) => `/part-time-availabilities/${id}/approve`,
     REJECT: (id: string) => `/part-time-availabilities/${id}/reject`,
+    /** Admin read-only greedy suggestions — confirm via ASSIGN_SHIFTS. */
+    SUGGEST: "/part-time-availabilities/suggest",
     /** Admin creates EmployeeShift rows from submitted availability. */
     ASSIGN_SHIFTS: (id: string) => `/part-time-availabilities/${id}/assign-shifts`,
   },

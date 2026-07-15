@@ -16,6 +16,21 @@ export type IEmployeeShiftStatus = (typeof EMPLOYEE_SHIFT_STATUSES)[number]
 export const HOLIDAY_TYPES = ["national", "company"] as const
 export type IHolidayType = (typeof HOLIDAY_TYPES)[number]
 
+/** Who the holiday applies to — all staff, one position, or hand-picked employees. */
+export const HOLIDAY_SCOPE = {
+  ALL: "all",
+  POSITION: "position",
+  EMPLOYEES: "employees",
+} as const
+
+export const HOLIDAY_SCOPE_VALUES = [
+  HOLIDAY_SCOPE.ALL,
+  HOLIDAY_SCOPE.POSITION,
+  HOLIDAY_SCOPE.EMPLOYEES,
+] as const
+
+export type IHolidayScope = (typeof HOLIDAY_SCOPE_VALUES)[number]
+
 export const ATTENDANCE_STATUS = {
   ON_TIME: "on_time",
   LATE: "late",
@@ -136,3 +151,37 @@ export const ATTENDANCE_QUERY_PARAMS = {
   STATUS: "status",
   PERSONAL_ONLY: "personalOnly",
 } as const
+
+/** Weekly Schedule Copilot — attendance pattern insights + template suggest/simulate. */
+export const SCHEDULE_INSIGHTS = {
+  DEFAULT_LOOKBACK_DAYS: 90,
+  MIN_LOOKBACK_DAYS: 7,
+  MAX_LOOKBACK_DAYS: 180,
+  HOTSPOT_LIMIT: 3,
+  LOOKBACK_QUERY_PARAM: "lookbackDays",
+  LATE_RATE_THRESHOLD: 0.1,
+  ABSENT_RATE_THRESHOLD: 0.08,
+  WORK_DAYS: [1, 2, 3, 4, 5] as const,
+  CANDIDATE_LIMIT: 2,
+} as const
+
+/** Short day labels for insights API (0=CN … 6=T7). */
+export const DAY_OF_WEEK_SHORT_LABELS: Record<number, string> = {
+  0: "CN",
+  1: "T2",
+  2: "T3",
+  3: "T4",
+  4: "T5",
+  5: "T6",
+  6: "T7",
+}
+
+export const DAY_OF_WEEK_FULL_LABELS: Record<number, string> = {
+  0: "Chủ Nhật",
+  1: "Thứ Hai",
+  2: "Thứ Ba",
+  3: "Thứ Tư",
+  4: "Thứ Năm",
+  5: "Thứ Sáu",
+  6: "Thứ Bảy",
+}

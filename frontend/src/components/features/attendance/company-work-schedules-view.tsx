@@ -19,6 +19,7 @@ import { getScheduleByEmployeeId } from "@/utils/attendance/get-schedule-by-empl
 import { getWeekDates } from "@/utils/attendance/get-week-dates"
 import { getWeekRangeLabel } from "@/utils/attendance/get-week-range-label"
 import { getWeekStart } from "@/utils/attendance/get-week-start"
+import { groupHolidaysByDate } from "@/utils/attendance/pick-holiday-for-employee.util"
 
 import { useState } from "react"
 
@@ -55,9 +56,7 @@ export function CompanyWorkSchedulesView() {
   })
   const isSchedulesLoading = scheduleQueries.some((query) => query.isLoading)
   const isSchedulesError = scheduleQueries.some((query) => query.isError)
-  const holidaysByDate = new Map(
-    holidays?.map((holiday) => [formatDateParam(new Date(holiday.date)), holiday]) ?? [],
-  )
+  const holidaysByDate = groupHolidaysByDate(holidays ?? [])
   const schedulesByEmployeeId = getScheduleByEmployeeId(
     scheduleQueries.map((query) => query.data),
   )

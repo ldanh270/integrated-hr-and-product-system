@@ -4,9 +4,13 @@ import { PageCard } from "@/components/common"
 import { useAttendanceRecords } from "@/hooks/attendance/use-attendance"
 import { holidaysApi, schedulesApi } from "@/lib/api/attendance.api"
 import { countScheduledShiftsInMonth } from "@/utils/attendance/count-scheduled-shifts-in-month"
-import { formatDateParam } from "@/utils/attendance/format-date-param"
 import { formatHours } from "@/utils/attendance/format-hours"
 import { getMonthRange } from "@/utils/attendance/get-month-range"
+import {
+  doesHolidayApplyToEmployee,
+  groupHolidaysByDate,
+} from "@/utils/attendance/pick-holiday-for-employee.util"
+import { useAuthStore } from "@/store/auth-store"
 
 import { useState } from "react"
 
@@ -54,8 +58,18 @@ export function AttendanceSummaryContent({ employeeId }: AttendanceSummaryConten
   const overtimeCount = records?.filter((record) => record.overtimeMinutes > 0).length ?? 0
   const earlyLeaveCount = records?.filter((record) => record.earlyLeaveMinutes > 0).length ?? 0
   const workedShiftCount = records?.filter((record) => record.checkInAt && record.checkOutAt).length ?? 0
+  const user = useAuthStore((state) => state.user)
+  const targetEmployeeId = employeeId ?? user?.id ?? ""
   const holidaysByDate = new Map(
-    holidays?.map((holiday) => [formatDateParam(new Date(holiday.date)), holiday]) ?? [],
+    [...groupHolidaysByDate(holidays ?? []).entries()].flatMap(([dateKey, list]) => {
+      const applicable = list.filter((h) =>
+        doesHolidayApplyToEmployee(h, {
+          id: targetEmployeeId,
+          positionId: null,
+        }),
+      )
+      return applicable[0] ? [[dateKey, applicable[0]] as const] : []
+    }),
   )
   const scheduledShiftCount = countScheduledShiftsInMonth(schedule, year, month, holidaysByDate)
   const completionRate =

@@ -59,6 +59,12 @@ enum HolidayType {
   company
 }
 
+enum HolidayScope {
+  all
+  position
+  employees
+}
+
 enum LeaveType {
   annual_leave
   sick_leave
@@ -226,6 +232,7 @@ model Employee {
   workingShiftsCreated             WorkingShift[]
   weeklyScheduleTemplatesCreated   WeeklyScheduleTemplate[]     @relation("WeeklyScheduleTemplateCreator")
   holidayCalendarsCreated          HolidayCalendar[]
+  holidayCalendarAssignees         HolidayCalendarAssignee[]
   salaryVariablesCreated           SalaryVariable[]
   salaryComponentsCreated          SalaryComponent[]
   payslipTemplatesCreated          PayslipTemplate[]
@@ -577,18 +584,38 @@ model ApplicationWorkFromHomeDetail {
 }
 
 model HolidayCalendar {
-  id          String      @id @default(cuid())
-  date        DateTime    @unique @db.Date
+  id          String       @id @default(cuid())
+  date        DateTime     @db.Date
   name        String
   type        HolidayType
+  scope       HolidayScope @default(all)
+  positionId  String?
+  position    Position?    @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  /// Groups rows created from one date-range request.
+  batchId     String?
   createdById String
-  createdBy   Employee    @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy   Employee     @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  assignees   HolidayCalendarAssignee[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([date])
   @@index([type, date])
+  @@index([scope, date])
+  @@index([positionId])
+  @@index([batchId])
   @@index([createdById])
+}
+
+model HolidayCalendarAssignee {
+  holidayId  String
+  holiday    HolidayCalendar @relation(fields: [holidayId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@id([holidayId, employeeId])
+  @@index([employeeId])
 }
 
 // ── Payroll ──
@@ -1156,6 +1183,7 @@ model Position {
   allowedApplicationTypes ApplicationType[]
 
   employees    Employee[]
+  holidays     HolidayCalendar[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt

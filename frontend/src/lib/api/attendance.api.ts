@@ -13,7 +13,12 @@ import type {
   IHolidayQuery,
   IOverrideShiftPayload,
   IProcessApprovalPayload,
+  IPlannedWeek,
   ISchedule,
+  IScheduleInsightsResult,
+  ISimulateWeeklyTemplateDraft,
+  ISimulateWeeklyTemplateResult,
+  ISuggestWeeklyTemplatesResult,
   IShiftChangeRequest,
   ISubmitShiftChangeRequestPayload,
   IUpdateShiftPayload,
@@ -83,6 +88,14 @@ export const schedulesApi = {
     return res.data.data
   },
 
+  /** Fetches merged planned shifts (overrides + template) for the current user week. */
+  getMyPlannedWeek: async (weekStart: string): Promise<IPlannedWeek> => {
+    const res = await apiClient.get<ApiResponse<IPlannedWeek>>(API_ENDPOINTS.SCHEDULES.MY_WEEK, {
+      params: { [ATTENDANCE_QUERY_PARAMS.WEEK_START]: weekStart },
+    })
+    return res.data.data
+  },
+
   /** Fetches the entire history of shift assignments for the current user. */
   getMyAll: async (): Promise<ISchedule[]> => {
     const res = await apiClient.get<ApiResponse<ISchedule[]>>(API_ENDPOINTS.SCHEDULES.MY_ALL)
@@ -115,6 +128,15 @@ export const schedulesApi = {
     return res.data.data
   },
 
+  /** Fetches merged planned shifts for a specific employee week (admin PT assign). */
+  getEmployeePlannedWeek: async (employeeId: string, weekStart: string): Promise<IPlannedWeek> => {
+    const res = await apiClient.get<ApiResponse<IPlannedWeek>>(
+      API_ENDPOINTS.SCHEDULES.EMPLOYEE_WEEK(employeeId),
+      { params: { [ATTENDANCE_QUERY_PARAMS.WEEK_START]: weekStart } },
+    )
+    return res.data.data
+  },
+
   /** Fetches all schedule assignments for a specific employee. */
   getAllByEmployee: async (employeeId: string): Promise<ISchedule[]> => {
     const res = await apiClient.get<ApiResponse<ISchedule[]>>(
@@ -134,6 +156,35 @@ export const schedulesApi = {
     const res = await apiClient.post<ApiResponse<ISchedule>>(
       API_ENDPOINTS.SCHEDULES.OVERRIDE,
       data,
+    )
+    return res.data.data
+  },
+
+  /** FT template attendance patterns by day-of-week (read-only insights). */
+  getInsights: async (lookbackDays?: number): Promise<IScheduleInsightsResult> => {
+    const res = await apiClient.get<ApiResponse<IScheduleInsightsResult>>(
+      API_ENDPOINTS.SCHEDULES.INSIGHTS,
+      { params: lookbackDays !== undefined ? { lookbackDays } : undefined },
+    )
+    return res.data.data
+  },
+
+  /** Heuristic weekly template candidates from insights + shift catalog. */
+  suggestTemplates: async (lookbackDays?: number): Promise<ISuggestWeeklyTemplatesResult> => {
+    const res = await apiClient.get<ApiResponse<ISuggestWeeklyTemplatesResult>>(
+      API_ENDPOINTS.SCHEDULES.SUGGEST_TEMPLATES,
+      { params: lookbackDays !== undefined ? { lookbackDays } : undefined },
+    )
+    return res.data.data
+  },
+
+  /** What-if late/absent risk for a draft weekly template. */
+  simulateTemplate: async (
+    draft: ISimulateWeeklyTemplateDraft,
+  ): Promise<ISimulateWeeklyTemplateResult> => {
+    const res = await apiClient.post<ApiResponse<ISimulateWeeklyTemplateResult>>(
+      API_ENDPOINTS.SCHEDULES.SIMULATE_TEMPLATE,
+      draft,
     )
     return res.data.data
   },
@@ -262,8 +313,8 @@ export const holidaysApi = {
     return res.data.data
   },
 
-  create: async (data: IHolidayPayload): Promise<IHoliday> => {
-    const res = await apiClient.post<ApiResponse<IHoliday>>(API_ENDPOINTS.HOLIDAYS.BASE, data)
+  create: async (data: IHolidayPayload): Promise<IHoliday[]> => {
+    const res = await apiClient.post<ApiResponse<IHoliday[]>>(API_ENDPOINTS.HOLIDAYS.BASE, data)
     return res.data.data
   },
 

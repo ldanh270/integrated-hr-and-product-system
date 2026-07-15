@@ -1,32 +1,44 @@
 import {
+  EMPLOYEE_SHIFT_STATUS,
+  HOLIDAY_SCOPE,
+} from "@/configs/entities/attendance.config.ts"
+import {
+  ICreateHolidayDTO,
   IHolidayRepository,
   IListHolidaysQueryDTO,
   IUpdateHolidayDTO,
-  type IHolidayType,
 } from "@/types/attendance.types.ts"
+import { expandDateRange } from "@/utils/holiday/expand-date-range.util.ts"
 
-import { HolidayCalendar, HolidayType, PrismaClient } from "@prisma/client"
+import {
+  HolidayScope,
+  HolidayType,
+  Prisma,
+  PrismaClient,
+  ShiftStatus,
+} from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
+import { randomBytes } from "node:crypto"
+
+const HOLIDAY_INCLUDE = {
+  position: { select: { id: true, name: true, code: true } },
+  assignees: {
+    include: {
+      employee: { select: { id: true, fullName: true, email: true } },
+    },
+  },
+} as const
 
 /**
  * Prisma-backed repository for holiday calendar persistence.
  */
 export class PrismaHolidayRepository extends BaseRepository implements IHolidayRepository {
-  /**
-   * Creates a new PrismaHolidayRepository instance.
-   * @param prisma - Prisma client for database access.
-   */
   constructor(prisma: PrismaClient) {
     super(prisma)
   }
 
-  /**
-   * Finds holidays matching optional year or date-range filters.
-   * @param query - Optional filter criteria.
-   * @returns Holiday records ordered by date ascending.
-   */
-  async listHolidays(query?: IListHolidaysQueryDTO): Promise<HolidayCalendar[]> {
+  async listHolidays(query?: IListHolidaysQueryDTO): Promise<any[]> {
     const where: { date?: { gte?: Date; lte?: Date } } = {}
 
     if (query?.year) {
@@ -45,50 +57,81 @@ export class PrismaHolidayRepository extends BaseRepository implements IHolidayR
 
     return this.prisma.holidayCalendar.findMany({
       where,
+      include: HOLIDAY_INCLUDE,
       orderBy: { date: "asc" },
     })
   }
 
-  /**
-   * Creates or replaces a holiday on a unique date (upsert by date).
-   * @param name - Display name of the holiday.
-   * @param date - Holiday date.
-   * @param type - Holiday category.
-   * @param createdById - Employee ID of the creator.
-   * @returns The persisted holiday record.
-   */
-  async createHoliday(
-    name: string,
-    date: string | Date,
-    type: IHolidayType,
-    createdById: string,
-  ): Promise<HolidayCalendar> {
-    const holidayDate = new Date(date)
-    holidayDate.setHours(0, 0, 0, 0)
+  async createHolidayRange(data: ICreateHolidayDTO, createdById: string): Promise<any[]> {
+    const start = this.normalizeDate(data.startDate ?? data.date!)
+    const end = this.normalizeDate(data.endDate ?? data.startDate ?? data.date!)
+    const dates = expandDateRange(start, end)
+    const scope = (data.scope ?? HOLIDAY_SCOPE.ALL) as HolidayScope
+    const batchId =
+      dates.length > 1 || scope !== HOLIDAY_SCOPE.ALL
+        ? randomBytes(12).toString("hex")
+        : null
+    const employeeIds =
+      scope === HOLIDAY_SCOPE.EMPLOYEES ? [...new Set(data.employeeIds ?? [])] : []
 
-    // Using upsert based on date which is unique
-    return this.prisma.holidayCalendar.upsert({
-      where: { date: holidayDate },
-      update: { name, type: type as HolidayType },
-      create: {
-        date: holidayDate,
-        name,
-        type: type as HolidayType,
-        createdById,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const created: any[] = []
+
+      for (const day of dates) {
+        if (scope === HOLIDAY_SCOPE.ALL) {
+          const existing = await tx.holidayCalendar.findFirst({
+            where: { date: day, scope: HolidayScope.all },
+          })
+          if (existing) {
+            const updated = await tx.holidayCalendar.update({
+              where: { id: existing.id },
+              data: {
+                name: data.name,
+                type: data.type as HolidayType,
+                batchId,
+              },
+              include: HOLIDAY_INCLUDE,
+            })
+            created.push(updated)
+            continue
+          }
+        }
+
+        const row = await tx.holidayCalendar.create({
+          data: {
+            date: day,
+            name: data.name,
+            type: data.type as HolidayType,
+            scope,
+            positionId: scope === HOLIDAY_SCOPE.POSITION ? data.positionId! : null,
+            batchId,
+            createdById,
+            ...(scope === HOLIDAY_SCOPE.EMPLOYEES
+              ? {
+                  assignees: {
+                    create: employeeIds.map((employeeId) => ({ employeeId })),
+                  },
+                }
+              : {}),
+          },
+          include: HOLIDAY_INCLUDE,
+        })
+        created.push(row)
+      }
+
+      await this.markShiftsHolidayPending(tx, {
+        scope,
+        positionId: data.positionId,
+        employeeIds,
+        start,
+        end,
+      })
+
+      return created
     })
   }
 
-  /**
-   * Updates an existing holiday record by ID.
-   * @param id - Holiday record ID.
-   * @param data - Partial fields to update.
-   * @returns The updated holiday record.
-   */
-  async updateHoliday(
-    id: string,
-    data: IUpdateHolidayDTO,
-  ): Promise<HolidayCalendar> {
+  async updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<any> {
     return this.prisma.holidayCalendar.update({
       where: { id },
       data: {
@@ -96,37 +139,61 @@ export class PrismaHolidayRepository extends BaseRepository implements IHolidayR
         ...(data.date ? { date: this.normalizeDate(data.date) } : {}),
         ...(data.type ? { type: data.type as HolidayType } : {}),
       },
+      include: HOLIDAY_INCLUDE,
     })
   }
 
-  /**
-   * Deletes a holiday record by ID.
-   * @param id - Holiday record ID.
-   */
-  async deleteHoliday(id: string): Promise<void> {
+  async deleteHoliday(id: string, deleteBatch = true): Promise<void> {
+    const holiday = await this.prisma.holidayCalendar.findUnique({ where: { id } })
+    if (!holiday) return
+
+    if (deleteBatch && holiday.batchId) {
+      await this.prisma.holidayCalendar.deleteMany({ where: { batchId: holiday.batchId } })
+      return
+    }
+
     await this.prisma.holidayCalendar.delete({ where: { id } })
   }
 
-  /**
-   * Checks whether a date exists in the holiday calendar.
-   * @param date - Date to evaluate.
-   * @returns True when a holiday is configured for that date.
-   */
   async checkIsHoliday(date: string | Date): Promise<boolean> {
-    const checkDate = new Date(date)
-    checkDate.setHours(0, 0, 0, 0)
-
-    const holiday = await this.prisma.holidayCalendar.findUnique({
-      where: { date: checkDate },
+    const checkDate = this.normalizeDate(date)
+    const holiday = await this.prisma.holidayCalendar.findFirst({
+      where: { date: checkDate, scope: HolidayScope.all },
+      select: { id: true },
     })
     return !!holiday
   }
 
-  /** Strips time component so holiday lookups compare calendar dates only. */
+  private async markShiftsHolidayPending(
+    tx: Prisma.TransactionClient,
+    options: {
+      scope: HolidayScope
+      positionId?: string
+      employeeIds: string[]
+      start: Date
+      end: Date
+    },
+  ): Promise<void> {
+    const employeeFilter =
+      options.scope === HOLIDAY_SCOPE.ALL
+        ? {}
+        : options.scope === HOLIDAY_SCOPE.POSITION
+          ? { employee: { positionId: options.positionId } }
+          : { employeeId: { in: options.employeeIds } }
+
+    await tx.employeeShift.updateMany({
+      where: {
+        ...employeeFilter,
+        assignedDate: { gte: options.start, lte: options.end },
+        status: ShiftStatus.scheduled,
+      },
+      data: { status: EMPLOYEE_SHIFT_STATUS.HOLIDAY_PENDING as ShiftStatus },
+    })
+  }
+
   private normalizeDate(date: string | Date): Date {
     const normalizedDate = new Date(date)
     normalizedDate.setHours(0, 0, 0, 0)
-
     return normalizedDate
   }
 }
