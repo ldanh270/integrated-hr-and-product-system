@@ -7,10 +7,10 @@ import {
   IRegimeType,
 } from "@/configs/entities/attendance.config.ts"
 
-import type { HolidayCalendar, Application, ApplicationShiftSwapDetail } from "@prisma/client"
+import type { Application, ApplicationShiftSwapDetail, HolidayCalendar } from "@prisma/client"
 
 export interface IApplicationEntity extends Application {
-  shiftSwapDetail?: ApplicationShiftSwapDetail | null;
+  shiftSwapDetail?: ApplicationShiftSwapDetail | null
 }
 
 // Re-export for consumers that import from this module
@@ -201,6 +201,9 @@ export interface IAttendanceShiftDTO {
   name?: string
   startTime: number
   endTime: number
+  /** Optional unpaid break, represented as minutes from local midnight. */
+  breakStartTime?: number | null
+  breakEndTime?: number | null
   gracePeriodMinutes?: number | null
   gpsLat?: number | null
   gpsLng?: number | null
@@ -272,7 +275,10 @@ export interface IAttendanceRepository {
     realShift?: IRealShiftUpsertDTO,
   ): Promise<IAttendanceRecordDTO>
   /** Finds record by employee and date. */
-  findByEmployeeAndDate(employeeId: string, date: string | Date): Promise<IAttendanceRecordDTO | null>
+  findByEmployeeAndDate(
+    employeeId: string,
+    date: string | Date,
+  ): Promise<IAttendanceRecordDTO | null>
   /** Queries records with filters. */
   queryRecords(query: IAttendanceRecordQueryDTO): Promise<IAttendanceRecordDTO[]>
 }
@@ -305,7 +311,11 @@ export interface IApplicationRepository {
   /** Partner confirms (agree) a shift_swap application (partner_pending → pending). */
   partnerConfirm(id: string, partnerId: string): Promise<IApplicationEntity | null>
   /** Partner rejects a shift_swap application (partner_pending → rejected). */
-  partnerReject(id: string, partnerId: string, rejectReason: string): Promise<IApplicationEntity | null>
+  partnerReject(
+    id: string,
+    partnerId: string,
+    rejectReason: string,
+  ): Promise<IApplicationEntity | null>
   checkLeaveOverlap(
     employeeId: string,
     startDate: string | Date,

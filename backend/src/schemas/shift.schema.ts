@@ -1,4 +1,9 @@
-import { ATTENDANCE_GPS_RULES } from "@/configs/rules/attendance.config.ts"
+import { ATTENDANCE_ERROR_MESSAGES } from "@/configs/messages/attendance.message.ts"
+import {
+  ATTENDANCE_GPS_RULES,
+  ATTENDANCE_TIME_RULES,
+  WORKING_SHIFT_RULES,
+} from "@/configs/rules/attendance.config.ts"
 
 import { z } from "zod"
 
@@ -11,22 +16,82 @@ const gpsSchema = z.object({
 
 /** null clears GPS on PATCH; omitted leaves existing geofence unchanged. */
 const gpsFieldSchema = z.union([gpsSchema, z.null()]).optional()
+const timeFieldSchema = z
+  .string()
+  .regex(WORKING_SHIFT_RULES.TIME_INPUT_PATTERN, ATTENDANCE_ERROR_MESSAGES.SHIFT_TIME_FORMAT)
+
+/** Converts API HH:mm values into the minute-of-day representation used by Prisma. */
+function timeToMinutes(value: string): number {
+  const [hours, minutes] = value.split(":").map(Number)
+  return hours * ATTENDANCE_TIME_RULES.MINUTES_PER_HOUR + minutes
+}
+
+function validateBreakTime(
+  data: {
+    startTime?: string
+    endTime?: string
+    breakStartTime?: string | null
+    breakEndTime?: string | null
+  },
+  context: z.RefinementCtx,
+): void {
+  // A half-defined break is ambiguous: null/null means no unpaid break.
+  const breakStartTime = data.breakStartTime
+  const breakEndTime = data.breakEndTime
+  const hasBreakStart = breakStartTime != null
+  const hasBreakEnd = breakEndTime != null
+  if (hasBreakStart !== hasBreakEnd) {
+    context.addIssue({
+      code: "custom",
+      path: hasBreakStart ? ["breakEndTime"] : ["breakStartTime"],
+      message: ATTENDANCE_ERROR_MESSAGES.SHIFT_BREAK_PAIR_REQUIRED,
+    })
+    return
+  }
+  if (breakStartTime == null || breakEndTime == null || !data.startTime || !data.endTime) return
+  const start = timeToMinutes(data.startTime)
+  const end = timeToMinutes(data.endTime)
+  const breakStart = timeToMinutes(breakStartTime)
+  const breakEnd = timeToMinutes(breakEndTime)
+
+  // Strict inequalities prevent zero-length breaks and breaks touching shift boundaries.
+  if (!(start < breakStart && breakStart < breakEnd && breakEnd < end)) {
+    context.addIssue({
+      code: "custom",
+      path: ["breakStartTime"],
+      message: ATTENDANCE_ERROR_MESSAGES.SHIFT_BREAK_OUTSIDE_SHIFT,
+    })
+  }
+}
 
 // ─── WORKING SHIFT ───────────────────────────────────────────
+const workingShiftFields = {
+  name: z.string().min(2).max(100).trim(),
+  startTime: timeFieldSchema,
+  endTime: timeFieldSchema,
+  breakStartTime: z.union([timeFieldSchema, z.null()]).optional(),
+  breakEndTime: z.union([timeFieldSchema, z.null()]).optional(),
+  gracePeriodMinutes: z
+    .number()
+    .min(WORKING_SHIFT_RULES.MIN_MINUTES_FROM_MIDNIGHT)
+    .max(WORKING_SHIFT_RULES.MAX_GRACE_PERIOD_MINUTES)
+    .optional(),
+  gps: gpsFieldSchema,
+  isActive: z.boolean().optional(),
+}
+
 export const createWorkingShiftSchema = z
-  .object({
-    name: z.string().min(2).max(100).trim(),
-    startTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Format must be HH:mm"),
-    endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Format must be HH:mm"),
-    gracePeriodMinutes: z.number().min(0).optional(),
-    gps: gpsFieldSchema,
-    isActive: z.boolean().optional(),
-  })
+  .object(workingShiftFields)
   .strict()
+  .superRefine(validateBreakTime)
 
 export type CreateWorkingShiftSchemaType = z.infer<typeof createWorkingShiftSchema>
 
-export const updateWorkingShiftSchema = createWorkingShiftSchema.partial().strict()
+export const updateWorkingShiftSchema = z
+  .object(workingShiftFields)
+  .partial()
+  .strict()
+  .superRefine(validateBreakTime)
 
 export type UpdateWorkingShiftSchemaType = z.infer<typeof updateWorkingShiftSchema>
 

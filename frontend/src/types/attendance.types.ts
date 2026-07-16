@@ -32,6 +32,9 @@ export interface IWorkingShift {
   startTime: number
   /** Minutes since midnight, e.g. 1020 = 17:00 */
   endTime: number
+  /** Optional unpaid-break bounds in minutes from midnight; null/null means no break. */
+  breakStartTime?: number | null
+  breakEndTime?: number | null
   gracePeriodMinutes: number
   gpsLat?: number
   gpsLng?: number
@@ -48,6 +51,9 @@ export interface ICreateShiftPayload {
   startTime: string
   /** HH:MM format */
   endTime: string
+  /** Optional unpaid break; both values must be provided together. */
+  breakStartTime?: string | null
+  breakEndTime?: string | null
   gracePeriodMinutes?: number
   /** null clears GPS geofence when updating a working shift. */
   gps?: IGpsConfig | null
@@ -64,7 +70,15 @@ export interface IScheduleDay {
   shiftId: string
   shift?: Pick<
     IWorkingShift,
-    "name" | "startTime" | "endTime" | "gracePeriodMinutes" | "gpsLat" | "gpsLng" | "gpsRadiusMeters"
+    | "name"
+    | "startTime"
+    | "endTime"
+    | "breakStartTime"
+    | "breakEndTime"
+    | "gracePeriodMinutes"
+    | "gpsLat"
+    | "gpsLng"
+    | "gpsRadiusMeters"
   >
 }
 
@@ -83,7 +97,16 @@ export interface IPlannedWeekShift {
   isOverride: boolean
   shift: Pick<
     IWorkingShift,
-    "id" | "name" | "startTime" | "endTime" | "gracePeriodMinutes" | "gpsLat" | "gpsLng" | "gpsRadiusMeters"
+    | "id"
+    | "name"
+    | "startTime"
+    | "endTime"
+    | "breakStartTime"
+    | "breakEndTime"
+    | "gracePeriodMinutes"
+    | "gpsLat"
+    | "gpsLng"
+    | "gpsRadiusMeters"
   >
 }
 

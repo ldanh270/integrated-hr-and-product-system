@@ -1,7 +1,10 @@
 import type { IEmployeeShiftStatus } from "@/configs/entities/attendance.config.ts"
-import type { Prisma, WorkingShift } from "@prisma/client"
+import type {
+  IShiftScheduleWithDays,
+  IShiftScheduleWithTemplate,
+} from "@/types/shift-schedule.types.ts"
 
-import type { IShiftScheduleWithDays, IShiftScheduleWithTemplate } from "@/types/shift-schedule.types.ts"
+import type { Prisma, WorkingShift } from "@prisma/client"
 
 export type IEmployeeShiftWithShift = Prisma.EmployeeShiftGetPayload<{
   include: { shift: true }
@@ -18,6 +21,9 @@ export interface ICreateWorkingShiftDTO {
   name: string
   startTime: string // "HH:mm"
   endTime: string // "HH:mm"
+  /** Optional unpaid break. Both fields must be set together and remain inside the shift. */
+  breakStartTime?: string | null
+  breakEndTime?: string | null
   gracePeriodMinutes?: number
   /** null on PATCH removes geofence; optional on create. */
   gps?: IGpsLocationDTO | null
@@ -48,10 +54,10 @@ export interface ISubmitShiftChangeRequestDTO {
   reason: string
   startDate: string | Date
   endDate?: string | Date
-  employeeShiftId: string    // Shift the employee wants to swap FROM
+  employeeShiftId: string // Shift the employee wants to swap FROM
   swapWithEmployeeId: string // Target employee to swap WITH
-  swapWithShiftId: string    // Target EmployeeShift to swap WITH
-  workingShiftId?: string    // Target WorkingShift template (optional)
+  swapWithShiftId: string // Target EmployeeShift to swap WITH
+  workingShiftId?: string // Target WorkingShift template (optional)
 }
 
 /**
@@ -118,6 +124,8 @@ export interface IGeneratedShiftPreviewItem {
     name?: string
     startTime: number
     endTime: number
+    breakStartTime?: number | null
+    breakEndTime?: number | null
   } | null
   status: ShiftGenerateItemStatus
 }
@@ -183,7 +191,10 @@ export interface IShiftScheduleRepository {
   /** Assigns a pattern to an employee. */
   assignSchedule(data: IAssignShiftScheduleDTO): Promise<IShiftScheduleWithTemplate>
   /** Gets the active pattern for a date. */
-  getScheduleByEmployee(employeeId: string, date: string | Date): Promise<IShiftScheduleWithDays | null>
+  getScheduleByEmployee(
+    employeeId: string,
+    date: string | Date,
+  ): Promise<IShiftScheduleWithDays | null>
   /** Lists patterns for an employee. */
   listSchedulesByEmployee(employeeId: string): Promise<IShiftScheduleWithDays[]>
   /** Employee IDs with an active template-based schedule on a date. */
@@ -257,7 +268,10 @@ export interface IScheduleService {
   /** Assigns a schedule pattern. */
   assignSchedule(data: IAssignShiftScheduleDTO): Promise<IShiftScheduleWithTemplate>
   /** Gets schedule for a specific date. */
-  getScheduleForEmployee(employeeId: string, date: string | Date): Promise<IShiftScheduleWithDays | null>
+  getScheduleForEmployee(
+    employeeId: string,
+    date: string | Date,
+  ): Promise<IShiftScheduleWithDays | null>
   /** Lists schedules for an employee. */
   listSchedulesForEmployee(employeeId: string): Promise<IShiftScheduleWithDays[]>
 

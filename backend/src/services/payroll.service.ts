@@ -1,34 +1,48 @@
-import { ATTENDANCE_STATUS, EMPLOYEE_SHIFT_STATUS, PAID_LEAVE_TYPES } from "@/configs/entities/attendance.config.ts"
+import {
+  ATTENDANCE_STATUS,
+  EMPLOYEE_SHIFT_STATUS,
+  PAID_LEAVE_TYPES,
+} from "@/configs/entities/attendance.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
-import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util.ts"
-import { SPENT_TIME_WORK_TIME_TYPE } from "@/configs/entities/project.config.ts"
 import {
   PAYROLL_STATUS,
   SALARY_COMPONENT_TYPES,
   generateDefaultPayrollName,
 } from "@/configs/entities/payroll.config.ts"
+import { SPENT_TIME_WORK_TIME_TYPE } from "@/configs/entities/project.config.ts"
 import { PAYROLL_MESSAGES } from "@/configs/messages/payroll.message"
+import { ATTENDANCE_TIME_RULES } from "@/configs/rules/attendance.config.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { IAttendanceRepository } from "@/types/attendance.types.ts"
 import { IEmployeeRepository } from "@/types/employee.types.ts"
 import {
   IEmployeeSalaryConfigRepository,
+  IMyPayslipSummary,
   IPayrollRepository,
   IPayrollService,
   IPayslipRepository,
-  IMyPayslipSummary,
   PayrollWithPayslips,
   PayslipWithDetails,
 } from "@/types/payroll.types.ts"
 import { ISpentTimeRepository } from "@/types/spent-time.types.ts"
+import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util.ts"
 import { AppError } from "@/utils/error.util.ts"
 import {
   pickPartTimePayrollContext,
   resolvePartTimePayrollVariables,
 } from "@/utils/payroll/resolve-part-time-payroll-variables.util.ts"
 
-import { Application, ApplicationType, ComponentType, Payroll, PayrollStatus, Payslip, Prisma, PrismaClient } from "@prisma/client"
+import {
+  Application,
+  ApplicationType,
+  ComponentType,
+  Payroll,
+  PayrollStatus,
+  Payslip,
+  Prisma,
+  PrismaClient,
+} from "@prisma/client"
 import * as math from "mathjs"
 
 // Need an interface for SettingsRepository
@@ -97,14 +111,14 @@ export class PayrollService implements IPayrollService {
     // Fetch all approved applications for the period ONCE (N+1 fix)
     const allApprovedApps = await this.prisma.application.findMany({
       where: {
-        employeeId: { in: employees.map(e => e.id) },
+        employeeId: { in: employees.map((e) => e.id) },
         status: "approved",
         type: { in: [ApplicationType.leave, ApplicationType.late_early] },
         startDate: { lte: periodEnd },
         endDate: { gte: periodStart },
       },
-      include: { leaveDetail: true, lateEarlyDetail: true }
-    });
+      include: { leaveDetail: true, lateEarlyDetail: true },
+    })
 
     // Group by employeeId in memory
     type ApprovedApplication = (typeof allApprovedApps)[number]
@@ -153,6 +167,7 @@ export class PayrollService implements IPayrollService {
         overtimeMinutes: 0,
         lateMinutes: 0,
         earlyLeaveMinutes: 0,
+        totalWorkMinutes: 0,
         holidayDays: 0,
       }
       attendanceRecords.forEach((record) => {
@@ -172,6 +187,7 @@ export class PayrollService implements IPayrollService {
         attendance.overtimeMinutes += record.overtimeMinutes || 0
         attendance.lateMinutes += record.lateMinutes || 0
         attendance.earlyLeaveMinutes += record.earlyLeaveMinutes || 0
+        attendance.totalWorkMinutes += record.totalWorkMinutes || 0
       })
 
       // Use pre-fetched applications to prevent N+1
@@ -204,6 +220,9 @@ export class PayrollService implements IPayrollService {
         lateMinutes: attendance.lateMinutes,
         earlyLeaveMinutes: attendance.earlyLeaveMinutes,
         holidayDays: attendance.holidayDays,
+        // Formula authors may choose minute or hour precision; both exclude unpaid shift breaks.
+        totalWorkMinutes: attendance.totalWorkMinutes,
+        totalWorkHours: attendance.totalWorkMinutes / ATTENDANCE_TIME_RULES.MINUTES_PER_HOUR,
         MAX: Math.max,
         MIN: Math.min,
         ...variablesContext,
@@ -272,7 +291,9 @@ export class PayrollService implements IPayrollService {
     periodEnd: Date,
     variablesContext: Record<string, number>,
   ): Promise<{ netSalary: Prisma.Decimal } | null> {
-    const ptVariables = resolvePartTimePayrollVariables(pickPartTimePayrollContext(variablesContext))
+    const ptVariables = resolvePartTimePayrollVariables(
+      pickPartTimePayrollContext(variablesContext),
+    )
     const rows = await this.spentTimeRepo.listApprovedForPayroll(employeeId, periodStart, periodEnd)
     if (rows.length === 0) {
       console.warn(`[PayrollService] No approved spent time for PT employee ${employeeId}`)
@@ -329,7 +350,7 @@ export class PayrollService implements IPayrollService {
       overtimeMinutes: Math.round(
         rows
           .filter((r) => r.workTimeType === SPENT_TIME_WORK_TIME_TYPE.OVERTIME)
-          .reduce((sum, r) => sum + r.hours * 60, 0),
+          .reduce((sum, r) => sum + r.hours * ATTENDANCE_TIME_RULES.MINUTES_PER_HOUR, 0),
       ),
       details,
     })

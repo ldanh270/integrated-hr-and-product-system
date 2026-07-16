@@ -274,6 +274,8 @@ model WorkingShift {
   name               String
   startTime          Int // "HH:mm" stored as total minutes from midnight (e.g., 540 for 09:00)
   endTime            Int // "HH:mm" stored as total minutes from midnight (e.g., 1020 for 17:00)
+  breakStartTime     Int? // Optional unpaid-break start, minutes from midnight
+  breakEndTime       Int? // Optional unpaid-break end, minutes from midnight
   gracePeriodMinutes Int      @default(15)
   gpsLat             Float?
   gpsLng             Float?
@@ -294,6 +296,7 @@ model WorkingShift {
 
   /// @db.Check("start_time >= 0 AND start_time < 1440")
   /// @db.Check("end_time >= 0 AND end_time <= 1440")
+  /// @db.Check("(break_start_time IS NULL AND break_end_time IS NULL) OR (start_time < break_start_time AND break_start_time < break_end_time AND break_end_time < end_time)")
   /// @db.Check("grace_period_minutes >= 0 AND grace_period_minutes <= 120")
   /// @db.Check("gps_radius_meters > 0")
 
