@@ -2,6 +2,8 @@
 import { ApplicationService } from '../../services/application.service';
 import { prisma } from '@/libs/database.ts';
 import { authorizationService } from '@/services/authorization.service.ts';
+import type { IApplicationRepository } from '@/types/attendance.types.ts';
+import type { IPositionService } from '@/types/position.types.ts';
 
 // Mock all external modules
 jest.mock('@/configs/entities/attendance.config.ts', () => ({
@@ -130,8 +132,11 @@ jest.mock('@/utils/schedule.util.ts', () => ({
 }));
 
 describe('ApplicationService', () => {
-  let mockRepo: any;
-  let mockPositionService: any;
+  type MockedApplicationRepository = Record<keyof IApplicationRepository, jest.Mock>;
+  type MockedPositionService = Record<keyof IPositionService, jest.Mock>;
+
+  let mockRepo: MockedApplicationRepository;
+  let mockPositionService: MockedPositionService;
   let service: ApplicationService;
 
   beforeEach(() => {
@@ -153,9 +158,12 @@ describe('ApplicationService', () => {
 
     mockPositionService = {
       validateApplicationSubmission: jest.fn()
-    };
+    } as unknown as MockedPositionService;
 
-    service = new ApplicationService(mockRepo as any, mockPositionService as any);
+    service = new ApplicationService(
+      mockRepo as unknown as IApplicationRepository,
+      mockPositionService as unknown as IPositionService
+    );
     jest.clearAllMocks();
   });
 
@@ -179,7 +187,7 @@ describe('ApplicationService', () => {
       mockRepo.submit.mockResolvedValue({ id: 'app-1', status: 'pending' });
 
       // Act
-      const result = await service.submitApplication(data as any);
+      const result = await service.submitApplication(data as unknown as Parameters<typeof service.submitApplication>[0]);
 
       // Assert
       expect(result).toEqual({ id: 'app-1', status: 'pending' });
@@ -197,7 +205,7 @@ describe('ApplicationService', () => {
       };
 
       // Act & Assert
-      await expect(service.submitApplication(data as any)).rejects.toThrow('Invalid date range');
+      await expect(service.submitApplication(data as unknown as Parameters<typeof service.submitApplication>[0])).rejects.toThrow('Invalid date range');
     });
 
     it('UTCID03 - should throw NOT_FOUND if assigned approver does not exist', async () => {
@@ -214,7 +222,7 @@ describe('ApplicationService', () => {
       prismaEmployeeFindUniqueMock.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.submitApplication(data as any)).rejects.toThrow('Approver not found: non-existent-approver');
+      await expect(service.submitApplication(data as unknown as Parameters<typeof service.submitApplication>[0])).rejects.toThrow('Approver not found: non-existent-approver');
     });
 
     it('UTCID04 - should throw FORBIDDEN if overtime application is submitted for a shift the employee does not own', async () => {
@@ -230,7 +238,7 @@ describe('ApplicationService', () => {
       prismaShiftFindUniqueMock.mockResolvedValue({ employeeId: 'emp-different' });
 
       // Act & Assert
-      await expect(service.submitApplication(data as any)).rejects.toThrow('Shift not owned');
+      await expect(service.submitApplication(data as unknown as Parameters<typeof service.submitApplication>[0])).rejects.toThrow('Shift not owned');
     });
   });
 
@@ -244,7 +252,7 @@ describe('ApplicationService', () => {
       mockRepo.submitBulk.mockResolvedValue([{ id: '1' }, { id: '2' }]);
 
       // Act
-      const result = await service.submitBulkApplications(data as any);
+      const result = await service.submitBulkApplications(data as unknown as Parameters<typeof service.submitBulkApplications>[0]);
 
       // Assert
       expect(result).toHaveLength(2);
@@ -259,7 +267,7 @@ describe('ApplicationService', () => {
       ];
 
       // Act & Assert
-      await expect(service.submitBulkApplications(data as any)).rejects.toThrow('Invalid date range');
+      await expect(service.submitBulkApplications(data as unknown as Parameters<typeof service.submitBulkApplications>[0])).rejects.toThrow('Invalid date range');
     });
 
     it('UTCID03 - should throw error if position service validation fails', async () => {
@@ -270,7 +278,7 @@ describe('ApplicationService', () => {
       mockPositionService.validateApplicationSubmission.mockRejectedValue(new Error('Position constraint failed'));
 
       // Act & Assert
-      await expect(service.submitBulkApplications(data as any)).rejects.toThrow('Position constraint failed');
+      await expect(service.submitBulkApplications(data as unknown as Parameters<typeof service.submitBulkApplications>[0])).rejects.toThrow('Position constraint failed');
     });
   });
 
@@ -379,7 +387,7 @@ describe('ApplicationService', () => {
       mockRepo.findAll.mockResolvedValue(expected);
 
       // Act
-      const result = await service.listApplications(query as any);
+      const result = await service.listApplications(query as unknown as Parameters<typeof service.listApplications>[0]);
 
       // Assert
       expect(result).toEqual(expected);
@@ -399,7 +407,7 @@ describe('ApplicationService', () => {
       mockRepo.findAll.mockRejectedValue(new Error('Invalid arguments'));
 
       // Act & Assert
-      await expect(service.listApplications(null as any)).rejects.toThrow('Invalid arguments');
+      await expect(service.listApplications(null as unknown as Parameters<typeof service.listApplications>[0])).rejects.toThrow('Invalid arguments');
     });
   });
 
@@ -411,7 +419,7 @@ describe('ApplicationService', () => {
       mockRepo.findByEmployee.mockResolvedValue({ data: [], total: 0 });
 
       // Act
-      const result = await service.getEmployeeApplications('emp-123', {} as any, { empId: 'emp-123' });
+      const result = await service.getEmployeeApplications('emp-123', {} as unknown as Parameters<typeof service.getEmployeeApplications>[1], { empId: 'emp-123' });
 
       // Assert
       expect(result).toEqual({ data: [], total: 0 });
@@ -424,7 +432,7 @@ describe('ApplicationService', () => {
       prismaEmployeeFindFirstMock.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.getEmployeeApplications('emp-deleted', {} as any)).rejects.toThrow('Employee not found: emp-deleted');
+      await expect(service.getEmployeeApplications('emp-deleted', {} as unknown as Parameters<typeof service.getEmployeeApplications>[1])).rejects.toThrow('Employee not found: emp-deleted');
     });
 
     it('UTCID03 - should throw FORBIDDEN if requester has only approve permission but no active project with target employee', async () => {
@@ -440,7 +448,7 @@ describe('ApplicationService', () => {
       prismaProjectFindFirstMock.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.getEmployeeApplications('emp-target', {} as any, { empId: 'emp-tl' })).rejects.toThrow('View project forbidden');
+      await expect(service.getEmployeeApplications('emp-target', {} as unknown as Parameters<typeof service.getEmployeeApplications>[1], { empId: 'emp-tl' })).rejects.toThrow('View project forbidden');
     });
   });
 
@@ -556,7 +564,7 @@ describe('ApplicationService', () => {
       mockRepo.findApprovals.mockResolvedValue({ data: [], total: 0 });
 
       // Act
-      const result = await service.getApprovalsList('approver-1', {} as any);
+      const result = await service.getApprovalsList('approver-1', {} as unknown as Parameters<typeof service.getApprovalsList>[1]);
 
       // Assert
       expect(result).toEqual({ data: [], total: 0 });
@@ -577,7 +585,7 @@ describe('ApplicationService', () => {
       mockRepo.findApprovals.mockResolvedValue({ data: [], total: 0 });
 
       // Act
-      const result = await service.getApprovalsList('approver-1', {} as any);
+      const result = await service.getApprovalsList('approver-1', {} as unknown as Parameters<typeof service.getApprovalsList>[1]);
 
       // Assert
       expect(result).toEqual({ data: [], total: 0 });
@@ -590,7 +598,7 @@ describe('ApplicationService', () => {
       getAuthorizationContextMock.mockRejectedValue(new Error('Auth failed'));
 
       // Act & Assert
-      await expect(service.getApprovalsList('approver-1', {} as any)).rejects.toThrow('Auth failed');
+      await expect(service.getApprovalsList('approver-1', {} as unknown as Parameters<typeof service.getApprovalsList>[1])).rejects.toThrow('Auth failed');
     });
 
     it('UTCID04 - should propagate database query error', async () => {
@@ -604,7 +612,7 @@ describe('ApplicationService', () => {
       prismaProjectFindManyMock.mockRejectedValue(new Error('Database select error'));
 
       // Act & Assert
-      await expect(service.getApprovalsList('approver-1', {} as any)).rejects.toThrow('Database select error');
+      await expect(service.getApprovalsList('approver-1', {} as unknown as Parameters<typeof service.getApprovalsList>[1])).rejects.toThrow('Database select error');
     });
   });
 

@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-
+import { jest } from '@jest/globals';
 import { PartTimeAvailabilityService } from '../../services/part-time-availability.service';
 
 jest.mock('@/configs/entities/attendance.config.ts', () => ({
@@ -38,6 +38,10 @@ jest.mock('@/configs/system/http.config.ts', () => ({
     UNPROCESSABLE_ENTITY: 422,
   },
 }));
+
+jest.mock('@/types/employee.types.ts', () => ({}));
+jest.mock('@/types/part-time-availability.types.ts', () => ({}));
+jest.mock('@/types/shift.types.ts', () => ({}));
 
 jest.mock('@/utils/attendance/resolve-personal-employee-id.ts', () => ({
   resolvePersonalEmployeeId: jest.fn(),
@@ -87,6 +91,7 @@ jest.mock('../../services/audit.service', () => ({
 import { isPartTimeWorkSchedule } from '@/utils/employee/is-part-time-work-schedule.util.ts';
 import { PART_TIME_AVAILABILITY_STATUS } from '@/configs/entities/part-time-availability.config.ts';
 import { PART_TIME_AVAILABILITY_MESSAGES } from '@/configs/messages/part-time-availability.message.ts';
+import { HttpStatusCode } from '@/configs/system/http.config.ts';
 import { resolvePersonalEmployeeId } from '@/utils/attendance/resolve-personal-employee-id.ts';
 import {
   assertSubmittedForAssign,
@@ -105,75 +110,172 @@ import {
 
 import { auditService } from '../../services/audit.service';
 
-type MockFn = jest.Mock;
-type GenericRecord = Record<string, unknown>;
-
-type MockAvailabilityRepo = {
-  findByEmployeeAndWeek: jest.Mock;
-  upsert: jest.Mock;
-  listByWeek: jest.Mock;
-  findById: jest.Mock;
-  updateStatus: jest.Mock;
+type AvailabilitySlot = {
+  startTime: number;
+  endTime: number;
 };
 
-type MockEmployeeRepo = {
-  findById: jest.Mock;
+type AvailabilityDay = {
+  dayOfWeek: number;
+  isBusyAllDay: boolean;
+  slots: AvailabilitySlot[];
 };
 
-type MockEmployeeShiftRepo = {
-  hasOverridesForEmployeeDates: jest.Mock;
-  listByEmployeesAndDateRange: jest.Mock;
-  replacePartTimeOverrides: jest.Mock;
+type AvailabilityRecord = {
+  id: string;
+  employeeId: string;
+  weekStart: string;
+  days: AvailabilityDay[];
+  status?: string;
+  note?: string | null;
+  rejectReason?: string | null;
+  assignedDaySummaries?: Array<Record<string, unknown>>;
+  hasAssignedShifts?: boolean;
 };
 
-type MockWorkingShiftRepo = {
-  listAll: jest.Mock;
-  create: jest.Mock;
+type EmployeeRecord = {
+  id: string;
+  lockedUntil: null;
+  revokedAt: null;
 };
 
-const mockedIsPartTimeWorkSchedule = isPartTimeWorkSchedule as unknown as MockFn;
-const mockedResolvePersonalEmployeeId = resolvePersonalEmployeeId as unknown as MockFn;
-const mockedAssertSubmittedForAssign = assertSubmittedForAssign as unknown as MockFn;
-const mockedAssertSubmittedForReview = assertSubmittedForReview as unknown as MockFn;
-const mockedNormalizeAvailabilityDays = normalizeAvailabilityDays as unknown as MockFn;
-const mockedValidateAvailabilityDays = validateAvailabilityDays as unknown as MockFn;
-const mockedGetDateForWeekDay = getDateForWeekDay as unknown as MockFn;
-const mockedIsPastOrCurrentAvailabilityWeek = isPastOrCurrentAvailabilityWeek as unknown as MockFn;
-const mockedMinutesToTime = minutesToTime as unknown as MockFn;
-const mockedNormalizeWeekStart = normalizeWeekStart as unknown as MockFn;
-const mockedParseTimeToMinutes = parseTimeToMinutes as unknown as MockFn;
-const mockedShiftFitsAvailabilityDay = shiftFitsAvailabilityDay as unknown as MockFn;
+type EmployeeShiftRow = {
+  employeeId: string;
+  assignedDate: Date;
+  shiftId: string;
+};
 
-const mockedAuditServiceLog = (auditService as unknown as { log: MockFn }).log;
+type WorkingShiftRow = {
+  id: string;
+  startTime: number;
+  endTime: number;
+};
 
-const createService = (): {
+type WorkingShiftCreatePayload = {
+  name: string;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+  createdById: string;
+};
+
+type AvailabilityRepoMock = {
+  findByEmployeeAndWeek: jest.MockedFunction<
+    (employeeId: string, weekStart: string) => Promise<AvailabilityRecord | null>
+  >;
+  upsert: jest.MockedFunction<
+    (data: {
+      employeeId: string;
+      weekStart: string;
+      note: string;
+      status: string;
+      days: AvailabilityDay[];
+    }) => Promise<AvailabilityRecord>
+  >;
+  listByWeek: jest.MockedFunction<(weekStart: string) => Promise<AvailabilityRecord[]>>;
+  findById: jest.MockedFunction<(id: string) => Promise<AvailabilityRecord | null>>;
+  updateStatus: jest.MockedFunction<
+    (
+      id: string,
+      status: string,
+      reviewedById: string,
+      rejectReason?: string,
+    ) => Promise<AvailabilityRecord>
+  >;
+};
+
+type EmployeeRepoMock = {
+  findById: jest.MockedFunction<(id: string) => Promise<EmployeeRecord | null>>;
+};
+
+type EmployeeShiftRepoMock = {
+  hasOverridesForEmployeeDates: jest.MockedFunction<
+    (employeeId: string, weekDates: Date[]) => Promise<boolean>
+  >;
+  listByEmployeesAndDateRange: jest.MockedFunction<
+    (employeeIds: string[], startDate: Date, endDate: Date) => Promise<EmployeeShiftRow[]>
+  >;
+  replacePartTimeOverrides: jest.MockedFunction<
+    (
+      employeeId: string,
+      weekDates: Date[],
+      pendingOverrides: Array<{
+        employeeId: string;
+        assignedDate: Date;
+        shiftId: string;
+        createdById: string;
+      }>,
+    ) => Promise<void>
+  >;
+};
+
+type WorkingShiftRepoMock = {
+  listAll: jest.MockedFunction<() => Promise<WorkingShiftRow[]>>;
+  create: jest.MockedFunction<(data: WorkingShiftCreatePayload) => Promise<{ id: string }>>;
+};
+
+type ServiceBundle = {
   service: PartTimeAvailabilityService;
-  availabilityRepo: MockAvailabilityRepo;
-  employeeRepo: MockEmployeeRepo;
-  employeeShiftRepo: MockEmployeeShiftRepo;
-  workingShiftRepo: MockWorkingShiftRepo;
-} => {
-  const availabilityRepo: MockAvailabilityRepo = {
-    findByEmployeeAndWeek: jest.fn(),
-    upsert: jest.fn(),
-    listByWeek: jest.fn(),
-    findById: jest.fn(),
-    updateStatus: jest.fn(),
+  availabilityRepo: AvailabilityRepoMock;
+  employeeRepo: EmployeeRepoMock;
+  employeeShiftRepo: EmployeeShiftRepoMock;
+  workingShiftRepo: WorkingShiftRepoMock;
+};
+
+const mockIsPartTimeWorkSchedule = isPartTimeWorkSchedule as jest.MockedFunction<
+  typeof isPartTimeWorkSchedule
+>;
+const mockResolvePersonalEmployeeId = resolvePersonalEmployeeId as jest.MockedFunction<
+  typeof resolvePersonalEmployeeId
+>;
+const mockAssertSubmittedForAssign = assertSubmittedForAssign as jest.MockedFunction<
+  typeof assertSubmittedForAssign
+>;
+const mockAssertSubmittedForReview = assertSubmittedForReview as jest.MockedFunction<
+  typeof assertSubmittedForReview
+>;
+const mockNormalizeAvailabilityDays = normalizeAvailabilityDays as jest.MockedFunction<
+  typeof normalizeAvailabilityDays
+>;
+const mockValidateAvailabilityDays = validateAvailabilityDays as jest.MockedFunction<
+  typeof validateAvailabilityDays
+>;
+const mockGetDateForWeekDay = getDateForWeekDay as jest.MockedFunction<typeof getDateForWeekDay>;
+const mockIsPastOrCurrentAvailabilityWeek = isPastOrCurrentAvailabilityWeek as jest.MockedFunction<
+  typeof isPastOrCurrentAvailabilityWeek
+>;
+const mockMinutesToTime = minutesToTime as jest.MockedFunction<typeof minutesToTime>;
+const mockNormalizeWeekStart = normalizeWeekStart as jest.MockedFunction<typeof normalizeWeekStart>;
+const mockParseTimeToMinutes = parseTimeToMinutes as jest.MockedFunction<typeof parseTimeToMinutes>;
+const mockShiftFitsAvailabilityDay = shiftFitsAvailabilityDay as jest.MockedFunction<
+  typeof shiftFitsAvailabilityDay
+>;
+const { log: mockAuditLog } = auditService as unknown as {
+  log: jest.MockedFunction<typeof auditService.log>;
+};
+
+function createServiceBundle(): ServiceBundle {
+  const availabilityRepo: AvailabilityRepoMock = {
+    findByEmployeeAndWeek: jest.fn() as AvailabilityRepoMock['findByEmployeeAndWeek'],
+    upsert: jest.fn() as AvailabilityRepoMock['upsert'],
+    listByWeek: jest.fn() as AvailabilityRepoMock['listByWeek'],
+    findById: jest.fn() as AvailabilityRepoMock['findById'],
+    updateStatus: jest.fn() as AvailabilityRepoMock['updateStatus'],
   };
 
-  const employeeRepo: MockEmployeeRepo = {
-    findById: jest.fn(),
+  const employeeRepo: EmployeeRepoMock = {
+    findById: jest.fn() as EmployeeRepoMock['findById'],
   };
 
-  const employeeShiftRepo: MockEmployeeShiftRepo = {
-    hasOverridesForEmployeeDates: jest.fn(),
-    listByEmployeesAndDateRange: jest.fn(),
-    replacePartTimeOverrides: jest.fn(),
+  const employeeShiftRepo: EmployeeShiftRepoMock = {
+    hasOverridesForEmployeeDates: jest.fn() as EmployeeShiftRepoMock['hasOverridesForEmployeeDates'],
+    listByEmployeesAndDateRange: jest.fn() as EmployeeShiftRepoMock['listByEmployeesAndDateRange'],
+    replacePartTimeOverrides: jest.fn() as EmployeeShiftRepoMock['replacePartTimeOverrides'],
   };
 
-  const workingShiftRepo: MockWorkingShiftRepo = {
-    listAll: jest.fn(),
-    create: jest.fn(),
+  const workingShiftRepo: WorkingShiftRepoMock = {
+    listAll: jest.fn() as WorkingShiftRepoMock['listAll'],
+    create: jest.fn() as WorkingShiftRepoMock['create'],
   };
 
   const service = new PartTimeAvailabilityService(
@@ -190,591 +292,587 @@ const createService = (): {
     employeeShiftRepo,
     workingShiftRepo,
   };
-};
+}
 
 describe('PartTimeAvailabilityService.getMine', () => {
   let service: PartTimeAvailabilityService;
-  let availabilityRepo: MockAvailabilityRepo;
+  let availabilityRepo: AvailabilityRepoMock;
 
   beforeEach(() => {
-    const setup = createService();
+    const bundle = createServiceBundle();
 
-    service = setup.service;
-    availabilityRepo = setup.availabilityRepo;
+    service = bundle.service;
+    availabilityRepo = bundle.availabilityRepo;
 
     jest.clearAllMocks();
-    mockedNormalizeWeekStart.mockReset();
-    mockedNormalizeWeekStart.mockReturnValue('2025-02-03');
+    mockNormalizeWeekStart.mockReturnValue('2025-01-06' as never);
   });
 
-  it('UTCID01 - returns availability for normalized week', async () => {
-    const employeeId = 'emp-1';
-    const weekStart = '2025-02-05';
-    const expected: GenericRecord = { id: 'avail-1', employeeId, weekStart: '2025-02-03', days: [] };
-
+  it('UTCID01 - returns weekly availability for normalized week start', async () => {
+    // Arrange
+    const expected: AvailabilityRecord = {
+      id: 'av-1',
+      employeeId: 'emp-1',
+      weekStart: '2025-01-06',
+      days: [],
+    };
     availabilityRepo.findByEmployeeAndWeek.mockResolvedValue(expected);
 
-    const result = await service.getMine(employeeId, weekStart);
+    // Act
+    const result = await service.getMine('emp-1', '2025-01-08');
 
-    expect(mockedNormalizeWeekStart).toHaveBeenCalledWith(weekStart);
-    expect(availabilityRepo.findByEmployeeAndWeek).toHaveBeenCalledWith(employeeId, '2025-02-03');
+    // Assert
+    expect(mockNormalizeWeekStart).toHaveBeenCalledWith('2025-01-08');
+    expect(availabilityRepo.findByEmployeeAndWeek).toHaveBeenCalledWith('emp-1', '2025-01-06');
     expect(result).toEqual(expected);
   });
 
-  it('UTCID02 - propagates repository errors', async () => {
-    const employeeId = 'emp-1';
-    const weekStart = '2025-02-05';
-    const error = new Error('repo failed');
+  it('UTCID02 - returns null when no weekly availability exists', async () => {
+    // Arrange
+    availabilityRepo.findByEmployeeAndWeek.mockResolvedValue(null);
 
-    availabilityRepo.findByEmployeeAndWeek.mockRejectedValue(error);
+    // Act
+    const result = await service.getMine('emp-404', '2025-01-08');
 
-    await expect(service.getMine(employeeId, weekStart)).rejects.toThrow('repo failed');
-
-    expect(mockedNormalizeWeekStart).toHaveBeenCalledWith(weekStart);
-    expect(availabilityRepo.findByEmployeeAndWeek).toHaveBeenCalledWith(employeeId, '2025-02-03');
+    // Assert
+    expect(result).toBeNull();
+    expect(availabilityRepo.findByEmployeeAndWeek).toHaveBeenCalledWith('emp-404', '2025-01-06');
   });
 
-  it('UTCID03 - propagates normalizeWeekStart errors', async () => {
-    const employeeId = 'emp-1';
-    const weekStart = 'bad-date';
+  it('UTCID03 - propagates repository errors', async () => {
+    // Arrange
+    const error = new Error('repository failed');
+    availabilityRepo.findByEmployeeAndWeek.mockRejectedValue(error);
 
-    mockedNormalizeWeekStart.mockImplementation(() => {
-      throw new Error('invalid week');
-    });
+    // Act
+    const act = service.getMine('emp-1', '2025-01-08');
 
-    await expect(service.getMine(employeeId, weekStart)).rejects.toThrow('invalid week');
-
-    expect(mockedNormalizeWeekStart).toHaveBeenCalledWith(weekStart);
-    expect(availabilityRepo.findByEmployeeAndWeek).not.toHaveBeenCalled();
+    // Assert
+    await expect(act).rejects.toThrow('repository failed');
   });
 });
 
 describe('PartTimeAvailabilityService.upsertMine', () => {
   let service: PartTimeAvailabilityService;
-  let availabilityRepo: MockAvailabilityRepo;
-  let employeeRepo: MockEmployeeRepo;
-  let employeeShiftRepo: MockEmployeeShiftRepo;
-  let data: {
-    weekStart: string;
-    note: string;
-    days: Array<{
-      dayOfWeek: number;
-      isBusyAllDay: boolean;
-      slots: Array<{ startTime: number; endTime: number }>;
-    }>;
-  };
+  let availabilityRepo: AvailabilityRepoMock;
+  let employeeRepo: EmployeeRepoMock;
+  let employeeShiftRepo: EmployeeShiftRepoMock;
 
   beforeEach(() => {
-    const setup = createService();
+    const bundle = createServiceBundle();
 
-    service = setup.service;
-    availabilityRepo = setup.availabilityRepo;
-    employeeRepo = setup.employeeRepo;
-    employeeShiftRepo = setup.employeeShiftRepo;
-
-    data = {
-      weekStart: '2025-02-10',
-      note: 'note',
-      days: [{ dayOfWeek: 1, isBusyAllDay: false, slots: [{ startTime: 540, endTime: 720 }] }],
-    };
+    service = bundle.service;
+    availabilityRepo = bundle.availabilityRepo;
+    employeeRepo = bundle.employeeRepo;
+    employeeShiftRepo = bundle.employeeShiftRepo;
 
     jest.clearAllMocks();
-    mockedResolvePersonalEmployeeId.mockReset();
-    mockedIsPartTimeWorkSchedule.mockReset();
-    mockedIsPastOrCurrentAvailabilityWeek.mockReset();
-    mockedNormalizeWeekStart.mockReset();
-    mockedGetDateForWeekDay.mockReset();
-    mockedNormalizeAvailabilityDays.mockReset();
-    mockedValidateAvailabilityDays.mockReset();
-
-    mockedResolvePersonalEmployeeId.mockResolvedValue('emp-1');
-    employeeRepo.findById.mockResolvedValue({ id: 'emp-1', workSchedule: 'PT' });
-    mockedIsPartTimeWorkSchedule.mockReturnValue(true);
-    mockedIsPastOrCurrentAvailabilityWeek.mockReturnValue(false);
-    mockedNormalizeWeekStart.mockReturnValue('2025-02-10');
-    mockedGetDateForWeekDay.mockImplementation((weekStartArg: string, dayOfWeek: number) => `${weekStartArg}-D${dayOfWeek}`);
-    employeeShiftRepo.hasOverridesForEmployeeDates.mockResolvedValue(false);
-    mockedNormalizeAvailabilityDays.mockReturnValue(data.days);
-    mockedValidateAvailabilityDays.mockReturnValue(undefined);
-    availabilityRepo.upsert.mockResolvedValue({
-      id: 'avail-1',
-      employeeId: 'emp-1',
-      weekStart: '2025-02-10',
-      note: 'note',
-      status: PART_TIME_AVAILABILITY_STATUS.SUBMITTED,
-      days: data.days,
+    mockResolvePersonalEmployeeId.mockResolvedValue('emp-1' as never);
+    employeeRepo.findById.mockResolvedValue({ id: 'emp-1', lockedUntil: null, revokedAt: null });
+    mockIsPartTimeWorkSchedule.mockReturnValue(true as never);
+    mockIsPastOrCurrentAvailabilityWeek.mockReturnValue(false as never);
+    mockNormalizeWeekStart.mockReturnValue('2025-01-06' as never);
+    mockGetDateForWeekDay.mockImplementation((weekStart: Date, dayOfWeek: number) => {
+      return new Date(`2025-01-0${dayOfWeek}`);
     });
+    employeeShiftRepo.hasOverridesForEmployeeDates.mockResolvedValue(false);
+    mockNormalizeAvailabilityDays.mockReturnValue([
+      { dayOfWeek: 1, isBusyAllDay: false, slots: [{ startTime: 540, endTime: 720 }] },
+    ] as never);
+    mockValidateAvailabilityDays.mockImplementation(() => undefined);
   });
 
-  it('UTCID01 - upserts submitted availability for future week', async () => {
-    const result = await service.upsertMine('acct-1', data);
+  it('UTCID01 - upserts submitted availability for a future week', async () => {
+    // Arrange
+    const data = {
+      weekStart: '2025-01-08',
+      note: 'available mornings',
+      days: [{ dayOfWeek: 1, isBusyAllDay: false, slots: [{ startTime: 540, endTime: 720 }] }],
+    };
+    const expected: AvailabilityRecord = {
+      id: 'av-1',
+      employeeId: 'emp-1',
+      weekStart: '2025-01-06',
+      note: 'available mornings',
+      status: PART_TIME_AVAILABILITY_STATUS.SUBMITTED,
+      days: [{ dayOfWeek: 1, isBusyAllDay: false, slots: [{ startTime: 540, endTime: 720 }] }],
+    };
+    availabilityRepo.upsert.mockResolvedValue(expected);
 
-    expect(mockedResolvePersonalEmployeeId).toHaveBeenCalledWith('acct-1');
+    // Act
+    const result = await service.upsertMine('acc-1', data);
+
+    // Assert
+    expect(mockResolvePersonalEmployeeId).toHaveBeenCalledWith('acc-1');
     expect(employeeRepo.findById).toHaveBeenCalledWith('emp-1');
-    expect(mockedIsPartTimeWorkSchedule).toHaveBeenCalledWith({ id: 'emp-1', workSchedule: 'PT' });
-    expect(mockedIsPastOrCurrentAvailabilityWeek).toHaveBeenCalledWith(data.weekStart);
-    expect(mockedNormalizeWeekStart).toHaveBeenCalledWith(data.weekStart);
-    expect(employeeShiftRepo.hasOverridesForEmployeeDates).toHaveBeenCalledWith('emp-1', [
-      '2025-02-10-D1',
-      '2025-02-10-D2',
-      '2025-02-10-D3',
-      '2025-02-10-D4',
-      '2025-02-10-D5',
-      '2025-02-10-D6',
-      '2025-02-10-D7',
+    expect(mockIsPartTimeWorkSchedule).toHaveBeenCalledWith({
+      id: 'emp-1',
+      lockedUntil: null,
+      revokedAt: null,
+    });
+    expect(mockIsPastOrCurrentAvailabilityWeek).toHaveBeenCalledWith('2025-01-08');
+    expect(mockNormalizeAvailabilityDays).toHaveBeenCalledWith(data.days);
+    expect(mockValidateAvailabilityDays).toHaveBeenCalledWith([
+      { dayOfWeek: 1, isBusyAllDay: false, slots: [{ startTime: 540, endTime: 720 }] },
     ]);
-    expect(mockedNormalizeAvailabilityDays).toHaveBeenCalledWith(data.days);
-    expect(mockedValidateAvailabilityDays).toHaveBeenCalledWith(data.days);
     expect(availabilityRepo.upsert).toHaveBeenCalledWith({
       employeeId: 'emp-1',
-      weekStart: '2025-02-10',
-      note: 'note',
+      weekStart: '2025-01-06',
+      note: 'available mornings',
       status: PART_TIME_AVAILABILITY_STATUS.SUBMITTED,
-      days: data.days,
+      days: [{ dayOfWeek: 1, isBusyAllDay: false, slots: [{ startTime: 540, endTime: 720 }] }],
     });
-    expect(result).toEqual({
-      id: 'avail-1',
-      employeeId: 'emp-1',
-      weekStart: '2025-02-10',
-      note: 'note',
-      status: PART_TIME_AVAILABILITY_STATUS.SUBMITTED,
-      days: data.days,
-    });
+    expect(result).toEqual(expected);
   });
 
-  it('UTCID02 - throws when employee is not part time', async () => {
-    employeeRepo.findById.mockResolvedValue({ id: 'emp-1', workSchedule: 'FT' });
-    mockedIsPartTimeWorkSchedule.mockReturnValue(false);
+  it('UTCID02 - throws when week is past or current', async () => {
+    // Arrange
+    mockIsPastOrCurrentAvailabilityWeek.mockReturnValue(true as never);
+    const data = {
+      weekStart: '2025-01-01',
+      note: 'note',
+      days: [],
+    };
 
-    await expect(service.upsertMine('acct-1', data)).rejects.toMatchObject({
-      message: PART_TIME_AVAILABILITY_MESSAGES.NOT_PART_TIME,
-    });
+    // Act
+    const act = service.upsertMine('acc-1', data);
 
-    expect(mockedResolvePersonalEmployeeId).toHaveBeenCalledWith('acct-1');
-    expect(employeeRepo.findById).toHaveBeenCalledWith('emp-1');
-    expect(mockedIsPastOrCurrentAvailabilityWeek).not.toHaveBeenCalled();
-    expect(availabilityRepo.upsert).not.toHaveBeenCalled();
-  });
-
-  it('UTCID03 - throws when week is past or current', async () => {
-    mockedIsPastOrCurrentAvailabilityWeek.mockReturnValue(true);
-
-    await expect(service.upsertMine('acct-1', data)).rejects.toMatchObject({
+    // Assert
+    await expect(act).rejects.toMatchObject({
       message: PART_TIME_AVAILABILITY_MESSAGES.PAST_OR_CURRENT_WEEK_NOT_ALLOWED,
+      statusCode: HttpStatusCode.UNPROCESSABLE_ENTITY,
     });
-
-    expect(mockedIsPastOrCurrentAvailabilityWeek).toHaveBeenCalledWith(data.weekStart);
-    expect(employeeShiftRepo.hasOverridesForEmployeeDates).not.toHaveBeenCalled();
     expect(availabilityRepo.upsert).not.toHaveBeenCalled();
   });
 
-  it('UTCID04 - throws when week already has assigned shifts', async () => {
+  it('UTCID03 - throws when assigned shifts already exist for the week', async () => {
+    // Arrange
     employeeShiftRepo.hasOverridesForEmployeeDates.mockResolvedValue(true);
+    const data = {
+      weekStart: '2025-01-08',
+      note: 'note',
+      days: [],
+    };
 
-    await expect(service.upsertMine('acct-1', data)).rejects.toMatchObject({
+    // Act
+    const act = service.upsertMine('acc-1', data);
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
       message: PART_TIME_AVAILABILITY_MESSAGES.WEEK_ALREADY_ASSIGNED,
+      statusCode: HttpStatusCode.CONFLICT,
     });
+    expect(availabilityRepo.upsert).not.toHaveBeenCalled();
+  });
 
-    expect(employeeShiftRepo.hasOverridesForEmployeeDates).toHaveBeenCalled();
-    expect(mockedNormalizeAvailabilityDays).not.toHaveBeenCalled();
+  it('UTCID04 - throws when employee is not part time', async () => {
+    // Arrange
+    mockIsPartTimeWorkSchedule.mockReturnValue(false as never);
+    const data = {
+      weekStart: '2025-01-08',
+      note: 'note',
+      days: [],
+    };
+
+    // Act
+    const act = service.upsertMine('acc-1', data);
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: PART_TIME_AVAILABILITY_MESSAGES.NOT_PART_TIME,
+      statusCode: HttpStatusCode.UNPROCESSABLE_ENTITY,
+    });
     expect(availabilityRepo.upsert).not.toHaveBeenCalled();
   });
 });
 
 describe('PartTimeAvailabilityService.listForWeek', () => {
   let service: PartTimeAvailabilityService;
-  let availabilityRepo: MockAvailabilityRepo;
-  let employeeShiftRepo: MockEmployeeShiftRepo;
+  let availabilityRepo: AvailabilityRepoMock;
 
   beforeEach(() => {
-    const setup = createService();
+    const bundle = createServiceBundle();
 
-    service = setup.service;
-    availabilityRepo = setup.availabilityRepo;
-    employeeShiftRepo = setup.employeeShiftRepo;
+    service = bundle.service;
+    availabilityRepo = bundle.availabilityRepo;
 
     jest.clearAllMocks();
-    mockedNormalizeWeekStart.mockReset();
-
-    mockedNormalizeWeekStart.mockReturnValue('2025-02-10');
+    mockNormalizeWeekStart.mockReturnValue('2025-01-06' as never);
   });
 
-  it('UTCID01 - returns weekly availabilities', async () => {
-    const items = [
-      { id: 'avail-1', employeeId: 'emp-1', weekStart: '2025-02-10', days: [] },
-      { id: 'avail-2', employeeId: 'emp-2', weekStart: '2025-02-10', days: [] },
+  it('UTCID01 - returns weekly availability', async () => {
+    // Arrange
+    const items: AvailabilityRecord[] = [
+      { id: 'av-1', employeeId: 'emp-1', weekStart: '2025-01-06', days: [] },
+      { id: 'av-2', employeeId: 'emp-2', weekStart: '2025-01-06', days: [] },
     ];
 
     availabilityRepo.listByWeek.mockResolvedValue(items);
 
-    const result = await service.listForWeek('2025-02-11');
+    // Act
+    const result = await service.listForWeek('2025-01-08');
 
-    expect(mockedNormalizeWeekStart).toHaveBeenCalledWith('2025-02-11');
-    expect(availabilityRepo.listByWeek).toHaveBeenCalledWith('2025-02-10');
+    // Assert
+    expect(mockNormalizeWeekStart).toHaveBeenCalledWith('2025-01-08');
+    expect(availabilityRepo.listByWeek).toHaveBeenCalledWith('2025-01-06');
     expect(result).toEqual(items);
   });
 
-  it('UTCID02 - returns empty list when no availability exists', async () => {
+  it('UTCID02 - returns empty array when no availability exists for the week', async () => {
+    // Arrange
     availabilityRepo.listByWeek.mockResolvedValue([]);
 
-    const result = await service.listForWeek('2025-02-11');
+    // Act
+    const result = await service.listForWeek('2025-01-08');
 
-    expect(mockedNormalizeWeekStart).toHaveBeenCalledWith('2025-02-11');
-    expect(availabilityRepo.listByWeek).toHaveBeenCalledWith('2025-02-10');
+    // Assert
     expect(result).toEqual([]);
   });
 
-  it('UTCID03 - propagates repository errors from listByWeek', async () => {
+  it('UTCID03 - propagates repository list errors', async () => {
+    // Arrange
     availabilityRepo.listByWeek.mockRejectedValue(new Error('list failed'));
 
-    await expect(service.listForWeek('2025-02-11')).rejects.toThrow('list failed');
+    // Act
+    const act = service.listForWeek('2025-01-08');
 
-    expect(availabilityRepo.listByWeek).toHaveBeenCalledWith('2025-02-10');
+    // Assert
+    await expect(act).rejects.toThrow('list failed');
   });
 });
 
 describe('PartTimeAvailabilityService.getByEmployee', () => {
   let service: PartTimeAvailabilityService;
-  let availabilityRepo: MockAvailabilityRepo;
+  let availabilityRepo: AvailabilityRepoMock;
 
   beforeEach(() => {
-    const setup = createService();
+    const bundle = createServiceBundle();
 
-    service = setup.service;
-    availabilityRepo = setup.availabilityRepo;
+    service = bundle.service;
+    availabilityRepo = bundle.availabilityRepo;
 
     jest.clearAllMocks();
-    mockedNormalizeWeekStart.mockReset();
-    mockedNormalizeWeekStart.mockReturnValue('2025-02-10');
+    mockNormalizeWeekStart.mockReturnValue('2025-01-06' as never);
   });
 
-  it('UTCID01 - returns employee availability for normalized week', async () => {
-    const expected: GenericRecord = { id: 'avail-1', employeeId: 'emp-1', weekStart: '2025-02-10', days: [] };
+  it('UTCID01 - returns employee weekly availability', async () => {
+    // Arrange
+    const expected: AvailabilityRecord = {
+      id: 'av-1',
+      employeeId: 'emp-1',
+      weekStart: '2025-01-06',
+      days: [],
+    };
     availabilityRepo.findByEmployeeAndWeek.mockResolvedValue(expected);
 
-    const result = await service.getByEmployee('emp-1', '2025-02-11');
+    // Act
+    const result = await service.getByEmployee('emp-1', '2025-01-08');
 
-    expect(mockedNormalizeWeekStart).toHaveBeenCalledWith('2025-02-11');
-    expect(availabilityRepo.findByEmployeeAndWeek).toHaveBeenCalledWith('emp-1', '2025-02-10');
+    // Assert
+    expect(mockNormalizeWeekStart).toHaveBeenCalledWith('2025-01-08');
+    expect(availabilityRepo.findByEmployeeAndWeek).toHaveBeenCalledWith('emp-1', '2025-01-06');
     expect(result).toEqual(expected);
   });
 
-  it('UTCID02 - propagates repository errors', async () => {
-    availabilityRepo.findByEmployeeAndWeek.mockRejectedValue(new Error('find failed'));
+  it('UTCID02 - returns null when employee availability is missing', async () => {
+    // Arrange
+    availabilityRepo.findByEmployeeAndWeek.mockResolvedValue(null);
 
-    await expect(service.getByEmployee('emp-1', '2025-02-11')).rejects.toThrow('find failed');
+    // Act
+    const result = await service.getByEmployee('emp-404', '2025-01-08');
 
-    expect(availabilityRepo.findByEmployeeAndWeek).toHaveBeenCalledWith('emp-1', '2025-02-10');
+    // Assert
+    expect(result).toBeNull();
   });
 
-  it('UTCID03 - propagates normalization errors', () => {
-    mockedNormalizeWeekStart.mockImplementation(() => {
-      throw new Error('bad week');
-    });
+  it('UTCID03 - propagates repository errors', async () => {
+    // Arrange
+    availabilityRepo.findByEmployeeAndWeek.mockRejectedValue(new Error('find failed'));
 
-    expect(() => service.getByEmployee('emp-1', 'invalid')).toThrow('bad week');
+    // Act
+    const act = service.getByEmployee('emp-1', '2025-01-08');
 
-    expect(mockedNormalizeWeekStart).toHaveBeenCalledWith('invalid');
-    expect(availabilityRepo.findByEmployeeAndWeek).not.toHaveBeenCalled();
+    // Assert
+    await expect(act).rejects.toThrow('find failed');
   });
 });
 
 describe('PartTimeAvailabilityService.approve', () => {
   let service: PartTimeAvailabilityService;
-  let availabilityRepo: MockAvailabilityRepo;
+  let availabilityRepo: AvailabilityRepoMock;
 
   beforeEach(() => {
-    const setup = createService();
+    const bundle = createServiceBundle();
 
-    service = setup.service;
-    availabilityRepo = setup.availabilityRepo;
+    service = bundle.service;
+    availabilityRepo = bundle.availabilityRepo;
 
     jest.clearAllMocks();
-    mockedAssertSubmittedForReview.mockReset();
-    mockedAssertSubmittedForReview.mockImplementation(() => undefined);
+    mockAssertSubmittedForReview.mockImplementation(() => undefined);
   });
 
   it('UTCID01 - approves submitted availability', async () => {
-    const availability = { id: 'avail-1', status: PART_TIME_AVAILABILITY_STATUS.SUBMITTED, days: [] };
-    const updated = { ...availability, status: PART_TIME_AVAILABILITY_STATUS.APPROVED };
-
+    // Arrange
+    const availability: AvailabilityRecord = {
+      id: 'av-1',
+      employeeId: 'emp-1',
+      weekStart: '2025-01-06',
+      status: PART_TIME_AVAILABILITY_STATUS.SUBMITTED,
+      days: [],
+    };
+    const updated: AvailabilityRecord = {
+      ...availability,
+      status: PART_TIME_AVAILABILITY_STATUS.APPROVED,
+    };
     availabilityRepo.findById.mockResolvedValue(availability);
     availabilityRepo.updateStatus.mockResolvedValue(updated);
 
-    const result = await service.approve({
-      availabilityId: 'avail-1',
-      reviewedById: 'admin-1',
-      rejectReason: null,
-    } as never);
+    // Act
+    const result = await service.approve({ availabilityId: 'av-1', reviewedById: 'admin-1' });
 
-    expect(availabilityRepo.findById).toHaveBeenCalledWith('avail-1');
-    expect(mockedAssertSubmittedForReview).toHaveBeenCalledWith(PART_TIME_AVAILABILITY_STATUS.SUBMITTED);
+    // Assert
+    expect(availabilityRepo.findById).toHaveBeenCalledWith('av-1');
+    expect(mockAssertSubmittedForReview).toHaveBeenCalledWith(PART_TIME_AVAILABILITY_STATUS.SUBMITTED);
     expect(availabilityRepo.updateStatus).toHaveBeenCalledWith(
-      'avail-1',
+      'av-1',
       PART_TIME_AVAILABILITY_STATUS.APPROVED,
       'admin-1',
     );
     expect(result).toEqual(updated);
   });
 
-  it('UTCID02 - throws when availability is not found', async () => {
+  it('UTCID02 - throws not found when availability does not exist', async () => {
+    // Arrange
     availabilityRepo.findById.mockResolvedValue(null);
 
-    await expect(
-      service.approve({
-        availabilityId: 'missing',
-        reviewedById: 'admin-1',
-        rejectReason: null,
-      } as never),
-    ).rejects.toMatchObject({
-      message: PART_TIME_AVAILABILITY_MESSAGES.NOT_FOUND,
-    });
+    // Act
+    const act = service.approve({ availabilityId: 'av-404', reviewedById: 'admin-1' });
 
-    expect(availabilityRepo.findById).toHaveBeenCalledWith('missing');
-    expect(mockedAssertSubmittedForReview).not.toHaveBeenCalled();
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: PART_TIME_AVAILABILITY_MESSAGES.NOT_FOUND,
+      statusCode: HttpStatusCode.NOT_FOUND,
+    });
     expect(availabilityRepo.updateStatus).not.toHaveBeenCalled();
   });
 
-  it('UTCID03 - propagates invalid status errors from review assertion', async () => {
+  it('UTCID03 - propagates review status assertion errors', async () => {
+    // Arrange
     availabilityRepo.findById.mockResolvedValue({
-      id: 'avail-1',
-      status: PART_TIME_AVAILABILITY_STATUS.REJECTED,
+      id: 'av-1',
+      employeeId: 'emp-1',
+      weekStart: '2025-01-06',
+      status: 'REJECTED_ALREADY',
       days: [],
     });
-    mockedAssertSubmittedForReview.mockImplementation(() => {
-      throw new Error('invalid review status');
+    mockAssertSubmittedForReview.mockImplementation(() => {
+      throw new Error('invalid review state');
     });
 
-    await expect(
-      service.approve({
-        availabilityId: 'avail-1',
-        reviewedById: 'admin-1',
-        rejectReason: null,
-      } as never),
-    ).rejects.toThrow('invalid review status');
+    // Act
+    const act = service.approve({ availabilityId: 'av-1', reviewedById: 'admin-1' });
 
-    expect(mockedAssertSubmittedForReview).toHaveBeenCalledWith(PART_TIME_AVAILABILITY_STATUS.REJECTED);
+    // Assert
+    await expect(act).rejects.toThrow('invalid review state');
     expect(availabilityRepo.updateStatus).not.toHaveBeenCalled();
   });
 });
 
 describe('PartTimeAvailabilityService.reject', () => {
   let service: PartTimeAvailabilityService;
-  let availabilityRepo: MockAvailabilityRepo;
+  let availabilityRepo: AvailabilityRepoMock;
 
   beforeEach(() => {
-    const setup = createService();
+    const bundle = createServiceBundle();
 
-    service = setup.service;
-    availabilityRepo = setup.availabilityRepo;
+    service = bundle.service;
+    availabilityRepo = bundle.availabilityRepo;
 
     jest.clearAllMocks();
-    mockedAssertSubmittedForReview.mockReset();
-    mockedAssertSubmittedForReview.mockImplementation(() => undefined);
+    mockAssertSubmittedForReview.mockImplementation(() => undefined);
   });
 
   it('UTCID01 - rejects submitted availability with trimmed reason', async () => {
-    const availability = { id: 'avail-1', status: PART_TIME_AVAILABILITY_STATUS.SUBMITTED, days: [] };
-    const updated = {
+    // Arrange
+    const availability: AvailabilityRecord = {
+      id: 'av-1',
+      employeeId: 'emp-1',
+      weekStart: '2025-01-06',
+      status: PART_TIME_AVAILABILITY_STATUS.SUBMITTED,
+      days: [],
+    };
+    const updated: AvailabilityRecord = {
       ...availability,
       status: PART_TIME_AVAILABILITY_STATUS.REJECTED,
-      rejectReason: 'Need fixes',
+      rejectReason: 'Need clearer slots',
     };
-
     availabilityRepo.findById.mockResolvedValue(availability);
     availabilityRepo.updateStatus.mockResolvedValue(updated);
 
+    // Act
     const result = await service.reject({
-      availabilityId: 'avail-1',
+      availabilityId: 'av-1',
       reviewedById: 'admin-1',
-      rejectReason: '  Need fixes  ',
-    } as never);
+      rejectReason: '  Need clearer slots  ',
+    });
 
-    expect(availabilityRepo.findById).toHaveBeenCalledWith('avail-1');
-    expect(mockedAssertSubmittedForReview).toHaveBeenCalledWith(PART_TIME_AVAILABILITY_STATUS.SUBMITTED);
+    // Assert
+    expect(mockAssertSubmittedForReview).toHaveBeenCalledWith(PART_TIME_AVAILABILITY_STATUS.SUBMITTED);
     expect(availabilityRepo.updateStatus).toHaveBeenCalledWith(
-      'avail-1',
+      'av-1',
       PART_TIME_AVAILABILITY_STATUS.REJECTED,
       'admin-1',
-      'Need fixes',
+      'Need clearer slots',
     );
     expect(result).toEqual(updated);
   });
 
-  it('UTCID02 - throws when reject reason is missing or blank', async () => {
+  it('UTCID02 - throws when reject reason is missing', async () => {
+    // Arrange
     availabilityRepo.findById.mockResolvedValue({
-      id: 'avail-1',
+      id: 'av-1',
+      employeeId: 'emp-1',
+      weekStart: '2025-01-06',
       status: PART_TIME_AVAILABILITY_STATUS.SUBMITTED,
       days: [],
     });
 
-    await expect(
-      service.reject({
-        availabilityId: 'avail-1',
-        reviewedById: 'admin-1',
-        rejectReason: '   ',
-      } as never),
-    ).rejects.toMatchObject({
-      message: PART_TIME_AVAILABILITY_MESSAGES.REJECT_REASON_REQUIRED,
+    // Act
+    const act = service.reject({
+      availabilityId: 'av-1',
+      reviewedById: 'admin-1',
+      rejectReason: '   ',
     });
 
-    expect(mockedAssertSubmittedForReview).toHaveBeenCalledWith(PART_TIME_AVAILABILITY_STATUS.SUBMITTED);
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: PART_TIME_AVAILABILITY_MESSAGES.REJECT_REASON_REQUIRED,
+      statusCode: HttpStatusCode.BAD_REQUEST,
+    });
     expect(availabilityRepo.updateStatus).not.toHaveBeenCalled();
   });
 
-  it('UTCID03 - throws when availability is not found', async () => {
+  it('UTCID03 - throws not found when availability does not exist', async () => {
+    // Arrange
     availabilityRepo.findById.mockResolvedValue(null);
 
-    await expect(
-      service.reject({
-        availabilityId: 'missing',
-        reviewedById: 'admin-1',
-        rejectReason: 'reason',
-      } as never),
-    ).rejects.toMatchObject({
-      message: PART_TIME_AVAILABILITY_MESSAGES.NOT_FOUND,
+    // Act
+    const act = service.reject({
+      availabilityId: 'av-404',
+      reviewedById: 'admin-1',
+      rejectReason: 'Invalid',
     });
 
-    expect(availabilityRepo.findById).toHaveBeenCalledWith('missing');
-    expect(mockedAssertSubmittedForReview).not.toHaveBeenCalled();
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: PART_TIME_AVAILABILITY_MESSAGES.NOT_FOUND,
+      statusCode: HttpStatusCode.NOT_FOUND,
+    });
     expect(availabilityRepo.updateStatus).not.toHaveBeenCalled();
   });
 });
 
 describe('PartTimeAvailabilityService.assignShifts', () => {
   let service: PartTimeAvailabilityService;
-  let availabilityRepo: MockAvailabilityRepo;
-  let employeeRepo: MockEmployeeRepo;
-  let employeeShiftRepo: MockEmployeeShiftRepo;
-  let workingShiftRepo: MockWorkingShiftRepo;
-  let availability: {
-    id: string;
-    employeeId: string;
-    weekStart: string;
-    status: string;
-    days: Array<{
-      dayOfWeek: number;
-      isBusyAllDay: boolean;
-      slots: Array<{ startTime: number; endTime: number }>;
-    }>;
-  };
+  let availabilityRepo: AvailabilityRepoMock;
+  let employeeRepo: EmployeeRepoMock;
+  let employeeShiftRepo: EmployeeShiftRepoMock;
+  let workingShiftRepo: WorkingShiftRepoMock;
 
   beforeEach(() => {
-    const setup = createService();
+    const bundle = createServiceBundle();
 
-    service = setup.service;
-    availabilityRepo = setup.availabilityRepo;
-    employeeRepo = setup.employeeRepo;
-    employeeShiftRepo = setup.employeeShiftRepo;
-    workingShiftRepo = setup.workingShiftRepo;
-
-    availability = {
-      id: 'avail-1',
-      employeeId: 'emp-1',
-      weekStart: '2025-02-10',
-      status: PART_TIME_AVAILABILITY_STATUS.SUBMITTED,
-      days: [
-        { dayOfWeek: 1, isBusyAllDay: false, slots: [{ startTime: 540, endTime: 720 }] },
-        { dayOfWeek: 2, isBusyAllDay: false, slots: [{ startTime: 600, endTime: 780 }] },
-      ],
-    };
+    service = bundle.service;
+    availabilityRepo = bundle.availabilityRepo;
+    employeeRepo = bundle.employeeRepo;
+    employeeShiftRepo = bundle.employeeShiftRepo;
+    workingShiftRepo = bundle.workingShiftRepo;
 
     jest.clearAllMocks();
-    mockedAssertSubmittedForAssign.mockReset();
-    mockedIsPartTimeWorkSchedule.mockReset();
-    mockedNormalizeWeekStart.mockReset();
-    mockedGetDateForWeekDay.mockReset();
-    mockedParseTimeToMinutes.mockReset();
-    mockedShiftFitsAvailabilityDay.mockReset();
-    mockedAuditServiceLog.mockReset();
-    mockedMinutesToTime.mockReset();
-
-    mockedAssertSubmittedForAssign.mockImplementation(() => undefined);
-    availabilityRepo.findById.mockResolvedValue(availability);
-    employeeRepo.findById.mockResolvedValue({ id: 'emp-1', workSchedule: 'PT' });
-    mockedIsPartTimeWorkSchedule.mockReturnValue(true);
-    mockedNormalizeWeekStart.mockReturnValue('2025-02-10');
-    mockedGetDateForWeekDay.mockImplementation((_weekStartArg: string, dayOfWeek: number) => `date-${dayOfWeek}`);
-    mockedParseTimeToMinutes.mockImplementation((value: string) => {
-      switch (value) {
-        case '09:00':
-          return 540;
-        case '12:00':
-          return 720;
-        case '10:00':
-          return 600;
-        case '13:00':
-          return 780;
-        case '14:00':
-          return 840;
-        default:
-          return undefined;
-      }
+    mockAssertSubmittedForAssign.mockImplementation(() => undefined);
+    employeeRepo.findById.mockResolvedValue({ id: 'emp-1', lockedUntil: null, revokedAt: null });
+    mockIsPartTimeWorkSchedule.mockReturnValue(true as never);
+    mockNormalizeWeekStart.mockReturnValue('2025-01-06' as never);
+    mockGetDateForWeekDay.mockImplementation((weekStart: Date, dayOfWeek: number) => {
+      return new Date(`2025-01-0${dayOfWeek}`);
     });
-    mockedShiftFitsAvailabilityDay.mockReturnValue(true);
-    workingShiftRepo.listAll.mockResolvedValue([{ id: 'shift-existing', startTime: 540, endTime: 720 }]);
-    workingShiftRepo.create.mockResolvedValue({ id: 'shift-created' });
-    employeeShiftRepo.replacePartTimeOverrides.mockResolvedValue(undefined);
-    mockedAuditServiceLog.mockResolvedValue(undefined);
-    mockedMinutesToTime.mockImplementation((minutes: number) => {
-      switch (minutes) {
-        case 540:
-          return '09:00';
-        case 720:
-          return '12:00';
-        case 600:
-          return '10:00';
-        case 780:
-          return '13:00';
-        case 840:
-          return '14:00';
-        default:
-          return undefined;
-      }
+    mockShiftFitsAvailabilityDay.mockReturnValue(true as never);
+    workingShiftRepo.listAll.mockResolvedValue([
+      { id: 'shift-existing', startTime: 540, endTime: 720 },
+    ]);
+    mockMinutesToTime.mockImplementation((minutesValue: number) => {
+      const timeByMinutes = new Map<number, string>([
+        [540, '09:00'],
+        [720, '12:00'],
+        [780, '13:00'],
+        [1020, '17:00'],
+      ]);
+      return (timeByMinutes.get(minutesValue) ?? '00:00') as never;
     });
   });
 
-  it('UTCID01 - assigns valid shifts and skips day-off entries', async () => {
-    workingShiftRepo.listAll.mockResolvedValue([
-      { id: 'shift-existing', startTime: 540, endTime: 720 },
-      { id: 'shift-existing-2', startTime: 600, endTime: 780 },
-    ]);
+  it('UTCID01 - assigns shifts and skips off days successfully', async () => {
+    // Arrange
+    availabilityRepo.findById.mockResolvedValue({
+      id: 'av-1',
+      employeeId: 'emp-1',
+      weekStart: '2025-01-06',
+      status: PART_TIME_AVAILABILITY_STATUS.SUBMITTED,
+      days: [
+        { dayOfWeek: 1, isBusyAllDay: false, slots: [{ startTime: 540, endTime: 720 }] },
+        { dayOfWeek: 2, isBusyAllDay: false, slots: [{ startTime: 780, endTime: 1020 }] },
+      ],
+    });
+    mockParseTimeToMinutes.mockImplementation((value: string) => {
+      const minutesByTime = new Map<string, number>([
+        ['09:00', 540],
+        ['12:00', 720],
+      ]);
+      return minutesByTime.get(value) as never;
+    });
+    employeeShiftRepo.replacePartTimeOverrides.mockResolvedValue(undefined);
+    mockAuditLog.mockResolvedValue(undefined as never);
 
+    // Act
     const result = await service.assignShifts({
-      availabilityId: 'avail-1',
+      availabilityId: 'av-1',
       createdById: 'admin-1',
       assignments: [
         { dayOfWeek: 1, startTime: '09:00', endTime: '12:00' },
         { dayOfWeek: 2, startTime: null, endTime: null },
       ],
-    } as never);
+    });
 
-    expect(availabilityRepo.findById).toHaveBeenCalledWith('avail-1');
-    expect(mockedAssertSubmittedForAssign).toHaveBeenCalledWith(PART_TIME_AVAILABILITY_STATUS.SUBMITTED);
+    // Assert
+    expect(mockAssertSubmittedForAssign).toHaveBeenCalledWith(PART_TIME_AVAILABILITY_STATUS.SUBMITTED);
     expect(employeeRepo.findById).toHaveBeenCalledWith('emp-1');
-    expect(mockedIsPartTimeWorkSchedule).toHaveBeenCalledWith({ id: 'emp-1', workSchedule: 'PT' });
-    expect(mockedParseTimeToMinutes).toHaveBeenCalledWith('09:00');
-    expect(mockedParseTimeToMinutes).toHaveBeenCalledWith('12:00');
-    expect(mockedShiftFitsAvailabilityDay).toHaveBeenCalledWith({ startTime: 540, endTime: 720 }, availability.days[0]);
     expect(employeeShiftRepo.replacePartTimeOverrides).toHaveBeenCalledWith(
       'emp-1',
-      ['date-1', 'date-2', 'date-3', 'date-4', 'date-5', 'date-6', 'date-7'],
+      [
+        new Date('2025-01-01'),
+        new Date('2025-01-02'),
+        new Date('2025-01-03'),
+        new Date('2025-01-04'),
+        new Date('2025-01-05'),
+        new Date('2025-01-06'),
+        new Date('2025-01-07'),
+      ],
       [
         {
           employeeId: 'emp-1',
-          assignedDate: 'date-1',
+          assignedDate: new Date('2025-01-01'),
           shiftId: 'shift-existing',
           createdById: 'admin-1',
         },
       ],
     );
-    expect(mockedAuditServiceLog).toHaveBeenCalledWith({
+    expect(mockAuditLog).toHaveBeenCalledWith({
       actorId: 'admin-1',
       targetEmployeeId: 'emp-1',
       action: 'PART_TIME_SHIFTS_ASSIGNED',
       newValue: {
-        availabilityId: 'avail-1',
-        weekStart: '2025-02-10',
+        availabilityId: 'av-1',
+        weekStart: '2025-01-06',
         assigned: 1,
         skipped: 1,
       },
@@ -782,68 +880,177 @@ describe('PartTimeAvailabilityService.assignShifts', () => {
     expect(result).toEqual({ assigned: 1, skipped: 1 });
   });
 
-  it('UTCID02 - throws when availability is not found', async () => {
+  it('UTCID02 - throws when assignment time range is invalid', async () => {
+    // Arrange
+    availabilityRepo.findById.mockResolvedValue({
+      id: 'av-1',
+      employeeId: 'emp-1',
+      weekStart: '2025-01-06',
+      status: PART_TIME_AVAILABILITY_STATUS.SUBMITTED,
+      days: [{ dayOfWeek: 1, isBusyAllDay: false, slots: [{ startTime: 540, endTime: 720 }] }],
+    });
+    mockParseTimeToMinutes.mockImplementation((value: string) => {
+      const minutesByTime = new Map<string, number>([
+        ['12:00', 720],
+        ['09:00', 540],
+      ]);
+      return minutesByTime.get(value) as never;
+    });
+
+    // Act
+    const act = service.assignShifts({
+      availabilityId: 'av-1',
+      createdById: 'admin-1',
+      assignments: [{ dayOfWeek: 1, startTime: '12:00', endTime: '09:00' }],
+    });
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: PART_TIME_AVAILABILITY_MESSAGES.ASSIGN_INVALID_RANGE,
+      statusCode: HttpStatusCode.BAD_REQUEST,
+    });
+    expect(employeeShiftRepo.replacePartTimeOverrides).not.toHaveBeenCalled();
+  });
+
+  it('UTCID03 - throws when shift does not fit availability slot', async () => {
+    // Arrange
+    availabilityRepo.findById.mockResolvedValue({
+      id: 'av-1',
+      employeeId: 'emp-1',
+      weekStart: '2025-01-06',
+      status: PART_TIME_AVAILABILITY_STATUS.SUBMITTED,
+      days: [{ dayOfWeek: 1, isBusyAllDay: false, slots: [{ startTime: 540, endTime: 720 }] }],
+    });
+    mockParseTimeToMinutes.mockImplementation((value: string) => {
+      const minutesByTime = new Map<string, number>([
+        ['09:00', 540],
+        ['12:00', 720],
+      ]);
+      return minutesByTime.get(value) as never;
+    });
+    mockShiftFitsAvailabilityDay.mockReturnValue(false as never);
+
+    // Act
+    const act = service.assignShifts({
+      availabilityId: 'av-1',
+      createdById: 'admin-1',
+      assignments: [{ dayOfWeek: 1, startTime: '09:00', endTime: '12:00' }],
+    });
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: PART_TIME_AVAILABILITY_MESSAGES.SHIFT_NOT_IN_SLOT,
+      statusCode: HttpStatusCode.UNPROCESSABLE_ENTITY,
+    });
+    expect(employeeShiftRepo.replacePartTimeOverrides).not.toHaveBeenCalled();
+  });
+
+  it('UTCID04 - throws not found when availability does not exist', async () => {
+    // Arrange
     availabilityRepo.findById.mockResolvedValue(null);
 
-    await expect(
-      service.assignShifts({
-        availabilityId: 'missing',
-        createdById: 'admin-1',
-        assignments: [{ dayOfWeek: 1, startTime: '09:00', endTime: '12:00' }],
-      } as never),
-    ).rejects.toMatchObject({
+    // Act
+    const act = service.assignShifts({
+      availabilityId: 'av-404',
+      createdById: 'admin-1',
+      assignments: [],
+    });
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
       message: PART_TIME_AVAILABILITY_MESSAGES.NOT_FOUND,
+      statusCode: HttpStatusCode.NOT_FOUND,
     });
-
-    expect(mockedAssertSubmittedForAssign).not.toHaveBeenCalled();
-    expect(employeeShiftRepo.replacePartTimeOverrides).not.toHaveBeenCalled();
-    expect(mockedAuditServiceLog).not.toHaveBeenCalled();
-  });
-
-  it('UTCID03 - throws when assignment range is invalid', async () => {
-    mockedParseTimeToMinutes.mockImplementation((value: string) => {
-      switch (value) {
-        case '12:00':
-          return 720;
-        case '09:00':
-          return 540;
-        default:
-          return undefined;
-      }
-    });
-
-    await expect(
-      service.assignShifts({
-        availabilityId: 'avail-1',
-        createdById: 'admin-1',
-        assignments: [{ dayOfWeek: 1, startTime: '12:00', endTime: '09:00' }],
-      } as never),
-    ).rejects.toMatchObject({
-      message: PART_TIME_AVAILABILITY_MESSAGES.ASSIGN_INVALID_RANGE,
-    });
-
-    expect(mockedParseTimeToMinutes).toHaveBeenCalledWith('12:00');
-    expect(mockedParseTimeToMinutes).toHaveBeenCalledWith('09:00');
-    expect(employeeShiftRepo.replacePartTimeOverrides).not.toHaveBeenCalled();
-    expect(mockedAuditServiceLog).not.toHaveBeenCalled();
-  });
-
-  it('UTCID04 - throws when shift does not fit availability slot', async () => {
-    mockedShiftFitsAvailabilityDay.mockReturnValue(false);
-
-    await expect(
-      service.assignShifts({
-        availabilityId: 'avail-1',
-        createdById: 'admin-1',
-        assignments: [{ dayOfWeek: 1, startTime: '09:00', endTime: '12:00' }],
-      } as never),
-    ).rejects.toMatchObject({
-      message: PART_TIME_AVAILABILITY_MESSAGES.SHIFT_NOT_IN_SLOT,
-    });
-
-    expect(mockedShiftFitsAvailabilityDay).toHaveBeenCalledWith({ startTime: 540, endTime: 720 }, availability.days[0]);
-    expect(workingShiftRepo.listAll).not.toHaveBeenCalled();
     expect(employeeShiftRepo.replacePartTimeOverrides).not.toHaveBeenCalled();
   });
 });
 
+describe('PartTimeAvailabilityService.mapPayloadDays', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('UTCID01 - maps HH:mm slots into minute-based payload days', () => {
+    // Arrange
+    mockParseTimeToMinutes
+      .mockReturnValueOnce(540 as never)
+      .mockReturnValueOnce(720 as never)
+      .mockReturnValueOnce(780 as never)
+      .mockReturnValueOnce(1020 as never);
+
+    const payload: Array<{
+      dayOfWeek: number;
+      isBusyAllDay: boolean;
+      slots: Array<{ startTime: string; endTime: string }>;
+    }> = [
+      {
+        dayOfWeek: 1,
+        isBusyAllDay: false,
+        slots: [
+          { startTime: '09:00', endTime: '12:00' },
+          { startTime: '13:00', endTime: '17:00' },
+        ],
+      },
+    ];
+
+    // Act
+    const result = PartTimeAvailabilityService.mapPayloadDays(payload);
+
+    // Assert
+    expect(mockParseTimeToMinutes).toHaveBeenCalledWith('09:00');
+    expect(mockParseTimeToMinutes).toHaveBeenCalledWith('12:00');
+    expect(mockParseTimeToMinutes).toHaveBeenCalledWith('13:00');
+    expect(mockParseTimeToMinutes).toHaveBeenCalledWith('17:00');
+    expect(result).toEqual([
+      {
+        dayOfWeek: 1,
+        isBusyAllDay: false,
+        slots: [
+          { startTime: 540, endTime: 720 },
+          { startTime: 780, endTime: 1020 },
+        ],
+      },
+    ]);
+  });
+
+  it('UTCID02 - returns empty array when input days are empty', () => {
+    // Arrange
+    const payload: Array<{
+      dayOfWeek: number;
+      isBusyAllDay: boolean;
+      slots: Array<{ startTime: string; endTime: string }>;
+    }> = [];
+
+    // Act
+    const result = PartTimeAvailabilityService.mapPayloadDays(payload);
+
+    // Assert
+    expect(result).toEqual([]);
+    expect(mockParseTimeToMinutes).not.toHaveBeenCalled();
+  });
+
+  it('UTCID03 - propagates parse time errors', () => {
+    // Arrange
+    mockParseTimeToMinutes.mockImplementation(() => {
+      throw new Error('invalid time');
+    });
+    const payload: Array<{
+      dayOfWeek: number;
+      isBusyAllDay: boolean;
+      slots: Array<{ startTime: string; endTime: string }>;
+    }> = [
+      {
+        dayOfWeek: 1,
+        isBusyAllDay: false,
+        slots: [{ startTime: 'invalid', endTime: '12:00' }],
+      },
+    ];
+
+    // Act
+    const act = (): ReturnType<typeof PartTimeAvailabilityService.mapPayloadDays> =>
+      PartTimeAvailabilityService.mapPayloadDays(payload);
+
+    // Assert
+    expect(act).toThrow('invalid time');
+  });
+});

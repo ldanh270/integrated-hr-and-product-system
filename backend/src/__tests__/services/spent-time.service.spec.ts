@@ -1,655 +1,800 @@
 /// <reference types="jest" />
-jest.mock('@/configs/entities/project.config.ts', () => ({
+import { jest } from "@jest/globals"
+import type {
+  CreateSpentTimeDto,
+  IProjectRepository,
+  ISpentTimeRepository,
+  ITaskRepository,
+  SpentTime,
+  SpentTimeQuery,
+  UpdateSpentTimeDto,
+} from "@/types"
+import type { IAttendanceRepository } from "@/types/attendance.types.ts"
+
+jest.mock("@/configs/entities/project.config.ts", () => ({
   PROJECT_MEMBER_WORK_MODE: {
-    ONSITE: 'ONSITE',
-    REMOTE: 'REMOTE'
+    ONSITE: "ONSITE",
+    REMOTE: "REMOTE",
   },
   SPENT_TIME_STATUS: {
-    PENDING: 'PENDING',
-    APPROVED: 'APPROVED',
-    REJECTED: 'REJECTED'
-  }
-}), { virtual: true });
+    PENDING: "pending",
+    APPROVED: "approved",
+    REJECTED: "rejected",
+  },
+}))
 
-jest.mock('@/configs/rules/project.config.ts', () => ({
+jest.mock("@/configs/rules/project.config.ts", () => ({
   SPENT_TIME_RULES: {
-    ENFORCE_ESTIMATE_CAP: true
-  }
-}), { virtual: true });
+    ENFORCE_ESTIMATE_CAP: true,
+  },
+}))
 
-jest.mock('@/configs/system/http.config.ts', () => ({
+jest.mock("@/configs/system/http.config.ts", () => ({
   HttpStatusCode: {
-    OK: 200,
-    CREATED: 201,
-    BAD_REQUEST: 400,
-    UNAUTHORIZED: 401,
-    FORBIDDEN: 403,
     NOT_FOUND: 404,
-    CONFLICT: 409,
+    FORBIDDEN: 403,
     UNPROCESSABLE_ENTITY: 422,
-    INTERNAL_SERVER_ERROR: 500
-  }
-}), { virtual: true });
+    CONFLICT: 409,
+  },
+}))
 
-jest.mock('@/services/authorization.service.ts', () => ({
+jest.mock("@/services/authorization.service.ts", () => ({
   authorizationService: {
-    getAuthorizationContext: jest.fn()
-  }
-}), { virtual: true });
+    getAuthorizationContext: jest.fn(),
+  },
+}))
 
-jest.mock('@/utils/error.util.ts', () => ({
+jest.mock("@/utils/error.util.ts", () => ({
   AppError: class AppError extends Error {
-    statusCode: number;
-    layerName: string;
-    constructor(message: string, statusCode: number, layerName: string) {
-      super(message);
-      this.message = message;
-      this.statusCode = statusCode;
-      this.layerName = layerName;
+    statusCode: number
+    layer: string
+
+    constructor(message: string, statusCode: number, layer: string) {
+      super(message)
+      this.name = "AppError"
+      this.statusCode = statusCode
+      this.layer = layer
     }
+  },
+}))
+
+import { PROJECT_MEMBER_WORK_MODE, SPENT_TIME_STATUS } from "@/configs/entities/project.config.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
+import { SpentTimeService } from "../../services/spent-time.service"
+
+type MockedSpentTimeRepository = jest.Mocked<ISpentTimeRepository>
+type MockedTaskRepository = jest.Mocked<ITaskRepository>
+type MockedProjectRepository = jest.Mocked<IProjectRepository>
+type MockedAttendanceRepository = jest.Mocked<IAttendanceRepository>
+type MockedGetAuthorizationContext = jest.MockedFunction<
+  typeof authorizationService.getAuthorizationContext
+>
+type AuthorizationContext = Awaited<ReturnType<typeof authorizationService.getAuthorizationContext>>
+
+const mockedGetAuthorizationContext =
+  authorizationService.getAuthorizationContext as MockedGetAuthorizationContext
+
+const createSpentTimeRecord = (overrides: Partial<SpentTime> = {}): SpentTime =>
+  ({
+    id: "st-1",
+    taskId: "task-1",
+    employeeId: "user-1",
+    hours: 2,
+    date: new Date("2024-01-01T00:00:00.000Z"),
+    status: SPENT_TIME_STATUS.PENDING,
+    approvedBy: null,
+    rejectedBy: null,
+    rejectReason: null,
+    approvedAt: null,
+    rejectedAt: null,
+    createdAt: new Date("2024-01-01T00:00:00.000Z"),
+    updatedAt: new Date("2024-01-01T00:00:00.000Z"),
+    ...overrides,
+  }) as unknown as SpentTime
+
+const createRepositories = (): {
+  repository: MockedSpentTimeRepository
+  taskRepository: MockedTaskRepository
+  projectRepository: MockedProjectRepository
+  attendanceRepository: MockedAttendanceRepository
+} => {
+  const repository = {
+    findById: jest.fn(),
+    sumTaskHours: jest.fn(),
+    list: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    approve: jest.fn(),
+    reject: jest.fn(),
+    listApprovedForPayroll: jest.fn(),
+  } as unknown as MockedSpentTimeRepository
+
+  const taskRepository = {
+    findById: jest.fn(),
+  } as unknown as MockedTaskRepository
+
+  const projectRepository = {
+    findById: jest.fn(),
+    getMember: jest.fn(),
+    isMember: jest.fn(),
+  } as unknown as MockedProjectRepository
+
+  const attendanceRepository = {
+    findByEmployeeAndDate: jest.fn(),
+  } as unknown as MockedAttendanceRepository
+
+  return {
+    repository,
+    taskRepository,
+    projectRepository,
+    attendanceRepository,
   }
-}), { virtual: true });
+}
 
-jest.mock('@/types', () => ({}), { virtual: true });
-jest.mock('@/types/attendance.types.ts', () => ({}), { virtual: true });
+const createService = () => {
+  const deps = createRepositories()
 
-import { SpentTimeService } from '../../services/spent-time.service';
-import { authorizationService } from '@/services/authorization.service.ts';
-import { PROJECT_MEMBER_WORK_MODE, SPENT_TIME_STATUS } from '@/configs/entities/project.config.ts';
-import { HttpStatusCode } from '@/configs/system/http.config.ts';
-import { AppError } from '@/utils/error.util.ts';
+  const service = new SpentTimeService(
+    deps.repository,
+    deps.taskRepository,
+    deps.projectRepository,
+    deps.attendanceRepository,
+  )
 
-describe('SpentTimeService', () => {
-  let service: SpentTimeService;
-  let mockSpentTimeRepo: Record<string, jest.Mock>;
-  let mockTaskRepo: Record<string, jest.Mock>;
-  let mockProjectRepo: Record<string, jest.Mock>;
-  let mockAttendanceRepo: Record<string, jest.Mock>;
+  return { service, ...deps }
+}
 
+const mockAuth = (hasPermission: boolean) => {
+  mockedGetAuthorizationContext.mockResolvedValue({
+    permissions: new Set(hasPermission ? ["project.update"] : []),
+  } as AuthorizationContext)
+}
+
+describe("SpentTimeService.getSpentTime", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-
-    mockSpentTimeRepo = {
-      findById: jest.fn(),
-      sumTaskHours: jest.fn(),
-      list: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      approve: jest.fn(),
-      reject: jest.fn()
-    };
-
-    mockTaskRepo = {
-      findById: jest.fn()
-    };
-
-    mockProjectRepo = {
-      findById: jest.fn(),
-      getMember: jest.fn(),
-      isMember: jest.fn()
-    };
-
-    mockAttendanceRepo = {
-      findByEmployeeAndDate: jest.fn()
-    };
-
-    service = new SpentTimeService(
-      mockSpentTimeRepo as never,
-      mockTaskRepo as never,
-      mockProjectRepo as never,
-      mockAttendanceRepo as never
-    );
-  });
-
-  describe('getSpentTime', () => {
-    it('should return a spent time record when the requester is the owner (Happy Path)', async () => {
-      // Arrange
-      const recordId = 'record-123';
-      const userId = 'user-123';
-      const mockRecord = { id: recordId, employeeId: userId, taskId: 'task-123', hours: 4 };
-
-      mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      jest.mocked(authorizationService.getAuthorizationContext).mockResolvedValue({
-        permissions: new Set()
-      } as never);
-
-      // Act
-      const result = await service.getSpentTime(recordId, userId);
-
-      // Assert
-      expect(result).toEqual(mockRecord);
-      expect(mockSpentTimeRepo.findById).toHaveBeenCalledWith(recordId);
-    });
-
-    it('should throw NOT_FOUND when the spent time record does not exist', async () => {
-      // Arrange
-      const recordId = 'missing-id';
-      mockSpentTimeRepo.findById.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(service.getSpentTime(recordId, 'user-123'))
-        .rejects
-        .toThrow(new AppError("Spent time record not found", HttpStatusCode.NOT_FOUND, "SpentTimeService"));
-    });
-
-    it('should throw FORBIDDEN when user is not the owner, not admin, and task/project matches but not TL', async () => {
-      // Arrange
-      const recordId = 'record-123';
-      const userId = 'user-123';
-      const mockRecord = { id: recordId, employeeId: 'other-user', taskId: 'task-123' };
-      const mockTask = { id: 'task-123', projectId: 'project-123' };
-      const mockProject = { id: 'project-123', teamLeaderId: 'another-tl' };
-
-      mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
-        permissions: new Set()
-      });
-      mockTaskRepo.findById.mockResolvedValue(mockTask);
-      mockProjectRepo.findById.mockResolvedValue(mockProject);
-
-      // Act & Assert
-      await expect(service.getSpentTime(recordId, userId))
-        .rejects
-        .toThrow(new AppError("Access denied", HttpStatusCode.FORBIDDEN, "SpentTimeService"));
-    });
-
-    it('should throw FORBIDDEN when user is not owner/admin and associated task does not exist', async () => {
-      // Arrange
-      const recordId = 'record-123';
-      const mockRecord = { id: recordId, employeeId: 'other-user', taskId: 'missing-task' };
-
-      mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
-        permissions: new Set()
-      });
-      mockTaskRepo.findById.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(service.getSpentTime(recordId, 'user-123'))
-        .rejects
-        .toThrow(new AppError("Access denied", HttpStatusCode.FORBIDDEN, "SpentTimeService"));
-    });
-  });
-
-  describe('listSpentTimes', () => {
-    it('should list all matching records when request is made by an authorized admin (Happy Path)', async () => {
-      // Arrange
-      const userId = 'admin-123';
-      const query = { projectId: 'project-123' };
-      const mockList = [{ id: 'record-1', hours: 8 }];
-
-      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
-        permissions: new Set(['project.update'])
-      });
-      mockSpentTimeRepo.list.mockResolvedValue(mockList);
-
-      // Act
-      const result = await service.listSpentTimes(query, userId);
-
-      // Assert
-      expect(result).toEqual(mockList);
-      expect(mockSpentTimeRepo.list).toHaveBeenCalledWith(query);
-    });
-
-    it('should throw NOT_FOUND when non-admin queries by projectId and project does not exist', async () => {
-      // Arrange
-      const userId = 'user-123';
-      const query = { projectId: 'missing-project' };
-
-      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
-        permissions: new Set()
-      });
-      mockProjectRepo.findById.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(service.listSpentTimes(query, userId))
-        .rejects
-        .toThrow(new AppError("Project not found", HttpStatusCode.NOT_FOUND, "SpentTimeService"));
-    });
-
-    it('should throw FORBIDDEN when non-admin queries project logs but is neither member nor TL', async () => {
-      // Arrange
-      const userId = 'user-123';
-      const query = { projectId: 'project-123' };
-      const mockProject = { id: 'project-123', teamLeaderId: 'tl-456' };
-
-      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
-        permissions: new Set()
-      });
-      mockProjectRepo.findById.mockResolvedValue(mockProject);
-      mockProjectRepo.isMember.mockResolvedValue(false);
-
-      // Act & Assert
-      await expect(service.listSpentTimes(query, userId))
-        .rejects
-        .toThrow(new AppError("Access denied to this project's logs", HttpStatusCode.FORBIDDEN, "SpentTimeService"));
-    });
-
-    it('should throw NOT_FOUND when non-admin queries by taskId and task does not exist', async () => {
-      // Arrange
-      const userId = 'user-123';
-      const query = { taskId: 'missing-task' };
-
-      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
-        permissions: new Set()
-      });
-      mockTaskRepo.findById.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(service.listSpentTimes(query, userId))
-        .rejects
-        .toThrow(new AppError("Task not found", HttpStatusCode.NOT_FOUND, "SpentTimeService"));
-    });
-  });
-
-  describe('createSpentTime', () => {
-    it('should create spent time successfully for valid inputs (Happy Path)', async () => {
-      // Arrange
-      const userId = 'user-123';
-      const dto = { taskId: 'task-123', hours: 4, date: '2023-10-10', activity: 'DEVELOPMENT' as never };
-      const mockTask = { id: 'task-123', projectId: 'project-123', estimatedTime: 10 };
-      const mockProject = { id: 'project-123', teamLeaderId: 'tl-123' };
-      const mockCreated = { id: 'record-1', ...dto, employeeId: userId };
-
-      mockTaskRepo.findById.mockResolvedValue(mockTask);
-      jest.mocked(authorizationService.getAuthorizationContext).mockResolvedValue({
-        permissions: new Set()
-      } as never);
-      mockProjectRepo.findById.mockResolvedValue(mockProject);
-      mockProjectRepo.isMember.mockResolvedValue(true);
-      mockSpentTimeRepo.sumTaskHours.mockResolvedValue(0);
-      mockProjectRepo.getMember.mockResolvedValue({ workMode: PROJECT_MEMBER_WORK_MODE.REMOTE });
-      mockSpentTimeRepo.create.mockResolvedValue(mockCreated);
-
-      // Act
-      const result = await service.createSpentTime(dto, userId);
-
-      // Assert
-      expect(result).toEqual(mockCreated);
-      expect(mockSpentTimeRepo.create).toHaveBeenCalledWith(expect.objectContaining({ employeeId: userId }));
-    });
-
-    it('should throw NOT_FOUND when creating spent time for a non-existing task', async () => {
-      // Arrange
-      const dto = { taskId: 'missing-task', hours: 4, date: '2023-10-10', activity: 'DEVELOPMENT' as never };
-      mockTaskRepo.findById.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(service.createSpentTime(dto, 'user-123'))
-        .rejects
-        .toThrow(new AppError("Task not found", HttpStatusCode.NOT_FOUND, "SpentTimeService"));
-    });
-
-    it('should throw FORBIDDEN when user has no access to the project to log time', async () => {
-      // Arrange
-      const dto = { taskId: 'task-123', hours: 4, date: '2023-10-10', activity: 'DEVELOPMENT' as never };
-      const mockTask = { id: 'task-123', projectId: 'project-123' };
-      const mockProject = { id: 'project-123', teamLeaderId: 'tl-123' };
-
-      mockTaskRepo.findById.mockResolvedValue(mockTask);
-      jest.mocked(authorizationService.getAuthorizationContext).mockResolvedValue({
-        permissions: new Set()
-      } as never);
-      mockProjectRepo.findById.mockResolvedValue(mockProject);
-      mockProjectRepo.isMember.mockResolvedValue(false);
-
-      // Act & Assert
-      await expect(service.createSpentTime(dto, 'stranger-123'))
-        .rejects
-        .toThrow(new AppError("Access denied to log time for this project", HttpStatusCode.FORBIDDEN, "SpentTimeService"));
-    });
-
-    it('should throw UNPROCESSABLE_ENTITY when total logged hours exceeds task estimated time cap', async () => {
-      // Arrange
-      const dto = { taskId: 'task-123', hours: 5, date: '2023-10-10', activity: 'DEVELOPMENT' as never };
-      const mockTask = { id: 'task-123', projectId: 'project-123', estimatedTime: 8 };
-      const mockProject = { id: 'project-123', teamLeaderId: 'tl-123' };
-
-      mockTaskRepo.findById.mockResolvedValue(mockTask);
-      jest.mocked(authorizationService.getAuthorizationContext).mockResolvedValue({
-        permissions: new Set()
-      } as never);
-      mockProjectRepo.findById.mockResolvedValue(mockProject);
-      mockProjectRepo.isMember.mockResolvedValue(true);
-      mockSpentTimeRepo.sumTaskHours.mockResolvedValue(4); // 4 + 5 = 9 > 8
-
-      // Act & Assert
-      await expect(service.createSpentTime(dto, 'user-123'))
-        .rejects
-        .toThrow(new AppError("Tổng giờ làm (9.0h) vượt ước tính (8h)", HttpStatusCode.UNPROCESSABLE_ENTITY, "SpentTimeService"));
-    });
-
-    it('should throw UNPROCESSABLE_ENTITY when onsite member has no check-in on record', async () => {
-      // Arrange
-      const dto = { taskId: 'task-123', hours: 4, date: '2023-10-10', activity: 'DEVELOPMENT' as never };
-      const mockTask = { id: 'task-123', projectId: 'project-123', estimatedTime: null };
-      const mockProject = { id: 'project-123', teamLeaderId: 'tl-123' };
-
-      mockTaskRepo.findById.mockResolvedValue(mockTask);
-      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
-        permissions: new Set()
-      });
-      mockProjectRepo.findById.mockResolvedValue(mockProject);
-      mockProjectRepo.isMember.mockResolvedValue(true);
-      mockSpentTimeRepo.sumTaskHours.mockResolvedValue(0);
-      mockProjectRepo.getMember.mockResolvedValue({ workMode: PROJECT_MEMBER_WORK_MODE.ONSITE });
-      mockAttendanceRepo.findByEmployeeAndDate.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(service.createSpentTime(dto, 'user-123'))
-        .rejects
-        .toThrow(new AppError("Nhân viên onsite phải check-in trước khi ghi Spent Time", HttpStatusCode.UNPROCESSABLE_ENTITY, "SpentTimeService"));
-    });
-  });
-
-  describe('updateSpentTime', () => {
-    it('should update a pending spent time record successfully (Happy Path)', async () => {
-      // Arrange
-      const recordId = 'record-123';
-      const userId = 'user-123';
-      const dto = { hours: 6 };
-      const mockRecord = { id: recordId, status: SPENT_TIME_STATUS.PENDING, employeeId: userId, taskId: 'task-123', hours: 4, date: '2023-10-10' };
-      const mockTask = { id: 'task-123', projectId: 'project-123', estimatedTime: null };
-      const mockUpdated = { ...mockRecord, hours: 6 };
-
-      mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
-        permissions: new Set()
-      });
-      mockTaskRepo.findById.mockResolvedValue(mockTask);
-      mockProjectRepo.getMember.mockResolvedValue({ workMode: PROJECT_MEMBER_WORK_MODE.REMOTE });
-      mockSpentTimeRepo.update.mockResolvedValue(mockUpdated);
-
-      // Act
-      const result = await service.updateSpentTime(recordId, dto, userId);
-
-      // Assert
-      expect(result).toEqual(mockUpdated);
-      expect(mockSpentTimeRepo.update).toHaveBeenCalledWith(recordId, dto);
-    });
-
-    it('should throw NOT_FOUND when updating non-existent record', async () => {
-      // Arrange
-      mockSpentTimeRepo.findById.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(service.updateSpentTime('missing-id', { hours: 5 }, 'user-123'))
-        .rejects
-        .toThrow(new AppError("Spent time record not found", HttpStatusCode.NOT_FOUND, "SpentTimeService"));
-    });
-
-    it('should throw CONFLICT when trying to update non-pending record', async () => {
-      // Arrange
-      const recordId = 'record-123';
-      const mockRecord = { id: recordId, status: SPENT_TIME_STATUS.APPROVED, employeeId: 'user-123' };
-      mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-
-      // Act & Assert
-      await expect(service.updateSpentTime(recordId, { hours: 5 }, 'user-123'))
-        .rejects
-        .toThrow(new AppError("Chỉ có thể sửa log đang chờ duyệt", HttpStatusCode.CONFLICT, "SpentTimeService"));
-    });
-
-    it('should throw FORBIDDEN when user has no permission to update others log', async () => {
-      // Arrange
-      const recordId = 'record-123';
-      const mockRecord = { id: recordId, status: SPENT_TIME_STATUS.PENDING, employeeId: 'other-user' };
-
-      mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
-        permissions: new Set()
-      });
-
-      // Act & Assert
-      await expect(service.updateSpentTime(recordId, { hours: 5 }, 'user-123'))
-        .rejects
-        .toThrow(new AppError("Access denied to update this log", HttpStatusCode.FORBIDDEN, "SpentTimeService"));
-    });
-  });
-
-  describe('deleteSpentTime', () => {
-    it('should delete a pending spent time record successfully (Happy Path)', async () => {
-      // Arrange
-      const recordId = 'record-123';
-      const userId = 'user-123';
-      const mockRecord = { id: recordId, status: SPENT_TIME_STATUS.PENDING, employeeId: userId };
-
-      mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
-        permissions: new Set()
-      });
-      mockSpentTimeRepo.delete.mockResolvedValue(true);
-
-      // Act
-      const result = await service.deleteSpentTime(recordId, userId);
-
-      // Assert
-      expect(result).toBe(true);
-      expect(mockSpentTimeRepo.delete).toHaveBeenCalledWith(recordId);
-    });
-
-    it('should throw NOT_FOUND when deleting non-existent record', async () => {
-      // Arrange
-      mockSpentTimeRepo.findById.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(service.deleteSpentTime('missing-id', 'user-123'))
-        .rejects
-        .toThrow(new AppError("Spent time record not found", HttpStatusCode.NOT_FOUND, "SpentTimeService"));
-    });
-
-    it('should throw CONFLICT when trying to delete non-pending record', async () => {
-      // Arrange
-      const recordId = 'record-123';
-      const mockRecord = { id: recordId, status: SPENT_TIME_STATUS.REJECTED, employeeId: 'user-123' };
-      mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-
-      // Act & Assert
-      await expect(service.deleteSpentTime(recordId, 'user-123'))
-        .rejects
-        .toThrow(new AppError("Chỉ có thể xóa log đang chờ duyệt", HttpStatusCode.CONFLICT, "SpentTimeService"));
-    });
-
-    it('should throw FORBIDDEN when user has no permission to delete others log', async () => {
-      // Arrange
-      const recordId = 'record-123';
-      const mockRecord = { id: recordId, status: SPENT_TIME_STATUS.PENDING, employeeId: 'other-user' };
-
-      mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
-        permissions: new Set()
-      });
-
-      // Act & Assert
-      await expect(service.deleteSpentTime(recordId, 'user-123'))
-        .rejects
-        .toThrow(new AppError("Access denied to delete this log", HttpStatusCode.FORBIDDEN, "SpentTimeService"));
-    });
-  });
-
-  describe('approveSpentTime', () => {
-    it('should approve pending spent time successfully by project lead (Happy Path)', async () => {
-      // Arrange
-      const recordId = 'record-123';
-      const leadId = 'lead-123';
-      const mockRecord = { id: recordId, taskId: 'task-123', status: SPENT_TIME_STATUS.PENDING };
-      const mockTask = { id: 'task-123', projectId: 'project-123' };
-      const mockProject = { id: 'project-123', teamLeaderId: leadId };
-      const mockApproved = { ...mockRecord, status: SPENT_TIME_STATUS.APPROVED };
-
-      mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      mockTaskRepo.findById.mockResolvedValue(mockTask);
-      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
-        permissions: new Set()
-      });
-      mockProjectRepo.findById.mockResolvedValue(mockProject);
-      mockSpentTimeRepo.approve.mockResolvedValue(mockApproved);
-
-      // Act
-      const result = await service.approveSpentTime(recordId, leadId);
-
-      // Assert
-      expect(result).toEqual(mockApproved);
-      expect(mockSpentTimeRepo.approve).toHaveBeenCalledWith(recordId, leadId);
-    });
-
-    it('should throw NOT_FOUND when approving non-existent record', async () => {
-      // Arrange
-      mockSpentTimeRepo.findById.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(service.approveSpentTime('missing-id', 'lead-123'))
-        .rejects
-        .toThrow(new AppError("Spent time record not found", HttpStatusCode.NOT_FOUND, "SpentTimeService"));
-    });
-
-    it('should throw NOT_FOUND when task associated with the record is missing', async () => {
-      // Arrange
-      const recordId = 'record-123';
-      const mockRecord = { id: recordId, taskId: 'missing-task', status: SPENT_TIME_STATUS.PENDING };
-
-      mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      mockTaskRepo.findById.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(service.approveSpentTime(recordId, 'lead-123'))
-        .rejects
-        .toThrow(new AppError("Task not found", HttpStatusCode.NOT_FOUND, "SpentTimeService"));
-    });
-
-    it('should throw FORBIDDEN when user has no authorization to approve (not project lead)', async () => {
-      // Arrange
-      const recordId = 'record-123';
-      const mockRecord = { id: recordId, taskId: 'task-123', status: SPENT_TIME_STATUS.PENDING };
-      const mockTask = { id: 'task-123', projectId: 'project-123' };
-      const mockProject = { id: 'project-123', teamLeaderId: 'different-lead-123' };
-
-      mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      mockTaskRepo.findById.mockResolvedValue(mockTask);
-      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
-        permissions: new Set()
-      });
-      mockProjectRepo.findById.mockResolvedValue(mockProject);
-
-      // Act & Assert
-      await expect(service.approveSpentTime(recordId, 'user-123'))
-        .rejects
-        .toThrow(new AppError("Access denied", HttpStatusCode.FORBIDDEN, "SpentTimeService"));
-    });
-
-    it('should throw CONFLICT when trying to approve already processed record', async () => {
-      // Arrange
-      const recordId = 'record-123';
-      const leadId = 'lead-123';
-      const mockRecord = { id: recordId, taskId: 'task-123', status: SPENT_TIME_STATUS.APPROVED };
-      const mockTask = { id: 'task-123', projectId: 'project-123' };
-      const mockProject = { id: 'project-123', teamLeaderId: leadId };
-
-      mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      mockTaskRepo.findById.mockResolvedValue(mockTask);
-      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
-        permissions: new Set()
-      });
-      mockProjectRepo.findById.mockResolvedValue(mockProject);
-
-      // Act & Assert
-      await expect(service.approveSpentTime(recordId, leadId))
-        .rejects
-        .toThrow(new AppError("Log đã được xử lý", HttpStatusCode.CONFLICT, "SpentTimeService"));
-    });
-  });
-
-  describe('rejectSpentTime', () => {
-    it('should reject pending spent time successfully by project lead (Happy Path)', async () => {
-      // Arrange
-      const recordId = 'record-123';
-      const leadId = 'lead-123';
-      const reason = 'Incorrect task code';
-      const mockRecord = { id: recordId, taskId: 'task-123', status: SPENT_TIME_STATUS.PENDING };
-      const mockTask = { id: 'task-123', projectId: 'project-123' };
-      const mockProject = { id: 'project-123', teamLeaderId: leadId };
-      const mockRejected = { ...mockRecord, status: SPENT_TIME_STATUS.REJECTED, rejectionReason: reason };
-
-      mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      mockTaskRepo.findById.mockResolvedValue(mockTask);
-      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
-        permissions: new Set()
-      });
-      mockProjectRepo.findById.mockResolvedValue(mockProject);
-      mockSpentTimeRepo.reject.mockResolvedValue(mockRejected);
-
-      // Act
-      const result = await service.rejectSpentTime(recordId, reason, leadId);
-
-      // Assert
-      expect(result).toEqual(mockRejected);
-      expect(mockSpentTimeRepo.reject).toHaveBeenCalledWith(recordId, leadId, reason);
-    });
-
-    it('should throw NOT_FOUND when rejecting non-existent record', async () => {
-      // Arrange
-      mockSpentTimeRepo.findById.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(service.rejectSpentTime('missing-id', 'no reason', 'lead-123'))
-        .rejects
-        .toThrow(new AppError("Spent time record not found", HttpStatusCode.NOT_FOUND, "SpentTimeService"));
-    });
-
-    it('should throw NOT_FOUND when task associated with the record is missing', async () => {
-      // Arrange
-      const recordId = 'record-123';
-      const mockRecord = { id: recordId, taskId: 'missing-task', status: SPENT_TIME_STATUS.PENDING };
-
-      mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      mockTaskRepo.findById.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(service.rejectSpentTime(recordId, 'reason', 'lead-123'))
-        .rejects
-        .toThrow(new AppError("Task not found", HttpStatusCode.NOT_FOUND, "SpentTimeService"));
-    });
-
-    it('should throw FORBIDDEN when user has no authorization to reject (not project lead)', async () => {
-      // Arrange
-      const recordId = 'record-123';
-      const mockRecord = { id: recordId, taskId: 'task-123', status: SPENT_TIME_STATUS.PENDING };
-      const mockTask = { id: 'task-123', projectId: 'project-123' };
-      const mockProject = { id: 'project-123', teamLeaderId: 'different-lead-123' };
-
-      mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      mockTaskRepo.findById.mockResolvedValue(mockTask);
-      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
-        permissions: new Set()
-      });
-      mockProjectRepo.findById.mockResolvedValue(mockProject);
-
-      // Act & Assert
-      await expect(service.rejectSpentTime(recordId, 'reason', 'user-123'))
-        .rejects
-        .toThrow(new AppError("Access denied", HttpStatusCode.FORBIDDEN, "SpentTimeService"));
-    });
-
-    it('should throw CONFLICT when trying to reject already processed record', async () => {
-      // Arrange
-      const recordId = 'record-123';
-      const leadId = 'lead-123';
-      const mockRecord = { id: recordId, taskId: 'task-123', status: SPENT_TIME_STATUS.REJECTED };
-      const mockTask = { id: 'task-123', projectId: 'project-123' };
-      const mockProject = { id: 'project-123', teamLeaderId: leadId };
-
-      mockSpentTimeRepo.findById.mockResolvedValue(mockRecord);
-      mockTaskRepo.findById.mockResolvedValue(mockTask);
-      (authorizationService.getAuthorizationContext as jest.Mock).mockResolvedValue({
-        permissions: new Set()
-      });
-      mockProjectRepo.findById.mockResolvedValue(mockProject);
-
-      // Act & Assert
-      await expect(service.rejectSpentTime(recordId, 'another reason', leadId))
-        .rejects
-        .toThrow(new AppError("Log đã được xử lý", HttpStatusCode.CONFLICT, "SpentTimeService"));
-    });
-  });
-});
+    jest.clearAllMocks()
+  })
+
+  it("UTCID01 - returns the record for the owner", async () => {
+    // Arrange
+    const { service, repository, taskRepository, projectRepository } = createService()
+    const record = createSpentTimeRecord()
+    repository.findById.mockResolvedValue(record)
+    mockAuth(false)
+
+    // Act
+    const result = await service.getSpentTime("st-1", "user-1")
+
+    // Assert
+    expect(result).toEqual(record)
+    expect(repository.findById).toHaveBeenCalledWith("st-1")
+    expect(taskRepository.findById).not.toHaveBeenCalled()
+    expect(projectRepository.findById).not.toHaveBeenCalled()
+  })
+
+  it("UTCID02 - throws not found when record does not exist", async () => {
+    // Arrange
+    const { service, repository } = createService()
+    repository.findById.mockResolvedValue(null)
+
+    // Act
+    const act = service.getSpentTime("missing", "user-1")
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: "Spent time record not found",
+      statusCode: 404,
+    })
+  })
+
+  it("UTCID03 - throws forbidden when user is not owner admin or team leader", async () => {
+    // Arrange
+    const { service, repository, taskRepository, projectRepository } = createService()
+    repository.findById.mockResolvedValue(
+      createSpentTimeRecord({
+        employeeId: "owner-1",
+      }),
+    )
+    taskRepository.findById.mockResolvedValue({
+      id: "task-1",
+      projectId: "project-1",
+      estimatedTime: 8,
+    } as never)
+    projectRepository.findById.mockResolvedValue({
+      id: "project-1",
+      teamLeaderId: "other-lead",
+    } as never)
+    mockAuth(false)
+
+    // Act
+    const act = service.getSpentTime("st-1", "user-2")
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: "Access denied",
+      statusCode: 403,
+    })
+  })
+})
+
+describe("SpentTimeService.listSpentTimes", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it("UTCID01 - returns records and scopes query to current user for non-admin without filters", async () => {
+    // Arrange
+    const { service, repository } = createService()
+    const query = {} as SpentTimeQuery
+    const records = [createSpentTimeRecord({ hours: 1 })]
+    mockAuth(false)
+    repository.list.mockResolvedValue(records)
+
+    // Act
+    const result = await service.listSpentTimes(query, "user-1")
+
+    // Assert
+    expect(result).toEqual(records)
+    expect(query).toEqual({ employeeId: "user-1" })
+    expect(repository.list).toHaveBeenCalledWith({ employeeId: "user-1" })
+  })
+
+  it("UTCID02 - throws not found when project filter references missing project", async () => {
+    // Arrange
+    const { service, projectRepository } = createService()
+    const query = { projectId: "project-1" } as SpentTimeQuery
+    mockAuth(false)
+    projectRepository.findById.mockResolvedValue(null)
+
+    // Act
+    const act = service.listSpentTimes(query, "user-1")
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: "Project not found",
+      statusCode: 404,
+    })
+  })
+
+  it("UTCID03 - throws forbidden when user has no access to project logs", async () => {
+    // Arrange
+    const { service, projectRepository } = createService()
+    const query = { projectId: "project-1" } as SpentTimeQuery
+    mockAuth(false)
+    projectRepository.findById.mockResolvedValue({
+      id: "project-1",
+      teamLeaderId: "lead-1",
+    } as never)
+    projectRepository.isMember.mockResolvedValue(false)
+
+    // Act
+    const act = service.listSpentTimes(query, "user-1")
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: "Access denied to this project's logs",
+      statusCode: 403,
+    })
+  })
+})
+
+describe("SpentTimeService.createSpentTime", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it("UTCID01 - creates spent time for a project member", async () => {
+    // Arrange
+    const { service, repository, taskRepository, projectRepository, attendanceRepository } = createService()
+    const data = {
+      taskId: "task-1",
+      hours: 2,
+      date: "2024-01-01",
+      employeeId: null,
+    } as unknown as CreateSpentTimeDto
+    const created = createSpentTimeRecord()
+    mockAuth(false)
+    taskRepository.findById.mockResolvedValue({
+      id: "task-1",
+      projectId: "project-1",
+      estimatedTime: 8,
+    } as never)
+    projectRepository.findById.mockResolvedValue({
+      id: "project-1",
+      teamLeaderId: "lead-1",
+    } as never)
+    projectRepository.isMember.mockResolvedValue(true)
+    repository.sumTaskHours.mockResolvedValue(3)
+    projectRepository.getMember.mockResolvedValue({
+      employeeId: "user-1",
+      workMode: PROJECT_MEMBER_WORK_MODE.REMOTE,
+    } as never)
+    attendanceRepository.findByEmployeeAndDate.mockResolvedValue(null)
+    repository.create.mockResolvedValue(created)
+
+    // Act
+    const result = await service.createSpentTime(data, "user-1")
+
+    // Assert
+    expect(result).toEqual(created)
+    expect((data as { employeeId: string | null }).employeeId).toBe("user-1")
+    expect(repository.create).toHaveBeenCalledWith({
+      taskId: "task-1",
+      hours: 2,
+      date: "2024-01-01",
+      employeeId: "user-1",
+    })
+  })
+
+  it("UTCID02 - throws not found when task does not exist", async () => {
+    // Arrange
+    const { service, taskRepository } = createService()
+    const data = {
+      taskId: "missing-task",
+      hours: 2,
+      date: "2024-01-01",
+      employeeId: null,
+    } as unknown as CreateSpentTimeDto
+    mockAuth(false)
+    taskRepository.findById.mockResolvedValue(null)
+
+    // Act
+    const act = service.createSpentTime(data, "user-1")
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: "Task not found",
+      statusCode: 404,
+    })
+  })
+
+  it("UTCID03 - throws forbidden when non-admin user is not a team leader or project member", async () => {
+    // Arrange
+    const { service, taskRepository, projectRepository } = createService()
+    const data = {
+      taskId: "task-1",
+      hours: 2,
+      date: "2024-01-01",
+      employeeId: null,
+    } as unknown as CreateSpentTimeDto
+    mockAuth(false)
+    taskRepository.findById.mockResolvedValue({
+      id: "task-1",
+      projectId: "project-1",
+      estimatedTime: 8,
+    } as never)
+    projectRepository.findById.mockResolvedValue({
+      id: "project-1",
+      teamLeaderId: "lead-1",
+    } as never)
+    projectRepository.isMember.mockResolvedValue(false)
+
+    // Act
+    const act = service.createSpentTime(data, "user-1")
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: "Access denied to log time for this project",
+      statusCode: 403,
+    })
+  })
+
+  it("UTCID04 - throws unprocessable entity when onsite member has no check-in", async () => {
+    // Arrange
+    const { service, taskRepository, projectRepository, repository, attendanceRepository } = createService()
+    const data = {
+      taskId: "task-1",
+      hours: 2,
+      date: "2024-01-01",
+      employeeId: null,
+    } as unknown as CreateSpentTimeDto
+    mockAuth(false)
+    taskRepository.findById.mockResolvedValue({
+      id: "task-1",
+      projectId: "project-1",
+      estimatedTime: 8,
+    } as never)
+    projectRepository.findById.mockResolvedValue({
+      id: "project-1",
+      teamLeaderId: "lead-1",
+    } as never)
+    projectRepository.isMember.mockResolvedValue(true)
+    repository.sumTaskHours.mockResolvedValue(1)
+    projectRepository.getMember.mockResolvedValue({
+      employeeId: "user-1",
+      workMode: PROJECT_MEMBER_WORK_MODE.ONSITE,
+    } as never)
+    attendanceRepository.findByEmployeeAndDate.mockResolvedValue({
+      id: "att-1",
+      checkInAt: null,
+    } as never)
+
+    // Act
+    const act = service.createSpentTime(data, "user-1")
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: "Nhân viên onsite phải check-in trước khi ghi Spent Time",
+      statusCode: 422,
+    })
+  })
+})
+
+describe("SpentTimeService.updateSpentTime", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it("UTCID01 - updates a pending spent time record owned by the user", async () => {
+    // Arrange
+    const { service, repository, taskRepository, projectRepository, attendanceRepository } = createService()
+    const record = createSpentTimeRecord()
+    const updateData = {
+      hours: 3,
+      date: new Date("2024-01-02T00:00:00.000Z"),
+    } as unknown as UpdateSpentTimeDto
+    const updated = createSpentTimeRecord({
+      hours: 3,
+      date: new Date("2024-01-02T00:00:00.000Z"),
+    })
+    repository.findById.mockResolvedValue(record)
+    mockAuth(false)
+    taskRepository.findById.mockResolvedValue({
+      id: "task-1",
+      projectId: "project-1",
+      estimatedTime: 8,
+    } as never)
+    repository.sumTaskHours.mockResolvedValue(2)
+    projectRepository.getMember.mockResolvedValue({
+      employeeId: "user-1",
+      workMode: PROJECT_MEMBER_WORK_MODE.REMOTE,
+    } as never)
+    attendanceRepository.findByEmployeeAndDate.mockResolvedValue(null)
+    repository.update.mockResolvedValue(updated)
+
+    // Act
+    const result = await service.updateSpentTime("st-1", updateData, "user-1")
+
+    // Assert
+    expect(result).toEqual(updated)
+    expect(repository.update).toHaveBeenCalledWith("st-1", updateData)
+    expect(repository.sumTaskHours).toHaveBeenCalledWith("task-1", "st-1")
+  })
+
+  it("UTCID02 - throws not found when record does not exist", async () => {
+    // Arrange
+    const { service, repository } = createService()
+    repository.findById.mockResolvedValue(null)
+
+    // Act
+    const act = service.updateSpentTime("missing", { hours: 3 } as UpdateSpentTimeDto, "user-1")
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: "Spent time record not found",
+      statusCode: 404,
+    })
+  })
+
+  it("UTCID03 - throws conflict when record is not pending", async () => {
+    // Arrange
+    const { service, repository } = createService()
+    repository.findById.mockResolvedValue(
+      createSpentTimeRecord({
+        status: SPENT_TIME_STATUS.APPROVED,
+      }),
+    )
+
+    // Act
+    const act = service.updateSpentTime("st-1", { hours: 3 } as UpdateSpentTimeDto, "user-1")
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: "Chỉ có thể sửa log đang chờ duyệt",
+      statusCode: 409,
+    })
+  })
+
+  it("UTCID04 - throws forbidden when non-admin user does not own the record", async () => {
+    // Arrange
+    const { service, repository } = createService()
+    repository.findById.mockResolvedValue(
+      createSpentTimeRecord({
+        employeeId: "owner-1",
+      }),
+    )
+    mockAuth(false)
+
+    // Act
+    const act = service.updateSpentTime("st-1", { hours: 3 } as UpdateSpentTimeDto, "user-1")
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: "Access denied to update this log",
+      statusCode: 403,
+    })
+  })
+})
+
+describe("SpentTimeService.deleteSpentTime", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it("UTCID01 - deletes a pending spent time record owned by the user", async () => {
+    // Arrange
+    const { service, repository } = createService()
+    repository.findById.mockResolvedValue(createSpentTimeRecord())
+    mockAuth(false)
+    repository.delete.mockResolvedValue(true)
+
+    // Act
+    const result = await service.deleteSpentTime("st-1", "user-1")
+
+    // Assert
+    expect(result).toBe(true)
+    expect(repository.delete).toHaveBeenCalledWith("st-1")
+  })
+
+  it("UTCID02 - throws not found when record does not exist", async () => {
+    // Arrange
+    const { service, repository } = createService()
+    repository.findById.mockResolvedValue(null)
+
+    // Act
+    const act = service.deleteSpentTime("missing", "user-1")
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: "Spent time record not found",
+      statusCode: 404,
+    })
+  })
+
+  it("UTCID03 - throws conflict when record is not pending", async () => {
+    // Arrange
+    const { service, repository } = createService()
+    repository.findById.mockResolvedValue(
+      createSpentTimeRecord({
+        status: SPENT_TIME_STATUS.APPROVED,
+      }),
+    )
+
+    // Act
+    const act = service.deleteSpentTime("st-1", "user-1")
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: "Chỉ có thể xóa log đang chờ duyệt",
+      statusCode: 409,
+    })
+  })
+
+  it("UTCID04 - throws forbidden when non-admin user does not own the record", async () => {
+    // Arrange
+    const { service, repository } = createService()
+    repository.findById.mockResolvedValue(
+      createSpentTimeRecord({
+        employeeId: "owner-1",
+      }),
+    )
+    mockAuth(false)
+
+    // Act
+    const act = service.deleteSpentTime("st-1", "user-1")
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: "Access denied to delete this log",
+      statusCode: 403,
+    })
+  })
+})
+
+describe("SpentTimeService.approveSpentTime", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it("UTCID01 - approves a pending spent time record as team leader", async () => {
+    // Arrange
+    const { service, repository, taskRepository, projectRepository } = createService()
+    const record = createSpentTimeRecord()
+    const approved = createSpentTimeRecord({
+      status: SPENT_TIME_STATUS.APPROVED,
+      approvedBy: {
+        id: "lead-1",
+        fullName: "Lead One",
+      },
+    } as unknown as Partial<SpentTime>)
+    repository.findById.mockResolvedValue(record)
+    taskRepository.findById.mockResolvedValue({
+      id: "task-1",
+      projectId: "project-1",
+      estimatedTime: 8,
+    } as never)
+    mockAuth(false)
+    projectRepository.findById.mockResolvedValue({
+      id: "project-1",
+      teamLeaderId: "lead-1",
+    } as never)
+    repository.approve.mockResolvedValue(approved)
+
+    // Act
+    const result = await service.approveSpentTime("st-1", "lead-1")
+
+    // Assert
+    expect(result).toEqual(approved)
+    expect(repository.approve).toHaveBeenCalledWith("st-1", "lead-1")
+  })
+
+  it("UTCID02 - throws not found when record does not exist", async () => {
+    // Arrange
+    const { service, repository } = createService()
+    repository.findById.mockResolvedValue(null)
+
+    // Act
+    const act = service.approveSpentTime("missing", "lead-1")
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: "Spent time record not found",
+      statusCode: 404,
+    })
+  })
+
+  it("UTCID03 - throws forbidden when user is not admin and not project team leader", async () => {
+    // Arrange
+    const { service, repository, taskRepository, projectRepository } = createService()
+    repository.findById.mockResolvedValue(createSpentTimeRecord())
+    taskRepository.findById.mockResolvedValue({
+      id: "task-1",
+      projectId: "project-1",
+      estimatedTime: 8,
+    } as never)
+    mockAuth(false)
+    projectRepository.findById.mockResolvedValue({
+      id: "project-1",
+      teamLeaderId: "lead-1",
+    } as never)
+
+    // Act
+    const act = service.approveSpentTime("st-1", "user-2")
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: "Access denied",
+      statusCode: 403,
+    })
+  })
+
+  it("UTCID04 - throws conflict when record is already processed", async () => {
+    // Arrange
+    const { service, repository, taskRepository } = createService()
+    repository.findById.mockResolvedValue(
+      createSpentTimeRecord({
+        status: SPENT_TIME_STATUS.APPROVED,
+      }),
+    )
+    taskRepository.findById.mockResolvedValue({
+      id: "task-1",
+      projectId: "project-1",
+      estimatedTime: 8,
+    } as never)
+    mockAuth(true)
+
+    // Act
+    const act = service.approveSpentTime("st-1", "admin-1")
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: "Log đã được xử lý",
+      statusCode: 409,
+    })
+  })
+})
+
+describe("SpentTimeService.rejectSpentTime", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it("UTCID01 - rejects a pending spent time record as team leader", async () => {
+    // Arrange
+    const { service, repository, taskRepository, projectRepository } = createService()
+    const record = createSpentTimeRecord()
+    const rejected = createSpentTimeRecord({
+      status: SPENT_TIME_STATUS.REJECTED,
+      rejectedBy: {
+        id: "lead-1",
+        fullName: "Lead One",
+      },
+      rejectReason: "Invalid log",
+    } as unknown as Partial<SpentTime>)
+    repository.findById.mockResolvedValue(record)
+    taskRepository.findById.mockResolvedValue({
+      id: "task-1",
+      projectId: "project-1",
+      estimatedTime: 8,
+    } as never)
+    mockAuth(false)
+    projectRepository.findById.mockResolvedValue({
+      id: "project-1",
+      teamLeaderId: "lead-1",
+    } as never)
+    repository.reject.mockResolvedValue(rejected)
+
+    // Act
+    const result = await service.rejectSpentTime("st-1", "Invalid log", "lead-1")
+
+    // Assert
+    expect(result).toEqual(rejected)
+    expect(repository.reject).toHaveBeenCalledWith("st-1", "lead-1", "Invalid log")
+  })
+
+  it("UTCID02 - throws not found when record does not exist", async () => {
+    // Arrange
+    const { service, repository } = createService()
+    repository.findById.mockResolvedValue(null)
+
+    // Act
+    const act = service.rejectSpentTime("missing", "Invalid", "lead-1")
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: "Spent time record not found",
+      statusCode: 404,
+    })
+  })
+
+  it("UTCID03 - throws forbidden when user is not admin and not project team leader", async () => {
+    // Arrange
+    const { service, repository, taskRepository, projectRepository } = createService()
+    repository.findById.mockResolvedValue(createSpentTimeRecord())
+    taskRepository.findById.mockResolvedValue({
+      id: "task-1",
+      projectId: "project-1",
+      estimatedTime: 8,
+    } as never)
+    mockAuth(false)
+    projectRepository.findById.mockResolvedValue({
+      id: "project-1",
+      teamLeaderId: "lead-1",
+    } as never)
+
+    // Act
+    const act = service.rejectSpentTime("st-1", "Invalid", "user-2")
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: "Access denied",
+      statusCode: 403,
+    })
+  })
+
+  it("UTCID04 - throws conflict when record is already processed", async () => {
+    // Arrange
+    const { service, repository, taskRepository } = createService()
+    repository.findById.mockResolvedValue(
+      createSpentTimeRecord({
+        status: SPENT_TIME_STATUS.REJECTED,
+      }),
+    )
+    taskRepository.findById.mockResolvedValue({
+      id: "task-1",
+      projectId: "project-1",
+      estimatedTime: 8,
+    } as never)
+    mockAuth(true)
+
+    // Act
+    const act = service.rejectSpentTime("st-1", "Invalid", "admin-1")
+
+    // Assert
+    await expect(act).rejects.toMatchObject({
+      message: "Log đã được xử lý",
+      statusCode: 409,
+    })
+  })
+})

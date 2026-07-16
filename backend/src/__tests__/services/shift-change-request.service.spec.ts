@@ -1,4 +1,5 @@
 /// <reference types="jest" />
+import { jest } from '@jest/globals';
 
 jest.mock('@/configs/system/error-code.config.ts', () => ({
   ErrorLayer: {
@@ -18,8 +19,8 @@ jest.mock('@/types/shift.types.ts', () => ({}));
 
 jest.mock('@/utils/error.util.ts', () => ({
   AppError: class AppError extends Error {
-    public statusCode: number;
-    public layer: string;
+    statusCode: number;
+    layer: string;
 
     constructor(message: string, statusCode: number, layer: string) {
       super(message);
@@ -32,8 +33,8 @@ jest.mock('@/utils/error.util.ts', () => ({
 
 import { ShiftChangeRequestService } from '../../services/shift-change-request.service';
 import { AppError } from '@/utils/error.util.ts';
-import { HttpStatusCode } from '@/configs/system/http.config.ts';
 import { ErrorLayer } from '@/configs/system/error-code.config.ts';
+import { HttpStatusCode } from '@/configs/system/http.config.ts';
 import type {
   IShiftChangeRequestRepository,
   ISubmitShiftChangeRequestDTO,
@@ -57,63 +58,58 @@ describe('ShiftChangeRequestService', () => {
     beforeEach(() => {
       // Arrange
       repo = createMockRepo();
-      service = new ShiftChangeRequestService(repo);
 
       // Act
+      service = new ShiftChangeRequestService(repo);
 
       // Assert
-      expect(service).toBeInstanceOf(ShiftChangeRequestService);
+      jest.clearAllMocks();
     });
 
-    it('UTCID01 - submits a shift change request successfully', async () => {
+    it('UTCID01 - returns the created shift change request when submission is valid', async () => {
       // Arrange
-      const data: ISubmitShiftChangeRequestDTO = {
-        employeeId: 'emp-1',
-        swapWithEmployeeId: 'emp-2',
-        employeeShiftId: 'shift-1',
-        swapWithShiftId: 'shift-2',
-        startDate: '2024-01-15',
-        reason: 'Need coverage',
-      };
+      const payload = {
+        employeeId: 'emp-001',
+        swapWithEmployeeId: 'emp-002',
+        reason: 'Personal schedule conflict',
+      } as unknown as ISubmitShiftChangeRequestDTO;
       const createdRequest = {
-        id: 'req-1',
-        employeeId: 'emp-1',
-        swapWithEmployeeId: 'emp-2',
-        employeeShiftId: 'shift-1',
-        swapWithShiftId: 'shift-2',
-        startDate: '2024-01-15',
-        reason: 'Need coverage',
+        id: 'req-001',
+        employeeId: 'emp-001',
+        swapWithEmployeeId: 'emp-002',
+        requestShiftId: 'shift-001',
+        reason: 'Personal schedule conflict',
+        status: 'PENDING',
+        approvedBy: null,
         approvedAt: null,
+        rejectedBy: null,
         rejectedAt: null,
       };
       repo.submit.mockResolvedValue(createdRequest);
 
       // Act
-      const result = await service.submitRequest(data);
+      const result = await service.submitRequest(payload);
 
       // Assert
       expect(repo.submit).toHaveBeenCalledTimes(1);
-      expect(repo.submit).toHaveBeenCalledWith(data);
+      expect(repo.submit).toHaveBeenCalledWith(payload);
       expect(result).toEqual(createdRequest);
     });
 
-    it('UTCID02 - throws AppError when employee requests a swap with themselves', async () => {
+    it('UTCID02 - throws AppError when employee attempts to swap with themselves', async () => {
       // Arrange
-      const data: ISubmitShiftChangeRequestDTO = {
-        employeeId: 'emp-1',
-        swapWithEmployeeId: 'emp-1',
-        employeeShiftId: 'shift-1',
-        swapWithShiftId: 'shift-1',
-        startDate: '2024-01-15',
+      const payload = {
+        employeeId: 'emp-001',
+        swapWithEmployeeId: 'emp-001',
         reason: 'Invalid self swap',
-      };
+      } as unknown as ISubmitShiftChangeRequestDTO;
 
       // Act
-      const act = service.submitRequest(data);
+      const act = service.submitRequest(payload);
 
       // Assert
-      await expect(act).rejects.toBeInstanceOf(AppError);
       await expect(act).rejects.toMatchObject({
+        name: 'AppError',
         message: 'Cannot request shift swap with yourself',
         statusCode: HttpStatusCode.BAD_REQUEST,
         layer: ErrorLayer.SERVICE,
@@ -121,30 +117,46 @@ describe('ShiftChangeRequestService', () => {
       expect(repo.submit).not.toHaveBeenCalled();
     });
 
-    it('UTCID03 - propagates repository errors during request submission', async () => {
+    it('UTCID03 - propagates repository AppError when submit fails', async () => {
       // Arrange
-      const data: ISubmitShiftChangeRequestDTO = {
-        employeeId: 'emp-1',
-        swapWithEmployeeId: 'emp-2',
-        employeeShiftId: 'shift-1',
-        swapWithShiftId: 'shift-2',
-        startDate: '2024-01-16',
-        reason: 'Need change',
-      };
+      const payload = {
+        employeeId: 'emp-001',
+        swapWithEmployeeId: 'emp-003',
+        reason: 'Need urgent swap',
+      } as unknown as ISubmitShiftChangeRequestDTO;
       const repoError = new AppError(
-        'Repository submit failed',
+        'Repository failed to create request',
         HttpStatusCode.INTERNAL_SERVER_ERROR,
         ErrorLayer.SERVICE,
       );
       repo.submit.mockRejectedValue(repoError);
 
       // Act
-      const act = service.submitRequest(data);
+      const act = service.submitRequest(payload);
 
       // Assert
       await expect(act).rejects.toBe(repoError);
       expect(repo.submit).toHaveBeenCalledTimes(1);
-      expect(repo.submit).toHaveBeenCalledWith(data);
+      expect(repo.submit).toHaveBeenCalledWith(payload);
+    });
+
+    it('UTCID04 - propagates generic repository error when submit crashes', async () => {
+      // Arrange
+      const payload = {
+        employeeId: 'emp-010',
+        swapWithEmployeeId: 'emp-011',
+        reason: 'Unexpected issue path',
+      } as unknown as ISubmitShiftChangeRequestDTO;
+      const repoError = new Error('Unexpected repository crash');
+      repo.submit.mockRejectedValue(repoError);
+
+      // Act
+      const act = service.submitRequest(payload);
+
+      // Assert
+      await expect(act).rejects.toThrow('Unexpected repository crash');
+      expect(repo.submit).toHaveBeenCalledTimes(1);
+      expect(repo.submit).toHaveBeenCalledWith(payload);
     });
   });
 
@@ -155,36 +167,38 @@ describe('ShiftChangeRequestService', () => {
     beforeEach(() => {
       // Arrange
       repo = createMockRepo();
-      service = new ShiftChangeRequestService(repo);
 
       // Act
+      service = new ShiftChangeRequestService(repo);
 
       // Assert
-      expect(service).toBeInstanceOf(ShiftChangeRequestService);
+      jest.clearAllMocks();
     });
 
-    it('UTCID01 - returns all shift change requests for the employee', async () => {
+    it('UTCID01 - returns all shift change requests for the given employee', async () => {
       // Arrange
-      const employeeId = 'emp-1';
+      const employeeId = 'emp-100';
       const requests = [
         {
-          id: 'req-1',
-          employeeId: 'emp-1',
-          swapWithEmployeeId: 'emp-2',
-          employeeShiftId: 'shift-1',
-          swapWithShiftId: 'shift-2',
-          startDate: '2024-01-15',
+          id: 'req-100',
+          employeeId: 'emp-100',
+          swapWithEmployeeId: 'emp-101',
+          requestShiftId: 'shift-100',
+          status: 'PENDING',
+          approvedBy: null,
           approvedAt: null,
+          rejectedBy: null,
           rejectedAt: null,
         },
         {
-          id: 'req-2',
-          employeeId: 'emp-1',
-          swapWithEmployeeId: 'emp-3',
-          employeeShiftId: 'shift-3',
-          swapWithShiftId: 'shift-4',
-          startDate: '2024-01-16',
-          approvedAt: null,
+          id: 'req-101',
+          employeeId: 'emp-100',
+          swapWithEmployeeId: 'emp-102',
+          requestShiftId: 'shift-101',
+          status: 'APPROVED',
+          approvedBy: 'mgr-001',
+          approvedAt: '2024-01-10T10:00:00.000Z',
+          rejectedBy: null,
           rejectedAt: null,
         },
       ];
@@ -199,11 +213,11 @@ describe('ShiftChangeRequestService', () => {
       expect(result).toEqual(requests);
     });
 
-    it('UTCID02 - propagates not found style repository errors when fetching employee requests', async () => {
+    it('UTCID02 - propagates repository AppError when fetching requests fails', async () => {
       // Arrange
-      const employeeId = 'missing-emp';
+      const employeeId = 'emp-404';
       const repoError = new AppError(
-        'Requests not found',
+        'Employee requests not found',
         HttpStatusCode.NOT_FOUND,
         ErrorLayer.SERVICE,
       );
@@ -218,17 +232,17 @@ describe('ShiftChangeRequestService', () => {
       expect(repo.findByEmployee).toHaveBeenCalledWith(employeeId);
     });
 
-    it('UTCID03 - propagates generic repository failures when fetching employee requests', async () => {
+    it('UTCID03 - propagates generic repository error when fetching requests crashes', async () => {
       // Arrange
-      const employeeId = 'emp-1';
-      const repoError = new Error('Database unavailable');
+      const employeeId = 'emp-500';
+      const repoError = new Error('Database connection lost');
       repo.findByEmployee.mockRejectedValue(repoError);
 
       // Act
       const act = service.getMyRequests(employeeId);
 
       // Assert
-      await expect(act).rejects.toBe(repoError);
+      await expect(act).rejects.toThrow('Database connection lost');
       expect(repo.findByEmployee).toHaveBeenCalledTimes(1);
       expect(repo.findByEmployee).toHaveBeenCalledWith(employeeId);
     });
