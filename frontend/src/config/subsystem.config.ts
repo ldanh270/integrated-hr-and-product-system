@@ -1,5 +1,9 @@
 import { APPLICATION_TYPES } from "@/config/entities/attendance.config"
-import { WORK_SCHEDULE_TYPE, type IEmployeeType, type IWorkScheduleType } from "@/config/entities/employee.config"
+import {
+  type IEmployeeType,
+  type IWorkScheduleType,
+  WORK_SCHEDULE_TYPE,
+} from "@/config/entities/employee.config"
 import { PERSONAL_TAB_LABELS } from "@/config/entities/personal.config"
 import { ROUTES } from "@/config/routes.config"
 
@@ -56,6 +60,9 @@ export interface SubsystemConfig {
   permissions?: string[]
 }
 
+/** Baseline permission that distinguishes payroll administration from personal payslips. */
+export const PAYROLL_SUBSYSTEM_PERMISSION = "payroll.read"
+
 export const SUBSYSTEMS: SubsystemConfig[] = [
   {
     id: "personal",
@@ -78,7 +85,11 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         icon: CircleDollarSign,
       },
       { name: PERSONAL_TAB_LABELS.projects, path: ROUTES.PERSONAL.PROJECTS, icon: Briefcase },
-      { name: PERSONAL_TAB_LABELS.applications, path: ROUTES.PERSONAL.APPLICATIONS, icon: FileText },
+      {
+        name: PERSONAL_TAB_LABELS.applications,
+        path: ROUTES.PERSONAL.APPLICATIONS,
+        icon: FileText,
+      },
     ],
   },
   {
@@ -176,42 +187,51 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     description: "Tự động tính và chi trả bảng lương",
     icon: CircleDollarSign,
     routePrefix: ROUTES.PAYROLL.BASE,
+    // Admin items carry payroll.read individually. The subsystem itself stays visible
+    // because every employee must be able to enter its self-service payslip page.
     sidebarItems: [
       {
         name: "Kỳ lương",
         path: ROUTES.PAYROLL.LIST,
         icon: FileText,
-        permissions: ["payroll.read"],
+        permissions: [PAYROLL_SUBSYSTEM_PERMISSION],
       },
       {
         name: "Thành phần lương",
         path: ROUTES.PAYROLL.SALARY_COMPONENTS,
         icon: Settings,
-        permissions: ["payroll.read"],
+        permissions: [PAYROLL_SUBSYSTEM_PERMISSION],
       },
       {
         name: "Biến hệ thống",
         path: ROUTES.PAYROLL.SALARY_VARIABLES,
         icon: Settings,
-        permissions: ["payroll.read"],
+        permissions: [PAYROLL_SUBSYSTEM_PERMISSION],
       },
       {
         name: "Mẫu bảng lương",
         path: ROUTES.PAYROLL.PAYSLIP_TEMPLATES,
         icon: FileText,
-        permissions: ["payroll.read"],
+        permissions: [PAYROLL_SUBSYSTEM_PERMISSION],
       },
       {
         name: "Chu kỳ lương",
         path: ROUTES.PAYROLL.CYCLE,
         icon: CalendarClock,
-        permissions: ["payroll.read"],
+        permissions: [PAYROLL_SUBSYSTEM_PERMISSION],
       },
       {
         name: "Lương nhân sự",
         path: ROUTES.PAYROLL.EMPLOYEE_SALARY,
         icon: Users,
-        permissions: ["payroll.read"],
+        permissions: [PAYROLL_SUBSYSTEM_PERMISSION],
+      },
+      {
+        // No permission gate: filterNavItems removes the admin entries above and leaves
+        // this as the only payroll sidebar item for a regular employee.
+        name: PERSONAL_TAB_LABELS.payslips,
+        path: ROUTES.PAYROLL.MY_PAYSLIPS,
+        icon: CircleDollarSign,
       },
     ],
   },

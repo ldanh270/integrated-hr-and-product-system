@@ -209,7 +209,15 @@ const privateRoutes: RouteConfig[] = [
     // Page-level guard redirects full-time employees to schedule view.
   },
   {
+    // Personal navigation keeps the page inside the Personal subsystem.
     path: ROUTES.PERSONAL.PAYSLIPS,
+    component: lazy(() => import("@/pages/payroll/MyPayslips.tsx")),
+    layout: MainLayout,
+  },
+  {
+    // Same self-service page under /payroll so employees see only the payroll sidebar.
+    // API authorization still limits the response to the authenticated employee.
+    path: ROUTES.PAYROLL.MY_PAYSLIPS,
     component: lazy(() => import("@/pages/payroll/MyPayslips.tsx")),
     layout: MainLayout,
   },

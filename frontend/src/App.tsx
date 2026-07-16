@@ -173,6 +173,8 @@ const App = () => {
             })}
 
             {SUBSYSTEMS.map((subsystem) => {
+              // Subsystem roots use the first configured item as their admin landing page.
+              // Regular payroll users bypass this redirect through resolveSubsystemDestination.
               const firstPath =
                 subsystem.sidebarItems[0]?.path || `${subsystem.routePrefix}/dashboard`
 
@@ -200,14 +202,6 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <Navigate to={ROUTES.PERSONAL.SCHEDULE} replace />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={ROUTES.PAYROLL.MY_PAYSLIPS}
-              element={
-                <ProtectedRoute>
-                  <Navigate to={ROUTES.PERSONAL.PAYSLIPS} replace />
                 </ProtectedRoute>
               }
             />

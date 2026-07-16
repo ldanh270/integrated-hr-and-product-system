@@ -9,6 +9,7 @@ import type { SubsystemId } from "@/config/subsystem.config"
 import { useAuthStore } from "@/store/auth-store"
 import { useSidebarStore } from "@/store/sidebar-store"
 import { useSubsystemStore } from "@/store/subsystem-store"
+import { resolveSubsystemDestination } from "@/utils/navigation/resolve-subsystem-destination"
 
 import { ChevronsUpDown } from "lucide-react"
 import { useNavigate } from "react-router-dom"
@@ -21,15 +22,22 @@ export default function SubsystemDropdown() {
 
   const activeConfig = getActiveSubsystemConfig()
 
+  // A subsystem-level permission hides whole admin-only modules. Payroll deliberately
+  // has no such gate because its self-service payslip item is available to all employees.
   const navSubsystems = SUBSYSTEMS.filter(
     (subsystem) =>
       !subsystem.permissions ||
       (user && subsystem.permissions.every((p) => user.permissions?.includes(p))),
   )
 
-  const handleSelectSubsystem = (subsystemId: string, routePrefix: string) => {
-    setActiveSubsystem(subsystemId as SubsystemId)
-    navigate(routePrefix)
+  const handleSelectSubsystem = (subsystemId: SubsystemId, routePrefix: string) => {
+    // Resolve before mutating UI state so navigation has one deterministic destination.
+    const destination = resolveSubsystemDestination(subsystemId, routePrefix, user?.permissions)
+
+    // Set immediately for responsive dropdown feedback. MainLayout then confirms the
+    // subsystem from the destination URL after React Router commits navigation.
+    setActiveSubsystem(subsystemId)
+    navigate(destination)
   }
 
   return (
@@ -43,7 +51,6 @@ export default function SubsystemDropdown() {
         >
           <div className="flex items-center gap-2 overflow-hidden">
             <div className="flex items-center justify-center h-9.5 w-9.5 gap-3 p-2.5 rounded-md text-sm font-medium transition-all duration-150 bg-primary text-primary-foreground shadow-sm">
-              {/* {ActiveIcon ? <ActiveIcon size={18} /> : <span className="font-bold">HRP</span>} */}
               <span className="font-bold text-xs">HRP</span>
             </div>
             {!isCollapsed && (
@@ -73,7 +80,9 @@ export default function SubsystemDropdown() {
             return (
               <DropdownMenuItem
                 key={subsystem.id}
-                onClick={() => { handleSelectSubsystem(subsystem.id, subsystem.routePrefix); }}
+                onClick={() => {
+                  handleSelectSubsystem(subsystem.id, subsystem.routePrefix)
+                }}
                 className={`flex cursor-pointer items-center gap-2 rounded-md p-2 transition-colors ${
                   isActive
                     ? "bg-primary/10 text-primary focus:bg-primary/15 focus:text-primary"
