@@ -117,7 +117,7 @@ export function buildPartTimeShiftSuggestions(params: {
  * Scores an employee's reliability based on their punctuality and absences.
  */
 export function scorePartTimeReliability(records: IAttendanceRecordDTO[]): IPartTimeReliabilityScore {
-  if (!records || records.length === 0) {
+  if (records.length === 0) {
     return {
       score: 50,
       reasons: ["Chưa có lịch sử chấm công — điểm trung lập"],

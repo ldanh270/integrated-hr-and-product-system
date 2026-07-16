@@ -285,7 +285,7 @@ export interface ISimulateWeeklyTemplateAssignment {
 export interface ISimulateWeeklyTemplateDraft {
   lookbackDays: number
   cycleWeeks: number
-  weeks: any[]
+  weeks: unknown[]
   assignments: ISimulateWeeklyTemplateAssignment[]
 }
 
