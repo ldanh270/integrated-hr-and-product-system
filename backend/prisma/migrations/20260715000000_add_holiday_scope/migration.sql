@@ -10,6 +10,7 @@ ALTER TABLE "HolidayCalendar" DROP CONSTRAINT IF EXISTS "HolidayCalendar_date_ke
 
 -- batchId groups every date generated from one range so the range can be deleted atomically.
 ALTER TABLE "HolidayCalendar"
+  -- Existing holidays remain company-wide so this migration preserves their previous meaning.
   ADD COLUMN IF NOT EXISTS "scope" "HolidayScope" NOT NULL DEFAULT 'all',
   ADD COLUMN IF NOT EXISTS "positionId" TEXT,
   ADD COLUMN IF NOT EXISTS "batchId" TEXT;

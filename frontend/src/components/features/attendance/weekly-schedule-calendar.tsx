@@ -35,6 +35,7 @@ interface WeeklyScheduleCalendarProps {
   view?: CalendarTab
 }
 
+/** Displays the authenticated employee's resolved week, including overrides and holidays. */
 export function WeeklyScheduleCalendar({
   className,
   showAllShifts = false,
@@ -80,6 +81,7 @@ export function WeeklyScheduleCalendar({
   })
 
   const scheduleDaysByDay = mapPlannedWeekToScheduleDays(plannedWeek)
+  // Older API responses may omit plannedWeek, so retain the weekly-template fallback.
   if (scheduleDaysByDay.size === 0) {
     for (const day of weekDays) {
       const scheduleDay = resolveScheduleDay(schedule, day.date)

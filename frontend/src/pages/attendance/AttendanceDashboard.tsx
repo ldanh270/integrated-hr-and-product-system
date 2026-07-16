@@ -69,6 +69,7 @@ function toSelectedEmployee(record: IAttendanceRecord): SelectedEmployeeSummary 
 export default function AttendanceDashboard() {
   const { hasPermission, hasRole } = usePermission()
 
+  // Route guards handle navigation; this check also protects direct component rendering.
   if (!hasPermission("attendance.read") || !hasRole(ROLE.ADMIN)) {
     return <Navigate to={ROUTES.ATTENDANCE.MY_SCHEDULE} replace />
   }

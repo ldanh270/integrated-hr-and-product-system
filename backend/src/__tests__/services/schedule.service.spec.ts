@@ -753,6 +753,7 @@ describe('ScheduleService.generateShifts', () => {
     mockedNormalizeScheduleDate.mockReturnValueOnce(start).mockReturnValueOnce(end);
     mockedEachScheduleDate.mockReturnValue([day1, day2] as never);
 
+    // Four employee/day cells cover created, updated, no-schedule, and skipped outcomes.
     scheduleRepo.getScheduleByEmployee
       .mockResolvedValueOnce({ id: 'schedule-1' } as never)
       .mockResolvedValueOnce({ id: 'schedule-2' } as never)

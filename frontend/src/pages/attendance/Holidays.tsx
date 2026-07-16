@@ -223,6 +223,7 @@ export default function Holidays() {
         )}
       </PageCard>
 
+      {/* Remount when the target changes so local form state is rebuilt from the selected holiday. */}
       <HolidayFormDialog
         key={`${editingHoliday?.id ?? "new"}:${isDialogOpen ? "open" : "closed"}`}
         open={isDialogOpen}

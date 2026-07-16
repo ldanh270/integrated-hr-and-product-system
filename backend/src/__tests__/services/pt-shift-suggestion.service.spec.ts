@@ -92,6 +92,7 @@ describe('PtShiftSuggestionService', () => {
       // Arrange
       const inputWeekStart = '2024-01-10';
       const formattedWeekStart = 'formatted-normalized-2024-01-10';
+      // Duplicate availability rows verify that reliability is scored once per employee.
       const availabilities = [
         { employeeId: 'emp-1' },
         { employeeId: 'emp-2' },

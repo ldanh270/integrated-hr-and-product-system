@@ -183,6 +183,7 @@ export function simulateWeeklyTemplateDraft(options: {
   }
 
   const cycleWeeks = Math.max(1, options.draft.cycleWeeks)
+  // A partial final cycle is approximated as a full cycle for conservative staffing estimates.
   const cyclesInHorizon = Math.ceil(simulateWeeks / cycleWeeks)
 
   let totalAssignedSlots = 0

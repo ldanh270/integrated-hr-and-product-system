@@ -93,6 +93,7 @@ export function ScheduleInsightsPanel() {
     )
   }, [data])
 
+  // Default to the highest-ranked candidate until the admin explicitly selects another.
   const selectedCandidate = useMemo(
     () =>
       suggestQuery.data?.candidates.find((candidate) => candidate.id === selectedCandidateId) ??

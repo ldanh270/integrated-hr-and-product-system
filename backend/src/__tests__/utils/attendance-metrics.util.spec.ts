@@ -31,6 +31,7 @@ describe("computeAttendanceMetrics break deduction", () => {
   })
 
   it("deducts only the attended part of the break", () => {
+    // Check-in during lunch deducts only the remaining overlap, not the full configured break.
     const partialRecord = {
       ...record,
       checkInAt: new Date(2026, 6, 16, 12, 30),

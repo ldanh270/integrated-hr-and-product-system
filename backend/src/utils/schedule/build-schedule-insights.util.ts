@@ -62,6 +62,7 @@ export function buildScheduleInsights(options: {
       record.status === ATTENDANCE_STATUS.OVERTIME ||
       record.status === ATTENDANCE_STATUS.EARLY_LEAVE
     ) {
+      // Completed, non-absent records count as attendance while retaining any recorded lateness.
       bucket.onTime++
       totalOnTime++
       if (record.lateMinutes > 0) {

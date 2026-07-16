@@ -587,6 +587,7 @@ model ApplicationWorkFromHomeDetail {
 }
 
 model HolidayCalendar {
+  // Date is intentionally non-unique because scoped holidays may overlap on the same day.
   id          String       @id @default(cuid())
   date        DateTime     @db.Date
   name        String

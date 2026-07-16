@@ -99,6 +99,7 @@ export function buildPlannedWeek(params: {
       const dateKey = formatScheduleDateKey(date)
       const rows = shiftsByDate.get(dateKey) ?? []
       const overrideRows = rows.filter((row) => row.isOverride)
+      // A manual override replaces every generated row for that date; templates are only fallback.
       const plannedRows = overrideRows.length > 0 ? overrideRows : rows
 
       let shifts: IPlannedWeekShift[] = plannedRows.map(mapEmployeeShift)

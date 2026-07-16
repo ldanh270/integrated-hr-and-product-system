@@ -72,6 +72,7 @@ function toDateInputValue(date: string) {
 
 function createInitialForm(editingHoliday: IHoliday | null): FormState {
   if (!editingHoliday) return DEFAULT_FORM
+  // Editing targets one persisted date; range scope and batch membership stay immutable.
   const day = toDateInputValue(editingHoliday.date)
   return {
     name: editingHoliday.name,

@@ -285,6 +285,7 @@ describe('HolidayService', () => {
         startDate: '2025-08-10',
         endDate: '2025-08-10',
         scope: HOLIDAY_SCOPE.EMPLOYEES,
+        // Duplicate IDs verify that target validation operates on distinct employees.
         employeeIds: ['emp-1', 'emp-1', 'emp-2'],
       } as ICreateHolidayDTO
       const createdById = 'user-2'
