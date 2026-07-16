@@ -8,11 +8,6 @@ import type {
   IPartTimeWeeklyAvailability,
   ISuggestPartTimeShiftsResult,
 } from '@/types/part-time-availability.types.ts';
-import { buildPartTimeShiftSuggestions } from '@/utils/part-time-availability/build-part-time-shift-suggestions.util.ts';
-import { scorePartTimeReliability } from '@/utils/part-time-availability/score-part-time-reliability.util.ts';
-import { normalizeWeekStart } from '@/utils/part-time-availability.util.ts';
-import { formatScheduleDateKey } from '@/utils/schedule.util.ts';
-
 jest.mock('@/configs/entities/part-time-availability.config.ts', () => ({
   PART_TIME_SHIFT_SUGGEST: {
     NEUTRAL_SCORE: 50,
@@ -20,21 +15,22 @@ jest.mock('@/configs/entities/part-time-availability.config.ts', () => ({
   },
 }));
 
-jest.mock('@/utils/part-time-availability/build-part-time-shift-suggestions.util.ts', () => ({
-  buildPartTimeShiftSuggestions: jest.fn(),
-}));
-
-jest.mock('@/utils/part-time-availability/score-part-time-reliability.util.ts', () => ({
-  scorePartTimeReliability: jest.fn(),
-}));
-
 jest.mock('@/utils/part-time-availability.util.ts', () => ({
   normalizeWeekStart: jest.fn(),
+  buildPartTimeShiftSuggestions: jest.fn(),
+  scorePartTimeReliability: jest.fn(),
 }));
 
 jest.mock('@/utils/schedule.util.ts', () => ({
   formatScheduleDateKey: jest.fn(),
 }));
+
+import {
+  buildPartTimeShiftSuggestions,
+  normalizeWeekStart,
+  scorePartTimeReliability,
+} from '@/utils/part-time-availability.util.ts';
+import { formatScheduleDateKey } from '@/utils/schedule.util.ts';
 
 type ReliabilityScore = {
   score: number;

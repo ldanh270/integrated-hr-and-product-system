@@ -31,3 +31,9 @@ export const PART_TIME_AVAILABILITY_RULES = {
 export const PART_TIME_AVAILABILITY_QUERY_PARAMS = {
   WEEK_START: "weekStart",
 } as const
+
+export const PART_TIME_SHIFT_SUGGEST = {
+  NEUTRAL_SCORE: 50,
+  LOOKBACK_DAYS: 30,
+} as const
+
