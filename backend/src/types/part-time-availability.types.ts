@@ -114,3 +114,24 @@ export const partTimeAvailabilityInclude = {
     },
   },
 } as const
+
+// ─── PART-TIME SHIFT SUGGESTION ───────────────────────────────
+export interface IPartTimeShiftSuggestion {
+  employeeId: string
+  fullName: string
+  dayOfWeek: number
+  startTime: number
+  endTime: number
+  reliabilityScore: number
+  reliabilityReasons: string[]
+}
+
+export interface ISuggestPartTimeShiftsResult {
+  weekStart: string
+  suggestions: IPartTimeShiftSuggestion[]
+}
+
+export interface IPtShiftSuggestionService {
+  suggest(weekStart: string): Promise<ISuggestPartTimeShiftsResult>
+}
+

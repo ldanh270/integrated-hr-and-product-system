@@ -158,6 +158,9 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
     const where: Prisma.AttendanceRecordWhereInput = {}
 
     if (query.employeeId) where.employeeId = query.employeeId
+    if (query.employeeIds && query.employeeIds.length > 0) {
+      where.employeeId = { in: query.employeeIds }
+    }
     if (query.status) where.status = query.status as AttendanceStatus
 
     if (query.startDate || query.endDate) {

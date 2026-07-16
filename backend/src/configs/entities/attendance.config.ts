@@ -136,3 +136,10 @@ export const ATTENDANCE_QUERY_PARAMS = {
   STATUS: "status",
   PERSONAL_ONLY: "personalOnly",
 } as const
+
+export const SCHEDULE_INSIGHTS = {
+  DEFAULT_LOOKBACK_DAYS: 7,
+  MIN_LOOKBACK_DAYS: 1,
+  MAX_LOOKBACK_DAYS: 30,
+} as const
+

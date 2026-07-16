@@ -5,12 +5,12 @@ import type {
   IPtShiftSuggestionService,
   ISuggestPartTimeShiftsResult,
 } from "@/types/part-time-availability.types.ts"
-import { buildPartTimeShiftSuggestions } from "@/utils/part-time-availability/build-part-time-shift-suggestions.util.ts"
 import {
+  buildPartTimeShiftSuggestions,
+  normalizeWeekStart,
   scorePartTimeReliability,
   type IPartTimeReliabilityScore,
-} from "@/utils/part-time-availability/score-part-time-reliability.util.ts"
-import { normalizeWeekStart } from "@/utils/part-time-availability.util.ts"
+} from "@/utils/part-time-availability.util.ts"
 import { formatScheduleDateKey } from "@/utils/schedule.util.ts"
 
 const NEUTRAL_RELIABILITY: IPartTimeReliabilityScore = {
