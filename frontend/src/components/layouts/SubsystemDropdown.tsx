@@ -32,7 +32,12 @@ export default function SubsystemDropdown() {
 
   const handleSelectSubsystem = (subsystemId: SubsystemId, routePrefix: string) => {
     // Resolve before mutating UI state so navigation has one deterministic destination.
-    const destination = resolveSubsystemDestination(subsystemId, routePrefix, user?.permissions)
+    const destination = resolveSubsystemDestination(
+      subsystemId,
+      routePrefix,
+      user?.permissions,
+      user?.roles,
+    )
 
     // Set immediately for responsive dropdown feedback. MainLayout then confirms the
     // subsystem from the destination URL after React Router commits navigation.

@@ -1,3 +1,4 @@
+import { ROLE } from "@/config/entities/employee.config"
 import { ROUTES } from "@/config/routes.config"
 import { PAYROLL_SUBSYSTEM_PERMISSION, SUBSYSTEMS } from "@/config/subsystem.config"
 import { resolveSubsystemDestination } from "@/utils/navigation/resolve-subsystem-destination"
@@ -32,5 +33,48 @@ describe("payroll subsystem navigation", () => {
     expect(
       resolveSubsystemDestination("payroll", ROUTES.PAYROLL.BASE, [PAYROLL_SUBSYSTEM_PERMISSION]),
     ).toBe(ROUTES.PAYROLL.BASE)
+  })
+})
+
+describe("attendance subsystem navigation", () => {
+  test("V9: attendance.read opens the all-employee history dashboard", () => {
+    const attendanceSubsystem = SUBSYSTEMS.find((subsystem) => subsystem.id === "attendance")
+    const historyItem = attendanceSubsystem?.sidebarItems.find(
+      (item) => item.name === "Lịch sử chấm công",
+    )
+
+    expect(historyItem?.path).toBe(ROUTES.ATTENDANCE.DASHBOARD)
+    expect(historyItem?.permissions).toEqual(["attendance.read"])
+    expect(historyItem?.roles).toEqual([ROLE.ADMIN])
+  })
+
+  test("V10: admins retain a separate personal attendance summary entry", () => {
+    const attendanceSubsystem = SUBSYSTEMS.find((subsystem) => subsystem.id === "attendance")
+    const personalItem = attendanceSubsystem?.sidebarItems.find(
+      (item) => item.name === "Chấm công của tôi",
+    )
+
+    expect(personalItem?.path).toBe(ROUTES.ATTENDANCE.SUMMARY)
+    expect(personalItem?.permissions).toEqual(["attendance.read"])
+    expect(personalItem?.roles).toBeUndefined()
+  })
+
+  test("V11: employees enter attendance through their personal summary", () => {
+    expect(
+      resolveSubsystemDestination(
+        "attendance",
+        ROUTES.ATTENDANCE.BASE,
+        ["attendance.read"],
+        [ROLE.EMPLOYEE],
+      ),
+    ).toBe(ROUTES.ATTENDANCE.SUMMARY)
+    expect(
+      resolveSubsystemDestination(
+        "attendance",
+        ROUTES.ATTENDANCE.BASE,
+        ["attendance.read"],
+        [ROLE.ADMIN],
+      ),
+    ).toBe(ROUTES.ATTENDANCE.BASE)
   })
 })

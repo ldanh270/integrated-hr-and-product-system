@@ -1,5 +1,6 @@
-import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { APP_ROLE } from "@/configs/entities/employee.config.ts"
 import { ATTENDANCE_ERROR_MESSAGES } from "@/configs/messages/attendance.message.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
   ATTENDANCE_ERROR_CODES,
   ATTENDANCE_REPORT_HEADERS,
@@ -10,10 +11,10 @@ import {
   checkInSchema,
   checkOutSchema,
 } from "@/schemas/attendance.schema.ts"
+import { authorizationService } from "@/services/authorization.service.ts"
 import { ApiResponse } from "@/types"
 import { IAttendanceRecordDTO, IAttendanceService } from "@/types/attendance.types.ts"
 import { resolvePersonalEmployeeId } from "@/utils/attendance/resolve-personal-employee-id.ts"
-import { authorizationService } from "@/services/authorization.service.ts"
 
 import { Request, Response } from "express"
 import { z } from "zod"
@@ -162,8 +163,9 @@ export class AttendanceController {
       }
 
       const authContext = await authorizationService.getAuthorizationContext(userId)
-      const canViewAll =
-        authContext.isDynamicAdmin || authContext.permissions.has("attendance.read")
+      // attendance.read belongs to regular employees for personal records; only the
+      // explicit admin role may remove the employee scope and query workforce history.
+      const canViewAll = authContext.roles.has(APP_ROLE.ADMIN)
 
       if (query.personalOnly) {
         query.employeeId = await resolvePersonalEmployeeId(userId)

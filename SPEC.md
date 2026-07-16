@@ -26,6 +26,9 @@ V5: UI có team matrix, coverage theo ngày/ca, warning gap/conflict, tick/untic
 V6: Existing assign API và weekly schedule flow không regression.
 V7: Core solver/scoring/mapping có golden unit tests; critical admin flow có Playwright.
 V8: Click Bảng lương: user có payroll.read → payroll admin; user thường → /payroll/my-payslips và sidebar chỉ còn Lương của tôi; mọi payroll admin page vẫn cần payroll.read.
+V9: Chỉ role admin + attendance.read → menu/route Lịch sử chấm công mở /attendance/dashboard; employee dù có attendance.read không thấy tab, direct URL bị redirect, API vẫn ép personal scope.
+V10: Mọi employee có attendance.read → menu Chấm công của tôi mở /attendance/summary và chỉ tổng hợp attendance của chính user.
+V11: Click Chấm công: role admin → attendance admin root; role khác → /attendance/summary; employee sidebar chỉ còn Chấm công của tôi + Ngày lễ.
 
 §T
 id|status|goal|cites
@@ -47,3 +50,7 @@ B7|2026-07-16|payroll subsystem visible without payroll.read then permission red
 B8|2026-07-16|frontend tsconfig lacked bun:test type declarations|keep Bun config invariant test as mjs; no runtime change
 B9|2026-07-16|hiding payroll subsystem blocked desired employee shortcut to personal payslips|V8 routes by payroll.read
 B10|2026-07-16|employee payroll shortcut reused personal route so sidebar switched back to all personal items|V8 uses payroll-scoped self-service route
+B11|2026-07-16|admin attendance menu pointed to personal-only summary despite all-employee dashboard already existing|V9
+B12|2026-07-16|employee role also owns attendance.read so permission-only guard exposed workforce history|V9 requires explicit admin role across nav, route, page, API
+B13|2026-07-16|backend typecheck references PT suggestion dependencies intentionally hidden in stash@{0}|external worktree split; attendance tests verified independently
+B14|2026-07-16|attendance subsystem root always chose admin history then redirected employees to Personal schedule|V11 resolves employee entry to attendance personal summary

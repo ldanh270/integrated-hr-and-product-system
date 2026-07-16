@@ -6,7 +6,13 @@ import {
 } from "@/components/features/attendance/employee-attendance-summary-sheet"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -20,20 +26,20 @@ import {
   ATTENDANCE_STATUS_LABELS,
   ATTENDANCE_STATUS_VARIANTS,
 } from "@/config/entities/attendance.config"
-import { usePermission } from "@/hooks/use-permission"
+import type { IAttendanceStatus } from "@/config/entities/attendance.config"
+import { ROLE } from "@/config/entities/employee.config"
 import { ROUTES } from "@/config/routes.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useAttendanceRecords } from "@/hooks/attendance/use-attendance"
+import { usePermission } from "@/hooks/use-permission"
 import { attendanceApi } from "@/lib/api/attendance.api"
 import { formatDate, formatTime } from "@/lib/utils"
-import dayjs from "dayjs"
-import type { IAttendanceStatus } from "@/config/entities/attendance.config"
 import type { IAttendanceRecord } from "@/types/attendance.types"
 import { getCurrentMonthRange } from "@/utils/attendance/get-current-month-range"
 
-import { Navigate } from "react-router-dom"
 import { useMemo, useState } from "react"
 
+import dayjs from "dayjs"
 import {
   AlertTriangle,
   CalendarX2,
@@ -44,6 +50,8 @@ import {
   UserCheck,
   Users,
 } from "lucide-react"
+import { Navigate } from "react-router-dom"
+
 /**
  * Helper function for toSelectedEmployee.
  */
@@ -59,9 +67,9 @@ function toSelectedEmployee(record: IAttendanceRecord): SelectedEmployeeSummary 
  * AttendanceDashboard Component.
  */
 export default function AttendanceDashboard() {
-  const { hasPermission } = usePermission()
+  const { hasPermission, hasRole } = usePermission()
 
-  if (!hasPermission("attendance.read")) {
+  if (!hasPermission("attendance.read") || !hasRole(ROLE.ADMIN)) {
     return <Navigate to={ROUTES.ATTENDANCE.MY_SCHEDULE} replace />
   }
 
@@ -216,7 +224,10 @@ function AdminAttendanceDashboard() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <StatusPill label={`${openCheckoutToday.length} chưa checkout hôm nay`} variant="warning" />
+            <StatusPill
+              label={`${openCheckoutToday.length} chưa checkout hôm nay`}
+              variant="warning"
+            />
             <StatusPill label={`${attentionRecords.length} bản ghi cần xem`} variant="info" />
           </div>
         </div>
@@ -228,7 +239,9 @@ function AdminAttendanceDashboard() {
               Chưa checkout
             </div>
             <p className="mt-2 text-2xl font-bold">{openCheckoutToday.length}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Nhân viên đã vào ca nhưng chưa ra ca.</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Nhân viên đã vào ca nhưng chưa ra ca.
+            </p>
           </div>
           <div className="rounded-xl border bg-muted/30 p-4">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -242,7 +255,9 @@ function AdminAttendanceDashboard() {
                 ).length
               }
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">Cần kiểm tra lý do hoặc đơn điều chỉnh.</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Cần kiểm tra lý do hoặc đơn điều chỉnh.
+            </p>
           </div>
           <div className="rounded-xl border bg-muted/30 p-4">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -252,7 +267,9 @@ function AdminAttendanceDashboard() {
             <p className="mt-2 text-2xl font-bold">
               {attentionRecords.filter((record) => record.overtimeMinutes > 0).length}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">Đối chiếu với đơn OT trước khi chốt công.</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Đối chiếu với đơn OT trước khi chốt công.
+            </p>
           </div>
         </div>
 
@@ -288,10 +305,14 @@ function AdminAttendanceDashboard() {
                     className={`cursor-pointer hover:bg-muted/30 ${
                       selectedEmployee?.id === record.employeeId ? "bg-primary/5" : ""
                     }`}
-                    onClick={() => { setSelectedEmployee(toSelectedEmployee(record)) }}
+                    onClick={() => {
+                      setSelectedEmployee(toSelectedEmployee(record))
+                    }}
                   >
                     <TableCell className="px-4 py-3">
-                      <p className="font-medium">{record.employee?.fullName ?? record.employeeId}</p>
+                      <p className="font-medium">
+                        {record.employee?.fullName ?? record.employeeId}
+                      </p>
                       {record.employee?.email ? (
                         <p className="text-xs text-muted-foreground">{record.employee.email}</p>
                       ) : null}
@@ -301,8 +322,16 @@ function AdminAttendanceDashboard() {
                     </TableCell>
                     <TableCell className="px-4 py-3">
                       <StatusPill
-                        label={!record.checkOutAt && record.checkInAt ? "Chưa checkout" : ATTENDANCE_STATUS_LABELS[record.status]}
-                        variant={!record.checkOutAt && record.checkInAt ? "warning" : ATTENDANCE_STATUS_VARIANTS[record.status]}
+                        label={
+                          !record.checkOutAt && record.checkInAt
+                            ? "Chưa checkout"
+                            : ATTENDANCE_STATUS_LABELS[record.status]
+                        }
+                        variant={
+                          !record.checkOutAt && record.checkInAt
+                            ? "warning"
+                            : ATTENDANCE_STATUS_VARIANTS[record.status]
+                        }
                       />
                     </TableCell>
                     <TableCell className="px-4 py-3 text-xs text-muted-foreground">
@@ -321,160 +350,173 @@ function AdminAttendanceDashboard() {
 
       {/* Attendance history table */}
       <div className="space-y-4">
-          {/* Filtering Toolbar — Allowing user to scope history by date and status */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => { setStartDate(e.target.value); }}
-                className="w-40 h-9 text-sm"
-              />
-              <span className="text-muted-foreground text-sm">–</span>
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(e) => { setEndDate(e.target.value); }}
-                className="w-40 h-9 text-sm"
-              />
-            </div>
-
-            <Select
-              value={statusFilter}
-              onValueChange={(v) => setStatusFilter(v as IAttendanceStatus | "all")}
-            >
-              <SelectTrigger className="w-44 h-9 text-sm">
-                <SelectValue placeholder="Trạng thái" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                {ATTENDANCE_STATUSES.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {ATTENDANCE_STATUS_LABELS[s]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Filtering Toolbar — Allowing user to scope history by date and status */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => {
+                setStartDate(e.target.value)
+              }}
+              className="w-40 h-9 text-sm"
+            />
+            <span className="text-muted-foreground text-sm">–</span>
+            <Input
+              type="date"
+              value={endDate}
+              onChange={(e) => {
+                setEndDate(e.target.value)
+              }}
+              className="w-40 h-9 text-sm"
+            />
           </div>
 
-          {/* Attendance History Table */}
-          <PageCard className="overflow-hidden p-0" noBorder={false}>
-            <div className="overflow-x-auto">
-              <Table className="text-sm">
-                <TableHeader className="bg-muted/40">
-                  <TableRow className="hover:bg-transparent border-b">
-                    <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase whitespace-nowrap">
-                      Nhân viên
-                    </TableHead>
-                    <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase whitespace-nowrap">
-                      Ngày
-                    </TableHead>
-                    <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase whitespace-nowrap">
-                      Check In
-                    </TableHead>
-                    <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase whitespace-nowrap">
-                      Check Out
-                    </TableHead>
-                    <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase whitespace-nowrap">
-                      Giờ làm
-                    </TableHead>
-                    <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase whitespace-nowrap">
-                      Trạng thái
-                    </TableHead>
-                    <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase whitespace-nowrap hidden lg:table-cell">
-                      Muộn/Sớm/OT
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as IAttendanceStatus | "all")}
+          >
+            <SelectTrigger className="w-44 h-9 text-sm">
+              <SelectValue placeholder="Trạng thái" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả trạng thái</SelectItem>
+              {ATTENDANCE_STATUSES.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {ATTENDANCE_STATUS_LABELS[s]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-                <TableBody className="divide-y divide-border">
-                  {isLoading ? (
-                    // Skeleton-like loading state
-                    <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">
-                        <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
-                      </TableCell>
-                    </TableRow>
-                  ) : isError ? (
-                    // Error state feedback
-                    <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center text-destructive">
-                        Lỗi khi tải dữ liệu chấm công.
-                      </TableCell>
-                    </TableRow>
-                  ) : !records || records.length === 0 ? (
-                    // Empty state feedback
-                    <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                        Không có bản ghi nào trong khoảng thời gian đã chọn.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    // Data rendering
-                    records.map((record) => {
-                      const workHours = Math.floor(record.totalWorkMinutes / 60)
-                      const workMins = record.totalWorkMinutes % 60
-                      return (
-                        <TableRow
-                          key={record.id}
-                          className={`cursor-pointer hover:bg-muted/30 ${
-                            selectedEmployee?.id === record.employeeId ? "bg-primary/5" : ""
-                          }`}
-                          onClick={() => { setSelectedEmployee(toSelectedEmployee(record)) }}
-                        >
-                          <TableCell className="px-4 py-4">
-                            <p className="font-medium whitespace-nowrap">
-                              {record.employee?.fullName ?? record.employeeId}
-                            </p>
-                            {record.employee?.email && (
-                              <p className="text-xs text-muted-foreground">{record.employee.email}</p>
-                            )}
-                          </TableCell>
-                          <TableCell className="px-4 py-4 text-muted-foreground whitespace-nowrap">
-                            {formatDate(record.date)}
-                          </TableCell>
-                          <TableCell className="px-4 py-4 font-mono text-sm">
-                            {formatTime(record.checkInAt)}
-                          </TableCell>
-                          <TableCell className="px-4 py-4 font-mono text-sm">
-                            {formatTime(record.checkOutAt)}
-                          </TableCell>
-                          <TableCell className="px-4 py-4 text-muted-foreground whitespace-nowrap">
-                            {record.totalWorkMinutes > 0
-                              ? `${workHours}h${workMins > 0 ? ` ${workMins}m` : ""}`
-                              : "—"}
-                          </TableCell>
-                          <TableCell className="px-4 py-4">
-                            <StatusPill
-                              label={ATTENDANCE_STATUS_LABELS[record.status] ?? record.status}
-                              variant={ATTENDANCE_STATUS_VARIANTS[record.status] ?? "neutral"}
-                            />
-                          </TableCell>
-                          <TableCell className="px-4 py-4 text-xs text-muted-foreground hidden lg:table-cell whitespace-nowrap">
-                            {record.lateMinutes > 0 && (
-                              <span className="text-warning">+{record.lateMinutes}m muộn </span>
-                            )}
-                            {record.earlyLeaveMinutes > 0 && (
-                              <span className="text-warning">-{record.earlyLeaveMinutes}m sớm </span>
-                            )}
-                            {record.overtimeMinutes > 0 && (
-                              <span className="text-info-foreground">+{record.overtimeMinutes}m OT</span>
-                            )}
-                            {!record.lateMinutes && !record.earlyLeaveMinutes && !record.overtimeMinutes && "—"}
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </PageCard>
+        {/* Attendance History Table */}
+        <PageCard className="overflow-hidden p-0" noBorder={false}>
+          <div className="overflow-x-auto">
+            <Table className="text-sm">
+              <TableHeader className="bg-muted/40">
+                <TableRow className="hover:bg-transparent border-b">
+                  <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase whitespace-nowrap">
+                    Nhân viên
+                  </TableHead>
+                  <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase whitespace-nowrap">
+                    Ngày
+                  </TableHead>
+                  <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase whitespace-nowrap">
+                    Check In
+                  </TableHead>
+                  <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase whitespace-nowrap">
+                    Check Out
+                  </TableHead>
+                  <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase whitespace-nowrap">
+                    Giờ làm
+                  </TableHead>
+                  <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase whitespace-nowrap">
+                    Trạng thái
+                  </TableHead>
+                  <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase whitespace-nowrap hidden lg:table-cell">
+                    Muộn/Sớm/OT
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+
+              <TableBody className="divide-y divide-border">
+                {isLoading ? (
+                  // Skeleton-like loading state
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
+                      <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+                    </TableCell>
+                  </TableRow>
+                ) : isError ? (
+                  // Error state feedback
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center text-destructive">
+                      Lỗi khi tải dữ liệu chấm công.
+                    </TableCell>
+                  </TableRow>
+                ) : !records || records.length === 0 ? (
+                  // Empty state feedback
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                      Không có bản ghi nào trong khoảng thời gian đã chọn.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  // Data rendering
+                  records.map((record) => {
+                    const workHours = Math.floor(record.totalWorkMinutes / 60)
+                    const workMins = record.totalWorkMinutes % 60
+                    return (
+                      <TableRow
+                        key={record.id}
+                        className={`cursor-pointer hover:bg-muted/30 ${
+                          selectedEmployee?.id === record.employeeId ? "bg-primary/5" : ""
+                        }`}
+                        onClick={() => {
+                          setSelectedEmployee(toSelectedEmployee(record))
+                        }}
+                      >
+                        <TableCell className="px-4 py-4">
+                          <p className="font-medium whitespace-nowrap">
+                            {record.employee?.fullName ?? record.employeeId}
+                          </p>
+                          {record.employee?.email && (
+                            <p className="text-xs text-muted-foreground">{record.employee.email}</p>
+                          )}
+                        </TableCell>
+                        <TableCell className="px-4 py-4 text-muted-foreground whitespace-nowrap">
+                          {formatDate(record.date)}
+                        </TableCell>
+                        <TableCell className="px-4 py-4 font-mono text-sm">
+                          {formatTime(record.checkInAt)}
+                        </TableCell>
+                        <TableCell className="px-4 py-4 font-mono text-sm">
+                          {formatTime(record.checkOutAt)}
+                        </TableCell>
+                        <TableCell className="px-4 py-4 text-muted-foreground whitespace-nowrap">
+                          {record.totalWorkMinutes > 0
+                            ? `${workHours}h${workMins > 0 ? ` ${workMins}m` : ""}`
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="px-4 py-4">
+                          <StatusPill
+                            label={ATTENDANCE_STATUS_LABELS[record.status] ?? record.status}
+                            variant={ATTENDANCE_STATUS_VARIANTS[record.status] ?? "neutral"}
+                          />
+                        </TableCell>
+                        <TableCell className="px-4 py-4 text-xs text-muted-foreground hidden lg:table-cell whitespace-nowrap">
+                          {record.lateMinutes > 0 && (
+                            <span className="text-warning">+{record.lateMinutes}m muộn </span>
+                          )}
+                          {record.earlyLeaveMinutes > 0 && (
+                            <span className="text-warning">-{record.earlyLeaveMinutes}m sớm </span>
+                          )}
+                          {record.overtimeMinutes > 0 && (
+                            <span className="text-info-foreground">
+                              +{record.overtimeMinutes}m OT
+                            </span>
+                          )}
+                          {!record.lateMinutes &&
+                            !record.earlyLeaveMinutes &&
+                            !record.overtimeMinutes &&
+                            "—"}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </PageCard>
       </div>
 
       <EmployeeAttendanceSummarySheet
         employee={selectedEmployee}
-        onClose={() => { setSelectedEmployee(null) }}
+        onClose={() => {
+          setSelectedEmployee(null)
+        }}
       />
     </div>
   )

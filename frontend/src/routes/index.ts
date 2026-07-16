@@ -1,3 +1,4 @@
+import { ROLE } from "@/config/entities/employee.config.ts"
 import { ROUTES } from "@/config/routes.config.ts"
 
 import { type ComponentType, lazy } from "react"
@@ -22,6 +23,7 @@ export interface RouteConfig {
   component?: ComponentType
   layout?: ComponentType | null
   permissions?: string[]
+  roles?: string[]
   children?: RouteConfig[]
 }
 
@@ -46,6 +48,7 @@ const privateRoutes: RouteConfig[] = [
     component: lazy(() => import("@/pages/attendance/AttendanceDashboard.tsx")),
     layout: MainLayout,
     permissions: ["attendance.read"],
+    roles: [ROLE.ADMIN],
   },
   {
     path: ROUTES.ATTENDANCE.SUMMARY,

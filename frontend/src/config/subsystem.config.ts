@@ -2,6 +2,7 @@ import { APPLICATION_TYPES } from "@/config/entities/attendance.config"
 import {
   type IEmployeeType,
   type IWorkScheduleType,
+  ROLE,
   WORK_SCHEDULE_TYPE,
 } from "@/config/entities/employee.config"
 import { PERSONAL_TAB_LABELS } from "@/config/entities/personal.config"
@@ -142,9 +143,18 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     routePrefix: ROUTES.ATTENDANCE.BASE,
     sidebarItems: [
       {
-        name: "Tổng hợp",
-        path: ROUTES.ATTENDANCE.SUMMARY,
+        // Admin history view: all employees, check-in/out, late, early-leave and OT details.
+        name: "Lịch sử chấm công",
+        path: ROUTES.ATTENDANCE.DASHBOARD,
         icon: ChartNoAxesColumn,
+        permissions: ["attendance.read"],
+        roles: [ROLE.ADMIN],
+      },
+      {
+        // Self-service summary is available to every employee with personal attendance access.
+        name: "Chấm công của tôi",
+        path: ROUTES.ATTENDANCE.SUMMARY,
+        icon: UserCheck,
         permissions: ["attendance.read"],
       },
       {

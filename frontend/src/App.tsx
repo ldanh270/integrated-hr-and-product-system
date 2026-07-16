@@ -42,9 +42,11 @@ const NotFound = lazy(() => import("@/pages/NotFound.tsx"))
 const ProtectedRoute = ({
   children,
   requiredPermissions,
+  requiredRoles,
 }: {
   children: React.ReactNode
   requiredPermissions?: string[]
+  requiredRoles?: string[]
 }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const user = useAuthStore((state) => state.user)
@@ -84,6 +86,13 @@ const ProtectedRoute = ({
     }
   }
 
+  if (requiredRoles && user) {
+    const hasRole = requiredRoles.some((role) => user.roles?.includes(role))
+    if (!hasRole) {
+      return <Navigate to={ROUTES.PERSONAL.BASE} replace />
+    }
+  }
+
   return <>{children}</>
 }
 
@@ -110,7 +119,7 @@ const renderPrivateRoute = (route: RouteConfig, index: number, keyPrefix: string
         key={`${keyPrefix}-${index}`}
         path={route.path}
         element={
-          <ProtectedRoute requiredPermissions={route.permissions}>
+          <ProtectedRoute requiredPermissions={route.permissions} requiredRoles={route.roles}>
             <Layout>
               <Outlet />
             </Layout>
@@ -129,7 +138,7 @@ const renderPrivateRoute = (route: RouteConfig, index: number, keyPrefix: string
       key={`${keyPrefix}-${index}`}
       path={route.path}
       element={
-        <ProtectedRoute requiredPermissions={route.permissions}>
+        <ProtectedRoute requiredPermissions={route.permissions} requiredRoles={route.roles}>
           <Layout>
             <Page />
           </Layout>
