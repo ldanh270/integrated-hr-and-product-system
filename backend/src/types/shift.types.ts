@@ -248,3 +248,57 @@ export interface IScheduleService {
   /** Materializes planned shifts into EmployeeShift records. */
   generateShifts(data: IGenerateShiftsDTO): Promise<IGenerateShiftsResult>
 }
+
+// ─── SCHEDULE COPILOT / INSIGHTS / SIMULATION ─────────────────
+export interface IScheduleInsightsResult {
+  lookbackDays: number
+  periodStart: Date | string
+  periodEnd: Date | string
+  employeeCount: number
+  totalLateMinutes: number
+  totalEarlyLeaveMinutes: number
+  totalOvertimeMinutes: number
+  averageWorkMinutes: number
+  lateRecordsCount: number
+  earlyLeaveRecordsCount: number
+  absentRecordsCount: number
+  attendanceRate: number
+}
+
+export interface ISuggestedWeeklyTemplate {
+  id: string
+  name: string
+  score: number
+  description: string
+  assignments: Array<{ dayOfWeek: number; shiftId: string }>
+}
+
+export interface ISuggestWeeklyTemplatesResult {
+  templates: ISuggestedWeeklyTemplate[]
+}
+
+export interface ISimulateWeeklyTemplateAssignment {
+  dayOfWeek: number
+  shiftId: string
+}
+
+export interface ISimulateWeeklyTemplateDraft {
+  lookbackDays: number
+  cycleWeeks: number
+  weeks: unknown[]
+  assignments: ISimulateWeeklyTemplateAssignment[]
+}
+
+export interface ISimulateWeeklyTemplateResult {
+  score: number
+  coverageRate: number
+  efficiencyScore: number
+  reasons: string[]
+}
+
+export interface IScheduleInsightsService {
+  getInsights(lookbackDays?: number): Promise<IScheduleInsightsResult>
+  suggestTemplates(lookbackDays?: number): Promise<ISuggestWeeklyTemplatesResult>
+  simulateTemplate(draft: ISimulateWeeklyTemplateDraft): Promise<ISimulateWeeklyTemplateResult>
+}
+

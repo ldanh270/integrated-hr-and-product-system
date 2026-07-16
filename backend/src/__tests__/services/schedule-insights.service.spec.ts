@@ -9,17 +9,11 @@ jest.mock('@/configs/entities/attendance.config.ts', () => ({
   },
 }));
 
-jest.mock('@/utils/schedule/build-schedule-insights.util.ts', () => ({
-  buildScheduleInsights: jest.fn(),
-}));
-
-jest.mock('@/utils/schedule/build-weekly-template-copilot.util.ts', () => ({
-  buildSuggestedWeeklyTemplates: jest.fn(),
-  simulateWeeklyTemplateDraft: jest.fn(),
-}));
-
 jest.mock('@/utils/schedule.util.ts', () => ({
   normalizeScheduleDate: jest.fn(),
+  buildScheduleInsights: jest.fn(),
+  buildSuggestedWeeklyTemplates: jest.fn(),
+  simulateWeeklyTemplateDraft: jest.fn(),
 }));
 
 import { ScheduleInsightsService } from '../../services/schedule-insights.service';
@@ -29,12 +23,12 @@ import type {
   IShiftScheduleRepository,
   IWorkingShiftRepository,
 } from '@/types/shift.types.ts';
-import { buildScheduleInsights } from '@/utils/schedule/build-schedule-insights.util.ts';
 import {
+  buildScheduleInsights,
   buildSuggestedWeeklyTemplates,
+  normalizeScheduleDate,
   simulateWeeklyTemplateDraft,
-} from '@/utils/schedule/build-weekly-template-copilot.util.ts';
-import { normalizeScheduleDate } from '@/utils/schedule.util.ts';
+} from '@/utils/schedule.util.ts';
 
 const mockBuildScheduleInsights = buildScheduleInsights as jest.MockedFunction<
   typeof buildScheduleInsights

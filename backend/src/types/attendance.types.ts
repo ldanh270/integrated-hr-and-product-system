@@ -43,6 +43,7 @@ export interface IAttendanceRecordQueryDTO {
   startDate?: string
   endDate?: string
   employeeId?: string
+  employeeIds?: string[]
   status?: IAttendanceStatus
 }
 
