@@ -1,5 +1,6 @@
 import { PageCard, SafeHtml, StatusPill } from "@/components/common"
 import LogTimeModal from "@/components/features/project/LogTimeModal"
+import { TaskAssigneeAiModal } from "./components/task-assignee-ai-modal"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -58,6 +59,7 @@ import {
   Trash2,
   User,
   X,
+  Brain,
 } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 
@@ -118,6 +120,7 @@ export default function TaskDetail() {
   // State hooks to control dialog modal views
   const [isOpenLogTimeModal, setIsOpenLogTimeModal] = useState(false) // Visibility of log time modal
   const [isOpenEditModal, setIsOpenEditModal] = useState(false) // Visibility of edit task modal
+  const [isOpenAiModal, setIsOpenAiModal] = useState(false) // Visibility of AI suggestion modal
   const [editingSpentTime, setEditingSpentTime] = useState<SpentTime | undefined>(undefined) // Target log record to modify
 
   // State hooks to bind edit task form inputs
@@ -204,9 +207,12 @@ export default function TaskDetail() {
 
     const isAdminOrGM = hasAnyPermission(["project.update", "project.task.approve"])
 
-    const currentMember = members?.find((m) => m.employeeId === profile?.personalEmployeeId)
+    const currentEmpId = profile?.personalEmployeeId || user?.personalEmployeeId || profile?.id || user?.id
+    const currentMember = members?.find((m) => m.employeeId === currentEmpId)
     const isLeader = project?.teamLeaderId === user?.personalEmployeeId ||
                      project?.teamLeaderId === profile?.personalEmployeeId ||
+                     project?.teamLeaderId === user?.id ||
+                     project?.teamLeaderId === profile?.id ||
                      currentMember?.role?.code === PROJECT_ROLE.LEADER
 
     if (isAdminOrGM || isLeader) {
@@ -835,6 +841,14 @@ export default function TaskDetail() {
         loggedHours={totalSpentHours}
       />
 
+      {/* AI ASSIGNEE MODAL */}
+      <TaskAssigneeAiModal
+        isOpen={isOpenAiModal}
+        onOpenChange={setIsOpenAiModal}
+        taskId={task.id}
+        onAssign={setTaskAssignee}
+      />
+
       {/* EDIT TASK DIALOG */}
       <Dialog open={isOpenEditModal} onOpenChange={setIsOpenEditModal}>
         <DialogContent className="sm:max-w-[650px] rounded-xl bg-background border-border p-6 shadow-lg">
@@ -974,12 +988,24 @@ export default function TaskDetail() {
 
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <Label
-                  htmlFor="editAssignee"
-                  className="text-xs font-semibold text-muted-foreground"
-                >
-                  Người thực hiện (Assignee)
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label
+                    htmlFor="editAssignee"
+                    className="text-xs font-semibold text-muted-foreground"
+                  >
+                    Người thực hiện (Assignee)
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 text-[10px] font-bold text-primary px-1.5 rounded-full flex items-center gap-1 hover:bg-primary/10"
+                    onClick={() => setIsOpenAiModal(true)}
+                  >
+                    <Brain className="h-3 w-3" />
+                    AI gợi ý
+                  </Button>
+                </div>
                 <Select value={taskAssignee} onValueChange={setTaskAssignee}>
                   <SelectTrigger
                     id="editAssignee"
