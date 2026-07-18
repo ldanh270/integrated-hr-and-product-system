@@ -13,8 +13,27 @@ export const EMPLOYEE_SHIFT_STATUSES = [
 ] as const
 export type IEmployeeShiftStatus = (typeof EMPLOYEE_SHIFT_STATUSES)[number]
 
-export const HOLIDAY_TYPES = ["national", "company"] as const
+export const HOLIDAY_TYPE = {
+  NATIONAL: "national",
+  COMPANY: "company",
+} as const
+export const HOLIDAY_TYPES = [HOLIDAY_TYPE.NATIONAL, HOLIDAY_TYPE.COMPANY] as const
 export type IHolidayType = (typeof HOLIDAY_TYPES)[number]
+
+/** Who the holiday applies to — all staff, one position, or hand-picked employees. */
+export const HOLIDAY_SCOPE = {
+  ALL: "all",
+  POSITION: "position",
+  EMPLOYEES: "employees",
+} as const
+
+export const HOLIDAY_SCOPE_VALUES = [
+  HOLIDAY_SCOPE.ALL,
+  HOLIDAY_SCOPE.POSITION,
+  HOLIDAY_SCOPE.EMPLOYEES,
+] as const
+
+export type IHolidayScope = (typeof HOLIDAY_SCOPE_VALUES)[number]
 
 export const ATTENDANCE_STATUS = {
   ON_TIME: "on_time",
@@ -32,6 +51,36 @@ export const ATTENDANCE_STATUSES = [
   ATTENDANCE_STATUS.OVERTIME,
 ] as const
 export type IAttendanceStatus = (typeof ATTENDANCE_STATUSES)[number]
+
+/** Supported aggregation periods for the workforce attendance matrix. */
+export const ATTENDANCE_MATRIX_VIEW = {
+  WEEK: "week",
+  MONTH: "month",
+} as const
+
+export const ATTENDANCE_MATRIX_VIEW_VALUES = [
+  ATTENDANCE_MATRIX_VIEW.WEEK,
+  ATTENDANCE_MATRIX_VIEW.MONTH,
+] as const
+
+export type IAttendanceMatrixView = (typeof ATTENDANCE_MATRIX_VIEW_VALUES)[number]
+
+/** Check-in timing relative to the scheduled shift start. */
+export const CHECK_IN_VARIANCE_STATUS = {
+  EARLY: "early",
+  ON_TIME: "on_time",
+  LATE: "late",
+  UNAVAILABLE: "unavailable",
+} as const
+
+export const CHECK_IN_VARIANCE_STATUS_VALUES = [
+  CHECK_IN_VARIANCE_STATUS.EARLY,
+  CHECK_IN_VARIANCE_STATUS.ON_TIME,
+  CHECK_IN_VARIANCE_STATUS.LATE,
+  CHECK_IN_VARIANCE_STATUS.UNAVAILABLE,
+] as const
+
+export type ICheckInVarianceStatus = (typeof CHECK_IN_VARIANCE_STATUS_VALUES)[number]
 
 export const APPLICATION_TYPES = {
   LEAVE: { LABEL: "leave", DESCRIPTION: "Xin nghỉ phép" },
@@ -149,8 +198,50 @@ export const ATTENDANCE_QUERY_PARAMS = {
   PERSONAL_ONLY: "personalOnly",
 } as const
 
+/** Weekly Schedule Copilot — attendance pattern insights + template suggest/simulate. */
 export const SCHEDULE_INSIGHTS = {
-  DEFAULT_LOOKBACK_DAYS: 7,
-  MIN_LOOKBACK_DAYS: 1,
-  MAX_LOOKBACK_DAYS: 30,
+  DEFAULT_LOOKBACK_DAYS: 90,
+  MIN_LOOKBACK_DAYS: 7,
+  MAX_LOOKBACK_DAYS: 180,
+  HOTSPOT_LIMIT: 3,
+  LOOKBACK_QUERY_PARAM: "lookbackDays",
+  LATE_RATE_THRESHOLD: 0.1,
+  ABSENT_RATE_THRESHOLD: 0.08,
+  WORK_DAYS: [1, 2, 3, 4, 5] as const,
+  CANDIDATE_LIMIT: 2,
+  RATE_PRECISION: 3,
+  TEMPLATE_BASE_SCORE: 88,
+  LATE_RISK_PENALTY: 25,
+  ABSENCE_RISK_PENALTY: 20,
+  MIN_COVERAGE_SCORE: 40,
+  MAX_COVERAGE_SCORE: 99,
+  MIN_SIMULATION_WEEKS: 1,
+  MAX_SIMULATION_WEEKS: 8,
+  DEFAULT_SIMULATION_WEEKS: 4,
+  WEEK_END_OFFSET_DAYS: 6,
+  DEFAULT_GRACE_PERIOD_MINUTES: 0,
 } as const
+export const SCHEDULE_VALIDATION_MESSAGES = {
+  WEEK_START_REQUIRED: "weekStart is required",
+} as const
+
+/** Short day labels for insights API (0=CN … 6=T7). */
+export const DAY_OF_WEEK_SHORT_LABELS: Record<number, string> = {
+  0: "CN",
+  1: "T2",
+  2: "T3",
+  3: "T4",
+  4: "T5",
+  5: "T6",
+  6: "T7",
+}
+
+export const DAY_OF_WEEK_FULL_LABELS: Record<number, string> = {
+  0: "Chủ Nhật",
+  1: "Thứ Hai",
+  2: "Thứ Ba",
+  3: "Thứ Tư",
+  4: "Thứ Năm",
+  5: "Thứ Sáu",
+  6: "Thứ Bảy",
+}

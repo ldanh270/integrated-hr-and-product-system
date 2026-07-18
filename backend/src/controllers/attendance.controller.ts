@@ -1,5 +1,6 @@
-import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { APP_ROLE } from "@/configs/entities/employee.config.ts"
 import { ATTENDANCE_ERROR_MESSAGES } from "@/configs/messages/attendance.message.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
   ATTENDANCE_ERROR_CODES,
   ATTENDANCE_REPORT_HEADERS,
@@ -7,13 +8,18 @@ import {
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import {
   attendanceRecordQuerySchema,
+  attendanceMatrixQuerySchema,
   checkInSchema,
   checkOutSchema,
 } from "@/schemas/attendance.schema.ts"
-import { ApiResponse } from "@/types"
-import { IAttendanceRecordDTO, IAttendanceService } from "@/types/attendance.types.ts"
-import { resolvePersonalEmployeeId } from "@/utils/attendance/resolve-personal-employee-id.ts"
 import { authorizationService } from "@/services/authorization.service.ts"
+import { ApiResponse } from "@/types"
+import {
+  IAttendanceMatrixDTO,
+  IAttendanceRecordDTO,
+  IAttendanceService,
+} from "@/types/attendance.types.ts"
+import { resolvePersonalEmployeeId } from "@/utils/attendance/resolve-personal-employee-id.ts"
 
 import { Request, Response } from "express"
 import { z } from "zod"
@@ -162,8 +168,9 @@ export class AttendanceController {
       }
 
       const authContext = await authorizationService.getAuthorizationContext(userId)
-      const canViewAll =
-        authContext.isDynamicAdmin || authContext.permissions.has("attendance.read")
+      // attendance.read belongs to regular employees for personal records; only the
+      // explicit admin role may remove the employee scope and query workforce history.
+      const canViewAll = authContext.roles.has(APP_ROLE.ADMIN)
 
       if (query.personalOnly) {
         query.employeeId = await resolvePersonalEmployeeId(userId)
@@ -174,6 +181,27 @@ export class AttendanceController {
       const { personalOnly: _personalOnly, ...recordQuery } = query
       const records = await this.service.getAttendanceRecords(recordQuery)
       res.status(HttpStatusCode.OK).json({ data: records, error: null })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: {
+            message: ATTENDANCE_ERROR_MESSAGES.VALIDATION_ERROR,
+            code: ATTENDANCE_ERROR_CODES.VALIDATION_ERROR,
+            meta: error.issues,
+          },
+        })
+      }
+      throw error
+    }
+  }
+
+  /** Returns workforce attendance grouped for weekly/monthly matrix rendering. */
+  queryMatrix = async (req: Request, res: Response<ApiResponse<IAttendanceMatrixDTO>>) => {
+    try {
+      const query = attendanceMatrixQuerySchema.parse(req.query)
+      const matrix = await this.service.getAttendanceMatrix(query)
+      res.status(HttpStatusCode.OK).json({ data: matrix, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({

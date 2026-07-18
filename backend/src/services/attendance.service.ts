@@ -1,15 +1,22 @@
 import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util.ts"
 import { ATTENDANCE_ERROR_MESSAGES } from "@/configs/messages/attendance.message.ts"
+import { ATTENDANCE_MATRIX_RULES } from "@/configs/rules/attendance.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { ATTENDANCE_LAYERS } from "@/constants/attendance.constants.ts"
 import {
   IAttendanceRecordQueryDTO,
+  IAttendanceMatrixDTO,
+  IAttendanceMatrixQueryDTO,
   IAttendanceRepository,
   IAttendanceRecordDTO,
   IAttendanceScheduleDTO,
   IAttendanceService,
   IHolidayRepository,
 } from "@/types/attendance.types.ts"
+import {
+  buildAttendanceMatrix,
+  resolveAttendanceMatrixRange,
+} from "@/utils/attendance/attendance-matrix.util.ts"
 import {
   IEmployeeShiftRepository,
   IShiftScheduleRepository,
@@ -271,5 +278,19 @@ export class AttendanceService implements IAttendanceService {
   /** Query attendance history with optional employee/date filters. */
   async getAttendanceRecords(query: IAttendanceRecordQueryDTO): Promise<IAttendanceRecordDTO[]> {
     return this.attendanceRepo.queryRecords(query)
+  }
+
+  /** Build admin workforce matrix for one calendar week or month. */
+  async getAttendanceMatrix(query: IAttendanceMatrixQueryDTO): Promise<IAttendanceMatrixDTO> {
+    const range = resolveAttendanceMatrixRange(query)
+    const [records, employees] = await Promise.all([
+      this.attendanceRepo.queryRecords(range),
+      this.employeeRepo.listEmployeesPaginated({
+        limit: ATTENDANCE_MATRIX_RULES.MAX_EMPLOYEES,
+        search: query.search,
+        sortBy: "fullName",
+      }),
+    ])
+    return buildAttendanceMatrix(query, records, employees.data)
   }
 }

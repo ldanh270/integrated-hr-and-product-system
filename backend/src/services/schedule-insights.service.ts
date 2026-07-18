@@ -9,12 +9,12 @@ import type {
   ISuggestWeeklyTemplatesResult,
   IWorkingShiftRepository,
 } from "@/types/shift.types.ts"
+import { buildScheduleInsights } from "@/utils/schedule/build-schedule-insights.util.ts"
 import {
-  buildScheduleInsights,
   buildSuggestedWeeklyTemplates,
-  normalizeScheduleDate,
   simulateWeeklyTemplateDraft,
-} from "@/utils/schedule.util.ts"
+} from "@/utils/schedule/build-weekly-template-copilot.util.ts"
+import { normalizeScheduleDate } from "@/utils/schedule.util.ts"
 
 /** Weekly Schedule Copilot: insights + template suggest + what-if simulate. */
 export class ScheduleInsightsService implements IScheduleInsightsService {

@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { WORKING_SHIFT_FORM_RULES } from "@/config/rules/attendance.config"
 import { useDeleteShift, useShifts } from "@/hooks/attendance/use-shifts"
 import { minutesToTime } from "@/lib/utils"
 import type { IWorkingShift } from "@/types/attendance.types"
@@ -24,6 +25,8 @@ import type { IWorkingShift } from "@/types/attendance.types"
 import { useState } from "react"
 
 import { Clock, Loader2, MapPin, MoreHorizontal, Plus } from "lucide-react"
+
+const { TABLE_COLUMN_COUNT } = WORKING_SHIFT_FORM_RULES
 
 /**
  * ShiftManagement — Management page for Defining and configuring Working Shifts.
@@ -101,6 +104,9 @@ export default function ShiftManagement() {
                   Giờ làm
                 </TableHead>
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                  Giờ nghỉ
+                </TableHead>
+                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                   Ân hạn
                 </TableHead>
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
@@ -117,21 +123,27 @@ export default function ShiftManagement() {
               {isLoading ? (
                 // Loading spinner across full table body
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
+                  <TableCell colSpan={TABLE_COLUMN_COUNT} className="h-24 text-center">
                     <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
                   </TableCell>
                 </TableRow>
               ) : isError ? (
                 // Error feedback cell
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-destructive">
+                  <TableCell
+                    colSpan={TABLE_COLUMN_COUNT}
+                    className="h-24 text-center text-destructive"
+                  >
                     Lỗi khi tải danh sách ca làm việc.
                   </TableCell>
                 </TableRow>
               ) : !shifts || shifts.length === 0 ? (
                 // Empty data feedback
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={TABLE_COLUMN_COUNT}
+                    className="h-24 text-center text-muted-foreground"
+                  >
                     Chưa có ca làm việc nào. Tạo ca đầu tiên ngay.
                   </TableCell>
                 </TableRow>
@@ -144,7 +156,9 @@ export default function ShiftManagement() {
                     </TableCell>
                     <TableCell className="px-4 py-4 font-medium text-foreground">
                       <button
-                        onClick={() => { handleEdit(shift); }}
+                        onClick={() => {
+                          handleEdit(shift)
+                        }}
                         className="hover:text-primary hover:underline focus:outline-none"
                       >
                         {shift.name}
@@ -155,6 +169,12 @@ export default function ShiftManagement() {
                         <Clock className="h-3.5 w-3.5" />
                         {minutesToTime(shift.startTime)} – {minutesToTime(shift.endTime)}
                       </span>
+                    </TableCell>
+                    <TableCell className="px-4 py-4 text-muted-foreground">
+                      {/* A dash preserves compatibility with legacy shifts created before break fields existed. */}
+                      {shift.breakStartTime != null && shift.breakEndTime != null
+                        ? `${minutesToTime(shift.breakStartTime)} – ${minutesToTime(shift.breakEndTime)}`
+                        : "—"}
                     </TableCell>
                     <TableCell className="px-4 py-4 text-muted-foreground">
                       {shift.gracePeriodMinutes} phút
@@ -185,13 +205,19 @@ export default function ShiftManagement() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => { handleEdit(shift); }}>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              handleEdit(shift)
+                            }}
+                          >
                             Chỉnh sửa
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-destructive"
-                            onClick={() => { handleDelete(shift.id); }}
+                            onClick={() => {
+                              handleDelete(shift.id)
+                            }}
                           >
                             Xoá ca
                           </DropdownMenuItem>

@@ -1,7 +1,10 @@
 import type {
   IApplicationStatus,
   IApplicationType,
+  IAttendanceMatrixView,
   IAttendanceStatus,
+  ICheckInVarianceStatus,
+  IHolidayScope,
   IHolidayType,
 } from "@/config/entities/attendance.config"
 
@@ -31,6 +34,9 @@ export interface IWorkingShift {
   startTime: number
   /** Minutes since midnight, e.g. 1020 = 17:00 */
   endTime: number
+  /** Optional unpaid-break bounds in minutes from midnight; null/null means no break. */
+  breakStartTime?: number | null
+  breakEndTime?: number | null
   gracePeriodMinutes: number
   gpsLat?: number
   gpsLng?: number
@@ -47,6 +53,9 @@ export interface ICreateShiftPayload {
   startTime: string
   /** HH:MM format */
   endTime: string
+  /** Optional unpaid break; both values must be provided together. */
+  breakStartTime?: string | null
+  breakEndTime?: string | null
   gracePeriodMinutes?: number
   /** null clears GPS geofence when updating a working shift. */
   gps?: IGpsConfig | null
@@ -66,6 +75,8 @@ export interface IScheduleDay {
     | "name"
     | "startTime"
     | "endTime"
+    | "breakStartTime"
+    | "breakEndTime"
     | "gracePeriodMinutes"
     | "gpsLat"
     | "gpsLng"
@@ -81,6 +92,35 @@ export interface ISchedule {
   templateId?: string | null
   cycleWeeks?: number | null
   days: IScheduleDay[]
+}
+
+export interface IPlannedWeekShift {
+  shiftId: string
+  isOverride: boolean
+  shift: Pick<
+    IWorkingShift,
+    | "id"
+    | "name"
+    | "startTime"
+    | "endTime"
+    | "breakStartTime"
+    | "breakEndTime"
+    | "gracePeriodMinutes"
+    | "gpsLat"
+    | "gpsLng"
+    | "gpsRadiusMeters"
+  >
+}
+
+export interface IPlannedWeekDay {
+  date: string
+  dayOfWeek: number
+  shifts: IPlannedWeekShift[]
+}
+
+export interface IPlannedWeek {
+  weekStart: string
+  days: IPlannedWeekDay[]
 }
 
 export interface IAssignSchedulePayload {
@@ -150,6 +190,48 @@ export interface IAttendanceQuery {
   employeeId?: string
   status?: IAttendanceStatus
   personalOnly?: boolean
+}
+
+/** One scheduled attendance occurrence rendered inside a matrix day cell. */
+export interface IAttendanceMatrixShift {
+  id: string
+  shiftName?: string
+  scheduledStart?: number
+  checkInAt?: string
+  checkOutAt?: string
+  checkInVarianceMinutes?: number
+  status: ICheckInVarianceStatus
+}
+
+/** Attendance occurrences grouped under one ISO calendar date. */
+export interface IAttendanceMatrixDay {
+  date: string
+  shifts: IAttendanceMatrixShift[]
+}
+
+/** Employee row displayed in the workforce matrix. */
+export interface IAttendanceMatrixEmployee {
+  employeeId: string
+  employeeCode: string
+  fullName: string
+  email?: string
+  position?: string
+  days: IAttendanceMatrixDay[]
+}
+
+/** Workforce matrix API response for the selected period. */
+export interface IAttendanceMatrixResult {
+  view: IAttendanceMatrixView
+  rangeStart: string
+  rangeEnd: string
+  employees: IAttendanceMatrixEmployee[]
+}
+
+/** Query contract shared by week and month matrix requests. */
+export interface IAttendanceMatrixQuery {
+  view: IAttendanceMatrixView
+  anchor: string
+  search?: string
 }
 
 // ─── SHIFT CHANGE REQUEST ─────────────────────────────────────
@@ -243,6 +325,14 @@ export interface IHoliday {
   name: string
   date: string
   type: IHolidayType
+  scope?: IHolidayScope
+  positionId?: string | null
+  position?: { id: string; name: string; code: string } | null
+  batchId?: string | null
+  assignees?: Array<{
+    employeeId: string
+    employee?: { id: string; fullName: string; email: string }
+  }>
   createdById: string
   createdAt: string
   updatedAt: string
@@ -256,8 +346,14 @@ export interface IHolidayQuery {
 
 export interface IHolidayPayload {
   name: string
-  date: string
+  /** Legacy single-day field — prefer startDate/endDate. */
+  date?: string
+  startDate: string
+  endDate: string
   type: IHolidayType
+  scope: IHolidayScope
+  positionId?: string
+  employeeIds?: string[]
 }
 
 // ─── WEEKLY SCHEDULE TEMPLATE ─────────────────────────────────
@@ -325,4 +421,104 @@ export interface IGenerateShiftsResult {
   created: number
   updated: number
   skipped: number
+}
+
+/** Weekly Schedule Copilot Mode A — attendance patterns for FT template schedules. */
+export interface IScheduleInsightDayBucket {
+  dayOfWeek: number
+  label: string
+  total: number
+  late: number
+  absent: number
+  onTime: number
+  lateRate: number
+  absentRate: number
+  avgLateMinutes: number
+}
+
+export interface IScheduleInsightHotspot {
+  dayOfWeek: number
+  issue: "late" | "absent"
+  rate: number
+  message: string
+}
+
+export interface IScheduleInsightsResult {
+  lookbackDays: number
+  periodStart: string
+  periodEnd: string
+  employeeCount: number
+  totals: {
+    late: number
+    absent: number
+    onTime: number
+    avgLateMinutes: number
+  }
+  byDayOfWeek: IScheduleInsightDayBucket[]
+  hotspots: IScheduleInsightHotspot[]
+}
+
+export interface ISuggestedTemplateDay {
+  dayOfWeek: number
+  shiftId: string | null
+  shiftName: string | null
+}
+
+export interface ISuggestedTemplateWeek {
+  weekIndex: number
+  days: ISuggestedTemplateDay[]
+}
+
+export interface ISuggestedWeeklyTemplateCandidate {
+  id: string
+  name: string
+  description: string
+  cycleWeeks: number
+  predictedCoverageScore: number
+  tradeOffs: string[]
+  weeks: ISuggestedTemplateWeek[]
+}
+
+export interface ISuggestWeeklyTemplatesResult {
+  lookbackDays: number
+  basedOnInsights: {
+    employeeCount: number
+    periodStart: string
+    periodEnd: string
+  }
+  candidates: ISuggestedWeeklyTemplateCandidate[]
+}
+
+export interface ISimulateWeeklyTemplateDraft {
+  cycleWeeks: number
+  weeks: Array<{
+    weekIndex: number
+    days: Array<{ dayOfWeek: number; shiftId: string | null }>
+  }>
+  lookbackDays?: number
+  simulateWeeks?: number
+}
+
+export interface ISimulateWeeklyTemplateDayImpact {
+  dayOfWeek: number
+  label: string
+  assignedShifts: number
+  historicalLateRate: number
+  historicalAbsentRate: number
+  projectedLateRisk: number
+  projectedAbsentRisk: number
+  note: string
+}
+
+export interface ISimulateWeeklyTemplateResult {
+  simulateWeeks: number
+  lookbackDays: number
+  summary: {
+    totalAssignedSlots: number
+    offSlots: number
+    avgProjectedLateRisk: number
+    avgProjectedAbsentRisk: number
+  }
+  byDayOfWeek: ISimulateWeeklyTemplateDayImpact[]
+  messages: string[]
 }

@@ -1,3 +1,4 @@
+import { ROLE } from "@/config/entities/employee.config.ts"
 import { ROUTES } from "@/config/routes.config.ts"
 
 import { type ComponentType, lazy } from "react"
@@ -22,6 +23,7 @@ export interface RouteConfig {
   component?: ComponentType
   layout?: ComponentType | null
   permissions?: string[]
+  roles?: string[]
   children?: RouteConfig[]
 }
 
@@ -43,9 +45,10 @@ const privateRoutes: RouteConfig[] = [
   },
   {
     path: ROUTES.ATTENDANCE.DASHBOARD,
-    component: lazy(() => import("@/pages/attendance/AttendanceDashboard.tsx")),
+    component: lazy(() => import("@/pages/attendance/AttendanceTimesheet.tsx")),
     layout: MainLayout,
     permissions: ["attendance.read"],
+    roles: [ROLE.ADMIN],
   },
   {
     path: ROUTES.ATTENDANCE.SUMMARY,
@@ -209,7 +212,15 @@ const privateRoutes: RouteConfig[] = [
     // Page-level guard redirects full-time employees to schedule view.
   },
   {
+    // Personal navigation keeps the page inside the Personal subsystem.
     path: ROUTES.PERSONAL.PAYSLIPS,
+    component: lazy(() => import("@/pages/payroll/MyPayslips.tsx")),
+    layout: MainLayout,
+  },
+  {
+    // Same self-service page under /payroll so employees see only the payroll sidebar.
+    // API authorization still limits the response to the authenticated employee.
+    path: ROUTES.PAYROLL.MY_PAYSLIPS,
     component: lazy(() => import("@/pages/payroll/MyPayslips.tsx")),
     layout: MainLayout,
   },

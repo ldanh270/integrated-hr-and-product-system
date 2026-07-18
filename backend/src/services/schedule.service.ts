@@ -1,3 +1,4 @@
+import { SCHEDULE_INSIGHTS } from "@/configs/entities/attendance.config.ts"
 import {
   IAssignShiftScheduleDTO,
   IEmployeeShiftRepository,
@@ -6,6 +7,7 @@ import {
   IGeneratedShiftPreview,
   IGenerateShiftsResult,
   IOverrideEmployeeShiftDTO,
+  IPlannedWeek,
   IScheduleService,
   IShiftScheduleRepository,
   ShiftGenerateItemStatus,
@@ -21,6 +23,7 @@ import {
   normalizeScheduleDate,
   resolveShiftFromSchedule,
 } from "@/utils/schedule.util.ts"
+import { buildPlannedWeek } from "@/utils/schedule/build-planned-week.util.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 
 /**
@@ -53,6 +56,28 @@ export class ScheduleService implements IScheduleService {
     endDate: Date,
   ): Promise<IEmployeeShiftWithShift[]> {
     return this.employeeShiftRepo.listByEmployeesAndDateRange([employeeId], startDate, endDate)
+  }
+
+  /** Combines explicit employee shifts with the reusable template fallback for one calendar week. */
+  async getPlannedWeekForEmployee(
+    employeeId: string,
+    weekStart: string | Date,
+  ): Promise<IPlannedWeek> {
+    const start = normalizeScheduleDate(new Date(weekStart))
+    const end = new Date(start)
+    end.setDate(end.getDate() + SCHEDULE_INSIGHTS.WEEK_END_OFFSET_DAYS)
+
+    const employeeShifts = await this.employeeShiftRepo.listByEmployeesAndDateRange(
+      [employeeId],
+      start,
+      end,
+    )
+
+    return buildPlannedWeek({
+      weekStart: start,
+      employeeShifts,
+      getScheduleForDate: (date) => this.scheduleRepo.getScheduleByEmployee(employeeId, date),
+    })
   }
 
   async overrideEmployeeShift(data: IOverrideEmployeeShiftDTO): Promise<unknown> {

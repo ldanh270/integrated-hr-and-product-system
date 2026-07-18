@@ -1,5 +1,6 @@
 import { PageCard, PageHeader } from "@/components/common"
 import { StatusPill } from "@/components/common/status-pill"
+import { AttendanceMatrix } from "@/components/features/attendance/attendance-matrix"
 import {
   EmployeeAttendanceSummarySheet,
   type SelectedEmployeeSummary,
@@ -27,6 +28,7 @@ import {
   ATTENDANCE_STATUS_VARIANTS,
 } from "@/config/entities/attendance.config"
 import type { IAttendanceStatus } from "@/config/entities/attendance.config"
+import { ROLE } from "@/config/entities/employee.config"
 import { ROUTES } from "@/config/routes.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useAttendanceRecords } from "@/hooks/attendance/use-attendance"
@@ -67,9 +69,10 @@ function toSelectedEmployee(record: IAttendanceRecord): SelectedEmployeeSummary 
  * AttendanceDashboard Component.
  */
 export default function AttendanceDashboard() {
-  const { hasPermission } = usePermission()
+  const { hasPermission, hasRole } = usePermission()
 
-  if (!hasPermission("attendance.read")) {
+  // Route guards handle navigation; this check also protects direct component rendering.
+  if (!hasPermission("attendance.read") || !hasRole(ROLE.ADMIN)) {
     return <Navigate to={ROUTES.ATTENDANCE.MY_SCHEDULE} replace />
   }
 
@@ -214,6 +217,8 @@ function AdminAttendanceDashboard() {
           <p className="text-xs text-muted-foreground mt-1">Hôm nay</p>
         </PageCard>
       </div>
+
+      <AttendanceMatrix />
 
       <PageCard padding="lg" className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

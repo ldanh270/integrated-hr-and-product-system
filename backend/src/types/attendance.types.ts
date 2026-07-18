@@ -1,7 +1,9 @@
 import {
   IApplicationStatus,
   IApplicationType,
+  IAttendanceMatrixView,
   IAttendanceStatus,
+  ICheckInVarianceStatus,
   IHolidayType,
   ILeaveType,
   IRegimeType,
@@ -49,8 +51,60 @@ export interface IAttendanceRecordQueryDTO {
   startDate?: string
   endDate?: string
   employeeId?: string
+  /** Bulk filter — preferred over looping single employeeId for scoring. */
   employeeIds?: string[]
   status?: IAttendanceStatus
+}
+
+/** Filters and anchors a workforce matrix request to one calendar period. */
+export interface IAttendanceMatrixQueryDTO {
+  view: IAttendanceMatrixView
+  anchor: string
+  search?: string
+}
+
+/** One scheduled attendance occurrence inside a matrix day. */
+export interface IAttendanceMatrixShiftDTO {
+  id: string
+  shiftName?: string
+  scheduledStart?: number
+  checkInAt?: string
+  checkOutAt?: string
+  checkInVarianceMinutes?: number
+  status: ICheckInVarianceStatus
+}
+
+/** Attendance occurrences grouped by ISO calendar date. */
+export interface IAttendanceMatrixDayDTO {
+  date: string
+  shifts: IAttendanceMatrixShiftDTO[]
+}
+
+/** Employee identity and day cells returned to the matrix UI. */
+export interface IAttendanceMatrixEmployeeDTO {
+  employeeId: string
+  employeeCode: string
+  fullName: string
+  email?: string
+  position?: string
+  days: IAttendanceMatrixDayDTO[]
+}
+
+/** Minimal employee projection required to build empty matrix rows. */
+export interface IAttendanceMatrixEmployeeProfileDTO {
+  id: string
+  username: string
+  fullName: string
+  email: string
+  position: string | null
+}
+
+/** Complete workforce matrix response for one week or month. */
+export interface IAttendanceMatrixDTO {
+  view: IAttendanceMatrixView
+  rangeStart: string
+  rangeEnd: string
+  employees: IAttendanceMatrixEmployeeDTO[]
 }
 
 // ─── APPLICATION DETAIL DTOs ──────────────────────────────────
@@ -178,10 +232,39 @@ export interface IListHolidaysQueryDTO {
   year?: number
 }
 
+export interface ICreateHolidayDTO {
+  name: string
+  date?: string | Date
+  startDate?: string | Date
+  endDate?: string | Date
+  type: IHolidayType
+  scope?: "all" | "position" | "employees"
+  positionId?: string
+  employeeIds?: string[]
+}
+
 export interface IUpdateHolidayDTO {
   name?: string
   date?: string | Date
   type?: IHolidayType
+}
+
+export interface IHolidayCalendarDTO {
+  id: string
+  name: string
+  date: Date
+  type: IHolidayType
+  scope: string
+  positionId: string | null
+  batchId: string | null
+  createdById: string
+  createdAt: Date
+  updatedAt: Date
+  position: { id: string; name: string; code: string } | null
+  assignees: Array<{
+    employeeId: string
+    employee: { id: string; fullName: string; email: string }
+  }>
 }
 
 // ─── REPOSITORY INTERFACES ────────────────────────────────────
@@ -214,6 +297,9 @@ export interface IAttendanceShiftDTO {
   name?: string
   startTime: number
   endTime: number
+  /** Optional unpaid break, represented as minutes from local midnight. */
+  breakStartTime?: number | null
+  breakEndTime?: number | null
   gracePeriodMinutes?: number | null
   gpsLat?: number | null
   gpsLng?: number | null
@@ -340,19 +426,14 @@ export interface IApplicationRepository {
  */
 export interface IHolidayRepository {
   /** Lists holiday records. */
-  listHolidays(query?: IListHolidaysQueryDTO): Promise<HolidayCalendar[]>
-  /** Creates a holiday record. */
-  createHoliday(
-    name: string,
-    date: string | Date,
-    type: IHolidayType,
-    createdById: string,
-  ): Promise<HolidayCalendar>
+  listHolidays(query?: IListHolidaysQueryDTO): Promise<IHolidayCalendarDTO[]>
+  /** Creates holiday day rows for a date range + scope. */
+  createHolidayRange(data: ICreateHolidayDTO, createdById: string): Promise<IHolidayCalendarDTO[]>
   /** Updates a holiday record. */
-  updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<HolidayCalendar>
-  /** Deletes a holiday record. */
-  deleteHoliday(id: string): Promise<void>
-  /** Checks if a specific date is a holiday. */
+  updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<IHolidayCalendarDTO>
+  /** Deletes a holiday record (and batch siblings when batchId set). */
+  deleteHoliday(id: string, deleteBatch?: boolean): Promise<void>
+  /** Checks if a specific date is a company-wide holiday. */
   checkIsHoliday(date: string | Date): Promise<boolean>
 }
 
@@ -376,6 +457,7 @@ export interface IAttendanceService {
   ): Promise<IAttendanceRecordDTO>
   /** Queries attendance records. */
   getAttendanceRecords(query: IAttendanceRecordQueryDTO): Promise<IAttendanceRecordDTO[]>
+  getAttendanceMatrix(query: IAttendanceMatrixQueryDTO): Promise<IAttendanceMatrixDTO>
 }
 
 /**
@@ -419,18 +501,13 @@ export interface IApplicationService {
  */
 export interface IHolidayService {
   /** Lists holidays. */
-  listHolidays(query?: IListHolidaysQueryDTO): Promise<HolidayCalendar[]>
-  /** Creates a holiday. */
-  createHoliday(
-    name: string,
-    date: string | Date,
-    type: IHolidayType,
-    createdById: string,
-  ): Promise<HolidayCalendar>
+  listHolidays(query?: IListHolidaysQueryDTO): Promise<IHolidayCalendarDTO[]>
+  /** Creates holiday day rows for a date range + scope. */
+  createHoliday(data: ICreateHolidayDTO, createdById: string): Promise<IHolidayCalendarDTO[]>
   /** Updates a holiday. */
-  updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<HolidayCalendar>
-  /** Deletes a holiday. */
-  deleteHoliday(id: string): Promise<void>
-  /** Checks if a date is a holiday. */
+  updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<IHolidayCalendarDTO>
+  /** Deletes a holiday (optionally whole batch). */
+  deleteHoliday(id: string, deleteBatch?: boolean): Promise<void>
+  /** Checks if a date is a company-wide holiday. */
   isHoliday(date: string | Date): Promise<boolean>
 }

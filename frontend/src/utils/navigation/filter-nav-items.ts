@@ -21,8 +21,9 @@ export function filterNavItems(
       return false
     }
 
-    if (item.roles?.length && (!user?.role || !item.roles.includes(user.role))) {
-      return false
+    if (item.roles?.length) {
+      const userRoles = new Set(user?.roles ?? [])
+      if (!item.roles.some((role) => userRoles.has(role))) return false
     }
 
     if (item.employeeTypes && (!employeeType || !item.employeeTypes.includes(employeeType))) {

@@ -1,7 +1,10 @@
 import {
   APPLICATION_STATUSES,
   APPLICATION_TYPE_VALUES,
+  ATTENDANCE_MATRIX_VIEW_VALUES,
   ATTENDANCE_STATUSES,
+  HOLIDAY_SCOPE,
+  HOLIDAY_SCOPE_VALUES,
   HOLIDAY_TYPES,
   LEAVE_TYPE_VALUES,
   REGIME_TYPES,
@@ -62,6 +65,17 @@ export const attendanceRecordQuerySchema = z
   .strict()
 
 export type AttendanceRecordQuerySchemaType = z.infer<typeof attendanceRecordQuerySchema>
+
+/** Validates the bounded period selector used by the admin workforce matrix. */
+export const attendanceMatrixQuerySchema = z
+  .object({
+    view: z.enum(ATTENDANCE_MATRIX_VIEW_VALUES),
+    anchor: z.iso.date(),
+    search: z.string().trim().max(100).optional(),
+  })
+  .strict()
+
+export type AttendanceMatrixQuerySchemaType = z.infer<typeof attendanceMatrixQuerySchema>
 
 // ─── SHARED DATE FIELD ───────────────────────────────────────
 
@@ -312,16 +326,58 @@ export type ListApplicationsQuerySchemaType = z.infer<typeof listApplicationsQue
 export const createHolidaySchema = z
   .object({
     name: z.string().min(2).max(100),
-    date: z.string().refine((val) => !isNaN(Date.parse(val)), {
-      message: ATTENDANCE_ERROR_MESSAGES.INVALID_DATE_FORMAT,
-    }),
+    /** Single-day create (legacy). Prefer startDate/endDate for ranges. */
+    date: dateString.optional(),
+    startDate: dateString.optional(),
+    endDate: dateString.optional(),
     type: z.enum(HOLIDAY_TYPES),
+    scope: z.enum(HOLIDAY_SCOPE_VALUES).default(HOLIDAY_SCOPE.ALL),
+    positionId: z.string().cuid("Invalid position ID").optional(),
+    employeeIds: z.array(z.string().cuid("Invalid employee ID")).min(1).max(200).optional(),
   })
   .strict()
+  .superRefine((data, ctx) => {
+    const start = data.startDate ?? data.date
+    const end = data.endDate ?? data.startDate ?? data.date
+    if (!start) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "startDate or date is required",
+        path: ["startDate"],
+      })
+    }
+    if (start && end && new Date(end) < new Date(start)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "endDate must be >= startDate",
+        path: ["endDate"],
+      })
+    }
+    if (data.scope === HOLIDAY_SCOPE.POSITION && !data.positionId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "positionId is required when scope is position",
+        path: ["positionId"],
+      })
+    }
+    if (data.scope === HOLIDAY_SCOPE.EMPLOYEES && !data.employeeIds?.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "employeeIds is required when scope is employees",
+        path: ["employeeIds"],
+      })
+    }
+  })
 
 export type CreateHolidaySchemaType = z.infer<typeof createHolidaySchema>
 
-export const updateHolidaySchema = createHolidaySchema.partial().strict()
+export const updateHolidaySchema = z
+  .object({
+    name: z.string().min(2).max(100).optional(),
+    date: dateString.optional(),
+    type: z.enum(HOLIDAY_TYPES).optional(),
+  })
+  .strict()
 
 export const listHolidayQuerySchema = z
   .object({

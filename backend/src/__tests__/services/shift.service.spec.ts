@@ -63,6 +63,8 @@ const createMockShift = (overrides: Partial<ShiftEntity> = {}): ShiftEntity => (
   name: 'Morning Shift',
   startTime: 800,
   endTime: 1700,
+  breakStartTime: null,
+  breakEndTime: null,
   createdAt: new Date('2024-01-01T00:00:00.000Z'),
   updatedAt: new Date('2024-01-01T00:00:00.000Z'),
   gracePeriodMinutes: 15,
