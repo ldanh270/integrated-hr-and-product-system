@@ -779,7 +779,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
       }),
     ])
 
-    const statusCounts = new Map(
+    const statusCounts = new Map<ApplicationStatus, number>(
       groupedStatuses.map((row) => [
         row.status,
         typeof row._count._all === "number" ? row._count._all : 0,
