@@ -4,6 +4,10 @@ import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
 import { ATTENDANCE_TIME_RULES } from "@/configs/rules/attendance.config.ts"
 import { prisma } from "@/libs/database.ts"
 import {
+  buildDemoShiftSelections,
+  demoAssignmentKey,
+} from "@/scripts/attendance-demo-assignment.util.ts"
+import {
   getAttendanceClockMinutes,
   toAttendanceInstant,
 } from "@/utils/attendance/attendance-time-zone.util.ts"
@@ -44,17 +48,43 @@ function getBusinessDates(): Date[] {
 
 /** Replaces only script-owned demo records while preserving real attendance. */
 async function seedDemoWeek() {
-  const [employees, shift] = await Promise.all([
+  const [employees, fallbackShift] = await Promise.all([
     prisma.employee.findMany({
       where: { deletedAt: null, status: { not: EMPLOYEE_STATUS.TERMINATED } },
       orderBy: { fullName: "asc" },
     }),
     prisma.workingShift.findFirst({ where: { isActive: true }, orderBy: { startTime: "asc" } }),
   ])
-  if (!shift || employees.length === 0) throw new Error("Active employee or working shift missing")
+  if (!fallbackShift || employees.length === 0) {
+    throw new Error("Active employee or working shift missing")
+  }
 
   const creator = employees.find((employee) => employee.username === "admin") ?? employees[0]
   const dates = getBusinessDates()
+  const schedules = await prisma.shiftSchedule.findMany({
+    where: {
+      employeeId: { in: employees.map((employee) => employee.id) },
+      validFrom: { lte: DEMO_END },
+      OR: [{ validTo: null }, { validTo: { gte: DEMO_START } }],
+    },
+    include: { days: { include: { shift: true } } },
+    orderBy: { validFrom: "desc" },
+  })
+  const desiredAssignments = buildDemoShiftSelections(
+    employees,
+    schedules,
+    dates,
+    fallbackShift.id,
+  ).map((selection) => ({
+    ...selection,
+    status: EMPLOYEE_SHIFT_STATUS.CONFIRMED,
+    createdById: creator.id,
+  }))
+  const desiredAssignmentKeys = new Set(
+    desiredAssignments.map((assignment) =>
+      demoAssignmentKey(assignment.employeeId, assignment.assignedDate, assignment.shiftId),
+    ),
+  )
 
   // Remove only rows owned by this demo script, including an older timezone-shifted run.
   await prisma.employeeShift.deleteMany({
@@ -62,25 +92,27 @@ async function seedDemoWeek() {
   })
 
   await prisma.employeeShift.createMany({
-    data: employees.flatMap((employee) =>
-      dates.map((assignedDate) => ({
-        employeeId: employee.id,
-        shiftId: shift.id,
-        assignedDate,
-        status: EMPLOYEE_SHIFT_STATUS.CONFIRMED,
-        createdById: creator.id,
-      })),
-    ),
+    data: desiredAssignments,
     skipDuplicates: true,
   })
 
-  const assignedShifts = await prisma.employeeShift.findMany({
-    where: {
-      employeeId: { in: employees.map((employee) => employee.id) },
-      shiftId: shift.id,
-      assignedDate: { in: dates },
-    },
-  })
+  const assignedShifts = (
+    await prisma.employeeShift.findMany({
+      where: {
+        employeeId: { in: employees.map((employee) => employee.id) },
+        assignedDate: { in: dates },
+      },
+      include: { shift: true },
+    })
+  ).filter((employeeShift) =>
+    desiredAssignmentKeys.has(
+      demoAssignmentKey(
+        employeeShift.employeeId,
+        employeeShift.assignedDate,
+        employeeShift.shiftId,
+      ),
+    ),
+  )
   const employeeOrder = new Map<string, number>(
     employees.map((employee, index): [string, number] => [employee.id, index]),
   )
@@ -108,12 +140,15 @@ async function seedDemoWeek() {
         date: employeeShift.assignedDate,
         checkInAt: isAbsent
           ? null
-          : toAttendanceInstant(employeeShift.assignedDate, shift.startTime + variance),
+          : toAttendanceInstant(
+              employeeShift.assignedDate,
+              employeeShift.shift.startTime + variance,
+            ),
         checkOutAt: isAbsent
           ? null
           : toAttendanceInstant(
               employeeShift.assignedDate,
-              shift.endTime + DEMO_ATTENDANCE_RULES.CHECKOUT_BUFFER_MINUTES,
+              employeeShift.shift.endTime + DEMO_ATTENDANCE_RULES.CHECKOUT_BUFFER_MINUTES,
             ),
         status: isAbsent
           ? ATTENDANCE_STATUS.ABSENT
@@ -121,7 +156,9 @@ async function seedDemoWeek() {
             ? ATTENDANCE_STATUS.LATE
             : ATTENDANCE_STATUS.ON_TIME,
         lateMinutes: isLate ? variance : 0,
-        totalWorkMinutes: isAbsent ? 0 : shift.endTime - shift.startTime - Math.max(0, variance),
+        totalWorkMinutes: isAbsent
+          ? 0
+          : employeeShift.shift.endTime - employeeShift.shift.startTime - Math.max(0, variance),
         note: DEMO_NOTE,
       }
     }),

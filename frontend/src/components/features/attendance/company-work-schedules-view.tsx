@@ -1,6 +1,7 @@
-import { EmployeeScheduleCells } from "@/components/features/attendance/employee-schedule-cells"
+/** Displays company schedules for a selected week and employee search scope. */
 import { PageCard } from "@/components/common"
-import { Button } from "@/components/ui/button"
+import { EmployeeScheduleCells } from "@/components/features/attendance/employee-schedule-cells"
+import { WorkScheduleToolbar } from "@/components/features/attendance/work-schedule-toolbar"
 import {
   Table,
   TableBody,
@@ -24,19 +25,26 @@ import { groupHolidaysByDate } from "@/utils/attendance/pick-holiday-for-employe
 import { useState } from "react"
 
 import { useQueries, useQuery } from "@tanstack/react-query"
-import { CalendarDays, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 
 const SCHEDULE_TABLE_COLUMN_COUNT = CALENDAR_WEEK_DAY_COUNT + 1
 
 export function CompanyWorkSchedulesView() {
-  const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()))
+  const [selectedDate, setSelectedDate] = useState(() => new Date())
+  const [employeeSearch, setEmployeeSearch] = useState("")
+  const weekStart = getWeekStart(selectedDate)
   const weekDates = getWeekDates(weekStart)
   const weekStartIso = formatDateParam(weekStart)
   const weekEndIso = weekDates[CALENDAR_WEEK_DAY_COUNT - 1].dateKey
   const weekRangeLabel = getWeekRangeLabel(weekDates)
-  const { data: employeeData, isLoading: isEmployeesLoading, isError: isEmployeesError } = useEmployees({
+  const {
+    data: employeeData,
+    isLoading: isEmployeesLoading,
+    isError: isEmployeesError,
+  } = useEmployees({
     page: 1,
     limit: SYSTEM_CONFIG.PAGINATION.BULK_LIMIT,
+    search: employeeSearch || undefined,
   })
   const employees = employeeData?.data ?? []
   const scheduleQueries = useQueries({
@@ -58,40 +66,27 @@ export function CompanyWorkSchedulesView() {
   const isSchedulesError = scheduleQueries.some((query) => query.isError)
   // Preserve every scoped holiday on a date; the employee row chooses the applicable one later.
   const holidaysByDate = groupHolidaysByDate(holidays ?? [])
-  const schedulesByEmployeeId = getScheduleByEmployeeId(
-    scheduleQueries.map((query) => query.data),
-  )
+  const schedulesByEmployeeId = getScheduleByEmployeeId(scheduleQueries.map((query) => query.data))
+
+  const handleDateChange = (value: string) => {
+    if (!value) return
+    setSelectedDate(new Date(`${value}T00:00:00`))
+  }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="h-4 w-4 text-muted-foreground" />
-          <span className="font-semibold">{weekRangeLabel}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 rounded-full"
-            onClick={() => {
-              setWeekStart((currentWeekStart) => addDays(currentWeekStart, -CALENDAR_WEEK_DAY_COUNT))
-            }}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 rounded-full"
-            onClick={() => {
-              setWeekStart((currentWeekStart) => addDays(currentWeekStart, CALENDAR_WEEK_DAY_COUNT))
-            }}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      <WorkScheduleToolbar
+        employeeSearch={employeeSearch}
+        selectedDate={selectedDate}
+        weekRangeLabel={weekRangeLabel}
+        onEmployeeSearchChange={setEmployeeSearch}
+        onMoveWeek={(direction) => {
+          setSelectedDate((currentDate) =>
+            addDays(currentDate, direction * CALENDAR_WEEK_DAY_COUNT),
+          )
+        }}
+        onSelectedDateChange={handleDateChange}
+      />
 
       <PageCard className="overflow-hidden p-0" noBorder={false}>
         <div className="overflow-x-auto">
@@ -122,13 +117,19 @@ export function CompanyWorkSchedulesView() {
                 </TableRow>
               ) : isEmployeesError || isSchedulesError || isHolidaysError ? (
                 <TableRow>
-                  <TableCell colSpan={SCHEDULE_TABLE_COLUMN_COUNT} className="h-24 text-center text-destructive">
+                  <TableCell
+                    colSpan={SCHEDULE_TABLE_COLUMN_COUNT}
+                    className="h-24 text-center text-destructive"
+                  >
                     Lỗi khi tải lịch làm việc nhân viên.
                   </TableCell>
                 </TableRow>
               ) : employees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={SCHEDULE_TABLE_COLUMN_COUNT} className="h-24 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={SCHEDULE_TABLE_COLUMN_COUNT}
+                    className="h-24 text-center text-muted-foreground"
+                  >
                     Không có nhân viên nào.
                   </TableCell>
                 </TableRow>
