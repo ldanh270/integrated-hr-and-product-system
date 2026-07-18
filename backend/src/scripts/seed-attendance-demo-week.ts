@@ -81,7 +81,9 @@ async function seedDemoWeek() {
       assignedDate: { in: dates },
     },
   })
-  const employeeOrder = new Map(employees.map((employee, index) => [employee.id, index]))
+  const employeeOrder = new Map<string, number>(
+    employees.map((employee, index): [string, number] => [employee.id, index]),
+  )
 
   await prisma.attendanceRecord.createMany({
     data: assignedShifts.map((employeeShift) => {
@@ -130,14 +132,21 @@ async function seedDemoWeek() {
     where: { note: DEMO_NOTE, checkInAt: { not: null } },
   })
   await prisma.realShift.createMany({
-    data: records.map((record) => ({
-      employeeId: record.employeeId,
-      attendanceRecordId: record.id,
-      date: record.date,
-      actualStartTime: getAttendanceClockMinutes(record.checkInAt!),
-      actualEndTime: record.checkOutAt ? getAttendanceClockMinutes(record.checkOutAt) : null,
-      isMatched: record.lateMinutes === 0,
-    })),
+    data: records.flatMap((record) => {
+      const checkInAt = record.checkInAt
+      if (!checkInAt) return []
+
+      return [
+        {
+          employeeId: record.employeeId,
+          attendanceRecordId: record.id,
+          date: record.date,
+          actualStartTime: getAttendanceClockMinutes(checkInAt),
+          actualEndTime: record.checkOutAt ? getAttendanceClockMinutes(record.checkOutAt) : null,
+          isMatched: record.lateMinutes === 0,
+        },
+      ]
+    }),
     skipDuplicates: true,
   })
 

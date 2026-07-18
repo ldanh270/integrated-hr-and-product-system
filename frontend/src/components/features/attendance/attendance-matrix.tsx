@@ -70,14 +70,18 @@ export function AttendanceMatrix() {
               className="pl-10"
               placeholder="Tìm họ tên hoặc email"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value)
+              }}
             />
           </div>
           <Button
             variant="outline"
             size="icon"
             aria-label="Kỳ trước"
-            onClick={() => movePeriod(-1)}
+            onClick={() => {
+              movePeriod(-1)
+            }}
           >
             <ChevronLeft />
           </Button>
@@ -91,10 +95,19 @@ export function AttendanceMatrix() {
             type={view === ATTENDANCE_MATRIX_VIEW.MONTH ? "month" : "date"}
             value={view === ATTENDANCE_MATRIX_VIEW.MONTH ? anchor.slice(0, 7) : anchor}
             onClick={openPeriodPicker}
-            onChange={(event) => handlePeriodChange(event.target.value)}
+            onChange={(event) => {
+              handlePeriodChange(event.target.value)
+            }}
           />
           <span className="min-w-44 text-center text-sm font-medium">{periodLabel}</span>
-          <Button variant="outline" size="icon" aria-label="Kỳ sau" onClick={() => movePeriod(1)}>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Kỳ sau"
+            onClick={() => {
+              movePeriod(1)
+            }}
+          >
             <ChevronRight />
           </Button>
           <div className="flex rounded-full border p-1">
@@ -103,7 +116,9 @@ export function AttendanceMatrix() {
                 key={item}
                 size="sm"
                 variant={view === item ? "default" : "ghost"}
-                onClick={() => setView(item)}
+                onClick={() => {
+                  setView(item)
+                }}
               >
                 {item === ATTENDANCE_MATRIX_VIEW.WEEK ? "Theo tuần" : "Theo tháng"}
               </Button>
