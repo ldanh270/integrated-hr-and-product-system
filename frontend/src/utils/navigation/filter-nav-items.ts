@@ -22,7 +22,7 @@ export function filterNavItems(
     }
 
     if (item.roles?.length) {
-      const userRoles = new Set([...(user?.roles ?? []), ...(user?.role ? [user.role] : [])])
+      const userRoles = new Set(user?.roles ?? [])
       if (!item.roles.some((role) => userRoles.has(role))) return false
     }
 
