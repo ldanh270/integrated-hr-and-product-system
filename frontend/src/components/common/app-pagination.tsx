@@ -25,6 +25,7 @@ export interface AppPaginationProps {
   pageSizeOptions?: number[]
 }
 
+/** Renders shared pagination controls with optional page-size selection. */
 export function AppPagination({
   currentPage,
   totalPages,
@@ -117,6 +118,8 @@ export function AppPagination({
             <PaginationItem>
               <PaginationPrevious
                 href="#"
+                text="Trước"
+                aria-label="Đi đến trang trước"
                 onClick={(e) => {
                   e.preventDefault()
                   if (currentPage > 1) onPageChange(currentPage - 1)
@@ -154,6 +157,8 @@ export function AppPagination({
             <PaginationItem>
               <PaginationNext
                 href="#"
+                text="Sau"
+                aria-label="Đi đến trang sau"
                 onClick={(e) => {
                   e.preventDefault()
                   if (currentPage < totalPages) onPageChange(currentPage + 1)

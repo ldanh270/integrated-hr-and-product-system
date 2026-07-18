@@ -12,7 +12,7 @@ import { getShiftDateTimes } from "@/utils/attendance/attendance-shift.util.ts"
  * Grace period reduces late penalty; status priority: late > early leave > overtime > on time.
  */
 export function computeAttendanceMetrics(
-  record: IAttendanceRecordDTO,
+  record: Pick<IAttendanceRecordDTO, "checkInAt" | "date">,
   shift: IAttendanceShiftDTO | null | undefined,
   checkOutAt: Date,
 ): IAttendanceMetricsDTO {
@@ -24,8 +24,7 @@ export function computeAttendanceMetrics(
   const totalWorkMinutes = Math.max(
     0,
     Math.round(
-      (checkOutAt.getTime() - checkInAt.getTime()) /
-        ATTENDANCE_TIME_RULES.MILLISECONDS_PER_MINUTE,
+      (checkOutAt.getTime() - checkInAt.getTime()) / ATTENDANCE_TIME_RULES.MILLISECONDS_PER_MINUTE,
     ),
   )
 

@@ -1,13 +1,28 @@
 import { APPLICATION_TYPES, PAID_LEAVE_TYPES } from "@/configs/entities/attendance.config.ts"
+import { ATTENDANCE_TIME_RULES } from "@/configs/rules/attendance.config.ts"
 import {
-  IApplicationRepository,
   IApplicationEntity,
+  IApplicationListResultDTO,
+  IApplicationRepository,
+  IAttendanceMetricsDTO,
   ILeaveType,
   IListApplicationsQueryDTO,
   ISubmitApplicationDTO,
 } from "@/types/attendance.types.ts"
+import { computeAttendanceMetrics } from "@/utils/attendance/attendance-metrics.util.ts"
+import {
+  getMinutesFromDateTime,
+  getShiftDateTimes,
+  isActualShiftMatched,
+} from "@/utils/attendance/attendance-shift.util.ts"
 
-import { ApplicationStatus, ApplicationType, AttendanceStatus, PrismaClient, LeaveType } from "@prisma/client"
+import {
+  ApplicationStatus,
+  ApplicationType,
+  AttendanceStatus,
+  LeaveType,
+  PrismaClient,
+} from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
@@ -31,7 +46,20 @@ const APPLICATION_INCLUDE = {
   },
   businessTripDetail: true,
   lateEarlyDetail: { include: { employeeShift: { include: { shift: true } } } },
-  regimeDetail: true,
+  regimeDetail: { include: { regimeCategory: true } },
+  forgotCardDetail: { include: { employeeShift: { include: { shift: true } } } },
+  recruitmentDetail: true,
+} as const
+
+const APPLICATION_LIST_SELECT = {
+  id: true,
+  employeeId: true,
+  type: true,
+  status: true,
+  createdAt: true,
+  employee: { select: { id: true, fullName: true } },
+  assignedTo: { select: { id: true, fullName: true } },
+  approvedBy: { select: { id: true, fullName: true } },
 } as const
 
 export class PrismaApplicationRepository extends BaseRepository implements IApplicationRepository {
@@ -127,9 +155,10 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
   async findByEmployee(
     employeeId: string,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: IApplicationEntity[]; total: number }> {
+  ): Promise<IApplicationListResultDTO> {
     const where = this._buildWhere({ ...query, employeeId })
-    return this._paginate(where, query)
+    const statsWhere = this._buildWhere({ ...query, status: undefined, employeeId })
+    return this._paginate(where, statsWhere, query)
   }
 
   /**
@@ -138,9 +167,10 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    * @param query - The pagination and filter parameters.
    * @returns A promise that resolves to the matching applications and total count.
    */
-  async findAll(query: IListApplicationsQueryDTO): Promise<{ data: IApplicationEntity[]; total: number }> {
+  async findAll(query: IListApplicationsQueryDTO): Promise<IApplicationListResultDTO> {
     const where = this._buildWhere(query)
-    return this._paginate(where, query)
+    const statsWhere = this._buildWhere({ ...query, status: undefined })
+    return this._paginate(where, statsWhere, query)
   }
 
   /**
@@ -151,7 +181,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
     managedEmployeeIds: string[],
     isGlobalApprover: boolean,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: IApplicationEntity[]; total: number }> {
+  ): Promise<IApplicationListResultDTO> {
     const baseWhere = this._buildWhere(query)
 
     // Swap partner condition: partner_pending shift_swap where approverId is the swap target
@@ -174,19 +204,29 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
         OR: [
           {
             status: ApplicationStatus.pending,
-            OR: assignedOrManaged
+            OR: assignedOrManaged,
           },
-          partnerPendingCondition
-        ]
+          partnerPendingCondition,
+        ],
       }
     } else {
       where = {
         ...baseWhere,
-        OR: assignedOrManaged
+        OR: assignedOrManaged,
       }
     }
 
-    return this._paginate(where, query)
+    const statsWhere = {
+      ...this._buildWhere({ ...query, status: undefined }),
+      OR: [
+        ...assignedOrManaged,
+        {
+          status: ApplicationStatus.partner_pending,
+          shiftSwapDetail: { swapWithEmployeeId: approverId },
+        },
+      ],
+    }
+    return this._paginate(where, statsWhere, query)
   }
 
   /**
@@ -230,72 +270,185 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
             include: APPLICATION_INCLUDE,
           })
 
-        if (!app) return null
+          if (!app) return null
 
-        // 2. Execute side-effects
-        if (app.type === ApplicationType.shift_swap && app.shiftSwapDetail) {
-          const detail = app.shiftSwapDetail
-          if (detail.swapWithShiftId && detail.swapWithEmployeeId) {
-            // Swapping two existing employee shifts
-            const shift1 = await tx.employeeShift.findUnique({
-              where: { id: detail.employeeShiftId },
-            })
-            const shift2 = await tx.employeeShift.findUnique({
-              where: { id: detail.swapWithShiftId },
-            })
+          // 2. Execute side-effects
+          if (app.type === ApplicationType.shift_swap && app.shiftSwapDetail) {
+            const detail = app.shiftSwapDetail
+            if (detail.swapWithShiftId && detail.swapWithEmployeeId) {
+              // Swapping two existing employee shifts
+              const shift1 = await tx.employeeShift.findUnique({
+                where: { id: detail.employeeShiftId },
+              })
+              const shift2 = await tx.employeeShift.findUnique({
+                where: { id: detail.swapWithShiftId },
+              })
 
-            if (shift1 && shift2) {
-              const tempDate = new Date(Date.now() + 1000000 + (Date.now() % 100000))
-              // Step 1: Move shift1 to a temp date to avoid unique constraint violations [employeeId, assignedDate]
+              if (shift1 && shift2) {
+                const tempDate = new Date(Date.now() + 1000000 + (Date.now() % 100000))
+                // Step 1: Move shift1 to a temp date to avoid unique constraint violations [employeeId, assignedDate]
+                await tx.employeeShift.update({
+                  where: { id: shift1.id },
+                  data: { assignedDate: tempDate },
+                })
+                // Step 2: Update shift2 with shift1's original shiftId and date
+                await tx.employeeShift.update({
+                  where: { id: shift2.id },
+                  data: { shiftId: shift1.shiftId, assignedDate: shift1.assignedDate },
+                })
+                // Step 3: Update shift1 with shift2's original shiftId and date
+                await tx.employeeShift.update({
+                  where: { id: shift1.id },
+                  data: { shiftId: shift2.shiftId, assignedDate: shift2.assignedDate },
+                })
+              }
+            } else if (detail.workingShiftId) {
+              // Swapping to a different working shift on the same day
               await tx.employeeShift.update({
-                where: { id: shift1.id },
-                data: { assignedDate: tempDate },
-              })
-              // Step 2: Update shift2 with shift1's original shiftId and date
-              await tx.employeeShift.update({
-                where: { id: shift2.id },
-                data: { shiftId: shift1.shiftId, assignedDate: shift1.assignedDate },
-              })
-              // Step 3: Update shift1 with shift2's original shiftId and date
-              await tx.employeeShift.update({
-                where: { id: shift1.id },
-                data: { shiftId: shift2.shiftId, assignedDate: shift2.assignedDate },
+                where: { id: detail.employeeShiftId },
+                data: { shiftId: detail.workingShiftId },
               })
             }
-          } else if (detail.workingShiftId) {
-            // Swapping to a different working shift on the same day
-            await tx.employeeShift.update({
-              where: { id: detail.employeeShiftId },
-              data: { shiftId: detail.workingShiftId },
-            })
-          }
-        } else if (app.type === ApplicationType.overtime && app.overtimeDetail) {
-          const detail = app.overtimeDetail
-          const start = new Date(app.startDate).getTime()
-          const end = new Date(app.endDate).getTime()
-          const minutes = Math.max(0, Math.round((end - start) / 60000))
+          } else if (app.type === ApplicationType.overtime && app.overtimeDetail) {
+            const detail = app.overtimeDetail
+            const start = new Date(app.startDate).getTime()
+            const end = new Date(app.endDate).getTime()
+            const minutes = Math.max(
+              0,
+              Math.round((end - start) / ATTENDANCE_TIME_RULES.MILLISECONDS_PER_MINUTE),
+            )
 
-          if (minutes > 0) {
+            if (minutes > 0) {
+              const shift = await tx.employeeShift.findUnique({
+                where: { id: detail.employeeShiftId },
+              })
+              if (shift) {
+                await tx.attendanceRecord.upsert({
+                  where: { employeeShiftId: shift.id },
+                  create: {
+                    employeeId: shift.employeeId,
+                    employeeShiftId: shift.id,
+                    date: shift.assignedDate,
+                    status: AttendanceStatus.overtime,
+                    overtimeMinutes: minutes,
+                  },
+                  update: {
+                    overtimeMinutes: { increment: minutes },
+                  },
+                })
+              }
+            }
+          } else if (app.type === ApplicationType.forgot_card && app.forgotCardDetail) {
+            const detail = app.forgotCardDetail
             const shift = await tx.employeeShift.findUnique({
               where: { id: detail.employeeShiftId },
+              include: { shift: true },
             })
             if (shift) {
-              await tx.attendanceRecord.upsert({
+              const existingRecord = await tx.attendanceRecord.findUnique({
+                where: { employeeShiftId: shift.id },
+              })
+
+              const newCheckInAt = detail.checkInAt
+                ? new Date(detail.checkInAt)
+                : (existingRecord?.checkInAt ?? null)
+              const newCheckOutAt = detail.checkOutAt
+                ? new Date(detail.checkOutAt)
+                : (existingRecord?.checkOutAt ?? null)
+
+              let metrics: IAttendanceMetricsDTO = {
+                status: AttendanceStatus.on_time,
+                lateMinutes: 0,
+                earlyLeaveMinutes: 0,
+                overtimeMinutes: 0,
+                totalWorkMinutes: 0,
+              }
+
+              if (newCheckInAt && newCheckOutAt) {
+                const tempRecord = {
+                  checkInAt: newCheckInAt,
+                  date: shift.assignedDate,
+                }
+                metrics = computeAttendanceMetrics(tempRecord, shift.shift, newCheckOutAt)
+              } else if (newCheckInAt && !newCheckOutAt) {
+                const gracePeriod = shift.shift.gracePeriodMinutes ?? 0
+                const { start: scheduledStart } = getShiftDateTimes(
+                  new Date(shift.assignedDate),
+                  shift.shift,
+                )
+                const minutesLate = Math.max(
+                  0,
+                  Math.round(
+                    (newCheckInAt.getTime() - scheduledStart.getTime()) /
+                      ATTENDANCE_TIME_RULES.MILLISECONDS_PER_MINUTE,
+                  ) - gracePeriod,
+                )
+                metrics = {
+                  status: minutesLate > 0 ? AttendanceStatus.late : AttendanceStatus.on_time,
+                  lateMinutes: minutesLate,
+                  earlyLeaveMinutes: 0,
+                  overtimeMinutes: 0,
+                  totalWorkMinutes: 0,
+                }
+              }
+
+              const record = await tx.attendanceRecord.upsert({
                 where: { employeeShiftId: shift.id },
                 create: {
                   employeeId: shift.employeeId,
                   employeeShiftId: shift.id,
                   date: shift.assignedDate,
-                  status: AttendanceStatus.overtime,
-                  overtimeMinutes: minutes,
+                  checkInAt: newCheckInAt,
+                  checkOutAt: newCheckOutAt,
+                  status: metrics.status ?? AttendanceStatus.on_time,
+                  lateMinutes: metrics.lateMinutes ?? 0,
+                  earlyLeaveMinutes: metrics.earlyLeaveMinutes ?? 0,
+                  overtimeMinutes: metrics.overtimeMinutes ?? 0,
+                  totalWorkMinutes: metrics.totalWorkMinutes ?? 0,
+                  correctedByApplicationId: app.id,
                 },
                 update: {
-                  overtimeMinutes: { increment: minutes },
+                  checkInAt: newCheckInAt,
+                  checkOutAt: newCheckOutAt,
+                  status: metrics.status ?? AttendanceStatus.on_time,
+                  lateMinutes: metrics.lateMinutes ?? 0,
+                  earlyLeaveMinutes: metrics.earlyLeaveMinutes ?? 0,
+                  overtimeMinutes: metrics.overtimeMinutes ?? 0,
+                  totalWorkMinutes: metrics.totalWorkMinutes ?? 0,
+                  correctedByApplicationId: app.id,
                 },
               })
+
+              if (newCheckInAt && newCheckOutAt) {
+                const actualStartTime = getMinutesFromDateTime(newCheckInAt)
+                const actualEndTime = getMinutesFromDateTime(newCheckOutAt)
+                await tx.realShift.upsert({
+                  where: { attendanceRecordId: record.id },
+                  update: {
+                    actualStartTime: actualStartTime ?? 0,
+                    actualEndTime: actualEndTime ?? 0,
+                    isMatched: isActualShiftMatched(
+                      actualStartTime ?? 0,
+                      actualEndTime ?? 0,
+                      shift.shift,
+                    ),
+                  },
+                  create: {
+                    employeeId: shift.employeeId,
+                    attendanceRecordId: record.id,
+                    date: shift.assignedDate,
+                    actualStartTime: actualStartTime ?? 0,
+                    actualEndTime: actualEndTime ?? 0,
+                    isMatched: isActualShiftMatched(
+                      actualStartTime ?? 0,
+                      actualEndTime ?? 0,
+                      shift.shift,
+                    ),
+                  },
+                })
+              }
             }
           }
-        }
 
           // 3. Update application status
           return await tx.application.update({
@@ -309,7 +462,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
             include: APPLICATION_INCLUDE,
           })
         },
-        { timeout: 15000, maxWait: 15000 }
+        { timeout: 15000, maxWait: 15000 },
       )
     } catch (err) {
       console.error("[ApplicationRepository.approve] Failed:", err)
@@ -325,7 +478,11 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    * @param rejectReason - The explanation for rejection.
    * @returns A promise that resolves to the updated application, or null if update failed.
    */
-  async reject(id: string, rejectedBy: string, rejectReason: string): Promise<IApplicationEntity | null> {
+  async reject(
+    id: string,
+    rejectedBy: string,
+    rejectReason: string,
+  ): Promise<IApplicationEntity | null> {
     try {
       return await this.prisma.application.update({
         where: { id, status: ApplicationStatus.pending },
@@ -367,7 +524,11 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    * Partner (swap target) rejects the shift swap request.
    * Transitions status from partner_pending → rejected.
    */
-  async partnerReject(id: string, partnerId: string, rejectReason: string): Promise<IApplicationEntity | null> {
+  async partnerReject(
+    id: string,
+    partnerId: string,
+    rejectReason: string,
+  ): Promise<IApplicationEntity | null> {
     try {
       return await this.prisma.application.update({
         where: { id, status: ApplicationStatus.partner_pending },
@@ -511,6 +672,42 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
       case APPLICATION_TYPES.RESIGNATION.LABEL:
         return {}
 
+      case APPLICATION_TYPES.FORGOT_CARD.LABEL:
+        return {
+          forgotCardDetail: {
+            create: {
+              employeeShiftId: data.detail.employeeShiftId,
+              checkInAt: data.detail.checkInAt ? new Date(data.detail.checkInAt) : null,
+              checkOutAt: data.detail.checkOutAt ? new Date(data.detail.checkOutAt) : null,
+              documentUrl: data.detail.documentUrl ?? null,
+            },
+          },
+        }
+
+      case APPLICATION_TYPES.REGIME.LABEL:
+        return {
+          regimeDetail: {
+            create: {
+              regimeCategoryId: data.detail.regimeCategoryId,
+              lateMinutes: data.detail.lateMinutes ?? 0,
+              earlyMinutes: data.detail.earlyMinutes ?? 0,
+              documentUrl: data.detail.documentUrl ?? null,
+            },
+          },
+        }
+
+      case APPLICATION_TYPES.RECRUITMENT.LABEL:
+        return {
+          recruitmentDetail: {
+            create: {
+              positionId: data.detail.positionId ?? null,
+              positionName: data.detail.positionName,
+              quantity: data.detail.quantity ?? 1,
+              requirements: data.detail.requirements ?? null,
+            },
+          },
+        }
+
       default:
         return {}
     }
@@ -522,7 +719,9 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    * @param query - The filter parameters.
    * @returns The Prisma filter object.
    */
-  private _buildWhere(query: IListApplicationsQueryDTO & { employeeId?: string; keyword?: string }) {
+  private _buildWhere(
+    query: IListApplicationsQueryDTO & { employeeId?: string; keyword?: string },
+  ) {
     const where: Record<string, unknown> = {}
 
     if (query.employeeId) where.employeeId = query.employeeId
@@ -541,7 +740,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
         { id: { contains: kw, mode: "insensitive" } },
         { employee: { fullName: { contains: kw, mode: "insensitive" } } },
         { employee: { id: { contains: kw, mode: "insensitive" } } },
-        { approvedBy: { fullName: { contains: kw, mode: "insensitive" } } }
+        { approvedBy: { fullName: { contains: kw, mode: "insensitive" } } },
       ]
     }
 
@@ -549,7 +748,7 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
   }
 
   /**
-   * Executes a paginated query and counts matching records within a single database transaction.
+   * Executes the page and count queries concurrently without holding a read-only transaction open.
    *
    * @param where - The Prisma filter conditions.
    * @param query - Pagination parameters.
@@ -557,23 +756,40 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
    */
   private async _paginate(
     where: Record<string, unknown>,
+    statsWhere: Record<string, unknown>,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: IApplicationEntity[]; total: number }> {
+  ): Promise<IApplicationListResultDTO> {
     const page = query.page ?? 1
     const pageSize = query.pageSize ?? 20
     const skip = (page - 1) * pageSize
 
-    const [data, total] = await this.prisma.$transaction([
+    const [data, total, groupedStatuses] = await Promise.all([
       this.prisma.application.findMany({
         where,
-        include: APPLICATION_INCLUDE,
+        select: APPLICATION_LIST_SELECT,
         orderBy: { createdAt: "desc" },
         skip,
         take: pageSize,
       }),
       this.prisma.application.count({ where }),
+      this.prisma.application.groupBy({
+        by: ["status"],
+        where: statsWhere,
+        _count: { _all: true },
+      }),
     ])
 
-    return { data, total }
+    const statusCounts = new Map(groupedStatuses.map((row) => [row.status, row._count._all]))
+    const stats = {
+      pending:
+        (statusCounts.get(ApplicationStatus.pending) ?? 0) +
+        (statusCounts.get(ApplicationStatus.partner_pending) ?? 0),
+      approved: statusCounts.get(ApplicationStatus.approved) ?? 0,
+      rejected: statusCounts.get(ApplicationStatus.rejected) ?? 0,
+      cancelled: statusCounts.get(ApplicationStatus.cancelled) ?? 0,
+      total: groupedStatuses.reduce((sum, row) => sum + row._count._all, 0),
+    }
+
+    return { data, total, stats }
   }
 }

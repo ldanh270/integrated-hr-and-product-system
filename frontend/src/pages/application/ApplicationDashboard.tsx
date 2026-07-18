@@ -1,38 +1,45 @@
 "use client"
 
+import { PageCard, PageHeader } from "@/components/common"
 import { ApplicationDetail } from "@/components/features/application/ApplicationDetail"
 import { ApplicationList } from "@/components/features/application/ApplicationList"
+import { CancelDialog } from "@/components/features/application/CancelDialog"
+import { RejectDialog } from "@/components/features/application/RejectDialog"
+import { SubmitApplicationModal } from "@/components/features/application/SubmitApplicationModal"
+import { Button } from "@/components/ui/button"
+import { ROUTES } from "@/config/routes.config"
+import { useAllApplications } from "@/hooks/application/useAllApplications"
 import { useManageApplications } from "@/hooks/application/useManageApplications"
 import { useMyApplications } from "@/hooks/application/useMyApplications"
-import { useAllApplications } from "@/hooks/application/useAllApplications"
-import type { IApplication } from "@/lib/api/application.api"
+import {
+  type IApplication,
+  type IApplicationListItem,
+  applicationApi,
+} from "@/lib/api/application.api"
 
 import { startTransition, useEffect, useState } from "react"
 
 import { Plus } from "lucide-react"
-import { useLocation, useSearchParams, useNavigate } from "react-router-dom"
-import { ROUTES } from "@/config/routes.config"
-
-import { CancelDialog } from "@/components/features/application/CancelDialog"
-import { RejectDialog } from "@/components/features/application/RejectDialog"
-import { SubmitApplicationModal } from "@/components/features/application/SubmitApplicationModal"
+import { useLocation, useSearchParams } from "react-router-dom"
+import { toast } from "sonner"
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
+/** Coordinates route-scoped application lists and the lazy detail view. */
 export default function ApplicationDashboard() {
   // View State: "list" | "detail"
   const [view, setView] = useState<"list" | "detail">("list")
   const [selectedApp, setSelectedApp] = useState<IApplication | null>(null)
+  const [isDetailLoading, setIsDetailLoading] = useState(false)
   const [mineSubTab, setMineSubTab] = useState<"list" | "leaves">("list")
 
   const [searchParams] = useSearchParams()
   const location = useLocation()
-  const navigate = useNavigate()
-  
+
   let activeTab: "mine" | "manage" | "all" = "mine"
   if (location.pathname.startsWith(ROUTES.APPLICATION.MANAGE)) activeTab = "manage"
   else if (location.pathname.startsWith(ROUTES.APPLICATION.ALL)) activeTab = "all"
-  
+
   const activeType = searchParams.get("type") || "all"
 
   const myApps = useMyApplications()
@@ -93,9 +100,20 @@ export default function ApplicationDashboard() {
     if (view === "detail" && selectedApp?.id === swapConfirmTarget.id) setView("list")
   }
 
-  const handleRowClick = (app: IApplication) => {
-    setSelectedApp(app)
+  /** Loads the complete application before switching from list to detail view. */
+  const handleRowClick = async (app: IApplicationListItem) => {
     setView("detail")
+    setIsDetailLoading(true)
+    try {
+      const detail = await applicationApi.getById(app.id)
+      setSelectedApp(detail)
+    } catch (error) {
+      const apiError = error as { response?: { data?: { error?: { message?: string } } } }
+      toast.error(apiError.response?.data?.error?.message ?? "Lỗi khi tải chi tiết đơn")
+      setView("list")
+    } finally {
+      setIsDetailLoading(false)
+    }
   }
 
   if (view === "detail") {
@@ -103,11 +121,11 @@ export default function ApplicationDashboard() {
       <>
         <ApplicationDetail
           application={selectedApp}
-          isLoading={activeTab === "mine" ? myApps.isLoading : activeTab === "manage" ? manageApps.isLoading : allApps.isLoading}
+          isLoading={isDetailLoading}
           mode={activeTab}
           onBack={() => {
             setView("list")
-            navigate(ROUTES.APPLICATION.BASE)
+            setSelectedApp(null)
           }}
           onApprove={handleApproveFromDetail}
           onReject={setRejectTarget}
@@ -146,15 +164,21 @@ export default function ApplicationDashboard() {
     )
   }
 
-
   return (
-    <div className="flex flex-col gap-6 p-6 w-full mx-auto animate-in fade-in duration-300">
+    <main className="container mx-auto w-full space-y-6 p-8 animate-in fade-in duration-300">
       {/* Header */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <button
-              className="flex items-center gap-2 h-9 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium shadow-sm"
+      <div className="space-y-4">
+        <PageHeader
+          title={activeTab === "manage" ? "Bạn duyệt" : "Đơn thư"}
+          description={
+            activeTab === "manage"
+              ? "Theo dõi và xử lý các đơn đang chờ bạn duyệt."
+              : "Tra cứu, theo dõi và quản lý đơn từ."
+          }
+          actions={
+            <Button
+              size="lg"
+              className="h-11 px-5"
               onClick={() => {
                 setCreateType(undefined)
                 setShowSubmitModal(true)
@@ -162,16 +186,20 @@ export default function ApplicationDashboard() {
             >
               <Plus size={16} strokeWidth={2.5} />
               Tạo đơn
-            </button>
-          </div>
-        </div>
+            </Button>
+          }
+        />
 
         {activeTab === "mine" && (
           <div className="flex items-center gap-6 border-b border-border mt-2">
             <button
-              onClick={() => { setMineSubTab("list"); }}
+              onClick={() => {
+                setMineSubTab("list")
+              }}
               className={`relative flex items-center py-3 font-medium text-[14px] transition-colors ${
-                mineSubTab === "list" ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                mineSubTab === "list"
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Danh sách đơn
@@ -180,9 +208,13 @@ export default function ApplicationDashboard() {
               )}
             </button>
             <button
-              onClick={() => { setMineSubTab("leaves"); }}
+              onClick={() => {
+                setMineSubTab("leaves")
+              }}
               className={`relative flex items-center py-3 font-medium text-[14px] transition-colors ${
-                mineSubTab === "leaves" ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                mineSubTab === "leaves"
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Tổng phép
@@ -195,15 +227,20 @@ export default function ApplicationDashboard() {
       </div>
 
       {mineSubTab === "list" || activeTab === "manage" || activeTab === "all" ? (
-        <div className="flex-1 w-full mt-4 min-w-0 bg-background border border-border rounded-xl p-6 shadow-sm">
+        <PageCard className="min-w-0 overflow-hidden p-0" noBorder={false}>
           <ApplicationList
+            key={activeTab}
             mode={activeTab}
-            onRowClick={handleRowClick}
-            hookState={activeTab === "mine" ? myApps : activeTab === "manage" ? manageApps : allApps}
+            onRowClick={(app) => {
+              void handleRowClick(app)
+            }}
+            hookState={
+              activeTab === "mine" ? myApps : activeTab === "manage" ? manageApps : allApps
+            }
           />
-        </div>
+        </PageCard>
       ) : (
-        <div className="flex-1 w-full mt-4 min-w-0 bg-background border border-border rounded-xl p-6 shadow-sm">
+        <PageCard className="min-w-0 overflow-hidden p-0" noBorder={false}>
           <div className="overflow-x-auto">
             <table className="w-full text-[13px] border-collapse border border-border">
               <thead>
@@ -242,7 +279,7 @@ export default function ApplicationDashboard() {
               </tbody>
             </table>
           </div>
-        </div>
+        </PageCard>
       )}
 
       {/* Modals */}
@@ -298,6 +335,6 @@ export default function ApplicationDashboard() {
           optionalReason={true}
         />
       )}
-    </div>
+    </main>
   )
 }

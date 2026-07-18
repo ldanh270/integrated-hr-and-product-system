@@ -40,6 +40,9 @@ export const APPLICATION_TYPES = {
   SHIFT_SWAP: { LABEL: "shift_swap", DESCRIPTION: "Đổi ca làm việc" },
   LATE_EARLY: { LABEL: "late_early", DESCRIPTION: "Đi muộn/về sớm" },
   RESIGNATION: { LABEL: "resignation", DESCRIPTION: "Thôi việc" },
+  FORGOT_CARD: { LABEL: "forgot_card", DESCRIPTION: "Quên chấm công" },
+  REGIME: { LABEL: "regime", DESCRIPTION: "Đơn chế độ" },
+  RECRUITMENT: { LABEL: "recruitment", DESCRIPTION: "Đề xuất tuyển dụng" },
 } as const
 export type IApplicationType = (typeof APPLICATION_TYPES)[keyof typeof APPLICATION_TYPES]["LABEL"]
 
@@ -50,6 +53,9 @@ export const APPLICATION_TYPE_VALUES = [
   APPLICATION_TYPES.SHIFT_SWAP.LABEL,
   APPLICATION_TYPES.LATE_EARLY.LABEL,
   APPLICATION_TYPES.RESIGNATION.LABEL,
+  APPLICATION_TYPES.FORGOT_CARD.LABEL,
+  APPLICATION_TYPES.REGIME.LABEL,
+  APPLICATION_TYPES.RECRUITMENT.LABEL,
 ] as const
 
 export const APPLICATION_STATUS = {
@@ -76,6 +82,12 @@ export const REGIME_TYPE = {
 
 export const REGIME_TYPES = [REGIME_TYPE.PAID, REGIME_TYPE.UNPAID] as const
 export type IRegimeType = (typeof REGIME_TYPES)[number]
+
+/** System regime categories seeded lazily for every installation. */
+export const DEFAULT_REGIME_CATEGORIES = [
+  { NAME: "Có lương", MAX_LATE_MINUTES: 40, MAX_EARLY_MINUTES: 40 },
+  { NAME: "Không lương", MAX_LATE_MINUTES: 0, MAX_EARLY_MINUTES: 0 },
+] as const
 
 export const LEAVE_TYPE = {
   ANNUAL_LEAVE: "annual_leave",
@@ -142,4 +154,3 @@ export const SCHEDULE_INSIGHTS = {
   MIN_LOOKBACK_DAYS: 1,
   MAX_LOOKBACK_DAYS: 30,
 } as const
-

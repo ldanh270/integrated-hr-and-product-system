@@ -1,81 +1,94 @@
 "use client"
 
-import {
-  APPLICATION_TYPES,
-  APPLICATION_TYPE_LABELS,
-} from "@/config/entities/attendance.config"
-import { useAuthStore } from "@/store/auth-store"
-
-import { ChevronRight, Plus } from "lucide-react"
-import { useNavigate, useSearchParams } from "react-router-dom"
-
-import { useCreateApplicationForm } from "@/hooks/application/useCreateApplicationForm"
 import { CreateApplicationInfoSection } from "@/components/features/application/CreateApplicationInfoSection"
 import { CreateApplicationTimeSection } from "@/components/features/application/CreateApplicationTimeSection"
+import { CreateApplicationRecruitmentSection } from "@/components/features/application/create-application-recruitment-section"
+import { APPLICATION_TYPES, APPLICATION_TYPE_LABELS } from "@/config/entities/attendance.config"
 import { ROUTES } from "@/config/routes.config"
+import { useCreateApplicationForm } from "@/hooks/application/useCreateApplicationForm"
+import { useAuthStore } from "@/store/auth-store"
 
+import { ArrowLeft, Plus } from "lucide-react"
+import { useNavigate, useParams } from "react-router-dom"
+
+/** Renders the route-level application creation workflow. */
 export default function CreateApplicationPage() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const type = searchParams.get("type") || "leave"
+  const { type = "leave" } = useParams<{ type?: string }>()
 
   const { user } = useAuthStore()
 
-  const { forms, addForm, removeForm, updateForm, assignedToId, setAssignedToId, approvers, employees, isSubmitting, handleSubmit } = useCreateApplicationForm(type)
+  const {
+    forms,
+    addForm,
+    removeForm,
+    updateForm,
+    assignedToId,
+    setAssignedToId,
+    approvers,
+    employees,
+    isSubmitting,
+    handleSubmit,
+  } = useCreateApplicationForm(type)
 
-  const typeLabel = Object.entries(APPLICATION_TYPE_LABELS).find(([k]) => k === type)?.[1] || "đơn từ"
+  const typeLabel =
+    Object.entries(APPLICATION_TYPE_LABELS).find(([k]) => k === type)?.[1] || "đơn từ"
 
   const handleBack = () => {
     navigate(ROUTES.APPLICATION.BASE, { replace: true })
   }
 
   return (
-    <div className="flex flex-col h-full bg-background w-full animate-in fade-in duration-300 overflow-hidden">
-      {/* Header Breadcrumbs */}
-      <div className="flex items-center px-6 py-4 bg-background border-b border-border shadow-sm z-10 shrink-0">
+    <div className="min-h-full w-full bg-background animate-in fade-in duration-300">
+      <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col gap-6 p-6 md:p-8">
         <button
           onClick={handleBack}
-          className="flex h-7 w-7 items-center justify-center rounded-full border border-primary text-primary hover:bg-primary/10 transition-colors mr-3"
+          aria-label="Quay lại danh sách đơn thư"
+          className="flex h-10 w-10 shrink-0 items-center justify-center self-start rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
-          <Plus size={16} strokeWidth={2.5} className="rotate-45" /> {/* Close/Back icon */}
+          <ArrowLeft size={20} />
         </button>
-        <span className="text-[15px] font-semibold text-foreground">Đơn thư</span>
-        <ChevronRight size={16} className="text-muted-foreground/70 mx-2" />
-        <span className="text-[15px] text-muted-foreground">Tạo mới {typeLabel.toLowerCase()}</span>
-      </div>
 
-      <div className="flex-1 overflow-y-auto w-full h-full">
-        <div className="p-6 max-w-5xl mx-auto w-full flex flex-col gap-6 min-h-full">
         {/* Section 1: Thông tin đơn */}
-        <CreateApplicationInfoSection 
-          type={type} 
+        <CreateApplicationInfoSection
+          type={type}
           form={forms[0]}
           set={(k, v) => updateForm(0, k, v)}
-          assignedToId={assignedToId} 
-          setAssignedToId={setAssignedToId} 
-          user={user} 
-          approvers={approvers} 
+          assignedToId={assignedToId}
+          setAssignedToId={setAssignedToId}
+          user={user}
+          approvers={approvers}
         />
 
         {/* Section 2: Danh sách các đơn chi tiết */}
         {type !== APPLICATION_TYPES.RESIGNATION.LABEL && (
           <div className="space-y-6">
-            {forms.map((form, index) => (
-              <CreateApplicationTimeSection 
-                key={index}
-                formIndex={index}
-                onRemove={forms.length > 1 ? () => removeForm(index) : undefined}
-                type={type} 
-                form={form} 
-                set={(k, v) => updateForm(index, k, v)} 
-                employees={employees} 
-              />
-            ))}
-            
+            {forms.map((form, index) =>
+              type === APPLICATION_TYPES.RECRUITMENT.LABEL ? (
+                <CreateApplicationRecruitmentSection
+                  key={index}
+                  formIndex={index}
+                  onRemove={forms.length > 1 ? () => removeForm(index) : undefined}
+                  form={form}
+                  set={(k, v) => updateForm(index, k, v)}
+                />
+              ) : (
+                <CreateApplicationTimeSection
+                  key={index}
+                  formIndex={index}
+                  onRemove={forms.length > 1 ? () => removeForm(index) : undefined}
+                  type={type}
+                  form={form}
+                  set={(k, v) => updateForm(index, k, v)}
+                  employees={employees}
+                />
+              ),
+            )}
+
             <div className="flex justify-center mt-4">
-              <button 
-                onClick={addForm} 
-                className="border border-dashed border-primary text-primary px-6 py-2.5 rounded-lg flex items-center gap-2 hover:bg-primary/5 transition-colors font-medium text-sm"
+              <button
+                onClick={addForm}
+                className="flex h-11 items-center gap-2 rounded-full border border-dashed border-primary px-6 text-sm font-medium text-primary transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
               >
                 <Plus size={16} /> Thêm {typeLabel.toLowerCase()}
               </button>
@@ -83,22 +96,24 @@ export default function CreateApplicationPage() {
           </div>
         )}
 
-        <div className="flex justify-end gap-3 pb-8 mt-auto pt-6">
+        <div className="mt-auto flex justify-end gap-3 pb-2 pt-6">
           <button
             onClick={handleBack}
-            className="px-6 py-2 rounded-md border border-input text-foreground font-medium hover:bg-muted transition-colors"
+            className="h-11 rounded-full border border-input px-6 font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             Hủy
           </button>
           <button
-              onClick={(e) => { e.preventDefault(); void handleSubmit(); }}
+            onClick={(e) => {
+              e.preventDefault()
+              void handleSubmit()
+            }}
             disabled={isSubmitting}
-            className="px-6 py-2 rounded-md bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+            className="h-11 rounded-full bg-primary px-6 font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50"
           >
             {isSubmitting ? "Đang gửi..." : `Gửi ${forms.length} đơn`}
           </button>
         </div>
-      </div>
       </div>
     </div>
   )

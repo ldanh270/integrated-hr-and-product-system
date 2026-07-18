@@ -1,5 +1,6 @@
 import {
   IAttendanceMetricsDTO,
+  IAttendanceRecordDTO,
   IAttendanceRecordQueryDTO,
   IAttendanceRepository,
   IGpsScanDTO,
@@ -33,7 +34,11 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
    * @param employeeShiftId - The associated employee shift ID.
    * @returns The created or updated attendance record.
    */
-  async checkIn(employeeId: string, location: IGpsScanDTO, employeeShiftId: string): Promise<any> {
+  async checkIn(
+    employeeId: string,
+    location: IGpsScanDTO,
+    employeeShiftId: string,
+  ): Promise<IAttendanceRecordDTO> {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
@@ -88,7 +93,7 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
     location: IGpsScanDTO,
     metrics: IAttendanceMetricsDTO = {},
     realShift: IRealShiftUpsertDTO = {},
-  ): Promise<any> {
+  ): Promise<IAttendanceRecordDTO> {
     const checkOutAt = new Date()
 
     return this.prisma.$transaction(async (tx) => {
@@ -132,7 +137,10 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
    * @param date - The target date.
    * @returns The attendance record or null if not found.
    */
-  async findByEmployeeAndDate(employeeId: string, date: string | Date): Promise<any | null> {
+  async findByEmployeeAndDate(
+    employeeId: string,
+    date: string | Date,
+  ): Promise<IAttendanceRecordDTO | null> {
     const targetDate = new Date(date)
     targetDate.setHours(0, 0, 0, 0)
 
@@ -154,7 +162,7 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
    * @param query - The query parameters.
    * @returns An array of matching attendance records.
    */
-  async queryRecords(query: IAttendanceRecordQueryDTO): Promise<any[]> {
+  async queryRecords(query: IAttendanceRecordQueryDTO): Promise<IAttendanceRecordDTO[]> {
     const where: Prisma.AttendanceRecordWhereInput = {}
 
     if (query.employeeId) where.employeeId = query.employeeId
@@ -190,6 +198,11 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
           },
         },
         realShift: true,
+        correctedByApplication: {
+          include: {
+            forgotCardDetail: true,
+          },
+        },
       },
       orderBy: { date: "desc" },
     })
