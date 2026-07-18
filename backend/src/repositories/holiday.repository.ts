@@ -1,7 +1,4 @@
-import {
-  EMPLOYEE_SHIFT_STATUS,
-  HOLIDAY_SCOPE,
-} from "@/configs/entities/attendance.config.ts"
+import { EMPLOYEE_SHIFT_STATUS, HOLIDAY_SCOPE } from "@/configs/entities/attendance.config.ts"
 import {
   ICreateHolidayDTO,
   IHolidayCalendarDTO,
@@ -11,16 +8,10 @@ import {
 } from "@/types/attendance.types.ts"
 import { expandDateRange } from "@/utils/holiday/expand-date-range.util.ts"
 
-import {
-  HolidayScope,
-  HolidayType,
-  Prisma,
-  PrismaClient,
-  ShiftStatus,
-} from "@prisma/client"
+import { HolidayScope, HolidayType, Prisma, PrismaClient, ShiftStatus } from "@prisma/client"
+import { randomBytes } from "node:crypto"
 
 import { BaseRepository } from "./base.repository.ts"
-import { randomBytes } from "node:crypto"
 
 const HOLIDAY_INCLUDE = {
   position: { select: { id: true, name: true, code: true } },
@@ -35,10 +26,12 @@ const HOLIDAY_INCLUDE = {
  * Prisma-backed repository for holiday calendar persistence.
  */
 export class PrismaHolidayRepository extends BaseRepository implements IHolidayRepository {
+  /** Creates a holiday repository backed by the injected Prisma client. */
   constructor(prisma: PrismaClient) {
     super(prisma)
   }
 
+  /** Returns holidays matching an optional year or inclusive date range. */
   async listHolidays(query?: IListHolidaysQueryDTO): Promise<IHolidayCalendarDTO[]> {
     const where: { date?: { gte?: Date; lte?: Date } } = {}
 
@@ -63,6 +56,7 @@ export class PrismaHolidayRepository extends BaseRepository implements IHolidayR
     })
   }
 
+  /** Creates a scoped single-day/range holiday and marks affected scheduled shifts pending. */
   async createHolidayRange(
     data: ICreateHolidayDTO,
     createdById: string,
@@ -75,9 +69,7 @@ export class PrismaHolidayRepository extends BaseRepository implements IHolidayR
     const scope = (data.scope ?? HOLIDAY_SCOPE.ALL) as HolidayScope
     // A shared batch lets range/scoped holidays be managed as one user action.
     const batchId =
-      dates.length > 1 || scope !== HOLIDAY_SCOPE.ALL
-        ? randomBytes(12).toString("hex")
-        : null
+      dates.length > 1 || scope !== HOLIDAY_SCOPE.ALL ? randomBytes(12).toString("hex") : null
     const employeeIds =
       scope === HOLIDAY_SCOPE.EMPLOYEES ? [...new Set(data.employeeIds ?? [])] : []
 
@@ -140,6 +132,7 @@ export class PrismaHolidayRepository extends BaseRepository implements IHolidayR
     })
   }
 
+  /** Updates mutable fields of one holiday row. */
   async updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<IHolidayCalendarDTO> {
     return this.prisma.holidayCalendar.update({
       where: { id },
@@ -152,6 +145,7 @@ export class PrismaHolidayRepository extends BaseRepository implements IHolidayR
     })
   }
 
+  /** Deletes one holiday or its complete range batch by default. */
   async deleteHoliday(id: string, deleteBatch = true): Promise<void> {
     const holiday = await this.prisma.holidayCalendar.findUnique({ where: { id } })
     if (!holiday) return
@@ -165,6 +159,7 @@ export class PrismaHolidayRepository extends BaseRepository implements IHolidayR
     await this.prisma.holidayCalendar.delete({ where: { id } })
   }
 
+  /** Checks whether the date is configured as a company-wide holiday. */
   async checkIsHoliday(date: string | Date): Promise<boolean> {
     const checkDate = this.normalizeDate(date)
     const holiday = await this.prisma.holidayCalendar.findFirst({
@@ -174,6 +169,7 @@ export class PrismaHolidayRepository extends BaseRepository implements IHolidayR
     return !!holiday
   }
 
+  /** Moves affected scheduled assignments to holiday-pending without deleting audit history. */
   private async markShiftsHolidayPending(
     tx: Prisma.TransactionClient,
     options: {
@@ -202,6 +198,7 @@ export class PrismaHolidayRepository extends BaseRepository implements IHolidayR
     })
   }
 
+  /** Strips the time component so holiday persistence compares calendar dates only. */
   private normalizeDate(date: string | Date): Date {
     const normalizedDate = new Date(date)
     normalizedDate.setHours(0, 0, 0, 0)

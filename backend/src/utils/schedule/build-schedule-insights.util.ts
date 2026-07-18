@@ -5,7 +5,6 @@ import {
   DAY_OF_WEEK_VALUES,
   SCHEDULE_INSIGHTS,
 } from "@/configs/entities/attendance.config.ts"
-
 import type { IAttendanceRecordDTO } from "@/types/attendance.types.ts"
 import type {
   IScheduleInsightDayBucket,
@@ -21,6 +20,35 @@ const FULL_LABEL_BY_DAY = new Map(
   Object.entries(DAY_OF_WEEK_FULL_LABELS).map(([day, label]) => [Number(day), label]),
 )
 
+/** Creates actionable late/absence warnings, ranked by historical rate. */
+function buildHotspots(byDayOfWeek: IScheduleInsightDayBucket[]): IScheduleInsightHotspot[] {
+  const candidates: IScheduleInsightHotspot[] = []
+
+  for (const day of byDayOfWeek) {
+    if (day.total === 0) continue
+    const fullLabel = FULL_LABEL_BY_DAY.get(day.dayOfWeek) ?? day.label
+
+    if (day.lateRate >= SCHEDULE_INSIGHTS.LATE_RATE_THRESHOLD) {
+      candidates.push({
+        dayOfWeek: day.dayOfWeek,
+        issue: "late",
+        rate: day.lateRate,
+        message: `${fullLabel}: ${Math.round(day.lateRate * 100)}% đi muộn — cân nhắc dời ca sáng hoặc tăng grace`,
+      })
+    }
+    if (day.absentRate >= SCHEDULE_INSIGHTS.ABSENT_RATE_THRESHOLD) {
+      candidates.push({
+        dayOfWeek: day.dayOfWeek,
+        issue: "absent",
+        rate: day.absentRate,
+        message: `${fullLabel}: ${Math.round(day.absentRate * 100)}% vắng — kiểm tra template / coverage`,
+      })
+    }
+  }
+
+  return candidates.sort((a, b) => b.rate - a.rate).slice(0, SCHEDULE_INSIGHTS.HOTSPOT_LIMIT)
+}
+
 /**
  * Aggregates attendance records into day-of-week insights + hotspot hints (no ML).
  */
@@ -31,7 +59,10 @@ export function buildScheduleInsights(options: {
   employeeCount: number
   records: Array<Pick<IAttendanceRecordDTO, "date" | "status" | "lateMinutes">>
 }): IScheduleInsightsResult {
-  const buckets = new Map<number, { total: number; late: number; absent: number; onTime: number; lateMinutesSum: number }>()
+  const buckets = new Map<
+    number,
+    { total: number; late: number; absent: number; onTime: number; lateMinutesSum: number }
+  >()
   for (const dayOfWeek of DAY_OF_WEEK_VALUES) {
     buckets.set(dayOfWeek, { total: 0, late: 0, absent: 0, onTime: 0, lateMinutesSum: 0 })
   }
@@ -106,34 +137,4 @@ export function buildScheduleInsights(options: {
     byDayOfWeek,
     hotspots,
   }
-}
-
-function buildHotspots(byDayOfWeek: IScheduleInsightDayBucket[]): IScheduleInsightHotspot[] {
-  const candidates: IScheduleInsightHotspot[] = []
-
-  for (const day of byDayOfWeek) {
-    if (day.total === 0) continue
-    const fullLabel = FULL_LABEL_BY_DAY.get(day.dayOfWeek) ?? day.label
-
-    if (day.lateRate >= SCHEDULE_INSIGHTS.LATE_RATE_THRESHOLD) {
-      candidates.push({
-        dayOfWeek: day.dayOfWeek,
-        issue: "late",
-        rate: day.lateRate,
-        message: `${fullLabel}: ${Math.round(day.lateRate * 100)}% đi muộn — cân nhắc dời ca sáng hoặc tăng grace`,
-      })
-    }
-    if (day.absentRate >= SCHEDULE_INSIGHTS.ABSENT_RATE_THRESHOLD) {
-      candidates.push({
-        dayOfWeek: day.dayOfWeek,
-        issue: "absent",
-        rate: day.absentRate,
-        message: `${fullLabel}: ${Math.round(day.absentRate * 100)}% vắng — kiểm tra template / coverage`,
-      })
-    }
-  }
-
-  return candidates
-    .sort((a, b) => b.rate - a.rate)
-    .slice(0, SCHEDULE_INSIGHTS.HOTSPOT_LIMIT)
 }

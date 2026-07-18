@@ -4,27 +4,29 @@ import {
   DAY_OF_WEEK_VALUES,
   SCHEDULE_INSIGHTS,
 } from "@/configs/entities/attendance.config.ts"
-
 import type {
   IScheduleInsightDayBucket,
   IScheduleInsightsResult,
   ISimulateWeeklyTemplateDraft,
   ISimulateWeeklyTemplateResult,
-  ISuggestedWeeklyTemplateCandidate,
   ISuggestWeeklyTemplatesResult,
+  ISuggestedWeeklyTemplateCandidate,
 } from "@/types/shift.types.ts"
 
 const SHORT_LABEL_BY_DAY = new Map<number, string>(
-  Object.entries(DAY_OF_WEEK_SHORT_LABELS).map(
-    ([day, label]): [number, string] => [Number(day), label],
-  ),
+  Object.entries(DAY_OF_WEEK_SHORT_LABELS).map(([day, label]): [number, string] => [
+    Number(day),
+    label,
+  ]),
 )
 const FULL_LABEL_BY_DAY = new Map<number, string>(
-  Object.entries(DAY_OF_WEEK_FULL_LABELS).map(
-    ([day, label]): [number, string] => [Number(day), label],
-  ),
+  Object.entries(DAY_OF_WEEK_FULL_LABELS).map(([day, label]): [number, string] => [
+    Number(day),
+    label,
+  ]),
 )
 
+/** Minimal active-shift catalog fields required by suggestion heuristics. */
 interface IShiftOption {
   id: string
   name: string
@@ -112,10 +114,7 @@ export function buildSuggestedWeeklyTemplates(options: {
       description: `Ngày muộn cao dùng ca ${laterShift.name}; ngày khác dùng ${defaultShift.name}.`,
       cycleWeeks: 1,
       predictedCoverageScore: rotatingScore,
-      tradeOffs: [
-        "Giảm rủi ro đi muộn dựa trên lịch sử",
-        "Cần ≥2 ca active trong catalog",
-      ],
+      tradeOffs: ["Giảm rủi ro đi muộn dựa trên lịch sử", "Cần ≥2 ca active trong catalog"],
       weeks: [{ weekIndex: 0, days: rotatingDays }],
     })
   }
@@ -134,6 +133,7 @@ export function buildSuggestedWeeklyTemplates(options: {
   }
 }
 
+/** Scores assigned days by subtracting historical late and absence risk penalties. */
 function scoreTemplateAgainstInsights(
   days: Array<{ dayOfWeek: number; shiftId: string | null }>,
   dayMap: Map<number, IScheduleInsightDayBucket>,
@@ -232,7 +232,8 @@ export function simulateWeeklyTemplateDraft(options: {
 
   const messages: string[] = []
   const highLate = byDayOfWeek.filter(
-    (day) => day.assignedShifts > 0 && day.projectedLateRisk >= SCHEDULE_INSIGHTS.LATE_RATE_THRESHOLD,
+    (day) =>
+      day.assignedShifts > 0 && day.projectedLateRisk >= SCHEDULE_INSIGHTS.LATE_RATE_THRESHOLD,
   )
   const highAbsent = byDayOfWeek.filter(
     (day) =>

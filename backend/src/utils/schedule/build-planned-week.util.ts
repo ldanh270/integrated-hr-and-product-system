@@ -1,12 +1,12 @@
 import { SCHEDULE_INSIGHTS } from "@/configs/entities/attendance.config.ts"
+import type { IShiftScheduleWithDays } from "@/types/shift-schedule.types.ts"
+import type { IEmployeeShiftWithShift } from "@/types/shift.types.ts"
 import {
   eachScheduleDate,
   formatScheduleDateKey,
   normalizeScheduleDate,
   resolveShiftFromSchedule,
 } from "@/utils/schedule.util.ts"
-import type { IEmployeeShiftWithShift } from "@/types/shift.types.ts"
-import type { IShiftScheduleWithDays } from "@/types/shift-schedule.types.ts"
 
 export interface IPlannedWeekShift {
   shiftId: string
@@ -23,17 +23,20 @@ export interface IPlannedWeekShift {
   }
 }
 
+/** One calendar day after resolving manual assignments and template fallback. */
 export interface IPlannedWeekDay {
   date: string
   dayOfWeek: number
   shifts: IPlannedWeekShift[]
 }
 
+/** Seven-day schedule projection anchored at weekStart. */
 export interface IPlannedWeek {
   weekStart: string
   days: IPlannedWeekDay[]
 }
 
+/** Maps a persisted employee assignment without losing override provenance. */
 function mapEmployeeShift(row: IEmployeeShiftWithShift): IPlannedWeekShift {
   return {
     shiftId: row.shiftId,
@@ -51,6 +54,7 @@ function mapEmployeeShift(row: IEmployeeShiftWithShift): IPlannedWeekShift {
   }
 }
 
+/** Converts a template result into the same shape used by persisted assignments. */
 function mapTemplateShift(
   shiftId: string,
   shift: NonNullable<ReturnType<typeof resolveShiftFromSchedule>>["shift"],
