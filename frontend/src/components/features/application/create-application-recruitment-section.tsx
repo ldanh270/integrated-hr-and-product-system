@@ -38,7 +38,9 @@ export function CreateApplicationRecruitmentSection({ form, set, formIndex, onRe
             className="h-11 w-full rounded-full border border-input bg-background px-4 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
             placeholder="VD: Lập trình viên Backend..."
             value={form.positionName}
-            onChange={(e) => set("positionName", e.target.value)}
+            onChange={(e) => {
+              set("positionName", e.target.value)
+            }}
           />
         </div>
 
@@ -49,7 +51,9 @@ export function CreateApplicationRecruitmentSection({ form, set, formIndex, onRe
             min="1"
             className="h-11 w-full rounded-full border border-input bg-background px-4 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
             value={form.quantity}
-            onChange={(e) => set("quantity", parseInt(e.target.value) || 1)}
+            onChange={(e) => {
+              set("quantity", parseInt(e.target.value) || 1)
+            }}
           />
         </div>
 
@@ -59,7 +63,9 @@ export function CreateApplicationRecruitmentSection({ form, set, formIndex, onRe
             className="min-h-[100px] w-full resize-y rounded-xl border border-input bg-background p-4 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
             placeholder="Yêu cầu kỹ năng, kinh nghiệm..."
             value={form.requirements}
-            onChange={(e) => set("requirements", e.target.value)}
+            onChange={(e) => {
+              set("requirements", e.target.value)
+            }}
           />
         </div>
       </div>

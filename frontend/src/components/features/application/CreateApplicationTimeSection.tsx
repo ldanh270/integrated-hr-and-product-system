@@ -440,7 +440,9 @@ export function CreateApplicationTimeSection({
                     </select>
                     <button
                       type="button"
-                      onClick={() => setIsAddRegimeOpen(true)}
+                      onClick={() => {
+                        setIsAddRegimeOpen(true)
+                      }}
                       className="h-9 px-3 text-sm font-medium border border-input rounded-md bg-muted/50 hover:bg-muted whitespace-nowrap transition-colors"
                     >
                       + Thêm mới

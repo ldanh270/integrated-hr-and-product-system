@@ -65,7 +65,9 @@ export function AddRegimeCategoryDialog({ open, onOpenChange, onCreated }: Props
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value)
+              }}
               placeholder="Nhập tên chế độ"
               className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
             />
@@ -80,7 +82,9 @@ export function AddRegimeCategoryDialog({ open, onOpenChange, onCreated }: Props
                 <input
                   type="number"
                   value={maxLateMinutes}
-                  onChange={(e) => setMaxLateMinutes(e.target.value)}
+                  onChange={(e) => {
+                    setMaxLateMinutes(e.target.value)
+                  }}
                   min="0"
                   className="w-full px-3 py-2 pr-10 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
                 />
@@ -95,7 +99,9 @@ export function AddRegimeCategoryDialog({ open, onOpenChange, onCreated }: Props
                 <input
                   type="number"
                   value={maxEarlyMinutes}
-                  onChange={(e) => setMaxEarlyMinutes(e.target.value)}
+                  onChange={(e) => {
+                    setMaxEarlyMinutes(e.target.value)
+                  }}
                   min="0"
                   className="w-full px-3 py-2 pr-10 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
                 />
@@ -105,7 +111,13 @@ export function AddRegimeCategoryDialog({ open, onOpenChange, onCreated }: Props
           </div>
         </div>
         <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              onOpenChange(false)
+            }}
+          >
             Hủy bỏ
           </Button>
           <Button type="button" onClick={handleSave} disabled={isCreating}>

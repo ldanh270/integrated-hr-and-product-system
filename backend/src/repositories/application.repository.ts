@@ -779,7 +779,12 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
       }),
     ])
 
-    const statusCounts = new Map(groupedStatuses.map((row) => [row.status, row._count._all]))
+    const statusCounts = new Map(
+      groupedStatuses.map((row) => [
+        row.status,
+        typeof row._count._all === "number" ? row._count._all : 0,
+      ]),
+    )
     const stats = {
       pending:
         (statusCounts.get(ApplicationStatus.pending) ?? 0) +
@@ -787,7 +792,10 @@ export class PrismaApplicationRepository extends BaseRepository implements IAppl
       approved: statusCounts.get(ApplicationStatus.approved) ?? 0,
       rejected: statusCounts.get(ApplicationStatus.rejected) ?? 0,
       cancelled: statusCounts.get(ApplicationStatus.cancelled) ?? 0,
-      total: groupedStatuses.reduce((sum, row) => sum + row._count._all, 0),
+      total: groupedStatuses.reduce(
+        (sum, row) => sum + (typeof row._count._all === "number" ? row._count._all : 0),
+        0,
+      ),
     }
 
     return { data, total, stats }

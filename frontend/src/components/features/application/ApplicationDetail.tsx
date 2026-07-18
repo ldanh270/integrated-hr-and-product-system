@@ -16,6 +16,13 @@ interface ApplicationDetailProps {
   onSwapReject?: (app: IApplication) => void
 }
 
+/** Formats an optional timestamp as local hours and minutes. */
+function formatTimestamp(value?: string | null): string {
+  if (!value) return "—"
+  const date = new Date(value)
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
+}
+
 /** Displays the complete detail payload and actions for one application. */
 export function ApplicationDetail({
   application,
@@ -424,23 +431,13 @@ export function ApplicationDetail({
               <div className="flex flex-col gap-1.5">
                 <span className="text-xs text-muted-foreground font-medium">Giờ vào</span>
                 <span className="text-sm font-semibold font-mono text-foreground">
-                  {application.forgotCardDetail.checkInAt
-                    ? (() => {
-                        const d = new Date(application.forgotCardDetail.checkInAt!)
-                        return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
-                      })()
-                    : "—"}
+                  {formatTimestamp(application.forgotCardDetail.checkInAt)}
                 </span>
               </div>
               <div className="flex flex-col gap-1.5">
                 <span className="text-xs text-muted-foreground font-medium">Giờ ra</span>
                 <span className="text-sm font-semibold font-mono text-foreground">
-                  {application.forgotCardDetail.checkOutAt
-                    ? (() => {
-                        const d = new Date(application.forgotCardDetail.checkOutAt!)
-                        return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
-                      })()
-                    : "—"}
+                  {formatTimestamp(application.forgotCardDetail.checkOutAt)}
                 </span>
               </div>
               {application.forgotCardDetail.documentUrl && (
