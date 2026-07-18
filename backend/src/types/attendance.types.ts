@@ -9,10 +9,16 @@ import {
   IRegimeType,
 } from "@/configs/entities/attendance.config.ts"
 
-import type { Application, ApplicationShiftSwapDetail, HolidayCalendar } from "@prisma/client"
+import type {
+  Application,
+  ApplicationForgotCardDetail,
+  ApplicationShiftSwapDetail,
+  HolidayCalendar,
+} from "@prisma/client"
 
 export interface IApplicationEntity extends Application {
   shiftSwapDetail?: ApplicationShiftSwapDetail | null
+  forgotCardDetail?: ApplicationForgotCardDetail | null
 }
 
 // Re-export for consumers that import from this module
@@ -137,11 +143,17 @@ export interface ILateEarlyDetailDTO {
 }
 
 export interface IRegimeDetailDTO {
-  regimeType: IRegimeType
-  reducedMinutesPerDay: number
-  applyToStart?: boolean
-  applyToEnd?: boolean
-  documentUrl?: string
+  regimeCategoryId: string
+  lateMinutes?: number
+  earlyMinutes?: number
+  documentUrl?: string | null
+}
+
+export interface IForgotCardDetailDTO {
+  employeeShiftId: string
+  checkInAt?: string | Date | null
+  checkOutAt?: string | Date | null
+  documentUrl?: string | null
 }
 
 // ─── BASE APPLICATION FIELDS ──────────────────────────────────
@@ -166,6 +178,11 @@ export type ISubmitApplicationDTO =
   | (IBaseApplicationDTO & { type: "late_early"; detail: ILateEarlyDetailDTO })
   | (IBaseApplicationDTO & { type: "regime"; detail: IRegimeDetailDTO })
   | (IBaseApplicationDTO & { type: "resignation"; detail: Record<string, unknown> })
+  | (IBaseApplicationDTO & { type: "forgot_card"; detail: IForgotCardDetailDTO })
+  | (IBaseApplicationDTO & {
+      type: "recruitment"
+      detail: { positionId?: string; positionName: string; quantity: number; requirements?: string }
+    })
 
 export interface IApproveApplicationDTO {
   status: IApplicationStatus
@@ -181,6 +198,32 @@ export interface IListApplicationsQueryDTO {
   employeeId?: string
   startDate?: string
   endDate?: string
+  keyword?: string
+}
+
+export interface IApplicationListItemDTO {
+  id: string
+  employeeId: string
+  type: Application["type"]
+  status: Application["status"]
+  createdAt: Date
+  employee: { id: string; fullName: string }
+  assignedTo: { id: string; fullName: string } | null
+  approvedBy: { id: string; fullName: string } | null
+}
+
+export interface IApplicationStatusStatsDTO {
+  pending: number
+  approved: number
+  rejected: number
+  cancelled: number
+  total: number
+}
+
+export interface IApplicationListResultDTO {
+  data: IApplicationListItemDTO[]
+  total: number
+  stats: IApplicationStatusStatsDTO
 }
 
 export interface IListHolidaysQueryDTO {
@@ -348,14 +391,14 @@ export interface IApplicationRepository {
   findByEmployee(
     employeeId: string,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: IApplicationEntity[]; total: number }>
-  findAll(query: IListApplicationsQueryDTO): Promise<{ data: IApplicationEntity[]; total: number }>
+  ): Promise<IApplicationListResultDTO>
+  findAll(query: IListApplicationsQueryDTO): Promise<IApplicationListResultDTO>
   findApprovals(
     approverId: string,
     managedEmployeeIds: string[],
     isGlobalApprover: boolean,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: IApplicationEntity[]; total: number }>
+  ): Promise<IApplicationListResultDTO>
   cancel(id: string, employeeId: string): Promise<IApplicationEntity | null>
   /** Approves an application (sets status=approved). */
   approve(id: string, approvedBy: string): Promise<IApplicationEntity | null>
@@ -427,16 +470,16 @@ export interface IApplicationService {
   submitBulkApplications(data: ISubmitApplicationDTO[]): Promise<unknown[]>
   cancelApplication(id: string, requesterId: string): Promise<unknown>
   getApplicationById(id: string, requester?: { empId: string }): Promise<unknown>
-  listApplications(query: IListApplicationsQueryDTO): Promise<{ data: unknown[]; total: number }>
+  listApplications(query: IListApplicationsQueryDTO): Promise<IApplicationListResultDTO>
   getApprovalsList(
     approverId: string,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: unknown[]; total: number }>
+  ): Promise<IApplicationListResultDTO>
   getEmployeeApplications(
     employeeId: string,
     query: IListApplicationsQueryDTO,
     requester?: { empId: string },
-  ): Promise<{ data: unknown[]; total: number }>
+  ): Promise<IApplicationListResultDTO>
   /** Approves a pending application. */
   approveApplication(id: string, processorId: string): Promise<unknown>
   /** Rejects a pending application with a mandatory reason. */

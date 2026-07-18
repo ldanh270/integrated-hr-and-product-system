@@ -1,6 +1,6 @@
-import React from "react"
-
 import { APPLICATION_TYPES, LEAVE_TYPE } from "@/config/entities/attendance.config"
+
+import React from "react"
 
 import {
   Calendar,
@@ -8,10 +8,12 @@ import {
   Clock,
   FileCheck2,
   FileX2,
+  Gift,
   Hourglass,
   Laptop,
   Repeat2,
   UserMinus,
+  UserPlus,
 } from "lucide-react"
 
 export const APP_TYPE_META: Record<
@@ -73,6 +75,30 @@ export const APP_TYPE_META: Record<
     bg: "bg-slate-100",
     border: "border-slate-200",
     hint: "Thông báo xin nghỉ việc",
+  },
+  [APPLICATION_TYPES.FORGOT_CARD.LABEL]: {
+    label: "Quên chấm công",
+    icon: FileCheck2,
+    color: "text-primary",
+    bg: "bg-primary/10",
+    border: "border-primary/20",
+    hint: "Giải trình quên checkin/checkout",
+  },
+  [APPLICATION_TYPES.REGIME.LABEL]: {
+    label: "Đơn chế độ",
+    icon: Gift,
+    color: "text-primary",
+    bg: "bg-primary/10",
+    border: "border-primary/20",
+    hint: "Đăng ký hưởng chế độ",
+  },
+  [APPLICATION_TYPES.RECRUITMENT.LABEL]: {
+    label: "Tuyển dụng",
+    icon: UserPlus,
+    color: "text-primary",
+    bg: "bg-primary/10",
+    border: "border-primary/20",
+    hint: "Đề xuất tuyển dụng nhân sự",
   },
 }
 

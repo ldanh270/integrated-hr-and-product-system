@@ -36,7 +36,7 @@ function getBreakMinutesWithinAttendance(
  * Grace period reduces late penalty; status priority: late > early leave > overtime > on time.
  */
 export function computeAttendanceMetrics(
-  record: IAttendanceRecordDTO,
+  record: Pick<IAttendanceRecordDTO, "checkInAt" | "date">,
   shift: IAttendanceShiftDTO | null | undefined,
   checkOutAt: Date,
 ): IAttendanceMetricsDTO {

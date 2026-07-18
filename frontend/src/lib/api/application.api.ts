@@ -11,6 +11,7 @@ interface ApiResponse<T> {
     page: number
     pageSize: number
     totalPages: number
+    stats: IApplicationStatusStats
   }
 }
 
@@ -47,7 +48,31 @@ export interface IBusinessTripDetail {
 }
 
 export interface IRegimeDetail {
-  regimeType: "paid" | "unpaid"
+  regimeCategoryId: string
+  lateMinutes?: number
+  earlyMinutes?: number
+  documentUrl?: string | null
+  regimeCategory?: {
+    id: string
+    name: string
+    maxLateMinutes: number
+    maxEarlyMinutes: number
+  }
+}
+
+export interface IForgotCardDetail {
+  employeeShiftId: string
+  checkInAt?: string | null
+  checkOutAt?: string | null
+  documentUrl?: string | null
+  employeeShift?: {
+    id: string
+    shift?: {
+      name: string
+      startTime: number
+      endTime: number
+    } | null
+  } | null
 }
 
 export type IApplicationDetail =
@@ -58,6 +83,15 @@ export type IApplicationDetail =
   | IWfhDetail
   | IBusinessTripDetail
   | IRegimeDetail
+  | IForgotCardDetail
+  | IRecruitmentDetail
+
+export interface IRecruitmentDetail {
+  positionId?: string | null
+  positionName: string
+  quantity: number
+  requirements?: string | null
+}
 
 // ─── Core Application Interface ───────────────────────────────────────────────
 
@@ -74,6 +108,10 @@ export interface IApplication {
   detail: IApplicationDetail & Record<string, unknown>
   createdAt: string
   updatedAt: string
+  forgotCardDetail?: IForgotCardDetail | null
+  regimeDetail?: IRegimeDetail | null
+  leaveDetail?: ILeaveDetail | null
+  recruitmentDetail?: IRecruitmentDetail | null
   employee?: {
     id: string
     fullName: string
@@ -89,6 +127,19 @@ export interface IApplication {
     fullName: string
   }
 }
+
+export interface IApplicationStatusStats {
+  pending: number
+  approved: number
+  rejected: number
+  cancelled: number
+  total: number
+}
+
+export type IApplicationListItem = Pick<
+  IApplication,
+  "id" | "employeeId" | "type" | "status" | "createdAt" | "employee" | "assignedTo" | "approvedBy"
+>
 
 // ─── Submit DTO ───────────────────────────────────────────────────────────────
 
@@ -121,8 +172,11 @@ export const applicationApi = {
   /** List the authenticated employee's own applications */
   listMine: async (
     query?: IListApplicationsQuery,
-  ): Promise<{ data: IApplication[]; meta: ApiResponse<IApplication[]>["meta"] }> => {
-    const response = await apiClient.get<ApiResponse<IApplication[]>>("/applications/me", {
+  ): Promise<{
+    data: IApplicationListItem[]
+    meta: ApiResponse<IApplicationListItem[]>["meta"]
+  }> => {
+    const response = await apiClient.get<ApiResponse<IApplicationListItem[]>>("/applications/me", {
       params: query,
     })
     return { data: response.data.data, meta: response.data.meta }
@@ -142,15 +196,15 @@ export const applicationApi = {
 
   /** Submit multiple applications in bulk */
   submitBulk: async (forms: ISubmitApplicationDTO[]): Promise<IApplication[]> => {
-    const response = await apiClient.post<ApiResponse<IApplication[]>>("/applications/bulk", { forms })
+    const response = await apiClient.post<ApiResponse<IApplication[]>>("/applications/bulk", {
+      forms,
+    })
     return response.data.data
   },
 
   /** Cancel a pending application (own) */
   cancel: async (id: string): Promise<IApplication> => {
-    const response = await apiClient.patch<ApiResponse<IApplication>>(
-      `/applications/${id}/cancel`,
-    )
+    const response = await apiClient.patch<ApiResponse<IApplication>>(`/applications/${id}/cancel`)
     return response.data.data
   },
 
@@ -178,8 +232,11 @@ export const applicationApi = {
   /** List all applications (manager role) */
   listAll: async (
     query?: IListApplicationsQuery,
-  ): Promise<{ data: IApplication[]; meta: ApiResponse<IApplication[]>["meta"] }> => {
-    const response = await apiClient.get<ApiResponse<IApplication[]>>("/applications", {
+  ): Promise<{
+    data: IApplicationListItem[]
+    meta: ApiResponse<IApplicationListItem[]>["meta"]
+  }> => {
+    const response = await apiClient.get<ApiResponse<IApplicationListItem[]>>("/applications", {
       params: query,
     })
     return { data: response.data.data, meta: response.data.meta }
@@ -188,10 +245,16 @@ export const applicationApi = {
   /** List applications the user can approve */
   listApprovals: async (
     query?: IListApplicationsQuery,
-  ): Promise<{ data: IApplication[]; meta: ApiResponse<IApplication[]>["meta"] }> => {
-    const response = await apiClient.get<ApiResponse<IApplication[]>>("/applications/approvals", {
-      params: query,
-    })
+  ): Promise<{
+    data: IApplicationListItem[]
+    meta: ApiResponse<IApplicationListItem[]>["meta"]
+  }> => {
+    const response = await apiClient.get<ApiResponse<IApplicationListItem[]>>(
+      "/applications/approvals",
+      {
+        params: query,
+      },
+    )
     return { data: response.data.data, meta: response.data.meta }
   },
 

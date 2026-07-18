@@ -33,6 +33,12 @@ export const DEFAULT_ATTENDANCE_LOCATION = {
   RADIUS_METERS: 500,
 } as const
 
+/** Validation limits shared by application schemas and services. */
+export const APPLICATION_RULES = {
+  MAX_DURATION_MINUTES: 480,
+  MAX_BULK_SUBMISSIONS: 100,
+} as const
+
 /** Earth-radius and conversion values for Haversine GPS distance checks. */
 export const ATTENDANCE_GPS_RULES = {
   EARTH_RADIUS_METERS: 6371000,

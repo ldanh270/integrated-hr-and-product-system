@@ -13,6 +13,7 @@ import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { authorizationService } from "@/services/authorization.service.ts"
 import {
+  IApplicationListResultDTO,
   IApplicationRepository,
   IApplicationService,
   IApplicationStatus,
@@ -20,9 +21,9 @@ import {
   IListApplicationsQueryDTO,
   ISubmitApplicationDTO,
 } from "@/types/attendance.types.ts"
+import { IPositionService } from "@/types/position.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { formatScheduleDateKey } from "@/utils/schedule.util.ts"
-import { IPositionService } from "@/types/position.types.ts"
 
 /**
  * Service managing organizational application requests (leaves, overtime, late/early checkins, shift swaps).
@@ -56,7 +57,10 @@ export class ApplicationService implements IApplicationService {
 
     // Validate position application restrictions
     if (this.positionService) {
-      await this.positionService.validateApplicationSubmission(data.employeeId, data.type as IApplicationType)
+      await this.positionService.validateApplicationSubmission(
+        data.employeeId,
+        data.type as IApplicationType,
+      )
     }
 
     // Type-specific business rule validation
@@ -91,6 +95,10 @@ export class ApplicationService implements IApplicationService {
             APPLICATION_ERROR_MESSAGES.SWAP_TARGET_SHIFT_NOT_FOUND,
           )
         }
+        break
+
+      case APPLICATION_TYPES.FORGOT_CARD.LABEL:
+        await this._validateShiftOwnership(data.detail.employeeShiftId, data.employeeId)
         break
 
       // work_from_home, business_trip, regime, resignation — no extra ownership checks
@@ -250,9 +258,7 @@ export class ApplicationService implements IApplicationService {
    * @param query - The pagination, filter, and sort options.
    * @returns A promise that resolves to a list of applications and the total count.
    */
-  async listApplications(
-    query: IListApplicationsQueryDTO,
-  ): Promise<{ data: unknown[]; total: number }> {
+  async listApplications(query: IListApplicationsQueryDTO): Promise<IApplicationListResultDTO> {
     return this.applicationRepo.findAll(query)
   }
 
@@ -269,7 +275,7 @@ export class ApplicationService implements IApplicationService {
     employeeId: string,
     query: IListApplicationsQueryDTO,
     requester?: { empId: string },
-  ): Promise<{ data: unknown[]; total: number }> {
+  ): Promise<IApplicationListResultDTO> {
     // Verify target employee exists and is not soft-deleted
     const employeeExists = await prisma.employee.findFirst({
       where: { id: employeeId, deletedAt: null },
@@ -418,7 +424,7 @@ export class ApplicationService implements IApplicationService {
     id: string,
     status: IApplicationStatus,
     processorId: string,
-  ): Promise<any | null> {
+  ): Promise<unknown | null> {
     if (status === APPLICATION_STATUS.APPROVED) {
       return this.approveApplication(id, processorId)
     }
@@ -589,7 +595,7 @@ export class ApplicationService implements IApplicationService {
   async getApprovalsList(
     approverId: string,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: unknown[]; total: number }> {
+  ): Promise<IApplicationListResultDTO> {
     const authContext = await authorizationService.getAuthorizationContext(approverId)
     const isGlobalAdmin = authContext.isDynamicAdmin
     const hasRead = authContext.permissions.has(PERMISSION_CODE.APPLICATION_READ)
@@ -604,18 +610,28 @@ export class ApplicationService implements IApplicationService {
         select: { members: { select: { employeeId: true } } },
       })
       managedEmployeeIds = Array.from(
-        new Set(managedProjects.flatMap((p) => p.members.map((m) => m.employeeId)))
+        new Set(managedProjects.flatMap((p) => p.members.map((m) => m.employeeId))),
       )
     }
 
-    return this.applicationRepo.findApprovals(approverId, managedEmployeeIds, isGlobalApprover, query)
+    return this.applicationRepo.findApprovals(
+      approverId,
+      managedEmployeeIds,
+      isGlobalApprover,
+      query,
+    )
   }
 
   async confirmSwapPartner(id: string, partnerId: string): Promise<unknown> {
     const app = await this.applicationRepo.findById(id)
 
     if (!app) {
-      throw new AppError(APPLICATION_ERROR_MESSAGES.NOT_FOUND, HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE, "NOT_FOUND")
+      throw new AppError(
+        APPLICATION_ERROR_MESSAGES.NOT_FOUND,
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+        "NOT_FOUND",
+      )
     }
 
     if (app.status !== APPLICATION_STATUS.PARTNER_PENDING) {
@@ -639,7 +655,11 @@ export class ApplicationService implements IApplicationService {
 
     const updated = await this.applicationRepo.partnerConfirm(id, partnerId)
     if (!updated) {
-      throw new AppError(APPLICATION_ERROR_MESSAGES.SWAP_CONFIRM_FAILED, HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorLayer.SERVICE)
+      throw new AppError(
+        APPLICATION_ERROR_MESSAGES.SWAP_CONFIRM_FAILED,
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
+        ErrorLayer.SERVICE,
+      )
     }
 
     return updated
@@ -649,7 +669,12 @@ export class ApplicationService implements IApplicationService {
     const app = await this.applicationRepo.findById(id)
 
     if (!app) {
-      throw new AppError(APPLICATION_ERROR_MESSAGES.NOT_FOUND, HttpStatusCode.NOT_FOUND, ErrorLayer.SERVICE, "NOT_FOUND")
+      throw new AppError(
+        APPLICATION_ERROR_MESSAGES.NOT_FOUND,
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+        "NOT_FOUND",
+      )
     }
 
     if (app.status !== APPLICATION_STATUS.PARTNER_PENDING) {
@@ -673,11 +698,13 @@ export class ApplicationService implements IApplicationService {
 
     const updated = await this.applicationRepo.partnerReject(id, partnerId, rejectReason)
     if (!updated) {
-      throw new AppError(APPLICATION_ERROR_MESSAGES.SWAP_REJECT_FAILED, HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorLayer.SERVICE)
+      throw new AppError(
+        APPLICATION_ERROR_MESSAGES.SWAP_REJECT_FAILED,
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
+        ErrorLayer.SERVICE,
+      )
     }
 
     return updated
   }
-
-
 }

@@ -10,6 +10,7 @@ import {
   REGIME_TYPES,
 } from "@/configs/entities/attendance.config.ts"
 import { ATTENDANCE_ERROR_MESSAGES } from "@/configs/messages/attendance.message.ts"
+import { APPLICATION_RULES } from "@/configs/rules/attendance.config.ts"
 
 import { z } from "zod"
 
@@ -150,13 +151,62 @@ const lateEarlyApplicationSchema = z
     ...baseApplicationFields,
     detail: z.object({
       employeeShiftId: z.string().cuid("Invalid shift ID"),
-      durationMinutes: z.number().int().min(1).max(480),
+      durationMinutes: z.number().int().min(1).max(APPLICATION_RULES.MAX_DURATION_MINUTES),
       isLate: z.boolean(),
     }),
   })
   .strict()
 
+/** forgot_card: quên chấm công — requires shift ref + checkInAt and/or checkOutAt */
+const forgotCardApplicationSchema = z
+  .object({
+    type: z.literal("forgot_card"),
+    ...baseApplicationFields,
+    detail: z.object({
+      employeeShiftId: z.string().cuid("Invalid shift ID"),
+      checkInAt: z
+        .string()
+        .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid check-in time format" })
+        .nullable()
+        .optional(),
+      checkOutAt: z
+        .string()
+        .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid check-out time format" })
+        .nullable()
+        .optional(),
+      documentUrl: z.string().url("Invalid URL format").nullable().optional(),
+    }),
+  })
+  .strict()
+
 // ─── DISCRIMINATED UNION ─────────────────────────────────────
+
+/** regime: chế độ — requires regimeCategoryId + start/end dates */
+const regimeApplicationSchema = z
+  .object({
+    type: z.literal("regime"),
+    ...baseApplicationFields,
+    endDate: dateString, // required for regime
+    detail: z.object({
+      regimeCategoryId: z.string().cuid("Invalid regime category ID"),
+      lateMinutes: z
+        .number()
+        .int()
+        .min(0)
+        .max(APPLICATION_RULES.MAX_DURATION_MINUTES)
+        .optional()
+        .default(0),
+      earlyMinutes: z
+        .number()
+        .int()
+        .min(0)
+        .max(APPLICATION_RULES.MAX_DURATION_MINUTES)
+        .optional()
+        .default(0),
+      documentUrl: z.string().url("Invalid URL format").nullable().optional(),
+    }),
+  })
+  .strict()
 
 /** resignation: thôi việc — no specific details */
 const resignationApplicationSchema = z
@@ -167,13 +217,30 @@ const resignationApplicationSchema = z
   })
   .strict()
 
+/** recruitment: tuyển dụng */
+const recruitmentApplicationSchema = z
+  .object({
+    type: z.literal("recruitment"),
+    ...baseApplicationFields,
+    detail: z.object({
+      positionId: z.string().cuid("Invalid position ID").optional(),
+      positionName: z.string().min(1, "Position name is required"),
+      quantity: z.number().int().min(1),
+      requirements: z.string().optional(),
+    }),
+  })
+  .strict()
+
 export const submitApplicationSchema = z.discriminatedUnion("type", [
   leaveApplicationSchema,
   overtimeApplicationSchema,
   workFromHomeApplicationSchema,
   shiftSwapApplicationSchema,
   lateEarlyApplicationSchema,
+  regimeApplicationSchema,
   resignationApplicationSchema,
+  forgotCardApplicationSchema,
+  recruitmentApplicationSchema,
 ])
 
 export type SubmitApplicationSchemaType = z.infer<typeof submitApplicationSchema>
@@ -182,7 +249,10 @@ export const submitBulkApplicationsSchema = z.object({
   forms: z
     .array(submitApplicationSchema)
     .min(1, "At least one application form is required")
-    .max(100, "Maximum 100 applications per bulk submission"),
+    .max(
+      APPLICATION_RULES.MAX_BULK_SUBMISSIONS,
+      `Maximum ${APPLICATION_RULES.MAX_BULK_SUBMISSIONS} applications per bulk submission`,
+    ),
 })
 
 export type SubmitBulkApplicationsSchemaType = z.infer<typeof submitBulkApplicationsSchema>

@@ -17,7 +17,7 @@ export const ROUTES = {
     BASE: "/application",
     ALL: "/application/all",
     MANAGE: "/application/manage",
-    CREATE: "/application/create",
+    CREATE: "/application/create/:type",
   },
   ATTENDANCE: {
     BASE: "/attendance",

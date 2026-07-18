@@ -1,11 +1,11 @@
 import { PageCard, PageHeader } from "@/components/common"
 import { StatusPill } from "@/components/common/status-pill"
+import { AttendanceMatrix } from "@/components/features/attendance/attendance-matrix"
 import {
   EmployeeAttendanceSummarySheet,
   type SelectedEmployeeSummary,
 } from "@/components/features/attendance/employee-attendance-summary-sheet"
 import { Button } from "@/components/ui/button"
-import { AttendanceMatrix } from "@/components/features/attendance/attendance-matrix"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -46,6 +46,7 @@ import {
   CalendarX2,
   Clock,
   Download,
+  FileCheck2,
   Loader2,
   TimerOff,
   UserCheck,
@@ -421,6 +422,9 @@ function AdminAttendanceDashboard() {
                   <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase whitespace-nowrap hidden lg:table-cell">
                     Muộn/Sớm/OT
                   </TableHead>
+                  <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase whitespace-nowrap">
+                    Điều chỉnh
+                  </TableHead>
                 </TableRow>
               </TableHeader>
 
@@ -505,6 +509,16 @@ function AdminAttendanceDashboard() {
                             !record.earlyLeaveMinutes &&
                             !record.overtimeMinutes &&
                             "—"}
+                        </TableCell>
+                        <TableCell className="px-4 py-4">
+                          {record.correctedByApplication ? (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                              <FileCheck2 size={11} />
+                              Đã sửa qua đơn
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
                         </TableCell>
                       </TableRow>
                     )
