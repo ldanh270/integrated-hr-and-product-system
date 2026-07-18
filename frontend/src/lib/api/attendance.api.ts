@@ -5,6 +5,8 @@ import type {
   IApproval,
   IAssignSchedulePayload,
   IAttendanceQuery,
+  IAttendanceMatrixQuery,
+  IAttendanceMatrixResult,
   IAttendanceRecord,
   ICheckInOutRequest,
   ICreateShiftPayload,
@@ -194,6 +196,15 @@ export const schedulesApi = {
  * attendanceApi — Data access layer for actual Check-In/Check-Out records.
  */
 export const attendanceApi = {
+  /** Workforce attendance grouped into week/month matrix cells. */
+  getMatrix: async (query: IAttendanceMatrixQuery): Promise<IAttendanceMatrixResult> => {
+    const res = await apiClient.get<ApiResponse<IAttendanceMatrixResult>>(
+      API_ENDPOINTS.ATTENDANCE.MATRIX,
+      { params: query },
+    )
+    return res.data.data
+  },
+
   /** Fetches attendance logs filtered by date range, employee, or status. */
   getRecords: async (query?: IAttendanceQuery): Promise<IAttendanceRecord[]> => {
     const res = await apiClient.get<ApiResponse<IAttendanceRecord[]>>(API_ENDPOINTS.ATTENDANCE.BASE, {

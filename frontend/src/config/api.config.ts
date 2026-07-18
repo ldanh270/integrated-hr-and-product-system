@@ -23,6 +23,7 @@ export const API_ENDPOINTS = {
     CHECK_OUT: "/attendance/check-out",
     SCAN: "/attendance/scan",
     EXPORT: "/attendance/export",
+    MATRIX: "/attendance/matrix",
   },
   SHIFTS: {
     BASE: "/shifts",

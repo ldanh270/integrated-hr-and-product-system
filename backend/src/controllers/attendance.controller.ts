@@ -8,12 +8,17 @@ import {
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import {
   attendanceRecordQuerySchema,
+  attendanceMatrixQuerySchema,
   checkInSchema,
   checkOutSchema,
 } from "@/schemas/attendance.schema.ts"
 import { authorizationService } from "@/services/authorization.service.ts"
 import { ApiResponse } from "@/types"
-import { IAttendanceRecordDTO, IAttendanceService } from "@/types/attendance.types.ts"
+import {
+  IAttendanceMatrixDTO,
+  IAttendanceRecordDTO,
+  IAttendanceService,
+} from "@/types/attendance.types.ts"
 import { resolvePersonalEmployeeId } from "@/utils/attendance/resolve-personal-employee-id.ts"
 
 import { Request, Response } from "express"
@@ -176,6 +181,27 @@ export class AttendanceController {
       const { personalOnly: _personalOnly, ...recordQuery } = query
       const records = await this.service.getAttendanceRecords(recordQuery)
       res.status(HttpStatusCode.OK).json({ data: records, error: null })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(HttpStatusCode.BAD_REQUEST).json({
+          data: null,
+          error: {
+            message: ATTENDANCE_ERROR_MESSAGES.VALIDATION_ERROR,
+            code: ATTENDANCE_ERROR_CODES.VALIDATION_ERROR,
+            meta: error.issues,
+          },
+        })
+      }
+      throw error
+    }
+  }
+
+  /** Returns workforce attendance grouped for weekly/monthly matrix rendering. */
+  queryMatrix = async (req: Request, res: Response<ApiResponse<IAttendanceMatrixDTO>>) => {
+    try {
+      const query = attendanceMatrixQuerySchema.parse(req.query)
+      const matrix = await this.service.getAttendanceMatrix(query)
+      res.status(HttpStatusCode.OK).json({ data: matrix, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({

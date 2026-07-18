@@ -45,7 +45,7 @@ const privateRoutes: RouteConfig[] = [
   },
   {
     path: ROUTES.ATTENDANCE.DASHBOARD,
-    component: lazy(() => import("@/pages/attendance/AttendanceDashboard.tsx")),
+    component: lazy(() => import("@/pages/attendance/AttendanceTimesheet.tsx")),
     layout: MainLayout,
     permissions: ["attendance.read"],
     roles: [ROLE.ADMIN],

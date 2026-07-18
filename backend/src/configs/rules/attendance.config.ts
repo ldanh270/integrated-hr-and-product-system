@@ -1,10 +1,21 @@
 /** Time-window constants for check-in/out grace periods and duration math. */
 export const ATTENDANCE_TIME_RULES = {
+  TIME_ZONE: "Asia/Bangkok",
+  UTC_OFFSET_MINUTES: 420,
   DEFAULT_WINDOW_MINUTES: 15,
   /** Canonical conversion used by attendance totals and payroll formula context. */
   MINUTES_PER_HOUR: 60,
   MINUTES_PER_DAY: 1440,
   MILLISECONDS_PER_MINUTE: 60000,
+  MILLISECONDS_PER_DAY: 86_400_000,
+} as const
+
+/** Bounded workforce load for the admin attendance matrix. */
+export const ATTENDANCE_MATRIX_RULES = {
+  MAX_EMPLOYEES: 10000,
+  CHECK_IN_GRACE_MINUTES: 5,
+  DAYS_PER_WEEK: 7,
+  MONDAY_OFFSET_BASE: 6,
 } as const
 
 /** Working-shift boundaries stored as minutes from local midnight. */

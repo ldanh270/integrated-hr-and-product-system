@@ -5,6 +5,11 @@ export const ATTENDANCE_TIME_RULES = {
   MINUTES_PER_DAY: 1440,
 } as const
 
+/** Presentation rules shared by weekly and monthly attendance matrices. */
+export const ATTENDANCE_MATRIX_UI = {
+  WEEKDAY_LABELS: ["CN", "T2", "T3", "T4", "T5", "T6", "T7"],
+} as const
+
 /** Shift form defaults and constraints mirrored from backend validation. */
 export const WORKING_SHIFT_FORM_RULES = {
   TIME_INPUT_PATTERN: /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/,

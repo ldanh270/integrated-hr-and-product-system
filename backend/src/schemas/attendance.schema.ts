@@ -1,6 +1,7 @@
 import {
   APPLICATION_STATUSES,
   APPLICATION_TYPE_VALUES,
+  ATTENDANCE_MATRIX_VIEW_VALUES,
   ATTENDANCE_STATUSES,
   HOLIDAY_SCOPE,
   HOLIDAY_SCOPE_VALUES,
@@ -64,6 +65,17 @@ export const attendanceRecordQuerySchema = z
 
 export type AttendanceRecordQuerySchemaType = z.infer<typeof attendanceRecordQuerySchema>
 
+/** Validates the bounded period selector used by the admin workforce matrix. */
+export const attendanceMatrixQuerySchema = z
+  .object({
+    view: z.enum(ATTENDANCE_MATRIX_VIEW_VALUES),
+    anchor: z.iso.date(),
+    search: z.string().trim().max(100).optional(),
+  })
+  .strict()
+
+export type AttendanceMatrixQuerySchemaType = z.infer<typeof attendanceMatrixQuerySchema>
+
 // ─── SHARED DATE FIELD ───────────────────────────────────────
 
 const dateString = z
@@ -110,11 +122,10 @@ const workFromHomeApplicationSchema = z
   .object({
     type: z.literal("work_from_home"),
     ...baseApplicationFields,
-    detail: z
-      .object({
-        employeeShiftId: z.string().cuid("Invalid shift ID"),
-        location: z.string().max(255).optional(),
-      })
+    detail: z.object({
+      employeeShiftId: z.string().cuid("Invalid shift ID"),
+      location: z.string().max(255).optional(),
+    }),
   })
   .strict()
 
@@ -168,7 +179,10 @@ export const submitApplicationSchema = z.discriminatedUnion("type", [
 export type SubmitApplicationSchemaType = z.infer<typeof submitApplicationSchema>
 
 export const submitBulkApplicationsSchema = z.object({
-  forms: z.array(submitApplicationSchema).min(1, "At least one application form is required").max(100, "Maximum 100 applications per bulk submission"),
+  forms: z
+    .array(submitApplicationSchema)
+    .min(1, "At least one application form is required")
+    .max(100, "Maximum 100 applications per bulk submission"),
 })
 
 export type SubmitBulkApplicationsSchemaType = z.infer<typeof submitBulkApplicationsSchema>

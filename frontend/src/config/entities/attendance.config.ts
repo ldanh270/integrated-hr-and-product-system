@@ -36,8 +36,7 @@ export const HOLIDAY_SCOPE_LABELS: Record<IHolidayScope, string> = {
 
 export const ATTENDANCE_QUERY_KEYS = {
   HOLIDAYS: ["holidays"] as const,
-  HOLIDAYS_RANGE: (startDate: string, endDate: string) =>
-    ["holidays", startDate, endDate] as const,
+  HOLIDAYS_RANGE: (startDate: string, endDate: string) => ["holidays", startDate, endDate] as const,
   MY_SCHEDULE: (date: string) => ["my-schedule", date] as const,
   MY_PLANNED_WEEK: (weekStart: string) => ["my-planned-week", weekStart] as const,
   EMPLOYEE_SCHEDULE: (employeeId: string, date: string) =>
@@ -54,6 +53,36 @@ export const SCHEDULE_INSIGHTS_UI = {
 
 export const ATTENDANCE_STATUSES = ["on_time", "late", "early_leave", "absent", "overtime"] as const
 export type IAttendanceStatus = (typeof ATTENDANCE_STATUSES)[number]
+
+/** Mirrored from the backend attendance matrix contract. */
+export const ATTENDANCE_MATRIX_VIEW = {
+  WEEK: "week",
+  MONTH: "month",
+} as const
+
+export const ATTENDANCE_MATRIX_VIEW_VALUES = [
+  ATTENDANCE_MATRIX_VIEW.WEEK,
+  ATTENDANCE_MATRIX_VIEW.MONTH,
+] as const
+
+export type IAttendanceMatrixView = (typeof ATTENDANCE_MATRIX_VIEW_VALUES)[number]
+
+/** Mirrored check-in variance values returned by the matrix API. */
+export const CHECK_IN_VARIANCE_STATUS = {
+  EARLY: "early",
+  ON_TIME: "on_time",
+  LATE: "late",
+  UNAVAILABLE: "unavailable",
+} as const
+
+export const CHECK_IN_VARIANCE_STATUS_VALUES = [
+  CHECK_IN_VARIANCE_STATUS.EARLY,
+  CHECK_IN_VARIANCE_STATUS.ON_TIME,
+  CHECK_IN_VARIANCE_STATUS.LATE,
+  CHECK_IN_VARIANCE_STATUS.UNAVAILABLE,
+] as const
+
+export type ICheckInVarianceStatus = (typeof CHECK_IN_VARIANCE_STATUS_VALUES)[number]
 
 export const APPLICATION_TYPES = {
   LEAVE: { LABEL: "leave", DESCRIPTION: "Xin nghỉ phép" },

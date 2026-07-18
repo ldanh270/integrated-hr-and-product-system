@@ -5,6 +5,7 @@ import {
   type SelectedEmployeeSummary,
 } from "@/components/features/attendance/employee-attendance-summary-sheet"
 import { Button } from "@/components/ui/button"
+import { AttendanceMatrix } from "@/components/features/attendance/attendance-matrix"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -215,6 +216,8 @@ function AdminAttendanceDashboard() {
           <p className="text-xs text-muted-foreground mt-1">Hôm nay</p>
         </PageCard>
       </div>
+
+      <AttendanceMatrix />
 
       <PageCard padding="lg" className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

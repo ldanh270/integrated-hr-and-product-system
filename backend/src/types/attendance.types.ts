@@ -1,7 +1,9 @@
 import {
   IApplicationStatus,
   IApplicationType,
+  IAttendanceMatrixView,
   IAttendanceStatus,
+  ICheckInVarianceStatus,
   IHolidayType,
   ILeaveType,
   IRegimeType,
@@ -46,6 +48,57 @@ export interface IAttendanceRecordQueryDTO {
   /** Bulk filter — preferred over looping single employeeId for scoring. */
   employeeIds?: string[]
   status?: IAttendanceStatus
+}
+
+/** Filters and anchors a workforce matrix request to one calendar period. */
+export interface IAttendanceMatrixQueryDTO {
+  view: IAttendanceMatrixView
+  anchor: string
+  search?: string
+}
+
+/** One scheduled attendance occurrence inside a matrix day. */
+export interface IAttendanceMatrixShiftDTO {
+  id: string
+  shiftName?: string
+  scheduledStart?: number
+  checkInAt?: string
+  checkOutAt?: string
+  checkInVarianceMinutes?: number
+  status: ICheckInVarianceStatus
+}
+
+/** Attendance occurrences grouped by ISO calendar date. */
+export interface IAttendanceMatrixDayDTO {
+  date: string
+  shifts: IAttendanceMatrixShiftDTO[]
+}
+
+/** Employee identity and day cells returned to the matrix UI. */
+export interface IAttendanceMatrixEmployeeDTO {
+  employeeId: string
+  employeeCode: string
+  fullName: string
+  email?: string
+  position?: string
+  days: IAttendanceMatrixDayDTO[]
+}
+
+/** Minimal employee projection required to build empty matrix rows. */
+export interface IAttendanceMatrixEmployeeProfileDTO {
+  id: string
+  username: string
+  fullName: string
+  email: string
+  position: string | null
+}
+
+/** Complete workforce matrix response for one week or month. */
+export interface IAttendanceMatrixDTO {
+  view: IAttendanceMatrixView
+  rangeStart: string
+  rangeEnd: string
+  employees: IAttendanceMatrixEmployeeDTO[]
 }
 
 // ─── APPLICATION DETAIL DTOs ──────────────────────────────────
@@ -361,6 +414,7 @@ export interface IAttendanceService {
   ): Promise<IAttendanceRecordDTO>
   /** Queries attendance records. */
   getAttendanceRecords(query: IAttendanceRecordQueryDTO): Promise<IAttendanceRecordDTO[]>
+  getAttendanceMatrix(query: IAttendanceMatrixQueryDTO): Promise<IAttendanceMatrixDTO>
 }
 
 /**

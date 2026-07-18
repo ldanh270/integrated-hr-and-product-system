@@ -1,7 +1,9 @@
 import type {
   IApplicationStatus,
   IApplicationType,
+  IAttendanceMatrixView,
   IAttendanceStatus,
+  ICheckInVarianceStatus,
   IHolidayScope,
   IHolidayType,
 } from "@/config/entities/attendance.config"
@@ -178,6 +180,48 @@ export interface IAttendanceQuery {
   employeeId?: string
   status?: IAttendanceStatus
   personalOnly?: boolean
+}
+
+/** One scheduled attendance occurrence rendered inside a matrix day cell. */
+export interface IAttendanceMatrixShift {
+  id: string
+  shiftName?: string
+  scheduledStart?: number
+  checkInAt?: string
+  checkOutAt?: string
+  checkInVarianceMinutes?: number
+  status: ICheckInVarianceStatus
+}
+
+/** Attendance occurrences grouped under one ISO calendar date. */
+export interface IAttendanceMatrixDay {
+  date: string
+  shifts: IAttendanceMatrixShift[]
+}
+
+/** Employee row displayed in the workforce matrix. */
+export interface IAttendanceMatrixEmployee {
+  employeeId: string
+  employeeCode: string
+  fullName: string
+  email?: string
+  position?: string
+  days: IAttendanceMatrixDay[]
+}
+
+/** Workforce matrix API response for the selected period. */
+export interface IAttendanceMatrixResult {
+  view: IAttendanceMatrixView
+  rangeStart: string
+  rangeEnd: string
+  employees: IAttendanceMatrixEmployee[]
+}
+
+/** Query contract shared by week and month matrix requests. */
+export interface IAttendanceMatrixQuery {
+  view: IAttendanceMatrixView
+  anchor: string
+  search?: string
 }
 
 // ─── SHIFT CHANGE REQUEST ─────────────────────────────────────

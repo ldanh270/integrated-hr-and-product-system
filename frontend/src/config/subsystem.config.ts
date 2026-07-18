@@ -143,8 +143,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     routePrefix: ROUTES.ATTENDANCE.BASE,
     sidebarItems: [
       {
-        // Admin history view: all employees, check-in/out, late, early-leave and OT details.
-        name: "Lịch sử chấm công",
+        name: "Bảng chấm công",
         path: ROUTES.ATTENDANCE.DASHBOARD,
         icon: ChartNoAxesColumn,
         permissions: ["attendance.read"],

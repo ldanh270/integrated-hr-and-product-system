@@ -52,6 +52,36 @@ export const ATTENDANCE_STATUSES = [
 ] as const
 export type IAttendanceStatus = (typeof ATTENDANCE_STATUSES)[number]
 
+/** Supported aggregation periods for the workforce attendance matrix. */
+export const ATTENDANCE_MATRIX_VIEW = {
+  WEEK: "week",
+  MONTH: "month",
+} as const
+
+export const ATTENDANCE_MATRIX_VIEW_VALUES = [
+  ATTENDANCE_MATRIX_VIEW.WEEK,
+  ATTENDANCE_MATRIX_VIEW.MONTH,
+] as const
+
+export type IAttendanceMatrixView = (typeof ATTENDANCE_MATRIX_VIEW_VALUES)[number]
+
+/** Check-in timing relative to the scheduled shift start. */
+export const CHECK_IN_VARIANCE_STATUS = {
+  EARLY: "early",
+  ON_TIME: "on_time",
+  LATE: "late",
+  UNAVAILABLE: "unavailable",
+} as const
+
+export const CHECK_IN_VARIANCE_STATUS_VALUES = [
+  CHECK_IN_VARIANCE_STATUS.EARLY,
+  CHECK_IN_VARIANCE_STATUS.ON_TIME,
+  CHECK_IN_VARIANCE_STATUS.LATE,
+  CHECK_IN_VARIANCE_STATUS.UNAVAILABLE,
+] as const
+
+export type ICheckInVarianceStatus = (typeof CHECK_IN_VARIANCE_STATUS_VALUES)[number]
+
 export const APPLICATION_TYPES = {
   LEAVE: { LABEL: "leave", DESCRIPTION: "Xin nghỉ phép" },
   OVERTIME: { LABEL: "overtime", DESCRIPTION: "Làm thêm giờ (OT)" },
