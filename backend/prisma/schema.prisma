@@ -78,6 +78,8 @@ enum ApplicationType {
   late_early
   regime
   resignation
+  forgot_card
+  recruitment
 }
 
 enum ApplicationStatus {
@@ -251,6 +253,7 @@ model Employee {
   partTimeWeeklyAvailabilities     PartTimeWeeklyAvailability[] @relation("PartTimeAvailabilityEmployee")
   partTimeAvailabilitiesReviewed   PartTimeWeeklyAvailability[] @relation("PartTimeAvailabilityReviewer")
   leaveBalances                    EmployeeLeaveBalance[]
+  regimeCategoriesCreated          RegimeCategory[]
 
   @@index([status, employeeType])
   @@index([deletedAt])
@@ -396,6 +399,7 @@ model EmployeeShift {
   swapWithDetails  ApplicationShiftSwapDetail[] @relation("ApplicationSwapWithShift")
   lateEarlyDetails ApplicationLateEarlyDetail[] @relation("ApplicationLateEarlyShift")
   workFromHomeDetails ApplicationWorkFromHomeDetail[]
+  forgotCardDetails ApplicationForgotCardDetail[] @relation("ApplicationForgotCardShift")
   @@unique([employeeId, assignedDate, shiftId])
   @@index([shiftId, assignedDate])
   @@index([status, assignedDate])
@@ -425,6 +429,9 @@ model AttendanceRecord {
   overtimeMinutes   Int              @default(0)
   totalWorkMinutes  Int              @default(0)
   note              String?
+
+  correctedByApplicationId String?      @unique
+  correctedByApplication   Application? @relation("AttendanceRecordCorrection", fields: [correctedByApplicationId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -490,6 +497,9 @@ model Application {
   lateEarlyDetail    ApplicationLateEarlyDetail?
   businessTripDetail ApplicationBusinessTripDetail?
   workFromHomeDetail ApplicationWorkFromHomeDetail?
+  forgotCardDetail   ApplicationForgotCardDetail?
+  recruitmentDetail  ApplicationRecruitmentDetail?
+  attendanceRecordCorrection AttendanceRecord?            @relation("AttendanceRecordCorrection")
 
   @@index([employeeId, status])
   @@index([employeeId, startDate(sort: Desc)])
@@ -540,14 +550,36 @@ model ApplicationOvertimeDetail {
   @@index([employeeShiftId])
 }
 
+/// User-defined regime category (e.g. Con lớn, Thai sản, Con nhỏ).
+/// Two defaults (paid / unpaid) are seeded on first use.
+model RegimeCategory {
+  id              String   @id @default(cuid())
+  name            String
+  maxLateMinutes  Int      @default(0)
+  maxEarlyMinutes Int      @default(0)
+  isDefault       Boolean  @default(false)
+  createdById     String
+  createdBy       Employee @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  regimeDetails ApplicationRegimeDetail[]
+
+  @@index([createdById])
+  @@index([isDefault])
+}
+
 model ApplicationRegimeDetail {
-  applicationId        String      @id
-  application          Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  regimeType           RegimeType
-  reducedMinutesPerDay Int         @default(0)
-  applyToStart         Boolean     @default(false)
-  applyToEnd           Boolean     @default(false)
-  documentUrl          String?
+  applicationId    String         @id
+  application      Application    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  regimeCategoryId String
+  regimeCategory   RegimeCategory @relation(fields: [regimeCategoryId], references: [id], onDelete: Restrict)
+  lateMinutes      Int            @default(0)
+  earlyMinutes     Int            @default(0)
+  documentUrl      String?
+
+  @@index([regimeCategoryId])
 }
 
 model ApplicationLateEarlyDetail {
@@ -1209,4 +1241,24 @@ model EmployeeLeaveBalance {
 
   @@unique([employeeId, year])
   @@index([employeeId, year])
+}
+
+model ApplicationForgotCardDetail {
+  applicationId   String        @id
+  application     Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  employeeShiftId String
+  employeeShift   EmployeeShift @relation("ApplicationForgotCardShift", fields: [employeeShiftId], references: [id], onDelete: Cascade)
+  checkInAt       DateTime?
+  checkOutAt      DateTime?
+  documentUrl     String?
+}
+
+model ApplicationRecruitmentDetail {
+  applicationId   String      @id
+  application     Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  positionId      String?
+  positionName    String
+  quantity        Int
+  requirements    String?     @db.Text
 }

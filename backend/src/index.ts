@@ -19,8 +19,10 @@ import partTimeAvailabilityRoutes from "@/routes/part-time-availability.route.ts
 import payrollRoutes from "@/routes/payroll.route.ts"
 import payslipTemplateRoutes from "@/routes/payslip-template.route.ts"
 import permissionRoutes from "@/routes/permission.route.ts"
+import positionRoutes from "@/routes/position.route.ts"
 import profileRoutes from "@/routes/profile.route.ts"
 import projectRoutes from "@/routes/project.route.ts"
+import regimeCategoryRoutes from "@/routes/regime-category.route.ts"
 import roleRoutes from "@/routes/role.route.ts"
 import salaryComponentRoutes from "@/routes/salary-component.route.ts"
 import salaryVariableRoutes from "@/routes/salary-variable.route.ts"
@@ -31,8 +33,10 @@ import shiftRoutes from "@/routes/shift.route.ts"
 import spentTimeRoutes from "@/routes/spent-time.route.ts"
 import taskRoutes from "@/routes/task.route.ts"
 import weeklyScheduleTemplateRoutes from "@/routes/weekly-schedule-template.route.ts"
-import positionRoutes from "@/routes/position.route.ts"
-import { bootstrapAdmin, assertNoLegacyStaticRoleReferences } from "@/utils/startup-assertion.util.ts"
+import {
+  assertNoLegacyStaticRoleReferences,
+  bootstrapAdmin,
+} from "@/utils/startup-assertion.util.ts"
 
 import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
@@ -73,6 +77,7 @@ app.use("/api/attendance", attendanceRoutes)
 app.use("/api/applications", applicationRoutes)
 app.use("/api/shift-change-requests", shiftChangeRequestRoutes)
 app.use("/api/holidays", holidayRoutes)
+app.use("/api/regime-categories", regimeCategoryRoutes)
 app.use("/api/weekly-schedule-templates", weeklyScheduleTemplateRoutes)
 // PT weekly availability — separate from full-time shift templates; employee declares, admin assigns.
 app.use("/api/part-time-availabilities", partTimeAvailabilityRoutes)

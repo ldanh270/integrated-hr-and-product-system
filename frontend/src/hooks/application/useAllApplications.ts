@@ -1,6 +1,5 @@
-import { APPLICATION_STATUS } from "@/config/entities/attendance.config"
 import {
-  type IApplication,
+  type IApplicationListItem,
   type IListApplicationsQuery,
   applicationApi,
 } from "@/lib/api/application.api"
@@ -12,7 +11,7 @@ import { toast } from "sonner"
 export type StatusFilter = "all" | "pending" | "approved" | "rejected" | "cancelled"
 
 interface UseAllApplicationsReturn {
-  applications: IApplication[]
+  applications: IApplicationListItem[]
   isLoading: boolean
   isRefreshing: boolean
   statusFilter: StatusFilter
@@ -23,6 +22,8 @@ interface UseAllApplicationsReturn {
   setKeyword: (v: string) => void
   page: number
   setPage: (v: number) => void
+  pageSize: number
+  setPageSize: (v: number) => void
   totalPages: number
   total: number
   refetch: () => void
@@ -40,14 +41,16 @@ interface UseAllApplicationsReturn {
   handleSwapReject: (id: string, reason: string) => Promise<void>
 }
 
+/** Fetches and manages the organization-wide application list. */
 export function useAllApplications(): UseAllApplicationsReturn {
-  const [applications, setApplications] = useState<IApplication[]>([])
+  const [applications, setApplications] = useState<IApplicationListItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all") // Default to all
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [keyword, setKeyword] = useState<string>("")
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [processingId, setProcessingId] = useState<string | null>(null)
@@ -69,7 +72,7 @@ export function useAllApplications(): UseAllApplicationsReturn {
       try {
         const query: IListApplicationsQuery = {
           page,
-          pageSize: 10,
+          pageSize,
         }
 
         if (statusFilter !== "all") query.status = statusFilter
@@ -84,6 +87,7 @@ export function useAllApplications(): UseAllApplicationsReturn {
         if (meta) {
           setTotalPages(meta.totalPages ?? 1)
           setTotal(meta.total ?? data.length)
+          setStats(meta.stats)
         }
       } catch (error) {
         const err = error as { response?: { data?: { error?: { message?: string } } } }
@@ -95,62 +99,25 @@ export function useAllApplications(): UseAllApplicationsReturn {
         }
       }
     },
-    [statusFilter, typeFilter, keyword, page],
+    [statusFilter, typeFilter, keyword, page, pageSize],
   )
-
-  const fetchStats = useCallback(async () => {
-    try {
-      const statuses = [
-        APPLICATION_STATUS.PENDING,
-        APPLICATION_STATUS.APPROVED,
-        APPLICATION_STATUS.REJECTED,
-        APPLICATION_STATUS.CANCELLED,
-      ] as const
-
-      const counts = await Promise.all(
-        statuses.map((s) => {
-          const query: IListApplicationsQuery = { status: s, page: 1, pageSize: 1 }
-          if (typeFilter !== "all") query.type = typeFilter
-          if (keyword.trim() !== "") query.keyword = keyword.trim()
-          return applicationApi
-            .listAll(query)
-            .then((r) => r.meta?.total ?? 0)
-            .catch(() => 0)
-        }),
-      )
-
-      if (!activeRef.current) return
-
-      setStats({
-        pending: counts[0],
-        approved: counts[1],
-        rejected: counts[2],
-        cancelled: counts[3],
-        total: counts.reduce((a, b) => a + b, 0),
-      })
-    } catch (error) {
-      console.error("Failed to fetch application stats", error)
-    }
-  }, [typeFilter, keyword])
 
   useEffect(() => {
     activeRef.current = true
     const timer = setTimeout(() => {
       if (activeRef.current) {
-        void fetchApplications(true)
-        void fetchStats()
+        void fetchApplications(false)
       }
     }, 0)
     return () => {
       activeRef.current = false
       clearTimeout(timer)
     }
-  }, [fetchApplications, fetchStats])
+  }, [fetchApplications])
 
   const refetch = useCallback(() => {
     void fetchApplications(false)
-    void fetchStats()
-  }, [fetchApplications, fetchStats])
+  }, [fetchApplications])
 
   const handleApprove = async (id: string) => {
     setProcessingId(id)
@@ -220,6 +187,8 @@ export function useAllApplications(): UseAllApplicationsReturn {
     setKeyword,
     page,
     setPage,
+    pageSize,
+    setPageSize,
     totalPages,
     total,
     refetch,

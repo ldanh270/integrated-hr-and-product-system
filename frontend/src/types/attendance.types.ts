@@ -63,7 +63,13 @@ export interface IScheduleDay {
   shiftId: string
   shift?: Pick<
     IWorkingShift,
-    "name" | "startTime" | "endTime" | "gracePeriodMinutes" | "gpsLat" | "gpsLng" | "gpsRadiusMeters"
+    | "name"
+    | "startTime"
+    | "endTime"
+    | "gracePeriodMinutes"
+    | "gpsLat"
+    | "gpsLng"
+    | "gpsRadiusMeters"
   >
 }
 
@@ -121,6 +127,16 @@ export interface IAttendanceRecord {
   overtimeMinutes: number
   totalWorkMinutes: number
   realShift?: IRealShift | null
+  correctedByApplication?: {
+    id: string
+    type: string
+    status: string
+    forgotCardDetail?: {
+      checkInAt?: string | null
+      checkOutAt?: string | null
+      documentUrl?: string | null
+    } | null
+  } | null
   employee?: {
     id: string
     fullName: string
