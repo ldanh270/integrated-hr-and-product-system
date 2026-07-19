@@ -41,6 +41,12 @@ test("switches between week and month selectors and sends the selected anchor", 
 
   // Keep layout/background requests from triggering the global 401 logout interceptor.
   await page.route(API_PATTERN, async (route) => {
+    if (new URL(route.request().url()).pathname === "/api/auth/me") {
+      await route.fulfill({
+        json: { data: { employee: ADMIN_AUTH_STATE.state.user }, error: null },
+      })
+      return
+    }
     await route.fulfill({ json: { data: null, error: null } })
   })
   await page.route(MATRIX_API_PATTERN, async (route) => {
@@ -70,6 +76,12 @@ test("filters employees and shows the week containing the selected schedule date
     window.localStorage.setItem("auth-storage", JSON.stringify(authState))
   }, ADMIN_AUTH_STATE)
   await page.route(API_PATTERN, async (route) => {
+    if (new URL(route.request().url()).pathname === "/api/auth/me") {
+      await route.fulfill({
+        json: { data: { employee: ADMIN_AUTH_STATE.state.user }, error: null },
+      })
+      return
+    }
     await route.fulfill({ json: { data: null, error: null } })
   })
 

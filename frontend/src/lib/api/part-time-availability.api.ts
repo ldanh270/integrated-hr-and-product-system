@@ -4,7 +4,9 @@ import apiClient from "@/lib/api-client"
 import type {
   IAssignPartTimeShiftsPayload,
   IAssignPartTimeShiftsResult,
+  IPartTimeCoverageRequirement,
   IPartTimeWeeklyAvailability,
+  ISuggestPartTimeShiftsResult,
   IUpsertPartTimeAvailabilityPayload,
 } from "@/types/part-time-availability.types"
 
@@ -63,6 +65,18 @@ export const partTimeAvailabilityApi = {
     const res = await apiClient.post<ApiResponse<IAssignPartTimeShiftsResult>>(
       API_ENDPOINTS.PART_TIME_AVAILABILITIES.ASSIGN_SHIFTS(id),
       payload,
+    )
+    return res.data.data
+  },
+
+  /** Admin greedy suggestions from free slots + attendance reliability — does not persist. */
+  suggestShifts: async (
+    weekStart: string,
+    coverageRequirements?: IPartTimeCoverageRequirement[],
+  ): Promise<ISuggestPartTimeShiftsResult> => {
+    const res = await apiClient.post<ApiResponse<ISuggestPartTimeShiftsResult>>(
+      API_ENDPOINTS.PART_TIME_AVAILABILITIES.SUGGEST,
+      { weekStart, coverageRequirements },
     )
     return res.data.data
   },

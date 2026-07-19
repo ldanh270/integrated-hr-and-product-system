@@ -10,6 +10,7 @@ export { formatAvailabilityRangesForAssign } from "./format-availability-ranges-
 export { getAvailabilityTimeEnvelope } from "./get-availability-time-envelope.util"
 export { isOvernightShift } from "./is-overnight-shift.util"
 export { mapAvailabilityToForm } from "./map-availability-to-form.util"
+export { mapSuggestionAssignmentsToForm } from "./map-suggestion-assignments-to-form.util"
 export type {
   IPartTimeAssignmentDayForm,
   IPartTimeAssignmentForm,

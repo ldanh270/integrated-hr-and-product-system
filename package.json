@@ -21,7 +21,8 @@
     "db:seed": "cd backend && nr seed",
     "db:seed:admin": "cd backend && nr seed:admin",
     "db:clear": "cd backend && nr clear",
-    "hash-password": "cd backend && nr hash-password"
+    "hash-password": "cd backend && nr hash-password",
+    "test": "jest"
   },
   "dependencies": {
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
@@ -32,6 +33,8 @@
   "devDependencies": {
     "@antfu/ni": "^30.1.0",
     "@ldanh270/aatest": "^1.0.19",
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "jest": "^30.4.2",
+    "supertest": "^7.2.2"
   }
 }

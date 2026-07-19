@@ -6,9 +6,11 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { SUBSYSTEMS } from "@/config/subsystem.config"
 import type { SubsystemId } from "@/config/subsystem.config"
+import { useProfile } from "@/hooks/use-profile"
 import { useAuthStore } from "@/store/auth-store"
 import { useSidebarStore } from "@/store/sidebar-store"
 import { useSubsystemStore } from "@/store/subsystem-store"
+import { filterNavItems } from "@/utils/navigation/filter-nav-items"
 import { resolveSubsystemDestination } from "@/utils/navigation/resolve-subsystem-destination"
 
 import { ChevronsUpDown } from "lucide-react"
@@ -19,16 +21,25 @@ export default function SubsystemDropdown() {
   const { activeSubsystem, setActiveSubsystem, getActiveSubsystemConfig } = useSubsystemStore()
   const { isCollapsed } = useSidebarStore()
   const user = useAuthStore((state) => state.user)
+  const { data: profile } = useProfile()
 
   const activeConfig = getActiveSubsystemConfig()
 
   // A subsystem-level permission hides whole admin-only modules. Payroll deliberately
   // has no such gate because its self-service payslip item is available to all employees.
-  const navSubsystems = SUBSYSTEMS.filter(
-    (subsystem) =>
+  const navSubsystems = SUBSYSTEMS.filter((subsystem) => {
+    const hasSubsystemPermission =
       !subsystem.permissions ||
-      (user && subsystem.permissions.every((p) => user.permissions?.includes(p))),
-  )
+      Boolean(
+        user && subsystem.permissions.every((permission) => user.permissions.includes(permission)),
+      )
+    if (!hasSubsystemPermission) return false
+
+    return (
+      filterNavItems(subsystem.sidebarItems, user, profile?.employeeType, profile?.workScheduleType)
+        .length > 0
+    )
+  })
 
   const handleSelectSubsystem = (subsystemId: SubsystemId, routePrefix: string) => {
     // Resolve before mutating UI state so navigation has one deterministic destination.

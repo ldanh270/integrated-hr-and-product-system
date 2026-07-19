@@ -32,6 +32,7 @@ import {
   parseTimeToMinutes,
   shiftFitsAvailabilityDay,
 } from "@/utils/part-time-availability.util.ts"
+import { buildAssignedDaySummaries } from "@/utils/part-time-availability/build-assigned-day-summaries.util.ts"
 import { AppError } from "@/utils/error.util.ts"
 
 import { auditService } from "./audit.service.ts"
@@ -95,9 +96,35 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
     })
   }
 
-  /** Admin roster: all availability submissions for a given week. */
-  listForWeek(weekStart: string): Promise<IPartTimeWeeklyAvailability[]> {
-    return this.availabilityRepo.listByWeek(normalizeWeekStart(weekStart))
+  /** Admin roster: all availability submissions for a given week, with assigned shift summaries. */
+  async listForWeek(weekStart: string): Promise<IPartTimeWeeklyAvailability[]> {
+    const normalized = normalizeWeekStart(weekStart)
+    const items = await this.availabilityRepo.listByWeek(normalized)
+    if (items.length === 0) return items
+
+    const weekDates = DAY_OF_WEEK_VALUES.map((dayOfWeek) => getDateForWeekDay(normalized, dayOfWeek))
+    const shifts = await this.employeeShiftRepo.listByEmployeesAndDateRange(
+      items.map((item) => item.employeeId),
+      weekDates[0],
+      weekDates[weekDates.length - 1],
+    )
+
+    const shiftsByEmployee = new Map<string, typeof shifts>()
+    for (const row of shifts) {
+      const bucket = shiftsByEmployee.get(row.employeeId) ?? []
+      bucket.push(row)
+      shiftsByEmployee.set(row.employeeId, bucket)
+    }
+
+    return items.map((item) => {
+      const employeeShifts = shiftsByEmployee.get(item.employeeId) ?? []
+      const { summaries, hasAssigned } = buildAssignedDaySummaries(normalized, employeeShifts)
+      return {
+        ...item,
+        assignedDaySummaries: summaries,
+        hasAssignedShifts: hasAssigned,
+      }
+    })
   }
 
   /** Admin drill-down: one employee's availability for a week. */
@@ -218,6 +245,7 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
         weekStart: availability.weekStart,
         assigned,
         skipped,
+        suggestionDecision: data.suggestionDecision ?? "manual",
       },
     })
 

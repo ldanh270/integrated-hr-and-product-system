@@ -30,6 +30,9 @@ export interface IPartTimeWeeklyAvailability {
   createdAt: string
   updatedAt: string
   days: IPartTimeAvailabilityDay[]
+  /** Admin roster: assigned shift times per dayOfWeek when overrides exist for the week. */
+  assignedDaySummaries?: Partial<Record<number, string>>
+  hasAssignedShifts?: boolean
   employee?: {
     id: string
     fullName: string
@@ -58,6 +61,7 @@ export interface IAssignPartTimeShiftsDTO {
   availabilityId: string
   assignments: AssignPartTimeShiftsSchemaType["assignments"]
   createdById: string
+  suggestionDecision?: "accepted" | "edited" | "manual"
 }
 
 /** Optional review: approve locks further edits; reject returns to employee. Assign does not require approve — only submitted. */
@@ -81,6 +85,66 @@ export interface IPartTimeAvailabilityRepository {
     reviewedById: string,
     rejectReason?: string,
   ): Promise<IPartTimeWeeklyAvailability>
+}
+
+/** One suggested shift slot — HH:mm strings matching assign-shifts payload. */
+export interface ISuggestPartTimeAssignment {
+  shiftId: string
+  shiftName: string
+  dayOfWeek: number
+  startTime: string
+  endTime: string
+}
+
+export interface IPartTimeCoverageRequirement {
+  shiftId: string
+  shiftName: string
+  dayOfWeek: number
+  startTime: number
+  endTime: number
+  requiredCount: number
+}
+
+export interface ISuggestPartTimeEmployeeSuggestion {
+  availabilityId: string
+  employeeId: string
+  employeeName: string
+  score: number
+  reasons: string[]
+  assignments: ISuggestPartTimeAssignment[]
+}
+
+export interface ISuggestPartTimeCoverage {
+  shiftId: string
+  shiftName: string
+  dayOfWeek: number
+  startTime: string
+  endTime: string
+  requiredCount: number
+  assignedCount: number
+  coverageScore: number
+}
+
+export interface IPartTimeUnassignedGap {
+  shiftId: string
+  shiftName: string
+  dayOfWeek: number
+  missingCount: number
+  reason: string
+}
+
+export interface ISuggestPartTimeShiftsResult {
+  weekStart: string
+  suggestions: ISuggestPartTimeEmployeeSuggestion[]
+  coverage: ISuggestPartTimeCoverage[]
+  unassignedGaps: IPartTimeUnassignedGap[]
+}
+
+export interface IPtShiftSuggestionService {
+  suggest(input: {
+    weekStart: string
+    coverageRequirements?: Array<Omit<IPartTimeCoverageRequirement, "shiftName">>
+  }): Promise<ISuggestPartTimeShiftsResult>
 }
 
 export interface IPartTimeAvailabilityService {
@@ -114,24 +178,4 @@ export const partTimeAvailabilityInclude = {
     },
   },
 } as const
-
-// ─── PART-TIME SHIFT SUGGESTION ───────────────────────────────
-export interface IPartTimeShiftSuggestion {
-  employeeId: string
-  fullName: string
-  dayOfWeek: number
-  startTime: number
-  endTime: number
-  reliabilityScore: number
-  reliabilityReasons: string[]
-}
-
-export interface ISuggestPartTimeShiftsResult {
-  weekStart: string
-  suggestions: IPartTimeShiftSuggestion[]
-}
-
-export interface IPtShiftSuggestionService {
-  suggest(weekStart: string): Promise<ISuggestPartTimeShiftsResult>
-}
 

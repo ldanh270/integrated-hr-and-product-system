@@ -1,4 +1,7 @@
-import type { IPartTimeWeeklyAvailability } from "@/types/part-time-availability.types"
+import type {
+  IPartTimeWeeklyAvailability,
+  ISuggestPartTimeEmployeeSuggestion,
+} from "@/types/part-time-availability.types"
 import { isPartTimeAvailabilityAssignable } from "@/utils/attendance/part-time-availability.util"
 import { getWeekDates } from "@/utils/attendance/get-week-dates"
 
@@ -11,6 +14,7 @@ interface AdminPartTimeAvailabilityAssignPanelProps {
   weekStart: Date
   weekStartKey: string
   onAssigned?: () => void
+  suggestion?: ISuggestPartTimeEmployeeSuggestion
 }
 
 /** Admin shell: employee header + assign form keyed by availability id. */
@@ -19,6 +23,7 @@ export function AdminPartTimeAvailabilityAssignPanel({
   weekStart,
   weekStartKey,
   onAssigned,
+  suggestion,
 }: AdminPartTimeAvailabilityAssignPanelProps) {
   const weekDates = getWeekDates(weekStart)
   const canAssign = isPartTimeAvailabilityAssignable(availability.status)
@@ -39,6 +44,12 @@ export function AdminPartTimeAvailabilityAssignPanel({
             {availability.employee?.fullName ?? availability.employeeId}
           </p>
           <p className="text-sm text-muted-foreground">{availability.employee?.email}</p>
+          {suggestion ? (
+            <p className="text-xs text-muted-foreground">
+              Điểm tin cậy: {suggestion.score}
+              {suggestion.reasons[0] ? ` — ${suggestion.reasons[0]}` : ""}
+            </p>
+          ) : null}
           {availability.note ? (
             <div className="mt-2.5 rounded-lg border border-warning/20 bg-warning/10 px-3 py-2 text-xs text-warning">
               <span className="font-semibold">Ghi chú:</span> {availability.note}
@@ -55,6 +66,7 @@ export function AdminPartTimeAvailabilityAssignPanel({
         canAssign={canAssign}
         weekDates={weekDates}
         dayMap={dayMap}
+        suggestionAssignments={suggestion?.assignments}
       />
     </div>
   )

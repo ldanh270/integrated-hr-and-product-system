@@ -3,8 +3,12 @@ import { WORK_WEEK_DISPLAY_DAY_ORDER } from "@/config/entities/attendance.config
 import {
   getPartTimeAvailabilityStatusLabel,
   getPartTimeAvailabilityStatusVariant,
+  PART_TIME_AVAILABILITY_ASSIGN_LABELS,
 } from "@/config/entities/part-time-availability.config"
-import type { IPartTimeWeeklyAvailability } from "@/types/part-time-availability.types"
+import type {
+  IPartTimeWeeklyAvailability,
+  ISuggestPartTimeEmployeeSuggestion,
+} from "@/types/part-time-availability.types"
 import { formatAvailabilityDaySummary } from "@/utils/attendance/part-time-availability.util"
 import { getWeekDates } from "@/utils/attendance/get-week-dates"
 
@@ -17,13 +21,15 @@ interface AdminPartTimeAvailabilityCardProps {
   availability: IPartTimeWeeklyAvailability
   weekStart: Date
   weekStartKey: string
+  suggestion?: ISuggestPartTimeEmployeeSuggestion
 }
 
-/** One employee row — status pill, day summary, opens assign drawer on click. */
+/** One employee row — status pill, day summary, score, opens assign drawer on click. */
 export function AdminPartTimeAvailabilityCard({
   availability,
   weekStart,
   weekStartKey,
+  suggestion,
 }: AdminPartTimeAvailabilityCardProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const weekDates = useMemo(() => getWeekDates(weekStart), [weekStart])
@@ -32,6 +38,7 @@ export function AdminPartTimeAvailabilityCard({
     [availability.days],
   )
   const employeeName = availability.employee?.fullName ?? availability.employeeId
+  const topReason = suggestion?.reasons[0]
 
   return (
     <>
@@ -42,12 +49,16 @@ export function AdminPartTimeAvailabilityCard({
               type="button"
               className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
               // Name opens assign drawer — primary entry for per-day shift scheduling.
-              onClick={() => { setDrawerOpen(true); }}
-              
+              onClick={() => {
+                setDrawerOpen(true)
+              }}
             >
               {employeeName}
             </button>
             <p className="text-xs text-muted-foreground">{availability.employee?.email}</p>
+            {topReason ? (
+              <p className="mt-1 text-[11px] text-muted-foreground">{topReason}</p>
+            ) : null}
           </div>
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
@@ -61,7 +72,9 @@ export function AdminPartTimeAvailabilityCard({
                 >
                   <p className="text-[10px] font-medium text-foreground">{weekDay?.shortDate}</p>
                   <p className="text-[10px] text-muted-foreground">
-                    {formatAvailabilityDaySummary(dayMap.get(dayOfWeek))}
+                    {availability.hasAssignedShifts
+                      ? (availability.assignedDaySummaries?.[dayOfWeek] ?? "Không làm")
+                      : formatAvailabilityDaySummary(dayMap.get(dayOfWeek))}
                   </p>
                 </div>
               )
@@ -74,6 +87,14 @@ export function AdminPartTimeAvailabilityCard({
             label={getPartTimeAvailabilityStatusLabel(availability.status)}
             variant={getPartTimeAvailabilityStatusVariant(availability.status)}
           />
+          {suggestion ? (
+            <p className="text-[10px] font-medium text-primary">
+              {PART_TIME_AVAILABILITY_ASSIGN_LABELS.SCORE_LABEL}: {suggestion.score}
+            </p>
+          ) : null}
+          {availability.hasAssignedShifts ? (
+            <p className="text-[10px] font-medium text-primary">Đã xếp ca</p>
+          ) : null}
           <button
             type="button"
             className="rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -92,7 +113,10 @@ export function AdminPartTimeAvailabilityCard({
         weekStart={weekStart}
         weekStartKey={weekStartKey}
         isOpen={drawerOpen}
-        onClose={() => { setDrawerOpen(false); }}
+        onClose={() => {
+          setDrawerOpen(false)
+        }}
+        suggestion={suggestion}
       />
     </>
   )

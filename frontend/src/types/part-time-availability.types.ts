@@ -41,6 +41,8 @@ export interface IPartTimeWeeklyAvailability {
   createdAt: string
   updatedAt: string
   days: IPartTimeAvailabilityDay[]
+  assignedDaySummaries?: Partial<Record<number, string>>
+  hasAssignedShifts?: boolean
   employee?: {
     id: string
     fullName: string
@@ -60,9 +62,61 @@ export interface IUpsertPartTimeAvailabilityPayload {
 export interface IAssignPartTimeShiftsPayload {
   /** Null start/end means admin marks the day as off (no shift). */
   assignments: Array<{ dayOfWeek: number; startTime: string | null; endTime: string | null }>
+  suggestionDecision?: "accepted" | "edited" | "manual"
 }
 
 export interface IAssignPartTimeShiftsResult {
   assigned: number
   skipped: number
+}
+
+export interface ISuggestPartTimeAssignment {
+  shiftId: string
+  shiftName: string
+  dayOfWeek: number
+  startTime: string
+  endTime: string
+}
+
+export interface ISuggestPartTimeEmployeeSuggestion {
+  availabilityId: string
+  employeeId: string
+  employeeName: string
+  score: number
+  reasons: string[]
+  assignments: ISuggestPartTimeAssignment[]
+}
+
+export interface ISuggestPartTimeCoverage {
+  shiftId: string
+  shiftName: string
+  dayOfWeek: number
+  startTime: string
+  endTime: string
+  requiredCount: number
+  assignedCount: number
+  coverageScore: number
+}
+
+export interface IPartTimeUnassignedGap {
+  shiftId: string
+  shiftName: string
+  dayOfWeek: number
+  missingCount: number
+  reason: string
+}
+
+export interface ISuggestPartTimeShiftsResult {
+  weekStart: string
+  suggestions: ISuggestPartTimeEmployeeSuggestion[]
+  coverage: ISuggestPartTimeCoverage[]
+  unassignedGaps: IPartTimeUnassignedGap[]
+}
+
+export interface IPartTimeCoverageRequirement {
+  shiftId: string
+  dayOfWeek: number
+  startTime: number
+  endTime: number
+  requiredCount: number
 }

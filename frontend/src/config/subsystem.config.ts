@@ -61,8 +61,16 @@ export interface SubsystemConfig {
   permissions?: string[]
 }
 
-/** Baseline permission that distinguishes payroll administration from personal payslips. */
+/** Baseline permission that distinguishes payroll administration from personal payslips.
+ * Users without this permission are redirected to ROUTES.PAYROLL.MY_PAYSLIPS instead of
+ * the payroll list — the subsystem stays visible so self-service payslip access is preserved. */
 export const PAYROLL_SUBSYSTEM_PERMISSION = "payroll.read"
+
+/** Baseline permission required for personal and administrative attendance history.
+ * Users without this permission land on the shared holiday calendar when entering
+ * the Attendance subsystem; users with it but without the admin role land on their
+ * own attendance summary. Admins get the full dashboard. */
+export const ATTENDANCE_SUBSYSTEM_PERMISSION = "attendance.read"
 
 export const SUBSYSTEMS: SubsystemConfig[] = [
   {

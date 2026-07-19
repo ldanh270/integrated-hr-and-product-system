@@ -4,6 +4,7 @@ import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import {
   assignPartTimeShiftsSchema,
+  suggestPartTimeShiftsSchema,
   upsertPartTimeAvailabilitySchema,
   weekStartQuerySchema,
 } from "@/schemas/part-time-availability.schema.ts"
@@ -11,6 +12,8 @@ import { ApiResponse } from "@/types"
 import {
   IPartTimeAvailabilityService,
   IPartTimeWeeklyAvailability,
+  IPtShiftSuggestionService,
+  ISuggestPartTimeShiftsResult,
 } from "@/types/part-time-availability.types.ts"
 import { PartTimeAvailabilityService } from "@/services/part-time-availability.service.ts"
 import { resolvePersonalEmployeeId } from "@/utils/attendance/resolve-personal-employee-id.ts"
@@ -23,7 +26,10 @@ import { z } from "zod"
  * Approval workflow is optional — assign is allowed once status is submitted (or legacy approved).
  */
 export class PartTimeAvailabilityController {
-  constructor(private service: IPartTimeAvailabilityService) {}
+  constructor(
+    private service: IPartTimeAvailabilityService,
+    private suggestionService: IPtShiftSuggestionService,
+  ) {}
 
   /** Employee self-service: map auth account to HR employee record before week lookup. */
   getMine = async (req: AuthRequest, res: Response<ApiResponse<IPartTimeWeeklyAvailability | null>>) => {
@@ -100,6 +106,13 @@ export class PartTimeAvailabilityController {
     res.status(HttpStatusCode.OK).json({ data: availability, error: null })
   }
 
+  /** Read-only greedy suggestions — does not persist; admin confirms via assign-shifts. */
+  suggest = async (req: Request, res: Response<ApiResponse<ISuggestPartTimeShiftsResult>>) => {
+    const input = suggestPartTimeShiftsSchema.parse(req.body)
+    const result = await this.suggestionService.suggest(input)
+    res.status(HttpStatusCode.OK).json({ data: result, error: null })
+  }
+
   /** Creates EmployeeShift overrides from submitted free slots; createdById tracks assigning admin. */
   assignShifts = async (
     req: AuthRequest,
@@ -111,6 +124,7 @@ export class PartTimeAvailabilityController {
         availabilityId: String(req.params.id),
         assignments: payload.assignments,
         createdById: req.user?.empId || "system",
+        suggestionDecision: payload.suggestionDecision,
       })
       res.status(HttpStatusCode.OK).json({ data: result, error: null })
     } catch (error) {

@@ -54,10 +54,19 @@ export function useAssignPartTimeShifts(weekStart: string) {
     mutationFn: ({ id, ...payload }: IAssignPartTimeShiftsPayload & { id: string }) =>
       partTimeAvailabilityApi.assignShifts(id, payload),
     onSuccess: () => {
-      // Refresh admin list so assigned/skipped counts reflect the latest state.
       void queryClient.invalidateQueries({
         queryKey: PART_TIME_AVAILABILITY_QUERY_KEYS.LIST(weekStart),
       })
+      void queryClient.invalidateQueries({ queryKey: ["my-planned-week", weekStart] })
+      void queryClient.invalidateQueries({ queryKey: ["my-schedule", weekStart] })
+      void queryClient.invalidateQueries({ queryKey: ["employee-planned-week"] })
     },
+  })
+}
+
+/** Admin requests greedy shift suggestions for the selected week (read-only). */
+export function useSuggestPartTimeShifts(weekStart: string) {
+  return useMutation({
+    mutationFn: () => partTimeAvailabilityApi.suggestShifts(weekStart),
   })
 }
