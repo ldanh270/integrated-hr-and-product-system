@@ -1,3 +1,5 @@
+import { AUTHORIZATION_STATUS, type IAuthorizationStatus } from "@/config/entities/auth.config"
+
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
@@ -19,6 +21,10 @@ export interface User {
 interface AuthState {
   user: User | null
   isAuthenticated: boolean
+  authorizationStatus: IAuthorizationStatus
+  beginAuthorization: () => void
+  failAuthorization: () => void
+  retryAuthorization: () => void
   setAuth: (user: Partial<User> & { id: string; email: string; fullName: string }) => void
   clearAuth: () => void
 }
@@ -32,6 +38,11 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       isAuthenticated: false,
+      // Never persisted: every full reload must refresh roles/permissions from /auth/me.
+      authorizationStatus: AUTHORIZATION_STATUS.IDLE,
+      beginAuthorization: () => set({ authorizationStatus: AUTHORIZATION_STATUS.LOADING }),
+      failAuthorization: () => set({ authorizationStatus: AUTHORIZATION_STATUS.ERROR }),
+      retryAuthorization: () => set({ authorizationStatus: AUTHORIZATION_STATUS.IDLE }),
       setAuth: (user) => {
         const roles = user.roles || (user.role ? [user.role] : [])
         const permissions = user.permissions || []
@@ -42,14 +53,20 @@ export const useAuthStore = create<AuthState>()(
             permissions,
           } as User,
           isAuthenticated: true,
+          authorizationStatus: AUTHORIZATION_STATUS.READY,
         })
       },
       clearAuth: () => {
-        set({ user: null, isAuthenticated: false })
+        set({
+          user: null,
+          isAuthenticated: false,
+          authorizationStatus: AUTHORIZATION_STATUS.READY,
+        })
       },
     }),
     {
       name: "auth-storage",
+      partialize: ({ user, isAuthenticated }) => ({ user, isAuthenticated }),
     },
   ),
 )
