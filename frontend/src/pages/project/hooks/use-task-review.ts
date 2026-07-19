@@ -46,31 +46,10 @@ export function useTaskReview({ task, projectId, onOpenChange }: UseTaskReviewPr
     e.preventDefault()
     setFormError(null)
 
-    const isNotesEmpty = !resultNotes || (() => {
-      let insideTag = false
-      let textLength = 0
-      for (let i = 0; i < resultNotes.length; i++) {
-        const char = resultNotes.charAt(i)
-        if (char === "<") {
-          insideTag = true
-        } else if (char === ">") {
-          insideTag = false
-        } else if (!insideTag && /\S/.test(char)) {
-          textLength++
-        }
-      }
-      return textLength === 0
-    })()
-
-    if (isNotesEmpty) {
-      setFormError("Vui lòng điền mô tả kết quả công việc")
-      return
-    }
-
     submitReviewMutation.mutate({
       status: TASK_STATUS.IN_REVIEW,
       resultUrl: null, // Clear resultUrl as it is removed from UI
-      resultNotes: resultNotes.trim(),
+      resultNotes: resultNotes ? resultNotes.trim() : null,
       progress: 95, // Automatically sets progress to 95% when awaiting review
     })
   }
