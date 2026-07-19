@@ -1109,7 +1109,7 @@ export default function TaskDetail() {
 
             <div className="border-t border-border/60 pt-3 space-y-3">
               <div className="text-xs font-bold text-foreground">Kết quả công việc</div>
-              <Tabs value={resultTab} onValueChange={(val) => setResultTab(val as "report" | "optional")} className="w-full animate-in fade-in duration-300">
+              <Tabs value={resultTab} onValueChange={(val) => { setResultTab(val as "report" | "optional") }} className="w-full animate-in fade-in duration-300">
                 <TabsList className="grid w-full grid-cols-2 rounded-full h-9 p-1 bg-muted/60 border border-border/40">
                   <TabsTrigger value="report" className="rounded-full text-xs py-1">
                     Báo cáo kết quả
@@ -1129,7 +1129,9 @@ export default function TaskDetail() {
                       type="text"
                       placeholder="https://github.com/... hoặc link sản phẩm..."
                       value={resultUrl}
-                      onChange={(e) => setResultUrl(e.target.value)}
+                      onChange={(e) => {
+                        setResultUrl(e.target.value)
+                      }}
                       className="h-10 text-sm border-border rounded-full px-4 bg-background"
                     />
                   </div>
