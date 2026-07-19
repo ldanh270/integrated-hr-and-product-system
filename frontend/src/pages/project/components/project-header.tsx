@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { Plus, Settings, UserPlus } from "lucide-react"
+import { Plus, Settings, UserPlus, Sparkles } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 interface ProjectHeaderProps {
@@ -10,6 +10,7 @@ interface ProjectHeaderProps {
   canManageMembers: boolean
   onOpenEditProject: () => void
   onOpenAddMember: () => void
+  onOpenAiDecompose?: () => void
 }
 
 export function ProjectHeader({
@@ -20,6 +21,7 @@ export function ProjectHeader({
   canManageMembers,
   onOpenEditProject,
   onOpenAddMember,
+  onOpenAiDecompose,
 }: ProjectHeaderProps) {
   const navigate = useNavigate()
 
@@ -37,15 +39,27 @@ export function ProjectHeader({
 
       <div className="flex flex-wrap items-center gap-2">
         {canCreateTask && (
-          <Button
-            onClick={() => {
-              navigate(`/project/${projectId}/task/new`)
-            }}
-            className="rounded-full bg-primary text-primary-foreground hover:bg-primary/95 flex items-center gap-1.5 h-10 text-xs px-4"
-          >
-            <Plus className="size-4" />
-            Công việc mới
-          </Button>
+          <>
+            <Button
+              onClick={() => {
+                navigate(`/project/${projectId}/task/new`)
+              }}
+              className="rounded-full bg-primary text-primary-foreground hover:bg-primary/95 flex items-center gap-1.5 h-10 text-xs px-4"
+            >
+              <Plus className="size-4" />
+              Công việc mới
+            </Button>
+            {onOpenAiDecompose && (
+              <Button
+                variant="outline"
+                onClick={onOpenAiDecompose}
+                className="rounded-full border-purple-200 hover:bg-purple-50 dark:border-purple-900 dark:hover:bg-purple-950/20 text-purple-600 dark:text-purple-400 flex items-center gap-1.5 h-10 text-xs px-4"
+              >
+                <Sparkles className="size-4" />
+                AI phân rã task
+              </Button>
+            )}
+          </>
         )}
 
         {canManageMembers && (
