@@ -203,5 +203,9 @@ const htmlContent = `
 </html>
 `
 
-fs.writeFileSync(docPath, Buffer.from(htmlContent, "utf-8"))
+const charCodes = []
+for (let i = 0; i < htmlContent.length; i++) {
+  charCodes.push(htmlContent.charCodeAt(i))
+}
+fs.writeFileSync(docPath, Buffer.from(charCodes))
 console.log("Exported Word document successfully to:", docPath)
