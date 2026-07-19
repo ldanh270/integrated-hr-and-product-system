@@ -1,3 +1,4 @@
+import { HOLIDAY_SCOPE } from "@/configs/entities/attendance.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
 import { ISeeder } from "@/scripts/seeders/seeder.interface.ts"
@@ -76,13 +77,30 @@ export class HolidayCalendarsSeeder implements ISeeder {
     ]
 
     const createdHolidays = await prisma.$transaction(
-      holidaysToCreate.map((data) =>
-        prisma.holidayCalendar.upsert({
-          where: { date: data.date },
-          update: data,
-          create: data,
-        }),
-      ),
+      async (tx) => {
+        const results = []
+        for (const data of holidaysToCreate) {
+          // Date is no longer globally unique, so seed only the company-wide row for that date.
+          const existing = await tx.holidayCalendar.findFirst({
+            where: { date: data.date, scope: HOLIDAY_SCOPE.ALL },
+          })
+          if (existing) {
+            results.push(
+              await tx.holidayCalendar.update({
+                where: { id: existing.id },
+                data: { name: data.name, type: data.type },
+              }),
+            )
+          } else {
+            results.push(
+              await tx.holidayCalendar.create({
+                data: { ...data, scope: HOLIDAY_SCOPE.ALL },
+              }),
+            )
+          }
+        }
+        return results
+      },
       { timeout: 120000 },
     )
 

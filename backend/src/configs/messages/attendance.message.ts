@@ -13,6 +13,9 @@ export const ATTENDANCE_ERROR_MESSAGES = {
   CHECK_OUT_BEFORE_IN: "Cannot check out before check in",
   ALREADY_CHECKED_OUT: "Attendance already checked out",
   INVALID_DATE_FORMAT: "Invalid date format",
+  SHIFT_TIME_FORMAT: "Format must be HH:mm",
+  SHIFT_BREAK_PAIR_REQUIRED: "Break start and end time must be provided together",
+  SHIFT_BREAK_OUTSIDE_SHIFT: "Break time must be fully inside the working shift",
   /** PT onsite: GPS check-in only after admin assigns a shift for today. */
   PT_NO_ASSIGNED_SHIFT:
     "Nhân viên part-time chưa được xếp ca hôm nay, không thể check-in/check-out",

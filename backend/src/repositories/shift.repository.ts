@@ -1,3 +1,4 @@
+import { ATTENDANCE_TIME_RULES } from "@/configs/rules/attendance.config.ts"
 import {
   ICreateWorkingShiftDTO,
   IUpdateWorkingShiftDTO,
@@ -31,7 +32,7 @@ export class PrismaWorkingShiftRepository
   private parseTime(timeStr?: string): number | undefined {
     if (!timeStr) return undefined
     const [hours, minutes] = timeStr.split(":").map(Number)
-    return hours * 60 + minutes
+    return hours * ATTENDANCE_TIME_RULES.MINUTES_PER_HOUR + minutes
   }
 
   /**
@@ -45,6 +46,9 @@ export class PrismaWorkingShiftRepository
         name: data.name,
         startTime: this.parseTime(data.startTime) as number,
         endTime: this.parseTime(data.endTime) as number,
+        // Undefined persists as SQL NULL, preserving legacy shifts without an unpaid break.
+        breakStartTime: this.parseTime(data.breakStartTime ?? undefined),
+        breakEndTime: this.parseTime(data.breakEndTime ?? undefined),
         gracePeriodMinutes: data.gracePeriodMinutes || 0,
         gpsLat: data.gps?.lat,
         gpsLng: data.gps?.lng,
@@ -67,6 +71,16 @@ export class PrismaWorkingShiftRepository
     if (data.name !== undefined) updateData.name = data.name
     if (data.startTime !== undefined) updateData.startTime = this.parseTime(data.startTime)
     if (data.endTime !== undefined) updateData.endTime = this.parseTime(data.endTime)
+    if (data.breakStartTime !== undefined) {
+      // PATCH null explicitly removes an existing break; omitted leaves it unchanged.
+      updateData.breakStartTime =
+        data.breakStartTime === null ? null : this.parseTime(data.breakStartTime)
+    }
+    if (data.breakEndTime !== undefined) {
+      // Both break fields are validated as a pair at the Zod boundary.
+      updateData.breakEndTime =
+        data.breakEndTime === null ? null : this.parseTime(data.breakEndTime)
+    }
     if (data.gracePeriodMinutes !== undefined) {
       updateData.gracePeriodMinutes = data.gracePeriodMinutes
     }

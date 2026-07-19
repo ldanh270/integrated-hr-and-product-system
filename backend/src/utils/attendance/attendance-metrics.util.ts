@@ -7,12 +7,36 @@ import type {
 } from "@/types/attendance.types.ts"
 import { getShiftDateTimes } from "@/utils/attendance/attendance-shift.util.ts"
 
+function getBreakMinutesWithinAttendance(
+  checkInAt: Date,
+  checkOutAt: Date,
+  scheduledStart: Date,
+  shift: IAttendanceShiftDTO,
+): number {
+  // Legacy shifts have no unpaid break and therefore keep gross elapsed minutes.
+  if (shift.breakStartTime == null || shift.breakEndTime == null) return 0
+
+  // Break minutes share the shift's scheduled calendar day, not the checkout day.
+  const breakStart = new Date(scheduledStart)
+  breakStart.setHours(0, shift.breakStartTime, 0, 0)
+  const breakEnd = new Date(scheduledStart)
+  breakEnd.setHours(0, shift.breakEndTime, 0, 0)
+  const overlapStart = Math.max(checkInAt.getTime(), breakStart.getTime())
+  const overlapEnd = Math.min(checkOutAt.getTime(), breakEnd.getTime())
+
+  // Intersection avoids deducting break time when the employee was not clocked in.
+  return Math.max(
+    0,
+    Math.round((overlapEnd - overlapStart) / ATTENDANCE_TIME_RULES.MILLISECONDS_PER_MINUTE),
+  )
+}
+
 /**
  * Derive late/early/overtime minutes and attendance status at checkout.
  * Grace period reduces late penalty; status priority: late > early leave > overtime > on time.
  */
 export function computeAttendanceMetrics(
-  record: IAttendanceRecordDTO,
+  record: Pick<IAttendanceRecordDTO, "checkInAt" | "date">,
   shift: IAttendanceShiftDTO | null | undefined,
   checkOutAt: Date,
 ): IAttendanceMetricsDTO {
@@ -21,18 +45,18 @@ export function computeAttendanceMetrics(
   }
 
   const checkInAt = new Date(record.checkInAt)
-  const totalWorkMinutes = Math.max(
+  // Gross duration is elapsed presence; unpaid break is deducted later when a shift exists.
+  const grossWorkMinutes = Math.max(
     0,
     Math.round(
-      (checkOutAt.getTime() - checkInAt.getTime()) /
-        ATTENDANCE_TIME_RULES.MILLISECONDS_PER_MINUTE,
+      (checkOutAt.getTime() - checkInAt.getTime()) / ATTENDANCE_TIME_RULES.MILLISECONDS_PER_MINUTE,
     ),
   )
 
   if (!shift) {
     return {
       status: ATTENDANCE_STATUS.ON_TIME,
-      totalWorkMinutes,
+      totalWorkMinutes: grossWorkMinutes,
     }
   }
 
@@ -41,6 +65,8 @@ export function computeAttendanceMetrics(
     new Date(record.date),
     shift,
   )
+  const breakMinutes = getBreakMinutesWithinAttendance(checkInAt, checkOutAt, scheduledStart, shift)
+  const totalWorkMinutes = Math.max(0, grossWorkMinutes - breakMinutes)
 
   let lateMinutes = 0
   let earlyLeaveMinutes = 0

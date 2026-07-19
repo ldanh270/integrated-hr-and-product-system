@@ -2,14 +2,15 @@ import { TableCell } from "@/components/ui/table"
 import { minutesToTime } from "@/lib/utils"
 import type { IHoliday, ISchedule } from "@/types/attendance.types"
 import type { Employee } from "@/types/employee.types"
-import { resolveScheduleDay } from "@/utils/attendance/resolve-schedule-day"
+import { pickHolidayForEmployee } from "@/utils/attendance/pick-holiday-for-employee.util"
 import type { WeekDay } from "@/utils/attendance/get-week-dates"
+import { resolveScheduleDay } from "@/utils/attendance/resolve-schedule-day"
 
 interface EmployeeScheduleCellsProps {
   employee: Employee
   schedule?: ISchedule
   weekDates: WeekDay[]
-  holidaysByDate: Map<string, IHoliday>
+  holidaysByDate: Map<string, IHoliday[]>
 }
 
 export function EmployeeScheduleCells({
@@ -25,7 +26,8 @@ export function EmployeeScheduleCells({
         <p className="text-xs text-muted-foreground">{employee.email}</p>
       </TableCell>
       {weekDates.map((day) => {
-        const holiday = holidaysByDate.get(day.dateKey)
+        // Resolve scope per employee instead of treating the first holiday on a date as global.
+        const holiday = pickHolidayForEmployee(holidaysByDate.get(day.dateKey), employee)
         const scheduleDay = resolveScheduleDay(schedule, day.date)
         const shift = scheduleDay?.shift
 

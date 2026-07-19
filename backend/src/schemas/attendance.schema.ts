@@ -1,12 +1,16 @@
 import {
   APPLICATION_STATUSES,
   APPLICATION_TYPE_VALUES,
+  ATTENDANCE_MATRIX_VIEW_VALUES,
   ATTENDANCE_STATUSES,
+  HOLIDAY_SCOPE,
+  HOLIDAY_SCOPE_VALUES,
   HOLIDAY_TYPES,
   LEAVE_TYPE_VALUES,
   REGIME_TYPES,
 } from "@/configs/entities/attendance.config.ts"
 import { ATTENDANCE_ERROR_MESSAGES } from "@/configs/messages/attendance.message.ts"
+import { APPLICATION_RULES } from "@/configs/rules/attendance.config.ts"
 
 import { z } from "zod"
 
@@ -62,6 +66,17 @@ export const attendanceRecordQuerySchema = z
 
 export type AttendanceRecordQuerySchemaType = z.infer<typeof attendanceRecordQuerySchema>
 
+/** Validates the bounded period selector used by the admin workforce matrix. */
+export const attendanceMatrixQuerySchema = z
+  .object({
+    view: z.enum(ATTENDANCE_MATRIX_VIEW_VALUES),
+    anchor: z.iso.date(),
+    search: z.string().trim().max(100).optional(),
+  })
+  .strict()
+
+export type AttendanceMatrixQuerySchemaType = z.infer<typeof attendanceMatrixQuerySchema>
+
 // ─── SHARED DATE FIELD ───────────────────────────────────────
 
 const dateString = z
@@ -108,11 +123,10 @@ const workFromHomeApplicationSchema = z
   .object({
     type: z.literal("work_from_home"),
     ...baseApplicationFields,
-    detail: z
-      .object({
-        employeeShiftId: z.string().cuid("Invalid shift ID"),
-        location: z.string().max(255).optional(),
-      })
+    detail: z.object({
+      employeeShiftId: z.string().cuid("Invalid shift ID"),
+      location: z.string().max(255).optional(),
+    }),
   })
   .strict()
 
@@ -137,13 +151,62 @@ const lateEarlyApplicationSchema = z
     ...baseApplicationFields,
     detail: z.object({
       employeeShiftId: z.string().cuid("Invalid shift ID"),
-      durationMinutes: z.number().int().min(1).max(480),
+      durationMinutes: z.number().int().min(1).max(APPLICATION_RULES.MAX_DURATION_MINUTES),
       isLate: z.boolean(),
     }),
   })
   .strict()
 
+/** forgot_card: quên chấm công — requires shift ref + checkInAt and/or checkOutAt */
+const forgotCardApplicationSchema = z
+  .object({
+    type: z.literal("forgot_card"),
+    ...baseApplicationFields,
+    detail: z.object({
+      employeeShiftId: z.string().cuid("Invalid shift ID"),
+      checkInAt: z
+        .string()
+        .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid check-in time format" })
+        .nullable()
+        .optional(),
+      checkOutAt: z
+        .string()
+        .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid check-out time format" })
+        .nullable()
+        .optional(),
+      documentUrl: z.string().url("Invalid URL format").nullable().optional(),
+    }),
+  })
+  .strict()
+
 // ─── DISCRIMINATED UNION ─────────────────────────────────────
+
+/** regime: chế độ — requires regimeCategoryId + start/end dates */
+const regimeApplicationSchema = z
+  .object({
+    type: z.literal("regime"),
+    ...baseApplicationFields,
+    endDate: dateString, // required for regime
+    detail: z.object({
+      regimeCategoryId: z.string().cuid("Invalid regime category ID"),
+      lateMinutes: z
+        .number()
+        .int()
+        .min(0)
+        .max(APPLICATION_RULES.MAX_DURATION_MINUTES)
+        .optional()
+        .default(0),
+      earlyMinutes: z
+        .number()
+        .int()
+        .min(0)
+        .max(APPLICATION_RULES.MAX_DURATION_MINUTES)
+        .optional()
+        .default(0),
+      documentUrl: z.string().url("Invalid URL format").nullable().optional(),
+    }),
+  })
+  .strict()
 
 /** resignation: thôi việc — no specific details */
 const resignationApplicationSchema = z
@@ -154,19 +217,42 @@ const resignationApplicationSchema = z
   })
   .strict()
 
+/** recruitment: tuyển dụng */
+const recruitmentApplicationSchema = z
+  .object({
+    type: z.literal("recruitment"),
+    ...baseApplicationFields,
+    detail: z.object({
+      positionId: z.string().cuid("Invalid position ID").optional(),
+      positionName: z.string().min(1, "Position name is required"),
+      quantity: z.number().int().min(1),
+      requirements: z.string().optional(),
+    }),
+  })
+  .strict()
+
 export const submitApplicationSchema = z.discriminatedUnion("type", [
   leaveApplicationSchema,
   overtimeApplicationSchema,
   workFromHomeApplicationSchema,
   shiftSwapApplicationSchema,
   lateEarlyApplicationSchema,
+  regimeApplicationSchema,
   resignationApplicationSchema,
+  forgotCardApplicationSchema,
+  recruitmentApplicationSchema,
 ])
 
 export type SubmitApplicationSchemaType = z.infer<typeof submitApplicationSchema>
 
 export const submitBulkApplicationsSchema = z.object({
-  forms: z.array(submitApplicationSchema).min(1, "At least one application form is required").max(100, "Maximum 100 applications per bulk submission"),
+  forms: z
+    .array(submitApplicationSchema)
+    .min(1, "At least one application form is required")
+    .max(
+      APPLICATION_RULES.MAX_BULK_SUBMISSIONS,
+      `Maximum ${APPLICATION_RULES.MAX_BULK_SUBMISSIONS} applications per bulk submission`,
+    ),
 })
 
 export type SubmitBulkApplicationsSchemaType = z.infer<typeof submitBulkApplicationsSchema>
@@ -240,16 +326,58 @@ export type ListApplicationsQuerySchemaType = z.infer<typeof listApplicationsQue
 export const createHolidaySchema = z
   .object({
     name: z.string().min(2).max(100),
-    date: z.string().refine((val) => !isNaN(Date.parse(val)), {
-      message: ATTENDANCE_ERROR_MESSAGES.INVALID_DATE_FORMAT,
-    }),
+    /** Single-day create (legacy). Prefer startDate/endDate for ranges. */
+    date: dateString.optional(),
+    startDate: dateString.optional(),
+    endDate: dateString.optional(),
     type: z.enum(HOLIDAY_TYPES),
+    scope: z.enum(HOLIDAY_SCOPE_VALUES).default(HOLIDAY_SCOPE.ALL),
+    positionId: z.string().cuid("Invalid position ID").optional(),
+    employeeIds: z.array(z.string().cuid("Invalid employee ID")).min(1).max(200).optional(),
   })
   .strict()
+  .superRefine((data, ctx) => {
+    const start = data.startDate ?? data.date
+    const end = data.endDate ?? data.startDate ?? data.date
+    if (!start) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "startDate or date is required",
+        path: ["startDate"],
+      })
+    }
+    if (start && end && new Date(end) < new Date(start)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "endDate must be >= startDate",
+        path: ["endDate"],
+      })
+    }
+    if (data.scope === HOLIDAY_SCOPE.POSITION && !data.positionId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "positionId is required when scope is position",
+        path: ["positionId"],
+      })
+    }
+    if (data.scope === HOLIDAY_SCOPE.EMPLOYEES && !data.employeeIds?.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "employeeIds is required when scope is employees",
+        path: ["employeeIds"],
+      })
+    }
+  })
 
 export type CreateHolidaySchemaType = z.infer<typeof createHolidaySchema>
 
-export const updateHolidaySchema = createHolidaySchema.partial().strict()
+export const updateHolidaySchema = z
+  .object({
+    name: z.string().min(2).max(100).optional(),
+    date: dateString.optional(),
+    type: z.enum(HOLIDAY_TYPES).optional(),
+  })
+  .strict()
 
 export const listHolidayQuerySchema = z
   .object({

@@ -1,14 +1,14 @@
-export interface ApiResponse<T> {
+export interface ApiResponse<T, TMeta = PaginationMeta> {
   data: T | null
   error:
     | {
         message: string
         code: string
-        meta?: any
+        meta?: unknown
       }
     | string
     | null
-  meta?: PaginationMeta
+  meta?: TMeta
 }
 
 export interface PaginationMeta {

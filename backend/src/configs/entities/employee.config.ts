@@ -1,3 +1,8 @@
+/** Application role names stored in AppRole.name. */
+export const APP_ROLE = {
+  ADMIN: "admin",
+} as const
+
 export const EMPLOYEE_STATUS = {
   ACTIVE: "active",
   INACTIVE: "inactive",

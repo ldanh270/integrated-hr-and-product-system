@@ -1,7 +1,10 @@
 import type { IEmployeeShiftStatus } from "@/configs/entities/attendance.config.ts"
-import type { Prisma, WorkingShift } from "@prisma/client"
+import type {
+  IShiftScheduleWithDays,
+  IShiftScheduleWithTemplate,
+} from "@/types/shift-schedule.types.ts"
 
-import type { IShiftScheduleWithDays, IShiftScheduleWithTemplate } from "@/types/shift-schedule.types.ts"
+import type { Prisma, WorkingShift } from "@prisma/client"
 
 export type IEmployeeShiftWithShift = Prisma.EmployeeShiftGetPayload<{
   include: { shift: true }
@@ -18,6 +21,9 @@ export interface ICreateWorkingShiftDTO {
   name: string
   startTime: string // "HH:mm"
   endTime: string // "HH:mm"
+  /** Optional unpaid break. Both fields must be set together and remain inside the shift. */
+  breakStartTime?: string | null
+  breakEndTime?: string | null
   gracePeriodMinutes?: number
   /** null on PATCH removes geofence; optional on create. */
   gps?: IGpsLocationDTO | null
@@ -48,10 +54,10 @@ export interface ISubmitShiftChangeRequestDTO {
   reason: string
   startDate: string | Date
   endDate?: string | Date
-  employeeShiftId: string    // Shift the employee wants to swap FROM
+  employeeShiftId: string // Shift the employee wants to swap FROM
   swapWithEmployeeId: string // Target employee to swap WITH
-  swapWithShiftId: string    // Target EmployeeShift to swap WITH
-  workingShiftId?: string    // Target WorkingShift template (optional)
+  swapWithShiftId: string // Target EmployeeShift to swap WITH
+  workingShiftId?: string // Target WorkingShift template (optional)
 }
 
 /**
@@ -118,6 +124,8 @@ export interface IGeneratedShiftPreviewItem {
     name?: string
     startTime: number
     endTime: number
+    breakStartTime?: number | null
+    breakEndTime?: number | null
   } | null
   status: ShiftGenerateItemStatus
 }
@@ -131,6 +139,32 @@ export interface IGenerateShiftsResult {
   created: number
   updated: number
   skipped: number
+}
+
+export interface IPlannedWeekShift {
+  shiftId: string
+  isOverride: boolean
+  shift: {
+    id: string
+    name: string
+    startTime: number
+    endTime: number
+    gracePeriodMinutes: number
+    gpsLat: number | null
+    gpsLng: number | null
+    gpsRadiusMeters: number | null
+  }
+}
+
+export interface IPlannedWeekDay {
+  date: string
+  dayOfWeek: number
+  shifts: IPlannedWeekShift[]
+}
+
+export interface IPlannedWeek {
+  weekStart: string
+  days: IPlannedWeekDay[]
 }
 
 // ─── REPOSITORY INTERFACES ────────────────────────────────────
@@ -157,7 +191,10 @@ export interface IShiftScheduleRepository {
   /** Assigns a pattern to an employee. */
   assignSchedule(data: IAssignShiftScheduleDTO): Promise<IShiftScheduleWithTemplate>
   /** Gets the active pattern for a date. */
-  getScheduleByEmployee(employeeId: string, date: string | Date): Promise<IShiftScheduleWithDays | null>
+  getScheduleByEmployee(
+    employeeId: string,
+    date: string | Date,
+  ): Promise<IShiftScheduleWithDays | null>
   /** Lists patterns for an employee. */
   listSchedulesByEmployee(employeeId: string): Promise<IShiftScheduleWithDays[]>
   /** Employee IDs with an active template-based schedule on a date. */
@@ -231,7 +268,10 @@ export interface IScheduleService {
   /** Assigns a schedule pattern. */
   assignSchedule(data: IAssignShiftScheduleDTO): Promise<IShiftScheduleWithTemplate>
   /** Gets schedule for a specific date. */
-  getScheduleForEmployee(employeeId: string, date: string | Date): Promise<IShiftScheduleWithDays | null>
+  getScheduleForEmployee(
+    employeeId: string,
+    date: string | Date,
+  ): Promise<IShiftScheduleWithDays | null>
   /** Lists schedules for an employee. */
   listSchedulesForEmployee(employeeId: string): Promise<IShiftScheduleWithDays[]>
 
@@ -247,53 +287,44 @@ export interface IScheduleService {
   previewGeneratedShifts(data: IGenerateShiftsDTO): Promise<IGeneratedShiftPreview[]>
   /** Materializes planned shifts into EmployeeShift records. */
   generateShifts(data: IGenerateShiftsDTO): Promise<IGenerateShiftsResult>
+  /** Week view merging EmployeeShift overrides with template fallback. */
+  getPlannedWeekForEmployee(employeeId: string, weekStart: string | Date): Promise<IPlannedWeek>
 }
 
-// ─── SCHEDULE COPILOT / INSIGHTS / SIMULATION ─────────────────
+// ─── SCHEDULE INSIGHTS (Weekly Schedule Copilot Mode A) ────────
+
+export interface IScheduleInsightDayBucket {
+  dayOfWeek: number
+  label: string
+  total: number
+  late: number
+  absent: number
+  onTime: number
+  lateRate: number
+  absentRate: number
+  avgLateMinutes: number
+}
+
+export interface IScheduleInsightHotspot {
+  dayOfWeek: number
+  issue: "late" | "absent"
+  rate: number
+  message: string
+}
+
 export interface IScheduleInsightsResult {
   lookbackDays: number
-  periodStart: Date | string
-  periodEnd: Date | string
+  periodStart: string
+  periodEnd: string
   employeeCount: number
-  totalLateMinutes: number
-  totalEarlyLeaveMinutes: number
-  totalOvertimeMinutes: number
-  averageWorkMinutes: number
-  lateRecordsCount: number
-  earlyLeaveRecordsCount: number
-  absentRecordsCount: number
-  attendanceRate: number
-}
-
-export interface ISuggestedWeeklyTemplate {
-  id: string
-  name: string
-  score: number
-  description: string
-  assignments: Array<{ dayOfWeek: number; shiftId: string }>
-}
-
-export interface ISuggestWeeklyTemplatesResult {
-  templates: ISuggestedWeeklyTemplate[]
-}
-
-export interface ISimulateWeeklyTemplateAssignment {
-  dayOfWeek: number
-  shiftId: string
-}
-
-export interface ISimulateWeeklyTemplateDraft {
-  lookbackDays: number
-  cycleWeeks: number
-  weeks: unknown[]
-  assignments: ISimulateWeeklyTemplateAssignment[]
-}
-
-export interface ISimulateWeeklyTemplateResult {
-  score: number
-  coverageRate: number
-  efficiencyScore: number
-  reasons: string[]
+  totals: {
+    late: number
+    absent: number
+    onTime: number
+    avgLateMinutes: number
+  }
+  byDayOfWeek: IScheduleInsightDayBucket[]
+  hotspots: IScheduleInsightHotspot[]
 }
 
 export interface IScheduleInsightsService {
@@ -302,3 +333,67 @@ export interface IScheduleInsightsService {
   simulateTemplate(draft: ISimulateWeeklyTemplateDraft): Promise<ISimulateWeeklyTemplateResult>
 }
 
+export interface ISuggestedTemplateDay {
+  dayOfWeek: number
+  shiftId: string | null
+  shiftName: string | null
+}
+
+export interface ISuggestedTemplateWeek {
+  weekIndex: number
+  days: ISuggestedTemplateDay[]
+}
+
+export interface ISuggestedWeeklyTemplateCandidate {
+  id: string
+  name: string
+  description: string
+  cycleWeeks: number
+  predictedCoverageScore: number
+  tradeOffs: string[]
+  weeks: ISuggestedTemplateWeek[]
+}
+
+export interface ISuggestWeeklyTemplatesResult {
+  lookbackDays: number
+  basedOnInsights: {
+    employeeCount: number
+    periodStart: string
+    periodEnd: string
+  }
+  candidates: ISuggestedWeeklyTemplateCandidate[]
+}
+
+export interface ISimulateWeeklyTemplateDraft {
+  cycleWeeks: number
+  weeks: Array<{
+    weekIndex: number
+    days: Array<{ dayOfWeek: number; shiftId: string | null }>
+  }>
+  lookbackDays?: number
+  simulateWeeks?: number
+}
+
+export interface ISimulateWeeklyTemplateDayImpact {
+  dayOfWeek: number
+  label: string
+  assignedShifts: number
+  historicalLateRate: number
+  historicalAbsentRate: number
+  projectedLateRisk: number
+  projectedAbsentRisk: number
+  note: string
+}
+
+export interface ISimulateWeeklyTemplateResult {
+  simulateWeeks: number
+  lookbackDays: number
+  summary: {
+    totalAssignedSlots: number
+    offSlots: number
+    avgProjectedLateRisk: number
+    avgProjectedAbsentRisk: number
+  }
+  byDayOfWeek: ISimulateWeeklyTemplateDayImpact[]
+  messages: string[]
+}

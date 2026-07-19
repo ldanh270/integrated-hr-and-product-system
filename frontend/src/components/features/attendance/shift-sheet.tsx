@@ -18,7 +18,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
-import { ATTENDANCE_GPS_RULES } from "@/config/rules/attendance.config"
+import { ATTENDANCE_MESSAGES } from "@/config/messages/attendance.message"
+import { ATTENDANCE_GPS_RULES, WORKING_SHIFT_FORM_RULES } from "@/config/rules/attendance.config"
 import { useCreateShift, useUpdateShift } from "@/hooks/attendance/use-shifts"
 import { minutesToTime } from "@/lib/utils"
 import type { IGpsConfig, IWorkingShift } from "@/types/attendance.types"
@@ -32,23 +33,63 @@ import { useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
 
-const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/
 // Min radius synced with backend ATTENDANCE_GPS_RULES — used by full-time + onsite PT geofence.
 const { MIN_GEOFENCE_RADIUS_METERS } = ATTENDANCE_GPS_RULES
+const {
+  DEFAULT_BREAK_END_TIME,
+  DEFAULT_BREAK_START_TIME,
+  DEFAULT_END_TIME,
+  DEFAULT_GRACE_PERIOD_MINUTES,
+  DEFAULT_START_TIME,
+  MAX_GRACE_PERIOD_MINUTES,
+  MIN_GRACE_PERIOD_MINUTES,
+  TIME_INPUT_PATTERN,
+} = WORKING_SHIFT_FORM_RULES
+const { SHIFT_FORM } = ATTENDANCE_MESSAGES
 
-const formSchema = z.object({
-  name: z.string().min(2, "Shift name must be at least 2 characters"),
-  startTime: z.string().regex(timeRegex, "Format HH:MM"),
-  endTime: z.string().regex(timeRegex, "Format HH:MM"),
-  gracePeriodMinutes: z.string(),
-  gpsLat: z.number({ message: "Latitude must be a number" }).optional(),
-  gpsLng: z.number({ message: "Longitude must be a number" }).optional(),
-  gpsRadiusMeters: z
-    .number({ message: "Radius must be a number" })
-    .min(MIN_GEOFENCE_RADIUS_METERS, `Minimum radius is ${MIN_GEOFENCE_RADIUS_METERS}m`)
-    .optional(),
-  isActive: z.boolean(),
-})
+const formSchema = z
+  .object({
+    name: z.string().min(2, SHIFT_FORM.NAME_MIN_LENGTH),
+    startTime: z.string().regex(TIME_INPUT_PATTERN, SHIFT_FORM.TIME_FORMAT),
+    endTime: z.string().regex(TIME_INPUT_PATTERN, SHIFT_FORM.TIME_FORMAT),
+    breakStartTime: z.string(),
+    breakEndTime: z.string(),
+    gracePeriodMinutes: z.string(),
+    gpsLat: z.number({ message: SHIFT_FORM.LATITUDE_NUMBER }).optional(),
+    gpsLng: z.number({ message: SHIFT_FORM.LONGITUDE_NUMBER }).optional(),
+    gpsRadiusMeters: z
+      .number({ message: SHIFT_FORM.RADIUS_NUMBER })
+      .min(MIN_GEOFENCE_RADIUS_METERS, `Minimum radius is ${MIN_GEOFENCE_RADIUS_METERS}m`)
+      .optional(),
+    isActive: z.boolean(),
+  })
+  .superRefine((values, context) => {
+    // Empty/empty means this shift has no unpaid break; half-filled input is invalid.
+    const hasStart = values.breakStartTime !== ""
+    const hasEnd = values.breakEndTime !== ""
+    if (hasStart !== hasEnd) {
+      context.addIssue({
+        code: "custom",
+        path: [hasStart ? "breakEndTime" : "breakStartTime"],
+        message: SHIFT_FORM.BREAK_PAIR_REQUIRED,
+      })
+      return
+    }
+    if (
+      hasStart &&
+      !(
+        values.startTime < values.breakStartTime &&
+        values.breakStartTime < values.breakEndTime &&
+        values.breakEndTime < values.endTime
+      )
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["breakStartTime"],
+        message: SHIFT_FORM.BREAK_OUTSIDE_SHIFT,
+      })
+    }
+  })
 
 type FormValues = z.infer<typeof formSchema>
 
@@ -86,9 +127,11 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      startTime: "08:00",
-      endTime: "17:00",
-      gracePeriodMinutes: "15",
+      startTime: DEFAULT_START_TIME,
+      endTime: DEFAULT_END_TIME,
+      breakStartTime: DEFAULT_BREAK_START_TIME,
+      breakEndTime: DEFAULT_BREAK_END_TIME,
+      gracePeriodMinutes: String(DEFAULT_GRACE_PERIOD_MINUTES),
       gpsLat: undefined,
       gpsLng: undefined,
       gpsRadiusMeters: undefined,
@@ -118,6 +161,10 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
         name: initialData.name,
         startTime: minutesToTime(initialData.startTime),
         endTime: minutesToTime(initialData.endTime),
+        breakStartTime:
+          initialData.breakStartTime == null ? "" : minutesToTime(initialData.breakStartTime),
+        breakEndTime:
+          initialData.breakEndTime == null ? "" : minutesToTime(initialData.breakEndTime),
         gracePeriodMinutes: String(initialData.gracePeriodMinutes),
         gpsLat: initialData.gpsLat ?? undefined,
         gpsLng: initialData.gpsLng ?? undefined,
@@ -127,9 +174,11 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
     } else {
       form.reset({
         name: "",
-        startTime: "08:00",
-        endTime: "17:00",
-        gracePeriodMinutes: "15",
+        startTime: DEFAULT_START_TIME,
+        endTime: DEFAULT_END_TIME,
+        breakStartTime: DEFAULT_BREAK_START_TIME,
+        breakEndTime: DEFAULT_BREAK_END_TIME,
+        gracePeriodMinutes: String(DEFAULT_GRACE_PERIOD_MINUTES),
         gpsLat: undefined,
         gpsLng: undefined,
         gpsRadiusMeters: undefined,
@@ -142,10 +191,13 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
     const hadGps = initialData?.gpsLat != null && initialData?.gpsLng != null
     const gps = buildGpsPayload(values, { isUpdate: Boolean(initialData), hadGps })
 
+    // API uses null/null to explicitly represent a shift without an unpaid break.
     const payload = {
       name: values.name,
       startTime: values.startTime,
       endTime: values.endTime,
+      breakStartTime: values.breakStartTime || null,
+      breakEndTime: values.breakEndTime || null,
       gracePeriodMinutes: parseInt(values.gracePeriodMinutes, 10) || 0,
       isActive: values.isActive,
       ...(gps !== undefined ? { gps } : {}),
@@ -153,14 +205,14 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
 
     const mutationOptions = {
       onSuccess: () => {
-        toast.success(initialData ? "Đã cập nhật ca làm việc" : "Đã tạo ca làm việc")
+        toast.success(initialData ? SHIFT_FORM.UPDATE_SUCCESS : SHIFT_FORM.CREATE_SUCCESS)
         onOpenChange(false)
       },
       onError: (error: unknown) => {
         toast.error(
           getShiftMutationError(
             error,
-            initialData ? "Không thể cập nhật ca làm việc" : "Không thể tạo ca làm việc",
+            initialData ? SHIFT_FORM.UPDATE_ERROR : SHIFT_FORM.CREATE_ERROR,
           ),
         )
       },
@@ -196,14 +248,49 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
                 <span>Basic Information</span>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="breakStartTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bắt đầu nghỉ</FormLabel>
+                      <FormControl>
+                        <Input type="time" className="h-11 rounded-full" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="breakEndTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Kết thúc nghỉ</FormLabel>
+                      <FormControl>
+                        <Input type="time" className="h-11 rounded-full" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Shift Name <span className="text-destructive">*</span></FormLabel>
+                    <FormLabel>
+                      Shift Name <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Morning Shift, Office Hours..." className="h-11" {...field} />
+                      <Input
+                        placeholder="e.g., Morning Shift, Office Hours..."
+                        className="h-11 rounded-full"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -221,7 +308,7 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
                         Start Time <span className="text-destructive">*</span>
                       </FormLabel>
                       <FormControl>
-                        <Input type="time" className="h-11" {...field} />
+                        <Input type="time" className="h-11 rounded-full" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -238,7 +325,7 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
                         End Time <span className="text-destructive">*</span>
                       </FormLabel>
                       <FormControl>
-                        <Input type="time" className="h-11" {...field} />
+                        <Input type="time" className="h-11 rounded-full" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -254,7 +341,13 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
                     <FormItem>
                       <FormLabel>Grace Period (minutes)</FormLabel>
                       <FormControl>
-                        <Input type="number" min={0} max={120} className="h-11" {...field} />
+                        <Input
+                          type="number"
+                          min={MIN_GRACE_PERIOD_MINUTES}
+                          max={MAX_GRACE_PERIOD_MINUTES}
+                          className="h-11 rounded-full"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -301,7 +394,9 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
                           {...field}
                           value={field.value ?? ""}
                           onChange={(e) =>
-                            field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                            field.onChange(
+                              e.target.value === "" ? undefined : Number(e.target.value),
+                            )
                           }
                         />
                       </FormControl>
@@ -325,7 +420,9 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
                           {...field}
                           value={field.value ?? ""}
                           onChange={(e) =>
-                            field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                            field.onChange(
+                              e.target.value === "" ? undefined : Number(e.target.value),
+                            )
                           }
                         />
                       </FormControl>
@@ -368,7 +465,9 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
             </div>
 
             <FormActionFooter
-              onCancel={() => { onOpenChange(false); }}
+              onCancel={() => {
+                onOpenChange(false)
+              }}
               submitLabel={initialData ? "Save Changes" : "Create Shift"}
               isPending={isPending}
             />

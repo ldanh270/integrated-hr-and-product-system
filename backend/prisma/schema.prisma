@@ -59,6 +59,12 @@ enum HolidayType {
   company
 }
 
+enum HolidayScope {
+  all
+  position
+  employees
+}
+
 enum LeaveType {
   annual_leave
   sick_leave
@@ -78,6 +84,8 @@ enum ApplicationType {
   late_early
   regime
   resignation
+  forgot_card
+  recruitment
 }
 
 enum ApplicationStatus {
@@ -226,6 +234,7 @@ model Employee {
   workingShiftsCreated             WorkingShift[]
   weeklyScheduleTemplatesCreated   WeeklyScheduleTemplate[]     @relation("WeeklyScheduleTemplateCreator")
   holidayCalendarsCreated          HolidayCalendar[]
+  holidayCalendarAssignees         HolidayCalendarAssignee[]
   salaryVariablesCreated           SalaryVariable[]
   salaryComponentsCreated          SalaryComponent[]
   payslipTemplatesCreated          PayslipTemplate[]
@@ -251,6 +260,7 @@ model Employee {
   partTimeWeeklyAvailabilities     PartTimeWeeklyAvailability[] @relation("PartTimeAvailabilityEmployee")
   partTimeAvailabilitiesReviewed   PartTimeWeeklyAvailability[] @relation("PartTimeAvailabilityReviewer")
   leaveBalances                    EmployeeLeaveBalance[]
+  regimeCategoriesCreated          RegimeCategory[]
 
   @@index([status, employeeType])
   @@index([deletedAt])
@@ -267,6 +277,8 @@ model WorkingShift {
   name               String
   startTime          Int // "HH:mm" stored as total minutes from midnight (e.g., 540 for 09:00)
   endTime            Int // "HH:mm" stored as total minutes from midnight (e.g., 1020 for 17:00)
+  breakStartTime     Int? // Optional unpaid-break start, minutes from midnight
+  breakEndTime       Int? // Optional unpaid-break end, minutes from midnight
   gracePeriodMinutes Int      @default(15)
   gpsLat             Float?
   gpsLng             Float?
@@ -287,6 +299,7 @@ model WorkingShift {
 
   /// @db.Check("start_time >= 0 AND start_time < 1440")
   /// @db.Check("end_time >= 0 AND end_time <= 1440")
+  /// @db.Check("(break_start_time IS NULL AND break_end_time IS NULL) OR (start_time < break_start_time AND break_start_time < break_end_time AND break_end_time < end_time)")
   /// @db.Check("grace_period_minutes >= 0 AND grace_period_minutes <= 120")
   /// @db.Check("gps_radius_meters > 0")
 
@@ -396,6 +409,7 @@ model EmployeeShift {
   swapWithDetails  ApplicationShiftSwapDetail[] @relation("ApplicationSwapWithShift")
   lateEarlyDetails ApplicationLateEarlyDetail[] @relation("ApplicationLateEarlyShift")
   workFromHomeDetails ApplicationWorkFromHomeDetail[]
+  forgotCardDetails ApplicationForgotCardDetail[] @relation("ApplicationForgotCardShift")
   @@unique([employeeId, assignedDate, shiftId])
   @@index([shiftId, assignedDate])
   @@index([status, assignedDate])
@@ -425,6 +439,9 @@ model AttendanceRecord {
   overtimeMinutes   Int              @default(0)
   totalWorkMinutes  Int              @default(0)
   note              String?
+
+  correctedByApplicationId String?      @unique
+  correctedByApplication   Application? @relation("AttendanceRecordCorrection", fields: [correctedByApplicationId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -490,6 +507,9 @@ model Application {
   lateEarlyDetail    ApplicationLateEarlyDetail?
   businessTripDetail ApplicationBusinessTripDetail?
   workFromHomeDetail ApplicationWorkFromHomeDetail?
+  forgotCardDetail   ApplicationForgotCardDetail?
+  recruitmentDetail  ApplicationRecruitmentDetail?
+  attendanceRecordCorrection AttendanceRecord?            @relation("AttendanceRecordCorrection")
 
   @@index([employeeId, status])
   @@index([employeeId, startDate(sort: Desc)])
@@ -540,14 +560,36 @@ model ApplicationOvertimeDetail {
   @@index([employeeShiftId])
 }
 
+/// User-defined regime category (e.g. Con lớn, Thai sản, Con nhỏ).
+/// Two defaults (paid / unpaid) are seeded on first use.
+model RegimeCategory {
+  id              String   @id @default(cuid())
+  name            String
+  maxLateMinutes  Int      @default(0)
+  maxEarlyMinutes Int      @default(0)
+  isDefault       Boolean  @default(false)
+  createdById     String
+  createdBy       Employee @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  regimeDetails ApplicationRegimeDetail[]
+
+  @@index([createdById])
+  @@index([isDefault])
+}
+
 model ApplicationRegimeDetail {
-  applicationId        String      @id
-  application          Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  regimeType           RegimeType
-  reducedMinutesPerDay Int         @default(0)
-  applyToStart         Boolean     @default(false)
-  applyToEnd           Boolean     @default(false)
-  documentUrl          String?
+  applicationId    String         @id
+  application      Application    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  regimeCategoryId String
+  regimeCategory   RegimeCategory @relation(fields: [regimeCategoryId], references: [id], onDelete: Restrict)
+  lateMinutes      Int            @default(0)
+  earlyMinutes     Int            @default(0)
+  documentUrl      String?
+
+  @@index([regimeCategoryId])
 }
 
 model ApplicationLateEarlyDetail {
@@ -577,18 +619,39 @@ model ApplicationWorkFromHomeDetail {
 }
 
 model HolidayCalendar {
-  id          String      @id @default(cuid())
-  date        DateTime    @unique @db.Date
+  // Date is intentionally non-unique because scoped holidays may overlap on the same day.
+  id          String       @id @default(cuid())
+  date        DateTime     @db.Date
   name        String
   type        HolidayType
+  scope       HolidayScope @default(all)
+  positionId  String?
+  position    Position?    @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  /// Groups rows created from one date-range request.
+  batchId     String?
   createdById String
-  createdBy   Employee    @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy   Employee     @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  assignees   HolidayCalendarAssignee[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([date])
   @@index([type, date])
+  @@index([scope, date])
+  @@index([positionId])
+  @@index([batchId])
   @@index([createdById])
+}
+
+model HolidayCalendarAssignee {
+  holidayId  String
+  holiday    HolidayCalendar @relation(fields: [holidayId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@id([holidayId, employeeId])
+  @@index([employeeId])
 }
 
 // ── Payroll ──
@@ -1156,6 +1219,7 @@ model Position {
   allowedApplicationTypes ApplicationType[]
 
   employees    Employee[]
+  holidays     HolidayCalendar[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -1209,4 +1273,24 @@ model EmployeeLeaveBalance {
 
   @@unique([employeeId, year])
   @@index([employeeId, year])
+}
+
+model ApplicationForgotCardDetail {
+  applicationId   String        @id
+  application     Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  employeeShiftId String
+  employeeShift   EmployeeShift @relation("ApplicationForgotCardShift", fields: [employeeShiftId], references: [id], onDelete: Cascade)
+  checkInAt       DateTime?
+  checkOutAt      DateTime?
+  documentUrl     String?
+}
+
+model ApplicationRecruitmentDetail {
+  applicationId   String      @id
+  application     Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  positionId      String?
+  positionName    String
+  quantity        Int
+  requirements    String?     @db.Text
 }

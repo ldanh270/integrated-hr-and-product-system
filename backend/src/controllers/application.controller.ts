@@ -1,5 +1,6 @@
 import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { UPLOAD_CONFIG } from "@/configs/system/upload.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import {
   approveApplicationSchema,
@@ -11,44 +12,52 @@ import {
   swapRejectApplicationSchema,
 } from "@/schemas/attendance.schema.ts"
 import { ApiResponse } from "@/types"
-import { IApplicationService } from "@/types/attendance.types.ts"
-import { AppError } from "@/utils/error.util.ts"
+import { IApplicationService, IApplicationStatusStatsDTO } from "@/types/attendance.types.ts"
 import { CloudinaryUtil } from "@/utils/cloudinary.util.ts"
-import { UPLOAD_CONFIG } from "@/configs/system/upload.config.ts"
+import { AppError } from "@/utils/error.util.ts"
 
 import { Request, Response } from "express"
 import { z } from "zod"
+
+interface ApplicationListMeta {
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+  stats: IApplicationStatusStatsDTO
+}
 
 export class ApplicationController {
   constructor(private service: IApplicationService) {}
 
   uploadAttachment = async (req: AuthRequest, res: Response) => {
-    if (!req.file) throw new AppError("No file uploaded", 400, "ApplicationController")
-    if (!req.user) throw new AppError("Unauthorized", 401, "ApplicationController")
-    
+    if (!req.file)
+      throw new AppError("No file uploaded", HttpStatusCode.BAD_REQUEST, "ApplicationController")
+    if (!req.user)
+      throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, "ApplicationController")
+
     const { url, id } = await CloudinaryUtil.uploadStream(req.file.buffer, {
       folder: UPLOAD_CONFIG.CLOUDINARY_FOLDERS.APPLICATIONS,
       resource_type: "auto",
       public_id: `attachment_${Date.now()}_${req.user.empId}`,
       overwrite: true,
     })
-    
+
     res.status(HttpStatusCode.OK).json({ data: { url, id }, error: null })
   }
-
-
 
   /**
    * Submits a new application (leave, overtime, etc.) for the logged-in employee.
    * Ensures the employee ID is retrieved securely from the authenticated user context.
-   * 
+   *
    * @param req - The authenticated request containing the application payload.
    * @param res - The response object containing the API response envelope.
    * @returns A promise that resolves to the response with the created application.
    */
   submit = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
-      if (!req.user) throw new AppError("Unauthorized", 401, "ApplicationController")
+      if (!req.user)
+        throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, "ApplicationController")
       const employeeId = req.user.empId // §SEC: always from JWT, never from body
       const data = submitApplicationSchema.parse(req.body)
       const result = await this.service.submitApplication({ ...data, employeeId })
@@ -71,10 +80,11 @@ export class ApplicationController {
    */
   submitBulk = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
-      if (!req.user) throw new AppError("Unauthorized", 401, "ApplicationController")
+      if (!req.user)
+        throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, "ApplicationController")
       const employeeId = req.user.empId // §SEC: always from JWT, never from body
       const data = submitBulkApplicationsSchema.parse(req.body)
-      
+
       const bulkData = data.forms.map((form) => ({
         ...form,
         employeeId,
@@ -88,7 +98,11 @@ export class ApplicationController {
       })
     } catch (error) {
       if (error instanceof z.ZodError) {
-        throw new AppError("Invalid input data format", HttpStatusCode.BAD_REQUEST, "ApplicationController")
+        throw new AppError(
+          "Invalid input data format",
+          HttpStatusCode.BAD_REQUEST,
+          "ApplicationController",
+        )
       }
       throw error
     }
@@ -96,7 +110,7 @@ export class ApplicationController {
 
   /**
    * Retrieves a specific application by its unique identifier.
-   * 
+   *
    * @param req - The authenticated request containing the application ID in the parameters.
    * @param res - The response object containing the API response envelope.
    * @returns A promise that resolves to the response with the application details.
@@ -110,12 +124,12 @@ export class ApplicationController {
   /**
    * Lists all applications across the organization (intended for manager/HR view).
    * Supports pagination, filtering, and sorting query parameters.
-   * 
+   *
    * @param req - The HTTP request containing query filters and pagination params.
    * @param res - The response object containing the paginated API response.
    * @returns A promise that resolves to the response with the list of applications.
    */
-  listAll = async (req: Request, res: Response<ApiResponse<unknown>>) => {
+  listAll = async (req: Request, res: Response<ApiResponse<unknown, ApplicationListMeta>>) => {
     try {
       const query = listApplicationsQuerySchema.parse(req.query)
       const result = await this.service.listApplications(query)
@@ -127,8 +141,9 @@ export class ApplicationController {
           page: query.page,
           pageSize: query.pageSize,
           totalPages: Math.ceil(result.total / (query.pageSize ?? 20)),
+          stats: result.stats,
         },
-      } as any)
+      })
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
@@ -147,14 +162,18 @@ export class ApplicationController {
   /**
    * Lists applications that the currently authenticated employee has permission to approve.
    * Supports pagination, filtering, and sorting query parameters.
-   * 
+   *
    * @param req - The authenticated request containing query filters and pagination params.
    * @param res - The response object containing the paginated API response.
    * @returns A promise that resolves to the response with the list of applications to approve.
    */
-  listApprovals = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
+  listApprovals = async (
+    req: AuthRequest,
+    res: Response<ApiResponse<unknown, ApplicationListMeta>>,
+  ) => {
     try {
-      if (!req.user) throw new AppError("Unauthorized", 401, "ApplicationController")
+      if (!req.user)
+        throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, "ApplicationController")
       const approverId = req.user.empId
       const query = listApplicationsQuerySchema.parse(req.query)
       const result = await this.service.getApprovalsList(approverId, query)
@@ -166,8 +185,9 @@ export class ApplicationController {
           page: query.page,
           pageSize: query.pageSize,
           totalPages: Math.ceil(result.total / (query.pageSize ?? 20)),
+          stats: result.stats,
         },
-      } as any)
+      })
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
@@ -186,14 +206,15 @@ export class ApplicationController {
   /**
    * Lists the applications belonging only to the currently authenticated employee.
    * Supports pagination, filtering, and sorting query parameters.
-   * 
+   *
    * @param req - The authenticated request containing query params.
    * @param res - The response object containing the paginated API response.
    * @returns A promise that resolves to the response with the employee's own applications.
    */
-  listMine = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
+  listMine = async (req: AuthRequest, res: Response<ApiResponse<unknown, ApplicationListMeta>>) => {
     try {
-      if (!req.user) throw new AppError("Unauthorized", 401, "ApplicationController")
+      if (!req.user)
+        throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, "ApplicationController")
       const employeeId = req.user.empId
       const query = listApplicationsQuerySchema.parse(req.query)
       const result = await this.service.getEmployeeApplications(employeeId, query)
@@ -205,8 +226,9 @@ export class ApplicationController {
           page: query.page,
           pageSize: query.pageSize,
           totalPages: Math.ceil(result.total / (query.pageSize ?? 20)),
+          stats: result.stats,
         },
-      } as any)
+      })
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
@@ -225,12 +247,15 @@ export class ApplicationController {
   /**
    * Lists applications for a specific employee by their employee ID (intended for admin/HR view).
    * Validates that the requester has sufficient permissions if necessary.
-   * 
+   *
    * @param req - The authenticated request with the target employee ID parameter and query parameters.
    * @param res - The response object containing the paginated API response.
    * @returns A promise that resolves to the response with the employee's applications.
    */
-  listByEmployee = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
+  listByEmployee = async (
+    req: AuthRequest,
+    res: Response<ApiResponse<unknown, ApplicationListMeta>>,
+  ) => {
     try {
       const employeeId = String(req.params.employeeId ?? "")
       if (!employeeId) {
@@ -254,8 +279,9 @@ export class ApplicationController {
           page: query.page,
           pageSize: query.pageSize,
           totalPages: Math.ceil(result.total / (query.pageSize ?? 20)),
+          stats: result.stats,
         },
-      } as any)
+      })
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({
@@ -273,14 +299,15 @@ export class ApplicationController {
 
   /**
    * Cancels a pending application by the employee who submitted it.
-   * 
+   *
    * @param req - The authenticated request containing the application ID parameter and cancellation reasons.
    * @param res - The response object containing the API response envelope.
    * @returns A promise that resolves to the response with the updated application status.
    */
   cancel = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
-      if (!req.user) throw new AppError("Unauthorized", 401, "ApplicationController")
+      if (!req.user)
+        throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, "ApplicationController")
       const employeeId = req.user.empId
       cancelApplicationSchema.parse(req.body ?? {}) // validates optional reason field
       const app = await this.service.cancelApplication(String(req.params.id), employeeId)
@@ -303,14 +330,15 @@ export class ApplicationController {
   /**
    * Approves a pending application (intended for managers/HR).
    * Registers the authenticated user as the processor of the application.
-   * 
+   *
    * @param req - The authenticated request containing the application ID parameter.
    * @param res - The response object containing the API response envelope.
    * @returns A promise that resolves to the response with the approved application.
    */
   approve = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
-      if (!req.user) throw new AppError("Unauthorized", 401, "ApplicationController")
+      if (!req.user)
+        throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, "ApplicationController")
       const processorId = req.user.empId // §SEC: from JWT
       approveApplicationSchema.parse(req.body) // validates status=approved only
 
@@ -330,14 +358,15 @@ export class ApplicationController {
   /**
    * Rejects a pending application with a specified reason (intended for managers/HR).
    * Registers the authenticated user as the processor of the application.
-   * 
+   *
    * @param req - The authenticated request containing the application ID parameter and rejection reason.
    * @param res - The response object containing the API response envelope.
    * @returns A promise that resolves to the response with the rejected application.
    */
   reject = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
-      if (!req.user) throw new AppError("Unauthorized", 401, "ApplicationController")
+      if (!req.user)
+        throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, "ApplicationController")
       const processorId = req.user.empId // §SEC: from JWT
       const { rejectReason } = rejectApplicationSchema.parse(req.body)
 
@@ -364,7 +393,8 @@ export class ApplicationController {
    */
   swapConfirm = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
-      if (!req.user) throw new AppError("Unauthorized", 401, "ApplicationController")
+      if (!req.user)
+        throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, "ApplicationController")
       const partnerId = req.user.empId
       const app = await this.service.confirmSwapPartner(String(req.params.id), partnerId)
       res.status(HttpStatusCode.OK).json({ data: app, error: null })
@@ -378,10 +408,15 @@ export class ApplicationController {
    */
   swapReject = async (req: AuthRequest, res: Response<ApiResponse<unknown>>) => {
     try {
-      if (!req.user) throw new AppError("Unauthorized", 401, "ApplicationController")
+      if (!req.user)
+        throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, "ApplicationController")
       const partnerId = req.user.empId
       const { rejectReason } = swapRejectApplicationSchema.parse(req.body)
-      const app = await this.service.rejectSwapPartner(String(req.params.id), partnerId, rejectReason || "")
+      const app = await this.service.rejectSwapPartner(
+        String(req.params.id),
+        partnerId,
+        rejectReason || "",
+      )
       res.status(HttpStatusCode.OK).json({ data: app, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {

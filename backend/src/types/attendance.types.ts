@@ -1,16 +1,24 @@
 import {
   IApplicationStatus,
   IApplicationType,
+  IAttendanceMatrixView,
   IAttendanceStatus,
+  ICheckInVarianceStatus,
   IHolidayType,
   ILeaveType,
   IRegimeType,
 } from "@/configs/entities/attendance.config.ts"
 
-import type { HolidayCalendar, Application, ApplicationShiftSwapDetail } from "@prisma/client"
+import type {
+  Application,
+  ApplicationForgotCardDetail,
+  ApplicationShiftSwapDetail,
+  HolidayCalendar,
+} from "@prisma/client"
 
 export interface IApplicationEntity extends Application {
-  shiftSwapDetail?: ApplicationShiftSwapDetail | null;
+  shiftSwapDetail?: ApplicationShiftSwapDetail | null
+  forgotCardDetail?: ApplicationForgotCardDetail | null
 }
 
 // Re-export for consumers that import from this module
@@ -43,8 +51,60 @@ export interface IAttendanceRecordQueryDTO {
   startDate?: string
   endDate?: string
   employeeId?: string
+  /** Bulk filter — preferred over looping single employeeId for scoring. */
   employeeIds?: string[]
   status?: IAttendanceStatus
+}
+
+/** Filters and anchors a workforce matrix request to one calendar period. */
+export interface IAttendanceMatrixQueryDTO {
+  view: IAttendanceMatrixView
+  anchor: string
+  search?: string
+}
+
+/** One scheduled attendance occurrence inside a matrix day. */
+export interface IAttendanceMatrixShiftDTO {
+  id: string
+  shiftName?: string
+  scheduledStart?: number
+  checkInAt?: string
+  checkOutAt?: string
+  checkInVarianceMinutes?: number
+  status: ICheckInVarianceStatus
+}
+
+/** Attendance occurrences grouped by ISO calendar date. */
+export interface IAttendanceMatrixDayDTO {
+  date: string
+  shifts: IAttendanceMatrixShiftDTO[]
+}
+
+/** Employee identity and day cells returned to the matrix UI. */
+export interface IAttendanceMatrixEmployeeDTO {
+  employeeId: string
+  employeeCode: string
+  fullName: string
+  email?: string
+  position?: string
+  days: IAttendanceMatrixDayDTO[]
+}
+
+/** Minimal employee projection required to build empty matrix rows. */
+export interface IAttendanceMatrixEmployeeProfileDTO {
+  id: string
+  username: string
+  fullName: string
+  email: string
+  position: string | null
+}
+
+/** Complete workforce matrix response for one week or month. */
+export interface IAttendanceMatrixDTO {
+  view: IAttendanceMatrixView
+  rangeStart: string
+  rangeEnd: string
+  employees: IAttendanceMatrixEmployeeDTO[]
 }
 
 // ─── APPLICATION DETAIL DTOs ──────────────────────────────────
@@ -83,11 +143,17 @@ export interface ILateEarlyDetailDTO {
 }
 
 export interface IRegimeDetailDTO {
-  regimeType: IRegimeType
-  reducedMinutesPerDay: number
-  applyToStart?: boolean
-  applyToEnd?: boolean
-  documentUrl?: string
+  regimeCategoryId: string
+  lateMinutes?: number
+  earlyMinutes?: number
+  documentUrl?: string | null
+}
+
+export interface IForgotCardDetailDTO {
+  employeeShiftId: string
+  checkInAt?: string | Date | null
+  checkOutAt?: string | Date | null
+  documentUrl?: string | null
 }
 
 // ─── BASE APPLICATION FIELDS ──────────────────────────────────
@@ -112,6 +178,11 @@ export type ISubmitApplicationDTO =
   | (IBaseApplicationDTO & { type: "late_early"; detail: ILateEarlyDetailDTO })
   | (IBaseApplicationDTO & { type: "regime"; detail: IRegimeDetailDTO })
   | (IBaseApplicationDTO & { type: "resignation"; detail: Record<string, unknown> })
+  | (IBaseApplicationDTO & { type: "forgot_card"; detail: IForgotCardDetailDTO })
+  | (IBaseApplicationDTO & {
+      type: "recruitment"
+      detail: { positionId?: string; positionName: string; quantity: number; requirements?: string }
+    })
 
 export interface IApproveApplicationDTO {
   status: IApplicationStatus
@@ -127,6 +198,32 @@ export interface IListApplicationsQueryDTO {
   employeeId?: string
   startDate?: string
   endDate?: string
+  keyword?: string
+}
+
+export interface IApplicationListItemDTO {
+  id: string
+  employeeId: string
+  type: Application["type"]
+  status: Application["status"]
+  createdAt: Date
+  employee: { id: string; fullName: string }
+  assignedTo: { id: string; fullName: string } | null
+  approvedBy: { id: string; fullName: string } | null
+}
+
+export interface IApplicationStatusStatsDTO {
+  pending: number
+  approved: number
+  rejected: number
+  cancelled: number
+  total: number
+}
+
+export interface IApplicationListResultDTO {
+  data: IApplicationListItemDTO[]
+  total: number
+  stats: IApplicationStatusStatsDTO
 }
 
 export interface IListHolidaysQueryDTO {
@@ -135,10 +232,39 @@ export interface IListHolidaysQueryDTO {
   year?: number
 }
 
+export interface ICreateHolidayDTO {
+  name: string
+  date?: string | Date
+  startDate?: string | Date
+  endDate?: string | Date
+  type: IHolidayType
+  scope?: "all" | "position" | "employees"
+  positionId?: string
+  employeeIds?: string[]
+}
+
 export interface IUpdateHolidayDTO {
   name?: string
   date?: string | Date
   type?: IHolidayType
+}
+
+export interface IHolidayCalendarDTO {
+  id: string
+  name: string
+  date: Date
+  type: IHolidayType
+  scope: string
+  positionId: string | null
+  batchId: string | null
+  createdById: string
+  createdAt: Date
+  updatedAt: Date
+  position: { id: string; name: string; code: string } | null
+  assignees: Array<{
+    employeeId: string
+    employee: { id: string; fullName: string; email: string }
+  }>
 }
 
 // ─── REPOSITORY INTERFACES ────────────────────────────────────
@@ -171,6 +297,9 @@ export interface IAttendanceShiftDTO {
   name?: string
   startTime: number
   endTime: number
+  /** Optional unpaid break, represented as minutes from local midnight. */
+  breakStartTime?: number | null
+  breakEndTime?: number | null
   gracePeriodMinutes?: number | null
   gpsLat?: number | null
   gpsLng?: number | null
@@ -242,7 +371,10 @@ export interface IAttendanceRepository {
     realShift?: IRealShiftUpsertDTO,
   ): Promise<IAttendanceRecordDTO>
   /** Finds record by employee and date. */
-  findByEmployeeAndDate(employeeId: string, date: string | Date): Promise<IAttendanceRecordDTO | null>
+  findByEmployeeAndDate(
+    employeeId: string,
+    date: string | Date,
+  ): Promise<IAttendanceRecordDTO | null>
   /** Queries records with filters. */
   queryRecords(query: IAttendanceRecordQueryDTO): Promise<IAttendanceRecordDTO[]>
 }
@@ -259,14 +391,14 @@ export interface IApplicationRepository {
   findByEmployee(
     employeeId: string,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: IApplicationEntity[]; total: number }>
-  findAll(query: IListApplicationsQueryDTO): Promise<{ data: IApplicationEntity[]; total: number }>
+  ): Promise<IApplicationListResultDTO>
+  findAll(query: IListApplicationsQueryDTO): Promise<IApplicationListResultDTO>
   findApprovals(
     approverId: string,
     managedEmployeeIds: string[],
     isGlobalApprover: boolean,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: IApplicationEntity[]; total: number }>
+  ): Promise<IApplicationListResultDTO>
   cancel(id: string, employeeId: string): Promise<IApplicationEntity | null>
   /** Approves an application (sets status=approved). */
   approve(id: string, approvedBy: string): Promise<IApplicationEntity | null>
@@ -275,7 +407,11 @@ export interface IApplicationRepository {
   /** Partner confirms (agree) a shift_swap application (partner_pending → pending). */
   partnerConfirm(id: string, partnerId: string): Promise<IApplicationEntity | null>
   /** Partner rejects a shift_swap application (partner_pending → rejected). */
-  partnerReject(id: string, partnerId: string, rejectReason: string): Promise<IApplicationEntity | null>
+  partnerReject(
+    id: string,
+    partnerId: string,
+    rejectReason: string,
+  ): Promise<IApplicationEntity | null>
   checkLeaveOverlap(
     employeeId: string,
     startDate: string | Date,
@@ -290,19 +426,14 @@ export interface IApplicationRepository {
  */
 export interface IHolidayRepository {
   /** Lists holiday records. */
-  listHolidays(query?: IListHolidaysQueryDTO): Promise<HolidayCalendar[]>
-  /** Creates a holiday record. */
-  createHoliday(
-    name: string,
-    date: string | Date,
-    type: IHolidayType,
-    createdById: string,
-  ): Promise<HolidayCalendar>
+  listHolidays(query?: IListHolidaysQueryDTO): Promise<IHolidayCalendarDTO[]>
+  /** Creates holiday day rows for a date range + scope. */
+  createHolidayRange(data: ICreateHolidayDTO, createdById: string): Promise<IHolidayCalendarDTO[]>
   /** Updates a holiday record. */
-  updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<HolidayCalendar>
-  /** Deletes a holiday record. */
-  deleteHoliday(id: string): Promise<void>
-  /** Checks if a specific date is a holiday. */
+  updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<IHolidayCalendarDTO>
+  /** Deletes a holiday record (and batch siblings when batchId set). */
+  deleteHoliday(id: string, deleteBatch?: boolean): Promise<void>
+  /** Checks if a specific date is a company-wide holiday. */
   checkIsHoliday(date: string | Date): Promise<boolean>
 }
 
@@ -326,6 +457,7 @@ export interface IAttendanceService {
   ): Promise<IAttendanceRecordDTO>
   /** Queries attendance records. */
   getAttendanceRecords(query: IAttendanceRecordQueryDTO): Promise<IAttendanceRecordDTO[]>
+  getAttendanceMatrix(query: IAttendanceMatrixQueryDTO): Promise<IAttendanceMatrixDTO>
 }
 
 /**
@@ -338,16 +470,16 @@ export interface IApplicationService {
   submitBulkApplications(data: ISubmitApplicationDTO[]): Promise<unknown[]>
   cancelApplication(id: string, requesterId: string): Promise<unknown>
   getApplicationById(id: string, requester?: { empId: string }): Promise<unknown>
-  listApplications(query: IListApplicationsQueryDTO): Promise<{ data: unknown[]; total: number }>
+  listApplications(query: IListApplicationsQueryDTO): Promise<IApplicationListResultDTO>
   getApprovalsList(
     approverId: string,
     query: IListApplicationsQueryDTO,
-  ): Promise<{ data: unknown[]; total: number }>
+  ): Promise<IApplicationListResultDTO>
   getEmployeeApplications(
     employeeId: string,
     query: IListApplicationsQueryDTO,
     requester?: { empId: string },
-  ): Promise<{ data: unknown[]; total: number }>
+  ): Promise<IApplicationListResultDTO>
   /** Approves a pending application. */
   approveApplication(id: string, processorId: string): Promise<unknown>
   /** Rejects a pending application with a mandatory reason. */
@@ -369,18 +501,13 @@ export interface IApplicationService {
  */
 export interface IHolidayService {
   /** Lists holidays. */
-  listHolidays(query?: IListHolidaysQueryDTO): Promise<HolidayCalendar[]>
-  /** Creates a holiday. */
-  createHoliday(
-    name: string,
-    date: string | Date,
-    type: IHolidayType,
-    createdById: string,
-  ): Promise<HolidayCalendar>
+  listHolidays(query?: IListHolidaysQueryDTO): Promise<IHolidayCalendarDTO[]>
+  /** Creates holiday day rows for a date range + scope. */
+  createHoliday(data: ICreateHolidayDTO, createdById: string): Promise<IHolidayCalendarDTO[]>
   /** Updates a holiday. */
-  updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<HolidayCalendar>
-  /** Deletes a holiday. */
-  deleteHoliday(id: string): Promise<void>
-  /** Checks if a date is a holiday. */
+  updateHoliday(id: string, data: IUpdateHolidayDTO): Promise<IHolidayCalendarDTO>
+  /** Deletes a holiday (optionally whole batch). */
+  deleteHoliday(id: string, deleteBatch?: boolean): Promise<void>
+  /** Checks if a date is a company-wide holiday. */
   isHoliday(date: string | Date): Promise<boolean>
 }

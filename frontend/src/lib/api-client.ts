@@ -1,3 +1,4 @@
+import { AUTH_MESSAGES } from "@/config/messages/auth.message"
 import { ROUTES } from "@/config/routes.config"
 import { routerNavigate } from "@/lib/router-navigator"
 import { useAuthStore } from "@/store/auth-store"
@@ -84,7 +85,7 @@ apiClient.interceptors.response.use(
         failedQueue.push({ resolve, reject })
       })
         .then(() => {
-          originalRequest._retry = true  // mark trước khi retry
+          originalRequest._retry = true // mark trước khi retry
           return apiClient(originalRequest)
         })
         .catch((err) => Promise.reject(err))
@@ -101,15 +102,18 @@ apiClient.interceptors.response.use(
     } catch (refreshError) {
       processQueue(refreshError, null)
 
-      // Chỉ đăng xuất nếu user đang thực sự logged in
+      const refreshStatus = axios.isAxiosError(refreshError) ? refreshError.response?.status : null
+      const sessionExpired = refreshStatus === 401 || refreshStatus === 403
+
+      // Preserve identity for transient network/5xx failures; protected routes fail closed and offer retry.
       const isAuthenticated = useAuthStore.getState().isAuthenticated
-      if (isAuthenticated) {
+      if (sessionExpired && isAuthenticated) {
         useAuthStore.getState().clearAuth()
         localStorage.removeItem("auth-storage")
-        toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.")
+        toast.error(AUTH_MESSAGES.SESSION_EXPIRED)
         routerNavigate(ROUTES.AUTH.LOGIN, { replace: true })
       }
-      return Promise.reject(error)
+      return Promise.reject(refreshError)
     } finally {
       isRefreshing = false
     }

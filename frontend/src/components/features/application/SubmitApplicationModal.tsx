@@ -2,6 +2,7 @@
 
 import { APP_TYPE_META, LEAVE_TYPE_OPTIONS } from "@/components/attendance/attendance-ui.meta"
 import { APPLICATION_TYPES, REGIME_TYPE } from "@/config/entities/attendance.config"
+import { ROUTES } from "@/config/routes.config"
 import { useSubmitApplication } from "@/hooks/application/useSubmitApplication"
 
 import { useState } from "react"
@@ -16,6 +17,7 @@ export interface SubmitModalProps {
   initialType?: string
 }
 
+/** Presents application type selection and legacy single-item submission fields. */
 export function SubmitApplicationModal({ onClose, onSuccess, initialType }: SubmitModalProps) {
   const navigate = useNavigate()
   const { isSubmitting, submitApplication } = useSubmitApplication()
@@ -138,7 +140,9 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
       onClick={onClose}
     >
       <div
-        onClick={(e) => { e.stopPropagation() }}
+        onClick={(e) => {
+          e.stopPropagation()
+        }}
         className={`bg-background w-full ${step === "type" ? "max-w-3xl" : "max-w-lg"} rounded-2xl shadow-2xl shadow-slate-900/20 overflow-hidden flex flex-col max-h-[90vh] transition-all duration-300`}
       >
         {/* Header */}
@@ -187,7 +191,7 @@ export function SubmitApplicationModal({ onClose, onSuccess, initialType }: Subm
                     type="button"
                     onClick={() => {
                       onClose()
-                      navigate(`/application/create?type=${type}`)
+                      navigate(ROUTES.APPLICATION.CREATE.replace(":type", type))
                     }}
                     className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 text-left hover:shadow-md hover:border-primary/30 transition-all active:scale-[0.98] bg-background"
                   >

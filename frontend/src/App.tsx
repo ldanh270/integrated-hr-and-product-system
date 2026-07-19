@@ -1,14 +1,19 @@
+import { AuthorizationUnavailable } from "@/components/auth/authorization-unavailable"
 import { ConfirmProvider } from "@/components/common"
 import { API_ENDPOINTS } from "@/config/api.config"
+import { AUTHORIZATION_STATUS } from "@/config/entities/auth.config"
 import { ROUTES } from "@/config/routes.config"
 import { SUBSYSTEMS } from "@/config/subsystem.config"
+import type { SubsystemConfig } from "@/config/subsystem.config"
 import apiClient from "@/lib/api-client"
 import { setNavigate } from "@/lib/router-navigator"
 import { type RouteConfig, privateRoutes, publicRoutes } from "@/routes"
 import { useAuthStore } from "@/store/auth-store.ts"
+import { resolveSubsystemDestination } from "@/utils/navigation/resolve-subsystem-destination"
 
-import { Fragment, type ReactNode, Suspense, lazy, useEffect, useState } from "react"
+import { Fragment, type ReactNode, Suspense, lazy, useEffect } from "react"
 
+import axios from "axios"
 import {
   Navigate,
   Outlet,
@@ -42,30 +47,47 @@ const NotFound = lazy(() => import("@/pages/NotFound.tsx"))
 const ProtectedRoute = ({
   children,
   requiredPermissions,
+  requiredRoles,
 }: {
   children: React.ReactNode
   requiredPermissions?: string[]
+  requiredRoles?: string[]
 }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const user = useAuthStore((state) => state.user)
   const setAuth = useAuthStore((state) => state.setAuth)
-  const [isChecking, setIsChecking] = useState(!isAuthenticated)
+  const clearAuth = useAuthStore((state) => state.clearAuth)
+  const authorizationStatus = useAuthStore((state) => state.authorizationStatus)
+  const beginAuthorization = useAuthStore((state) => state.beginAuthorization)
+  const failAuthorization = useAuthStore((state) => state.failAuthorization)
+  const retryAuthorization = useAuthStore((state) => state.retryAuthorization)
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      apiClient
-        .get(API_ENDPOINTS.AUTH.ME)
-        .then((res) => {
-          setAuth(res.data.data.employee)
-        })
-        .catch(() => {})
-        .finally(() => {
-          setIsChecking(false)
-        })
-    }
-  }, [isAuthenticated, setAuth])
+    if (authorizationStatus !== AUTHORIZATION_STATUS.IDLE) return
+    beginAuthorization()
 
-  if (isChecking) {
+    // Refresh persisted authorization before any route guard trusts cached roles or permissions.
+    void apiClient
+      .get(API_ENDPOINTS.AUTH.ME)
+      .then((res) => {
+        setAuth(res.data.data.employee)
+      })
+      .catch((error: unknown) => {
+        const status = axios.isAxiosError(error) ? error.response?.status : null
+        // Only confirmed rejection expires identity; outages remain retryable and fail closed.
+        if (status === 401 || status === 403) {
+          clearAuth()
+          return
+        }
+        failAuthorization()
+      })
+  }, [authorizationStatus, beginAuthorization, clearAuth, failAuthorization, setAuth])
+
+  if (authorizationStatus === AUTHORIZATION_STATUS.ERROR) {
+    return <AuthorizationUnavailable onRetry={retryAuthorization} />
+  }
+
+  if (authorizationStatus !== AUTHORIZATION_STATUS.READY) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -80,6 +102,13 @@ const ProtectedRoute = ({
   if (requiredPermissions && user) {
     const hasPermission = requiredPermissions.every((p) => user.permissions?.includes(p))
     if (!hasPermission) {
+      return <Navigate to={ROUTES.PERSONAL.BASE} replace />
+    }
+  }
+
+  if (requiredRoles && user) {
+    const hasRole = requiredRoles.some((role) => user.roles?.includes(role))
+    if (!hasRole) {
       return <Navigate to={ROUTES.PERSONAL.BASE} replace />
     }
   }
@@ -101,6 +130,24 @@ const RootRedirect = () => {
   return <Navigate to={isAuthenticated ? ROUTES.PERSONAL.BASE : ROUTES.AUTH.LOGIN} replace />
 }
 
+const SubsystemRootRedirect = ({ subsystem }: { subsystem: SubsystemConfig }) => {
+  const user = useAuthStore((state) => state.user)
+  const destination = resolveSubsystemDestination(
+    subsystem.id,
+    subsystem.routePrefix,
+    user?.permissions,
+    user?.roles,
+  )
+
+  // Root URLs and dropdown clicks share one resolver so permission behavior cannot drift.
+  if (destination !== subsystem.routePrefix) {
+    return <Navigate to={destination} replace />
+  }
+
+  const firstPath = subsystem.sidebarItems[0]?.path ?? ROUTES.PERSONAL.SCHEDULE
+  return <Navigate to={firstPath} replace />
+}
+
 const renderPrivateRoute = (route: RouteConfig, index: number, keyPrefix: string): ReactNode => {
   const Layout = route.layout || Fragment
 
@@ -110,7 +157,7 @@ const renderPrivateRoute = (route: RouteConfig, index: number, keyPrefix: string
         key={`${keyPrefix}-${index}`}
         path={route.path}
         element={
-          <ProtectedRoute requiredPermissions={route.permissions}>
+          <ProtectedRoute requiredPermissions={route.permissions} requiredRoles={route.roles}>
             <Layout>
               <Outlet />
             </Layout>
@@ -129,7 +176,7 @@ const renderPrivateRoute = (route: RouteConfig, index: number, keyPrefix: string
       key={`${keyPrefix}-${index}`}
       path={route.path}
       element={
-        <ProtectedRoute requiredPermissions={route.permissions}>
+        <ProtectedRoute requiredPermissions={route.permissions} requiredRoles={route.roles}>
           <Layout>
             <Page />
           </Layout>
@@ -173,8 +220,7 @@ const App = () => {
             })}
 
             {SUBSYSTEMS.map((subsystem) => {
-              const firstPath =
-                subsystem.sidebarItems[0]?.path || `${subsystem.routePrefix}/dashboard`
+              const firstPath = subsystem.sidebarItems[0]?.path
 
               if (firstPath === subsystem.routePrefix) {
                 return null
@@ -186,7 +232,7 @@ const App = () => {
                   path={subsystem.routePrefix}
                   element={
                     <ProtectedRoute>
-                      <Navigate to={firstPath} replace />
+                      <SubsystemRootRedirect subsystem={subsystem} />
                     </ProtectedRoute>
                   }
                 />
@@ -200,14 +246,6 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <Navigate to={ROUTES.PERSONAL.SCHEDULE} replace />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={ROUTES.PAYROLL.MY_PAYSLIPS}
-              element={
-                <ProtectedRoute>
-                  <Navigate to={ROUTES.PERSONAL.PAYSLIPS} replace />
                 </ProtectedRoute>
               }
             />

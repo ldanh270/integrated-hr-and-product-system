@@ -1,3 +1,4 @@
+import { DEFAULT_ATTENDANCE_LOCATION } from "@/configs/rules/attendance.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
 import { ISeeder } from "@/scripts/seeders/seeder.interface.ts"
@@ -21,9 +22,10 @@ export class WorkingShiftsSeeder implements ISeeder {
         startTime: 8 * 60, // 480
         endTime: 17 * 60, // 1020
         gracePeriodMinutes: 15,
-        gpsLat: 15.975011, // FPT University Da Nang
-        gpsLng: 108.253215,
-        gpsRadiusMeters: 500,
+        // Shared campus geofence keeps seeded shifts aligned with the map picker default.
+        gpsLat: DEFAULT_ATTENDANCE_LOCATION.LATITUDE,
+        gpsLng: DEFAULT_ATTENDANCE_LOCATION.LONGITUDE,
+        gpsRadiusMeters: DEFAULT_ATTENDANCE_LOCATION.RADIUS_METERS,
         isActive: true,
         createdById: adminId,
       },
@@ -32,9 +34,9 @@ export class WorkingShiftsSeeder implements ISeeder {
         startTime: 13 * 60, // 780
         endTime: 21 * 60, // 1260
         gracePeriodMinutes: 15,
-        gpsLat: 15.975011,
-        gpsLng: 108.253215,
-        gpsRadiusMeters: 500,
+        gpsLat: DEFAULT_ATTENDANCE_LOCATION.LATITUDE,
+        gpsLng: DEFAULT_ATTENDANCE_LOCATION.LONGITUDE,
+        gpsRadiusMeters: DEFAULT_ATTENDANCE_LOCATION.RADIUS_METERS,
         isActive: true,
         createdById: adminId,
       },
@@ -43,9 +45,9 @@ export class WorkingShiftsSeeder implements ISeeder {
         startTime: 22 * 60, // 1320
         endTime: 6 * 60, // 360 (next day implicitly handled by logic)
         gracePeriodMinutes: 15,
-        gpsLat: 15.975011,
-        gpsLng: 108.253215,
-        gpsRadiusMeters: 500,
+        gpsLat: DEFAULT_ATTENDANCE_LOCATION.LATITUDE,
+        gpsLng: DEFAULT_ATTENDANCE_LOCATION.LONGITUDE,
+        gpsRadiusMeters: DEFAULT_ATTENDANCE_LOCATION.RADIUS_METERS,
         isActive: true,
         createdById: adminId,
       },
