@@ -1,6 +1,6 @@
 import { PageCard } from "@/components/common"
 import { Button } from "@/components/ui/button"
-import { Clock, Users } from "lucide-react"
+import { Clock, Users, BarChart3, TrendingUp } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -11,9 +11,11 @@ import {
 } from "@/components/ui/table"
 import { TASK_TRACKERS, getProjectMemberWorkModeLabel } from "@/config/entities/project.config"
 import type { Project, ProjectMember } from "@/types/project.types"
+import type { Task } from "@/types/task.types"
 
 interface ProjectOverviewTabProps {
   project: Project
+  tasks: Task[]
   totalTasksCount: number
   openTasksCount: number
   closedTasksCount: number
@@ -28,6 +30,7 @@ interface ProjectOverviewTabProps {
 
 export function ProjectOverviewTab({
   project,
+  tasks,
   totalTasksCount,
   openTasksCount,
   closedTasksCount,
@@ -39,8 +42,150 @@ export function ProjectOverviewTab({
   onRemoveMember,
   onEditMember,
 }: ProjectOverviewTabProps) {
+  // Count the number of tasks for each individual status
+  const todo = tasks.filter((t) => t.status === "todo").length
+  const inProgress = tasks.filter((t) => t.status === "in_progress").length
+  const inReview = tasks.filter((t) => t.status === "in_review").length
+  const done = tasks.filter((t) => t.status === "done").length
+  const reopened = tasks.filter((t) => t.status === "reopened").length
+  const cancelled = tasks.filter((t) => t.status === "cancelled").length
+
+  // Calculate the overall task completion percentage
+  const completionRate = totalTasksCount > 0 ? Math.round((done / totalTasksCount) * 100) : 0
+
+  // Configuration for the SVG Donut chart segments
+  const radius = 50
+  const strokeWidth = 14
+  const circumference = 2 * Math.PI * radius // ~314.16
+
+  // Define details for each status segment including labels, styling classes, and values
+  const segments = [
+    { value: done, label: "Đã xong (Done)", color: "stroke-emerald-500", text: "text-emerald-500", bg: "bg-emerald-500" },
+    { value: inProgress, label: "Đang làm (In Progress)", color: "stroke-blue-500", text: "text-blue-500", bg: "bg-blue-500" },
+    { value: inReview, label: "Đang duyệt (In Review)", color: "stroke-yellow-500", text: "text-yellow-500", bg: "bg-yellow-500" },
+    { value: reopened, label: "Mở lại (Reopened)", color: "stroke-purple-500", text: "text-purple-500", bg: "bg-purple-500" },
+    { value: todo, label: "Cần làm (To Do)", color: "stroke-slate-400", text: "text-slate-400", bg: "bg-slate-400" },
+    { value: cancelled, label: "Đã hủy (Cancelled)", color: "stroke-red-500", text: "text-red-500", bg: "bg-red-500" },
+  ].filter((s) => s.value > 0) // Only render segments with positive values
+
+  // Track the accumulated offset while rendering consecutive SVG circles
+  let currentAccumulated = 0
+
   return (
     <div className="grid grid-cols-12 gap-6 outline-none">
+      {/* Dashboard KPI cards section */}
+      <div className="col-span-12 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Card showing the visual circular project completion percentage */}
+        <PageCard className="p-6 flex flex-col items-center justify-center text-center relative overflow-hidden bg-gradient-to-br from-card to-card/50">
+          <div className="absolute top-3 left-4 flex items-center gap-1.5 text-xs text-muted-foreground font-semibold">
+            <TrendingUp className="size-3.5 text-emerald-500" />
+            Tiến độ dự án (Progress)
+          </div>
+          <div className="relative flex items-center justify-center my-6">
+            {/* SVG Progress Circle */}
+            <svg className="size-32 transform -rotate-90">
+              <circle
+                cx="64"
+                cy="64"
+                r="50"
+                className="stroke-muted/30"
+                strokeWidth="10"
+                fill="transparent"
+              />
+              <circle
+                cx="64"
+                cy="64"
+                r="50"
+                className="stroke-emerald-500 transition-all duration-500"
+                strokeWidth="10"
+                fill="transparent"
+                strokeDasharray={2 * Math.PI * 50}
+                strokeDashoffset={2 * Math.PI * 50 * (1 - completionRate / 100)}
+                strokeLinecap="round"
+              />
+            </svg>
+            <div className="absolute flex flex-col items-center justify-center">
+              <span className="text-2xl font-black text-foreground">{completionRate}%</span>
+              <span className="text-[10px] text-muted-foreground font-medium">Hoàn thành</span>
+            </div>
+          </div>
+          <div className="text-xs font-semibold text-muted-foreground">
+            Đã hoàn thành <span className="text-emerald-500 font-bold">{done}</span> trên tổng số <span className="text-foreground font-bold">{totalTasksCount}</span> công việc
+          </div>
+        </PageCard>
+
+        {/* Status Distribution Chart Card */}
+        <PageCard className="p-6 col-span-1 lg:col-span-2 flex flex-col md:flex-row items-center gap-8 bg-gradient-to-br from-card to-card/50">
+          <div className="absolute top-3 left-4 flex items-center gap-1.5 text-xs text-muted-foreground font-semibold">
+            <BarChart3 className="size-3.5 text-blue-500" />
+            Trạng thái công việc (Task Status)
+          </div>
+
+          {/* Donut Chart SVG */}
+          <div className="relative flex items-center justify-center size-36 mt-4 md:mt-0 shrink-0">
+            {totalTasksCount === 0 ? (
+              <div className="flex flex-col items-center justify-center text-center">
+                <svg className="size-32">
+                  <circle cx="64" cy="64" r="50" className="stroke-muted/20" strokeWidth="12" fill="transparent" />
+                </svg>
+                <div className="absolute text-[10px] text-muted-foreground font-medium">Không có dữ liệu</div>
+              </div>
+            ) : (
+              <>
+                <svg className="size-32 transform -rotate-90">
+                  {segments.map((seg, idx) => {
+                    const segmentPercent = (seg.value / totalTasksCount) * 100
+                    const accumulatedOffset = - (currentAccumulated / 100) * circumference
+                    currentAccumulated += segmentPercent
+                    return (
+                      <circle
+                        key={idx}
+                        cx="64"
+                        cy="64"
+                        r={radius}
+                        className={`${seg.color} transition-all duration-300 hover:opacity-85`}
+                        strokeWidth={strokeWidth}
+                        fill="transparent"
+                        strokeDasharray={`${(segmentPercent / 100) * circumference} ${circumference}`}
+                        strokeDashoffset={accumulatedOffset}
+                      />
+                    )
+                  })}
+                </svg>
+                <div className="absolute flex flex-col items-center justify-center">
+                  <span className="text-2xl font-black text-foreground">{totalTasksCount}</span>
+                  <span className="text-[10px] text-muted-foreground font-medium">Công việc</span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Legend Grid */}
+          <div className="w-full grid grid-cols-2 gap-3 mt-4 md:mt-0">
+            {segments.length === 0 ? (
+              <div className="col-span-2 text-xs text-muted-foreground italic text-center py-4">
+                Chưa có thống kê trạng thái.
+              </div>
+            ) : (
+              segments.map((seg, idx) => {
+                const percent = totalTasksCount > 0 ? Math.round((seg.value / totalTasksCount) * 100) : 0
+                return (
+                  <div key={idx} className="flex items-center justify-between p-2 rounded-xl border border-border/40 bg-muted/10 hover:bg-muted/20 transition-all duration-200">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={`size-2.5 rounded-full ${seg.bg} shrink-0`} />
+                      <span className="text-xs font-semibold text-muted-foreground truncate">{seg.label}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                      <span className="text-xs font-bold text-foreground">{seg.value}</span>
+                      <span className="text-[9px] text-muted-foreground font-medium">({percent}%)</span>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </PageCard>
+      </div>
       {/* Issue Tracking statistics panel */}
       <div className="col-span-12 xl:col-span-7 space-y-6">
         <PageCard className="p-6">

@@ -32,6 +32,7 @@ import shiftChangeRequestRoutes from "@/routes/shift-change-request.route.ts"
 import shiftRoutes from "@/routes/shift.route.ts"
 import spentTimeRoutes from "@/routes/spent-time.route.ts"
 import taskRoutes from "@/routes/task.route.ts"
+import taskEstimateAiRoutes from "@/routes/task-estimate-ai.route.ts"
 import weeklyScheduleTemplateRoutes from "@/routes/weekly-schedule-template.route.ts"
 import {
   assertNoLegacyStaticRoleReferences,
@@ -93,6 +94,7 @@ app.use("/api/payrolls", payrollRoutes)
 // Private routes
 app.use("/api/projects", projectRoutes)
 app.use("/api/tasks", taskRoutes)
+app.use("/api/task-estimate-ai", taskEstimateAiRoutes)
 app.use("/api/permissions", permissionRoutes)
 app.use("/api/roles", roleRoutes)
 app.use("/api/positions", positionRoutes)
