@@ -31,7 +31,7 @@ export const useLogin = () => {
   const onSubmit = async (data: LoginSchemaType) => {
     try {
       await login(data)
-      navigate(ROUTES.PERSONAL.BASE)
+      navigate(ROUTES.ATTENDANCE.MY_SCHEDULE)
     } catch (error) {
       const err = error as {
         response?: { data?: { error?: { message?: string }; message?: string } }

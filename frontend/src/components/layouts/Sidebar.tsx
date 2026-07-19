@@ -100,7 +100,9 @@ export default function Sidebar({ className, isMobile, onNavClick }: SidebarProp
               to={item.path}
               title={effectiveCollapsed ? item.name : undefined}
               onClick={onNavClick}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-full text-sm font-medium transition-all duration-150 ${
+              className={`flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-all duration-150 ${
+                effectiveCollapsed ? "justify-center px-0" : ""
+              } ${
                 isActive
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
@@ -108,7 +110,7 @@ export default function Sidebar({ className, isMobile, onNavClick }: SidebarProp
             >
               <Icon size={18} strokeWidth={isActive ? 2 : 1.5} className="shrink-0" />
               {!effectiveCollapsed && (
-                <span className="truncate transition-opacity duration-200">{item.name}</span>
+                <span className="min-w-0 flex-1 truncate transition-opacity duration-200">{item.name}</span>
               )}
             </Link>
           )

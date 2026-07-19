@@ -22,6 +22,8 @@ import {
 import { IAuthRepository } from "@/types/auth.types.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { HashUtil } from "@/utils/hash.util.ts"
+import { EmailUtil } from "@/utils/email.util.ts"
+import { ENVIRONMENT, ENV_ENVIRONMENT } from "@/configs/system/server.config.ts"
 
 import { auditService } from "./audit.service.ts"
 import { authorizationService } from "./authorization.service.ts"
@@ -152,12 +154,28 @@ export class EmployeeService implements IEmployeeService {
 
     try {
       // Coerce legacy employeeType=part_time into workScheduleType before persisting.
-      return await this.repository.createEmployee({
+      const created = await this.repository.createEmployee({
         ...normalizeScheduleFields(repoData),
         position: positionName,
         passwordHash,
         roleId: initialRole.id,
       })
+
+      // Send email containing credentials
+      try {
+        await EmailUtil.sendNewEmployeeCredentialsEmail(
+          created.email,
+          created.username,
+          data.password,
+        )
+      } catch (emailError) {
+        console.error("Failed to send credentials email to new employee:", emailError)
+        if (ENV_ENVIRONMENT !== ENVIRONMENT.PRODUCTION) {
+          throw emailError
+        }
+      }
+
+      return created
     } catch (error: unknown) {
       if (
         error &&

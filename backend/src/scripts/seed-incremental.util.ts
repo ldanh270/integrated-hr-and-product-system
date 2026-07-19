@@ -82,6 +82,10 @@ async function shouldSkipSeederInternal(name: string): Promise<boolean> {
       count = await prisma.spentTime.count()
       return count > 0
 
+    case "Recruitment":
+      count = await prisma.recruitmentApplication.count()
+      return count > 0
+
     default:
       return false
   }
@@ -128,6 +132,7 @@ export async function runIncrementalSeed(): Promise<void> {
     projects: await prisma.project.count(),
     tasks: await prisma.task.count(),
     spentTimes: await prisma.spentTime.count(),
+    recruitmentApplications: await prisma.recruitmentApplication.count(),
   }
 
   console.log("\nIncremental seed complete:", summary)

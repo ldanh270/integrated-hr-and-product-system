@@ -4,6 +4,7 @@ import { prisma } from '@/libs/database.ts';
 import { authorizationService } from '../../services/authorization.service';
 import { auditService } from '../../services/audit.service';
 import { HashUtil } from '@/utils/hash.util.ts';
+import { EmailUtil } from '@/utils/email.util.ts';
 import { IEmployeeRepository } from '@/types';
 
 const prismaMock = prisma as any;
@@ -115,6 +116,12 @@ jest.mock('@/utils/hash.util.ts', () => ({
   }
 }));
 
+jest.mock('@/utils/email.util.ts', () => ({
+  EmailUtil: {
+    sendNewEmployeeCredentialsEmail: jest.fn().mockResolvedValue({ id: 'mocked-email-id' })
+  }
+}));
+
 describe('EmployeeService', () => {
   let service: EmployeeService;
   let mockRepo: any;
@@ -185,7 +192,7 @@ describe('EmployeeService', () => {
   describe('createEmployee', () => {
     it('UTCID01 - creates employee with hashed password', async () => {
       prismaMock.appRole.findFirst.mockResolvedValue({ id: 'role-1' });
-      mockRepo.createEmployee.mockResolvedValue({ id: 'emp-1', email: 'e@e.com', deletedAt: null });
+      mockRepo.createEmployee.mockResolvedValue({ id: 'emp-1', email: 'e@e.com', username: 'e_user', deletedAt: null });
 
       const res = await service.createEmployee({
         email: 'e@e.com',
@@ -195,7 +202,7 @@ describe('EmployeeService', () => {
         role: 'admin'
       });
 
-      expect(res).toEqual({ id: 'emp-1', email: 'e@e.com', deletedAt: null });
+      expect(res).toEqual({ id: 'emp-1', email: 'e@e.com', username: 'e_user', deletedAt: null });
       expect(HashUtil.hash).toHaveBeenCalledWith('plain-password');
       expect(mockRepo.createEmployee).toHaveBeenCalledWith({
         email: 'e@e.com',
@@ -204,6 +211,11 @@ describe('EmployeeService', () => {
         passwordHash: 'mocked-hash',
         roleId: 'role-1'
       });
+      expect(EmailUtil.sendNewEmployeeCredentialsEmail).toHaveBeenCalledWith(
+        'e@e.com',
+        'e_user',
+        'plain-password'
+      );
     });
 
     it('UTCID02 - throws BAD_REQUEST when password is empty', async () => {

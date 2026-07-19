@@ -140,11 +140,11 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     } = query
 
     const skip = (page - 1) * limit
-    const where: Prisma.EmployeeWhereInput = { deletedAt: null }
+    const statsWhere: Prisma.EmployeeWhereInput = { deletedAt: null }
 
     // Apply role filter if provided
     if (roleId) {
-      where.employeeRoles = {
+      statsWhere.employeeRoles = {
         some: {
           roleId,
         },
@@ -153,19 +153,27 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
 
     // Apply text search on full name, email, or username (case-insensitive)
     if (search) {
-      where.OR = [
+      statsWhere.OR = [
         { fullName: { contains: search, mode: "insensitive" } },
         { email: { contains: search, mode: "insensitive" } },
         { username: { contains: search, mode: "insensitive" } },
       ]
     }
 
-    // Apply status filter, default to excluding terminated employees
+    // Apply status filter if it is a dropdown filter (active, inactive, on_leave)
+    // If it is 'locked' or 'terminated', it is a tab filter, so do not apply to statsWhere
+    const isDropdownStatus = status && status !== "locked" && status !== EMPLOYEE_STATUS.TERMINATED
+    if (isDropdownStatus) {
+      statsWhere.status = status as EmployeeStatus
+    }
+
+    const where: Prisma.EmployeeWhereInput = { ...statsWhere }
+
+    // Apply status filter, default to excluding terminated employees for the list query where
     if (status === "locked") {
       const now = new Date()
-      where.OR = [
-        { lockedUntil: { gt: now } },
-        { failedLoginCount: { gte: 5 } },
+      where.AND = [
+        { OR: [{ lockedUntil: { gt: now } }, { failedLoginCount: { gte: 5 } }] },
       ]
     } else if (status) {
       where.status = status as EmployeeStatus
@@ -173,15 +181,27 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
       where.status = { not: EMPLOYEE_STATUS.TERMINATED }
     }
 
-    // Apply optional field filters
+    // Apply optional type/schedule filters to the query 'where' only, not statsWhere
     if (employeeType) where.employeeType = employeeType
     if (workSchedule) where.workScheduleType = workSchedule // part-time tab filter
 
     // Define ordering criteria dynamically
     const orderBy = buildEmployeeOrderBy(sortBy, sortOrder)
 
+    const now = new Date()
+
     // Perform concurrent data fetching and count query
-    const [data, total] = await Promise.all([
+    const [
+      data,
+      total,
+      fullTimeCount,
+      partTimeCount,
+      internCount,
+      contractorCount,
+      lockedCount,
+      terminatedCount,
+      totalCount,
+    ] = await Promise.all([
       this.prisma.employee.findMany({
         where,
         orderBy,
@@ -207,16 +227,40 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
         take: Number(limit),
       }),
       this.prisma.employee.count({ where }),
+      this.prisma.employee.count({ where: { ...statsWhere, status: { not: EMPLOYEE_STATUS.TERMINATED }, employeeType: "full_time" } }),
+      this.prisma.employee.count({ where: { ...statsWhere, status: { not: EMPLOYEE_STATUS.TERMINATED }, employeeType: "part_time" } }),
+      this.prisma.employee.count({ where: { ...statsWhere, status: { not: EMPLOYEE_STATUS.TERMINATED }, employeeType: "intern" } }),
+      this.prisma.employee.count({ where: { ...statsWhere, status: { not: EMPLOYEE_STATUS.TERMINATED }, employeeType: "contractor" } }),
+      this.prisma.employee.count({
+        where: {
+          ...statsWhere,
+          status: { not: EMPLOYEE_STATUS.TERMINATED },
+          AND: [{ OR: [{ lockedUntil: { gt: now } }, { failedLoginCount: { gte: 5 } }] }],
+        },
+      }),
+      this.prisma.employee.count({ where: { ...statsWhere, status: EMPLOYEE_STATUS.TERMINATED } }),
+      this.prisma.employee.count({ where: { ...statsWhere, status: { not: EMPLOYEE_STATUS.TERMINATED } } }),
     ])
 
+    const stats = {
+      total: totalCount,
+      full_time: fullTimeCount,
+      part_time: partTimeCount,
+      intern: internCount,
+      contractor: contractorCount,
+      locked: lockedCount,
+      terminated: terminatedCount,
+    }
+
     return {
-      data: data.map((employee) => this.mapToDomain(employee)),
+      data: data.map((employee) => this.mapToDomain(employee as any)),
       meta: {
         total,
         page,
         limit,
         totalPages: Math.ceil(total / limit),
       },
+      stats,
     }
   }
 

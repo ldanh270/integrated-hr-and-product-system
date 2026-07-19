@@ -153,6 +153,15 @@ export interface PaginatedEmployeesDto {
     limit: number
     totalPages: number
   }
+  stats: {
+    total: number
+    full_time: number
+    part_time: number
+    intern: number
+    contractor: number
+    locked: number
+    terminated: number
+  }
 }
 
 /**

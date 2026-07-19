@@ -19,7 +19,7 @@ export function DataTableToolbar({
   actions,
 }: DataTableToolbarProps) {
   return (
-    <div className="p-4 flex items-center justify-between gap-4 border-b border-border bg-muted/20">
+    <div className="p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-border bg-muted/20">
       <div className="flex items-center gap-3 flex-1">
         {onSearchChange && (
           <div className="relative w-full max-w-sm">
@@ -28,12 +28,13 @@ export function DataTableToolbar({
               placeholder={searchPlaceholder}
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-9 h-9 bg-background shadow-none"
+              className="pl-9 h-9 bg-background shadow-none rounded-full"
             />
           </div>
         )}
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">{actions}</div>}
     </div>
   )
 }
+

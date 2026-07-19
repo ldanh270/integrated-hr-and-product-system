@@ -160,7 +160,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                     <select
                       key={roleSeedKey}
                       id="role-select"
-                      className="flex h-10 w-full rounded-full border border-input bg-background px-4 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      className="flex h-12 w-full rounded-full border border-input bg-background px-6 py-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                       defaultValue={employeeRoles?.[0]?.id || ""}
                       onChange={(e) => { handleRoleSelectionChange([e.target.value]); }}
                     >
@@ -269,7 +269,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                     <select
                       id="positionId"
                       {...register("positionId")}
-                      className="flex h-10 w-full rounded-full border border-input bg-background px-4 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      className="flex h-12 w-full rounded-full border border-input bg-background px-6 py-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     >
                       <option value="">-- Chọn chức danh --</option>
                       {positions.map((pos: { id: string; name: string }) => (
@@ -290,7 +290,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                     <select
                       id="employeeType"
                       {...register("employeeType")}
-                      className="flex h-10 w-full rounded-full border border-input bg-background px-4 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      className="flex h-12 w-full rounded-full border border-input bg-background px-6 py-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     >
                       {EMPLOYMENT_CATEGORY_TYPES.map((typeKey) => (
                         <option key={typeKey} value={typeKey}>
@@ -309,7 +309,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                     <select
                       id="status"
                       {...register("status")}
-                      className="flex h-10 w-full rounded-full border border-input bg-background px-4 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      className="flex h-12 w-full rounded-full border border-input bg-background px-6 py-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     >
                       {EMPLOYEE_STATUSES.map((statusKey) => (
                         <option key={statusKey} value={statusKey}>
@@ -326,7 +326,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                     <select
                       id="workScheduleType"
                       {...register("workScheduleType")}
-                      className="flex h-10 w-full rounded-full border border-input bg-background px-4 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      className="flex h-12 w-full rounded-full border border-input bg-background px-6 py-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     >
                       {WORK_SCHEDULE_TYPES.map((typeKey) => (
                         <option key={typeKey} value={typeKey}>

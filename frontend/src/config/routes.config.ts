@@ -8,6 +8,10 @@ export const ROUTES = {
     BASE: "/hrm",
     PROFILE: "/hrm/profile",
     EMPLOYEES: "/hrm/employees",
+    CREATE_EMPLOYEE: "/hrm/employees/create",
+    CONTRACTS: "/hrm/contracts",
+    CREATE_CONTRACT: "/hrm/contracts/create",
+    INSURANCE: "/hrm/insurance",
     MY_ACTIVITY_LOGS: "/hrm/my-activity-logs",
     LOGIN_HISTORY: "/hrm/login-history",
     DASHBOARD: "/hrm/dashboard",
@@ -17,6 +21,7 @@ export const ROUTES = {
     BASE: "/application",
     ALL: "/application/all",
     MANAGE: "/application/manage",
+    MY_APPLICATIONS: "/application/my-applications",
     CREATE: "/application/create/:type",
   },
   ATTENDANCE: {
@@ -24,6 +29,7 @@ export const ROUTES = {
     DASHBOARD: "/attendance/dashboard",
     SUMMARY: "/attendance/summary",
     MY_SCHEDULE: "/attendance/my-schedule",
+    MY_AVAILABILITY: "/attendance/my-availability",
     WORK_SCHEDULES: "/attendance/work-schedules",
     /** Admin shift assignment from PT employee availability submissions. */
     PART_TIME_AVAILABILITY: "/attendance/part-time-availability",
@@ -47,6 +53,21 @@ export const ROUTES = {
   RECRUITMENT: {
     BASE: "/recruitment",
     DASHBOARD: "/recruitment/dashboard",
+    REQUISITIONS: "/recruitment/requisitions",
+    REQUISITION_DETAIL: "/recruitment/requisitions/:id",
+    JOB_DESCRIPTIONS: "/recruitment/job-descriptions",
+    JOB_POSTINGS: "/recruitment/job-postings",
+    OAUTH_ACCOUNTS: "/recruitment/oauth-accounts",
+    APPLICANT_INTAKE: "/recruitment/applicant-intake",
+    CANDIDATES: "/recruitment/candidates",
+    CANDIDATE_DETAIL: "/recruitment/candidates/:id",
+    APPLICATIONS: "/recruitment/applications",
+    APPLICATION_DETAIL: "/recruitment/applications/:id",
+    KANBAN: "/recruitment/kanban",
+    INTERVIEWS: "/recruitment/interviews",
+    OFFERS: "/recruitment/offers",
+    OFFER_DETAIL: "/recruitment/offers/:id",
+    BACKGROUND_CHECKS: "/recruitment/background-checks",
   },
   SETTINGS: {
     BASE: "/settings",
@@ -57,8 +78,7 @@ export const ROUTES = {
   PROJECT: {
     BASE: "/project",
     LIST: "/project/list",
-    /** Cross-project weekly Capacity Copilot board for Admin/PM staffing decisions. */
-    CAPACITY_BOARD: "/project/capacity-board",
+    MY_PROJECTS: "/project/my-projects",
     POSITIONS: "/project/positions",
     DASHBOARD: "/project/dashboard",
     OVERVIEW: "/project/overview",
@@ -70,12 +90,12 @@ export const ROUTES = {
     TASK_DETAIL_WITH_ID: "/project/task/:id",
   },
   PERSONAL: {
-    BASE: "/personal",
-    SCHEDULE: "/personal/schedule",
+    BASE: "/attendance/my-schedule",
+    SCHEDULE: "/attendance/my-schedule",
     /** Part-time employees submit weekly free-time windows here. */
-    AVAILABILITY: "/personal/availability",
-    PAYSLIPS: "/personal/payslips",
-    PROJECTS: "/personal/projects",
-    APPLICATIONS: "/personal/applications",
+    AVAILABILITY: "/attendance/my-availability",
+    PAYSLIPS: "/payroll/my-payslips",
+    PROJECTS: "/project/my-projects",
+    APPLICATIONS: "/application/my-applications",
   },
 } as const
