@@ -14,6 +14,7 @@ import customQueryRoutes from "@/routes/custom-query.route.ts"
 import debugRoutes from "@/routes/debug.route.ts"
 import employeeSalaryConfigRoutes from "@/routes/employee-salary-config.route.ts"
 import employeeRoutes from "@/routes/employee.route.ts"
+import employeeContractRoutes from "@/routes/employee-contract.route.ts"
 import holidayRoutes from "@/routes/holiday.route.ts"
 import partTimeAvailabilityRoutes from "@/routes/part-time-availability.route.ts"
 import payrollRoutes from "@/routes/payroll.route.ts"
@@ -68,6 +69,7 @@ app.get("/", async (req, res) =>
 app.use("/api/auth", authRoutes)
 app.use("/api/security", securityRoutes)
 app.use("/api/employees", employeeRoutes)
+app.use("/api/employee-contracts", employeeContractRoutes)
 app.use("/api/profile", profileRoutes)
 
 // Attendance & Scheduling routes

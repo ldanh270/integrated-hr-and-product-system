@@ -181,6 +181,70 @@ enum ActivityAction {
   account_unlocked
 }
 
+// ─── Employee HRM Enums ───────────────────────────────────────────────────────
+
+enum ContractType {
+  trial
+  definite
+  indefinite
+  service
+}
+
+enum ContractStatus {
+  draft
+  pending_signature
+  active
+  expired
+  terminated
+  renewed
+}
+
+// ── Employee Contract ─────────────────────────────────────────────────────────
+model EmployeeContract {
+  id              String         @id @default(cuid())
+  employeeId      String
+  employee        Employee       @relation("EmployeeContracts", fields: [employeeId], references: [id], onDelete: Cascade)
+
+  contractType   ContractType
+  contractNumber String         @unique
+  title          String?
+
+  signedDate     DateTime?      @db.Date
+  startDate      DateTime       @db.Date
+  endDate        DateTime?      @db.Date
+  trialEndDate   DateTime?      @db.Date
+
+  salary         Decimal        @db.Decimal(15, 2)
+  currency       String         @default("VND")
+
+  allowances     Json?
+  attachments    String[]
+
+  status         ContractStatus @default(draft)
+  terminationReason String?
+  terminationDate   DateTime?
+
+  probationSalary  Decimal?     @db.Decimal(15, 2)
+  probationSalaryRate Decimal?  @db.Decimal(5, 2)
+
+  createdById    String
+  createdBy      Employee       @relation("ContractCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedById    String?
+  updatedBy      Employee?      @relation("ContractUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+  note           String?
+
+  renewedFromId  String?
+  renewedFrom    EmployeeContract? @relation("ContractRenewal", fields: [renewedFromId], references: [id], onDelete: SetNull)
+  renewedTo      EmployeeContract[] @relation("ContractRenewal")
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([employeeId])
+  @@index([status, endDate])
+  @@index([contractNumber])
+}
+
 // ─── Models ──────────────────────────────────────────────────────────────────
 
 // ── Employee ──
@@ -261,6 +325,9 @@ model Employee {
   partTimeAvailabilitiesReviewed   PartTimeWeeklyAvailability[] @relation("PartTimeAvailabilityReviewer")
   leaveBalances                    EmployeeLeaveBalance[]
   regimeCategoriesCreated          RegimeCategory[]
+  contracts                       EmployeeContract[] @relation("EmployeeContracts")
+  contractsCreated              EmployeeContract[] @relation("ContractCreator")
+  contractsUpdated             EmployeeContract[] @relation("ContractUpdater")
 
   @@index([status, employeeType])
   @@index([deletedAt])
