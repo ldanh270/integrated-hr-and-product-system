@@ -9,7 +9,7 @@ async function runDiagnostics() {
   const baseURL = process.env.AI_BASE_URL || "https://openrouter.ai/api/v1"
   const model = process.env.AI_MODEL || "google/gemini-2.5-flash"
 
-  console.log(`AI_API_KEY:          ${process.env.AI_API_KEY ? "CONFIGURED (starts with " + process.env.AI_API_KEY.slice(0, 8) + ")" : "NOT SET"}`)
+  console.log(`AI_API_KEY:          ${process.env.AI_API_KEY ? "CONFIGURED" : "NOT SET"}`)
   console.log(`AI_BASE_URL:         ${process.env.AI_BASE_URL || "NOT SET"}`)
   console.log(`AI_MODEL:            ${process.env.AI_MODEL || "NOT SET"}`)
   console.log("--------------------------------------------------")
@@ -17,7 +17,7 @@ async function runDiagnostics() {
   console.log("--------------------------------------------------")
   console.log("               RESOLVED AI CONFIG                 ")
   console.log("--------------------------------------------------")
-  console.log(`API KEY:             ${apiKey ? apiKey.slice(0, 8) + "..." : "NOT SET"}`)
+  console.log(`API KEY:             ${apiKey ? "CONFIGURED" : "NOT SET"}`)
   console.log(`BASE URL:            ${baseURL}`)
   console.log(`MODEL:               ${model}`)
   console.log("==================================================")
