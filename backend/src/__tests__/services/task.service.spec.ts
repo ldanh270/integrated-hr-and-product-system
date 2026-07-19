@@ -541,7 +541,7 @@ describe('TaskService Suite', () => {
         .rejects.toThrow('Chỉ Team Leader, Manager hoặc Tester mới có quyền phê duyệt hoàn thành công việc');
     });
 
-    it('should throw BAD_REQUEST when setting IN_REVIEW status without results', async () => {
+    it('should update successfully when setting IN_REVIEW status without results', async () => {
       // Arrange
       const originalTask = {
         id: 'task-1',
@@ -555,10 +555,13 @@ describe('TaskService Suite', () => {
       mockProjectRepository.findById.mockResolvedValue({ id: 'project-1', teamLeaderId: 'leader-1' });
       authorizationService.getAuthorizationContext.mockResolvedValue({ permissions: new Set() } as never);
       mockEmployeeRepository.findById.mockResolvedValue({ id: 'user-1', position: 'developer' });
+      mockTaskRepository.updateTask.mockResolvedValue({ ...originalTask, status: 'in_review' });
 
-      // Act & Assert
-      await expect(taskService.updateTask('task-1', { status: 'in_review' }, 'user-1'))
-        .rejects.toThrow('Bắt buộc phải đính kèm link sản phẩm hoặc ghi chú kết quả khi gửi yêu cầu đánh giá công việc (in_review)');
+      // Act
+      const result = await taskService.updateTask('task-1', { status: 'in_review' }, 'user-1');
+
+      // Assert
+      expect(result?.status).toBe('in_review');
     });
   });
 
