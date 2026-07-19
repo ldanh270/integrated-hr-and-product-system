@@ -4,48 +4,57 @@ async function runDiagnostics() {
   console.log("==================================================")
   console.log("           AI CONFIGURATION DIAGNOSTICS           ")
   console.log("==================================================")
-  console.log(
-    `TEST_GEN_API_KEY:  ${process.env.TEST_GEN_API_KEY ? "CONFIGURED (starts with " + process.env.TEST_GEN_API_KEY.slice(0, 5) + ")" : "NOT SET (will use default)"}`,
-  )
-  console.log(
-    `TEST_GEN_BASE_URL: ${process.env.TEST_GEN_BASE_URL || "NOT SET (will use http://localhost:20128/v1)"}`,
-  )
-  console.log(`TEST_GEN_MODEL:    ${process.env.TEST_GEN_MODEL || "NOT SET (will use anti)"}`)
-  console.log(
-    `GEMINI_API_KEY:    ${process.env.GEMINI_API_KEY ? "CONFIGURED" : "NOT SET (will use hardcoded default)"}`,
-  )
-  console.log("--------------------------------------------------")
 
-  const testUrl = `${process.env.TEST_GEN_BASE_URL || "http://localhost:20128/v1"}/chat/completions`
-  console.log(`1. Testing connection to Local AI Server (${testUrl})...`)
+  const apiKey = process.env.AI_API_KEY || ""
+  const baseURL = process.env.AI_BASE_URL || "https://openrouter.ai/api/v1"
+  const model = process.env.AI_MODEL || "google/gemini-2.5-flash"
+
+  console.log(`AI_API_KEY:          ${process.env.AI_API_KEY ? "CONFIGURED (starts with " + process.env.AI_API_KEY.slice(0, 8) + ")" : "NOT SET"}`)
+  console.log(`AI_BASE_URL:         ${process.env.AI_BASE_URL || "NOT SET"}`)
+  console.log(`AI_MODEL:            ${process.env.AI_MODEL || "NOT SET"}`)
+  console.log("--------------------------------------------------")
+  console.log(`GEMINI_API_KEY:      ${process.env.GEMINI_API_KEY ? "CONFIGURED" : "NOT SET"}`)
+  console.log("--------------------------------------------------")
+  console.log("               RESOLVED AI CONFIG                 ")
+  console.log("--------------------------------------------------")
+  console.log(`API KEY:             ${apiKey ? apiKey.slice(0, 8) + "..." : "NOT SET"}`)
+  console.log(`BASE URL:            ${baseURL}`)
+  console.log(`MODEL:               ${model}`)
+  console.log("==================================================")
+
+  const testUrl = `${baseURL}/chat/completions`
+  console.log(`1. Testing connection to Resolved AI Server (${testUrl})...`)
 
   try {
     const testResponse = await fetch(testUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.TEST_GEN_API_KEY || "sk-699f7164d83e9af9-isjba0-8d59f1a0"}`,
+        Authorization: `Bearer ${apiKey}`,
+        "HTTP-Referer": process.env.SERVER_URL || "http://localhost:5000",
+        "X-Title": "Integrated HR and Product System (Diagnostics)",
       },
       body: JSON.stringify({
-        model: process.env.TEST_GEN_MODEL || "anti",
+        model: model,
         messages: [{ role: "user", content: "hi" }],
         max_tokens: 5,
       }),
     })
 
     if (testResponse.ok) {
-      console.log("✅ Success! Local AI Server is ONLINE and responded correctly.")
-      const data = await testResponse.json()
+      console.log("✅ Success! Resolved AI Server is ONLINE and responded correctly.")
+      const data = (await testResponse.json()) as Record<string, unknown>
       console.log("Response snippet:", JSON.stringify(data))
     } else {
       const errBody = await testResponse.text()
-      console.log(`❌ Failed! Local AI Server responded with HTTP status ${testResponse.status}`)
+      console.log(`❌ Failed! Resolved AI Server responded with HTTP status ${testResponse.status}`)
       console.log("Error details from server:", errBody)
     }
-  } catch (err: any) {
-    console.log(`❌ Failed to connect to Local AI Server. Reason: ${err.message}`)
+  } catch (err) {
+    const error = err as Error
+    console.log(`❌ Failed to connect to Resolved AI Server. Reason: ${error.message}`)
     console.log(
-      "👉 Tip: Đảm bảo phần mềm AI cục bộ (LM Studio, Ollama, v.v.) đang CHẠY và lắng nghe đúng cổng cấu hình.",
+      "👉 Tip: Đảm bảo cấu hình trong file .env chính xác, hoặc nếu dùng AI cục bộ, hãy khởi chạy server.",
     )
   }
 
@@ -73,10 +82,11 @@ async function runDiagnostics() {
         )
       }
     }
-  } catch (err: any) {
-    console.log(`❌ Failed to connect to Google Gemini API. Reason: ${err.message}`)
+  } catch (err) {
+    const error = err as Error
+    console.log(`❌ Failed to connect to Google Gemini API. Reason: ${error.message}`)
   }
   console.log("==================================================")
 }
 
-runDiagnostics()
+void runDiagnostics()

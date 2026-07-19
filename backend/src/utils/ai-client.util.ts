@@ -12,7 +12,16 @@ async function callGeminiFallback(prompt: string, isJson: boolean): Promise<stri
   console.log("Fallback triggered: Calling Google Gemini API...")
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`
 
-  const body: any = {
+  interface GeminiRequestBody {
+    contents: Array<{
+      parts: Array<{ text: string }>
+    }>
+    generationConfig?: {
+      responseMimeType: string
+    }
+  }
+
+  const body: GeminiRequestBody = {
     contents: [
       {
         parts: [{ text: prompt }],
@@ -28,7 +37,7 @@ async function callGeminiFallback(prompt: string, isJson: boolean): Promise<stri
 
   // 30 seconds timeout for fallback Gemini request
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 30000)
+  const timeoutId = setTimeout(() => { controller.abort() }, 30000)
 
   try {
     const response = await fetch(url, {
@@ -46,19 +55,32 @@ async function callGeminiFallback(prompt: string, isJson: boolean): Promise<stri
       throw new Error(`Gemini API error! Status: ${response.status}`)
     }
 
-    const data = (await response.json()) as any
+    interface GeminiResponse {
+      candidates: Array<{
+        content: {
+          parts: Array<{ text: string }>
+        }
+      }>
+    }
+
+    const data = (await response.json()) as GeminiResponse
     return data.candidates[0].content.parts[0].text.trim()
-  } catch (err: any) {
+  } catch (err) {
     clearTimeout(timeoutId)
     throw err
   }
 }
 
+function getAiConfig() {
+  const apiKey = process.env.AI_API_KEY || ""
+  const baseURL = process.env.AI_BASE_URL || "https://openrouter.ai/api/v1"
+  const model = process.env.AI_MODEL || "google/gemini-2.5-flash"
+  return { apiKey, baseURL, model }
+}
+
 export const aiClient = {
   generateJson: async <T>(prompt: string, systemPrompt?: string): Promise<T> => {
-    const apiKey = process.env.TEST_GEN_API_KEY || "sk-699f7164d83e9af9-isjba0-8d59f1a0"
-    const baseURL = process.env.TEST_GEN_BASE_URL || "http://localhost:20128/v1"
-    const model = process.env.TEST_GEN_MODEL || "anti"
+    const { apiKey, baseURL, model } = getAiConfig()
 
     const messages: AiMessage[] = []
     if (systemPrompt) {
@@ -70,15 +92,17 @@ export const aiClient = {
 
     // Set 35 seconds timeout for local AI server request
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 35000)
+    const timeoutId = setTimeout(() => { controller.abort() }, 35000)
 
     try {
-      console.log(`Calling local AI server at ${baseURL}...`)
+      console.log(`Calling AI server at ${baseURL} using model ${model}...`)
       const response = await fetch(`${baseURL}/chat/completions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${apiKey}`,
+          "HTTP-Referer": process.env.SERVER_URL || "http://localhost:5000",
+          "X-Title": "Integrated HR and Product System",
         },
         body: JSON.stringify({
           model,
@@ -96,15 +120,25 @@ export const aiClient = {
         throw new Error(`HTTP error! Status: ${response.status}. Details: ${body}`)
       }
 
-      const resData = (await response.json()) as any
+      interface ChatCompletionResponse {
+        choices: Array<{
+          message: {
+            content: string
+          }
+        }>
+      }
+
+      const resData = (await response.json()) as ChatCompletionResponse
       responseText = resData.choices[0].message.content.trim()
-    } catch (err: any) {
+    } catch (err) {
       clearTimeout(timeoutId)
-      console.warn("Local AI JSON call failed, trying fallback to Google Gemini...", err.message)
+      const error = err as Error
+      console.warn("AI JSON call failed, trying fallback to Google Gemini...", error.message)
       try {
         responseText = await callGeminiFallback(prompt, true)
-      } catch (fallbackErr: any) {
-        console.error("All AI endpoints failed.", fallbackErr.message)
+      } catch (fallbackErr) {
+        const fallbackError = fallbackErr as Error
+        console.error("All AI endpoints failed.", fallbackError.message)
         throw new Error("Không thể kết nối đến cả AI cục bộ và Gemini API.")
       }
     }
@@ -121,9 +155,7 @@ export const aiClient = {
   },
 
   generateText: async (prompt: string, systemPrompt?: string): Promise<string> => {
-    const apiKey = process.env.TEST_GEN_API_KEY || "sk-699f7164d83e9af9-isjba0-8d59f1a0"
-    const baseURL = process.env.TEST_GEN_BASE_URL || "http://localhost:20128/v1"
-    const model = process.env.TEST_GEN_MODEL || "anti"
+    const { apiKey, baseURL, model } = getAiConfig()
 
     const messages: AiMessage[] = []
     if (systemPrompt) {
@@ -135,15 +167,17 @@ export const aiClient = {
 
     // Set 35 seconds timeout for local AI server request
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 35000)
+    const timeoutId = setTimeout(() => { controller.abort() }, 35000)
 
     try {
-      console.log(`Calling local AI server at ${baseURL}...`)
+      console.log(`Calling AI server at ${baseURL} using model ${model}...`)
       const response = await fetch(`${baseURL}/chat/completions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${apiKey}`,
+          "HTTP-Referer": process.env.SERVER_URL || "http://localhost:5000",
+          "X-Title": "Integrated HR and Product System",
         },
         body: JSON.stringify({
           model,
@@ -160,15 +194,25 @@ export const aiClient = {
         throw new Error(`HTTP error! Status: ${response.status}. Details: ${body}`)
       }
 
-      const resData = (await response.json()) as any
+      interface ChatCompletionResponse {
+        choices: Array<{
+          message: {
+            content: string
+          }
+        }>
+      }
+
+      const resData = (await response.json()) as ChatCompletionResponse
       responseText = resData.choices[0].message.content.trim()
-    } catch (err: any) {
+    } catch (err) {
       clearTimeout(timeoutId)
-      console.warn("Local AI text call failed, trying fallback to Google Gemini...", err.message)
+      const error = err as Error
+      console.warn("AI text call failed, trying fallback to Google Gemini...", error.message)
       try {
         responseText = await callGeminiFallback(prompt, false)
-      } catch (fallbackErr: any) {
-        console.error("All AI endpoints failed.", fallbackErr.message)
+      } catch (fallbackErr) {
+        const fallbackError = fallbackErr as Error
+        console.error("All AI endpoints failed.", fallbackError.message)
         throw new Error("Không thể kết nối đến cả AI cục bộ và Gemini API.")
       }
     }
