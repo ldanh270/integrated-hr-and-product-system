@@ -30,11 +30,12 @@ export class TaskEstimateAiController {
         data: suggestions,
         error: null,
       })
-    } catch (err: any) {
-      console.error("Suggestions generation failed:", err)
+    } catch (err) {
+      const error = err as Error
+      console.error("Suggestions generation failed:", error)
       return res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
         data: null,
-        error: { message: err.message || "Lỗi xử lý AI gợi ý", code: ErrorCode.INTERNAL_SERVER_ERROR },
+        error: { message: error.message || "Lỗi xử lý AI gợi ý", code: ErrorCode.INTERNAL_SERVER_ERROR },
       })
     }
   }
@@ -61,11 +62,12 @@ export class TaskEstimateAiController {
         data: generatedTasks,
         error: null,
       })
-    } catch (err: any) {
-      console.error("Tasks generation failed:", err)
+    } catch (err) {
+      const error = err as Error
+      console.error("Tasks generation failed:", error)
       return res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
         data: null,
-        error: { message: err.message || "Lỗi xử lý AI phân rã task", code: ErrorCode.INTERNAL_SERVER_ERROR },
+        error: { message: error.message || "Lỗi xử lý AI phân rã task", code: ErrorCode.INTERNAL_SERVER_ERROR },
       })
     }
   }

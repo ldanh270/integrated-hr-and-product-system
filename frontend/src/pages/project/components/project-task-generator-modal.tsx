@@ -48,7 +48,7 @@ export function ProjectTaskGeneratorModal({
 
   useEffect(() => {
     if (isOpen && projectId) {
-      fetchSuggestions()
+      void fetchSuggestions()
     }
   }, [isOpen, projectId])
 
@@ -62,8 +62,9 @@ export function ProjectTaskGeneratorModal({
         index: idx,
       }))
       setSuggestions(mapped)
-    } catch (err: any) {
-      console.error("Failed to generate project tasks:", err)
+    } catch (err) {
+      const error = err as Error
+      console.error("Failed to generate project tasks:", error)
       toast.error("Không thể sinh công việc tự động. Vui lòng kiểm tra API Key hoặc thử lại sau.")
       onOpenChange(false)
     } finally {
@@ -77,7 +78,7 @@ export function ProjectTaskGeneratorModal({
     )
   }
 
-  const handleFieldChange = (index: number, field: keyof GeneratedTaskSuggestion, value: any) => {
+  const handleFieldChange = (index: number, field: keyof GeneratedTaskSuggestion, value: string | number) => {
     setSuggestions(prev =>
       prev.map(t => t.index === index ? { ...t, [field]: value } : t)
     )
@@ -105,10 +106,11 @@ export function ProjectTaskGeneratorModal({
       }
       
       toast.success(`Đã tạo thành công ${selected.length} công việc mới bằng AI!`)
-      queryClient.invalidateQueries({ queryKey: ["tasks"] })
+      void queryClient.invalidateQueries({ queryKey: ["tasks"] })
       onOpenChange(false)
-    } catch (err: any) {
-      console.error("Failed to create generated tasks:", err)
+    } catch (err) {
+      const error = err as Error
+      console.error("Failed to create generated tasks:", error)
       toast.error("Lỗi khi tạo công việc. Một số công việc có thể chưa được lưu.")
     } finally {
       setCreating(false)
@@ -175,7 +177,9 @@ export function ProjectTaskGeneratorModal({
                   <input
                     type="checkbox"
                     checked={suggestion.checked}
-                    onChange={() => handleToggleCheck(suggestion.index)}
+                    onChange={() => {
+                      handleToggleCheck(suggestion.index)
+                    }}
                     className="mt-1 h-4 w-4 text-purple-600 border-border rounded focus:ring-purple-500"
                   />
 
@@ -184,7 +188,9 @@ export function ProjectTaskGeneratorModal({
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <Input
                         value={suggestion.title}
-                        onChange={(e) => handleFieldChange(suggestion.index, "title", e.target.value)}
+                        onChange={(e) => {
+                          handleFieldChange(suggestion.index, "title", e.target.value)
+                        }}
                         className="font-bold text-foreground bg-transparent border-none focus-visible:ring-1 focus-visible:ring-purple-500 h-8 px-1 text-sm flex-1 mr-4 rounded-lg"
                         disabled={!suggestion.checked}
                       />
@@ -204,7 +210,9 @@ export function ProjectTaskGeneratorModal({
                     {/* Description Area */}
                     <Textarea
                       value={suggestion.description || ""}
-                      onChange={(e) => handleFieldChange(suggestion.index, "description", e.target.value)}
+                      onChange={(e) => {
+                        handleFieldChange(suggestion.index, "description", e.target.value)
+                      }}
                       className="text-xs text-muted-foreground bg-transparent border-none focus-visible:ring-1 focus-visible:ring-purple-500 p-1 resize-none h-16 rounded-lg leading-relaxed"
                       disabled={!suggestion.checked}
                     />
@@ -224,7 +232,9 @@ export function ProjectTaskGeneratorModal({
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
-                onClick={() => onOpenChange(false)}
+                onClick={() => {
+                  onOpenChange(false)
+                }}
                 className="rounded-full"
                 disabled={creating}
               >

@@ -45,7 +45,7 @@ export function TaskAssigneeAiModal({
 
   useEffect(() => {
     if (isOpen && taskId) {
-      fetchSuggestions()
+      void fetchSuggestions()
     }
   }, [isOpen, taskId])
 
@@ -54,8 +54,9 @@ export function TaskAssigneeAiModal({
     try {
       const data = await taskEstimateAiApi.getSuggestions(taskId)
       setSuggestions(data)
-    } catch (err: any) {
-      console.error("Failed to fetch AI suggestions:", err)
+    } catch (err) {
+      const error = err as Error
+      console.error("Failed to fetch AI suggestions:", error)
       toast.error("Không thể tải gợi ý từ AI. Vui lòng thử lại sau.")
     } finally {
       setLoading(false)

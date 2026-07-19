@@ -59,8 +59,9 @@ async function main() {
     const generatedTasks = await service.generateProjectTasks(task.projectId)
     console.log("\nGenerated Tasks Suggestions:")
     console.log(JSON.stringify(generatedTasks, null, 2))
-  } catch (err: any) {
-    console.log(`Error generating project tasks: ${err.message}`)
+  } catch (err) {
+    const error = err as Error
+    console.log(`Error generating project tasks: ${error.message}`)
   }
 }
 
@@ -69,6 +70,6 @@ main()
     console.error("Test failed with error:", e)
     process.exit(1)
   })
-  .finally(async () => {
-    await prisma.$disconnect()
+  .finally(() => {
+    void prisma.$disconnect()
   })

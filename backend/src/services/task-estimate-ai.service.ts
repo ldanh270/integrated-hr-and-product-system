@@ -59,8 +59,16 @@ export class TaskEstimateAiService {
       return []
     }
 
-     const suggestions: TaskEstimateAiSuggestion[] = []
-    const geminiCandidatesContext: any[] = []
+    interface GeminiCandidateContext {
+      employeeId: string
+      fullName: string
+      position: string
+      completedTaskTitles: string[]
+      personalVelocity: string
+    }
+
+    const suggestions: TaskEstimateAiSuggestion[] = []
+    const geminiCandidatesContext: GeminiCandidateContext[] = []
     const velocities = new Map<string, number>()
 
     // 3. Process each member to compute local scores (Workload & Availability)
