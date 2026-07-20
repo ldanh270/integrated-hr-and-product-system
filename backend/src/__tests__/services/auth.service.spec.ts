@@ -1,3 +1,4 @@
+import { EMPLOYEE_STATUS } from '@/configs/entities/employee.config';
 /// <reference types="jest" />
 import { AuthService } from '../../services/auth.service';
 import { getPersonalEmployeeLink } from '@/utils/attendance/resolve-personal-employee-id.ts';
@@ -32,9 +33,9 @@ jest.mock('@/configs/auth/auth.config.ts', () => ({
 
 jest.mock('@/configs/entities/employee.config.ts', () => ({
   EMPLOYEE_STATUS: {
-    ACTIVE: 'ACTIVE',
+    ACTIVE: EMPLOYEE_STATUS.ACTIVE,
     TERMINATED: 'TERMINATED',
-    INACTIVE: 'INACTIVE',
+    INACTIVE: EMPLOYEE_STATUS.INACTIVE,
   },
 }));
 
@@ -149,7 +150,7 @@ describe('AuthService', () => {
       getActivityLogById: jest.fn(),
       getActivityLogByIdForEmployee: jest.fn(),
       getLockedEmployees: jest.fn(),
-      countActivityLogsToday: jest.fn(),
+      countActivityLogs: jest.fn(),
       getRecentLogsByCategory: jest.fn(),
       unlockEmployee: jest.fn(),
       invalidateAllPendingRequests: jest.fn(),
@@ -166,7 +167,7 @@ describe('AuthService', () => {
         email: 'test@example.com',
         fullName: 'Test User',
         passwordHash: 'hashed-password',
-        status: 'ACTIVE',
+        status: EMPLOYEE_STATUS.ACTIVE,
         lockedUntil: null,
         failedLoginCount: 0,
       };
@@ -220,7 +221,7 @@ describe('AuthService', () => {
       const mockEmployee = {
         id: 'emp-123',
         username: 'testuser',
-        status: 'ACTIVE',
+        status: EMPLOYEE_STATUS.ACTIVE,
         lockedUntil: futureDate,
       };
       mockRepo.findAuthByIdentifier.mockResolvedValue(mockEmployee);
@@ -238,7 +239,7 @@ describe('AuthService', () => {
         email: 'test@example.com',
         fullName: 'Test User',
         passwordHash: 'hashed-password',
-        status: 'ACTIVE',
+        status: EMPLOYEE_STATUS.ACTIVE,
         lockedUntil: null,
         failedLoginCount: 0,
       };
@@ -266,7 +267,7 @@ describe('AuthService', () => {
       const mockEmployee = {
         id: 'emp-123',
         username: 'testuser',
-        status: 'ACTIVE',
+        status: EMPLOYEE_STATUS.ACTIVE,
       };
       const mockLink = { personalEmployeeId: 'pe-123', personalEmployee: {} };
       const mockAuthContext = { roles: new Set(['USER']), permissions: new Set(['READ']) };
@@ -333,7 +334,7 @@ describe('AuthService', () => {
       const mockEmployee = {
         id: 'emp-123',
         username: 'testuser',
-        status: 'ACTIVE',
+        status: EMPLOYEE_STATUS.ACTIVE,
       };
       const mockLink = { personalEmployeeId: 'pe-123', personalEmployee: {} };
       const mockAuthContext = { roles: new Set(['USER']), permissions: new Set(['READ']) };
@@ -363,7 +364,7 @@ describe('AuthService', () => {
       const mockEmployee = {
         id: 'emp-123',
         username: 'testuser',
-        status: 'INACTIVE',
+        status: EMPLOYEE_STATUS.INACTIVE,
       };
       mockRepo.findById.mockResolvedValue(mockEmployee);
 
@@ -414,7 +415,7 @@ describe('AuthService', () => {
       const mockEmployee = {
         id: 'emp-123',
         email: 'test@example.com',
-        status: 'ACTIVE',
+        status: EMPLOYEE_STATUS.ACTIVE,
       };
       mockRepo.findAuthByEmail.mockResolvedValue(mockEmployee);
       mockRepo.findPendingRequestByEmployeeId.mockResolvedValue(null);
@@ -433,7 +434,7 @@ describe('AuthService', () => {
       const mockEmployee = {
         id: 'emp-123',
         email: 'test@example.com',
-        status: 'INACTIVE',
+        status: EMPLOYEE_STATUS.INACTIVE,
       };
       mockRepo.findAuthByEmail.mockResolvedValue(mockEmployee);
 
@@ -450,7 +451,7 @@ describe('AuthService', () => {
       const mockEmployee = {
         id: 'emp-123',
         email: 'test@example.com',
-        status: 'ACTIVE',
+        status: EMPLOYEE_STATUS.ACTIVE,
       };
       mockRepo.findAuthByEmail.mockResolvedValue(mockEmployee);
       mockRepo.findPendingRequestByEmployeeId.mockResolvedValue(null);
@@ -471,7 +472,7 @@ describe('AuthService', () => {
       const mockEmployee = {
         id: 'emp-123',
         email: 'test@example.com',
-        status: 'ACTIVE',
+        status: EMPLOYEE_STATUS.ACTIVE,
       };
       const expiredRequest = {
         id: 'req-123',
@@ -816,7 +817,7 @@ describe('AuthService', () => {
     it('UTCID01 - Happy Path: gets dashboard security summary', async () => {
       // Arrange
       mockRepo.getLockedEmployees.mockResolvedValue([{ id: 'emp-1' }]);
-      mockRepo.countActivityLogsToday.mockResolvedValue(10);
+      mockRepo.countActivityLogs.mockResolvedValue(10);
       mockRepo.getRecentLogsByCategory.mockResolvedValue([]);
 
       // Act
@@ -831,7 +832,7 @@ describe('AuthService', () => {
     it('UTCID02 - Error Case: propagates error if database counting fails', async () => {
       // Arrange
       mockRepo.getLockedEmployees.mockResolvedValue([]);
-      mockRepo.countActivityLogsToday.mockRejectedValue(new Error('Count query failed'));
+      mockRepo.countActivityLogs.mockRejectedValue(new Error('Count query failed'));
 
       // Act & Assert
       await expect(authService.getSecuritySummary())

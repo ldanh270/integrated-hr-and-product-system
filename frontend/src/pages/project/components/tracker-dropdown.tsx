@@ -4,6 +4,7 @@ import React from "react"
 interface TrackerDropdownProps {
   roleId: string
   allowed: string[]
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   trackers: any[]
   onToggle: (key: string) => void
   onSelectAll: () => void

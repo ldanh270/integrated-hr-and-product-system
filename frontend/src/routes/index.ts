@@ -150,11 +150,6 @@ const privateRoutes: RouteConfig[] = [
     permissions: ["payroll.read"],
   },
   {
-    path: ROUTES.ASSET.DASHBOARD,
-    component: lazy(() => import("@/pages/asset/AssetDashboard.tsx")),
-    layout: MainLayout,
-  },
-  {
     path: ROUTES.RECRUITMENT.DASHBOARD,
     component: lazy(() => import("@/pages/recruitment/RecruitmentDashboard.tsx")),
     layout: MainLayout,
@@ -194,11 +189,6 @@ const privateRoutes: RouteConfig[] = [
     component: lazy(() => import("@/pages/security/PermissionMatrix.tsx")),
     layout: MainLayout,
     permissions: ["role.read"],
-  },
-  {
-    path: ROUTES.SETTINGS.DASHBOARD,
-    component: lazy(() => import("@/pages/settings/SettingsDashboard.tsx")),
-    layout: MainLayout,
   },
   {
     path: ROUTES.PERSONAL.SCHEDULE,

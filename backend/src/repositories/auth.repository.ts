@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ACTIVITY_LOG_TTL, PASSWORD_RESET_STATUS } from "@/configs/auth/auth.config.ts"
 import {
   ActivityLogItem,
@@ -50,7 +51,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       status: employee.status,
       lockedUntil: employee.lockedUntil,
       failedLoginCount: employee.failedLoginCount,
-      lastLoginAt: (employee as any).lastLoginAt,
+      lastLoginAt: (employee as { lastLoginAt?: Date | null }).lastLoginAt,
     }
   }
 
@@ -78,7 +79,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       status: employee.status,
       lockedUntil: employee.lockedUntil,
       failedLoginCount: employee.failedLoginCount,
-      lastLoginAt: (employee as any).lastLoginAt,
+      lastLoginAt: (employee as { lastLoginAt?: Date | null }).lastLoginAt,
     }
   }
 
@@ -102,14 +103,14 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       status: employee.status,
       lockedUntil: employee.lockedUntil,
       failedLoginCount: employee.failedLoginCount,
-      lastLoginAt: (employee as any).lastLoginAt,
+      lastLoginAt: (employee as { lastLoginAt?: Date | null }).lastLoginAt,
     }
   }
 
   /**
    * Finds a pending password reset request by token
    */
-  async findResetRequestByToken(token: string): Promise<any | null> {
+  async findResetRequestByToken(token: string): Promise<unknown | null> {
     return this.prisma.passwordResetRequest.findFirst({
       where: {
         token,
@@ -121,7 +122,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
   /**
    * Finds a pending password reset request by employee ID
    */
-  async findPendingRequestByEmployeeId(employeeId: string): Promise<any | null> {
+  async findPendingRequestByEmployeeId(employeeId: string): Promise<unknown | null> {
     return this.prisma.passwordResetRequest.findFirst({
       where: {
         employeeId,
@@ -327,7 +328,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       category: log.category,
       actionType: log.actionType,
       ipAddress: log.ipAddress,
-      details: log.details,
+      details: log.details as any,
       createdAt: log.createdAt,
     }))
 
@@ -366,7 +367,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       category: log.category,
       actionType: log.actionType,
       ipAddress: log.ipAddress,
-      details: log.details,
+      details: log.details as any,
       createdAt: log.createdAt,
     }
   }
@@ -401,7 +402,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       category: log.category,
       actionType: log.actionType,
       ipAddress: log.ipAddress,
-      details: log.details,
+      details: log.details as any,
       createdAt: log.createdAt,
     }
   }
@@ -448,22 +449,31 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
   }
 
   /**
-   * Counts logs by type for today
+   * Counts logs by type within a time range
    */
-  async countActivityLogsToday(
+  async countActivityLogs(
     category: "auth" | "role" | "security",
     actionType: string,
+    timeRange: any = "today",
   ): Promise<number> {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    let gteDate: Date | undefined;
+    
+    if (timeRange === "today") {
+      gteDate = new Date();
+      gteDate.setHours(0, 0, 0, 0);
+    } else if (timeRange === "7days") {
+      gteDate = new Date();
+      gteDate.setDate(gteDate.getDate() - 7);
+    } else if (timeRange === "30days") {
+      gteDate = new Date();
+      gteDate.setDate(gteDate.getDate() - 30);
+    }
 
     return this.prisma.activityLog.count({
       where: {
         category: category as ActivityCategory,
         actionType: actionType as ActivityAction,
-        createdAt: {
-          gte: today,
-        },
+        ...(gteDate ? { createdAt: { gte: gteDate } } : {}),
       },
     })
   }
@@ -499,7 +509,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       category: log.category,
       actionType: log.actionType,
       ipAddress: log.ipAddress,
-      details: log.details,
+      details: log.details as any,
       createdAt: log.createdAt,
     }))
   }
