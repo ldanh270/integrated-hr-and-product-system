@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ACTIVITY_LOG_TTL, PASSWORD_RESET_STATUS } from "@/configs/auth/auth.config.ts"
 import {
   ActivityLogItem,
