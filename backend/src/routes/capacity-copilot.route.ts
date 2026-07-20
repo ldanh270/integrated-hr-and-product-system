@@ -15,6 +15,7 @@ const controller = new CapacityCopilotController(capacityCopilotService)
 
 // Dedicated route keeps capacity forecasting separate from Project Task assignment AI.
 capacityCopilotRoutes.use(authenticate)
+// Weekly board is read-only: Admin/PM compares shortage/surplus projects from cron-refreshed forecasts.
 capacityCopilotRoutes.get(
   "/weekly-board",
   requirePermission(PERMISSION_CODE.PROJECT_UPDATE),

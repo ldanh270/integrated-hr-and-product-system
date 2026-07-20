@@ -8,7 +8,8 @@ import { formatDateParam } from "@/utils/attendance/format-date-param"
 import { extractErrorMessage } from "@/utils/error-helper"
 
 /**
- * Project Overview card that lets PM/Admin run advisory capacity forecasts.
+ * Project Overview card for advisory capacity forecasts.
+ * It auto-loads forecast data; Admin/PM does not need a manual "run AI" button.
  */
 import { useMemo, useState } from "react"
 
@@ -66,6 +67,7 @@ export function ProjectCapacityCopilotCard({
 
   const forecastQuery = useQuery({
     queryKey: ["capacity-copilot", "project", projectId, weekStart],
+    // Query runs on mount/week change so the detail tab behaves like a read-only forecast screen.
     queryFn: () =>
       capacityCopilotApi.forecastProject(projectId, {
         weekStart,

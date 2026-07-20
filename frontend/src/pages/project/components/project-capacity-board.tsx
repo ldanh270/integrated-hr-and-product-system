@@ -1,6 +1,6 @@
 /**
  * Weekly capacity board for Admin/PM.
- * It auto-runs project forecasts on dashboard load so managers can compare shortage/surplus projects.
+ * It displays cron/event-refreshed project forecasts so managers can compare shortage/surplus projects.
  */
 import { PageCard } from "@/components/common"
 import { Badge } from "@/components/ui/badge"
@@ -25,6 +25,7 @@ const formatDateParam = (date: Date) => {
 }
 
 const parseLocalDateParam = (dateParam: string) => {
+  // Avoid `new Date("yyyy-mm-dd")` UTC parsing because it can shift the displayed week in local time.
   const [year = "0", month = "1", day = "1"] = dateParam.split("-")
   return new Date(Number(year), Number(month) - 1, Number(day))
 }
@@ -127,6 +128,7 @@ export function ProjectCapacityBoard() {
 
   const forecastQuery = useQuery({
     queryKey: ["capacity-copilot", "weekly-board", weekStart],
+    // Board reads one backend aggregate endpoint instead of making PM click/forecast every project.
     queryFn: () =>
       capacityCopilotApi.forecastWeeklyBoard({
         weekStart,

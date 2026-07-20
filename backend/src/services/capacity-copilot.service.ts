@@ -18,6 +18,8 @@ import {
 } from "@/utils/project-capacity-copilot.util.ts"
 
 export class CapacityCopilotService {
+  // Runtime cache stores the latest auto-refreshed snapshots from cron/event jobs.
+  // It is advisory only; board requests can recompute and overwrite it without changing project data.
   private forecastCache = new Map<string, CapacityBoardProjectSnapshot>()
 
   constructor(private repository: ICapacityCopilotRepository) {}
@@ -81,6 +83,7 @@ export class CapacityCopilotService {
   ): Promise<CapacityBoardForecastResult> {
     const weekStart = this.normalizeWeekStart(input.weekStart)
     const projects = await this.repository.listProjectsWithDealTarget()
+    // Board forecast isolates failures per project so one bad project does not hide other capacity signals.
     const snapshots = await Promise.all(
       projects.map((project) => {
         const forecastInput = {
@@ -115,6 +118,7 @@ export class CapacityCopilotService {
 
   private async refreshEmployeeProjectForecasts(employeeId: string, weekStart: Date): Promise<void> {
     const projects = await this.repository.listProjectsByEmployeeWithDealTarget(employeeId)
+    // Availability changes affect only projects where the employee is an active member.
     await Promise.allSettled(
       projects.map((project) =>
         this.forecastAndCacheProjectCapacity(project, {
@@ -170,6 +174,7 @@ export class CapacityCopilotService {
       | Awaited<ReturnType<ICapacityCopilotRepository["listWeeklyAvailabilities"]>>[number]
       | undefined,
   ): number {
+    // Full-time members contribute standard weekly capacity; part-time members contribute submitted availability.
     if (workScheduleType === WORK_SCHEDULE_TYPE.FULL_TIME) {
       return CAPACITY_COPILOT_RULES.FULL_TIME_WEEKLY_HOURS
     }

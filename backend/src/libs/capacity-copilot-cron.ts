@@ -21,6 +21,7 @@ const getWeekStart = (date: Date): Date => {
 }
 
 export const initCapacityCopilotCron = () => {
+  // Run every minute to reuse the existing project cron style, then gate by configured weekday/time.
   cron.schedule("* * * * *", async () => {
     try {
       const now = new Date()
@@ -34,6 +35,7 @@ export const initCapacityCopilotCron = () => {
 
       const weekStart = getWeekStart(now)
       const weekKey = formatDateKey(weekStart)
+      // Prevent duplicate refreshes if the server clock or cron callback fires more than once that minute.
       if (lastRunWeekKey === weekKey) return
 
       const result = await capacityCopilotService.forecastCapacityBoard({
