@@ -128,7 +128,9 @@ export function PartTimeSuggestionMatrix({
                     className="h-4 w-4 rounded-full accent-primary"
                     type="checkbox"
                     checked={selectedIds.has(suggestion.availabilityId)}
-                    onChange={() => toggle(suggestion.availabilityId)}
+                    onChange={() => {
+                      toggle(suggestion.availabilityId)
+                    }}
                     aria-label={`Chọn ${suggestion.employeeName}`}
                   />
                 </td>
