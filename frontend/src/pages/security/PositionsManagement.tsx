@@ -57,7 +57,7 @@ export default function PositionsManagement() {
     setIsOpen(true)
   }
 
-  const handleOpenEdit = (pos: unknown) => {
+  const handleOpenEdit = (pos: { id: string; name: string; code: string; description?: string | null; allowedTaskTrackers?: string[] }) => {
     setEditingId(pos.id)
     setName(pos.name)
     setCode(pos.code)
@@ -98,7 +98,8 @@ export default function PositionsManagement() {
       setIsOpen(false)
       refetch()
     } catch (error: unknown) {
-      const msg = error.response?.data?.error?.message || "Đã xảy ra lỗi"
+      const err = error as { response?: { data?: { error?: { message?: string } } } }
+      const msg = err.response?.data?.error?.message || "Đã xảy ra lỗi"
       toast.error(msg)
     }
   }
