@@ -386,7 +386,7 @@ export class AuthService implements IAuthService {
             ...genericResponse,
             debugToken: existingRequest.token,
             note: "Existing unexpired request found.",
-          } as any
+          } as unknown as ReturnType<IAuthService['login']>
         }
         return genericResponse
       }
@@ -417,7 +417,7 @@ export class AuthService implements IAuthService {
           debugToken: token,
           expiresAt,
           resend: resendResult,
-        } as any
+        } as unknown as ReturnType<IAuthService['login']>
       }
     } catch (error) {
       console.error("Critical error sending reset email:", error)
@@ -574,7 +574,7 @@ export class AuthService implements IAuthService {
   /**
    * Gets security dashboard summary
    */
-  async getSecuritySummary(): Promise<SecuritySummaryDto> {
+  async getSecuritySummary(timeRange: SecurityTimeRange = "today"): Promise<SecuritySummaryDto> {
     const [
       lockedAccounts,
       failedLoginsToday,
@@ -583,8 +583,8 @@ export class AuthService implements IAuthService {
       recentRoleEvents,
     ] = await Promise.all([
       this.repo.getLockedEmployees(),
-      this.repo.countActivityLogsToday(ACTIVITY_CATEGORY.AUTH, ACTIVITY_ACTION.FAILED_LOGIN),
-      this.repo.countActivityLogsToday(ACTIVITY_CATEGORY.AUTH, ACTIVITY_ACTION.LOGIN),
+      this.repo.countActivityLogs(ACTIVITY_CATEGORY.AUTH, ACTIVITY_ACTION.FAILED_LOGIN, timeRange),
+      this.repo.countActivityLogs(ACTIVITY_CATEGORY.AUTH, ACTIVITY_ACTION.LOGIN, timeRange),
       this.repo.getRecentLogsByCategory(ACTIVITY_CATEGORY.SECURITY, 5),
       this.repo.getRecentLogsByCategory(ACTIVITY_CATEGORY.ROLE, 5),
     ])

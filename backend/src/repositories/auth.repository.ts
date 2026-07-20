@@ -50,7 +50,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       status: employee.status,
       lockedUntil: employee.lockedUntil,
       failedLoginCount: employee.failedLoginCount,
-      lastLoginAt: (employee as any).lastLoginAt,
+      lastLoginAt: (employee as { lastLoginAt?: Date | null }).lastLoginAt,
     }
   }
 
@@ -78,7 +78,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       status: employee.status,
       lockedUntil: employee.lockedUntil,
       failedLoginCount: employee.failedLoginCount,
-      lastLoginAt: (employee as any).lastLoginAt,
+      lastLoginAt: (employee as { lastLoginAt?: Date | null }).lastLoginAt,
     }
   }
 
@@ -102,14 +102,14 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       status: employee.status,
       lockedUntil: employee.lockedUntil,
       failedLoginCount: employee.failedLoginCount,
-      lastLoginAt: (employee as any).lastLoginAt,
+      lastLoginAt: (employee as { lastLoginAt?: Date | null }).lastLoginAt,
     }
   }
 
   /**
    * Finds a pending password reset request by token
    */
-  async findResetRequestByToken(token: string): Promise<any | null> {
+  async findResetRequestByToken(token: string): Promise<unknown | null> {
     return this.prisma.passwordResetRequest.findFirst({
       where: {
         token,
@@ -121,7 +121,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
   /**
    * Finds a pending password reset request by employee ID
    */
-  async findPendingRequestByEmployeeId(employeeId: string): Promise<any | null> {
+  async findPendingRequestByEmployeeId(employeeId: string): Promise<unknown | null> {
     return this.prisma.passwordResetRequest.findFirst({
       where: {
         employeeId,
@@ -242,7 +242,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
         lockedUntil: data.lockedUntil,
         passwordHash: data.passwordHash,
         lastLoginAt: data.lastLoginAt,
-      } as any,
+      } as unknown as Employee,
     })
   }
 
@@ -448,22 +448,31 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
   }
 
   /**
-   * Counts logs by type for today
+   * Counts logs by type within a time range
    */
-  async countActivityLogsToday(
+  async countActivityLogs(
     category: "auth" | "role" | "security",
     actionType: string,
+    timeRange: SecurityTimeRange = "today",
   ): Promise<number> {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    let gteDate: Date | undefined;
+    
+    if (timeRange === "today") {
+      gteDate = new Date();
+      gteDate.setHours(0, 0, 0, 0);
+    } else if (timeRange === "7days") {
+      gteDate = new Date();
+      gteDate.setDate(gteDate.getDate() - 7);
+    } else if (timeRange === "30days") {
+      gteDate = new Date();
+      gteDate.setDate(gteDate.getDate() - 30);
+    }
 
     return this.prisma.activityLog.count({
       where: {
         category: category as ActivityCategory,
         actionType: actionType as ActivityAction,
-        createdAt: {
-          gte: today,
-        },
+        ...(gteDate ? { createdAt: { gte: gteDate } } : {}),
       },
     })
   }

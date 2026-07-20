@@ -119,7 +119,7 @@ export interface ActivityLogItem {
   category: string
   actionType: string
   ipAddress?: string | null
-  details?: any
+  details?: Record<string, unknown>
   createdAt: Date
 }
 
@@ -163,6 +163,8 @@ export interface LockedAccountItem {
 /**
  * Interface for Security Dashboard Summary
  */
+export type SecurityTimeRange = "today" | "7days" | "30days" | "all"
+
 export interface SecuritySummaryDto {
   lockedAccountsCount: number
   failedLoginsToday: number
@@ -208,12 +210,12 @@ export interface IAuthRepository {
   /**
    * Finds a pending password reset request by employee ID
    */
-  findPendingRequestByEmployeeId(employeeId: string): Promise<any | null>
+  findPendingRequestByEmployeeId(employeeId: string): Promise<unknown | null>
 
   /**
    * Finds a pending password reset request by token
    */
-  findResetRequestByToken(token: string): Promise<any | null>
+  findResetRequestByToken(token: string): Promise<unknown | null>
 
   /**
    * Invalidates all pending password reset requests for a user
@@ -305,11 +307,12 @@ export interface IAuthRepository {
   unlockEmployee(empId: string): Promise<void>
 
   /**
-   * Counts logs by type for today
+   * Counts logs by type within a time range
    */
-  countActivityLogsToday(
+  countActivityLogs(
     category: "auth" | "role" | "security",
     actionType: string,
+    timeRange?: SecurityTimeRange,
   ): Promise<number>
 
   /**
@@ -395,9 +398,9 @@ export interface IAuthService {
   getMyActivityLogDetail(empId: string, id: string): Promise<ActivityLogItem | null>
 
   /**
-   * Gets security summary for dashboard
+   * Gets security dashboard summary
    */
-  getSecuritySummary(): Promise<SecuritySummaryDto>
+  getSecuritySummary(timeRange?: SecurityTimeRange): Promise<SecuritySummaryDto>
 
   /**
    * Gets locked accounts

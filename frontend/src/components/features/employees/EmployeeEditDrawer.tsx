@@ -1,6 +1,5 @@
 import { AppDrawer } from "@/components/common"
 import { EmployeeWeeklyScheduleSection } from "@/components/features/employees/employee-weekly-schedule-section"
-import { EmployeeEditRoleCheckboxes } from "@/components/features/employees/employee-edit-role-checkboxes"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,23 +7,24 @@ import {
   EMPLOYEE_STATUSES,
   EMPLOYEE_STATUS_LABELS,
   EMPLOYMENT_CATEGORY_TYPES,
-  getEmployeeTypeLabel,
-  getWorkScheduleTypeLabel,
   WORK_SCHEDULE_TYPES,
+  getEmployeeTypeLabel,
+  getRoleLabel,
+  getWorkScheduleTypeLabel,
 } from "@/config/entities/employee.config"
-import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util"
-import { useEmployeeEditModal } from "@/hooks/employees/useEmployeeEditModal"
 import { useEmployeeWeeklyScheduleSection } from "@/hooks/employees/use-employee-weekly-schedule-section"
+import { useEmployeeEditModal } from "@/hooks/employees/useEmployeeEditModal"
 import {
   useEmployeeRoles,
   useRoles,
   useUpdateEmployeeRoles,
 } from "@/hooks/security/queries/use-security-query"
-import type { Employee } from "@/types/employee.types"
-
-import { useEffect, useRef } from "react"
-
 import { usePositions } from "@/hooks/use-position-query"
+import type { Employee } from "@/types/employee.types"
+import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util"
+
+import { useState } from "react"
+
 import { toast } from "sonner"
 
 interface Props {
@@ -47,18 +47,20 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
 
   const weeklySchedule = useEmployeeWeeklyScheduleSection(employee?.id, isOpen)
   const { data: allRoles } = useRoles()
-  const { data: employeeRoles, isLoading: isLoadingRoles } = useEmployeeRoles(employee?.id || "")
+  const { data: employeeRoles } = useEmployeeRoles(employee?.id || "")
   const updateEmployeeRoles = useUpdateEmployeeRoles()
 
-  const selectedRoleIdsRef = useRef<string[]>([])
+  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([])
   const roleSeedKey = employeeRoles?.map((role) => role.id).join(",") ?? ""
+  const [prevRoleSeed, setPrevRoleSeed] = useState(roleSeedKey)
 
-  useEffect(() => {
-    selectedRoleIdsRef.current = employeeRoles?.map((role) => role.id) ?? []
-  }, [roleSeedKey, employeeRoles])
+  if (roleSeedKey !== prevRoleSeed) {
+    setPrevRoleSeed(roleSeedKey)
+    setSelectedRoleIds(employeeRoles?.map((role) => role.id) ?? [])
+  }
 
   const handleRoleSelectionChange = (roleIds: string[]) => {
-    selectedRoleIdsRef.current = roleIds
+    setSelectedRoleIds(roleIds)
   }
 
   const onSubmit = handleSubmit(async (data) => {
@@ -67,7 +69,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
       await onSubmitEmployee(data)
       await updateEmployeeRoles.mutateAsync({
         employeeId: employee.id,
-        roleIds: selectedRoleIdsRef.current,
+        roleIds: selectedRoleIds,
         version: employee.version || 1,
       })
       const scheduleApplied = await weeklySchedule.applyIfNeeded()
@@ -153,15 +155,22 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
 
                   <div className="space-y-1.5">
                     <Label htmlFor="role-select" className="text-[12px] text-muted-foreground">
-                      Vai trò (Dynamic RBAC)
+                      Phân quyền
                     </Label>
-                    <EmployeeEditRoleCheckboxes
+                    <select
                       key={roleSeedKey}
-                      allRoles={allRoles?.data}
-                      initialRoleIds={employeeRoles?.map((role) => role.id) ?? []}
-                      isLoadingRoles={isLoadingRoles}
-                      onSelectionChange={handleRoleSelectionChange}
-                    />
+                      id="role-select"
+                      className="flex h-10 w-full rounded-full border border-input bg-background px-4 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      defaultValue={employeeRoles?.[0]?.id || ""}
+                      onChange={(e) => handleRoleSelectionChange([e.target.value])}
+                    >
+                      <option value="">-- Chọn phân quyền --</option>
+                      {allRoles?.data?.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {getRoleLabel(r.name)}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
@@ -252,25 +261,44 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                 Công việc & Hợp đồng
               </h3>
               <div className="border border-border rounded-xl p-4 bg-card space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="positionId" className="text-[12px] text-muted-foreground">
-                    Chức danh (Vị trí)
-                  </Label>
-                  <select
-                    id="positionId"
-                    {...register("positionId")}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    <option value="">-- Chọn chức danh --</option>
-                    {positions.map((pos: any) => (
-                      <option key={pos.id} value={pos.id}>
-                        {pos.name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.positionId && (
-                    <p className="text-xs text-destructive">{errors.positionId.message}</p>
-                  )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="positionId" className="text-[12px] text-muted-foreground">
+                      Chức danh (Vị trí)
+                    </Label>
+                    <select
+                      id="positionId"
+                      {...register("positionId")}
+                      className="flex h-10 w-full rounded-full border border-input bg-background px-4 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      <option value="">-- Chọn chức danh --</option>
+                      {positions.map((pos: { id: string; name: string }) => (
+                        <option key={pos.id} value={pos.id}>
+                          {pos.name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.positionId && (
+                      <p className="text-xs text-destructive">{errors.positionId.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="employeeType" className="text-[12px] text-muted-foreground">
+                      Loại nhân sự
+                    </Label>
+                    <select
+                      id="employeeType"
+                      {...register("employeeType")}
+                      className="flex h-10 w-full rounded-full border border-input bg-background px-4 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      {EMPLOYMENT_CATEGORY_TYPES.map((typeKey) => (
+                        <option key={typeKey} value={typeKey}>
+                          {getEmployeeTypeLabel(typeKey)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -281,28 +309,11 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                     <select
                       id="status"
                       {...register("status")}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      className="flex h-10 w-full rounded-full border border-input bg-background px-4 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     >
                       {EMPLOYEE_STATUSES.map((statusKey) => (
                         <option key={statusKey} value={statusKey}>
                           {EMPLOYEE_STATUS_LABELS[statusKey]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="employeeType" className="text-[12px] text-muted-foreground">
-                      Loại nhân sự
-                    </Label>
-                    <select
-                      id="employeeType"
-                      {...register("employeeType")}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    >
-                      {EMPLOYMENT_CATEGORY_TYPES.map((typeKey) => (
-                        <option key={typeKey} value={typeKey}>
-                          {getEmployeeTypeLabel(typeKey)}
                         </option>
                       ))}
                     </select>
@@ -315,7 +326,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                     <select
                       id="workScheduleType"
                       {...register("workScheduleType")}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      className="flex h-10 w-full rounded-full border border-input bg-background px-4 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     >
                       {WORK_SCHEDULE_TYPES.map((typeKey) => (
                         <option key={typeKey} value={typeKey}>
