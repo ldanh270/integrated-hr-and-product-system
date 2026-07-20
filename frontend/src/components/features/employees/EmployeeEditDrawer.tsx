@@ -162,7 +162,7 @@ export function EmployeeEditDrawer({ isOpen, onClose, employee }: Props) {
                       id="role-select"
                       className="flex h-10 w-full rounded-full border border-input bg-background px-4 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                       defaultValue={employeeRoles?.[0]?.id || ""}
-                      onChange={(e) => handleRoleSelectionChange([e.target.value])}
+                      onChange={(e) => { handleRoleSelectionChange([e.target.value]); }}
                     >
                       <option value="">-- Chọn phân quyền --</option>
                       {allRoles?.data?.map((r) => (

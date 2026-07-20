@@ -132,7 +132,7 @@ export default function SecurityDashboard() {
         <div className="flex items-center gap-3">
           <Select
             value={timeRange}
-            onValueChange={(val: "today" | "7days" | "30days") => setTimeRange(val)}
+            onValueChange={(val: "today" | "7days" | "30days") => { setTimeRange(val); }}
           >
             <SelectTrigger className="w-[160px] h-8 text-xs">
               <SelectValue placeholder="Chọn khoảng thời gian" />
