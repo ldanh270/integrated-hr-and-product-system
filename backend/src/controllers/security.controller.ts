@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ErrorMessage } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode, RESPONSE_STATUS } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
@@ -16,14 +17,14 @@ export class SecurityController {
    */
   getSummary = async (req: AuthRequest, res: Response) => {
     try {
-      const timeRange = (req.query.timeRange as string) || "today"
+      const timeRange = (req.query.timeRange as any) || "today"
       const result = await this.authService.getSecuritySummary(timeRange)
 
       res.status(HttpStatusCode.OK).json({
         status: RESPONSE_STATUS.SUCCESS,
         data: result,
       })
-    } catch (error: unknown) {
+    } catch (error: any) {
       res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
         status: RESPONSE_STATUS.ERROR,
         message: error.message || "Failed to fetch security summary",
@@ -42,7 +43,7 @@ export class SecurityController {
         status: RESPONSE_STATUS.SUCCESS,
         data: result,
       })
-    } catch (error: unknown) {
+    } catch (error: any) {
       res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
         status: RESPONSE_STATUS.ERROR,
         message: error.message || "Failed to fetch locked accounts",
@@ -71,7 +72,7 @@ export class SecurityController {
         status: RESPONSE_STATUS.SUCCESS,
         message: "Account unlocked successfully",
       })
-    } catch (error: unknown) {
+    } catch (error: any) {
       res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
         status: RESPONSE_STATUS.ERROR,
         message: error.message || "Failed to unlock account",

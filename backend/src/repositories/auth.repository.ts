@@ -242,7 +242,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
         lockedUntil: data.lockedUntil,
         passwordHash: data.passwordHash,
         lastLoginAt: data.lastLoginAt,
-      } as unknown as Employee,
+      } as any,
     })
   }
 
@@ -327,7 +327,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       category: log.category,
       actionType: log.actionType,
       ipAddress: log.ipAddress,
-      details: log.details,
+      details: log.details as any,
       createdAt: log.createdAt,
     }))
 
@@ -366,7 +366,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       category: log.category,
       actionType: log.actionType,
       ipAddress: log.ipAddress,
-      details: log.details,
+      details: log.details as any,
       createdAt: log.createdAt,
     }
   }
@@ -401,7 +401,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       category: log.category,
       actionType: log.actionType,
       ipAddress: log.ipAddress,
-      details: log.details,
+      details: log.details as any,
       createdAt: log.createdAt,
     }
   }
@@ -453,7 +453,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
   async countActivityLogs(
     category: "auth" | "role" | "security",
     actionType: string,
-    timeRange: SecurityTimeRange = "today",
+    timeRange: any = "today",
   ): Promise<number> {
     let gteDate: Date | undefined;
     
@@ -508,7 +508,7 @@ export class PrismaAuthRepository extends BaseRepository implements IAuthReposit
       category: log.category,
       actionType: log.actionType,
       ipAddress: log.ipAddress,
-      details: log.details,
+      details: log.details as any,
       createdAt: log.createdAt,
     }))
   }

@@ -1,3 +1,4 @@
+import { EMPLOYEE_STATUS } from '@/configs/entities/employee.config';
 /// <reference types="jest" />
 import { AuthService } from '../../services/auth.service';
 import { getPersonalEmployeeLink } from '@/utils/attendance/resolve-personal-employee-id.ts';
@@ -32,9 +33,9 @@ jest.mock('@/configs/auth/auth.config.ts', () => ({
 
 jest.mock('@/configs/entities/employee.config.ts', () => ({
   EMPLOYEE_STATUS: {
-    ACTIVE: EmployeeStatus.ACTIVE,
+    ACTIVE: EMPLOYEE_STATUS.ACTIVE,
     TERMINATED: 'TERMINATED',
-    INACTIVE: EmployeeStatus.INACTIVE,
+    INACTIVE: EMPLOYEE_STATUS.INACTIVE,
   },
 }));
 
@@ -166,7 +167,7 @@ describe('AuthService', () => {
         email: 'test@example.com',
         fullName: 'Test User',
         passwordHash: 'hashed-password',
-        status: EmployeeStatus.ACTIVE,
+        status: EMPLOYEE_STATUS.ACTIVE,
         lockedUntil: null,
         failedLoginCount: 0,
       };
@@ -220,7 +221,7 @@ describe('AuthService', () => {
       const mockEmployee = {
         id: 'emp-123',
         username: 'testuser',
-        status: EmployeeStatus.ACTIVE,
+        status: EMPLOYEE_STATUS.ACTIVE,
         lockedUntil: futureDate,
       };
       mockRepo.findAuthByIdentifier.mockResolvedValue(mockEmployee);
@@ -238,7 +239,7 @@ describe('AuthService', () => {
         email: 'test@example.com',
         fullName: 'Test User',
         passwordHash: 'hashed-password',
-        status: EmployeeStatus.ACTIVE,
+        status: EMPLOYEE_STATUS.ACTIVE,
         lockedUntil: null,
         failedLoginCount: 0,
       };
@@ -266,7 +267,7 @@ describe('AuthService', () => {
       const mockEmployee = {
         id: 'emp-123',
         username: 'testuser',
-        status: EmployeeStatus.ACTIVE,
+        status: EMPLOYEE_STATUS.ACTIVE,
       };
       const mockLink = { personalEmployeeId: 'pe-123', personalEmployee: {} };
       const mockAuthContext = { roles: new Set(['USER']), permissions: new Set(['READ']) };
@@ -333,7 +334,7 @@ describe('AuthService', () => {
       const mockEmployee = {
         id: 'emp-123',
         username: 'testuser',
-        status: EmployeeStatus.ACTIVE,
+        status: EMPLOYEE_STATUS.ACTIVE,
       };
       const mockLink = { personalEmployeeId: 'pe-123', personalEmployee: {} };
       const mockAuthContext = { roles: new Set(['USER']), permissions: new Set(['READ']) };
@@ -363,7 +364,7 @@ describe('AuthService', () => {
       const mockEmployee = {
         id: 'emp-123',
         username: 'testuser',
-        status: EmployeeStatus.INACTIVE,
+        status: EMPLOYEE_STATUS.INACTIVE,
       };
       mockRepo.findById.mockResolvedValue(mockEmployee);
 
@@ -414,7 +415,7 @@ describe('AuthService', () => {
       const mockEmployee = {
         id: 'emp-123',
         email: 'test@example.com',
-        status: EmployeeStatus.ACTIVE,
+        status: EMPLOYEE_STATUS.ACTIVE,
       };
       mockRepo.findAuthByEmail.mockResolvedValue(mockEmployee);
       mockRepo.findPendingRequestByEmployeeId.mockResolvedValue(null);
@@ -433,7 +434,7 @@ describe('AuthService', () => {
       const mockEmployee = {
         id: 'emp-123',
         email: 'test@example.com',
-        status: EmployeeStatus.INACTIVE,
+        status: EMPLOYEE_STATUS.INACTIVE,
       };
       mockRepo.findAuthByEmail.mockResolvedValue(mockEmployee);
 
@@ -450,7 +451,7 @@ describe('AuthService', () => {
       const mockEmployee = {
         id: 'emp-123',
         email: 'test@example.com',
-        status: EmployeeStatus.ACTIVE,
+        status: EMPLOYEE_STATUS.ACTIVE,
       };
       mockRepo.findAuthByEmail.mockResolvedValue(mockEmployee);
       mockRepo.findPendingRequestByEmployeeId.mockResolvedValue(null);
@@ -471,7 +472,7 @@ describe('AuthService', () => {
       const mockEmployee = {
         id: 'emp-123',
         email: 'test@example.com',
-        status: EmployeeStatus.ACTIVE,
+        status: EMPLOYEE_STATUS.ACTIVE,
       };
       const expiredRequest = {
         id: 'req-123',
