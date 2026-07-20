@@ -263,7 +263,7 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                     className="flex h-10 w-full rounded-full border border-input bg-background px-4 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     <option value="">-- Chọn chức danh --</option>
-                    {positions.map((pos: IPosition) => (
+                    {positions.map((pos: { id: string; name: string }) => (
                       <option key={pos.id} value={pos.id}>
                         {pos.name}
                       </option>

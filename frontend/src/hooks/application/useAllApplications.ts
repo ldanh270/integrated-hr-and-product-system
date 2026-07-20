@@ -5,6 +5,7 @@ import {
 } from "@/lib/api/application.api"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { APPLICATION_STATUS } from "@/config/entities/attendance.config"
 
 import { toast } from "sonner"
 
