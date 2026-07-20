@@ -1,0 +1,20 @@
+import { CAPACITY_COPILOT_RULES } from "@/configs/rules/capacity-copilot.config.ts"
+
+import { z } from "zod"
+
+// Only forecast window is user-supplied; target percent is read from the project deal.
+export const forecastProjectCapacitySchema = z
+  .object({
+    weekStart: z
+      .string()
+      .refine((value) => !Number.isNaN(Date.parse(value)), "weekStart không hợp lệ"),
+    lookbackWeeks: z
+      .number()
+      .int()
+      .min(CAPACITY_COPILOT_RULES.MIN_LOOKBACK_WEEKS)
+      .max(CAPACITY_COPILOT_RULES.MAX_LOOKBACK_WEEKS)
+      .optional(),
+  })
+  .strict()
+
+export type ForecastProjectCapacitySchemaType = z.infer<typeof forecastProjectCapacitySchema>

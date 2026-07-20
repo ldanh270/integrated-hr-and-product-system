@@ -335,6 +335,7 @@ export default function ProjectDetail() {
         <TabsContent value={PROJECT_TABS.OVERVIEW}>
           <ProjectOverviewTab
             project={project}
+            projectId={projectId}
             tasks={overviewTasks}
             totalTasksCount={totalTasksCount}
             openTasksCount={openTasksCount}

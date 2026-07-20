@@ -1,32 +1,23 @@
 import { EmptyState, PageCard, SectionHeader } from "@/components/common"
-import { AdminPartTimeAvailabilityCard } from "@/components/features/attendance/part-time-availability/admin-part-time-availability-card"
-import { PartTimeSuggestionMatrix } from "@/components/features/attendance/part-time-availability/part-time-suggestion-matrix"
 import { WeekPickerActions } from "@/components/features/attendance/calendar/week-picker-actions"
+import { AdminPartTimeAvailabilityCard } from "@/components/features/attendance/part-time-availability/admin-part-time-availability-card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { DAY_OF_WEEK_LABELS } from "@/config/entities/attendance.config"
-import {
-  PART_TIME_AVAILABILITY_ASSIGN_LABELS,
-  PART_TIME_AVAILABILITY_ASSIGNABLE_STATUSES,
-} from "@/config/entities/part-time-availability.config"
-import {
-  usePartTimeAvailabilityList,
-  useSuggestPartTimeShifts,
-} from "@/hooks/attendance/use-part-time-availability"
-import type { ISuggestPartTimeShiftsResult } from "@/types/part-time-availability.types"
+import { PART_TIME_AVAILABILITY_ASSIGNABLE_STATUSES } from "@/config/entities/part-time-availability.config"
+import { usePartTimeAvailabilityList } from "@/hooks/attendance/use-part-time-availability"
 import { formatDateParam } from "@/utils/attendance/format-date-param"
 import { getWeekDates } from "@/utils/attendance/get-week-dates"
 import { getWeekRangeLabel } from "@/utils/attendance/get-week-range-label"
 import { getWeekStart } from "@/utils/attendance/get-week-start"
-import {
-  getEarliestRequestableWeekStart,
-} from "@/utils/attendance/part-time-availability.util"
+import { getEarliestRequestableWeekStart } from "@/utils/attendance/part-time-availability.util"
 
-import { ChevronLeft, ChevronRight, Sparkles, Users } from "lucide-react"
 import { useMemo, useState } from "react"
-import { toast } from "sonner"
 
-/** Admin page — week navigation, suggest shifts, assignable-availability count, card list. */
+import { ChevronLeft, ChevronRight, Users } from "lucide-react"
+
+const DAYS_PER_WEEK = 7
+
+/** Admin page — week navigation, assignable-availability count, manual assignment card list. */
 export function AdminPartTimeAvailabilityView() {
   // Shift assignment starts from the upcoming week, not historical weeks.
   const earliestWeekStart = useMemo(() => getEarliestRequestableWeekStart(), [])
@@ -39,8 +30,6 @@ export function AdminPartTimeAvailabilityView() {
   const weekDays = useMemo(() => getWeekDates(weekStart), [weekStart])
   const weekRangeLabel = useMemo(() => getWeekRangeLabel(weekDays), [weekDays])
   const { data: items = [], isLoading } = usePartTimeAvailabilityList(weekStartKey)
-  const suggestMutation = useSuggestPartTimeShifts(weekStartKey)
-  const [suggestResult, setSuggestResult] = useState<ISuggestPartTimeShiftsResult | null>(null)
 
   // Only submitted/approved rows are actionable for shift assignment.
   const assignableItems = useMemo(
@@ -48,50 +37,14 @@ export function AdminPartTimeAvailabilityView() {
     [items],
   )
 
-  const suggestionByAvailabilityId = useMemo(() => {
-    const map = new Map(
-      (suggestResult?.suggestions ?? []).map((suggestion) => [
-        suggestion.availabilityId,
-        suggestion,
-      ]),
-    )
-    return map
-  }, [suggestResult])
-
-  const coverageSummary = useMemo(() => {
-    if (!suggestResult) return null
-    return suggestResult.coverage
-      .map((item) => {
-        const label = DAY_OF_WEEK_LABELS.get(item.dayOfWeek) ?? `Ngày ${item.dayOfWeek}`
-        return `${label} ${item.shiftName} ${item.assignedCount}/${item.requiredCount}`
-      })
-      .join(" · ")
-  }, [suggestResult])
-
   const handleWeekStartChange = (nextWeekStart: Date) => {
     setWeekStart(getWeekStart(nextWeekStart))
-    setSuggestResult(null)
   }
 
   const shiftWeek = (offset: number) => {
     const next = new Date(weekStart)
-    next.setDate(next.getDate() + offset * 7)
+    next.setDate(next.getDate() + offset * DAYS_PER_WEEK)
     handleWeekStartChange(next)
-  }
-
-  const handleSuggest = async () => {
-    if (assignableItems.length === 0) {
-      toast.error(PART_TIME_AVAILABILITY_ASSIGN_LABELS.SUGGEST_EMPTY)
-      return
-    }
-
-    try {
-      const result = await suggestMutation.mutateAsync()
-      setSuggestResult(result)
-      toast.success(PART_TIME_AVAILABILITY_ASSIGN_LABELS.SUGGEST_SUCCESS)
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Không thể tạo gợi ý xếp ca")
-    }
   }
 
   return (
@@ -100,19 +53,6 @@ export function AdminPartTimeAvailabilityView() {
         title="Xếp ca theo lịch rảnh"
         action={
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="rounded-full"
-              disabled={isLoading || suggestMutation.isPending || assignableItems.length === 0}
-              onClick={() => {
-                void handleSuggest()
-              }}
-            >
-              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-              {PART_TIME_AVAILABILITY_ASSIGN_LABELS.SUGGEST}
-            </Button>
             <Button
               type="button"
               variant="outline"
@@ -154,24 +94,15 @@ export function AdminPartTimeAvailabilityView() {
         <div className="flex items-center gap-2">
           <Users className="h-4 w-4 text-primary" />
           <span>
-            {isLoading ? "Đang tải..." : `${assignableItems.length} nhân viên đã gửi lịch rảnh tuần này`}
+            {isLoading
+              ? "Đang tải..."
+              : `${assignableItems.length} nhân viên đã gửi lịch rảnh tuần này`}
           </span>
         </div>
-        {coverageSummary ? (
-          <p className="pl-6 text-foreground/80">
-            Coverage gợi ý: {coverageSummary}
-          </p>
-        ) : null}
+        <p className="pl-6 text-foreground/80">
+          AI chính đã chuyển sang Project Overview để dự đoán capacity theo project/role.
+        </p>
       </div>
-
-      {suggestResult ? (
-        <PartTimeSuggestionMatrix
-          weekStartKey={weekStartKey}
-          suggestions={suggestResult.suggestions}
-          coverage={suggestResult.coverage}
-          gaps={suggestResult.unassignedGaps}
-        />
-      ) : null}
 
       {isLoading ? (
         <Skeleton className="h-64 w-full rounded-xl" />
@@ -185,7 +116,6 @@ export function AdminPartTimeAvailabilityView() {
               availability={availability}
               weekStart={weekStart}
               weekStartKey={weekStartKey}
-              suggestion={suggestionByAvailabilityId.get(availability.id)}
             />
           ))}
         </div>
