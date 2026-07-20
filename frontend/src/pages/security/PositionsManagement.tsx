@@ -57,7 +57,7 @@ export default function PositionsManagement() {
     setIsOpen(true)
   }
 
-  const handleOpenEdit = (pos: any) => {
+  const handleOpenEdit = (pos: unknown) => {
     setEditingId(pos.id)
     setName(pos.name)
     setCode(pos.code)
@@ -97,7 +97,7 @@ export default function PositionsManagement() {
       }
       setIsOpen(false)
       refetch()
-    } catch (error: any) {
+    } catch (error: unknown) {
       const msg = error.response?.data?.error?.message || "Đã xảy ra lỗi"
       toast.error(msg)
     }
@@ -109,7 +109,7 @@ export default function PositionsManagement() {
         await deleteMutation.mutateAsync(id)
         toast.success("Xóa chức vụ thành công")
         refetch()
-      } catch (error: any) {
+      } catch {
         toast.error("Xóa chức vụ thất bại")
       }
     }

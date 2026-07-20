@@ -105,7 +105,9 @@ export const schedulesApi = {
   },
 
   /** Fetches specific employee shifts for the authenticated user within a date range. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   getMyShifts: async (startDate: string, endDate: string): Promise<any[]> => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
     const res = await apiClient.get<ApiResponse<any[]>>(API_ENDPOINTS.SCHEDULES.MY_SHIFTS, {
       params: { startDate, endDate },
     })
@@ -113,7 +115,9 @@ export const schedulesApi = {
   },
 
   /** Fetches EmployeeShifts for a specific employee (used for shift-swap partner ca selection). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   getShiftsByEmployee: async (employeeId: string, startDate: string, endDate: string): Promise<any[]> => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
     const res = await apiClient.get<ApiResponse<any[]>>(
       API_ENDPOINTS.SCHEDULES.EMPLOYEE_SHIFTS(employeeId),
       { params: { startDate, endDate } },

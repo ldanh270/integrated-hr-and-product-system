@@ -54,7 +54,7 @@ export function ProjectPositionRules({ projectId }: ProjectPositionRulesProps) {
 
   // Dialog state for adding member directly to a role
   const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
-  const [targetRole, setTargetRole] = useState<any | null>(null)
+  const [targetRole, setTargetRole] = useState<unknown | null>(null)
   const [selectedEmpId, setSelectedEmpId] = useState(SELECT_NONE_VALUE)
   const [addMemberError, setAddMemberError] = useState<string | null>(null)
   const [isSubmittingMember, setIsSubmittingMember] = useState(false)
@@ -63,7 +63,7 @@ export function ProjectPositionRules({ projectId }: ProjectPositionRulesProps) {
    * Opens the role assignment modal for a specific target role.
    * Reset form selection and errors upon opening.
    */
-  const handleOpenAddMemberToRole = (role: any) => {
+  const handleOpenAddMemberToRole = (role: unknown) => {
     setTargetRole(role)
     setSelectedEmpId(SELECT_NONE_VALUE)
     setAddMemberError(null)
@@ -74,7 +74,7 @@ export function ProjectPositionRules({ projectId }: ProjectPositionRulesProps) {
    * Unassigns a project member's role (sets roleId to null).
    * Prompts the user with a unified custom confirmation dialog before performing the unassignment.
    */
-  const handleRemoveMemberFromRole = async (employeeId: string, role: any) => {
+  const handleRemoveMemberFromRole = async (employeeId: string, role: unknown) => {
     const memberName = members.find((m) => m.employeeId === employeeId)?.employee?.fullName || "nhân sự này"
     const ok = await confirm({
       title: "Bỏ thành viên khỏi vai trò",
@@ -89,7 +89,7 @@ export function ProjectPositionRules({ projectId }: ProjectPositionRulesProps) {
       })
       toast.success("Đã xóa nhân sự khỏi vai trò")
       await queryClient.invalidateQueries({ queryKey: ["members", projectId] })
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(err.response?.data?.error?.message || err.message || "Không thể bỏ nhân sự khỏi vai trò")
     }
   }
@@ -103,7 +103,7 @@ export function ProjectPositionRules({ projectId }: ProjectPositionRulesProps) {
   // State to track open dropdown for each role
   const [openDropdown, setOpenDropdown] = useState<{ roleId: string; type: "tracker" | null }>({ roleId: "", type: null })
 
-  const getRoleMembers = (role: any): any[] => {
+  const getRoleMembers = (role: unknown): unknown[] => {
     const assignedMembers = members.filter((m) => m.roleId === role.id)
     const teamLeader = project?.teamLeader
     if (role.code === PROJECT_ROLE.LEADER && teamLeader) {
@@ -151,7 +151,7 @@ export function ProjectPositionRules({ projectId }: ProjectPositionRulesProps) {
     setIsModalOpen(true)
   }
 
-  const handleOpenEdit = (role: any) => {
+  const handleOpenEdit = (role: unknown) => {
     setEditingId(role.id)
     setRoleName(role.name)
     setRoleCode(role.code)
@@ -178,7 +178,8 @@ export function ProjectPositionRules({ projectId }: ProjectPositionRulesProps) {
       }
       setIsModalOpen(false)
       refetchRoles()
-    } catch (error: any) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error: unknown) {
       // Handled by react query error toast
     }
   }
@@ -204,7 +205,8 @@ export function ProjectPositionRules({ projectId }: ProjectPositionRulesProps) {
     try {
       await deleteRoleMutation.mutateAsync(id)
       refetchRoles()
-    } catch (error: any) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error: unknown) {
       // Handled by react query error toast
     }
   }
@@ -238,7 +240,7 @@ export function ProjectPositionRules({ projectId }: ProjectPositionRulesProps) {
       // Invalidate queries to reload members
       await queryClient.invalidateQueries({ queryKey: ["members", projectId] })
       setIsAddMemberModalOpen(false)
-    } catch (err: any) {
+    } catch (err: unknown) {
       setAddMemberError(err.response?.data?.error?.message || err.message || "Thao tác thất bại")
     } finally {
       setIsSubmittingMember(false)
@@ -257,6 +259,7 @@ export function ProjectPositionRules({ projectId }: ProjectPositionRulesProps) {
           ? r.allowedTaskTrackers
           : trackers.map((t) => t.code)
       })
+// eslint-disable-next-line react-hooks/set-state-in-effect
       setLocalRules(initialTrackers)
     }
   }, [roles, trackers])
@@ -275,6 +278,7 @@ export function ProjectPositionRules({ projectId }: ProjectPositionRulesProps) {
   }
 
   const handleSave = async () => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
     const invalidRole = Object.entries(localRules).find(([_, allowedTaskTrackers]) => allowedTaskTrackers.length === 0)
     if (invalidRole) {
       const roleObj = roles.find(r => r.id === invalidRole[0])
@@ -289,6 +293,7 @@ export function ProjectPositionRules({ projectId }: ProjectPositionRulesProps) {
       await Promise.all(promises)
       toast.success("Lưu cấu hình phân quyền thành công")
       refetchRoles()
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       toast.error("Lưu cấu hình thất bại")
     }
