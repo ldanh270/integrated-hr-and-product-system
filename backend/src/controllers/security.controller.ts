@@ -16,13 +16,14 @@ export class SecurityController {
    */
   getSummary = async (req: AuthRequest, res: Response) => {
     try {
-      const result = await this.authService.getSecuritySummary()
+      const timeRange = (req.query.timeRange as string) || "today"
+      const result = await this.authService.getSecuritySummary(timeRange)
 
       res.status(HttpStatusCode.OK).json({
         status: RESPONSE_STATUS.SUCCESS,
         data: result,
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
         status: RESPONSE_STATUS.ERROR,
         message: error.message || "Failed to fetch security summary",
@@ -41,7 +42,7 @@ export class SecurityController {
         status: RESPONSE_STATUS.SUCCESS,
         data: result,
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
         status: RESPONSE_STATUS.ERROR,
         message: error.message || "Failed to fetch locked accounts",
@@ -70,7 +71,7 @@ export class SecurityController {
         status: RESPONSE_STATUS.SUCCESS,
         message: "Account unlocked successfully",
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       res.status(error.statusCode || HttpStatusCode.INTERNAL_SERVER_ERROR).json({
         status: RESPONSE_STATUS.ERROR,
         message: error.message || "Failed to unlock account",
