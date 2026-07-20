@@ -99,9 +99,6 @@ export function AdminPartTimeAvailabilityView() {
               : `${assignableItems.length} nhân viên đã gửi lịch rảnh tuần này`}
           </span>
         </div>
-        <p className="pl-6 text-foreground/80">
-          AI chính đã chuyển sang Project Overview để dự đoán capacity theo project/role.
-        </p>
       </div>
 
       {isLoading ? (

@@ -2,9 +2,11 @@ import { PageCard } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { CAPACITY_COPILOT_RULES } from "@/config/rules/capacity-copilot.config"
+import { usePermission } from "@/hooks/use-permission"
 import { capacityCopilotApi } from "@/lib/api/capacity-copilot.api"
 import type { CapacityForecastResult } from "@/types/capacity-copilot.types"
 import type { ProjectMember } from "@/types/project.types"
+import { formatDateParam } from "@/utils/attendance/format-date-param"
 import { extractErrorMessage } from "@/utils/error-helper"
 
 /**
@@ -23,17 +25,35 @@ interface ProjectCapacityCopilotCardProps {
 
 const getCurrentWeekStart = (): string => {
   const date = new Date()
+  return getWeekStartDateKey(date)
+}
+
+const getWeekStartDateKey = (value: Date): string => {
+  const date = new Date(value)
   const day = date.getDay()
-  const diff = day === 0 ? -6 : 1 - day
+  const diff = day === 0 ? -CAPACITY_COPILOT_RULES.DAYS_PER_WEEK + 1 : 1 - day
   date.setDate(date.getDate() + diff)
   date.setHours(0, 0, 0, 0)
-  return date.toISOString().slice(0, 10)
+  return formatDateParam(date)
+}
+
+const formatDisplayDate = (value: Date): string =>
+  formatDateParam(value).split("-").reverse().join("/")
+
+const getForecastWeekLabel = (weekStart: string): string => {
+  const start = new Date(`${weekStart}T00:00:00`)
+  const end = new Date(start)
+  end.setDate(start.getDate() + CAPACITY_COPILOT_RULES.DAYS_PER_WEEK - 1)
+  return `${formatDisplayDate(start)} – ${formatDisplayDate(end)}`
 }
 
 export function ProjectCapacityCopilotCard({
   projectId,
   members,
 }: ProjectCapacityCopilotCardProps) {
+  const { hasPermission } = usePermission()
+  const canForecastCapacity = hasPermission("project.update")
+
   const roleOptions = useMemo(() => {
     const roleByCode = new Map<string, string>()
     for (const member of members) {
@@ -46,6 +66,7 @@ export function ProjectCapacityCopilotCard({
 
   const [weekStart, setWeekStart] = useState(getCurrentWeekStart)
   const [forecast, setForecast] = useState<CapacityForecastResult | null>(null)
+  const forecastWeekLabel = useMemo(() => getForecastWeekLabel(weekStart), [weekStart])
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -68,6 +89,10 @@ export function ProjectCapacityCopilotCard({
       <AlertTriangle className="size-4 text-destructive" />
     )
 
+  if (!canForecastCapacity) {
+    return null
+  }
+
   return (
     <PageCard className="p-6">
       <div className="flex flex-col gap-4">
@@ -78,21 +103,29 @@ export function ProjectCapacityCopilotCard({
               Part-time Capacity Copilot
             </h3>
             <p className="text-xs text-muted-foreground mt-1">
-              Dự đoán % hoàn thành tuần này từ lịch sử delivery, lịch rảnh (availability), hiệu suất
-              (velocity) và giờ đã log (spent time).
+              Dự đoán % hoàn thành tuần được chọn từ lịch sử delivery, lịch rảnh (availability),
+              hiệu suất (velocity) và giờ đã log (spent time).
             </p>
           </div>
-          <Input
-            type="date"
-            value={weekStart}
-            onChange={(event) => setWeekStart(event.target.value)}
-            className="w-40 rounded-full"
-          />
+          <div className="flex flex-col items-end gap-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Tuần dự đoán (Forecast week)
+            </span>
+            <Input
+              type="date"
+              value={weekStart}
+              onChange={(event) => {
+                setWeekStart(getWeekStartDateKey(new Date(`${event.target.value}T00:00:00`)))
+              }}
+              className="w-40 rounded-full"
+            />
+            <span className="text-xs font-medium text-muted-foreground">{forecastWeekLabel}</span>
+          </div>
         </div>
 
         <div className="rounded-xl border border-border p-3 bg-muted/20 max-w-sm text-xs text-muted-foreground">
           {/* Target stays on project deal so Admin cannot silently alter forecast assumptions at runtime. */}
-          Mục tiêu tuần này (Target milestone %) được lấy từ deal khi tạo/chỉnh sửa dự án.
+          Mục tiêu tuần được chọn (Target milestone %) được lấy từ deal khi tạo/chỉnh sửa dự án.
         </div>
 
         <Button
@@ -126,7 +159,9 @@ export function ProjectCapacityCopilotCard({
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
               <div className="rounded-xl border border-border p-3 bg-muted/20">
-                <span className="text-muted-foreground">Capacity tuần này (This week)</span>
+                <span className="text-muted-foreground">
+                  Capacity tuần được chọn (Selected week)
+                </span>
                 <div className="text-base font-black">
                   {forecast.totalEffectiveHours} effective hours
                 </div>
