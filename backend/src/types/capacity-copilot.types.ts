@@ -26,6 +26,12 @@ export interface CapacityDeliveryHistoryRow {
   completedPercent: number
 }
 
+export interface CapacityProjectRow {
+  id: string
+  name: string
+  dealTargetPercent: number
+}
+
 export interface CapacityAvailabilityRow {
   employeeId: string
   status: string
@@ -40,6 +46,8 @@ export interface CapacityAvailabilityRow {
 
 export interface ICapacityCopilotRepository {
   getProjectDealTargetPercent(projectId: string): Promise<number | null | undefined>
+  listProjectsWithDealTarget(): Promise<CapacityProjectRow[]>
+  listProjectsByEmployeeWithDealTarget(employeeId: string): Promise<CapacityProjectRow[]>
   listProjectMembers(projectId: string): Promise<CapacityProjectMemberRow[]>
   listWeeklyAvailabilities(weekStart: Date): Promise<CapacityAvailabilityRow[]>
   getEmployeeVelocity(employeeId: string): Promise<CapacityVelocityRow>

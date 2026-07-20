@@ -3,6 +3,7 @@
  */
 import apiClient from "@/lib/api-client"
 import type {
+  CapacityBoardForecastResult,
   CapacityForecastResult,
   ForecastProjectCapacityDto,
 } from "@/types/capacity-copilot.types"
@@ -13,6 +14,16 @@ interface ApiResponse<T> {
 }
 
 export const capacityCopilotApi = {
+  forecastWeeklyBoard: async (
+    data: ForecastProjectCapacityDto,
+  ): Promise<CapacityBoardForecastResult> => {
+    const response = await apiClient.get<ApiResponse<CapacityBoardForecastResult>>(
+      "/capacity-copilot/weekly-board",
+      { params: data },
+    )
+    return response.data.data
+  },
+
   // Keep capacity forecasting outside Project Task AI so task assignment behavior remains untouched.
   forecastProject: async (
     projectId: string,

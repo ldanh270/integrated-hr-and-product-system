@@ -1,5 +1,5 @@
 import { PART_TIME_AVAILABILITY_STATUS } from "@/configs/entities/part-time-availability.config.ts"
-import { SPENT_TIME_STATUS, TASK_STATUS } from "@/configs/entities/project.config.ts"
+import { PROJECT_STATUS, SPENT_TIME_STATUS, TASK_STATUS } from "@/configs/entities/project.config.ts"
 import { CAPACITY_COPILOT_RULES } from "@/configs/rules/capacity-copilot.config.ts"
 /**
  * Prisma repository that gathers project deal, staffing, availability, and delivery history.
@@ -7,6 +7,7 @@ import { CAPACITY_COPILOT_RULES } from "@/configs/rules/capacity-copilot.config.
 import {
   CapacityAvailabilityRow,
   CapacityDeliveryHistoryRow,
+  CapacityProjectRow,
   CapacityProjectMemberRow,
   CapacityVelocityRow,
   ICapacityCopilotRepository,
@@ -30,6 +31,62 @@ export class PrismaCapacityCopilotRepository
       select: { dealTargetPercent: true },
     })
     return project?.dealTargetPercent
+  }
+
+  async listProjectsWithDealTarget(): Promise<CapacityProjectRow[]> {
+    // Weekly cron/board only forecasts live projects that have a committed deal target.
+    const projects = await this.prisma.project.findMany({
+      where: {
+        dealTargetPercent: { not: null },
+        status: { notIn: [PROJECT_STATUS.COMPLETED, PROJECT_STATUS.CANCELLED] },
+      },
+      select: {
+        id: true,
+        name: true,
+        dealTargetPercent: true,
+      },
+      orderBy: { updatedAt: "desc" },
+    })
+
+    return projects
+      .filter((project): project is CapacityProjectRow => project.dealTargetPercent !== null)
+      .map((project) => ({
+        id: project.id,
+        name: project.name,
+        dealTargetPercent: project.dealTargetPercent,
+      }))
+  }
+
+  async listProjectsByEmployeeWithDealTarget(employeeId: string): Promise<CapacityProjectRow[]> {
+    // Availability update jobs refresh only projects touched by that employee's new free-time slots.
+    const members = await this.prisma.projectMember.findMany({
+      where: {
+        employeeId,
+        removedAt: null,
+        project: {
+          dealTargetPercent: { not: null },
+          status: { notIn: [PROJECT_STATUS.COMPLETED, PROJECT_STATUS.CANCELLED] },
+        },
+      },
+      select: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+            dealTargetPercent: true,
+          },
+        },
+      },
+    })
+
+    return members
+      .map((member) => member.project)
+      .filter((project): project is CapacityProjectRow => project.dealTargetPercent !== null)
+      .map((project) => ({
+        id: project.id,
+        name: project.name,
+        dealTargetPercent: project.dealTargetPercent,
+      }))
   }
 
   async listProjectMembers(projectId: string): Promise<CapacityProjectMemberRow[]> {
@@ -65,6 +122,7 @@ export class PrismaCapacityCopilotRepository
   }
 
   async listWeeklyAvailabilities(weekStart: Date): Promise<CapacityAvailabilityRow[]> {
+    // Submitted rows count as usable forecast input; Admin assignment approval is not required for capacity planning.
     const records = await this.prisma.partTimeWeeklyAvailability.findMany({
       where: {
         weekStart,
@@ -97,6 +155,7 @@ export class PrismaCapacityCopilotRepository
   }
 
   async getEmployeeVelocity(employeeId: string): Promise<CapacityVelocityRow> {
+    // Velocity uses completed tasks plus non-rejected spent time; rejected logs are excluded from productivity.
     const tasks = await this.prisma.task.findMany({
       where: {
         assigneeId: employeeId,
@@ -140,6 +199,7 @@ export class PrismaCapacityCopilotRepository
     lookbackWeeks: number,
   ): Promise<CapacityDeliveryHistoryRow[]> {
     // Completed estimate / total estimate gives a simple historical delivery percentage.
+    // This repository reads history only; it does not modify Project Task assignment or task estimates.
     const totalEstimateResult = await this.prisma.task.aggregate({
       where: {
         projectId,

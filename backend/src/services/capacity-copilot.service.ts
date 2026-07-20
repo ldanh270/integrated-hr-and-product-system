@@ -6,6 +6,7 @@ import { CAPACITY_COPILOT_RULES } from "@/configs/rules/capacity-copilot.config.
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
+  CapacityProjectRow,
   ForecastProjectCapacityDto,
   ICapacityCopilotRepository,
 } from "@/types/capacity-copilot.types.ts"
@@ -17,6 +18,8 @@ import {
 } from "@/utils/project-capacity-copilot.util.ts"
 
 export class CapacityCopilotService {
+  private forecastCache = new Map<string, CapacityBoardProjectSnapshot>()
+
   constructor(private repository: ICapacityCopilotRepository) {}
 
   async forecastProjectCapacity(
@@ -73,6 +76,94 @@ export class CapacityCopilotService {
     return buildCapacityForecast(memberInputs, dealTargetPercent, history)
   }
 
+  async forecastCapacityBoard(
+    input: ForecastProjectCapacityDto,
+  ): Promise<CapacityBoardForecastResult> {
+    const weekStart = this.normalizeWeekStart(input.weekStart)
+    const projects = await this.repository.listProjectsWithDealTarget()
+    const snapshots = await Promise.all(
+      projects.map((project) => {
+        const forecastInput = {
+          weekStart: weekStart.toISOString(),
+          lookbackWeeks: input.lookbackWeeks,
+        }
+        return this.safeForecastBoardProject(project, forecastInput)
+      }),
+    )
+
+    return {
+      weekStart: weekStart.toISOString().slice(0, 10),
+      generatedAt: new Date().toISOString(),
+      projects: snapshots,
+    }
+  }
+
+  /**
+   * Fire-and-forget event job after an employee submits availability.
+   * This makes the copilot proactive without changing Project Task assignment behavior.
+   */
+  runAvailabilityUpdatedJob(employeeId: string, weekStartValue: string | Date): void {
+    const weekStart = this.normalizeWeekStart(
+      weekStartValue instanceof Date ? weekStartValue.toISOString() : weekStartValue,
+    )
+
+    void this.refreshEmployeeProjectForecasts(employeeId, weekStart).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : "unknown error"
+      console.error("[CapacityCopilotJob] availability refresh failed:", message)
+    })
+  }
+
+  private async refreshEmployeeProjectForecasts(employeeId: string, weekStart: Date): Promise<void> {
+    const projects = await this.repository.listProjectsByEmployeeWithDealTarget(employeeId)
+    await Promise.allSettled(
+      projects.map((project) =>
+        this.forecastAndCacheProjectCapacity(project, {
+          weekStart: weekStart.toISOString(),
+          lookbackWeeks: CAPACITY_COPILOT_RULES.DEFAULT_LOOKBACK_WEEKS,
+        }),
+      ),
+    )
+  }
+
+  private async safeForecastBoardProject(
+    project: CapacityProjectRow,
+    input: ForecastProjectCapacityDto,
+  ): Promise<CapacityBoardProjectSnapshot> {
+    try {
+      return await this.forecastAndCacheProjectCapacity(project, input)
+    } catch (error: unknown) {
+      return {
+        projectId: project.id,
+        projectName: project.name,
+        forecast: null,
+        generatedAt: new Date().toISOString(),
+        errorMessage: error instanceof Error ? error.message : "Forecast failed",
+      }
+    }
+  }
+
+  private async forecastAndCacheProjectCapacity(
+    project: CapacityProjectRow,
+    input: ForecastProjectCapacityDto,
+  ): Promise<CapacityBoardProjectSnapshot> {
+    const projectId = project.id
+    const forecast = await this.forecastProjectCapacity(projectId, input)
+    const snapshot: CapacityBoardProjectSnapshot = {
+      projectId,
+      projectName: project.name,
+      forecast,
+      generatedAt: new Date().toISOString(),
+      errorMessage: null,
+    }
+    this.forecastCache.set(this.buildCacheKey(projectId, input.weekStart, input.lookbackWeeks), snapshot)
+    return snapshot
+  }
+
+  private buildCacheKey(projectId: string, weekStart: string, lookbackWeeks?: number): string {
+    const lookback = lookbackWeeks ?? CAPACITY_COPILOT_RULES.DEFAULT_LOOKBACK_WEEKS
+    return `${projectId}:${this.normalizeWeekStart(weekStart).toISOString().slice(0, 10)}:${lookback}`
+  }
+
   private getAvailableHours(
     workScheduleType: string,
     availability:
@@ -102,4 +193,18 @@ export class CapacityCopilotService {
     date.setHours(0, 0, 0, 0)
     return date
   }
+}
+
+export interface CapacityBoardProjectSnapshot {
+  projectId: string
+  projectName: string
+  forecast: CapacityForecastResult | null
+  generatedAt: string
+  errorMessage: string | null
+}
+
+export interface CapacityBoardForecastResult {
+  weekStart: string
+  generatedAt: string
+  projects: CapacityBoardProjectSnapshot[]
 }

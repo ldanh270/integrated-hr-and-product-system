@@ -36,6 +36,7 @@ import { buildAssignedDaySummaries } from "@/utils/part-time-availability/build-
 import { AppError } from "@/utils/error.util.ts"
 
 import { auditService } from "./audit.service.ts"
+import type { CapacityCopilotService } from "./capacity-copilot.service.ts"
 
 /** Part-time weekly availability: employee free-time submission and admin shift assignment. */
 export class PartTimeAvailabilityService implements IPartTimeAvailabilityService {
@@ -44,6 +45,7 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
     private employeeRepo: IEmployeeRepository,
     private employeeShiftRepo: IEmployeeShiftRepository,
     private workingShiftRepo: IWorkingShiftRepository,
+    private capacityCopilotService?: CapacityCopilotService,
   ) {}
 
   /** Employee reads own weekly availability for the selected Monday weekStart. */
@@ -87,13 +89,17 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
     validateAvailabilityDays(days)
 
     // Every employee save enters the assign queue immediately; client status is ignored.
-    return this.availabilityRepo.upsert({
+    const availability = await this.availabilityRepo.upsert({
       employeeId,
       weekStart,
       note: data.note,
       status: PART_TIME_AVAILABILITY_STATUS.SUBMITTED,
       days,
     })
+
+    this.capacityCopilotService?.runAvailabilityUpdatedJob(employeeId, weekStart)
+
+    return availability
   }
 
   /** Admin roster: all availability submissions for a given week, with assigned shift summaries. */

@@ -1,10 +1,8 @@
 import { PageCard } from "@/components/common"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { CAPACITY_COPILOT_RULES } from "@/config/rules/capacity-copilot.config"
 import { usePermission } from "@/hooks/use-permission"
 import { capacityCopilotApi } from "@/lib/api/capacity-copilot.api"
-import type { CapacityForecastResult } from "@/types/capacity-copilot.types"
 import type { ProjectMember } from "@/types/project.types"
 import { formatDateParam } from "@/utils/attendance/format-date-param"
 import { extractErrorMessage } from "@/utils/error-helper"
@@ -14,9 +12,8 @@ import { extractErrorMessage } from "@/utils/error-helper"
  */
 import { useMemo, useState } from "react"
 
-import { useMutation } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { AlertTriangle, Brain, CheckCircle2, RefreshCw } from "lucide-react"
-import { toast } from "sonner"
 
 interface ProjectCapacityCopilotCardProps {
   projectId: string
@@ -65,22 +62,19 @@ export function ProjectCapacityCopilotCard({
   }, [members])
 
   const [weekStart, setWeekStart] = useState(getCurrentWeekStart)
-  const [forecast, setForecast] = useState<CapacityForecastResult | null>(null)
   const forecastWeekLabel = useMemo(() => getForecastWeekLabel(weekStart), [weekStart])
 
-  const mutation = useMutation({
-    mutationFn: () =>
+  const forecastQuery = useQuery({
+    queryKey: ["capacity-copilot", "project", projectId, weekStart],
+    queryFn: () =>
       capacityCopilotApi.forecastProject(projectId, {
         weekStart,
         lookbackWeeks: CAPACITY_COPILOT_RULES.DEFAULT_LOOKBACK_WEEKS,
       }),
-    onSuccess: (data) => {
-      setForecast(data)
-    },
-    onError: (error) => {
-      toast.error(extractErrorMessage(error))
-    },
+    enabled: canForecastCapacity && roleOptions.length > 0,
   })
+
+  const forecast = forecastQuery.data ?? null
 
   const riskIcon =
     forecast?.riskLevel === "low" ? (
@@ -128,18 +122,23 @@ export function ProjectCapacityCopilotCard({
           Mục tiêu tuần được chọn (Target milestone %) được lấy từ deal khi tạo/chỉnh sửa dự án.
         </div>
 
-        <Button
-          className="rounded-full w-fit gap-2"
-          onClick={() => {
-            mutation.mutate()
-          }}
-          disabled={mutation.isPending || roleOptions.length === 0}
-        >
-          <RefreshCw className={`size-4 ${mutation.isPending ? "animate-spin" : ""}`} />
-          Dự đoán năng lực (Forecast capacity)
-        </Button>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/20 px-3 py-2">
+            <RefreshCw className={`size-4 text-primary ${forecastQuery.isFetching ? "animate-spin" : ""}`} />
+            Cronjob chạy ngầm hằng tuần, màn hình chỉ đọc kết quả dự báo
+          </span>
+          {forecastQuery.error && (
+            <span className="rounded-full border border-destructive/30 bg-destructive/10 px-3 py-2 text-destructive">
+              {extractErrorMessage(forecastQuery.error)}
+            </span>
+          )}
+        </div>
 
-        {forecast && (
+        {forecastQuery.isLoading ? (
+          <div className="rounded-xl border border-border bg-muted/20 p-4 text-xs text-muted-foreground">
+            Đang tự động dự đoán capacity...
+          </div>
+        ) : forecast && (
           <div className="space-y-4 border-t border-border pt-4">
             <div className="grid grid-cols-3 gap-3">
               <div className="rounded-xl border border-border p-3 bg-muted/20">

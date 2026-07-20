@@ -42,3 +42,17 @@ export interface CapacityForecastResult {
   }>
   recommendations: string[]
 }
+
+export interface CapacityBoardProjectSnapshot {
+  projectId: string
+  projectName: string
+  forecast: CapacityForecastResult | null
+  generatedAt: string
+  errorMessage: string | null
+}
+
+export interface CapacityBoardForecastResult {
+  weekStart: string
+  generatedAt: string
+  projects: CapacityBoardProjectSnapshot[]
+}

@@ -16,4 +16,8 @@ export const CAPACITY_COPILOT_RULES = {
   UNKNOWN_ROLE_NAME: "Chưa có role",
   DEAL_TARGET_PERCENT_MIN: 1,
   DEAL_TARGET_PERCENT_MAX: 100,
+  // Weekly background refresh defaults: Monday 00:05, after employees usually submit next-week availability.
+  WEEKLY_CRON_DAY_OF_WEEK: 1,
+  WEEKLY_CRON_HOUR: 0,
+  WEEKLY_CRON_MINUTE: 5,
 } as const

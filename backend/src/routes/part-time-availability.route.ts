@@ -1,6 +1,7 @@
 import {
   PartTimeAvailabilityController,
 } from "@/controllers/part-time-availability.controller.ts"
+import { capacityCopilotService } from "@/libs/capacity-copilot-runtime.ts"
 import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
 import { requirePermission } from "@/middlewares/permission.middleware.ts"
@@ -27,6 +28,7 @@ const service = new PartTimeAvailabilityService(
   employeeRepo,
   employeeShiftRepo,
   workingShiftRepo,
+  capacityCopilotService,
 )
 const suggestionService = new PtShiftSuggestionService(
   service,

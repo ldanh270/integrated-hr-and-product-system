@@ -68,6 +68,8 @@ export const clampVelocity = (value: number): number =>
 
 export const calculateVelocity = (estimatedHours: number, spentHours: number): number => {
   if (estimatedHours <= 0 || spentHours <= 0) return CAPACITY_VELOCITY.DEFAULT
+  // Velocity > 1 means the employee historically finishes estimated work faster than logged time.
+  // Clamp avoids one abnormal week making the forecast unrealistically optimistic or pessimistic.
   return clampVelocity(estimatedHours / spentHours)
 }
 
@@ -98,6 +100,7 @@ export const buildCapacityForecast = (
   const roleCodes = Array.from(new Set(memberForecasts.map((member) => member.roleCode)))
   const roles = roleCodes.map((roleCode) => {
     const firstMember = memberForecasts.find((member) => member.roleCode === roleCode)
+    // Role summary is what lets PM/Admin spot "developer thiếu, tester dư" across projects.
     const effectiveHours = memberForecasts
       .filter((member) => member.roleCode === roleCode)
       .reduce((sum, member) => sum + member.effectiveHours, 0)
@@ -142,6 +145,8 @@ export const buildCapacityForecast = (
 }
 
 const calculateProductivityRate = (history: CapacityForecastResult["history"]): number => {
+  // Productivity rate converts historical delivery into "% completed per effective hour".
+  // If there is no spent-time + done-task history, the UI must show "not enough data" instead of guessing.
   const totals = history.reduce(
     (sum, week) => ({
       completedPercent: sum.completedPercent + week.completedPercent,

@@ -9,6 +9,7 @@ import { PERSONAL_TAB_LABELS } from "@/config/entities/personal.config"
 import { ROUTES } from "@/config/routes.config"
 
 import {
+  BrainCircuit,
   Briefcase,
   CalendarClock,
   CalendarDays,
@@ -302,6 +303,15 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     description: "Quản lý dự án, tiến độ công việc và báo cáo",
     icon: Briefcase,
     routePrefix: ROUTES.PROJECT.BASE,
-    sidebarItems: [{ name: "Danh sách dự án", path: ROUTES.PROJECT.LIST, icon: Briefcase }],
+    sidebarItems: [
+      { name: "Danh sách dự án", path: ROUTES.PROJECT.LIST, icon: Briefcase },
+      // Admin/PM-only board for weekly Capacity Copilot shortage/surplus overview.
+      {
+        name: "Dự báo capacity",
+        path: ROUTES.PROJECT.CAPACITY_BOARD,
+        icon: BrainCircuit,
+        permissions: ["project.update"],
+      },
+    ],
   },
 ]

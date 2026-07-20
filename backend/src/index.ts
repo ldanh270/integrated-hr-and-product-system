@@ -1,5 +1,6 @@
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { PORT } from "@/configs/system/server.config.ts"
+import { initCapacityCopilotCron } from "@/libs/capacity-copilot-cron.ts"
 import { connectDB } from "@/libs/database.ts"
 import { initCronJobs } from "@/libs/payroll-cron.ts"
 import { initWeeklyScheduleCron } from "@/libs/weekly-schedule-cron.ts"
@@ -131,6 +132,8 @@ void connectDB()
       console.log("Server start on port " + PORT)
       initCronJobs()
       initWeeklyScheduleCron()
+      // Capacity Copilot refreshes weekly forecasts in the background; UI reads advisory results.
+      initCapacityCopilotCron()
     })
   })
   .catch((error) => {

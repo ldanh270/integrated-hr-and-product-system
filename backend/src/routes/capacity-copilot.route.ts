@@ -3,22 +3,23 @@ import { CapacityCopilotController } from "@/controllers/capacity-copilot.contro
 /**
  * Express routes for project capacity forecasting.
  */
-import { prisma } from "@/libs/database.ts"
 import { authenticate } from "@/middlewares/auth.middleware.ts"
 import { requirePermission } from "@/middlewares/permission.middleware.ts"
-import { PrismaCapacityCopilotRepository } from "@/repositories/capacity-copilot.repository.ts"
-import { CapacityCopilotService } from "@/services/capacity-copilot.service.ts"
+import { capacityCopilotService } from "@/libs/capacity-copilot-runtime.ts"
 
 import express from "express"
 
 const capacityCopilotRoutes = express.Router()
 
-const repository = new PrismaCapacityCopilotRepository(prisma)
-const service = new CapacityCopilotService(repository)
-const controller = new CapacityCopilotController(service)
+const controller = new CapacityCopilotController(capacityCopilotService)
 
 // Dedicated route keeps capacity forecasting separate from Project Task assignment AI.
 capacityCopilotRoutes.use(authenticate)
+capacityCopilotRoutes.get(
+  "/weekly-board",
+  requirePermission(PERMISSION_CODE.PROJECT_UPDATE),
+  controller.forecastCapacityBoard,
+)
 capacityCopilotRoutes.post(
   "/projects/:projectId/forecast",
   requirePermission(PERMISSION_CODE.PROJECT_UPDATE),

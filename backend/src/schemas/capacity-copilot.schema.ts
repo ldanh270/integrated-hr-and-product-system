@@ -18,3 +18,18 @@ export const forecastProjectCapacitySchema = z
   .strict()
 
 export type ForecastProjectCapacitySchemaType = z.infer<typeof forecastProjectCapacitySchema>
+
+// Board endpoint uses query params because it is read-only and can reuse cron-refreshed snapshots.
+export const forecastCapacityBoardQuerySchema = z
+  .object({
+    weekStart: z
+      .string()
+      .refine((value) => !Number.isNaN(Date.parse(value)), "weekStart không hợp lệ"),
+    lookbackWeeks: z.coerce
+      .number()
+      .int()
+      .min(CAPACITY_COPILOT_RULES.MIN_LOOKBACK_WEEKS)
+      .max(CAPACITY_COPILOT_RULES.MAX_LOOKBACK_WEEKS)
+      .optional(),
+  })
+  .strict()
