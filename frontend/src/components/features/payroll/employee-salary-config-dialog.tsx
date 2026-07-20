@@ -33,6 +33,7 @@ import {
   usePayslipTemplates,
   useSalaryConfigHistory,
 } from "@/hooks/payroll/use-employee-salary-config"
+import { usePermission } from "@/hooks/use-permission"
 
 import { useEffect, useState } from "react"
 
@@ -67,6 +68,9 @@ const formatDate = (dateString?: string) => {
 }
 
 export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employee }: Props) {
+  const { hasPermission } = usePermission()
+  const canReadConfig = hasPermission("payroll.read")
+
   const [activeTab, setActiveTab] = useState<string>("config")
 
   const { data: templates } = usePayslipTemplates()
@@ -160,17 +164,23 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
         >
           <div className="px-6 py-3 border-b border-border/50">
             <TabsList className="bg-muted/50 rounded-lg p-1">
-              <TabsTrigger value="config" className="rounded-md gap-1.5 py-1.5 px-4 text-xs">
-                <Save className="h-3.5 w-3.5" /> Gán mẫu lương
-              </TabsTrigger>
-              <TabsTrigger value="history" className="rounded-md gap-1.5 py-1.5 px-4 text-xs">
-                <History className="h-3.5 w-3.5" /> Lịch sử thiết lập
-              </TabsTrigger>
+              {canReadConfig && (
+                <>
+                  <TabsTrigger value="config" className="rounded-md gap-1.5 py-1.5 px-4 text-xs">
+                    <Save className="h-3.5 w-3.5" /> Gán mẫu lương
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="rounded-md gap-1.5 py-1.5 px-4 text-xs">
+                    <History className="h-3.5 w-3.5" /> Lịch sử thiết lập
+                  </TabsTrigger>
+                </>
+              )}
             </TabsList>
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 min-h-0">
-            <TabsContent value="config" className="mt-0 outline-none">
+            {canReadConfig && (
+              <>
+                <TabsContent value="config" className="mt-0 outline-none">
               {isActiveLoading ? (
                 <div className="flex h-40 items-center justify-center">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -351,6 +361,8 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
                 </div>
               )}
             </TabsContent>
+              </>
+            )}
           </div>
         </Tabs>
       </DialogContent>

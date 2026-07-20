@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ErrorMessage } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode, RESPONSE_STATUS } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
@@ -16,7 +17,8 @@ export class SecurityController {
    */
   getSummary = async (req: AuthRequest, res: Response) => {
     try {
-      const result = await this.authService.getSecuritySummary()
+      const timeRange = (req.query.timeRange as any) || "today"
+      const result = await this.authService.getSecuritySummary(timeRange)
 
       res.status(HttpStatusCode.OK).json({
         status: RESPONSE_STATUS.SUCCESS,

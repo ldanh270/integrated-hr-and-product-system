@@ -1,4 +1,3 @@
-/* eslint-disable security/detect-object-injection */
 import React, { useState } from "react"
 import { 
   Clock, 

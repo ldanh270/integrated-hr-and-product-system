@@ -10,6 +10,8 @@ export const PERMISSION_CODE = {
   PROJECT_UPDATE: "project.update",
   APPLICATION_READ: "application.read",
   APPLICATION_APPROVE: "application.approve",
+  ATTENDANCE_WEEKLY_SCHEDULE_READ: "attendance.weekly_schedule.read",
+  PAYROLL_SALARY_CONFIG_READ: "payroll.salary_config.read",
 } as const
 
 export const PERMISSION_CODES = [
@@ -24,6 +26,8 @@ export const PERMISSION_CODES = [
   PERMISSION_CODE.PROJECT_UPDATE,
   PERMISSION_CODE.APPLICATION_READ,
   PERMISSION_CODE.APPLICATION_APPROVE,
+  PERMISSION_CODE.ATTENDANCE_WEEKLY_SCHEDULE_READ,
+  PERMISSION_CODE.PAYROLL_SALARY_CONFIG_READ,
 ] as const
 
 export type PermissionCode = (typeof PERMISSION_CODES)[number]

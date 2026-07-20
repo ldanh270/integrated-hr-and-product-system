@@ -18,7 +18,7 @@ export type IExportStatus = (typeof EXPORT_STATUS)[keyof typeof EXPORT_STATUS]
 /**
  * Maps activity actions to UI badge variants for security screens.
  */
-export const ACTIVITY_ACTION_VARIANTS: Record<string, "success" | "danger" | "warning" | "neutral"> = {
+export const ACTIVITY_ACTION_VARIANTS: Record<string, "success" | "danger" | "warning" | "neutral" | "info"> = {
   login: "success",
   logout: "neutral",
   failed_login: "danger",
@@ -27,6 +27,52 @@ export const ACTIVITY_ACTION_VARIANTS: Record<string, "success" | "danger" | "wa
   role_assigned: "success",
   role_revoked: "warning",
   password_changed: "warning",
+  // Audit Types
+  ROLE_ASSIGNED: "success",
+  ROLE_REVOKED: "warning",
+  ROLE_REPLACED: "warning",
+  PERMISSION_ASSIGNED: "success",
+  PERMISSION_REVOKED: "warning",
+  PERMISSION_REPLACED: "warning",
+  ROLE_CREATED: "success",
+  ROLE_UPDATED: "neutral",
+  ROLE_DELETED: "danger",
+  PERMISSION_CREATED: "success",
+  PERMISSION_UPDATED: "neutral",
+  PERMISSION_DELETED: "danger",
+  EMPLOYEE_DEACTIVATED: "warning",
+  EMPLOYEE_DELETED: "danger",
+  PART_TIME_SHIFTS_ASSIGNED: "success",
+} as const
+
+/**
+ * Maps activity actions to Vietnamese UI labels.
+ */
+export const ACTIVITY_ACTION_LABELS: Record<string, string> = {
+  login: "Đăng nhập",
+  logout: "Đăng xuất",
+  failed_login: "Đăng nhập thất bại",
+  account_locked: "Khóa tài khoản",
+  account_unlocked: "Mở khóa tài khoản",
+  role_assigned: "Cấp vai trò",
+  role_revoked: "Thu hồi vai trò",
+  password_changed: "Đổi mật khẩu",
+  // Audit Types
+  ROLE_ASSIGNED: "Cấp vai trò",
+  ROLE_REVOKED: "Thu hồi vai trò",
+  ROLE_REPLACED: "Cập nhật vai trò",
+  PERMISSION_ASSIGNED: "Cấp quyền",
+  PERMISSION_REVOKED: "Thu hồi quyền",
+  PERMISSION_REPLACED: "Cập nhật quyền",
+  ROLE_CREATED: "Tạo vai trò",
+  ROLE_UPDATED: "Cập nhật vai trò",
+  ROLE_DELETED: "Xóa vai trò",
+  PERMISSION_CREATED: "Tạo quyền",
+  PERMISSION_UPDATED: "Cập nhật quyền",
+  PERMISSION_DELETED: "Xóa quyền",
+  EMPLOYEE_DEACTIVATED: "Vô hiệu hóa nhân viên",
+  EMPLOYEE_DELETED: "Xóa nhân viên",
+  PART_TIME_SHIFTS_ASSIGNED: "Phân ca làm việc",
 } as const
 
 /**
@@ -73,6 +119,16 @@ export const SECURITY_QUERY_KEY = {
   ROLES: "roles",
   PERMISSIONS: "permissions",
   EMPLOYEES: "employees",
+} as const
+
+/**
+ * Maps security categories to UI badge variants.
+ */
+export const SECURITY_CATEGORY_VARIANTS: Record<string, "success" | "danger" | "warning" | "neutral" | "info"> = {
+  security: "danger",
+  role: "warning",
+  permission: "warning",
+  employee: "info",
 } as const
 
 /**

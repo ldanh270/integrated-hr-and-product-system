@@ -127,7 +127,7 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                   <select
                     id="role"
                     {...register("role")}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="flex h-10 w-full rounded-full border border-input bg-background px-4 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     {roles.map((r) => (
                       <option key={r.id} value={r.name}>
@@ -250,7 +250,7 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                 </p>
               </div>
               <div className="col-span-8 grid grid-cols-2 gap-5">
-                <div className="col-span-2 space-y-1.5">
+                <div className="space-y-1.5">
                   <Label
                     htmlFor="positionId"
                     className="text-[12px] text-muted-foreground font-medium"
@@ -260,10 +260,10 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                   <select
                     id="positionId"
                     {...register("positionId")}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="flex h-10 w-full rounded-full border border-input bg-background px-4 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     <option value="">-- Chọn chức danh --</option>
-                    {positions.map((pos: any) => (
+                    {positions.map((pos: { id: string; name: string }) => (
                       <option key={pos.id} value={pos.id}>
                         {pos.name}
                       </option>
@@ -272,23 +272,6 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                   {errors.positionId && (
                     <p className="text-xs text-destructive">{errors.positionId.message}</p>
                   )}
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="status" className="text-[12px] text-muted-foreground font-medium">
-                    Trạng thái ban đầu
-                  </Label>
-                  <select
-                    id="status"
-                    {...register("status")}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    {EMPLOYEE_STATUSES.map((statusKey) => (
-                      <option key={statusKey} value={statusKey}>
-                        {getEmployeeStatusLabel(statusKey)}
-                      </option>
-                    ))}
-                  </select>
                 </div>
 
                 <div className="space-y-1.5">
@@ -301,7 +284,7 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                   <select
                     id="employeeType"
                     {...register("employeeType")}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="flex h-10 w-full rounded-full border border-input bg-background px-4 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     {EMPLOYMENT_CATEGORY_TYPES.map((typeKey) => (
                       // Contract category only; part-time schedule is workScheduleType below.
@@ -311,6 +294,24 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                     ))}
                   </select>
                 </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="status" className="text-[12px] text-muted-foreground font-medium">
+                    Trạng thái ban đầu
+                  </Label>
+                  <select
+                    id="status"
+                    {...register("status")}
+                    className="flex h-10 w-full rounded-full border border-input bg-background px-4 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    {EMPLOYEE_STATUSES.map((statusKey) => (
+                      <option key={statusKey} value={statusKey}>
+                        {getEmployeeStatusLabel(statusKey)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
 
                 {/* Part-time schedule is separate from employment category (contract type). */}
                 <div className="space-y-1.5">
@@ -323,7 +324,7 @@ export function EmployeeCreateModal({ isOpen, onClose }: Props) {
                   <select
                     id="workScheduleType"
                     {...register("workScheduleType")}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="flex h-10 w-full rounded-full border border-input bg-background px-4 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     {WORK_SCHEDULE_TYPES.map((typeKey) => (
                       // Drives PT vs FT product paths (availability vs weekly template, payroll branch).

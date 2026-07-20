@@ -19,6 +19,7 @@ export interface Employee {
   phone: string | null
   position: string | null
   positionId?: string | null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   positionRel?: any
   employeeType: EmployeeType
   workScheduleType: WorkScheduleType // separates contract category from PT schedule model

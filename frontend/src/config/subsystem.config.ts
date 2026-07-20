@@ -18,11 +18,9 @@ import {
   CircleDollarSign,
   FilePlus2,
   FileText,
-  Package,
   Settings,
   Settings2,
   ShieldCheck,
-  User,
   UserCheck,
   Users,
 } from "lucide-react"
@@ -30,7 +28,6 @@ import type { LucideIcon } from "lucide-react"
 
 export type SubsystemId =
   | "hrm"
-  | "personal"
   | "application"
   | "attendance"
   | "payroll"
@@ -75,41 +72,13 @@ export const ATTENDANCE_SUBSYSTEM_PERMISSION = "attendance.read"
 
 export const SUBSYSTEMS: SubsystemConfig[] = [
   {
-    id: "personal",
-    name: "Cá nhân",
-    description: "Các màn hình cá nhân dành cho nhân viên",
-    icon: User,
-    routePrefix: ROUTES.PERSONAL.BASE,
-    sidebarItems: [
-      { name: PERSONAL_TAB_LABELS.schedule, path: ROUTES.PERSONAL.SCHEDULE, icon: CalendarClock },
-      {
-        name: PERSONAL_TAB_LABELS.availability,
-        path: ROUTES.PERSONAL.AVAILABILITY,
-        icon: CalendarRange,
-        // Only part-time schedule employees submit weekly free-time windows.
-        workScheduleTypes: [WORK_SCHEDULE_TYPE.PART_TIME],
-      },
-      {
-        name: PERSONAL_TAB_LABELS.payslips,
-        path: ROUTES.PERSONAL.PAYSLIPS,
-        icon: CircleDollarSign,
-      },
-      { name: PERSONAL_TAB_LABELS.projects, path: ROUTES.PERSONAL.PROJECTS, icon: Briefcase },
-      {
-        name: PERSONAL_TAB_LABELS.applications,
-        path: ROUTES.PERSONAL.APPLICATIONS,
-        icon: FileText,
-      },
-    ],
-  },
-  {
     id: "hrm",
     name: "Nhân sự",
     description: "Quản lý hồ sơ, hợp đồng, bảo hiểm, công việc...",
     icon: Users,
     routePrefix: ROUTES.HRM.BASE,
     sidebarItems: [
-      { name: "Quản lý hồ sơ", path: ROUTES.HRM.EMPLOYEES, icon: Users },
+      { name: "Quản lý hồ sơ", path: ROUTES.HRM.EMPLOYEES, icon: Users, permissions: ["employee.read"] },
       {
         name: "Nhật ký hoạt động",
         path: ROUTES.HRM.ACTIVITY_LOGS,
@@ -131,6 +100,11 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     icon: FileText,
     routePrefix: ROUTES.APPLICATION.BASE,
     sidebarItems: [
+      {
+        name: PERSONAL_TAB_LABELS.applications,
+        path: ROUTES.PERSONAL.APPLICATIONS,
+        icon: FileText,
+      },
       { name: "Bạn duyệt", path: ROUTES.APPLICATION.MANAGE, icon: UserCheck },
       {
         name: "Đơn thư",
@@ -151,6 +125,17 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     icon: CalendarClock,
     routePrefix: ROUTES.ATTENDANCE.BASE,
     sidebarItems: [
+      {
+        name: PERSONAL_TAB_LABELS.schedule,
+        path: ROUTES.PERSONAL.SCHEDULE,
+        icon: CalendarClock,
+      },
+      {
+        name: PERSONAL_TAB_LABELS.availability,
+        path: ROUTES.PERSONAL.AVAILABILITY,
+        icon: CalendarRange,
+        workScheduleTypes: [WORK_SCHEDULE_TYPE.PART_TIME],
+      },
       {
         name: "Bảng chấm công",
         path: ROUTES.ATTENDANCE.DASHBOARD,
@@ -254,20 +239,34 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     ],
   },
   {
-    id: "asset",
-    name: "Tài sản",
-    description: "Quản lý tài sản và thông tin bàn giao",
-    icon: Package,
-    routePrefix: ROUTES.ASSET.BASE,
-    sidebarItems: [{ name: "Tổng quan", path: ROUTES.ASSET.DASHBOARD, icon: Package }],
-  },
-  {
     id: "recruitment",
     name: "Tuyển dụng",
     description: "Quản lý hồ sơ ứng viên và lịch phỏng vấn",
     icon: Briefcase,
     routePrefix: ROUTES.RECRUITMENT.BASE,
-    sidebarItems: [{ name: "Tổng quan", path: ROUTES.RECRUITMENT.DASHBOARD, icon: Briefcase }],
+    sidebarItems: [{ name: "Tổng quan", path: ROUTES.RECRUITMENT.DASHBOARD, icon: Briefcase, permissions: ["recruitment.read"] }],
+  },
+  {
+    id: "project",
+    name: "Dự án",
+    description: "Quản lý dự án, tiến độ công việc và báo cáo",
+    icon: Briefcase,
+    routePrefix: ROUTES.PROJECT.BASE,
+    sidebarItems: [
+      {
+        name: PERSONAL_TAB_LABELS.projects,
+        path: ROUTES.PERSONAL.PROJECTS,
+        icon: Briefcase,
+      },
+      { name: "Danh sách dự án", path: ROUTES.PROJECT.LIST, icon: Briefcase, permissions: ["project.read"] },
+      // Admin/PM-only board for weekly Capacity Copilot shortage/surplus overview.
+      {
+        name: "Dự báo capacity",
+        path: ROUTES.PROJECT.CAPACITY_BOARD,
+        icon: BrainCircuit,
+        permissions: ["project.update"],
+      },
+    ],
   },
   {
     id: "settings",
@@ -276,7 +275,6 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     icon: Settings,
     routePrefix: ROUTES.SETTINGS.BASE,
     sidebarItems: [
-      { name: "Tổng quan", path: ROUTES.SETTINGS.DASHBOARD, icon: Settings },
       {
         name: "Vai trò",
         path: ROUTES.SETTINGS.ROLES,
@@ -294,23 +292,6 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         path: ROUTES.SETTINGS.PERMISSIONS,
         icon: ShieldCheck,
         permissions: ["role.read"],
-      },
-    ],
-  },
-  {
-    id: "project",
-    name: "Dự án",
-    description: "Quản lý dự án, tiến độ công việc và báo cáo",
-    icon: Briefcase,
-    routePrefix: ROUTES.PROJECT.BASE,
-    sidebarItems: [
-      { name: "Danh sách dự án", path: ROUTES.PROJECT.LIST, icon: Briefcase },
-      // Admin/PM-only board for weekly Capacity Copilot shortage/surplus overview.
-      {
-        name: "Dự báo capacity",
-        path: ROUTES.PROJECT.CAPACITY_BOARD,
-        icon: BrainCircuit,
-        permissions: ["project.update"],
       },
     ],
   },

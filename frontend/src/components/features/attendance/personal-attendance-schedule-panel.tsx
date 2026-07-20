@@ -1,5 +1,5 @@
+import { VirtualScanner } from "@/components/features/attendance/virtual-scanner"
 import { WeeklyScheduleCalendar } from "@/components/features/attendance/weekly-schedule-calendar"
-import { VirtualScanner } from "@/components/features/attendance/VirtualScanner"
 
 export function PersonalAttendanceSchedulePanel() {
   return (

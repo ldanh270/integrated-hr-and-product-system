@@ -1,11 +1,14 @@
 import { PageCard, SectionHeader, StatusPill } from "@/components/common"
 import { IconBox } from "@/components/common/icon-box"
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useSecuritySummary } from "@/hooks/security/queries/use-security-query"
+import { useState } from "react"
 import type { ActivityLogItem } from "@/types/security.types"
 import type { LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useNavigate } from "react-router-dom"
+import { ROUTES } from "@/config/routes.config"
 
 import {
   AlertTriangle,
@@ -85,7 +88,8 @@ function SecurityEventRow({
 
 export default function SecurityDashboard() {
   const navigate = useNavigate()
-  const { data, isLoading, isError, refetch } = useSecuritySummary()
+  const [timeRange, setTimeRange] = useState<"today" | "7days" | "30days">("today")
+  const { data, isLoading, isError, refetch } = useSecuritySummary(timeRange)
 
   if (isLoading) {
     return (
@@ -125,22 +129,37 @@ export default function SecurityDashboard() {
             Theo dõi trạng thái tài khoản và nhật ký hoạt động quan trọng.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 gap-1.5 text-xs"
-          onClick={() => { refetch(); }}
-        >
-          <RefreshCw className="h-3 w-3" />
-          Làm mới
-        </Button>
+        <div className="flex items-center gap-3">
+          <Select
+            value={timeRange}
+            onValueChange={(val: "today" | "7days" | "30days") => { setTimeRange(val); }}
+          >
+            <SelectTrigger className="w-[160px] h-8 text-xs">
+              <SelectValue placeholder="Chọn khoảng thời gian" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today" className="text-xs">Hôm nay</SelectItem>
+              <SelectItem value="7days" className="text-xs">7 ngày qua</SelectItem>
+              <SelectItem value="30days" className="text-xs">30 ngày qua</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1.5 text-xs"
+            onClick={() => { refetch(); }}
+          >
+            <RefreshCw className="h-3 w-3" />
+            Làm mới
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <PageCard
           className="cursor-pointer hover:border-rose-400 hover:shadow-md transition-all duration-200"
-          onClick={() => { navigate("/security/activity-logs?category=security&actionType=account_locked") }}
+          onClick={() => { navigate(`${ROUTES.HRM.ACTIVITY_LOGS}?category=security&actionType=account_locked`) }}
         >
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-600 shrink-0">
@@ -159,7 +178,7 @@ export default function SecurityDashboard() {
 
         <PageCard
           className="cursor-pointer hover:border-amber-400 hover:shadow-md transition-all duration-200"
-          onClick={() => { navigate("/security/activity-logs?category=auth&actionType=failed_login") }}
+          onClick={() => { navigate(`${ROUTES.HRM.ACTIVITY_LOGS}?category=auth&actionType=failed_login`) }}
         >
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 shrink-0">
@@ -167,7 +186,7 @@ export default function SecurityDashboard() {
             </div>
             <div>
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Đăng nhập thất bại (Hôm nay)
+                Đăng nhập thất bại ({timeRange === "today" ? "Hôm nay" : timeRange === "7days" ? "7 ngày qua" : "30 ngày qua"})
               </p>
               <p className="text-2xl font-bold text-foreground mt-0.5">
                 {data.failedLoginsToday}
@@ -178,7 +197,7 @@ export default function SecurityDashboard() {
 
         <PageCard
           className="cursor-pointer hover:border-emerald-400 hover:shadow-md transition-all duration-200"
-          onClick={() => { navigate("/security/activity-logs?category=auth&actionType=login") }}
+          onClick={() => { navigate(`${ROUTES.HRM.ACTIVITY_LOGS}?category=auth&actionType=login`) }}
         >
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 shrink-0">
@@ -186,7 +205,7 @@ export default function SecurityDashboard() {
             </div>
             <div>
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Đăng nhập thành công (Hôm nay)
+                Đăng nhập thành công ({timeRange === "today" ? "Hôm nay" : timeRange === "7days" ? "7 ngày qua" : "30 ngày qua"})
               </p>
               <p className="text-2xl font-bold text-foreground mt-0.5">
                 {data.successfulLoginsToday}

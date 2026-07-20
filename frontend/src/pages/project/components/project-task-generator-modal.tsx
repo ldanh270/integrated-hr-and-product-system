@@ -48,8 +48,10 @@ export function ProjectTaskGeneratorModal({
 
   useEffect(() => {
     if (isOpen && projectId) {
+// eslint-disable-next-line react-hooks/immutability
       void fetchSuggestions()
     }
+// eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, projectId])
 
   const fetchSuggestions = async () => {
