@@ -8,7 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 
 import { toast } from "sonner"
 
-export type StatusFilter = "all" | "pending" | "approved" | "rejected" | "cancelled"
+export type StatusFilter = "all" | typeof APPLICATION_STATUS[keyof typeof APPLICATION_STATUS]
 
 interface UseManageApplicationsReturn {
   applications: IApplicationListItem[]
@@ -42,9 +42,16 @@ interface UseManageApplicationsReturn {
 }
 
 /** Fetches and manages applications assigned to the current approver. */
-export function useManageApplications(): UseManageApplicationsReturn {
+export function useManageApplications(enabled: boolean = true): UseManageApplicationsReturn {
   const [applications, setApplications] = useState<IApplicationListItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(enabled)
+  const [prevEnabled, setPrevEnabled] = useState(enabled)
+
+  if (enabled !== prevEnabled) {
+    setPrevEnabled(enabled)
+    setIsLoading(enabled)
+  }
+  
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending") // Default to pending for managers
   const [typeFilter, setTypeFilter] = useState<string>("all")
@@ -103,17 +110,19 @@ export function useManageApplications(): UseManageApplicationsReturn {
   )
 
   useEffect(() => {
+    if (!enabled) return
+
     activeRef.current = true
     const timer = setTimeout(() => {
       if (activeRef.current) {
-        fetchApplications(false)
+        void fetchApplications(false)
       }
     }, 0)
     return () => {
       activeRef.current = false
       clearTimeout(timer)
     }
-  }, [fetchApplications])
+  }, [fetchApplications, enabled])
 
   const refetch = useCallback(() => {
     fetchApplications(false)
