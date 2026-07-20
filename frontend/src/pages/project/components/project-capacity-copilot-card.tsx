@@ -130,7 +130,9 @@ export function ProjectCapacityCopilotCard({
 
         <Button
           className="rounded-full w-fit gap-2"
-          onClick={() => mutation.mutate()}
+          onClick={() => {
+            mutation.mutate()
+          }}
           disabled={mutation.isPending || roleOptions.length === 0}
         >
           <RefreshCw className={`size-4 ${mutation.isPending ? "animate-spin" : ""}`} />

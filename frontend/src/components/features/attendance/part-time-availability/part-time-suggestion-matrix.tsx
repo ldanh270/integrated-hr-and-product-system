@@ -1,5 +1,8 @@
 import { Button } from "@/components/ui/button"
-import { DAY_OF_WEEK_LABELS, WORK_WEEK_DISPLAY_DAY_ORDER } from "@/config/entities/attendance.config"
+import {
+  DAY_OF_WEEK_LABELS,
+  WORK_WEEK_DISPLAY_DAY_ORDER,
+} from "@/config/entities/attendance.config"
 import { useAssignPartTimeShifts } from "@/hooks/attendance/use-part-time-availability"
 import type {
   IPartTimeUnassignedGap,
@@ -8,6 +11,7 @@ import type {
 } from "@/types/part-time-availability.types"
 
 import { useMemo, useState } from "react"
+
 import { toast } from "sonner"
 
 interface PartTimeSuggestionMatrixProps {
@@ -79,17 +83,24 @@ export function PartTimeSuggestionMatrix({
   }
 
   return (
-    <section className="space-y-3 rounded-xl border border-border bg-card p-4" data-testid="pt-suggestion-matrix">
+    <section
+      className="space-y-3 rounded-xl border border-border bg-card p-4"
+      data-testid="pt-suggestion-matrix"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold text-foreground">Ma trận gợi ý cả đội</h3>
-          <p className="text-xs text-muted-foreground">Bỏ chọn nhân viên không muốn áp dụng; mở card bên dưới để sửa chi tiết.</p>
+          <p className="text-xs text-muted-foreground">
+            Bỏ chọn nhân viên không muốn áp dụng; mở card bên dưới để sửa chi tiết.
+          </p>
         </div>
         <Button
           type="button"
           className="rounded-full"
           disabled={selectedIds.size === 0 || assignMutation.isPending}
-          onClick={() => void confirmSelected()}
+          onClick={() => {
+            void confirmSelected()
+          }}
           data-testid="confirm-selected-suggestions"
         >
           Xác nhận {selectedIds.size} nhân viên
@@ -102,15 +113,34 @@ export function PartTimeSuggestionMatrix({
             <tr>
               <th className="px-3 py-2 text-left">Chọn</th>
               <th className="px-3 py-2 text-left">Nhân viên</th>
-              {WORK_WEEK_DISPLAY_DAY_ORDER.map((day) => <th key={day} className="px-3 py-2 text-left">{DAY_OF_WEEK_LABELS.get(day)}</th>)}
+              {WORK_WEEK_DISPLAY_DAY_ORDER.map((day) => (
+                <th key={day} className="px-3 py-2 text-left">
+                  {DAY_OF_WEEK_LABELS.get(day)}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {suggestions.map((suggestion) => (
               <tr key={suggestion.availabilityId} className="border-t border-border">
-                <td className="px-3 py-2"><input className="h-4 w-4 rounded-full accent-primary" type="checkbox" checked={selectedIds.has(suggestion.availabilityId)} onChange={() => toggle(suggestion.availabilityId)} aria-label={`Chọn ${suggestion.employeeName}`} /></td>
-                <td className="whitespace-nowrap px-3 py-2 font-medium text-foreground">{suggestion.employeeName}<span className="ml-2 text-muted-foreground">{suggestion.score}</span></td>
-                {WORK_WEEK_DISPLAY_DAY_ORDER.map((day) => <td key={day} className="whitespace-nowrap px-3 py-2 text-muted-foreground">{assignmentsByEmployeeDay.get(`${suggestion.availabilityId}:${day}`) ?? "—"}</td>)}
+                <td className="px-3 py-2">
+                  <input
+                    className="h-4 w-4 rounded-full accent-primary"
+                    type="checkbox"
+                    checked={selectedIds.has(suggestion.availabilityId)}
+                    onChange={() => toggle(suggestion.availabilityId)}
+                    aria-label={`Chọn ${suggestion.employeeName}`}
+                  />
+                </td>
+                <td className="whitespace-nowrap px-3 py-2 font-medium text-foreground">
+                  {suggestion.employeeName}
+                  <span className="ml-2 text-muted-foreground">{suggestion.score}</span>
+                </td>
+                {WORK_WEEK_DISPLAY_DAY_ORDER.map((day) => (
+                  <td key={day} className="whitespace-nowrap px-3 py-2 text-muted-foreground">
+                    {assignmentsByEmployeeDay.get(`${suggestion.availabilityId}:${day}`) ?? "—"}
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>
@@ -118,8 +148,23 @@ export function PartTimeSuggestionMatrix({
       </div>
 
       <div className="flex flex-wrap gap-2 text-xs">
-        {coverage.map((item) => <span key={`${item.shiftId}:${item.dayOfWeek}`} className="rounded-full bg-secondary px-3 py-1 text-secondary-foreground">{DAY_OF_WEEK_LABELS.get(item.dayOfWeek)} {item.shiftName}: {item.assignedCount}/{item.requiredCount}</span>)}
-        {gaps.map((gap) => <span key={`${gap.shiftId}:${gap.dayOfWeek}`} className="rounded-full bg-destructive/10 px-3 py-1 text-destructive">Thiếu {gap.missingCount} · {DAY_OF_WEEK_LABELS.get(gap.dayOfWeek)} {gap.shiftName}</span>)}
+        {coverage.map((item) => (
+          <span
+            key={`${item.shiftId}:${item.dayOfWeek}`}
+            className="rounded-full bg-secondary px-3 py-1 text-secondary-foreground"
+          >
+            {DAY_OF_WEEK_LABELS.get(item.dayOfWeek)} {item.shiftName}: {item.assignedCount}/
+            {item.requiredCount}
+          </span>
+        ))}
+        {gaps.map((gap) => (
+          <span
+            key={`${gap.shiftId}:${gap.dayOfWeek}`}
+            className="rounded-full bg-destructive/10 px-3 py-1 text-destructive"
+          >
+            Thiếu {gap.missingCount} · {DAY_OF_WEEK_LABELS.get(gap.dayOfWeek)} {gap.shiftName}
+          </span>
+        ))}
       </div>
     </section>
   )

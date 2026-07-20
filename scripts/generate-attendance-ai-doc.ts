@@ -7,15 +7,15 @@ import {
   BorderStyle,
   Document,
   HeadingLevel,
+  LevelFormat,
   Packer,
   Paragraph,
+  ShadingType,
   Table,
   TableCell,
   TableRow,
   TextRun,
   WidthType,
-  LevelFormat,
-  ShadingType,
 } from "docx"
 import { mkdirSync, writeFileSync } from "fs"
 import { join } from "path"
@@ -39,9 +39,7 @@ function heading1(text: string): Paragraph {
   return new Paragraph({
     heading: HeadingLevel.HEADING_1,
     spacing: { before: 360, after: 200 },
-    children: [
-      new TextRun({ text, bold: true, size: 32, color: COLORS.primary, font: "Calibri" }),
-    ],
+    children: [new TextRun({ text, bold: true, size: 32, color: COLORS.primary, font: "Calibri" })],
   })
 }
 
@@ -49,9 +47,7 @@ function heading2(text: string): Paragraph {
   return new Paragraph({
     heading: HeadingLevel.HEADING_2,
     spacing: { before: 280, after: 140 },
-    children: [
-      new TextRun({ text, bold: true, size: 26, color: COLORS.accent, font: "Calibri" }),
-    ],
+    children: [new TextRun({ text, bold: true, size: 26, color: COLORS.accent, font: "Calibri" })],
   })
 }
 
@@ -59,9 +55,7 @@ function heading3(text: string): Paragraph {
   return new Paragraph({
     heading: HeadingLevel.HEADING_3,
     spacing: { before: 200, after: 100 },
-    children: [
-      new TextRun({ text, bold: true, size: 22, color: COLORS.primary, font: "Calibri" }),
-    ],
+    children: [new TextRun({ text, bold: true, size: 22, color: COLORS.primary, font: "Calibri" })],
   })
 }
 
@@ -150,9 +144,11 @@ function cell(
 }
 
 function makeTable(headers: string[], rows: string[][], colWidths: number[]): Table {
+  const getColumnWidth = (index: number): number => colWidths.at(index) ?? CONTENT_WIDTH
+
   const headerRow = new TableRow({
     children: headers.map((h, i) =>
-      cell(h, { header: true, bold: true, width: colWidths[i] }),
+      cell(h, { header: true, bold: true, width: getColumnWidth(i) }),
     ),
   })
   const dataRows = rows.map(
@@ -160,7 +156,7 @@ function makeTable(headers: string[], rows: string[][], colWidths: number[]): Ta
       new TableRow({
         children: row.map((c, i) =>
           cell(c, {
-            width: colWidths[i],
+            width: getColumnWidth(i),
             fill: ri % 2 === 1 ? COLORS.altRow : undefined,
           }),
         ),
@@ -179,7 +175,13 @@ function callout(title: string, text: string): Paragraph[] {
       spacing: { before: 160, after: 40 },
       shading: { type: ShadingType.CLEAR, fill: COLORS.lightBlue },
       children: [
-        new TextRun({ text: `💡 ${title}`, bold: true, size: 20, font: "Calibri", color: COLORS.accent }),
+        new TextRun({
+          text: `💡 ${title}`,
+          bold: true,
+          size: 20,
+          font: "Calibri",
+          color: COLORS.accent,
+        }),
       ],
     }),
     new Paragraph({
@@ -378,7 +380,13 @@ const doc = new Document({
           ["Tier", "Feature chính", "Effort", "Impact", "LLM?"],
           [
             ["1", "Leave Assistant + Approval Summary + Anomaly", "2–4 tuần", "Cao", "Có (chính)"],
-            ["2", "PT Shift Suggester + Weekly Schedule Copilot", "4–6 tuần", "Rất cao", "Phụ (explain)"],
+            [
+              "2",
+              "PT Shift Suggester + Weekly Schedule Copilot",
+              "4–6 tuần",
+              "Rất cao",
+              "Phụ (explain)",
+            ],
             ["3", "Forecast + Real Shift AI + Payroll Explainer", "6–10 tuần", "Chiến lược", "Có"],
           ],
           [1200, 4200, 1600, 1600, 1860],
@@ -391,9 +399,12 @@ const doc = new Document({
 
         // ── 3. TIER 1 ──
         heading1("3. Tier 1 — Ship nhanh, ROI cao"),
-        body("Các feature này dễ demo, dùng hàng ngày, effort thấp. Phù hợp làm bước đầu tiên để chứng minh giá trị AI.", {
-          italic: true,
-        }),
+        body(
+          "Các feature này dễ demo, dùng hàng ngày, effort thấp. Phù hợp làm bước đầu tiên để chứng minh giá trị AI.",
+          {
+            italic: true,
+          },
+        ),
 
         heading2("3.1 AI Assistant nộp đơn (Leave / OT / WFH)"),
         body("Nhân viên gõ ngôn ngữ tự nhiên, AI parse ra form chuẩn và kiểm tra ràng buộc."),
@@ -408,7 +419,9 @@ const doc = new Document({
         bullet("application.service.ts — validation hiện có"),
         bullet("submitApplicationSchema — Zod schema"),
         bullet("UI: chat panel trong CreateApplicationPage"),
-        body("Kỹ thuật: Structured output (JSON schema) — không cần RAG. Model trả JSON đúng format, validate bằng Zod."),
+        body(
+          "Kỹ thuật: Structured output (JSON schema) — không cần RAG. Model trả JSON đúng format, validate bằng Zod.",
+        ),
 
         heading2("3.2 Approval Triage cho HR"),
         body("Queue duyệt đơn có thể rất dài. AI giúp HR xử lý nhanh hơn:"),
@@ -426,7 +439,7 @@ const doc = new Document({
         bullet("Check-in xa geofence nhưng vẫn pass"),
         bullet("Pattern lạ: luôn check-in sát deadline, check-out sớm"),
         bullet("Cùng GPS nhiều người khác thời điểm (có thể proxy)"),
-        body("→ Dashboard \"Cảnh báo\" cho HR. Không auto phạt — human-in-the-loop."),
+        body('→ Dashboard "Cảnh báo" cho HR. Không auto phạt — human-in-the-loop.'),
 
         // ── 4. TIER 2 ──
         heading1("4. Tier 2 — Giải quyết pain point lớn"),
@@ -447,12 +460,16 @@ const doc = new Document({
         heading3("Luồng hiện tại (không AI)"),
         numbered("Nhân viên PT submit availability (khung giờ rảnh/bận)"),
         numbered("Admin mở drawer, nhập start/end từng ngày thủ công"),
-        numbered("Gọi POST /part-time-availability/:id/assign-shifts → validate → lưu EmployeeShift qua replacePartTimeOverrides()"),
+        numbered(
+          "Gọi POST /part-time-availability/:id/assign-shifts → validate → lưu EmployeeShift qua replacePartTimeOverrides()",
+        ),
         spacer(),
         body("Hạn chế còn lại:", { bold: true }),
         bullet("Admin gán từng người một — không có view cả team trong một màn"),
         bullet("Không biết ai hay đi muộn, ai reliable khi chọn"),
-        bullet("Coverage requiredCount mặc định là 1 — chưa có UI để admin config số người cần thiết mỗi ca/ngày"),
+        bullet(
+          "Coverage requiredCount mặc định là 1 — chưa có UI để admin config số người cần thiết mỗi ca/ngày",
+        ),
 
         heading3("Smart Shift Assignment làm gì?"),
         body("Không auto-gán. Hệ thống đề xuất phân ca, admin review rồi confirm.", {
@@ -462,8 +479,12 @@ const doc = new Document({
         body("Input tuần W:", { bold: true }),
         bullet("PT employees × PartTimeWeeklyAvailability (slots rảnh — đã có trong DB)"),
         bullet("WorkingShift catalog (đã có — isActive filter)"),
-        bullet("coverageRequirements[] — admin truyền vào hoặc fallback: 1 người/ca/ngày cho mọi active shift"),
-        bullet("Historical signals từ AttendanceRecord 90 ngày — LOOKBACK_DAYS=90 (đã config trong PART_TIME_SHIFT_SUGGEST)"),
+        bullet(
+          "coverageRequirements[] — admin truyền vào hoặc fallback: 1 người/ca/ngày cho mọi active shift",
+        ),
+        bullet(
+          "Historical signals từ AttendanceRecord 90 ngày — LOOKBACK_DAYS=90 (đã config trong PART_TIME_SHIFT_SUGGEST)",
+        ),
         spacer(),
         body("Output:", { bold: true }),
         bullet("Suggested assignments per employee per day (ISuggestPartTimeShiftsResult)"),
@@ -479,25 +500,46 @@ const doc = new Document({
         bullet("startTime < endTime — validate trong PartTimeAvailabilityService.assignShifts()"),
         bullet("replacePartTimeOverrides() — atomic delete+create, loại bỏ duplicate tự nhiên"),
         bullet("Chỉ assign khi status ∈ {submitted, approved} — assertSubmittedForAssign()"),
-        bullet("Overnight shift bị block — shiftFitsAvailabilityDay() trả false nếu endTime < startTime"),
+        bullet(
+          "Overnight shift bị block — shiftFitsAvailabilityDay() trả false nếu endTime < startTime",
+        ),
         spacer(),
         body("Scoring hiện tại (scorePartTimeReliability — 2 chiều):", { bold: true }),
         makeTable(
           ["Chiều score", "Trọng số thực tế", "Nguồn data"],
           [
-            ["Attendance rate (check-in/check-out)", "WEIGHT_ATTENDANCE_RATE = 70%", "AttendanceRecord 90 ngày (queryRecords với employeeIds batch)"],
-            ["Late penalty (lateMinutes > 0)", "WEIGHT_LATE_PENALTY = 30%", "lateMinutes từ AttendanceRecord, capped tại LATE_PENALTY_CAP_MINUTES=60"],
-            ["Tie-break: ít giờ tuần này hơn", "assignedMinutesByEmployeeId", "EmployeeShift.shift.endTime - startTime trong tuần"],
+            [
+              "Attendance rate (check-in/check-out)",
+              "WEIGHT_ATTENDANCE_RATE = 70%",
+              "AttendanceRecord 90 ngày (queryRecords với employeeIds batch)",
+            ],
+            [
+              "Late penalty (lateMinutes > 0)",
+              "WEIGHT_LATE_PENALTY = 30%",
+              "lateMinutes từ AttendanceRecord, capped tại LATE_PENALTY_CAP_MINUTES=60",
+            ],
+            [
+              "Tie-break: ít giờ tuần này hơn",
+              "assignedMinutesByEmployeeId",
+              "EmployeeShift.shift.endTime - startTime trong tuần",
+            ],
             ["Employee chưa check-in lần nào", "NEUTRAL_SCORE = 50", "Không penalty, không bonus"],
           ],
           [3000, 2800, 4660],
         ),
         spacer(),
-        body("Lưu ý: không có soft constraint 'cân bằng giờ' dạng weighted score — chỉ dùng làm tie-break sau khi score bằng nhau.", { italic: true }),
+        body(
+          "Lưu ý: không có soft constraint 'cân bằng giờ' dạng weighted score — chỉ dùng làm tie-break sau khi score bằng nhau.",
+          { italic: true },
+        ),
         spacer(),
         body("Cần thêm để hoàn thiện:", { bold: true }),
-        bullet("UI cho admin config coverageRequirements (requiredCount mỗi ca/ngày) — hiện chỉ default = 1"),
-        bullet("Coverage bar visualization trên màn admin roster — component part-time-suggestion-matrix.tsx đã có, cần wire thêm coverage data"),
+        bullet(
+          "UI cho admin config coverageRequirements (requiredCount mỗi ca/ngày) — hiện chỉ default = 1",
+        ),
+        bullet(
+          "Coverage bar visualization trên màn admin roster — component part-time-suggestion-matrix.tsx đã có, cần wire thêm coverage data",
+        ),
         bullet("LLM explainer — chưa có, optional"),
         spacer(),
         body("Lớp 2: LLM Explainer (chưa implement — optional)", { bold: true }),
@@ -505,21 +547,37 @@ const doc = new Document({
         quote(
           '"Gán Lan 8:00–12:00 T3 vì: rảnh 7:30–13:00, attendance rate 97%, score 82/100. Thiếu 1 người ca chiều T3 — không có PT nào rảnh (unassignedGap), cần admin quyết định."',
         ),
-        body("LLM không thay đổi assignment — chỉ narrative. Solver trả kết quả trước, LLM đọc và giải thích sau."),
+        body(
+          "LLM không thay đổi assignment — chỉ narrative. Solver trả kết quả trước, LLM đọc và giải thích sau.",
+        ),
 
         heading3("API đã có & còn thiếu"),
         makeTable(
           ["API", "Trạng thái", "Ghi chú"],
           [
-            ["POST /part-time-availability/suggest", "✅ Đã có", "PtShiftSuggestionService.suggest(), route đã đăng ký"],
-            ["POST /part-time-availability/:id/assign-shifts", "✅ Đã có", "PartTimeAvailabilityService.assignShifts(), không đổi"],
-            ["PUT coverageRequirements config", "❌ Chưa có", "Admin cần màn để set requiredCount mỗi shift/ngày"],
+            [
+              "POST /part-time-availability/suggest",
+              "✅ Đã có",
+              "PtShiftSuggestionService.suggest(), route đã đăng ký",
+            ],
+            [
+              "POST /part-time-availability/:id/assign-shifts",
+              "✅ Đã có",
+              "PartTimeAvailabilityService.assignShifts(), không đổi",
+            ],
+            [
+              "PUT coverageRequirements config",
+              "❌ Chưa có",
+              "Admin cần màn để set requiredCount mỗi shift/ngày",
+            ],
           ],
           [3200, 1800, 5460],
         ),
         spacer(),
         body("Body suggest hiện tại: { weekStart, coverageRequirements? }"),
-        body("Response: { suggestions: ISuggestPartTimeEmployeeSuggestion[], unassignedGaps[], weekStart }"),
+        body(
+          "Response: { suggestions: ISuggestPartTimeEmployeeSuggestion[], unassignedGaps[], weekStart }",
+        ),
 
         heading3("Edge cases"),
         makeTable(
@@ -529,7 +587,10 @@ const doc = new Document({
             ["2 PT cùng score", "Tie-break: ít giờ tuần này hơn — assignedMinutesByEmployeeId"],
             ["Employee chưa từng check-in", "NEUTRAL_SCORE = 50, không penalty — đã có"],
             ["Overnight shift", "Block intentionally — shiftFitsAvailabilityDay() trả false"],
-            ["Admin dùng suggestion rồi sửa", "Log suggestionDecision='edited' qua auditService — đã có"],
+            [
+              "Admin dùng suggestion rồi sửa",
+              "Log suggestionDecision='edited' qua auditService — đã có",
+            ],
             ["Admin không dùng suggestion", "Log suggestionDecision='manual' — đã có"],
           ],
           [3600, 6860],
@@ -556,25 +617,41 @@ const doc = new Document({
         ),
 
         heading3("Ba chế độ — trạng thái implementation"),
-        body("Chế độ A: Analytics Dashboard — backend đã có (ScheduleInsightsService)", { bold: true }),
+        body("Chế độ A: Analytics Dashboard — backend đã có (ScheduleInsightsService)", {
+          bold: true,
+        }),
         body("Route GET /schedule/insights trả về:"),
-        bullet("lateRateByDay — tỷ lệ đi muộn GROUP BY dayOfWeek (threshold: LATE_RATE_THRESHOLD=0.1)"),
-        bullet("absentRateByDay — tỷ lệ vắng GROUP BY dayOfWeek (threshold: ABSENT_RATE_THRESHOLD=0.08)"),
+        bullet(
+          "lateRateByDay — tỷ lệ đi muộn GROUP BY dayOfWeek (threshold: LATE_RATE_THRESHOLD=0.1)",
+        ),
+        bullet(
+          "absentRateByDay — tỷ lệ vắng GROUP BY dayOfWeek (threshold: ABSENT_RATE_THRESHOLD=0.08)",
+        ),
         bullet("hotspots — top 3 ngày/ca vấn đề nhất (HOTSPOT_LIMIT=3)"),
         bullet("lookbackDays config — 7–180 ngày, default 90"),
-        body("→ Cần build frontend chart/heatmap để hiển thị. Backend SQL aggregation đã có, zero LLM cost."),
+        body(
+          "→ Cần build frontend chart/heatmap để hiển thị. Backend SQL aggregation đã có, zero LLM cost.",
+        ),
         spacer(),
 
-        body("Chế độ B: Template Suggester — backend đã có (GET /schedule/suggest-templates)", { bold: true }),
+        body("Chế độ B: Template Suggester — backend đã có (GET /schedule/suggest-templates)", {
+          bold: true,
+        }),
         body("Input: lookbackDays, workingShifts catalog, historical attendance patterns."),
-        body("Output: tối đa CANDIDATE_LIMIT=2 template candidates + coverage score + gợi ý shift assignments cho từng ngày trong tuần."),
+        body(
+          "Output: tối đa CANDIDATE_LIMIT=2 template candidates + coverage score + gợi ý shift assignments cho từng ngày trong tuần.",
+        ),
         quote(
           "Template A (score 88): T2-T6 ca 08:00-17:00, coverage ổn. Template B (score 73): T2-T6 + T7 sáng, OT giảm. — LLM explain trade-off (chưa implement).",
         ),
-        body("Scoring: TEMPLATE_BASE_SCORE=88, LATE_RISK_PENALTY=25, ABSENCE_RISK_PENALTY=20, coverage range 40–99."),
+        body(
+          "Scoring: TEMPLATE_BASE_SCORE=88, LATE_RISK_PENALTY=25, ABSENCE_RISK_PENALTY=20, coverage range 40–99.",
+        ),
         spacer(),
 
-        body("Chế độ C: What-if Simulator — backend đã có (POST /schedule/simulate-template)", { bold: true }),
+        body("Chế độ C: What-if Simulator — backend đã có (POST /schedule/simulate-template)", {
+          bold: true,
+        }),
         body("Admin submit template config → simulate N tuần (MIN=1, MAX=8, default=4 tuần):"),
         quote(
           '"Nếu đổi T5 sang ca chiều: coverage T5 +8%, late risk giảm dựa trên historical data."',
@@ -582,9 +659,16 @@ const doc = new Document({
         body("Frontend form để submit template + hiển thị simulation result chưa có."),
 
         heading3("Lưu ý kỹ thuật quan trọng — WorkScheduleType"),
-        body("Filter nhân viên FT phải dùng workScheduleType='full_time', không dùng employeeType='full_time'.", { bold: true }),
-        bullet("workScheduleType — canonical field cho PT/FT branching trong toàn bộ schedule/attendance logic"),
-        bullet("employeeType — legacy field, có thể khác workScheduleType, không dùng cho schedule decision"),
+        body(
+          "Filter nhân viên FT phải dùng workScheduleType='full_time', không dùng employeeType='full_time'.",
+          { bold: true },
+        ),
+        bullet(
+          "workScheduleType — canonical field cho PT/FT branching trong toàn bộ schedule/attendance logic",
+        ),
+        bullet(
+          "employeeType — legacy field, có thể khác workScheduleType, không dùng cho schedule decision",
+        ),
         bullet("isPartTimeWorkSchedule() util trong codebase đã dùng đúng workScheduleType"),
 
         heading3("Metrics từ data sẵn có"),
@@ -592,10 +676,18 @@ const doc = new Document({
           ["Metric", "Logic trong ScheduleInsightsService", "Insight"],
           [
             ["Late rate by day", "lateMinutes > 0, GROUP BY dayOfWeek, AVG", "Thứ 2 hay muộn"],
-            ["Absent rate by day", "Có shift nhưng status=absent, GROUP BY dayOfWeek", "Thứ 6 vắng nhiều"],
+            [
+              "Absent rate by day",
+              "Có shift nhưng status=absent, GROUP BY dayOfWeek",
+              "Thứ 6 vắng nhiều",
+            ],
             ["Hotspot days", "Combine late + absent, top HOTSPOT_LIMIT", "Ngày cần chú ý nhất"],
             ["OT pattern", "overtimeMinutes > 0 từ AttendanceRecord", "Ca nào thường OT"],
-            ["Coverage gap (template sim)", "EmployeeShift count per day vs required", "T5 thiếu người"],
+            [
+              "Coverage gap (template sim)",
+              "EmployeeShift count per day vs required",
+              "T5 thiếu người",
+            ],
           ],
           [2800, 4400, 3260],
         ),
@@ -623,8 +715,16 @@ const doc = new Document({
             ["Đối tượng", "workScheduleType=part_time", "workScheduleType=full_time"],
             ["Time horizon", "1 tuần", "2–4 tuần cycle"],
             ["Granularity", "Từng người, từng ngày", "Pattern chung cho nhóm"],
-            ["Backend core", "✅ PtShiftSuggestionService đã có", "✅ ScheduleInsightsService đã có"],
-            ["Routes đã có", "POST /suggest, POST /:id/assign-shifts", "GET /insights, /suggest-templates, POST /simulate-template"],
+            [
+              "Backend core",
+              "✅ PtShiftSuggestionService đã có",
+              "✅ ScheduleInsightsService đã có",
+            ],
+            [
+              "Routes đã có",
+              "POST /suggest, POST /:id/assign-shifts",
+              "GET /insights, /suggest-templates, POST /simulate-template",
+            ],
             ["Frontend còn thiếu", "Coverage config UI, coverage bar", "Toàn bộ dashboard/form"],
             ["LLM role", "Explain only (optional)", "Explain trade-off (optional)"],
             ["ROI", "Cao nếu nhiều PT", "Cao nếu nhiều FT, template phức tạp"],
@@ -655,12 +755,8 @@ const doc = new Document({
         quote('"Check-out sớm 45 phút — có đơn về sớm đã duyệt."'),
 
         heading2("5.3 Payroll Attendance Explainer"),
-        body(
-          "Tóm tắt ngôn ngữ tự nhiên cho HR/employee về công tháng:",
-        ),
-        quote(
-          '"Tháng 6: 22 ngày công, 2 ngày nghỉ phép, 3 lần đi muộn tổng 45 phút."',
-        ),
+        body("Tóm tắt ngôn ngữ tự nhiên cho HR/employee về công tháng:"),
+        quote('"Tháng 6: 22 ngày công, 2 ngày nghỉ phép, 3 lần đi muộn tổng 45 phút."'),
         body("Hook sẵn: payroll.service.ts attendance aggregates."),
 
         // ── 6. KIẾN TRÚC ──

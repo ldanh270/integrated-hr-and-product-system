@@ -179,8 +179,12 @@ const buildRecommendations = (
     ]
   }
 
-  const weakestRole = [...roles].sort((a, b) => a.effectiveHours - b.effectiveHours)[0]
-  const roleHint = weakestRole ? ` Ưu tiên bổ sung role ${weakestRole.roleName}.` : ""
+  const roleHint =
+    roles.length > 0
+      ? ` Ưu tiên bổ sung role ${
+          [...roles].sort((a, b) => a.effectiveHours - b.effectiveHours)[0].roleName
+        }.`
+      : ""
   return [
     `Dự đoán tuần này thiếu ${percentGap.toFixed(1)}% so với cam kết. Cần thêm khoảng ${neededEffectiveHours.toFixed(1)} effective hours.${roleHint}`,
     "Admin/PM có thể điều thêm nhân viên phù hợp, xin thêm availability từ part-time/intern, hoặc giảm scope tuần này.",

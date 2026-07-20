@@ -1,6 +1,10 @@
 import type { IEmployeeShiftWithShift } from "@/types/shift.types.ts"
+import {
+  getDateForWeekDay,
+  minutesToTime,
+  normalizeWeekStart,
+} from "@/utils/part-time-availability.util.ts"
 import { formatScheduleDateKey } from "@/utils/schedule.util.ts"
-import { getDateForWeekDay, minutesToTime, normalizeWeekStart } from "@/utils/part-time-availability.util.ts"
 
 /** Builds per-day assigned shift labels for admin PT roster cards. */
 export function buildAssignedDaySummaries(
@@ -21,17 +25,20 @@ export function buildAssignedDaySummaries(
     byDate.set(key, bucket)
   }
 
-  const summaries: Partial<Record<number, string>> = {}
+  const summaryEntries: Array<[number, string]> = []
   for (let dayOfWeek = 0; dayOfWeek <= 6; dayOfWeek++) {
     const dateKey = formatScheduleDateKey(getDateForWeekDay(normalized, dayOfWeek))
     const rows = byDate.get(dateKey) ?? []
     if (rows.length === 0) continue
 
-    summaries[dayOfWeek] = rows
-      .toSorted((a, b) => a.shift.startTime - b.shift.startTime)
-      .map((row) => `${minutesToTime(row.shift.startTime)}–${minutesToTime(row.shift.endTime)}`)
-      .join(", ")
+    summaryEntries.push([
+      dayOfWeek,
+      rows
+        .toSorted((a, b) => a.shift.startTime - b.shift.startTime)
+        .map((row) => `${minutesToTime(row.shift.startTime)}–${minutesToTime(row.shift.endTime)}`)
+        .join(", "),
+    ])
   }
 
-  return { summaries, hasAssigned: Object.keys(summaries).length > 0 }
+  return { summaries: Object.fromEntries(summaryEntries), hasAssigned: summaryEntries.length > 0 }
 }

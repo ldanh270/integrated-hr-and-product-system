@@ -1,19 +1,20 @@
 import { StatusPill } from "@/components/common/status-pill"
 import { WORK_WEEK_DISPLAY_DAY_ORDER } from "@/config/entities/attendance.config"
 import {
+  PART_TIME_AVAILABILITY_ASSIGN_LABELS,
   getPartTimeAvailabilityStatusLabel,
   getPartTimeAvailabilityStatusVariant,
-  PART_TIME_AVAILABILITY_ASSIGN_LABELS,
 } from "@/config/entities/part-time-availability.config"
 import type {
   IPartTimeWeeklyAvailability,
   ISuggestPartTimeEmployeeSuggestion,
 } from "@/types/part-time-availability.types"
-import { formatAvailabilityDaySummary } from "@/utils/attendance/part-time-availability.util"
 import { getWeekDates } from "@/utils/attendance/get-week-dates"
+import { formatAvailabilityDaySummary } from "@/utils/attendance/part-time-availability.util"
+
+import { useMemo, useState } from "react"
 
 import { ChevronRight } from "lucide-react"
-import { useMemo, useState } from "react"
 
 import { AdminPartTimeAvailabilityAssignDrawer } from "./admin-part-time-availability-assign-drawer"
 
@@ -23,6 +24,12 @@ interface AdminPartTimeAvailabilityCardProps {
   weekStartKey: string
   suggestion?: ISuggestPartTimeEmployeeSuggestion
 }
+
+const getAssignedDaySummary = (
+  summaries: Partial<Record<number, string>> | undefined,
+  dayOfWeek: number,
+): string | undefined =>
+  Object.entries(summaries ?? {}).find(([key]) => Number(key) === dayOfWeek)?.[1]
 
 /** One employee row — status pill, day summary, score, opens assign drawer on click. */
 export function AdminPartTimeAvailabilityCard({
@@ -73,7 +80,8 @@ export function AdminPartTimeAvailabilityCard({
                   <p className="text-[10px] font-medium text-foreground">{weekDay?.shortDate}</p>
                   <p className="text-[10px] text-muted-foreground">
                     {availability.hasAssignedShifts
-                      ? (availability.assignedDaySummaries?.[dayOfWeek] ?? "Không làm")
+                      ? (getAssignedDaySummary(availability.assignedDaySummaries, dayOfWeek) ??
+                        "Không làm")
                       : formatAvailabilityDaySummary(dayMap.get(dayOfWeek))}
                   </p>
                 </div>
