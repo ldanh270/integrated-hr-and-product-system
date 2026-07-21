@@ -1,5 +1,6 @@
 export const CONTRACT_TYPES = ["trial", "definite", "indefinite", "service"] as const
 export type IContractType = (typeof CONTRACT_TYPES)[number]
+export const CONTRACT_STATUS_VALUES = ["draft", "pending_signature", "active", "expired", "terminated", "renewed"] as const
 
 export const CONTRACT_TYPE_LABELS: Record<IContractType, string> = {
   trial: "Thử việc",

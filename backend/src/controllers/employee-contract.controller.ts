@@ -1,3 +1,4 @@
+import { CONTRACT_STATUS_VALUES, CONTRACT_TYPES, type IContractStatus, type IContractType } from "@/configs/entities/employee-contract.config.ts"
 import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
@@ -21,8 +22,8 @@ export class EmployeeContractController {
     const { employeeId, status, type, page, limit } = req.query as Record<string, unknown>
     const result = await this.service.listContracts({
       employeeId: employeeId as string,
-      status: status as string,
-      type: type as string,
+      status: status && (CONTRACT_STATUS_VALUES as readonly string[]).includes(status as string) ? status as IContractStatus : undefined,
+      type: type && (CONTRACT_TYPES as readonly string[]).includes(type as string) ? type as IContractType : undefined,
       page: page ? Number(page) : 1,
       limit: limit ? Number(limit) : 50,
     })

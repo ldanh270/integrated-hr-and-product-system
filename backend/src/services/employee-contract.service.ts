@@ -101,7 +101,11 @@ export class EmployeeContractService implements IEmployeeContractService {
       )
     }
 
-    return this.repository.update(id, data, actorId)
+    const updated = await this.repository.update(id, data, actorId)
+    if (!updated) {
+      throw new AppError("Failed to update contract", HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorLayer.SERVICE)
+    }
+    return updated
   }
 
   async terminateContract(id: string, data: TerminateContractDto): Promise<EmployeeContract> {
@@ -118,7 +122,11 @@ export class EmployeeContractService implements IEmployeeContractService {
       throw new AppError("Cannot terminate renewed contract", HttpStatusCode.BAD_REQUEST, ErrorLayer.SERVICE)
     }
 
-    return this.repository.terminate(id, data)
+    const terminated = await this.repository.terminate(id, data)
+    if (!terminated) {
+      throw new AppError("Failed to terminate contract", HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorLayer.SERVICE)
+    }
+    return terminated
   }
 
   async renewContract(id: string, data: RenewContractDto, actorId: string): Promise<EmployeeContract> {

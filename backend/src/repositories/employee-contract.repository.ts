@@ -1,6 +1,6 @@
 import { IContractStatus, IContractType } from "@/configs/entities/employee-contract.config.ts"
 import { SORT_ORDER } from "@/configs/system/db.config.ts"
-import { Prisma } from "@prisma/client"
+import { Prisma, PrismaClient } from "@prisma/client"
 
 import {
   ContractListQuery,
@@ -33,7 +33,7 @@ export interface IEmployeeContractRepository {
  * Prisma implementation of IEmployeeContractRepository.
  */
 export class PrismaEmployeeContractRepository implements IEmployeeContractRepository {
-  constructor(private readonly prisma: Prisma) {}
+  constructor(private readonly prisma: PrismaClient) {}
 
   private mapToDomain(contract: Prisma.EmployeeContractGetPayload<object>): EmployeeContract {
     return {
@@ -42,17 +42,17 @@ export class PrismaEmployeeContractRepository implements IEmployeeContractReposi
       contractType: contract.contractType as ContractType,
       contractNumber: contract.contractNumber,
       title: contract.title,
-      signedDate: contract.signedDate?.toISOString(),
+      signedDate: contract.signedDate?.toISOString() ?? null,
       startDate: contract.startDate.toISOString(),
-      endDate: contract.endDate?.toISOString(),
-      trialEndDate: contract.trialEndDate?.toISOString(),
+      endDate: contract.endDate?.toISOString() ?? null,
+      trialEndDate: contract.trialEndDate?.toISOString() ?? null,
       salary: Number(contract.salary),
       currency: contract.currency,
-      allowances: contract.allowances as EmployeeContract["allowances"],
-      attachments: contract.attachments,
+      allowances: (contract.allowances ?? []) as unknown as EmployeeContract["allowances"],
+      attachments: contract.attachments ?? [],
       status: contract.status as ContractStatus,
       terminationReason: contract.terminationReason,
-      terminationDate: contract.terminationDate?.toISOString(),
+      terminationDate: contract.terminationDate?.toISOString() ?? null,
       probationSalary: contract.probationSalary ? Number(contract.probationSalary) : null,
       probationSalaryRate: contract.probationSalaryRate ? Number(contract.probationSalaryRate) : null,
       createdById: contract.createdById,
@@ -154,7 +154,7 @@ export class PrismaEmployeeContractRepository implements IEmployeeContractReposi
         trialEndDate: data.trialEndDate ? new Date(data.trialEndDate) : null,
         salary: data.salary,
         currency: data.currency || "VND",
-        allowances: data.allowances || [],
+        allowances: ((data.allowances || []) as unknown) as Prisma.InputJsonValue,
         attachments: data.attachments || [],
         probationSalary: data.probationSalary,
         probationSalaryRate: data.probationSalaryRate,
@@ -170,7 +170,7 @@ export class PrismaEmployeeContractRepository implements IEmployeeContractReposi
     if (!existing) return null
 
     const updateData: Prisma.EmployeeContractUpdateInput = {
-      updatedById,
+      updatedBy: { connect: { id: updatedById } },
       note: data.note,
     }
 
@@ -186,7 +186,7 @@ export class PrismaEmployeeContractRepository implements IEmployeeContractReposi
       updateData.trialEndDate = data.trialEndDate ? new Date(data.trialEndDate) : null
     if (data.salary !== undefined) updateData.salary = data.salary
     if (data.currency) updateData.currency = data.currency
-    if (data.allowances !== undefined) updateData.allowances = data.allowances
+    if (data.allowances !== undefined) updateData.allowances = (data.allowances as unknown) as Prisma.InputJsonValue
     if (data.attachments !== undefined) updateData.attachments = data.attachments
     if (data.probationSalary !== undefined) updateData.probationSalary = data.probationSalary
     if (data.probationSalaryRate !== undefined)
@@ -236,7 +236,7 @@ export class PrismaEmployeeContractRepository implements IEmployeeContractReposi
           trialEndDate: newData.trialEndDate ? new Date(newData.trialEndDate) : null,
           salary: newData.salary,
           currency: newData.currency || "VND",
-          allowances: newData.allowances || [],
+          allowances: ((newData.allowances || []) as unknown) as Prisma.InputJsonValue,
           attachments: newData.attachments || [],
           probationSalary: newData.probationSalary,
           probationSalaryRate: newData.probationSalaryRate,
