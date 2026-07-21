@@ -22,8 +22,8 @@ export const PERSONAL_TAB_LABELS: Record<PersonalTab, string> = {
 /** Legacy URL paths → new personal tab path. Used for backward-compatible redirects. */
 export const PERSONAL_LEGACY_PATHS = {
   [PERSONAL_TAB.SCHEDULE]: "/attendance/my-schedule",
-  [PERSONAL_TAB.AVAILABILITY]: "/personal/availability",
+  [PERSONAL_TAB.AVAILABILITY]: "/attendance/my-availability",
   [PERSONAL_TAB.PAYSLIPS]: "/payroll/my-payslips",
-  [PERSONAL_TAB.PROJECTS]: "/project/dashboard",
-  [PERSONAL_TAB.APPLICATIONS]: "/application/dashboard?tab=mine",
+  [PERSONAL_TAB.PROJECTS]: "/project/my-projects",
+  [PERSONAL_TAB.APPLICATIONS]: "/application/my-applications",
 } as const

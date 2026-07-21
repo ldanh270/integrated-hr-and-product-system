@@ -17,6 +17,7 @@ export const ROUTES = {
     BASE: "/application",
     ALL: "/application/all",
     MANAGE: "/application/manage",
+    MY_APPLICATIONS: "/application/my-applications",
     CREATE: "/application/create/:type",
   },
   ATTENDANCE: {
@@ -24,6 +25,7 @@ export const ROUTES = {
     DASHBOARD: "/attendance/dashboard",
     SUMMARY: "/attendance/summary",
     MY_SCHEDULE: "/attendance/my-schedule",
+    MY_AVAILABILITY: "/attendance/my-availability",
     WORK_SCHEDULES: "/attendance/work-schedules",
     /** Admin shift assignment from PT employee availability submissions. */
     PART_TIME_AVAILABILITY: "/attendance/part-time-availability",
@@ -72,6 +74,7 @@ export const ROUTES = {
   PROJECT: {
     BASE: "/project",
     LIST: "/project/list",
+    MY_PROJECTS: "/project/my-projects",
     POSITIONS: "/project/positions",
     DASHBOARD: "/project/dashboard",
     OVERVIEW: "/project/overview",
@@ -83,12 +86,12 @@ export const ROUTES = {
     TASK_DETAIL_WITH_ID: "/project/task/:id",
   },
   PERSONAL: {
-    BASE: "/personal",
-    SCHEDULE: "/personal/schedule",
+    BASE: "/attendance/my-schedule",
+    SCHEDULE: "/attendance/my-schedule",
     /** Part-time employees submit weekly free-time windows here. */
-    AVAILABILITY: "/personal/availability",
-    PAYSLIPS: "/personal/payslips",
-    PROJECTS: "/personal/projects",
-    APPLICATIONS: "/personal/applications",
+    AVAILABILITY: "/attendance/my-availability",
+    PAYSLIPS: "/payroll/my-payslips",
+    PROJECTS: "/project/my-projects",
+    APPLICATIONS: "/application/my-applications",
   },
 } as const

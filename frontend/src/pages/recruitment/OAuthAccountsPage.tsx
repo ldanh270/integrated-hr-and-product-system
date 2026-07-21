@@ -1,13 +1,18 @@
-import { useEffect, useState } from "react"
-import { Settings } from "lucide-react"
-import { useSearchParams } from "react-router-dom"
 import { PageHeader } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useOAuthAccounts, useDeleteOAuthAccount } from "@/hooks/recruitment/use-recruitment-queries"
 import { POSTING_CHANNELS } from "@/config/entities/recruitment.config"
-import { toast } from "sonner"
+import {
+  useDeleteOAuthAccount,
+  useOAuthAccounts,
+} from "@/hooks/recruitment/use-recruitment-queries"
 import apiClient from "@/lib/api-client"
+
+import { useEffect, useState } from "react"
+
+import { Settings } from "lucide-react"
+import { useSearchParams } from "react-router-dom"
+import { toast } from "sonner"
 
 export default function OAuthAccountsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -35,11 +40,14 @@ export default function OAuthAccountsPage() {
     }
     setConnectingChannel(channel)
     try {
-      const response = await apiClient.get<{ data: { authUrl: string } }>("/recruitment/oauth/google/connect", {
-        params: { channel, name: "Default" },
-      })
-      window.location.href = response.data.data.authUrl
-    } catch (err) {
+      const response = await apiClient.get<{ data: { authUrl: string } }>(
+        "/recruitment/oauth/google/connect",
+        {
+          params: { channel, name: "Default" },
+        },
+      )
+      window.location.assign(response.data.data.authUrl)
+    } catch {
       toast.error("Không thể khởi tạo OAuth. Vui lòng kiểm tra cấu hình server.")
       setConnectingChannel(null)
     }
@@ -64,8 +72,12 @@ export default function OAuthAccountsPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
             <Card key={i} className="animate-pulse">
-              <CardHeader><div className="h-4 bg-muted rounded w-1/2" /></CardHeader>
-              <CardContent><div className="h-8 bg-muted rounded" /></CardContent>
+              <CardHeader>
+                <div className="h-4 bg-muted rounded w-1/2" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 bg-muted rounded" />
+              </CardContent>
             </Card>
           ))}
         </div>
@@ -137,8 +149,10 @@ export default function OAuthAccountsPage() {
           <li>Sau khi xác thực thành công, bạn sẽ được chuyển về trang này</li>
         </ol>
         <p className="text-xs text-muted-foreground mt-3">
-          <strong>Lưu ý:</strong> Cần có <code className="bg-muted px-1 rounded">GOOGLE_OAUTH_CLIENT_ID</code> và{" "}
-          <code className="bg-muted px-1 rounded">GOOGLE_OAUTH_CLIENT_SECRET</code> trong file .env phía server.
+          <strong>Lưu ý:</strong> Cần có{" "}
+          <code className="bg-muted px-1 rounded">GOOGLE_OAUTH_CLIENT_ID</code> và{" "}
+          <code className="bg-muted px-1 rounded">GOOGLE_OAUTH_CLIENT_SECRET</code> trong file .env
+          phía server.
         </p>
       </div>
     </div>

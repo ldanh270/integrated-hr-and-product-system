@@ -252,36 +252,28 @@ const privateRoutes: RouteConfig[] = [
     permissions: ["role.read"],
   },
   {
-    path: ROUTES.PERSONAL.SCHEDULE,
+    path: ROUTES.ATTENDANCE.MY_SCHEDULE,
     component: lazy(() => import("@/pages/attendance/MySchedule.tsx")),
     layout: MainLayout,
   },
   {
-    path: ROUTES.PERSONAL.AVAILABILITY,
+    path: ROUTES.ATTENDANCE.MY_AVAILABILITY,
     component: lazy(() => import("@/pages/personal/MyPartTimeAvailability.tsx")),
     layout: MainLayout,
     // Page-level guard redirects full-time employees to schedule view.
   },
   {
-    // Personal navigation keeps the page inside the Personal subsystem.
-    path: ROUTES.PERSONAL.PAYSLIPS,
-    component: lazy(() => import("@/pages/payroll/MyPayslips.tsx")),
-    layout: MainLayout,
-  },
-  {
-    // Same self-service page under /payroll so employees see only the payroll sidebar.
-    // API authorization still limits the response to the authenticated employee.
     path: ROUTES.PAYROLL.MY_PAYSLIPS,
     component: lazy(() => import("@/pages/payroll/MyPayslips.tsx")),
     layout: MainLayout,
   },
   {
-    path: ROUTES.PERSONAL.PROJECTS,
+    path: ROUTES.PROJECT.MY_PROJECTS,
     component: lazy(() => import("@/pages/project/ProjectDashboard.tsx")),
     layout: MainLayout,
   },
   {
-    path: ROUTES.PERSONAL.APPLICATIONS,
+    path: ROUTES.APPLICATION.MY_APPLICATIONS,
     component: lazy(() => import("@/pages/application/ApplicationDashboard.tsx")),
     layout: MainLayout,
   },

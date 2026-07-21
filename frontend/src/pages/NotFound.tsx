@@ -21,7 +21,7 @@ export default function NotFound() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
 
   const handleGoHome = () => {
-    navigate(isAuthenticated ? ROUTES.PERSONAL.BASE : ROUTES.AUTH.LOGIN)
+    navigate(isAuthenticated ? ROUTES.HRM.EMPLOYEES : ROUTES.AUTH.LOGIN)
   }
 
   const handleGoBack = () => {
@@ -35,29 +35,29 @@ export default function NotFound() {
   const quickLinks = isAuthenticated
     ? [
         {
-          label: "Lịch làm việc",
+          label: "Nhân sự",
+          icon: Users,
+          path: ROUTES.HRM.EMPLOYEES,
+        },
+        {
+          label: "Chấm công",
           icon: Calendar,
-          path: ROUTES.PERSONAL.SCHEDULE,
+          path: ROUTES.ATTENDANCE.SUMMARY,
         },
         {
           label: "Bảng lương",
           icon: CreditCard,
-          path: ROUTES.PERSONAL.PAYSLIPS,
+          path: ROUTES.PAYROLL.LIST,
         },
         {
           label: "Dự án",
           icon: FolderKanban,
-          path: ROUTES.PERSONAL.PROJECTS,
+          path: ROUTES.PROJECT.LIST,
         },
         {
           label: "Đơn từ",
           icon: FileText,
-          path: ROUTES.PERSONAL.APPLICATIONS,
-        },
-        {
-          label: "Nhân sự",
-          icon: Users,
-          path: ROUTES.HRM.EMPLOYEES,
+          path: ROUTES.APPLICATION.MANAGE,
         },
       ]
     : [
@@ -106,7 +106,7 @@ export default function NotFound() {
             </Button>
           </div>
 
-          {/* Quick Links (Wider single-row container) */}
+          {/* Quick Links (Modular subsystem URLs) */}
           <div className="rounded-lg border border-border bg-muted/30 p-3.5 space-y-2.5 text-left">
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1">
               Truy cập nhanh

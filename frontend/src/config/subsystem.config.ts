@@ -100,7 +100,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     sidebarItems: [
       {
         name: PERSONAL_TAB_LABELS.applications,
-        path: ROUTES.PERSONAL.APPLICATIONS,
+        path: ROUTES.APPLICATION.MY_APPLICATIONS,
         icon: FileText,
       },
       { name: "Bạn duyệt", path: ROUTES.APPLICATION.MANAGE, icon: UserCheck },
@@ -125,12 +125,12 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     sidebarItems: [
       {
         name: PERSONAL_TAB_LABELS.schedule,
-        path: ROUTES.PERSONAL.SCHEDULE,
+        path: ROUTES.ATTENDANCE.MY_SCHEDULE,
         icon: CalendarClock,
       },
       {
         name: PERSONAL_TAB_LABELS.availability,
-        path: ROUTES.PERSONAL.AVAILABILITY,
+        path: ROUTES.ATTENDANCE.MY_AVAILABILITY,
         icon: CalendarRange,
         workScheduleTypes: [WORK_SCHEDULE_TYPE.PART_TIME],
       },
@@ -320,7 +320,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     sidebarItems: [
       {
         name: PERSONAL_TAB_LABELS.projects,
-        path: ROUTES.PERSONAL.PROJECTS,
+        path: ROUTES.PROJECT.MY_PROJECTS,
         icon: Briefcase,
       },
       {
