@@ -1,5 +1,6 @@
 import { PageCard, SafeHtml, StatusPill } from "@/components/common"
 import LogTimeModal from "@/components/features/project/LogTimeModal"
+import { TaskAssigneeAiModal } from "./components/task-assignee-ai-modal"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -20,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   SPENT_TIME_STATUS,
   TASK_PRIORITIES,
@@ -58,6 +60,7 @@ import {
   Trash2,
   User,
   X,
+  Brain,
 } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 
@@ -118,6 +121,7 @@ export default function TaskDetail() {
   // State hooks to control dialog modal views
   const [isOpenLogTimeModal, setIsOpenLogTimeModal] = useState(false) // Visibility of log time modal
   const [isOpenEditModal, setIsOpenEditModal] = useState(false) // Visibility of edit task modal
+  const [isOpenAiModal, setIsOpenAiModal] = useState(false) // Visibility of AI suggestion modal
   const [editingSpentTime, setEditingSpentTime] = useState<SpentTime | undefined>(undefined) // Target log record to modify
 
   // State hooks to bind edit task form inputs
@@ -132,6 +136,8 @@ export default function TaskDetail() {
   const [taskEstimate, setTaskEstimate] = useState("") // Time estimate
   const [taskProgress, setTaskProgress] = useState(0) // Completion progress percentage
   const [resultNotes, setResultNotes] = useState("") // Product result notes
+  const [resultUrl, setResultUrl] = useState("") // Product result URL
+  const [resultTab, setResultTab] = useState<"report" | "optional">("optional") // Tab for result notes: "report" or "optional"
   const [editError, setEditError] = useState<string | null>(null) // Errors during form submission
 
   // 1. Query hook to fetch detailed data for the targeted task
@@ -204,9 +210,12 @@ export default function TaskDetail() {
 
     const isAdminOrGM = hasAnyPermission(["project.update", "project.task.approve"])
 
-    const currentMember = members?.find((m) => m.employeeId === profile?.personalEmployeeId)
+    const currentEmpId = profile?.personalEmployeeId || user?.personalEmployeeId || profile?.id || user?.id
+    const currentMember = members?.find((m) => m.employeeId === currentEmpId)
     const isLeader = project?.teamLeaderId === user?.personalEmployeeId ||
                      project?.teamLeaderId === profile?.personalEmployeeId ||
+                     project?.teamLeaderId === user?.id ||
+                     project?.teamLeaderId === profile?.id ||
                      currentMember?.role?.code === PROJECT_ROLE.LEADER
 
     if (isAdminOrGM || isLeader) {
@@ -267,6 +276,8 @@ export default function TaskDetail() {
     setTaskEstimate(task.estimatedTime ? String(task.estimatedTime) : "")
     setTaskProgress(task.progress)
     setResultNotes(task.resultNotes || "")
+    setResultUrl(task.resultUrl || "")
+    setResultTab(task.resultNotes || task.resultUrl ? "report" : "optional")
     setIsOpenEditModal(true)
   }
 
@@ -284,8 +295,8 @@ export default function TaskDetail() {
         dueDate: taskDue || null,
         estimatedTime: taskEstimate ? parseFloat(taskEstimate) : null,
         progress: Number(taskProgress),
-        resultUrl: null, // Clear resultUrl as it is removed from UI
-        resultNotes: cleanHtml(resultNotes),
+        resultUrl: resultTab === "report" ? (resultUrl.trim() || null) : null,
+        resultNotes: resultTab === "report" ? cleanHtml(resultNotes) : null,
       })
     },
     onSuccess: () => {
@@ -835,6 +846,14 @@ export default function TaskDetail() {
         loggedHours={totalSpentHours}
       />
 
+      {/* AI ASSIGNEE MODAL */}
+      <TaskAssigneeAiModal
+        isOpen={isOpenAiModal}
+        onOpenChange={setIsOpenAiModal}
+        taskId={task.id}
+        onAssign={setTaskAssignee}
+      />
+
       {/* EDIT TASK DIALOG */}
       <Dialog open={isOpenEditModal} onOpenChange={setIsOpenEditModal}>
         <DialogContent className="sm:max-w-[650px] rounded-xl bg-background border-border p-6 shadow-lg">
@@ -974,12 +993,26 @@ export default function TaskDetail() {
 
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <Label
-                  htmlFor="editAssignee"
-                  className="text-xs font-semibold text-muted-foreground"
-                >
-                  Người thực hiện (Assignee)
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label
+                    htmlFor="editAssignee"
+                    className="text-xs font-semibold text-muted-foreground"
+                  >
+                    Người thực hiện (Assignee)
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 text-[10px] font-bold text-primary px-1.5 rounded-full flex items-center gap-1 hover:bg-primary/10"
+                    onClick={() => {
+                      setIsOpenAiModal(true)
+                    }}
+                  >
+                    <Brain className="h-3 w-3" />
+                    AI gợi ý
+                  </Button>
+                </div>
                 <Select value={taskAssignee} onValueChange={setTaskAssignee}>
                   <SelectTrigger
                     id="editAssignee"
@@ -1076,25 +1109,51 @@ export default function TaskDetail() {
 
             <div className="border-t border-border/60 pt-3 space-y-3">
               <div className="text-xs font-bold text-foreground">Kết quả công việc</div>
-              <div className="grid grid-cols-1 gap-3">
-                <div className="space-y-1.5">
-                  <Label
-                    htmlFor="editResultNotes"
-                    className="text-xs font-semibold text-muted-foreground"
-                  >
-                    Ghi chú kết quả (resultNotes)
-                  </Label>
-                  <RichTextEditor
-                    value={resultNotes}
-                    onChange={setResultNotes}
-                    placeholder="Mô tả kết quả công việc, tính năng đã hoàn thiện hoặc hướng dẫn test..."
-                  />
-                </div>
-              </div>
-              <div className="text-[10px] text-muted-foreground italic">
-                * Lưu ý: Bắt buộc điền ghi chú kết quả khi gửi yêu cầu đánh giá công việc
-                (in_review).
-              </div>
+              <Tabs value={resultTab} onValueChange={(val) => { setResultTab(val as "report" | "optional") }} className="w-full animate-in fade-in duration-300">
+                <TabsList className="grid w-full grid-cols-2 rounded-full h-9 p-1 bg-muted/60 border border-border/40">
+                  <TabsTrigger value="report" className="rounded-full text-xs py-1">
+                    Báo cáo kết quả
+                  </TabsTrigger>
+                  <TabsTrigger value="optional" className="rounded-full text-xs py-1">
+                    Không yêu cầu kết quả (Optional)
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="report" className="space-y-3 pt-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="editResultUrl" className="text-xs font-semibold text-muted-foreground">
+                      Đường dẫn sản phẩm (resultUrl)
+                    </Label>
+                    <Input
+                      id="editResultUrl"
+                      type="text"
+                      placeholder="https://github.com/... hoặc link sản phẩm..."
+                      value={resultUrl}
+                      onChange={(e) => {
+                        setResultUrl(e.target.value)
+                      }}
+                      className="h-10 text-sm border-border rounded-full px-4 bg-background"
+                    />
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <Label htmlFor="editResultNotes" className="text-xs font-semibold text-muted-foreground">
+                      Ghi chú kết quả (resultNotes)
+                    </Label>
+                    <RichTextEditor
+                      value={resultNotes}
+                      onChange={setResultNotes}
+                      placeholder="Mô tả kết quả công việc, tính năng đã hoàn thiện hoặc hướng dẫn test..."
+                    />
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="optional" className="pt-3">
+                  <div className="text-xs text-muted-foreground italic bg-muted/20 p-4 rounded-xl border border-border/40 text-center">
+                    Công việc này không yêu cầu đính kèm kết quả hoặc ghi chú bàn giao.
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
 
             <div className="flex justify-end gap-2 pt-2">

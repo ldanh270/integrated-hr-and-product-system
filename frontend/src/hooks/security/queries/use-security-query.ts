@@ -15,7 +15,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
  */
 export const securityKeys = {
   all: [SECURITY_QUERY_KEY.ROOT] as const,
-  summary: () => [...securityKeys.all, SECURITY_QUERY_KEY.SUMMARY] as const,
+  summary: (timeRange?: string) => [...securityKeys.all, SECURITY_QUERY_KEY.SUMMARY, timeRange] as const,
   lockedAccounts: () => [...securityKeys.all, SECURITY_QUERY_KEY.LOCKED_ACCOUNTS] as const,
   logs: () => [...securityKeys.all, SECURITY_QUERY_KEY.LOGS] as const,
   logList: (query: ActivityLogQuery) => [...securityKeys.logs(), query] as const,
@@ -43,10 +43,10 @@ export const securityKeys = {
 /**
  * Loads the top-level security dashboard summary.
  */
-export function useSecuritySummary() {
+export function useSecuritySummary(timeRange: string = "today") {
   return useQuery({
-    queryKey: securityKeys.summary(),
-    queryFn: securityApi.getSummary,
+    queryKey: securityKeys.summary(timeRange),
+    queryFn: () => securityApi.getSummary(timeRange),
   })
 }
 

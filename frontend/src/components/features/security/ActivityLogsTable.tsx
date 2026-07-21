@@ -1,8 +1,32 @@
 import { StatusPill } from "@/components/common"
-import { ACTIVITY_ACTION_VARIANTS } from "@/config/entities/security.config"
+import {
+  ACTIVITY_ACTION_LABELS,
+  ACTIVITY_ACTION_VARIANTS,
+  SECURITY_CATEGORY_VARIANTS,
+} from "@/config/entities/security.config"
 import { COMMON_TEXTS } from "@/config/system.config"
 import type { ActivityLogItem } from "@/types/security.types"
-import { FileText } from "lucide-react"
+
+import { Activity, Eye, FileText, Globe, Key, Lock, Shield, Unlock, User } from "lucide-react"
+
+const getActionIcon = (actionType: string) => {
+  if (actionType.includes("ROLE") || actionType.includes("PERMISSION"))
+    return <Shield className="w-4 h-4" />
+  if (actionType.includes("EMPLOYEE")) return <User className="w-4 h-4" />
+  if (
+    actionType.includes("password") ||
+    actionType.includes("login") ||
+    actionType.includes("logout")
+  )
+    return <Key className="w-4 h-4" />
+  if (actionType.includes("lock"))
+    return actionType.includes("unlocked") ? (
+      <Unlock className="w-4 h-4" />
+    ) : (
+      <Lock className="w-4 h-4" />
+    )
+  return <Activity className="w-4 h-4" />
+}
 
 interface ActivityLogsTableProps {
   logs: ActivityLogItem[]
@@ -10,30 +34,34 @@ interface ActivityLogsTableProps {
   hideEmployee?: boolean
 }
 
-export function ActivityLogsTable({ logs, onViewDetail, hideEmployee = false }: ActivityLogsTableProps) {
+export function ActivityLogsTable({
+  logs,
+  onViewDetail,
+  hideEmployee = false,
+}: ActivityLogsTableProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border bg-muted/5">
-            <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            <th className="w-[20%] px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Hành động
             </th>
             {!hideEmployee && (
-              <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+              <th className="w-[20%] px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                 Nhân viên
               </th>
             )}
-            <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            <th className="w-[15%] px-5 py-3 text-center text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Danh mục
             </th>
-            <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            <th className="w-[20%] px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Địa chỉ IP
             </th>
-            <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            <th className="w-[15%] px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Thời gian
             </th>
-            <th className="px-5 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            <th className="w-[10%] px-5 py-3 text-center text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Chi tiết
             </th>
           </tr>
@@ -44,45 +72,61 @@ export function ActivityLogsTable({ logs, onViewDetail, hideEmployee = false }: 
               <td colSpan={hideEmployee ? 5 : 6} className="px-5 py-24 text-center">
                 <div className="flex flex-col items-center gap-3">
                   <FileText className="h-10 w-10 text-muted-foreground opacity-20" />
-                  <p className="text-sm text-muted-foreground">Không tìm thấy bản ghi nhật ký nào.</p>
+                  <p className="text-sm text-muted-foreground">
+                    Không tìm thấy bản ghi nhật ký nào.
+                  </p>
                 </div>
               </td>
             </tr>
           ) : (
             logs.map((log) => (
-              <tr
-                key={log.id}
-                className="group hover:bg-muted/30 transition-colors duration-100"
-              >
+              <tr key={log.id} className="group hover:bg-muted/30 transition-colors duration-100">
                 <td className="px-5 py-4">
-                  <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className={
+                        (ACTIVITY_ACTION_VARIANTS[log.actionType] ?? "neutral") === "success"
+                          ? "text-emerald-500"
+                          : (ACTIVITY_ACTION_VARIANTS[log.actionType] ?? "neutral") === "danger"
+                            ? "text-rose-500"
+                            : (ACTIVITY_ACTION_VARIANTS[log.actionType] ?? "neutral") === "warning"
+                              ? "text-amber-500"
+                              : (ACTIVITY_ACTION_VARIANTS[log.actionType] ?? "neutral") === "info"
+                                ? "text-blue-500"
+                                : "text-muted-foreground"
+                      }
+                    >
+                      {getActionIcon(log.actionType)}
+                    </div>
                     <span className="font-semibold text-foreground text-[13px]">
-                      {log.actionType}
+                      {ACTIVITY_ACTION_LABELS[log.actionType] ?? log.actionType}
                     </span>
-                    <StatusPill
-                      label={log.actionType}
-                      variant={ACTIVITY_ACTION_VARIANTS[log.actionType] ?? "neutral"}
-                      className="scale-90 origin-left"
-                    />
                   </div>
                 </td>
                 {!hideEmployee && (
                   <td className="px-5 py-4">
                     <div className="text-[13px] text-foreground font-medium">
-                      {log.employeeName || <span className="text-muted-foreground italic">{COMMON_TEXTS.SYSTEM}</span>}
+                      {log.employeeName || (
+                        <span className="text-muted-foreground italic">{COMMON_TEXTS.SYSTEM}</span>
+                      )}
                     </div>
                     <div className="text-[11px] text-muted-foreground font-mono">
                       {log.employeeId || COMMON_TEXTS.NOT_AVAILABLE}
                     </div>
                   </td>
                 )}
-                <td className="px-5 py-4">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-muted text-muted-foreground border border-border/50">
-                    {log.category}
-                  </span>
+                <td className="px-5 py-4 text-center">
+                  <StatusPill
+                    label={log.category}
+                    variant={SECURITY_CATEGORY_VARIANTS[log.category] ?? "neutral"}
+                    className="text-[13px] px-3 py-1 font-bold uppercase"
+                  />
                 </td>
                 <td className="px-5 py-4 font-mono text-[12px] text-muted-foreground">
-                  {log.ipAddress || "—"}
+                  <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-muted/50 rounded-md border border-border/40">
+                    <Globe className="w-3.5 h-3.5 opacity-50" />
+                    <span>{log.ipAddress || "—"}</span>
+                  </div>
                 </td>
                 <td className="px-5 py-4">
                   <div className="text-[13px] text-foreground tabular-nums">
@@ -95,12 +139,15 @@ export function ActivityLogsTable({ logs, onViewDetail, hideEmployee = false }: 
                     })}
                   </div>
                 </td>
-                <td className="px-5 py-4 text-right">
+                <td className="px-5 py-4 text-center">
                   <button
-                    onClick={() => { onViewDetail(log.id) }}
-                    className="text-[12px] font-bold text-primary hover:underline underline-offset-4 focus:outline-none"
+                    onClick={() => {
+                      onViewDetail(log.id)
+                    }}
+                    className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors focus:outline-none inline-flex items-center justify-center"
+                    title="Xem chi tiết"
                   >
-                    Xem chi tiết
+                    <Eye className="w-[18px] h-[18px]" />
                   </button>
                 </td>
               </tr>

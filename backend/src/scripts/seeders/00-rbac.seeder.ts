@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from "@/libs/database.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
 import { ISeeder } from "@/scripts/seeders/seeder.interface.ts"
@@ -8,7 +9,7 @@ export class RBACSeeder implements ISeeder {
   readonly order = 2 // Runs right after EmployeesSeeder (order = 1) to map employees to dynamic roles
 
   async run(context: SeedContext): Promise<Partial<SeedContext>> {
-    console.log("  Seeding AppRoles and Permissions...")
+    console.info("  Seeding AppRoles and Permissions...")
 
     // Define permissions list
     const permissionsData = [
@@ -69,6 +70,12 @@ export class RBACSeeder implements ISeeder {
         module: "attendance",
         description: "Export attendance report",
       },
+      {
+        name: "Read Weekly Schedule",
+        code: "attendance.weekly_schedule.read",
+        module: "attendance",
+        description: "View workforce planning templates",
+      },
 
       // Applications
       {
@@ -128,6 +135,12 @@ export class RBACSeeder implements ISeeder {
         code: "payroll.approve",
         module: "payroll",
         description: "Approve/Reject payroll calculations",
+      },
+      {
+        name: "Read Salary Config",
+        code: "payroll.salary_config.read",
+        module: "payroll",
+        description: "View employee salary settings and history",
       },
 
       // Project
@@ -335,7 +348,7 @@ export class RBACSeeder implements ISeeder {
       })
       createdPermissions[p.code] = dbPermission.id
     }
-    console.log(`    [✓] Upserted ${permissionsData.length} permissions.`)
+    console.info(`    [✓] Upserted ${permissionsData.length} permissions.`)
 
     // Define AppRoles mapping
     const rolesData = [
@@ -389,7 +402,7 @@ export class RBACSeeder implements ISeeder {
       })
       createdRoles[r.name] = dbRole.id
     }
-    console.log(`    [✓] Upserted ${rolesData.length} core AppRoles.`)
+    console.info(`    [✓] Upserted ${rolesData.length} core AppRoles.`)
 
     // Define role-permission linkages
     const rolePermissionsLink: Record<string, string[]> = {
@@ -406,12 +419,14 @@ export class RBACSeeder implements ISeeder {
         "attendance.update",
         "attendance.delete",
         "attendance.export",
+        "attendance.weekly_schedule.read",
         "application.read",
         "application.approve",
         "payroll.read",
         "payroll.create",
         "payroll.update",
         "payroll.delete",
+        "payroll.salary_config.read",
         "role.read",
         "audit.read",
         // Recruitment
@@ -451,7 +466,7 @@ export class RBACSeeder implements ISeeder {
     }
 
     // Create RolePermissions using createMany for maximum speed
-    const rolePermissionsData: any[] = []
+    const rolePermissionsData: Prisma.RolePermissionCreateManyInput[] = []
     for (const [roleName, permissionCodes] of Object.entries(rolePermissionsLink)) {
       const roleId = createdRoles[roleName]
       if (!roleId) continue
@@ -470,11 +485,11 @@ export class RBACSeeder implements ISeeder {
         skipDuplicates: true,
       })
     }
-    console.log(`    [✓] Linked ${rolePermissionsData.length} role-permission mappings.`)
+    console.info(`    [✓] Linked ${rolePermissionsData.length} role-permission mappings.`)
 
     // Map existing seeded employees to dynamic AppRoles
     if (context.employees && context.employees.length > 0) {
-      const employeeRolesData: any[] = []
+      const employeeRolesData: Prisma.EmployeeRoleCreateManyInput[] = []
       for (const emp of context.employees) {
         let targetRoleName = "employee"
         if (emp.username === "admin") targetRoleName = "admin"
@@ -494,7 +509,7 @@ export class RBACSeeder implements ISeeder {
           data: employeeRolesData,
         })
       }
-      console.log(`    [✓] Assigned dynamic roles to ${employeeRolesData.length} seeded employees.`)
+      console.info(`    [✓] Assigned dynamic roles to ${employeeRolesData.length} seeded employees.`)
     }
 
     return {}

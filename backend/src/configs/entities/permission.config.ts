@@ -20,6 +20,8 @@ export const PERMISSION_CODE = {
   RECRUITMENT_JD_UPDATE: "recruitment.jd.update",
   RECRUITMENT_POSTING_MANAGE: "recruitment.posting.manage",
   RECRUITMENT_INTAKE_MANAGE: "recruitment.intake.manage",
+  ATTENDANCE_WEEKLY_SCHEDULE_READ: "attendance.weekly_schedule.read",
+  PAYROLL_SALARY_CONFIG_READ: "payroll.salary_config.read",
 } as const
 
 export const PERMISSION_CODES = [
@@ -44,6 +46,8 @@ export const PERMISSION_CODES = [
   PERMISSION_CODE.RECRUITMENT_JD_UPDATE,
   PERMISSION_CODE.RECRUITMENT_POSTING_MANAGE,
   PERMISSION_CODE.RECRUITMENT_INTAKE_MANAGE,
+  PERMISSION_CODE.ATTENDANCE_WEEKLY_SCHEDULE_READ,
+  PERMISSION_CODE.PAYROLL_SALARY_CONFIG_READ,
 ] as const
 
 export type PermissionCode = (typeof PERMISSION_CODES)[number]

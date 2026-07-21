@@ -57,7 +57,7 @@ export default function PositionsManagement() {
     setIsOpen(true)
   }
 
-  const handleOpenEdit = (pos: any) => {
+  const handleOpenEdit = (pos: { id: string; name: string; code: string; description?: string | null; allowedTaskTrackers?: string[] }) => {
     setEditingId(pos.id)
     setName(pos.name)
     setCode(pos.code)
@@ -97,8 +97,9 @@ export default function PositionsManagement() {
       }
       setIsOpen(false)
       refetch()
-    } catch (error: any) {
-      const msg = error.response?.data?.error?.message || "Đã xảy ra lỗi"
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: { message?: string } } } }
+      const msg = err.response?.data?.error?.message || "Đã xảy ra lỗi"
       toast.error(msg)
     }
   }
@@ -109,7 +110,7 @@ export default function PositionsManagement() {
         await deleteMutation.mutateAsync(id)
         toast.success("Xóa chức vụ thành công")
         refetch()
-      } catch (error: any) {
+      } catch {
         toast.error("Xóa chức vụ thất bại")
       }
     }

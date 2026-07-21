@@ -350,19 +350,7 @@ export class TaskService implements ITaskService {
         }
       }
 
-      if (statusEnum === TASK_STATUS.IN_REVIEW) {
-        const hasResultUrl = data.resultUrl !== undefined ? !!data.resultUrl : !!task.resultUrl
-        const hasResultNotes =
-          data.resultNotes !== undefined ? !!data.resultNotes : !!task.resultNotes
 
-        if (!hasResultUrl && !hasResultNotes) {
-          throw new AppError(
-            "Bắt buộc phải đính kèm link sản phẩm hoặc ghi chú kết quả khi gửi yêu cầu đánh giá công việc (in_review)",
-            HttpStatusCode.BAD_REQUEST,
-            ErrorLayer.SERVICE,
-          )
-        }
-      }
     }
 
     return this.repository.updateTask(id, {

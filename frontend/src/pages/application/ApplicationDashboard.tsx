@@ -42,9 +42,9 @@ export default function ApplicationDashboard() {
 
   const activeType = searchParams.get("type") || "all"
 
-  const myApps = useMyApplications()
-  const manageApps = useManageApplications()
-  const allApps = useAllApplications()
+  const myApps = useMyApplications(activeTab === "mine")
+  const manageApps = useManageApplications(activeTab === "manage")
+  const allApps = useAllApplications(activeTab === "all")
 
   const { setTypeFilter: setMyTypeFilter } = myApps
   const { setTypeFilter: setManageTypeFilter } = manageApps
@@ -169,11 +169,13 @@ export default function ApplicationDashboard() {
       {/* Header */}
       <div className="space-y-4">
         <PageHeader
-          title={activeTab === "manage" ? "Bạn duyệt" : "Đơn thư"}
+          title={activeTab === "manage" ? "Bạn duyệt" : activeTab === "mine" ? "Đơn của tôi" : "Đơn thư"}
           description={
             activeTab === "manage"
               ? "Theo dõi và xử lý các đơn đang chờ bạn duyệt."
-              : "Tra cứu, theo dõi và quản lý đơn từ."
+              : activeTab === "mine"
+                ? "Tra cứu, theo dõi và quản lý đơn từ cá nhân."
+                : "Tra cứu, theo dõi và quản lý toàn bộ đơn từ của công ty."
           }
           actions={
             <Button

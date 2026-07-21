@@ -44,10 +44,6 @@ export const ROUTES = {
     EMPLOYEE_SALARY: "/payroll/employee-salary",
     MY_PAYSLIPS: "/payroll/my-payslips",
   },
-  ASSET: {
-    BASE: "/asset",
-    DASHBOARD: "/asset/dashboard",
-  },
   RECRUITMENT: {
     BASE: "/recruitment",
     DASHBOARD: "/recruitment/dashboard",
@@ -69,7 +65,6 @@ export const ROUTES = {
   },
   SETTINGS: {
     BASE: "/settings",
-    DASHBOARD: "/settings/dashboard",
     ROLES: "/settings/roles",
     ROLE_PERMISSIONS: "/settings/role-permissions",
     PERMISSIONS: "/settings/permissions",

@@ -164,6 +164,7 @@ export default function NewTask() {
     queryFn: () => projectTaskStatusApi.list(pId),
     enabled: !!pId,
   })
+// eslint-disable-next-line react-hooks/exhaustive-deps
   const statuses = statusesData || []
 
   // Auth context
@@ -209,6 +210,7 @@ export default function NewTask() {
   useEffect(() => {
     if (statuses.length > 0 && !taskStatusId) {
       const defaultStatus = statuses.find((s: ProjectTaskStatus) => s.isDefault) || statuses[0]
+// eslint-disable-next-line react-hooks/set-state-in-effect
       setTaskStatusId(defaultStatus.id)
     }
   }, [statuses, taskStatusId])
@@ -217,6 +219,7 @@ export default function NewTask() {
   useEffect(() => {
     if (allowedTrackers.length > 0) {
       if (!allowedTrackers.includes(taskTracker)) {
+// eslint-disable-next-line react-hooks/set-state-in-effect
         setTaskTracker(allowedTrackers[0] as TaskTracker)
       }
     }

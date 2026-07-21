@@ -86,9 +86,10 @@ function mapAuditToActivity(log: BackendAuditLog): ActivityLogItem {
 }
 
 export const securityApi = {
-  getSummary: async (): Promise<SecuritySummaryDto> => {
+  getSummary: async (timeRange: string = "today"): Promise<SecuritySummaryDto> => {
     const response = await apiClient.get<ApiResponse<SecuritySummaryDto>>(
-      API_ENDPOINTS.SECURITY.DASHBOARD,
+      "/security/dashboard",
+      { params: { timeRange } }
     )
     return response.data.data
   },

@@ -23,6 +23,7 @@ import {
   useDeleteWeeklyScheduleTemplate,
   useWeeklyScheduleTemplates,
 } from "@/hooks/attendance/use-weekly-schedule-templates"
+import { usePermission } from "@/hooks/use-permission"
 import type { IWeeklyScheduleTemplate } from "@/types/attendance.types"
 
 import { useState } from "react"
@@ -39,6 +40,9 @@ function countAssignedDays(template: IWeeklyScheduleTemplate): number {
 
 /** Keeps template management separate from read-only workforce-planning insights. */
 export default function WeeklySchedules() {
+  const { hasPermission } = usePermission()
+  const canReadSchedules = hasPermission("attendance.weekly_schedule.read")
+
   const { data: templates = [], isLoading, isError } = useWeeklyScheduleTemplates()
   const deleteMutation = useDeleteWeeklyScheduleTemplate()
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -76,106 +80,114 @@ export default function WeeklySchedules() {
 
       <Tabs defaultValue="templates" className="gap-4">
         <TabsList>
-          <TabsTrigger value="templates">Templates</TabsTrigger>
-          <TabsTrigger value="insights">Insights</TabsTrigger>
+          {canReadSchedules && (
+            <>
+              <TabsTrigger value="templates">Templates</TabsTrigger>
+              <TabsTrigger value="insights">Insights</TabsTrigger>
+            </>
+          )}
         </TabsList>
 
-        <TabsContent value="templates">
-          <PageCard className="overflow-hidden p-0" noBorder={false}>
-            <Table>
-              <TableHeader className="bg-muted/40">
-                <TableRow className="hover:bg-transparent">
-                  <TableHead>Tên</TableHead>
-                  <TableHead>Chu kỳ</TableHead>
-                  <TableHead>Ca đã gán</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                      <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
-                    </TableCell>
-                  </TableRow>
-                ) : isError ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center text-destructive">
-                      Lỗi khi tải danh sách template.
-                    </TableCell>
-                  </TableRow>
-                ) : templates.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                      Chưa có template. Tạo template đầu tiên.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  templates.map((template) => (
-                    <TableRow key={template.id}>
-                      <TableCell>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleEdit(template)
-                          }}
-                          className="rounded-full text-left font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                          {template.name}
-                        </button>
-                        {template.description ? (
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {template.description}
-                          </p>
-                        ) : null}
-                      </TableCell>
-                      <TableCell>{template.cycleWeeks} tuần</TableCell>
-                      <TableCell>{countAssignedDays(template)} ô ca</TableCell>
-                      <TableCell>
-                        <StatusPill
-                          label={template.isActive ? "Đang dùng" : "Tắt"}
-                          variant={template.isActive ? "success" : "neutral"}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
+        {canReadSchedules && (
+          <>
+            <TabsContent value="templates">
+              <PageCard className="overflow-hidden p-0" noBorder={false}>
+                <Table>
+                  <TableHeader className="bg-muted/40">
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead>Tên</TableHead>
+                      <TableHead>Chu kỳ</TableHead>
+                      <TableHead>Ca đã gán</TableHead>
+                      <TableHead>Trạng thái</TableHead>
+                      <TableHead className="w-12" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">
+                          <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+                        </TableCell>
+                      </TableRow>
+                    ) : isError ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center text-destructive">
+                          Lỗi khi tải danh sách template.
+                        </TableCell>
+                      </TableRow>
+                    ) : templates.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                          Chưa có template. Tạo template đầu tiên.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      templates.map((template) => (
+                        <TableRow key={template.id}>
+                          <TableCell>
+                            <button
+                              type="button"
                               onClick={() => {
                                 handleEdit(template)
                               }}
+                              className="rounded-full text-left font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
-                              Sửa
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => {
-                                handleDelete(template.id)
-                              }}
-                            >
-                              Xoá
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </PageCard>
-        </TabsContent>
+                              {template.name}
+                            </button>
+                            {template.description ? (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {template.description}
+                              </p>
+                            ) : null}
+                          </TableCell>
+                          <TableCell>{template.cycleWeeks} tuần</TableCell>
+                          <TableCell>{countAssignedDays(template)} ô ca</TableCell>
+                          <TableCell>
+                            <StatusPill
+                              label={template.isActive ? "Đang dùng" : "Tắt"}
+                              variant={template.isActive ? "success" : "neutral"}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    handleEdit(template)
+                                  }}
+                                >
+                                  Sửa
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => {
+                                    handleDelete(template.id)
+                                  }}
+                                >
+                                  Xoá
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </PageCard>
+            </TabsContent>
 
-        <TabsContent value="insights">
-          <ScheduleInsightsPanel />
-        </TabsContent>
+            <TabsContent value="insights">
+              <ScheduleInsightsPanel />
+            </TabsContent>
+          </>
+        )}
       </Tabs>
 
       <WeeklyScheduleTemplateDialog

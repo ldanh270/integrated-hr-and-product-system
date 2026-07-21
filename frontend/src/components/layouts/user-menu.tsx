@@ -11,13 +11,12 @@ import { useAuth } from "@/hooks/use-auth.ts"
 import { useAuthStore } from "@/store/auth-store.ts"
 import { useSidebarStore } from "@/store/sidebar-store"
 
-import { ChevronsUpDown, History, LogOut, MessageSquare, User as UserIcon } from "lucide-react"
+import { ChevronsUpDown, History, LogOut, User as UserIcon } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 
 const USER_MENU_ITEMS = [
   { icon: UserIcon, label: "Hồ sơ cá nhân", to: ROUTES.HRM.PROFILE },
   { icon: History, label: "Lịch sử đăng nhập", to: ROUTES.HRM.LOGIN_HISTORY },
-  { icon: MessageSquare, label: "Đóng góp ý kiến", to: "#" },
 ]
 
 /**

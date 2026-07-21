@@ -5,10 +5,11 @@ import {
 } from "@/lib/api/application.api"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { APPLICATION_STATUS } from "@/config/entities/attendance.config"
 
 import { toast } from "sonner"
 
-export type StatusFilter = "all" | "pending" | "approved" | "rejected" | "cancelled"
+export type StatusFilter = "all" | typeof APPLICATION_STATUS[keyof typeof APPLICATION_STATUS]
 
 interface UseMyApplicationsReturn {
   applications: IApplicationListItem[]
@@ -39,9 +40,16 @@ interface UseMyApplicationsReturn {
 }
 
 /** Fetches and manages applications submitted by the current employee. */
-export function useMyApplications(): UseMyApplicationsReturn {
+export function useMyApplications(enabled: boolean = true): UseMyApplicationsReturn {
   const [applications, setApplications] = useState<IApplicationListItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(enabled)
+  const [prevEnabled, setPrevEnabled] = useState(enabled)
+
+  if (enabled !== prevEnabled) {
+    setPrevEnabled(enabled)
+    setIsLoading(enabled)
+  }
+  
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [typeFilter, setTypeFilter] = useState<string>("all")
@@ -102,17 +110,19 @@ export function useMyApplications(): UseMyApplicationsReturn {
   )
 
   useEffect(() => {
+    if (!enabled) return
+
     activeRef.current = true
     const timer = setTimeout(() => {
       if (activeRef.current) {
-        fetchApplications(false)
+        void fetchApplications(false)
       }
     }, 0)
     return () => {
       activeRef.current = false
       clearTimeout(timer)
     }
-  }, [fetchApplications])
+  }, [fetchApplications, enabled])
 
   const refetch = useCallback(() => {
     fetchApplications(false)

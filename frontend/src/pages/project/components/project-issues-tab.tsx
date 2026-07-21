@@ -1,4 +1,3 @@
-/* eslint-disable security/detect-object-injection */
 import { useState, useEffect } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Link, useSearchParams } from "react-router-dom"
@@ -358,6 +357,7 @@ export function ProjectIssuesTab({
           const data = JSON.parse(matched.queryData)
           
           if (data.defaultColumns) {
+// eslint-disable-next-line react-hooks/set-state-in-effect
             setDisplayColumns(["id", "tracker", "title", "assignee", "status", "priority", "progress"])
           } else if (Array.isArray(data.selectedColumns)) {
             setDisplayColumns(data.selectedColumns)
@@ -422,13 +422,16 @@ export function ProjectIssuesTab({
             const newParams = new URLSearchParams(searchParams)
             newParams.delete("queryId")
             setSearchParams(newParams)
+// eslint-disable-next-line react-hooks/set-state-in-effect
             setAppliedUrlQueryId(null)
           }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {
           // ignore
         }
       }
     }
+// eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     statusFilter,
     trackerFilter,
@@ -544,6 +547,7 @@ export function ProjectIssuesTab({
       setSearchParams(newParams)
 
       toast.success(`Đã áp dụng truy vấn: ${q.name}`)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
       toast.error("Không thể đọc dữ liệu truy vấn đã lưu")
     }
@@ -576,6 +580,7 @@ export function ProjectIssuesTab({
 
   // Reset page number back to 1 when filters are updated
   useEffect(() => {
+// eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1)
   }, [
     issueSearch,

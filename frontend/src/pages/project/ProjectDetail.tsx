@@ -30,6 +30,7 @@ import { ProjectActivityTab } from "./components/project-activity-tab"
 import { ProjectGanttTab } from "./components/project-gantt-tab"
 import { ProjectSpentTimeTab } from "./components/project-spent-time-tab"
 import { ProjectPositionRules } from "./components/project-position-rules"
+import { ProjectTaskGeneratorModal } from "./components/project-task-generator-modal"
 import type { ProjectMember } from "@/types/project.types"
 
 interface ActivityItem {
@@ -82,6 +83,7 @@ export default function ProjectDetail() {
 
   const [isOpenMemberModal, setIsOpenMemberModal] = useState(false)
   const [isOpenEditProjectModal, setIsOpenEditProjectModal] = useState(false)
+  const [isAiDecomposeOpen, setIsAiDecomposeOpen] = useState(false)
   const [editingMember, setEditingMember] = useState<ProjectMember | null>(null)
 
   // Redirect to canonical /project/:tab — fix invalid tab or missing project
@@ -275,6 +277,9 @@ export default function ProjectDetail() {
         onOpenAddMember={() => {
           setIsOpenMemberModal(true)
         }}
+        onOpenAiDecompose={() => {
+          setIsAiDecomposeOpen(true)
+        }}
       />
 
       {/* Tabs navigation panel: switches between Overview, Issues, and Activity views */}
@@ -330,6 +335,7 @@ export default function ProjectDetail() {
         <TabsContent value={PROJECT_TABS.OVERVIEW}>
           <ProjectOverviewTab
             project={project}
+            tasks={overviewTasks}
             totalTasksCount={totalTasksCount}
             openTasksCount={openTasksCount}
             closedTasksCount={closedTasksCount}
@@ -440,6 +446,13 @@ export default function ProjectDetail() {
         projectId={projectId}
         project={project}
         allEmployees={allEmployees}
+      />
+
+      {/* AI TASK DECOMPOSITION MODAL: Dialog overlay for AI project task breakdown */}
+      <ProjectTaskGeneratorModal
+        projectId={projectId}
+        isOpen={isAiDecomposeOpen}
+        onOpenChange={setIsAiDecomposeOpen}
       />
     </div>
   )

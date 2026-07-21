@@ -129,4 +129,73 @@ export class EmailUtil {
       throw error
     }
   }
+
+  /**
+   * Sends new account credentials email to the specified user using Resend.
+   */
+  static async sendNewEmployeeCredentialsEmail(
+    to: string,
+    username: string,
+    password: string,
+  ): Promise<any> {
+    const apiKey = process.env.RESEND_API_KEY
+    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173"
+    const from = process.env.EMAIL_FROM || "noreply@smartpcstore.id.vn"
+
+    if (ENV_ENVIRONMENT !== ENVIRONMENT.PRODUCTION) {
+      console.log(`[DEBUG] Email to: ${to}`)
+      console.log(`[DEBUG] Generated Username: ${username}`)
+      console.log(`[DEBUG] Generated Password: ${password}`)
+    }
+
+    if (!apiKey) {
+      const mockResult = {
+        mocked: true,
+        to,
+        username,
+        password,
+        message: "RESEND_API_KEY missing, email was mocked to console.",
+      }
+      console.log("--- EMAIL MOCK (NEW EMPLOYEE CREDENTIALS) ---")
+      console.log(JSON.stringify(mockResult, null, 2))
+      console.log("---------------------------------------------")
+      return mockResult
+    }
+
+    try {
+      const resend = new Resend(apiKey)
+
+      const result = await resend.emails.send({
+        from: `HRP Management System <${from}>`,
+        to,
+        subject: "Welcome to HRP Management System - Your Account Credentials",
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+            <h2 style="color: #333;">Welcome to HRP Management System</h2>
+            <p>Hello,</p>
+            <p>Your account has been successfully created. Below are your login credentials to access the system:</p>
+            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0; font-family: monospace; font-size: 16px;">
+              <p style="margin: 5px 0;"><strong>Username:</strong> ${username}</p>
+              <p style="margin: 5px 0;"><strong>Password:</strong> ${password}</p>
+            </div>
+            <p>For security reasons, we recommend changing your password after your first login.</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${clientUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Login to HRP</a>
+            </div>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+            <p style="color: #999; font-size: 12px;">This is an automated notification from the <b>HRP Management System</b>.</p>
+          </div>
+        `,
+      })
+
+      if (ENV_ENVIRONMENT !== ENVIRONMENT.PRODUCTION) {
+        console.log("Resend response:", JSON.stringify(result, null, 2))
+      }
+
+      return result
+    } catch (error) {
+      console.error("Failed to send credentials email via Resend:", error)
+      throw error
+    }
+  }
 }
