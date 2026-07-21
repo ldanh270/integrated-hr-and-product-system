@@ -201,44 +201,44 @@ enum ContractStatus {
 
 // ── Employee Contract ─────────────────────────────────────────────────────────
 model EmployeeContract {
-  id              String         @id @default(cuid())
-  employeeId      String
-  employee        Employee       @relation("EmployeeContracts", fields: [employeeId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation("EmployeeContracts", fields: [employeeId], references: [id], onDelete: Cascade)
 
   contractType   ContractType
-  contractNumber String         @unique
+  contractNumber String       @unique
   title          String?
 
-  signedDate     DateTime?      @db.Date
-  startDate      DateTime       @db.Date
-  endDate        DateTime?      @db.Date
-  trialEndDate   DateTime?      @db.Date
+  signedDate   DateTime? @db.Date
+  startDate    DateTime  @db.Date
+  endDate      DateTime? @db.Date
+  trialEndDate DateTime? @db.Date
 
-  salary         Decimal        @db.Decimal(15, 2)
-  currency       String         @default("VND")
+  salary   Decimal @db.Decimal(15, 2)
+  currency String  @default("VND")
 
-  allowances     Json?
-  attachments    String[]
+  allowances  Json?
+  attachments String[]
 
-  status         ContractStatus @default(draft)
+  status            ContractStatus @default(draft)
   terminationReason String?
   terminationDate   DateTime?
 
-  probationSalary  Decimal?     @db.Decimal(15, 2)
-  probationSalaryRate Decimal?  @db.Decimal(5, 2)
+  probationSalary     Decimal? @db.Decimal(15, 2)
+  probationSalaryRate Decimal? @db.Decimal(5, 2)
 
-  createdById    String
-  createdBy      Employee       @relation("ContractCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  updatedById    String?
-  updatedBy      Employee?      @relation("ContractUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
-  note           String?
+  createdById String
+  createdBy   Employee  @relation("ContractCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedById String?
+  updatedBy   Employee? @relation("ContractUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+  note        String?
 
-  renewedFromId  String?
-  renewedFrom    EmployeeContract? @relation("ContractRenewal", fields: [renewedFromId], references: [id], onDelete: SetNull)
-  renewedTo      EmployeeContract[] @relation("ContractRenewal")
+  renewedFromId String?
+  renewedFrom   EmployeeContract?  @relation("ContractRenewal", fields: [renewedFromId], references: [id], onDelete: SetNull)
+  renewedTo     EmployeeContract[] @relation("ContractRenewal")
 
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([employeeId])
   @@index([status, endDate])
@@ -282,52 +282,63 @@ model Employee {
   authorizationVersion Int       @default(1)
 
   // Relations
-  auditLogsActed                     AuthorizationAuditLog[]      @relation("AuditLogActor")
-  auditLogsTargeted                  AuthorizationAuditLog[]      @relation("AuditLogTarget")
-  attendanceRecords                  AttendanceRecord[]
-  realShifts                         RealShift[]
-  employeeShifts                     EmployeeShift[]              @relation("EmployeeShiftEmployee")
-  employeeShiftsCreated            EmployeeShift[]              @relation("EmployeeShiftCreator")
-  applications                       Application[]                @relation("ApplicationEmployee")
-  applicationsApproved               Application[]                @relation("ApplicationApprover")
-  applicationsAssigned             Application[]                @relation("ApplicationAssignedTo")
-  applicationsPartnerApproved      Application[]                @relation("ApplicationPartnerApprover")
-  swapApplicationsAsPartner          ApplicationShiftSwapDetail[] @relation("ApplicationSwapWith")
-  shiftSchedules                     ShiftSchedule[]              @relation("ShiftScheduleEmployee")
-  shiftSchedulesCreated            ShiftSchedule[]              @relation("ShiftScheduleCreator")
-  workingShiftsCreated             WorkingShift[]
-  weeklyScheduleTemplatesCreated   WeeklyScheduleTemplate[]     @relation("WeeklyScheduleTemplateCreator")
-  holidayCalendarsCreated          HolidayCalendar[]
-  holidayCalendarAssignees         HolidayCalendarAssignee[]
-  salaryVariablesCreated           SalaryVariable[]
-  salaryComponentsCreated          SalaryComponent[]
-  payslipTemplatesCreated          PayslipTemplate[]
-  salaryConfigs                    EmployeeSalaryConfig[]
-  salaryConfigsCreated             EmployeeSalaryConfig[]       @relation("SalaryConfigCreator")
-  payrollSettingsUpdated           PayrollSettings[]
-  weeklyScheduleSettingsUpdated    WeeklyScheduleSettings[]
-  payrollsApproved                 Payroll[]
-  payslips                         Payslip[]
-  projectsLead                     Project[]                    @relation("ProjectTeamLeader")
-  projectsCreated                  Project[]                    @relation("ProjectCreator")
-  projectMembers                   ProjectMember[]
-  tasksAssigned                    Task[]                       @relation("TaskAssignee")
-  tasksCreated                     Task[]                       @relation("TaskCreator")
-  activityLogs                     ActivityLog[]
-  passwordResetRequests            PasswordResetRequest[]       @relation("PasswordResetRequestEmployee")
-  passwordResetRequestsApprd       PasswordResetRequest[]       @relation("PasswordResetRequestApprover")
-  refreshTokens                    RefreshToken[]
-  spentTimes                       SpentTime[]                  @relation("EmployeeSpentTimes")
-  employeeRoles                    EmployeeRole[]
-  spentTimesApproved               SpentTime[]                  @relation("SpentTimeApprover")
-  customQueries                    CustomQuery[]
-  partTimeWeeklyAvailabilities     PartTimeWeeklyAvailability[] @relation("PartTimeAvailabilityEmployee")
-  partTimeAvailabilitiesReviewed   PartTimeWeeklyAvailability[] @relation("PartTimeAvailabilityReviewer")
-  leaveBalances                    EmployeeLeaveBalance[]
-  regimeCategoriesCreated          RegimeCategory[]
-  contracts                       EmployeeContract[] @relation("EmployeeContracts")
-  contractsCreated              EmployeeContract[] @relation("ContractCreator")
-  contractsUpdated             EmployeeContract[] @relation("ContractUpdater")
+  auditLogsActed                 AuthorizationAuditLog[]      @relation("AuditLogActor")
+  auditLogsTargeted              AuthorizationAuditLog[]      @relation("AuditLogTarget")
+  attendanceRecords              AttendanceRecord[]
+  realShifts                     RealShift[]
+  employeeShifts                 EmployeeShift[]              @relation("EmployeeShiftEmployee")
+  employeeShiftsCreated          EmployeeShift[]              @relation("EmployeeShiftCreator")
+  applications                   Application[]                @relation("ApplicationEmployee")
+  applicationsApproved           Application[]                @relation("ApplicationApprover")
+  applicationsAssigned           Application[]                @relation("ApplicationAssignedTo")
+  applicationsPartnerApproved    Application[]                @relation("ApplicationPartnerApprover")
+  swapApplicationsAsPartner      ApplicationShiftSwapDetail[] @relation("ApplicationSwapWith")
+  shiftSchedules                 ShiftSchedule[]              @relation("ShiftScheduleEmployee")
+  shiftSchedulesCreated          ShiftSchedule[]              @relation("ShiftScheduleCreator")
+  workingShiftsCreated           WorkingShift[]
+  weeklyScheduleTemplatesCreated WeeklyScheduleTemplate[]     @relation("WeeklyScheduleTemplateCreator")
+  holidayCalendarsCreated        HolidayCalendar[]
+  holidayCalendarAssignees       HolidayCalendarAssignee[]
+  salaryVariablesCreated         SalaryVariable[]
+  salaryComponentsCreated        SalaryComponent[]
+  payslipTemplatesCreated        PayslipTemplate[]
+  salaryConfigs                  EmployeeSalaryConfig[]
+  salaryConfigsCreated           EmployeeSalaryConfig[]       @relation("SalaryConfigCreator")
+  payrollSettingsUpdated         PayrollSettings[]
+  weeklyScheduleSettingsUpdated  WeeklyScheduleSettings[]
+  payrollsApproved               Payroll[]
+  payslips                       Payslip[]
+  projectsLead                   Project[]                    @relation("ProjectTeamLeader")
+  projectsCreated                Project[]                    @relation("ProjectCreator")
+  projectMembers                 ProjectMember[]
+  tasksAssigned                  Task[]                       @relation("TaskAssignee")
+  recruitmentOAuthAccounts       RecruitmentOAuthAccount[]
+  tasksCreated                   Task[]                       @relation("TaskCreator")
+  activityLogs                   ActivityLog[]
+  passwordResetRequests          PasswordResetRequest[]       @relation("PasswordResetRequestEmployee")
+  passwordResetRequestsApprd     PasswordResetRequest[]       @relation("PasswordResetRequestApprover")
+  refreshTokens                  RefreshToken[]
+  spentTimes                     SpentTime[]                  @relation("EmployeeSpentTimes")
+  employeeRoles                  EmployeeRole[]
+  spentTimesApproved             SpentTime[]                  @relation("SpentTimeApprover")
+  customQueries                  CustomQuery[]
+  partTimeWeeklyAvailabilities   PartTimeWeeklyAvailability[] @relation("PartTimeAvailabilityEmployee")
+  partTimeAvailabilitiesReviewed PartTimeWeeklyAvailability[] @relation("PartTimeAvailabilityReviewer")
+  leaveBalances                  EmployeeLeaveBalance[]
+  regimeCategoriesCreated        RegimeCategory[]
+  contracts                      EmployeeContract[]           @relation("EmployeeContracts")
+  contractsCreated               EmployeeContract[]           @relation("ContractCreator")
+  contractsUpdated               EmployeeContract[]           @relation("ContractUpdater")
+
+  // Recruitment relations
+  requisitionsRequested         JobRequisition[]         @relation("RequisitionRequester")
+  requisitionsAssignedToApprove JobRequisition[]         @relation("RequisitionDesignatedApprover")
+  requisitionsApproved          JobRequisition[]         @relation("RequisitionApprover")
+  recruitmentAppsAssigned       RecruitmentApplication[] @relation("RecruitmentAppRecruiter")
+  scorecardsEvaluated           Scorecard[]              @relation("ScorecardEvaluator")
+  offersCreated                 RecruitmentOffer[]       @relation("OfferCreator")
+  bgcChecked                    BackgroundCheck[]        @relation("BgcChecker")
+  recruitmentNotesCreated       ApplicationNote[]        @relation("RecruitmentNoteCreator")
 
   @@index([status, employeeType])
   @@index([deletedAt])
@@ -470,13 +481,14 @@ model EmployeeShift {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  attendanceRecord AttendanceRecord?
-  overtimeDetails  ApplicationOvertimeDetail[]  @relation("ApplicationOvertimeShift")
-  swapDetails      ApplicationShiftSwapDetail[] @relation("ApplicationEmployeeShift")
-  swapWithDetails  ApplicationShiftSwapDetail[] @relation("ApplicationSwapWithShift")
-  lateEarlyDetails ApplicationLateEarlyDetail[] @relation("ApplicationLateEarlyShift")
+  attendanceRecord    AttendanceRecord?
+  overtimeDetails     ApplicationOvertimeDetail[]     @relation("ApplicationOvertimeShift")
+  swapDetails         ApplicationShiftSwapDetail[]    @relation("ApplicationEmployeeShift")
+  swapWithDetails     ApplicationShiftSwapDetail[]    @relation("ApplicationSwapWithShift")
+  lateEarlyDetails    ApplicationLateEarlyDetail[]    @relation("ApplicationLateEarlyShift")
   workFromHomeDetails ApplicationWorkFromHomeDetail[]
-  forgotCardDetails ApplicationForgotCardDetail[] @relation("ApplicationForgotCardShift")
+  forgotCardDetails   ApplicationForgotCardDetail[]   @relation("ApplicationForgotCardShift")
+
   @@unique([employeeId, assignedDate, shiftId])
   @@index([shiftId, assignedDate])
   @@index([status, assignedDate])
@@ -567,16 +579,16 @@ model Application {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  leaveDetail        ApplicationLeaveDetail?
-  shiftSwapDetail    ApplicationShiftSwapDetail?
-  overtimeDetail     ApplicationOvertimeDetail?
-  regimeDetail       ApplicationRegimeDetail?
-  lateEarlyDetail    ApplicationLateEarlyDetail?
-  businessTripDetail ApplicationBusinessTripDetail?
-  workFromHomeDetail ApplicationWorkFromHomeDetail?
-  forgotCardDetail   ApplicationForgotCardDetail?
-  recruitmentDetail  ApplicationRecruitmentDetail?
-  attendanceRecordCorrection AttendanceRecord?            @relation("AttendanceRecordCorrection")
+  leaveDetail                ApplicationLeaveDetail?
+  shiftSwapDetail            ApplicationShiftSwapDetail?
+  overtimeDetail             ApplicationOvertimeDetail?
+  regimeDetail               ApplicationRegimeDetail?
+  lateEarlyDetail            ApplicationLateEarlyDetail?
+  businessTripDetail         ApplicationBusinessTripDetail?
+  workFromHomeDetail         ApplicationWorkFromHomeDetail?
+  forgotCardDetail           ApplicationForgotCardDetail?
+  recruitmentDetail          ApplicationRecruitmentDetail?
+  attendanceRecordCorrection AttendanceRecord?              @relation("AttendanceRecordCorrection")
 
   @@index([employeeId, status])
   @@index([employeeId, startDate(sort: Desc)])
@@ -687,17 +699,17 @@ model ApplicationWorkFromHomeDetail {
 
 model HolidayCalendar {
   // Date is intentionally non-unique because scoped holidays may overlap on the same day.
-  id          String       @id @default(cuid())
-  date        DateTime     @db.Date
+  id          String                    @id @default(cuid())
+  date        DateTime                  @db.Date
   name        String
   type        HolidayType
-  scope       HolidayScope @default(all)
+  scope       HolidayScope              @default(all)
   positionId  String?
-  position    Position?    @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  position    Position?                 @relation(fields: [positionId], references: [id], onDelete: SetNull)
   /// Groups rows created from one date-range request.
   batchId     String?
   createdById String
-  createdBy   Employee     @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy   Employee                  @relation(fields: [createdById], references: [id], onDelete: Restrict)
   assignees   HolidayCalendarAssignee[]
 
   createdAt DateTime @default(now())
@@ -877,11 +889,11 @@ model PartTimeWeeklyAvailability {
 
 // One row per weekday (0=Sun … 6=Sat); isBusyAllDay blocks all shift assignment that day.
 model PartTimeAvailabilityDay {
-  id             String                   @id @default(cuid())
+  id             String                     @id @default(cuid())
   availabilityId String
   availability   PartTimeWeeklyAvailability @relation(fields: [availabilityId], references: [id], onDelete: Cascade)
   dayOfWeek      Int
-  isBusyAllDay   Boolean                  @default(false)
+  isBusyAllDay   Boolean                    @default(false)
 
   slots PartTimeAvailabilitySlot[]
 
@@ -890,12 +902,12 @@ model PartTimeAvailabilityDay {
 
 // Free windows as minutes-from-midnight; assigned shifts must fall within these bounds.
 model PartTimeAvailabilitySlot {
-  id        String                 @id @default(cuid())
+  id        String                  @id @default(cuid())
   dayId     String
   day       PartTimeAvailabilityDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
   startTime Int
   endTime   Int
-  sortOrder Int                    @default(0)
+  sortOrder Int                     @default(0)
 
   @@index([dayId])
 }
@@ -1141,10 +1153,10 @@ model AppRole {
   id               String  @id @default(cuid())
   name             String  @unique
   description      String?
-  isSystem         Boolean   @default(false)
-  isActive         Boolean   @default(true)
-  isAdministrative Boolean   @default(false)
-  isDefault        Boolean   @default(false)
+  isSystem         Boolean @default(false)
+  isActive         Boolean @default(true)
+  isAdministrative Boolean @default(false)
+  isDefault        Boolean @default(false)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -1287,6 +1299,7 @@ model Position {
 
   employees    Employee[]
   holidays     HolidayCalendar[]
+  requisitions JobRequisition[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -1305,7 +1318,7 @@ model ProjectRole {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  members             ProjectMember[]
+  members ProjectMember[]
 
   @@unique([projectId, name])
   @@unique([projectId, code])
@@ -1328,15 +1341,15 @@ model ProjectTracker {
 }
 
 model EmployeeLeaveBalance {
-  id           String   @id @default(cuid())
-  employeeId   String
-  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  year         Int
-  totalDays    Decimal  @db.Decimal(5, 2)
-  usedDays     Decimal  @default(0) @db.Decimal(5, 2)
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  year       Int
+  totalDays  Decimal  @db.Decimal(5, 2)
+  usedDays   Decimal  @default(0) @db.Decimal(5, 2)
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([employeeId, year])
   @@index([employeeId, year])
@@ -1353,11 +1366,515 @@ model ApplicationForgotCardDetail {
 }
 
 model ApplicationRecruitmentDetail {
-  applicationId   String      @id
-  application     Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId String      @id
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
-  positionId      String?
-  positionName    String
-  quantity        Int
-  requirements    String?     @db.Text
+  positionId   String?
+  positionName String
+  quantity     Int
+  requirements String? @db.Text
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RECRUITMENT MODELS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── Enums ─────────────────────────────────────────────────────────────────────
+
+enum RequisitionStatus {
+  draft
+  pending_approval
+  approved
+  rejected
+  closed
+  filled
+}
+
+enum RequisitionPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum PostingStatus {
+  draft
+  open
+  paused
+  closed
+  archived
+}
+
+enum RecruitmentChannel {
+  linkedin
+  facebook
+  google_form
+  company_website
+  agency
+  referral
+  other
+}
+
+enum ConnectorStatus {
+  not_configured
+  ready
+  error
+}
+
+enum RecruitmentApplicationStatus {
+  new
+  reviewing
+  shortlisted
+  interviewing
+  final_review
+  offer_sent
+  offer_accepted
+  offer_declined
+  offer_rescinded
+  background_check
+  pending_onboarding
+  hired
+  rejected
+  candidate_withdrew
+}
+
+enum RecruitmentSource {
+  website
+  linkedin
+  referral
+  facebook
+  recruitment_agency
+  google_form
+  company_website
+  agency
+  other
+}
+
+enum InterviewFormat {
+  in_person
+  video_call
+  phone
+}
+
+enum InterviewRoundStatus {
+  scheduled
+  completed
+  cancelled
+  no_show
+}
+
+enum InterviewResult {
+  pass
+  fail
+  pending
+  no_show
+}
+
+enum BgcGroup {
+  a
+  b
+  c
+  d
+}
+
+enum BgcStatus {
+  pending
+  in_progress
+  completed
+  passed
+  failed
+}
+
+enum RecruitmentOfferStatus {
+  draft
+  sent
+  accepted
+  declined
+  rescinded
+  expired
+}
+
+// ── Models ─────────────────────────────────────────────────────────────────────
+
+// Job Requisition — Hiring request with approval workflow
+model JobRequisition {
+  id              String              @id @default(cuid())
+  code            String              @unique
+  title           String
+  department      String?
+  positionLevel   String?
+  employmentType  EmployeeType
+  salaryMin       Decimal?            @db.Decimal(15, 2)
+  salaryMax       Decimal?            @db.Decimal(15, 2)
+  currency        String              @default("VND")
+  headcount       Int                 @default(1)
+  filledCount     Int                 @default(0)
+  priority        RequisitionPriority @default(medium)
+  status          RequisitionStatus   @default(draft)
+  reason          String?             @db.Text
+  targetHireDate  DateTime?           @db.Date
+  targetCloseDate DateTime?           @db.Date
+
+  requestedById   String
+  requestedBy     Employee  @relation("RequisitionRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  approverId      String?
+  approver        Employee? @relation("RequisitionDesignatedApprover", fields: [approverId], references: [id], onDelete: SetNull)
+  approvedById    String?
+  approvedBy      Employee? @relation("RequisitionApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedAt      DateTime?
+  approvalComment String?
+
+  positionId String?
+  position   Position? @relation(fields: [positionId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  jobDescriptions JobDescription[]
+  applications    RecruitmentApplication[]
+
+  @@index([status])
+  @@index([requestedById])
+  @@index([approverId])
+  @@index([positionId])
+  @@index([department])
+}
+
+// Job Description — approved content derived from one internal requisition
+model JobDescription {
+  id            String         @id @default(cuid())
+  requisitionId String
+  requisition   JobRequisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+
+  title            String
+  summary          String?  @db.Text
+  responsibilities String?  @db.Text
+  requirements     String?  @db.Text
+  benefits         String?  @db.Text
+  salaryMin        Decimal? @db.Decimal(15, 2)
+  salaryMax        Decimal? @db.Decimal(15, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  postings     JobPosting[]
+  applications RecruitmentApplication[]
+
+  @@index([requisitionId])
+}
+
+// Job Posting — one channel-specific publication point for a JD
+model JobPosting {
+  id               String             @id @default(cuid())
+  jobDescriptionId String
+  jobDescription   JobDescription     @relation(fields: [jobDescriptionId], references: [id], onDelete: Cascade)
+  channel          RecruitmentChannel
+  source           RecruitmentSource
+  sourceCode       String             @unique
+  formFields       Json?
+  status           PostingStatus      @default(draft)
+  postingUrl       String?
+  externalId       String?
+  connectorStatus  ConnectorStatus    @default(not_configured)
+  oauthAccountId   String?
+  oauthAccount     RecruitmentOAuthAccount? @relation(fields: [oauthAccountId], references: [id], onDelete: SetNull)
+  publishedAt      DateTime?
+  lastSyncedAt     DateTime?
+  closedAt         DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  applications       RecruitmentApplication[]
+  connectorResponses RecruitmentConnectorResponse[]
+
+  @@index([jobDescriptionId])
+  @@index([channel])
+  @@index([source])
+  @@index([status])
+  @@index([oauthAccountId])
+}
+
+// RecruitmentOAuthAccount — OAuth credentials for posting channels (per user)
+model RecruitmentOAuthAccount {
+  id           String             @id @default(cuid())
+  userId       String
+  user         Employee           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel      RecruitmentChannel
+  name         String             @default("Default")
+  clientId     String
+  clientSecret String
+  refreshToken String
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  postings JobPosting[]
+
+  @@unique([userId, channel])
+  @@index([userId])
+  @@index([channel])
+}
+
+// Candidate — Person being recruited
+model Candidate {
+  id          String    @id @default(cuid())
+  fullName    String
+  email       String    @unique
+  phone       String?
+  dateOfBirth DateTime? @db.Date
+  address     String?
+  nationalId  String?
+
+  source       RecruitmentSource
+  linkedinUrl  String?
+  portfolioUrl String?
+  cvUrl        String?
+  avatarUrl    String?
+
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications     RecruitmentApplication[]
+  offers           RecruitmentOffer[]
+  backgroundChecks BackgroundCheck[]
+
+  @@index([email])
+  @@index([source])
+}
+
+// Recruitment Application — Candidate's application to a requisition
+model RecruitmentApplication {
+  id               String          @id @default(cuid())
+  requisitionId    String
+  requisition      JobRequisition  @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  candidateId      String
+  candidate        Candidate       @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  jobDescriptionId String?
+  jobDescription   JobDescription? @relation(fields: [jobDescriptionId], references: [id], onDelete: Restrict)
+  postingId        String?
+  posting          JobPosting?     @relation(fields: [postingId], references: [id], onDelete: Restrict)
+
+  status         RecruitmentApplicationStatus @default(new)
+  rejectReason   String?                      @db.Text
+  withdrawReason String?
+
+  appliedAt DateTime          @default(now())
+  source    RecruitmentSource
+  sourceRef String?
+
+  assignedToId String?
+  assignedTo   Employee? @relation("RecruitmentAppRecruiter", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  hiredAt   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  interviewRounds InterviewRound[]
+  offers          RecruitmentOffer[]
+  notes           ApplicationNote[]
+  connectorResponses RecruitmentConnectorResponse[]
+
+  @@index([requisitionId, candidateId])
+  @@index([requisitionId])
+  @@index([candidateId])
+  @@index([jobDescriptionId])
+  @@index([postingId])
+  @@index([assignedToId])
+  @@index([status])
+}
+
+model RecruitmentConnectorResponse {
+  id                 String                 @id @default(cuid())
+  postingId          String
+  posting            JobPosting             @relation(fields: [postingId], references: [id], onDelete: Cascade)
+  externalResponseId String
+  applicationId      String?
+  application        RecruitmentApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  errorCode          String?
+  errorMessage       String?                @db.Text
+  responseData       Json?
+  processedAt        DateTime               @default(now())
+
+  @@unique([postingId, externalResponseId])
+  @@index([applicationId])
+}
+
+// Application Note — Recruiter notes on an application
+model ApplicationNote {
+  id            String                 @id @default(cuid())
+  applicationId String
+  application   RecruitmentApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  note          String                 @db.Text
+  addedById     String
+  addedBy       Employee               @relation("RecruitmentNoteCreator", fields: [addedById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([applicationId])
+  @@index([addedById])
+}
+
+// Interview Round — Scheduled interview
+model InterviewRound {
+  id            String                 @id @default(cuid())
+  applicationId String
+  application   RecruitmentApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  roundNumber Int
+  title       String
+  format      InterviewFormat @default(video_call)
+
+  scheduledAt     DateTime
+  durationMinutes Int      @default(60)
+  location        String?
+  meetingLink     String?
+
+  interviewerIds String[]
+  status         InterviewRoundStatus @default(scheduled)
+  result         InterviewResult      @default(pending)
+  feedback       String?              @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  scorecards Scorecard[]
+
+  @@index([applicationId])
+  @@index([scheduledAt])
+  @@index([status])
+}
+
+// Scorecard — Evaluation per interviewer
+model Scorecard {
+  id          String         @id @default(cuid())
+  interviewId String
+  interview   InterviewRound @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  evaluatorId String
+  evaluator   Employee @relation("ScorecardEvaluator", fields: [evaluatorId], references: [id], onDelete: Restrict)
+
+  overallRating  Int
+  strengths      String? @db.Text
+  weaknesses     String? @db.Text
+  recommendation String?
+
+  scores  Json?
+  answers Json?
+
+  submittedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([interviewId, evaluatorId])
+  @@index([interviewId])
+  @@index([evaluatorId])
+}
+
+// Recruitment Offer — Job offer with versioning
+model RecruitmentOffer {
+  id            String                 @id @default(cuid())
+  applicationId String
+  application   RecruitmentApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  candidateId   String
+  candidate     Candidate              @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  currentVersion Int                    @default(1)
+  status         RecruitmentOfferStatus @default(draft)
+
+  offeredSalary Decimal   @db.Decimal(15, 2)
+  currency      String    @default("VND")
+  startDate     DateTime  @db.Date
+  endDate       DateTime? @db.Date
+  trialEndDate  DateTime? @db.Date
+
+  jobTitle       String?
+  department     String?
+  employmentType EmployeeType
+
+  benefits Json?
+  notes    String? @db.Text
+
+  createdById  String
+  createdBy    Employee  @relation("OfferCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  sentAt       DateTime?
+  respondedAt  DateTime?
+  responseNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  versions        OfferVersion[]
+  backgroundCheck BackgroundCheck?
+
+  @@index([applicationId])
+  @@index([candidateId])
+  @@index([status])
+}
+
+// Offer Version — Negotiation history
+model OfferVersion {
+  id      String           @id @default(cuid())
+  offerId String
+  offer   RecruitmentOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  version   Int
+  salary    Decimal   @db.Decimal(15, 2)
+  currency  String    @default("VND")
+  startDate DateTime  @db.Date
+  endDate   DateTime? @db.Date
+
+  changeReason String?
+  notes        String? @db.Text
+
+  createdById String
+  createdAt   DateTime @default(now())
+
+  @@unique([offerId, version])
+  @@index([offerId])
+}
+
+// Background Check
+model BackgroundCheck {
+  id          String           @id @default(cuid())
+  offerId     String           @unique
+  offer       RecruitmentOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  candidateId String
+  candidate   Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  group  BgcGroup
+  status BgcStatus @default(pending)
+
+  // Group A checks
+  idVerified      Boolean?
+  addressVerified Boolean?
+
+  // Group B checks
+  criminalRecordCheck Boolean?
+  legalStatusCheck    Boolean?
+
+  // Group C checks
+  certificationVerified     Boolean?
+  employmentHistoryVerified Boolean?
+
+  // Group D checks
+  financialCheckCompleted Boolean?
+  creditScoreCheck        Boolean?
+
+  completedAt DateTime?
+  passedAt    DateTime?
+  failedAt    DateTime?
+  failReason  String?   @db.Text
+
+  checkedById String?
+  checkedBy   Employee? @relation("BgcChecker", fields: [checkedById], references: [id], onDelete: SetNull)
+
+  documents Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([candidateId])
+  @@index([status])
 }
