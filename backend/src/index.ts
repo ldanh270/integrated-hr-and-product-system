@@ -20,6 +20,7 @@ import partTimeAvailabilityRoutes from "@/routes/part-time-availability.route.ts
 import payrollRoutes from "@/routes/payroll.route.ts"
 import payslipTemplateRoutes from "@/routes/payslip-template.route.ts"
 import permissionRoutes from "@/routes/permission.route.ts"
+import recruitmentRoutes from "@/routes/recruitment.route"
 import positionRoutes from "@/routes/position.route.ts"
 import profileRoutes from "@/routes/profile.route.ts"
 import projectRoutes from "@/routes/project.route.ts"
@@ -84,6 +85,9 @@ app.use("/api/weekly-schedule-templates", weeklyScheduleTemplateRoutes)
 // PT weekly availability — separate from full-time shift templates; employee declares, admin assigns.
 app.use("/api/part-time-availabilities", partTimeAvailabilityRoutes)
 app.use("/api/approvals", approvalRoutes)
+
+// Recruitment routes
+app.use("/api/recruitment", recruitmentRoutes)
 
 // Payroll routes
 app.use("/api/salary-components", salaryComponentRoutes)
