@@ -1,7 +1,12 @@
 /**
- * Frontend view-model contracts returned by the Capacity Copilot forecast API.
- * Values are advisory metrics for PM/Admin staffing decisions.
+ * Frontend view contracts for the Capacity Copilot API.
+ * Field names intentionally mirror backend results so the UI does not reinterpret forecast math.
  */
+import type {
+  CapacityConfidenceLevel,
+  CapacityRiskLevel,
+} from "@/config/rules/capacity-copilot.config"
+
 export interface ForecastProjectCapacityDto {
   weekStart: string
   lookbackWeeks?: number
@@ -28,11 +33,13 @@ export interface CapacityForecastResult {
   targetPercent: number
   predictedPercent: number
   percentGap: number
+  confidenceLevel: CapacityConfidenceLevel
+  confidenceReasons: string[]
   productivityRate: number
   requiredEffectiveHours: number
   totalEffectiveHours: number
   neededEffectiveHours: number
-  riskLevel: string
+  riskLevel: CapacityRiskLevel
   members: CapacityMemberForecast[]
   roles: CapacityRoleForecast[]
   history: Array<{

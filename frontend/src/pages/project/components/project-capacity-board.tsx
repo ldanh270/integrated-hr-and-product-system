@@ -6,7 +6,11 @@ import { PageCard } from "@/components/common"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { CAPACITY_COPILOT_RULES } from "@/config/rules/capacity-copilot.config"
+import {
+  CAPACITY_CONFIDENCE_LEVEL,
+  CAPACITY_COPILOT_RULES,
+  type CapacityConfidenceLevel,
+} from "@/config/rules/capacity-copilot.config"
 import { usePermission } from "@/hooks/use-permission"
 import { capacityCopilotApi } from "@/lib/api/capacity-copilot.api"
 import { cn } from "@/lib/utils"
@@ -54,6 +58,12 @@ const sortByGapDescending = (left: CapacityBoardProjectSnapshot, right: Capacity
   return (right.forecast?.percentGap ?? Number.NEGATIVE_INFINITY) - (left.forecast?.percentGap ?? Number.NEGATIVE_INFINITY)
 }
 
+const getConfidenceLabel = (confidenceLevel: CapacityConfidenceLevel) => {
+  if (confidenceLevel === CAPACITY_CONFIDENCE_LEVEL.HIGH) return "Độ tin cậy cao"
+  if (confidenceLevel === CAPACITY_CONFIDENCE_LEVEL.MEDIUM) return "Độ tin cậy vừa"
+  return "Độ tin cậy thấp"
+}
+
 const getWeakestRoleName = (forecast: CapacityForecastResult) => {
   const weakestRole = forecast.roles.reduce(
     (current, role) => (role.effectiveHours < current.effectiveHours ? role : current),
@@ -88,6 +98,9 @@ const ForecastRow = ({ item }: { item: CapacityBoardProjectSnapshot }) => {
           <p className="mt-1 text-xs text-muted-foreground">
             Target {forecast.targetPercent}% · Predicted {forecast.predictedPercent}% · Gap {forecast.percentGap}%
           </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {getConfidenceLabel(forecast.confidenceLevel)}
+          </p>
         </div>
         <Badge
           variant="outline"
@@ -117,6 +130,11 @@ const ForecastRow = ({ item }: { item: CapacityBoardProjectSnapshot }) => {
           {isShortage ? "Role nên bổ sung" : "Role đang dư"}
         </div>
       </div>
+      {forecast.confidenceReasons.length > 0 ? (
+        <p className="mt-3 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+          {forecast.confidenceReasons[0]}
+        </p>
+      ) : null}
     </div>
   )
 }
@@ -163,7 +181,7 @@ export function ProjectCapacityBoard() {
               Project Capacity Board
             </h3>
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              Cronjob chạy ngầm mỗi tuần để forecast các project có deal target, giúp Admin/PM thấy project nào thiếu hoặc dư capacity để điều người.
+              Cronjob chạy ngầm mỗi tuần để refresh dự báo. Màn hình tải kết quả forecast mới nhất để Admin/PM thấy project thiếu hoặc dư capacity.
             </p>
             {forecastQuery.data?.generatedAt && (
               <p className="mt-1 text-xs text-muted-foreground">
@@ -207,7 +225,7 @@ export function ProjectCapacityBoard() {
             }}
           >
             <RefreshCw className="mr-2 size-4" />
-            Làm mới dữ liệu
+            Tải lại kết quả
           </Button>
         </div>
       </div>

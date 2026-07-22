@@ -338,7 +338,11 @@ export function ProjectOverviewTab({
           </div>
         </PageCard>
 
-        <ProjectCapacityCopilotCard projectId={projectId} members={members} />
+        <ProjectCapacityCopilotCard
+          projectId={projectId}
+          members={members}
+          dealTargetPercent={project.dealTargetPercent}
+        />
       </div>
 
       {/* Members and team assignment list panel */}
