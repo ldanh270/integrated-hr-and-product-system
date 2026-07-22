@@ -69,6 +69,7 @@ export interface UpdateContractDto {
   probationSalary?: number
   probationSalaryRate?: number
   note?: string
+  status?: ContractStatus
 }
 
 export interface TerminateContractDto {

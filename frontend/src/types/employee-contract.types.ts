@@ -66,6 +66,7 @@ export interface IUpdateContractPayload {
   probationSalary?: number
   probationSalaryRate?: number
   note?: string
+  status?: ContractStatus
 }
 
 export interface ITerminateContractPayload {

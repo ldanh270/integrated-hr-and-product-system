@@ -191,6 +191,7 @@ export class PrismaEmployeeContractRepository implements IEmployeeContractReposi
     if (data.probationSalary !== undefined) updateData.probationSalary = data.probationSalary
     if (data.probationSalaryRate !== undefined)
       updateData.probationSalaryRate = data.probationSalaryRate
+    if (data.status) updateData.status = data.status
 
     const contract = await this.prisma.employeeContract.update({
       where: { id },

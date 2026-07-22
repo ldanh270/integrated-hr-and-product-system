@@ -1,4 +1,8 @@
-import { AppDrawer, StatusPill } from "@/components/common"
+import { useState } from "react"
+import { toast } from "sonner"
+import { AppDrawer, StatusPill, useConfirm } from "@/components/common"
+import { ContractList } from "@/components/employee-contract/ContractList"
+import { ContractModal, type ContractModalMode } from "@/components/employee-contract/ContractModal"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -9,8 +13,10 @@ import {
   getWorkScheduleTypeLabel,
 } from "@/config/entities/employee.config"
 import { useEmployee } from "@/hooks/employees/queries/useEmployeeQuery"
+import { useUpdateContract } from "@/hooks/employee-contract/use-contracts"
+import type { IContract } from "@/types/employee-contract.types"
 
-import { Briefcase, Building, Calendar, Hash, Mail, MapPin, Phone, User } from "lucide-react"
+import { Briefcase, Building, Calendar, FileText, Hash, Mail, MapPin, Phone, Plus, User } from "lucide-react"
 
 import type { Employee } from "@/types/employee.types"
 
@@ -29,11 +35,66 @@ interface EmployeeDetailsDrawerProps {
 /**
  * EmployeeDetailsDrawer Component.
  * Slide-out drawer displaying exhaustive details for a specific employee profile.
- * Renders loading states (skeleton), errors, basic information, and organizational metrics in a bento-style grid.
+ * Renders loading states (skeleton), errors, basic information, organizational metrics, and employment contract records.
  */
 export function EmployeeDetailsDrawer({ employeeId, onClose }: EmployeeDetailsDrawerProps) {
   // Query hook to fetch employee details by their ID (reacts to changes in employeeId)
   const { data: employee, isLoading, error } = useEmployee(employeeId || "")
+
+  // State for Contract Modal management
+  const [isContractModalOpen, setIsContractModalOpen] = useState(false)
+  const [contractModalMode, setContractModalMode] = useState<ContractModalMode>("create")
+  const [selectedContract, setSelectedContract] = useState<IContract | null>(null)
+
+  const confirm = useConfirm()
+  const updateMutation = useUpdateContract()
+
+  const handleCreateContract = () => {
+    setContractModalMode("create")
+    setSelectedContract(null)
+    setIsContractModalOpen(true)
+  }
+
+  const handleEditContract = (contract: IContract) => {
+    setSelectedContract(contract)
+    setContractModalMode("edit")
+    setIsContractModalOpen(true)
+  }
+
+  const handleRenewContract = (contract: IContract) => {
+    setSelectedContract(contract)
+    setContractModalMode("renew")
+    setIsContractModalOpen(true)
+  }
+
+  const handleTerminateContract = (contract: IContract) => {
+    setSelectedContract(contract)
+    setContractModalMode("terminate")
+    setIsContractModalOpen(true)
+  }
+
+  const handleSignContract = async (contract: IContract) => {
+    const isConfirmed = await confirm({
+      title: "Ký hợp đồng lao động",
+      description: `Bạn có chắc chắn muốn xác nhận ký hợp đồng số ${contract.contractNumber}? Trạng thái hợp đồng sẽ chuyển sang "Đang hiệu lực".`,
+    })
+
+    if (!isConfirmed) return
+
+    const toastId = toast.loading("Đang thực hiện ký hợp đồng...")
+    try {
+      await updateMutation.mutateAsync({
+        id: contract.id,
+        data: {
+          status: "active",
+          signedDate: new Date().toISOString().slice(0, 10),
+        },
+      })
+      toast.dismiss(toastId)
+    } catch (error) {
+      toast.dismiss(toastId)
+    }
+  }
 
   /**
    * Formats a date string into Vietnamese localized format (DD/MM/YYYY).
@@ -169,6 +230,31 @@ export function EmployeeDetailsDrawer({ employeeId, onClose }: EmployeeDetailsDr
               </div>
             </section>
 
+            {/* Employment Contracts Management Section */}
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <FileText size={15} /> Hợp đồng lao động
+                </h3>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCreateContract}
+                  className="rounded-full text-xs h-8 gap-1 border-border"
+                >
+                  <Plus size={14} /> Tạo hợp đồng
+                </Button>
+              </div>
+              <ContractList
+                employeeId={employee.id}
+                onEdit={handleEditContract}
+                onRenew={handleRenewContract}
+                onTerminate={handleTerminateContract}
+                onCreateContract={handleCreateContract}
+                onSign={handleSignContract}
+              />
+            </section>
+
             {/* List Group: Contact details (Email, Phone, Address) */}
             <section>
               <h3 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
@@ -248,6 +334,18 @@ export function EmployeeDetailsDrawer({ employeeId, onClose }: EmployeeDetailsDr
           </div>
         </div>
       )}
+
+      {/* Contract Management Modal */}
+      {employee && (
+        <ContractModal
+          isOpen={isContractModalOpen}
+          onClose={() => setIsContractModalOpen(false)}
+          employeeId={employee.id}
+          mode={contractModalMode}
+          contract={selectedContract}
+        />
+      )}
     </AppDrawer>
   )
 }
+
