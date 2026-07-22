@@ -4,58 +4,85 @@
  */
 import {
   PROJECT_MEMBER_WORK_MODE,
+  PROJECT_ROLE,
   PROJECT_STATUS,
   SPENT_TIME_ACTIVITY,
   SPENT_TIME_STATUS,
   SPENT_TIME_WORK_TIME_TYPE,
   TASK_PRIORITY,
   TASK_STATUS,
+  TASK_CREATION_POLICY,
   TASK_TRACKER,
 } from "@/configs/entities/project.config.ts"
 import { PART_TIME_AVAILABILITY_STATUS } from "@/configs/entities/part-time-availability.config.ts"
 import { prisma } from "@/libs/database.ts"
+import { ensureCapacityDemoTester } from "@/scripts/capacity-demo-employee.util.ts"
+import { getSeedPassword } from "@/scripts/seeders/seed-password.util.ts"
+import { HashUtil } from "@/utils/hash.util.ts"
 
 const DEMO_PROJECT_NAME = "AI Capacity Copilot Demo"
-const DEMO_DEAL_TARGET_PERCENT = 20
-const DEMO_FORECAST_WEEK_START = new Date("2026-07-20T00:00:00.000Z")
-const DEMO_PREVIOUS_WEEK_START = new Date("2026-07-13T00:00:00.000Z")
-const DEMO_PREVIOUS_WEEK_END = new Date("2026-07-19T00:00:00.000Z")
+const DEMO_DEAL_TARGET_PERCENT = 50
+const DEMO_FORECAST_WEEK_START = new Date("2026-07-27T00:00:00.000Z")
+const DEMO_PREVIOUS_WEEK_START = new Date("2026-07-20T00:00:00.000Z")
+const DEMO_PREVIOUS_WEEK_END = new Date("2026-07-26T00:00:00.000Z")
+const DEMO_PROJECT_END = new Date("2026-08-31T00:00:00.000Z")
 const WORKDAY_START_MINUTES = 8 * 60
 const WORKDAY_END_MINUTES = 17 * 60
+const MINIMUM_DEMO_EMPLOYEES = 3
+const DEMO_DONE_STATUS_NAME = "Done"
+const DEMO_WORK_DAYS = [1, 2, 3, 4, 5] as const
 
 const roleSeeds = [
-  { code: "developer", name: "Lập trình viên" },
-  { code: "tester", name: "Kiểm thử viên" },
-  { code: "leader", name: "Trưởng nhóm" },
+  { code: PROJECT_ROLE.DEVELOPER, name: "Lập trình viên" },
+  { code: PROJECT_ROLE.TESTER, name: "Kiểm thử viên" },
+  { code: PROJECT_ROLE.LEADER, name: "Trưởng nhóm" },
 ] as const
 
 const taskStatusSeeds = [
   { name: "To Do", order: 0, isDefault: true, isCompleted: false },
   { name: "In Progress", order: 1, isDefault: false, isCompleted: false },
-  { name: "Done", order: 2, isDefault: false, isCompleted: true },
+  { name: DEMO_DONE_STATUS_NAME, order: 2, isDefault: false, isCompleted: true },
 ] as const
 
-async function pickEmployees() {
+async function pickEmployees(demoTesterId: string) {
   const employees = await prisma.employee.findMany({
     where: { status: "active", deletedAt: null },
     orderBy: { createdAt: "asc" },
-    take: 8,
   })
 
-  if (employees.length < 3) {
-    throw new Error("Cần ít nhất 3 nhân viên active để seed demo Capacity Copilot.")
+  if (employees.length < MINIMUM_DEMO_EMPLOYEES) {
+    throw new Error(
+      `Cần ít nhất ${MINIMUM_DEMO_EMPLOYEES} nhân viên active để seed demo Capacity Copilot.`,
+    )
   }
+
+  const partTimeEmployees = employees.filter((employee) => employee.workScheduleType === "part_time")
+  const fullTimeEmployees = employees.filter((employee) => employee.workScheduleType !== "part_time")
 
   return {
     admin: employees.find((employee) => employee.username === "admin") ?? employees[0],
-    developer: employees.find((employee) => employee.position === "Developer") ?? employees[1],
-    tester: employees.find((employee) => employee.position === "Tester") ?? employees[2],
-    extra: employees.find((employee) => employee.id !== employees[0].id) ?? employees[1],
+    developer:
+      fullTimeEmployees.find((employee) => employee.position === "Developer") ??
+      fullTimeEmployees[0] ??
+      employees[1],
+    tester:
+      partTimeEmployees.find((employee) => employee.id === demoTesterId) ??
+      partTimeEmployees.find((employee) => employee.position === "Tester") ??
+      partTimeEmployees[0] ??
+      employees[2],
   }
 }
 
+function addDays(date: Date, days: number): Date {
+  const result = new Date(date)
+  result.setDate(result.getDate() + days)
+  return result
+}
+
 async function main() {
-  const people = await pickEmployees()
+  const passwordHash = await HashUtil.hash(getSeedPassword("SEED_EMPLOYEE_PASSWORD"))
+  const demoTester = await ensureCapacityDemoTester(prisma, passwordHash)
+  const people = await pickEmployees(demoTester.id)
 
   await prisma.project.deleteMany({ where: { name: DEMO_PROJECT_NAME } })
 
@@ -65,9 +92,9 @@ async function main() {
       description: "Demo project đầy đủ dữ kiện cho Part-time Capacity Copilot.",
       techStack: ["React", "Node.js", "PostgreSQL"],
       status: PROJECT_STATUS.ACTIVE,
-      taskCreationPolicy: "all_members",
-      startDate: DEMO_PREVIOUS_WEEK_START,
-      expectedEndDate: new Date("2026-08-31T00:00:00.000Z"),
+      taskCreationPolicy: TASK_CREATION_POLICY.ALL_MEMBERS,
+      startDate: addDays(DEMO_PREVIOUS_WEEK_START, -21),
+      expectedEndDate: DEMO_PROJECT_END,
       dealTargetPercent: DEMO_DEAL_TARGET_PERCENT,
       teamLeaderId: people.admin.id,
       createdById: people.admin.id,
@@ -101,27 +128,27 @@ async function main() {
       }),
     ),
   )
-  const doneStatus = statuses.find((status) => status.name === "Done")
+  const doneStatus = statuses.find((status) => status.name === DEMO_DONE_STATUS_NAME)
 
   await prisma.projectMember.createMany({
     data: [
       {
         projectId: project.id,
         employeeId: people.admin.id,
-        roleId: roleByCode.get("leader")?.id,
+        roleId: roleByCode.get(PROJECT_ROLE.LEADER)?.id,
         workMode: PROJECT_MEMBER_WORK_MODE.REMOTE,
       },
       {
         projectId: project.id,
         employeeId: people.developer.id,
-        roleId: roleByCode.get("developer")?.id,
+        roleId: roleByCode.get(PROJECT_ROLE.DEVELOPER)?.id,
         workMode: PROJECT_MEMBER_WORK_MODE.REMOTE,
         hourlyRate: 50000,
       },
       {
         projectId: project.id,
         employeeId: people.tester.id,
-        roleId: roleByCode.get("tester")?.id,
+        roleId: roleByCode.get(PROJECT_ROLE.TESTER)?.id,
         workMode: PROJECT_MEMBER_WORK_MODE.REMOTE,
         hourlyRate: 50000,
       },
@@ -129,42 +156,62 @@ async function main() {
     skipDuplicates: true,
   })
 
-  const doneTasks = await Promise.all([
-    prisma.task.create({
-      data: {
-        projectId: project.id,
-        title: "Hoàn thành API forecast tuần trước",
-        tracker: TASK_TRACKER.FEATURE,
-        priority: TASK_PRIORITY.HIGH,
-        status: TASK_STATUS.DONE,
-        statusId: doneStatus?.id,
-        assigneeId: people.developer.id,
-        createdById: people.admin.id,
-        startDate: DEMO_PREVIOUS_WEEK_START,
-        dueDate: DEMO_PREVIOUS_WEEK_END,
-        completedAt: new Date("2026-07-15T10:00:00.000Z"),
-        estimatedTime: 10,
-        progress: 100,
-      },
-    }),
-    prisma.task.create({
-      data: {
-        projectId: project.id,
-        title: "Hoàn thành test case capacity tuần trước",
-        tracker: TASK_TRACKER.TEST,
-        priority: TASK_PRIORITY.MEDIUM,
-        status: TASK_STATUS.DONE,
-        statusId: doneStatus?.id,
-        assigneeId: people.tester.id,
-        createdById: people.admin.id,
-        startDate: DEMO_PREVIOUS_WEEK_START,
-        dueDate: DEMO_PREVIOUS_WEEK_END,
-        completedAt: new Date("2026-07-16T10:00:00.000Z"),
-        estimatedTime: 10,
-        progress: 100,
-      },
-    }),
-  ])
+  const historyWeeks = [
+    {
+      start: addDays(DEMO_PREVIOUS_WEEK_START, -14),
+      completedAt: addDays(DEMO_PREVIOUS_WEEK_START, -10),
+      title: "Hoàn thành module nhập lịch rảnh",
+    },
+    {
+      start: addDays(DEMO_PREVIOUS_WEEK_START, -7),
+      completedAt: addDays(DEMO_PREVIOUS_WEEK_START, -3),
+      title: "Hoàn thành dashboard capacity",
+    },
+    {
+      start: DEMO_PREVIOUS_WEEK_START,
+      completedAt: addDays(DEMO_PREVIOUS_WEEK_START, 3),
+      title: "Hoàn thành rule cảnh báo thiếu capacity",
+    },
+  ]
+
+  const doneTasks = await Promise.all(
+    historyWeeks.flatMap((week, index) => [
+      prisma.task.create({
+        data: {
+          projectId: project.id,
+          title: `${week.title} - backend ${index + 1}`,
+          tracker: TASK_TRACKER.FEATURE,
+          priority: TASK_PRIORITY.HIGH,
+          status: TASK_STATUS.DONE,
+          statusId: doneStatus?.id,
+          assigneeId: people.developer.id,
+          createdById: people.admin.id,
+          startDate: week.start,
+          dueDate: addDays(week.start, 6),
+          completedAt: week.completedAt,
+          estimatedTime: 12,
+          progress: 100,
+        },
+      }),
+      prisma.task.create({
+        data: {
+          projectId: project.id,
+          title: `${week.title} - testing ${index + 1}`,
+          tracker: TASK_TRACKER.TEST,
+          priority: TASK_PRIORITY.MEDIUM,
+          status: TASK_STATUS.DONE,
+          statusId: doneStatus?.id,
+          assigneeId: people.tester.id,
+          createdById: people.admin.id,
+          startDate: week.start,
+          dueDate: addDays(week.start, 6),
+          completedAt: addDays(week.completedAt, 1),
+          estimatedTime: 8,
+          progress: 100,
+        },
+      }),
+    ]),
+  )
 
   await prisma.task.create({
     data: {
@@ -176,39 +223,28 @@ async function main() {
       assigneeId: people.developer.id,
       createdById: people.admin.id,
       startDate: DEMO_FORECAST_WEEK_START,
-      dueDate: new Date("2026-07-26T00:00:00.000Z"),
+      dueDate: addDays(DEMO_FORECAST_WEEK_START, 6),
       estimatedTime: 30,
       progress: 30,
     },
   })
 
   await prisma.spentTime.createMany({
-    data: [
-      {
-        taskId: doneTasks[0].id,
-        employeeId: people.developer.id,
-        date: new Date("2026-07-15T00:00:00.000Z"),
-        hours: 20,
-        comment: "Demo history: developer spent time",
-        activity: SPENT_TIME_ACTIVITY.DEVELOP,
+    data: doneTasks.map((task, index) => {
+      const isDeveloperTask = index % 2 === 0
+      return {
+        taskId: task.id,
+        employeeId: isDeveloperTask ? people.developer.id : people.tester.id,
+        date: addDays(addDays(DEMO_PREVIOUS_WEEK_START, -14), index * 3),
+        hours: isDeveloperTask ? 12 : 8,
+        comment: "Demo history: approved spent time for Capacity Copilot.",
+        activity: isDeveloperTask ? SPENT_TIME_ACTIVITY.DEVELOP : SPENT_TIME_ACTIVITY.TEST,
         workTimeType: SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY,
         status: SPENT_TIME_STATUS.APPROVED,
         approvedById: people.admin.id,
-        approvedAt: new Date("2026-07-15T18:00:00.000Z"),
-      },
-      {
-        taskId: doneTasks[1].id,
-        employeeId: people.tester.id,
-        date: new Date("2026-07-16T00:00:00.000Z"),
-        hours: 20,
-        comment: "Demo history: tester spent time",
-        activity: SPENT_TIME_ACTIVITY.TEST,
-        workTimeType: SPENT_TIME_WORK_TIME_TYPE.WORKING_DAY,
-        status: SPENT_TIME_STATUS.APPROVED,
-        approvedById: people.admin.id,
-        approvedAt: new Date("2026-07-16T18:00:00.000Z"),
-      },
-    ],
+        approvedAt: addDays(DEMO_PREVIOUS_WEEK_START, 4),
+      }
+    }),
   })
 
   await prisma.partTimeWeeklyAvailability.upsert({
@@ -226,7 +262,7 @@ async function main() {
       submittedAt: new Date("2026-07-19T08:00:00.000Z"),
       note: "Demo availability for Capacity Copilot.",
       days: {
-        create: [1, 2, 3, 4, 5].map((dayOfWeek) => ({
+        create: DEMO_WORK_DAYS.map((dayOfWeek) => ({
           dayOfWeek,
           isBusyAllDay: false,
           slots: {
@@ -244,8 +280,9 @@ async function main() {
   console.log("Seeded Capacity Copilot demo project.")
   console.log(`Project: ${project.name}`)
   console.log(`Target: ${DEMO_DEAL_TARGET_PERCENT}%`)
-  console.log("Forecast week: 20/07/2026 - 26/07/2026")
-  console.log("Expected productivity: previous week completed 20% with 40 spent hours = 0.5%/hour.")
+  console.log("Forecast week: 27/07/2026 - 02/08/2026")
+  console.log("History: 3 previous weeks with approved spent time and done tasks.")
+  console.log("Demo tip: increase Deal target % to 80-100 to show shortage, lower it to 10-20 to show surplus.")
 }
 
 await main()
