@@ -1,3 +1,4 @@
+/** Public utility surface for part-time availability screens. */
 export { buildDefaultPartTimeAssignments } from "./build-default-part-time-assignments.util"
 export { buildEmptyAvailabilityDays } from "./build-empty-availability-days.util"
 export { buildOutsideFreeRangeAlert } from "./build-outside-free-range-alert.util"

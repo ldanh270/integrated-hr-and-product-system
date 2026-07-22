@@ -1,3 +1,7 @@
+/**
+ * Converts a previously planned attendance week into an editable part-time assignment form.
+ * Only slots still allowed by the employee's submitted availability are retained.
+ */
 import { WORK_WEEK_DISPLAY_DAY_ORDER } from "@/config/entities/attendance.config"
 import type { IPlannedWeek } from "@/types/attendance.types"
 import type { IPartTimeWeeklyAvailability } from "@/types/part-time-availability.types"

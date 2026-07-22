@@ -1,3 +1,7 @@
+/**
+ * Drawer shell for assigning one employee's submitted availability.
+ * Form state remains in the panel so opening and closing the drawer has no persistence side effect.
+ */
 import { AppDrawer } from "@/components/common/app-drawer"
 import type {
   IPartTimeWeeklyAvailability,

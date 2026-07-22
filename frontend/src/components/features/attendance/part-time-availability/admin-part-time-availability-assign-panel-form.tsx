@@ -1,3 +1,7 @@
+/**
+ * Controlled weekly assignment form for an admin-selected employee.
+ * It validates assigned slots against submitted free-time before producing the save payload.
+ */
 import { Button } from "@/components/ui/button"
 import {
   DAY_OF_WEEK_LABELS,

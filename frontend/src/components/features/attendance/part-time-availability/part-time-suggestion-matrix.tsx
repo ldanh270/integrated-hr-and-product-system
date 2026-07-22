@@ -1,3 +1,7 @@
+/**
+ * Read-only suggestion matrix explaining proposed shifts, scores, and uncovered demand.
+ * Selecting a suggestion only fills the form; an Admin save is still required to persist it.
+ */
 import { Button } from "@/components/ui/button"
 import {
   DAY_OF_WEEK_LABELS,

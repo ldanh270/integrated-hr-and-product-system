@@ -1,3 +1,7 @@
+/**
+ * Assignment orchestrator that switches between loading, validation, suggestion, and edit states.
+ * Suggestions remain advisory until an admin explicitly saves the assignment form.
+ */
 import type {
   IPartTimeWeeklyAvailability,
   ISuggestPartTimeEmployeeSuggestion,

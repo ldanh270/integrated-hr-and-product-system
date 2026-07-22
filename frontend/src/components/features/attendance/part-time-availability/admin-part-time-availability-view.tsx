@@ -1,3 +1,7 @@
+/**
+ * Admin weekly roster screen for reviewing availability and opening assignment workflows.
+ * The selected week is the shared query key for cards, suggestions, and assignment details.
+ */
 import { EmptyState, PageCard, SectionHeader } from "@/components/common"
 import { WeekPickerActions } from "@/components/features/attendance/calendar/week-picker-actions"
 import { AdminPartTimeAvailabilityCard } from "@/components/features/attendance/part-time-availability/admin-part-time-availability-card"

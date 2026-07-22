@@ -1,3 +1,7 @@
+/**
+ * React Query hooks for part-time availability reads and mutations.
+ * Query keys are centralized so employee/admin updates invalidate the same weekly cache entries.
+ */
 import { PART_TIME_AVAILABILITY_QUERY_KEYS } from "@/config/entities/part-time-availability.config"
 import { partTimeAvailabilityApi } from "@/lib/api/part-time-availability.api"
 import type {

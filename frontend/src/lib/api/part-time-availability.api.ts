@@ -1,3 +1,7 @@
+/**
+ * Typed HTTP client for employee availability and admin assignment endpoints.
+ * UI-specific form values are mapped before reaching this transport boundary.
+ */
 import { API_ENDPOINTS } from "@/config/api.config"
 import { PART_TIME_AVAILABILITY_QUERY_PARAMS } from "@/constants/attendance.constants"
 import apiClient from "@/lib/api-client"

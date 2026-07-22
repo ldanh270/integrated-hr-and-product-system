@@ -1,3 +1,7 @@
+/**
+ * Compact admin roster card summarizing one employee's availability and assigned shifts.
+ * All mutations are delegated to the parent view to keep the card presentation-only.
+ */
 import { StatusPill } from "@/components/common/status-pill"
 import { WORK_WEEK_DISPLAY_DAY_ORDER } from "@/config/entities/attendance.config"
 import {
