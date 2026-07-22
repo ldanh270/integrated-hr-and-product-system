@@ -1,3 +1,7 @@
+/**
+ * Presentation mapper for the admin roster.
+ * It groups persisted employee shifts by weekday without changing assignment records.
+ */
 import type { IEmployeeShiftWithShift } from "@/types/shift.types.ts"
 import {
   getDateForWeekDay,

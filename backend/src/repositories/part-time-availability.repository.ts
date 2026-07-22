@@ -1,3 +1,7 @@
+/**
+ * Prisma persistence adapter for weekly free-time declarations and admin assignments.
+ * Date normalization lives at this boundary so callers always query one canonical Monday key.
+ */
 import {
   IPartTimeAvailabilityRepository,
   IPartTimeWeeklyAvailability,
@@ -6,6 +10,7 @@ import {
 } from "@/types/part-time-availability.types.ts"
 import { PART_TIME_AVAILABILITY_STATUS } from "@/configs/entities/part-time-availability.config.ts"
 import { PRISMA_INTERACTIVE_TRANSACTION_OPTIONS } from "@/configs/system/db.config.ts"
+import { normalizeWeekStart } from "@/utils/part-time-availability.util.ts"
 import { formatScheduleDateKey } from "@/utils/schedule.util.ts"
 
 import { PartTimeAvailabilityStatus, PrismaClient } from "@prisma/client"
@@ -110,8 +115,7 @@ export class PrismaPartTimeAvailabilityRepository
   async upsert(
     data: IUpsertPartTimeAvailabilityDTO & { employeeId: string },
   ): Promise<IPartTimeWeeklyAvailability> {
-    const weekStart = new Date(data.weekStart)
-    weekStart.setHours(0, 0, 0, 0)
+    const weekStart = normalizeWeekStart(data.weekStart)
     const status = (data.status ?? PART_TIME_AVAILABILITY_STATUS.SUBMITTED) as PartTimeAvailabilityStatus
     const submittedAt = status === PART_TIME_AVAILABILITY_STATUS.SUBMITTED ? new Date() : null
 

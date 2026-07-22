@@ -1,4 +1,4 @@
-import { normalizeScheduleDate } from "@/utils/schedule.util.ts"
+import { parseUtcDateOnly } from "@/utils/date.util.ts"
 
 /** Converts minutes since midnight to HH:mm. */
 export function minutesToTime(minutes: number): string {
@@ -11,7 +11,7 @@ export function minutesToTime(minutes: number): string {
 export function getEarliestRequestableWeekStart(referenceDate = new Date()): Date {
   const currentWeekStart = normalizeWeekStart(referenceDate)
   const nextWeekStart = new Date(currentWeekStart)
-  nextWeekStart.setDate(nextWeekStart.getDate() + 7)
+  nextWeekStart.setUTCDate(nextWeekStart.getUTCDate() + 7)
   return nextWeekStart
 }
 
@@ -27,12 +27,13 @@ export function isPastOrCurrentAvailabilityWeek(
 
 /** Returns Monday 00:00 of the week containing the given date. */
 export function normalizeWeekStart(date: string | Date): Date {
-  const normalized = normalizeScheduleDate(new Date(date))
-  const day = normalized.getDay()
-  // getDay(): 0 = Sunday — roll back 6 days so ISO week starts on Monday, not Sunday.
-  const diff = normalized.getDate() - day + (day === 0 ? -6 : 1)
+  const normalized = date instanceof Date ? new Date(date) : parseUtcDateOnly(date)
+  normalized.setUTCHours(0, 0, 0, 0)
+  const day = normalized.getUTCDay()
+  // getUTCDay(): 0 = Sunday — roll back 6 days so ISO week starts on Monday, not Sunday.
+  const diff = day === 0 ? -6 : 1 - day
 
-  normalized.setDate(diff)
+  normalized.setUTCDate(normalized.getUTCDate() + diff)
   return normalized
 }
 
@@ -42,8 +43,9 @@ export function getDateForWeekDay(weekStart: Date, dayOfWeek: number): Date {
   // Prisma dayOfWeek: 0 = Sunday at end of Mon–Sun display order (+6 from Monday).
   const offset = dayOfWeek === 0 ? 6 : dayOfWeek - 1
   const date = new Date(start)
-  date.setDate(start.getDate() + offset)
-  return normalizeScheduleDate(date)
+  date.setUTCDate(start.getUTCDate() + offset)
+  date.setUTCHours(0, 0, 0, 0)
+  return date
 }
 
 /** Converts HH:mm to minutes since midnight. */

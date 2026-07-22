@@ -1,4 +1,11 @@
-import type { IPartTimeAvailabilityStatus } from "@/configs/entities/part-time-availability.config.ts"
+/**
+ * Domain and repository contracts for weekly part-time availability.
+ * Transport schemas are converted into these minute-based types before business processing.
+ */
+import type {
+  IPartTimeAvailabilityStatus,
+  PartTimeSuggestionDecision,
+} from "@/configs/entities/part-time-availability.config.ts"
 import type { AssignPartTimeShiftsSchemaType } from "@/schemas/part-time-availability.schema.ts"
 
 export interface IPartTimeAvailabilitySlot {
@@ -61,7 +68,7 @@ export interface IAssignPartTimeShiftsDTO {
   availabilityId: string
   assignments: AssignPartTimeShiftsSchemaType["assignments"]
   createdById: string
-  suggestionDecision?: "accepted" | "edited" | "manual"
+  suggestionDecision?: PartTimeSuggestionDecision
 }
 
 /** Optional review: approve locks further edits; reject returns to employee. Assign does not require approve — only submitted. */

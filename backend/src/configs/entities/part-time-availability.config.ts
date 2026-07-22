@@ -1,3 +1,7 @@
+/**
+ * Canonical enum values, workflow states, and validation limits for weekly part-time availability.
+ * API schemas and services import these values to stay aligned with the Prisma enum contract.
+ */
 import { parseTimeToMinutes } from "@/utils/part-time-availability.util.ts"
 
 export const PART_TIME_AVAILABILITY_STATUS = {
@@ -16,6 +20,17 @@ export const PART_TIME_AVAILABILITY_STATUSES = [
 ] as const
 
 export type IPartTimeAvailabilityStatus = (typeof PART_TIME_AVAILABILITY_STATUSES)[number]
+
+/** Records whether an admin accepted, edited, or ignored the AI shift suggestion. */
+export const PART_TIME_SUGGESTION_DECISION = {
+  ACCEPTED: "accepted",
+  EDITED: "edited",
+  MANUAL: "manual",
+} as const
+
+export const PART_TIME_SUGGESTION_DECISIONS = Object.values(PART_TIME_SUGGESTION_DECISION)
+export type PartTimeSuggestionDecision =
+  (typeof PART_TIME_SUGGESTION_DECISION)[keyof typeof PART_TIME_SUGGESTION_DECISION]
 
 /** Admin may assign / suggest when submitted (primary) or legacy approved. */
 export const PART_TIME_AVAILABILITY_ASSIGNABLE_STATUSES: IPartTimeAvailabilityStatus[] = [

@@ -1,3 +1,7 @@
+/**
+ * Composition root for the part-time availability feature.
+ * It wires repositories/services once and protects employee/admin endpoints with route permissions.
+ */
 import {
   PartTimeAvailabilityController,
 } from "@/controllers/part-time-availability.controller.ts"

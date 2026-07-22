@@ -1,3 +1,7 @@
+/**
+ * Application service for generating explainable part-time shift suggestions.
+ * It prepares repository data, while the pure utility owns scoring and greedy allocation.
+ */
 import { PART_TIME_SHIFT_SUGGEST } from "@/configs/entities/part-time-availability.config.ts"
 import type { IAttendanceRepository } from "@/types/attendance.types.ts"
 import type { IEmployeeShiftRepository, IWorkingShiftRepository } from "@/types/shift.types.ts"

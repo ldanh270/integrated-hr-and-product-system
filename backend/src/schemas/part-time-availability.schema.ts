@@ -1,6 +1,11 @@
+/**
+ * Zod boundaries for employee availability and admin assignment payloads.
+ * Business enum values and limits are imported from config instead of duplicated here.
+ */
 import {
   PART_TIME_AVAILABILITY_RULES,
   PART_TIME_AVAILABILITY_STATUSES,
+  PART_TIME_SUGGESTION_DECISIONS,
 } from "@/configs/entities/part-time-availability.config.ts"
 import { DAY_OF_WEEK_VALUES } from "@/configs/entities/attendance.config.ts"
 
@@ -74,7 +79,7 @@ export const suggestPartTimeShiftsSchema = z
 // Admin shift assignment: both times null = skip that day; both set = create override within employee free slot.
 export const assignPartTimeShiftsSchema = z
   .object({
-    suggestionDecision: z.enum(["accepted", "edited", "manual"]).optional(),
+    suggestionDecision: z.enum(PART_TIME_SUGGESTION_DECISIONS).optional(),
     assignments: z
       .array(
         z

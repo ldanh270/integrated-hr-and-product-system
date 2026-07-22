@@ -1,3 +1,7 @@
+/**
+ * HTTP boundary for employee free-time submissions and Admin assignment actions.
+ * Suggestion endpoints are read-only; only assign-shifts persists a proposed roster.
+ */
 import { PART_TIME_AVAILABILITY_QUERY_PARAMS } from "@/configs/entities/part-time-availability.config.ts"
 import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"

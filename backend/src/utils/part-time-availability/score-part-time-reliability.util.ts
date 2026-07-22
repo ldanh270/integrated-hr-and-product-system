@@ -1,3 +1,7 @@
+/**
+ * Pure attendance-history scorer used as one factor in part-time shift suggestions.
+ * Keeping this calculation isolated makes its fallback and clamping behavior testable.
+ */
 import { ATTENDANCE_STATUS } from "@/configs/entities/attendance.config.ts"
 import { PART_TIME_SHIFT_SUGGEST } from "@/configs/entities/part-time-availability.config.ts"
 import type { IAttendanceRecordDTO } from "@/types/attendance.types.ts"

@@ -2,6 +2,7 @@ import { DAY_OF_WEEK_VALUES } from "@/configs/entities/attendance.config.ts"
 import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util.ts"
 import {
   PART_TIME_AVAILABILITY_STATUS,
+  PART_TIME_SUGGESTION_DECISION,
 } from "@/configs/entities/part-time-availability.config.ts"
 import { PART_TIME_AVAILABILITY_MESSAGES } from "@/configs/messages/part-time-availability.message.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
@@ -251,7 +252,7 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
         weekStart: availability.weekStart,
         assigned,
         skipped,
-        suggestionDecision: data.suggestionDecision ?? "manual",
+        suggestionDecision: data.suggestionDecision ?? PART_TIME_SUGGESTION_DECISION.MANUAL,
       },
     })
 
