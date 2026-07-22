@@ -22,8 +22,9 @@ import {
   REQUISITION_PRIORITY,
   REQUISITION_PRIORITY_LABELS,
 } from "@/config/entities/recruitment.config"
-import { useCreateRequisition, useRequisitionApprovers } from "@/hooks/recruitment/use-recruitment-queries"
+import { useCreateRequisition, useRequisitionApprovers, useUpdateRequisition } from "@/hooks/recruitment/use-recruitment-queries"
 import type { CreateRequisitionDto } from "@/lib/api/recruitment.api"
+import type { JobRequisition } from "@/types/recruitment.types"
 
 const optionalText = z.string().trim().optional().transform((value) => value || undefined)
 const optionalPositiveNumber = z.preprocess(
@@ -54,6 +55,7 @@ type RequisitionFormValues = z.input<typeof requisitionFormSchema>
 interface CreateRequisitionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  requisition?: JobRequisition | null
 }
 
 const defaultValues: RequisitionFormValues = {
@@ -71,8 +73,9 @@ const defaultValues: RequisitionFormValues = {
   approverId: "",
 }
 
-export function CreateRequisitionDialog({ open, onOpenChange }: CreateRequisitionDialogProps) {
+export function CreateRequisitionDialog({ open, onOpenChange, requisition }: CreateRequisitionDialogProps) {
   const createRequisition = useCreateRequisition()
+  const updateRequisition = useUpdateRequisition()
   const { data: approvers = [], isLoading: isLoadingApprovers } = useRequisitionApprovers()
   const form = useForm<RequisitionFormValues>({
     resolver: zodResolver(requisitionFormSchema),
@@ -84,8 +87,27 @@ export function CreateRequisitionDialog({ open, onOpenChange }: CreateRequisitio
   })
 
   useEffect(() => {
-    if (open) form.reset(defaultValues)
-  }, [form, open])
+    if (open) {
+      if (requisition) {
+        form.reset({
+          title: requisition.title,
+          department: requisition.department ?? "",
+          positionLevel: requisition.positionLevel ?? "",
+          employmentType: requisition.employmentType as any,
+          headcount: requisition.headcount,
+          priority: requisition.priority as any,
+          salaryMin: requisition.salaryMin ?? undefined,
+          salaryMax: requisition.salaryMax ?? undefined,
+          reason: requisition.reason ?? "",
+          targetHireDate: requisition.targetHireDate ? new Date(requisition.targetHireDate).toISOString().split("T")[0] : "",
+          targetCloseDate: requisition.targetCloseDate ? new Date(requisition.targetCloseDate).toISOString().split("T")[0] : "",
+          approverId: requisition.approverId ?? "",
+        })
+      } else {
+        form.reset(defaultValues)
+      }
+    }
+  }, [form, open, requisition])
 
   const close = () => onOpenChange(false)
 
@@ -97,18 +119,24 @@ export function CreateRequisitionDialog({ open, onOpenChange }: CreateRequisitio
       targetCloseDate: parsed.targetCloseDate ? new Date(parsed.targetCloseDate).toISOString() : undefined,
     }
 
-    createRequisition.mutate(payload, { onSuccess: close })
+    if (requisition) {
+      updateRequisition.mutate({ id: requisition.id, data: payload }, { onSuccess: close })
+    } else {
+      createRequisition.mutate(payload, { onSuccess: close })
+    }
   }
 
   const errors = form.formState.errors
+  const isEdit = Boolean(requisition)
+  const isPending = createRequisition.isPending || updateRequisition.isPending
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto rounded-xl">
         <form className="grid gap-6" onSubmit={form.handleSubmit(onSubmit)}>
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold">Tạo yêu cầu tuyển dụng</DialogTitle>
-            <DialogDescription>Tạo bản nháp để gửi duyệt trước khi đăng tuyển.</DialogDescription>
+            <DialogTitle className="text-lg font-bold">{isEdit ? "Chỉnh sửa yêu cầu tuyển dụng" : "Tạo yêu cầu tuyển dụng"}</DialogTitle>
+            <DialogDescription>{isEdit ? "Chỉnh sửa các trường của yêu cầu tuyển dụng." : "Tạo bản nháp để gửi duyệt trước khi đăng tuyển."}</DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -161,8 +189,10 @@ export function CreateRequisitionDialog({ open, onOpenChange }: CreateRequisitio
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={close} disabled={createRequisition.isPending}>Hủy</Button>
-            <Button type="submit" disabled={createRequisition.isPending}>{createRequisition.isPending ? "Đang tạo..." : "Tạo yêu cầu"}</Button>
+            <Button type="button" variant="outline" onClick={close} disabled={isPending}>Hủy</Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending ? (isEdit ? "Đang lưu..." : "Đang tạo...") : (isEdit ? "Lưu thay đổi" : "Tạo yêu cầu")}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

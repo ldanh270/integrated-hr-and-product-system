@@ -56,6 +56,18 @@ export function useCreateJobDescription() {
   })
 }
 
+export function useUpdateJobDescription() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof jobDescriptionApi.update>[1] }) =>
+      jobDescriptionApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["recruitment", "job-descriptions"] })
+      toast.success("Đã cập nhật bản mô tả công việc")
+    },
+  })
+}
+
 export function useCreateJobPosting() {
   const queryClient = useQueryClient()
   return useMutation({

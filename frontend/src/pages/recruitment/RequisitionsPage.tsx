@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { Check, FilePlus2, Plus, Send, X } from "lucide-react"
+import { Check, FilePlus2, Pencil, Plus, Send, X } from "lucide-react"
 import { AppPagination, DataTableToolbar, PageCard, PageHeader } from "@/components/common"
 import { StatusPill } from "@/components/common/status-pill"
 import { CreateRequisitionDialog } from "@/components/features/recruitment/create-requisition-dialog"
@@ -56,6 +56,8 @@ export default function RequisitionsPage() {
   const [pageSize, setPageSize] = useState(20)
   const [keyword, setKeyword] = useState("")
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [selectedRequisition, setSelectedRequisition] = useState<JobRequisition | null>(null)
+  const [isEditOpen, setIsEditOpen] = useState(false)
   const { hasPermission } = usePermission()
   const employeeId = usePersonalEmployeeId()
   const { data, isLoading } = useRequisitions({ page, pageSize })
@@ -104,7 +106,20 @@ export default function RequisitionsPage() {
             <TableBody>
               {isLoading ? <TableRow><TableCell colSpan={7} className="h-28 text-center text-muted-foreground">Đang tải yêu cầu tuyển dụng...</TableCell></TableRow>
                 : visibleRequisitions.length === 0 ? <TableRow><TableCell colSpan={7} className="h-28 text-center text-muted-foreground">{keyword ? "Không tìm thấy yêu cầu phù hợp" : "Chưa có yêu cầu tuyển dụng nào"}</TableCell></TableRow>
-                  : visibleRequisitions.map((requisition) => <RequisitionRow key={requisition.id} requisition={requisition} canCreateJd={hasPermission("recruitment.jd.create")} canSubmit={hasPermission("recruitment.update") && Boolean(requisition.approverId)} canApprove={hasPermission("recruitment.requisition.approve") && Boolean(requisition.approverId) && requisition.approverId === employeeId} />)}
+                  : visibleRequisitions.map((requisition) => (
+                      <RequisitionRow
+                        key={requisition.id}
+                        requisition={requisition}
+                        canCreateJd={hasPermission("recruitment.jd.create")}
+                        canSubmit={hasPermission("recruitment.update") && Boolean(requisition.approverId)}
+                        canApprove={hasPermission("recruitment.requisition.approve") && Boolean(requisition.approverId) && requisition.approverId === employeeId}
+                        canEdit={hasPermission("recruitment.update") && (requisition.status === "draft" || requisition.status === "pending_approval")}
+                        onEdit={(req) => {
+                          setSelectedRequisition(req)
+                          setIsEditOpen(true)
+                        }}
+                      />
+                    ))}
             </TableBody>
           </Table>
         </div>
@@ -118,12 +133,36 @@ export default function RequisitionsPage() {
           onItemsPerPageChange={(value) => { setPageSize(value); setPage(1) }}
         />
       </PageCard>
-      <CreateRequisitionDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} />
+      <CreateRequisitionDialog
+        open={isCreateOpen || isEditOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsCreateOpen(false)
+            setIsEditOpen(false)
+            setSelectedRequisition(null)
+          }
+        }}
+        requisition={selectedRequisition}
+      />
     </div>
   )
 }
 
-function RequisitionRow({ requisition, canCreateJd, canSubmit, canApprove }: { requisition: JobRequisition; canCreateJd: boolean; canSubmit: boolean; canApprove: boolean }) {
+function RequisitionRow({
+  requisition,
+  canCreateJd,
+  canSubmit,
+  canApprove,
+  canEdit,
+  onEdit,
+}: {
+  requisition: JobRequisition
+  canCreateJd: boolean
+  canSubmit: boolean
+  canApprove: boolean
+  canEdit: boolean
+  onEdit: (req: JobRequisition) => void
+}) {
   const submit = useSubmitRequisitionForApproval()
   const approve = useApproveRequisition()
   return (
@@ -142,6 +181,7 @@ function RequisitionRow({ requisition, canCreateJd, canSubmit, canApprove }: { r
       <TableCell className="hidden md:table-cell px-4 py-3"><p className="text-sm font-medium">{requisition.approver?.fullName ?? "Chưa chỉ định"}</p><p className="text-xs text-muted-foreground">{requisition.approver?.position ?? ""}</p></TableCell>
       <TableCell className="px-4 py-3"><StatusPill label={REQUISITION_STATUS_LABELS[requisition.status]} variant={statusVariantMap[requisition.status]} /></TableCell>
       <TableCell className="px-4 py-3 text-right"><div className="flex justify-end gap-1">
+        {canEdit && <Button variant="ghost" size="icon" className="rounded-full hover:text-primary" aria-label={`Sửa ${requisition.code}`} onClick={() => onEdit(requisition)}><Pencil className="h-4 w-4" /></Button>}
         {canSubmit && requisition.status === "draft" && <Button variant="ghost" size="icon" className="rounded-full" aria-label={`Gửi duyệt ${requisition.code}`} onClick={() => submit.mutate(requisition.id)} disabled={submit.isPending}><Send className="h-4 w-4" /></Button>}
         {canApprove && requisition.status === "pending_approval" && <><Button variant="ghost" size="icon" className="rounded-full text-success" aria-label={`Duyệt ${requisition.code}`} onClick={() => approve.mutate({ id: requisition.id, data: { approved: true } })} disabled={approve.isPending}><Check className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="rounded-full text-destructive" aria-label={`Từ chối ${requisition.code}`} onClick={() => approve.mutate({ id: requisition.id, data: { approved: false } })} disabled={approve.isPending}><X className="h-4 w-4" /></Button></>}
         {canCreateJd && requisition.status === "approved" && <Button variant="ghost" size="icon" className="rounded-full" aria-label={`Tạo JD từ ${requisition.code}`} onClick={() => routerNavigate(`${ROUTES.RECRUITMENT.JOB_DESCRIPTIONS}?requisitionId=${requisition.id}`)}><FilePlus2 className="h-4 w-4" /></Button>}

@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react"
-import { Plus } from "lucide-react"
+import { Pencil, Plus } from "lucide-react"
 import { useSearchParams } from "react-router-dom"
 import { AppPagination, DataTableToolbar, PageCard, PageHeader } from "@/components/common"
 import { CreateJobDescriptionDialog } from "@/components/features/recruitment/create-job-description-dialog"
+import { ViewJobDescriptionDialog } from "@/components/features/recruitment/view-job-description-dialog"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useJobDescriptions } from "@/hooks/recruitment/use-recruitment-queries"
 import { usePermission } from "@/hooks/use-permission"
+import type { JobDescription } from "@/types/recruitment.types"
 
 export default function JobDescriptionsPage() {
   const [params] = useSearchParams()
@@ -14,6 +16,10 @@ export default function JobDescriptionsPage() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [createJdOpen, setCreateJdOpen] = useState(Boolean(params.get("requisitionId")))
+  const [selectedJd, setSelectedJd] = useState<JobDescription | null>(null)
+  const [viewJdOpen, setViewJdOpen] = useState(false)
+  const [selectedEditJd, setSelectedEditJd] = useState<JobDescription | null>(null)
+  const [editJdOpen, setEditJdOpen] = useState(false)
   const { hasPermission } = usePermission()
   const { data: descriptions = [], isLoading } = useJobDescriptions()
 
@@ -93,9 +99,32 @@ export default function JobDescriptionsPage() {
                       )}
                     </TableCell>
                     <TableCell className="px-4 text-right">
-                      <Button variant="outline" size="sm">
-                        Xem chi tiết
-                      </Button>
+                      <div className="flex justify-end items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedJd(jd)
+                            setViewJdOpen(true)
+                          }}
+                        >
+                          Xem chi tiết
+                        </Button>
+                        {hasPermission("recruitment.jd.update") && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="rounded-full hover:text-primary h-8 w-8"
+                            aria-label={`Sửa ${jd.title}`}
+                            onClick={() => {
+                              setSelectedEditJd(jd)
+                              setEditJdOpen(true)
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -113,9 +142,21 @@ export default function JobDescriptionsPage() {
         />
       </PageCard>
       <CreateJobDescriptionDialog
-        open={createJdOpen}
-        onOpenChange={setCreateJdOpen}
+        open={createJdOpen || editJdOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCreateJdOpen(false)
+            setEditJdOpen(false)
+            setSelectedEditJd(null)
+          }
+        }}
         initialRequisitionId={params.get("requisitionId") ?? undefined}
+        jobDescription={selectedEditJd}
+      />
+      <ViewJobDescriptionDialog
+        open={viewJdOpen}
+        onOpenChange={setViewJdOpen}
+        jobDescription={selectedJd}
       />
     </div>
   )

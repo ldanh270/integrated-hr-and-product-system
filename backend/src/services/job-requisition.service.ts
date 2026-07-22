@@ -56,9 +56,17 @@ export class JobRequisitionService {
 
     if (input.approverId) await this.assertEligibleApprover(input.approverId)
 
-    // Only draft requisitions can update most fields
-    if (existing.status !== REQUISITION_STATUS.DRAFT && input.status === undefined) {
-      throw new Error("Only draft requisitions can be updated")
+    // Only draft and pending approval requisitions can update most fields
+    if (
+      existing.status !== REQUISITION_STATUS.DRAFT &&
+      existing.status !== REQUISITION_STATUS.PENDING_APPROVAL &&
+      input.status === undefined
+    ) {
+      throw new AppError(
+        "Chỉ yêu cầu tuyển dụng nháp hoặc chờ duyệt mới được chỉnh sửa",
+        HttpStatusCode.BAD_REQUEST,
+        "JobRequisitionService",
+      )
     }
 
     return jobRequisitionRepository.update(id, input)
