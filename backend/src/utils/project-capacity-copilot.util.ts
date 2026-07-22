@@ -2,7 +2,11 @@
  * Pure Capacity Copilot formulas.
  * Kept database-free so forecast math is testable and explainable in demo.
  */
-import { CAPACITY_COPILOT_RULES } from "@/configs/rules/capacity-copilot.config.ts"
+import {
+  CAPACITY_CONFIDENCE_LEVEL,
+  CAPACITY_COPILOT_RULES,
+  CapacityConfidenceLevel,
+} from "@/configs/rules/capacity-copilot.config.ts"
 
 export const CAPACITY_VELOCITY = {
   DEFAULT: 1,
@@ -48,6 +52,8 @@ export interface CapacityForecastResult {
   targetPercent: number
   predictedPercent: number
   percentGap: number
+  confidenceLevel: CapacityConfidenceLevel
+  confidenceReasons: string[]
   productivityRate: number
   requiredEffectiveHours: number
   totalEffectiveHours: number
@@ -118,6 +124,7 @@ export const buildCapacityForecast = (
   )
   // Historical productivity links delivery history (% completed) to this week's effective hours.
   const productivityRate = calculateProductivityRate(history)
+  const confidence = buildConfidenceSignal(history, memberForecasts)
   const predictedPercent = totalEffectiveHours * productivityRate
   const percentGap = targetPercent - predictedPercent
   const requiredEffectiveHours = productivityRate > 0 ? targetPercent / productivityRate : 0
@@ -127,6 +134,8 @@ export const buildCapacityForecast = (
     targetPercent: roundOne(targetPercent),
     predictedPercent: roundOne(predictedPercent),
     percentGap: roundOne(percentGap),
+    confidenceLevel: confidence.level,
+    confidenceReasons: confidence.reasons,
     productivityRate: roundTwo(productivityRate),
     requiredEffectiveHours: roundOne(requiredEffectiveHours),
     totalEffectiveHours: roundOne(totalEffectiveHours),
@@ -142,6 +151,46 @@ export const buildCapacityForecast = (
       roles,
     ),
   }
+}
+
+const buildConfidenceSignal = (
+  history: CapacityForecastResult["history"],
+  members: CapacityMemberForecast[],
+): { level: CapacityConfidenceLevel; reasons: string[] } => {
+  const usableHistoryWeeks = history.filter((week) => week.spentHours > 0 && week.completedPercent > 0)
+  const membersWithoutPersonalVelocity = members.filter(
+    (member) => member.velocity === CAPACITY_VELOCITY.DEFAULT,
+  )
+  const reasons: string[] = []
+
+  if (members.length === 0) {
+    reasons.push("Project chưa có member active nên forecast chưa phản ánh capacity thật.")
+  }
+  if (usableHistoryWeeks.length < CAPACITY_COPILOT_RULES.MIN_HISTORY_WEEKS_FOR_MEDIUM_CONFIDENCE) {
+    reasons.push("Ít dữ liệu delivery history nên forecast chỉ mang tính tham khảo.")
+  }
+  if (membersWithoutPersonalVelocity.length > 0) {
+    reasons.push("Một số member chưa có velocity cá nhân, hệ thống đang dùng velocity mặc định.")
+  }
+
+  if (
+    usableHistoryWeeks.length >= CAPACITY_COPILOT_RULES.MIN_HISTORY_WEEKS_FOR_HIGH_CONFIDENCE &&
+    reasons.length === 0
+  ) {
+    return {
+      level: CAPACITY_CONFIDENCE_LEVEL.HIGH,
+      reasons: ["Có đủ dữ liệu lịch sử và velocity để forecast ổn định hơn."],
+    }
+  }
+
+  if (usableHistoryWeeks.length >= CAPACITY_COPILOT_RULES.MIN_HISTORY_WEEKS_FOR_MEDIUM_CONFIDENCE) {
+    return {
+      level: CAPACITY_CONFIDENCE_LEVEL.MEDIUM,
+      reasons: reasons.length > 0 ? reasons : ["Có dữ liệu lịch sử ở mức vừa đủ."],
+    }
+  }
+
+  return { level: CAPACITY_CONFIDENCE_LEVEL.LOW, reasons }
 }
 
 const calculateProductivityRate = (history: CapacityForecastResult["history"]): number => {

@@ -1,3 +1,7 @@
+/**
+ * Request validation for project forecasts and the weekly capacity board.
+ * The client selects only the week/lookback window; the committed target comes from Project deal data.
+ */
 import { CAPACITY_COPILOT_RULES } from "@/configs/rules/capacity-copilot.config.ts"
 
 import { z } from "zod"

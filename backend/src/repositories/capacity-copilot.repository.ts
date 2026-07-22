@@ -1,9 +1,10 @@
+/**
+ * Read-only Prisma adapter for Capacity Copilot inputs.
+ * It aggregates Project, Attendance, and Spent Time data without mutating Project Task records.
+ */
 import { PART_TIME_AVAILABILITY_STATUS } from "@/configs/entities/part-time-availability.config.ts"
 import { PROJECT_STATUS, SPENT_TIME_STATUS, TASK_STATUS } from "@/configs/entities/project.config.ts"
 import { CAPACITY_COPILOT_RULES } from "@/configs/rules/capacity-copilot.config.ts"
-/**
- * Prisma repository that gathers project deal, staffing, availability, and delivery history.
- */
 import {
   CapacityAvailabilityRow,
   CapacityDeliveryHistoryRow,

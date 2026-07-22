@@ -1,9 +1,10 @@
+/**
+ * HTTP boundary for project and cross-project capacity forecasts.
+ * It validates transport input and delegates all forecast decisions to the service layer.
+ */
 import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
-/**
- * HTTP controller for the Part-time Capacity Copilot forecast flow.
- */
 import {
   forecastCapacityBoardQuerySchema,
   forecastProjectCapacitySchema,

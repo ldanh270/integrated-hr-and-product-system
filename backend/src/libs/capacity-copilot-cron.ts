@@ -9,7 +9,12 @@ import cron from "node-cron"
 
 let lastRunWeekKey: string | null = null
 
-const formatDateKey = (date: Date): string => date.toISOString().slice(0, 10)
+const formatDateKey = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
 
 const getWeekStart = (date: Date): Date => {
   const weekStart = new Date(date)
@@ -22,7 +27,7 @@ const getWeekStart = (date: Date): Date => {
 
 export const initCapacityCopilotCron = () => {
   // Run every minute to reuse the existing project cron style, then gate by configured weekday/time.
-  cron.schedule("* * * * *", async () => {
+  cron.schedule(CAPACITY_COPILOT_RULES.CRON_POLL_EXPRESSION, async () => {
     try {
       const now = new Date()
       if (

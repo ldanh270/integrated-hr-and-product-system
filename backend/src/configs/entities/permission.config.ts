@@ -1,3 +1,4 @@
+/** Canonical permission codes shared by route guards, seeds, and authorization services. */
 export const PERMISSION_CODE = {
   PERMISSION_READ: "permission.read",
   PERMISSION_CREATE: "permission.create",

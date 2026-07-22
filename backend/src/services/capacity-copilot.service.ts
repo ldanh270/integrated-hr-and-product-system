@@ -3,6 +3,7 @@
  */
 import { WORK_SCHEDULE_TYPE } from "@/configs/entities/employee.config.ts"
 import { CAPACITY_COPILOT_RULES } from "@/configs/rules/capacity-copilot.config.ts"
+import { formatUtcDateKey, parseUtcDateOnly } from "@/utils/date.util.ts"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
@@ -82,12 +83,13 @@ export class CapacityCopilotService {
     input: ForecastProjectCapacityDto,
   ): Promise<CapacityBoardForecastResult> {
     const weekStart = this.normalizeWeekStart(input.weekStart)
+    const weekStartKey = formatUtcDateKey(weekStart)
     const projects = await this.repository.listProjectsWithDealTarget()
     // Board forecast isolates failures per project so one bad project does not hide other capacity signals.
     const snapshots = await Promise.all(
       projects.map((project) => {
         const forecastInput = {
-          weekStart: weekStart.toISOString(),
+          weekStart: weekStartKey,
           lookbackWeeks: input.lookbackWeeks,
         }
         return this.safeForecastBoardProject(project, forecastInput)
@@ -95,7 +97,7 @@ export class CapacityCopilotService {
     )
 
     return {
-      weekStart: weekStart.toISOString().slice(0, 10),
+      weekStart: weekStartKey,
       generatedAt: new Date().toISOString(),
       projects: snapshots,
     }
@@ -122,7 +124,7 @@ export class CapacityCopilotService {
     await Promise.allSettled(
       projects.map((project) =>
         this.forecastAndCacheProjectCapacity(project, {
-          weekStart: weekStart.toISOString(),
+          weekStart: formatUtcDateKey(weekStart),
           lookbackWeeks: CAPACITY_COPILOT_RULES.DEFAULT_LOOKBACK_WEEKS,
         }),
       ),
@@ -165,7 +167,7 @@ export class CapacityCopilotService {
 
   private buildCacheKey(projectId: string, weekStart: string, lookbackWeeks?: number): string {
     const lookback = lookbackWeeks ?? CAPACITY_COPILOT_RULES.DEFAULT_LOOKBACK_WEEKS
-    return `${projectId}:${this.normalizeWeekStart(weekStart).toISOString().slice(0, 10)}:${lookback}`
+    return `${projectId}:${formatUtcDateKey(this.normalizeWeekStart(weekStart))}:${lookback}`
   }
 
   private getAvailableHours(
@@ -191,11 +193,11 @@ export class CapacityCopilotService {
   }
 
   private normalizeWeekStart(value: string): Date {
-    const date = new Date(value)
-    const day = date.getDay()
+    const date = parseUtcDateOnly(value)
+    const day = date.getUTCDay()
     const diff = day === 0 ? -CAPACITY_COPILOT_RULES.DAYS_PER_WEEK + 1 : 1 - day
-    date.setDate(date.getDate() + diff)
-    date.setHours(0, 0, 0, 0)
+    date.setUTCDate(date.getUTCDate() + diff)
+    date.setUTCHours(0, 0, 0, 0)
     return date
   }
 }

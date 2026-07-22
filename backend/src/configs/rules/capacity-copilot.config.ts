@@ -10,6 +10,8 @@ export const CAPACITY_COPILOT_RULES = {
   MAX_LOOKBACK_WEEKS: 12,
   VELOCITY_SAMPLE_TASK_LIMIT: 20,
   HIGH_RISK_GAP_RATIO: 0.2,
+  MIN_HISTORY_WEEKS_FOR_MEDIUM_CONFIDENCE: 2,
+  MIN_HISTORY_WEEKS_FOR_HIGH_CONFIDENCE: 3,
   DAYS_PER_WEEK: 7,
   MINUTES_PER_HOUR: 60,
   UNKNOWN_ROLE_CODE: "unknown",
@@ -20,4 +22,15 @@ export const CAPACITY_COPILOT_RULES = {
   WEEKLY_CRON_DAY_OF_WEEK: 1,
   WEEKLY_CRON_HOUR: 0,
   WEEKLY_CRON_MINUTE: 5,
+  CRON_POLL_EXPRESSION: "* * * * *",
 } as const
+
+/** Confidence values returned by the Capacity Copilot API. */
+export const CAPACITY_CONFIDENCE_LEVEL = {
+  LOW: "low",
+  MEDIUM: "medium",
+  HIGH: "high",
+} as const
+
+export type CapacityConfidenceLevel =
+  (typeof CAPACITY_CONFIDENCE_LEVEL)[keyof typeof CAPACITY_CONFIDENCE_LEVEL]
