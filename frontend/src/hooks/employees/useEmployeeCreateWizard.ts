@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useCreateEmployee } from "@/hooks/employees/queries/useEmployeeQuery"
 import { routerNavigate } from "@/lib/router-navigator"
+import { getBioFieldError, getJobFieldError, hasRequiredEmployeeFields } from "@/lib/employee-form-validation"
 import type {
   IEducationItem,
   IEmployeeWizardFormData,
@@ -14,7 +15,9 @@ export function useEmployeeCreateWizard() {
   const [activeTab, setActiveTab] = useState<WizardTab>("bio")
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
 
-  const defaultEmployeeCode = `Outfiz${Math.floor(10000 + Math.random() * 90000)}`
+  const [defaultEmployeeCode] = useState(
+    () => `Outfiz${Math.floor(10000 + Math.random() * 90000)}`
+  )
 
   const [formData, setFormData] = useState<IEmployeeWizardFormData>({
     // Tab 1: Sơ yếu lý lịch
@@ -179,6 +182,8 @@ export function useEmployeeCreateWizard() {
     }))
   }
 
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
+
   const removeFamilyMember = (id: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -186,15 +191,56 @@ export function useEmployeeCreateWizard() {
     }))
   }
 
+  const validateTab = (tab: WizardTab): boolean => {
+    if (tab === "bio") {
+      const hasError = getBioFieldError("fullName", formData.fullName)
+        || getBioFieldError("phone", formData.phone)
+        || getBioFieldError("email", formData.email)
+
+      if (hasError) toast.error("Vui lòng kiểm tra thông tin trong Sơ yếu lý lịch")
+      return !hasError
+    }
+
+    if (tab === "job") {
+      const hasError = getJobFieldError("employeeCode", formData.employeeCode)
+        || getJobFieldError("positionId", formData.positionId)
+        || getJobFieldError("department", formData.department)
+        || getJobFieldError("workLocation", formData.workLocation)
+        || getJobFieldError("startDate", formData.startDate)
+
+      if (hasError) toast.error("Vui lòng kiểm tra thông tin trong Công việc")
+      return !hasError
+    }
+
+    return true
+  }
+
+  const moveToTab = (nextTab: WizardTab) => {
+    const tabOrder: Record<WizardTab, number> = { bio: 0, job: 1, family: 2 }
+
+    if (tabOrder[nextTab] > tabOrder[activeTab]) {
+      setHasAttemptedSubmit(true)
+      if (!validateTab(activeTab)) return
+    }
+
+    setActiveTab(nextTab)
+    setHasAttemptedSubmit(false)
+  }
+
   const handleNextTab = () => {
-    if (activeTab === "bio") setActiveTab("job")
-    else if (activeTab === "job") setActiveTab("family")
-    else setIsConfirmModalOpen(true)
+    if (activeTab === "family") {
+      setIsConfirmModalOpen(true)
+      return
+    }
+
+    moveToTab(activeTab === "bio" ? "job" : "family")
   }
 
   const handleFinalSubmit = async () => {
-    if (!formData.fullName || !formData.phone) {
-      toast.error("Vui lòng điền đầy đủ Họ và tên và Số điện thoại")
+    setHasAttemptedSubmit(true)
+
+    if (!hasRequiredEmployeeFields(formData)) {
+      toast.error("Vui lòng kiểm tra lại các thông tin bắt buộc")
       setIsConfirmModalOpen(false)
       setActiveTab("bio")
       return
@@ -229,7 +275,7 @@ export function useEmployeeCreateWizard() {
 
   return {
     activeTab,
-    setActiveTab,
+    moveToTab,
     formData,
     updateField,
 
@@ -252,5 +298,6 @@ export function useEmployeeCreateWizard() {
     handleNextTab,
     handleFinalSubmit,
     isSubmitting: createEmployeeMutation.isPending,
+    hasAttemptedSubmit,
   }
 }

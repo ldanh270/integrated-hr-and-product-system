@@ -9,6 +9,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+
+import { cn } from "@/lib/utils"
+import { getBioFieldError } from "@/lib/employee-form-validation"
 import type {
   IEducationItem,
   IEmployeeWizardFormData,
@@ -35,6 +38,7 @@ interface BioTabProps {
   addExperience: () => void
   updateExperience: (id: string, field: keyof IExperienceItem, value: string) => void
   removeExperience: (id: string) => void
+  hasAttemptedSubmit?: boolean
 }
 
 export function BioTab({
@@ -46,26 +50,36 @@ export function BioTab({
   addExperience,
   updateExperience,
   removeExperience,
+  hasAttemptedSubmit,
 }: BioTabProps) {
   // Collapsible section states
   const [openPersonal, setOpenPersonal] = useState(true)
   const [openIdPhotos, setOpenIdPhotos] = useState(true)
   const [openContact, setOpenContact] = useState(true)
 
+  // OnBlur touch tracking
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({})
+  const handleBlur = (field: string) => {
+    setTouchedFields((prev) => ({ ...prev, [field]: true }))
+  }
+  const fullNameError = getBioFieldError("fullName", formData.fullName)
+  const phoneError = getBioFieldError("phone", formData.phone)
+  const emailError = getBioFieldError("email", formData.email)
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* ── 1. Thông tin cá nhân ────────────────────────────────────────── */}
-      <div className="border border-border rounded-xl bg-card overflow-hidden">
+      <div className="bg-background border border-border rounded-xl overflow-hidden shadow-none">
         <button
           type="button"
           onClick={() => setOpenPersonal(!openPersonal)}
-          className="w-full px-6 py-4 flex items-center justify-between bg-muted/20 border-b border-border text-left font-semibold text-sm text-foreground"
+          className="w-full px-6 py-4 flex items-center justify-between bg-muted/50 border-b border-border text-left font-semibold text-sm text-foreground"
         >
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">
               {openPersonal ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </span>
-            Thông tin cá nhân
+            <h2 className="font-semibold text-foreground">Thông tin cá nhân</h2>
           </div>
         </button>
 
@@ -85,12 +99,19 @@ export function BioTab({
                     Họ và tên <span className="text-destructive">*</span>
                   </Label>
                   <Input
-                    placeholder="Lê Đức Anh"
+                    placeholder="Nhập họ và tên"
                     value={formData.fullName}
                     onChange={(e) => updateField("fullName", e.target.value)}
-                    className="rounded-full"
+                    onBlur={() => handleBlur("fullName")}
+                    className={cn(
+                      "rounded-full",
+                      (touchedFields.fullName || hasAttemptedSubmit) && fullNameError && "border-destructive ring-1 ring-destructive"
+                    )}
                     required
                   />
+                  {(touchedFields.fullName || hasAttemptedSubmit) && fullNameError && (
+                    <p className="text-xs text-destructive font-medium mt-1">{fullNameError}</p>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
@@ -243,17 +264,17 @@ export function BioTab({
       </div>
 
       {/* ── 2. Ảnh CMND/CCCD ────────────────────────────────────────────── */}
-      <div className="border border-border rounded-xl bg-card overflow-hidden">
+      <div className="bg-background border border-border rounded-xl overflow-hidden shadow-none">
         <button
           type="button"
           onClick={() => setOpenIdPhotos(!openIdPhotos)}
-          className="w-full px-6 py-4 flex items-center justify-between bg-muted/20 border-b border-border text-left font-semibold text-sm text-foreground"
+          className="w-full px-6 py-4 flex items-center justify-between bg-muted/50 border-b border-border text-left font-semibold text-sm text-foreground"
         >
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">
               {openIdPhotos ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </span>
-            Ảnh CMND/CCCD
+            <h2 className="font-semibold text-foreground">Ảnh CMND/CCCD</h2>
           </div>
         </button>
 
@@ -279,17 +300,17 @@ export function BioTab({
       </div>
 
       {/* ── 3. Thông tin liên hệ ─────────────────────────────────────────── */}
-      <div className="border border-border rounded-xl bg-card overflow-hidden">
+      <div className="bg-background border border-border rounded-xl overflow-hidden shadow-none">
         <button
           type="button"
           onClick={() => setOpenContact(!openContact)}
-          className="w-full px-6 py-4 flex items-center justify-between bg-muted/20 border-b border-border text-left font-semibold text-sm text-foreground"
+          className="w-full px-6 py-4 flex items-center justify-between bg-muted/50 border-b border-border text-left font-semibold text-sm text-foreground"
         >
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">
               {openContact ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </span>
-            Thông tin liên hệ
+            <h2 className="font-semibold text-foreground">Thông tin liên hệ</h2>
           </div>
         </button>
 
@@ -300,23 +321,37 @@ export function BioTab({
                 Số điện thoại <span className="text-destructive">*</span>
               </Label>
               <Input
-                placeholder="0905944716"
+                placeholder="Nhập số điện thoại"
                 value={formData.phone}
                 onChange={(e) => updateField("phone", e.target.value)}
-                className="rounded-full"
+                onBlur={() => handleBlur("phone")}
+                className={cn(
+                  "rounded-full",
+                  (touchedFields.phone || hasAttemptedSubmit) && phoneError && "border-destructive ring-1 ring-destructive"
+                )}
                 required
               />
+              {(touchedFields.phone || hasAttemptedSubmit) && phoneError && (
+                <p className="text-xs text-destructive font-medium mt-1">{phoneError}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">Email</Label>
               <Input
                 type="email"
-                placeholder="abc.123@gmail.com"
+                placeholder="Nhập địa chỉ email"
                 value={formData.email}
                 onChange={(e) => updateField("email", e.target.value)}
-                className="rounded-full"
+                onBlur={() => handleBlur("email")}
+                className={cn(
+                  "rounded-full",
+                  touchedFields.email && emailError && "border-destructive ring-1 ring-destructive"
+                )}
               />
+              {touchedFields.email && emailError && (
+                <p className="text-xs text-destructive font-medium mt-1">{emailError}</p>
+              )}
             </div>
 
             <div className="space-y-1.5 md:col-span-2">
@@ -333,9 +368,9 @@ export function BioTab({
       </div>
 
       {/* ── 4. Trình độ học vấn ───────────────────────────────────────────── */}
-      <div className="border border-border rounded-xl bg-card overflow-hidden p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground">Trình độ học vấn</h3>
+      <div className="bg-background border border-border rounded-xl overflow-hidden shadow-none">
+        <div className="px-6 py-4 border-b border-border bg-muted/50 flex items-center justify-between">
+          <h2 className="font-semibold text-foreground text-sm">Trình độ học vấn</h2>
           <Button
             type="button"
             variant="ghost"
@@ -346,73 +381,97 @@ export function BioTab({
             <PlusCircle size={15} /> Thêm trình độ
           </Button>
         </div>
-
-        {formData.educations.length === 0 ? (
-          <p className="text-xs text-muted-foreground italic">Chưa có thông tin trình độ học vấn</p>
-        ) : (
-          <div className="space-y-3 divide-y divide-border">
-            {formData.educations.map((item, idx) => (
-              <div key={item.id} className="pt-3 first:pt-0 grid grid-cols-6 gap-2 items-center">
-                <span className="text-xs font-mono font-semibold text-muted-foreground col-span-6 mb-1">
-                  #{idx + 1}
-                </span>
-                <Input
-                  placeholder="Từ mm/yyyy"
-                  value={item.fromMonthYear}
-                  onChange={(e) => updateEducation(item.id, "fromMonthYear", e.target.value)}
-                  className="rounded-full text-xs"
-                />
-                <Input
-                  placeholder="Đến mm/yyyy"
-                  value={item.toMonthYear}
-                  onChange={(e) => updateEducation(item.id, "toMonthYear", e.target.value)}
-                  className="rounded-full text-xs"
-                />
-                <Input
-                  placeholder="Bằng cấp/Trình độ"
-                  value={item.degree}
-                  onChange={(e) => updateEducation(item.id, "degree", e.target.value)}
-                  className="rounded-full text-xs"
-                />
-                <Input
-                  placeholder="Hình thức đào tạo"
-                  value={item.trainingType}
-                  onChange={(e) => updateEducation(item.id, "trainingType", e.target.value)}
-                  className="rounded-full text-xs"
-                />
-                <Input
-                  placeholder="Chuyên ngành"
-                  value={item.major}
-                  onChange={(e) => updateEducation(item.id, "major", e.target.value)}
-                  className="rounded-full text-xs"
-                />
-                <div className="flex items-center gap-1">
-                  <Input
-                    placeholder="Nơi đào tạo"
-                    value={item.school}
-                    onChange={(e) => updateEducation(item.id, "school", e.target.value)}
-                    className="rounded-full text-xs flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeEducation(item.id)}
-                    className="h-8 w-8 text-destructive"
-                  >
-                    <Trash2 size={14} />
-                  </Button>
+        <div className="p-6">
+          {formData.educations.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic">Chưa có thông tin trình độ học vấn</p>
+          ) : (
+            <div className="space-y-4">
+              {formData.educations.map((item, idx) => (
+                <div
+                  key={item.id}
+                  className="p-4 border border-border/70 rounded-xl bg-card/40 space-y-3 relative"
+                >
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                    <span className="text-xs font-mono font-semibold text-muted-foreground">
+                      #{idx + 1}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeEducation(item.id)}
+                      className="h-7 px-2 text-destructive hover:bg-destructive/10 gap-1 text-xs"
+                    >
+                      <Trash2 size={13} /> Xóa
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-medium text-muted-foreground">Từ tháng/năm</Label>
+                      <Input
+                        placeholder="Từ mm/yyyy"
+                        value={item.fromMonthYear}
+                        onChange={(e) => updateEducation(item.id, "fromMonthYear", e.target.value)}
+                        className="rounded-full text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-medium text-muted-foreground">Đến tháng/năm</Label>
+                      <Input
+                        placeholder="Đến mm/yyyy"
+                        value={item.toMonthYear}
+                        onChange={(e) => updateEducation(item.id, "toMonthYear", e.target.value)}
+                        className="rounded-full text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-medium text-muted-foreground">Bằng cấp / Trình độ</Label>
+                      <Input
+                        placeholder="Nhập bằng cấp / trình độ"
+                        value={item.degree}
+                        onChange={(e) => updateEducation(item.id, "degree", e.target.value)}
+                        className="rounded-full text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-medium text-muted-foreground">Chuyên ngành</Label>
+                      <Input
+                        placeholder="Nhập chuyên ngành"
+                        value={item.major}
+                        onChange={(e) => updateEducation(item.id, "major", e.target.value)}
+                        className="rounded-full text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-medium text-muted-foreground">Hình thức đào tạo</Label>
+                      <Input
+                        placeholder="Chính quy, tại chức..."
+                        value={item.trainingType}
+                        onChange={(e) => updateEducation(item.id, "trainingType", e.target.value)}
+                        className="rounded-full text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-medium text-muted-foreground">Nơi đào tạo / Trường</Label>
+                      <Input
+                        placeholder="Nhập tên trường đào tạo"
+                        value={item.school}
+                        onChange={(e) => updateEducation(item.id, "school", e.target.value)}
+                        className="rounded-full text-xs"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── 5. Kinh nghiệm làm việc ──────────────────────────────────────── */}
-      <div className="border border-border rounded-xl bg-card overflow-hidden p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground">Kinh nghiệm làm việc</h3>
+      <div className="bg-background border border-border rounded-xl overflow-hidden shadow-none">
+        <div className="px-6 py-4 border-b border-border bg-muted/50 flex items-center justify-between">
+          <h2 className="font-semibold text-foreground text-sm">Kinh nghiệm làm việc</h2>
           <Button
             type="button"
             variant="ghost"
@@ -423,61 +482,82 @@ export function BioTab({
             <PlusCircle size={15} /> Thêm kinh nghiệm
           </Button>
         </div>
-
-        {formData.experiences.length === 0 ? (
-          <p className="text-xs text-muted-foreground italic">Chưa có thông tin kinh nghiệm làm việc</p>
-        ) : (
-          <div className="space-y-3 divide-y divide-border">
-            {formData.experiences.map((item, idx) => (
-              <div key={item.id} className="pt-3 first:pt-0 grid grid-cols-5 gap-2 items-center">
-                <span className="text-xs font-mono font-semibold text-muted-foreground col-span-5 mb-1">
-                  #{idx + 1}
-                </span>
-                <Input
-                  placeholder="Từ mm/yyyy"
-                  value={item.fromMonthYear}
-                  onChange={(e) => updateExperience(item.id, "fromMonthYear", e.target.value)}
-                  className="rounded-full text-xs"
-                />
-                <Input
-                  placeholder="Đến mm/yyyy"
-                  value={item.toMonthYear}
-                  onChange={(e) => updateExperience(item.id, "toMonthYear", e.target.value)}
-                  className="rounded-full text-xs"
-                />
-                <Input
-                  placeholder="Nơi làm việc"
-                  value={item.company}
-                  onChange={(e) => updateExperience(item.id, "company", e.target.value)}
-                  className="rounded-full text-xs"
-                />
-                <Input
-                  placeholder="Vị trí đảm nhận"
-                  value={item.position}
-                  onChange={(e) => updateExperience(item.id, "position", e.target.value)}
-                  className="rounded-full text-xs"
-                />
-                <div className="flex items-center gap-1">
-                  <Input
-                    placeholder="Mô tả công việc"
-                    value={item.description}
-                    onChange={(e) => updateExperience(item.id, "description", e.target.value)}
-                    className="rounded-full text-xs flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeExperience(item.id)}
-                    className="h-8 w-8 text-destructive"
-                  >
-                    <Trash2 size={14} />
-                  </Button>
+        <div className="p-6">
+          {formData.experiences.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic">Chưa có thông tin kinh nghiệm làm việc</p>
+          ) : (
+            <div className="space-y-4">
+              {formData.experiences.map((item, idx) => (
+                <div
+                  key={item.id}
+                  className="p-4 border border-border/70 rounded-xl bg-card/40 space-y-3 relative"
+                >
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                    <span className="text-xs font-mono font-semibold text-muted-foreground">
+                      #{idx + 1}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeExperience(item.id)}
+                      className="h-7 px-2 text-destructive hover:bg-destructive/10 gap-1 text-xs"
+                    >
+                      <Trash2 size={13} /> Xóa
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-medium text-muted-foreground">Từ tháng/năm</Label>
+                      <Input
+                        placeholder="Từ mm/yyyy"
+                        value={item.fromMonthYear}
+                        onChange={(e) => updateExperience(item.id, "fromMonthYear", e.target.value)}
+                        className="rounded-full text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-medium text-muted-foreground">Đến tháng/năm</Label>
+                      <Input
+                        placeholder="Đến mm/yyyy"
+                        value={item.toMonthYear}
+                        onChange={(e) => updateExperience(item.id, "toMonthYear", e.target.value)}
+                        className="rounded-full text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-medium text-muted-foreground">Nơi làm việc / Công ty</Label>
+                      <Input
+                        placeholder="Nhập tên nơi làm việc"
+                        value={item.company}
+                        onChange={(e) => updateExperience(item.id, "company", e.target.value)}
+                        className="rounded-full text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-medium text-muted-foreground">Vị trí đảm nhận</Label>
+                      <Input
+                        placeholder="Nhập chức danh / vị trí"
+                        value={item.position}
+                        onChange={(e) => updateExperience(item.id, "position", e.target.value)}
+                        className="rounded-full text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1 sm:col-span-2">
+                      <Label className="text-[11px] font-medium text-muted-foreground">Mô tả công việc</Label>
+                      <Input
+                        placeholder="Nhập tóm tắt công việc"
+                        value={item.description}
+                        onChange={(e) => updateExperience(item.id, "description", e.target.value)}
+                        className="rounded-full text-xs"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

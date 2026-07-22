@@ -9,6 +9,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useRoles } from "@/hooks/security/queries/use-security-query"
+import { cn } from "@/lib/utils"
+import { getJobFieldError } from "@/lib/employee-form-validation"
 import type { IEmployeeWizardFormData } from "@/types/employee-wizard.types"
 import { ChevronDown, ChevronUp } from "lucide-react"
 
@@ -18,29 +20,41 @@ interface JobTabProps {
     field: K,
     value: IEmployeeWizardFormData[K]
   ) => void
+  hasAttemptedSubmit?: boolean
 }
 
-export function JobTab({ formData, updateField }: JobTabProps) {
+export function JobTab({ formData, updateField, hasAttemptedSubmit }: JobTabProps) {
   const { data: rolesData } = useRoles()
   const roles = Array.isArray(rolesData?.data) ? rolesData.data : []
 
   const [openJobInfo, setOpenJobInfo] = useState(true)
   const [openAccountInfo, setOpenAccountInfo] = useState(true)
 
+  // OnBlur touch tracking
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({})
+  const handleBlur = (field: string) => {
+    setTouchedFields((prev) => ({ ...prev, [field]: true }))
+  }
+  const employeeCodeError = getJobFieldError("employeeCode", formData.employeeCode)
+  const workLocationError = getJobFieldError("workLocation", formData.workLocation)
+  const departmentError = getJobFieldError("department", formData.department)
+  const positionError = getJobFieldError("positionId", formData.positionId)
+  const startDateError = getJobFieldError("startDate", formData.startDate)
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* ── 1. Thông tin công việc ────────────────────────────────────────── */}
-      <div className="border border-border rounded-xl bg-card overflow-hidden">
+      <div className="bg-background border border-border rounded-xl overflow-hidden shadow-none">
         <button
           type="button"
           onClick={() => setOpenJobInfo(!openJobInfo)}
-          className="w-full px-6 py-4 flex items-center justify-between bg-muted/20 border-b border-border text-left font-semibold text-sm text-foreground"
+          className="w-full px-6 py-4 flex items-center justify-between bg-muted/50 border-b border-border text-left font-semibold text-sm text-foreground"
         >
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">
               {openJobInfo ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </span>
-            Thông tin công việc
+            <h2 className="font-semibold text-foreground">Thông tin công việc</h2>
           </div>
         </button>
 
@@ -51,12 +65,19 @@ export function JobTab({ formData, updateField }: JobTabProps) {
                 Mã nhân sự <span className="text-destructive">*</span>
               </Label>
               <Input
-                placeholder="Outfiz00036"
+                placeholder="Nhập mã nhân sự"
                 value={formData.employeeCode}
                 onChange={(e) => updateField("employeeCode", e.target.value)}
-                className="rounded-full bg-muted/40 font-mono"
+                onBlur={() => handleBlur("employeeCode")}
+                className={cn(
+                  "rounded-full bg-muted/40 font-mono",
+                  (touchedFields.employeeCode || hasAttemptedSubmit) && employeeCodeError && "border-destructive ring-1 ring-destructive"
+                )}
                 required
               />
+              {(touchedFields.employeeCode || hasAttemptedSubmit) && employeeCodeError && (
+                <p className="text-xs text-destructive font-medium mt-1">{employeeCodeError}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -65,9 +86,18 @@ export function JobTab({ formData, updateField }: JobTabProps) {
               </Label>
               <Select
                 value={formData.workLocation}
-                onValueChange={(val) => updateField("workLocation", val)}
+                onValueChange={(val) => {
+                  updateField("workLocation", val)
+                  handleBlur("workLocation")
+                }}
               >
-                <SelectTrigger className="rounded-full">
+                <SelectTrigger
+                  onBlur={() => handleBlur("workLocation")}
+                  className={cn(
+                    "rounded-full",
+                    (touchedFields.workLocation || hasAttemptedSubmit) && workLocationError && "border-destructive ring-1 ring-destructive"
+                  )}
+                >
                   <SelectValue placeholder="Nơi làm việc" />
                 </SelectTrigger>
                 <SelectContent>
@@ -76,6 +106,9 @@ export function JobTab({ formData, updateField }: JobTabProps) {
                   <SelectItem value="danang">Đà Nẵng - Văn phòng đại diện</SelectItem>
                 </SelectContent>
               </Select>
+              {(touchedFields.workLocation || hasAttemptedSubmit) && workLocationError && (
+                <p className="text-xs text-destructive font-medium mt-1">{workLocationError}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -84,9 +117,18 @@ export function JobTab({ formData, updateField }: JobTabProps) {
               </Label>
               <Select
                 value={formData.department}
-                onValueChange={(val) => updateField("department", val)}
+                onValueChange={(val) => {
+                  updateField("department", val)
+                  handleBlur("department")
+                }}
               >
-                <SelectTrigger className="rounded-full">
+                <SelectTrigger
+                  onBlur={() => handleBlur("department")}
+                  className={cn(
+                    "rounded-full",
+                    (touchedFields.department || hasAttemptedSubmit) && departmentError && "border-destructive ring-1 ring-destructive"
+                  )}
+                >
                   <SelectValue placeholder="Bộ phận" />
                 </SelectTrigger>
                 <SelectContent>
@@ -96,6 +138,9 @@ export function JobTab({ formData, updateField }: JobTabProps) {
                   <SelectItem value="accounting">Phòng Kế toán</SelectItem>
                 </SelectContent>
               </Select>
+              {(touchedFields.department || hasAttemptedSubmit) && departmentError && (
+                <p className="text-xs text-destructive font-medium mt-1">{departmentError}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -106,9 +151,16 @@ export function JobTab({ formData, updateField }: JobTabProps) {
                 placeholder="Vị trí / Chức danh"
                 value={formData.positionId}
                 onChange={(e) => updateField("positionId", e.target.value)}
-                className="rounded-full"
+                onBlur={() => handleBlur("positionId")}
+                className={cn(
+                  "rounded-full",
+                  (touchedFields.positionId || hasAttemptedSubmit) && positionError && "border-destructive ring-1 ring-destructive"
+                )}
                 required
               />
+              {(touchedFields.positionId || hasAttemptedSubmit) && positionError && (
+                <p className="text-xs text-destructive font-medium mt-1">{positionError}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -119,9 +171,16 @@ export function JobTab({ formData, updateField }: JobTabProps) {
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => updateField("startDate", e.target.value)}
-                className="rounded-full"
+                onBlur={() => handleBlur("startDate")}
+                className={cn(
+                  "rounded-full",
+                  (touchedFields.startDate || hasAttemptedSubmit) && startDateError && "border-destructive ring-1 ring-destructive"
+                )}
                 required
               />
+              {(touchedFields.startDate || hasAttemptedSubmit) && startDateError && (
+                <p className="text-xs text-destructive font-medium mt-1">{startDateError}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -156,17 +215,17 @@ export function JobTab({ formData, updateField }: JobTabProps) {
       </div>
 
       {/* ── 2. Thông tin tài khoản ────────────────────────────────────────── */}
-      <div className="border border-border rounded-xl bg-card overflow-hidden">
+      <div className="bg-background border border-border rounded-xl overflow-hidden shadow-none">
         <button
           type="button"
           onClick={() => setOpenAccountInfo(!openAccountInfo)}
-          className="w-full px-6 py-4 flex items-center justify-between bg-muted/20 border-b border-border text-left font-semibold text-sm text-foreground"
+          className="w-full px-6 py-4 flex items-center justify-between bg-muted/50 border-b border-border text-left font-semibold text-sm text-foreground"
         >
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">
               {openAccountInfo ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </span>
-            Thông tin tài khoản
+            <h2 className="font-semibold text-foreground">Thông tin tài khoản</h2>
           </div>
         </button>
 
@@ -178,7 +237,7 @@ export function JobTab({ formData, updateField }: JobTabProps) {
                   Tên đăng nhập <span className="text-destructive">*</span>
                 </Label>
                 <Input
-                  placeholder="Outfiz00036"
+                  placeholder="Nhập tên đăng nhập"
                   value={formData.username}
                   onChange={(e) => updateField("username", e.target.value)}
                   disabled={formData.autoGenUsername}

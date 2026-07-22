@@ -1,7 +1,7 @@
 import { ROUTES } from "@/config/routes.config"
 import { routerNavigate } from "@/lib/router-navigator"
 
-import { PageCard, StatusPill } from "@/components/common"
+import { PageCard, PageHeader, StatusPill, AppPagination } from "@/components/common"
 import { EmployeeCreateModal } from "@/components/features/employees/EmployeeCreateModal"
 import { EmployeeDetailsDrawer } from "@/components/features/employees/EmployeeDetailsDrawer"
 import { EmployeeEditDrawer } from "@/components/features/employees/EmployeeEditDrawer"
@@ -25,13 +25,14 @@ import {
 } from "@/config/entities/employee.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useEmployeeMaster } from "@/hooks/employees/useEmployeeMaster"
-import type { EmployeeType } from "@/types/employee.types"
-
-import { useMemo } from "react"
+import type { EmployeeStatus } from "@/types/employee.types"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useEffect, useMemo, useState, Fragment } from "react"
 
 import {
   Edit,
   FileDown,
+  Filter,
   Loader2,
   MoreHorizontal,
   Plus,
@@ -40,6 +41,7 @@ import {
   Trash2,
   User,
   Unlock,
+  ChevronRight,
 } from "lucide-react"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -70,12 +72,10 @@ interface TabDefinition {
  */
 const TAB_DEFINITIONS: TabDefinition[] = [
   { id: "all", label: "Tất cả" },
-  { id: EMPLOYEE_TYPES[0], label: getEmployeeTypeLabel(EMPLOYEE_TYPES[0]) },
-  {
-    id: EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME,
-    label: getWorkScheduleTypeLabel("part_time"),
-  },
-  { id: EMPLOYEE_TYPES[3], label: getEmployeeTypeLabel(EMPLOYEE_TYPES[3]) },
+  { id: EMPLOYEE_TYPES[0], label: getEmployeeTypeLabel(EMPLOYEE_TYPES[0]) }, // "full_time"
+  { id: EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME, label: getWorkScheduleTypeLabel("part_time") }, // "part_time"
+  { id: EMPLOYEE_TYPES[2], label: getEmployeeTypeLabel(EMPLOYEE_TYPES[2]) }, // "contractor"
+  { id: EMPLOYEE_TYPES[3], label: getEmployeeTypeLabel(EMPLOYEE_TYPES[3]) }, // "intern"
   { id: "locked", label: "Bị khóa", separator: true },
   { id: EMPLOYEE_STATUS.TERMINATED, label: "Đã nghỉ việc", separator: true },
 ]
@@ -109,11 +109,36 @@ export default function EmployeeList() {
     isFetching,
     handleSearch,
     handleTabChange,
+    handleStatusChange,
     handleDelete,
     handleReinstate,
     handleUnlock,
     isAdminOrManager,
+    navigate,
   } = useEmployeeMaster()
+
+  const [localKeyword, setLocalKeyword] = useState(query.search || "")
+  const [isTransitionLoading, setIsTransitionLoading] = useState(true)
+  const showLoading = isLoading || isFetching || isTransitionLoading
+
+  useEffect(() => {
+    setLocalKeyword(query.search || "")
+  }, [query.search])
+
+  useEffect(() => {
+    if (!isLoading && !isFetching) {
+      const frame = requestAnimationFrame(() => {
+        setIsTransitionLoading(false)
+      })
+      return () => {
+        cancelAnimationFrame(frame)
+      }
+    }
+  }, [isLoading, isFetching])
+
+  const beginTransition = () => {
+    setIsTransitionLoading(true)
+  }
 
   // Derived pagination calculations
   const currentPage = query.page ?? 1
@@ -128,86 +153,128 @@ export default function EmployeeList() {
     [totalPages],
   )
 
-  return (
-    <div className="container max-w-350 px-6 py-8">
-      {/* ── Page header ───────────────────────────────────────────── */}
-      <div className="flex items-start justify-between mb-7">
-        <div>
-          <h1 className="text-[22px] font-semibold tracking-tight text-foreground leading-snug">
-            Nhân sự
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Quản lý hồ sơ toàn bộ nhân sự công ty.
-          </p>
-        </div>
-        {isAdminOrManager && (
-          <Button
-            size="sm"
-            onClick={() => {
-              routerNavigate(ROUTES.HRM.CREATE_EMPLOYEE)
-            }}
-            className="gap-1.5 h-8 px-3 text-xs"
-          >
-            <Plus size={13} strokeWidth={2.5} />
-            Thêm nhân sự
-          </Button>
-        )}
-      </div>
+  const getTabCount = (tabId: ActiveTab) => {
+    if (!data?.stats) return 0
+    const stats = data.stats
+    switch (tabId) {
+      case "all": return stats.total
+      case "full_time": return stats.full_time
+      case EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME: return stats.part_time
+      case "intern": return stats.intern
+      case "contractor": return stats.contractor
+      case "locked": return stats.locked
+      case EMPLOYEE_STATUS.TERMINATED: return stats.terminated
+      default: return 0
+    }
+  }
 
-      <PageCard className="overflow-hidden" padding="sm" noBorder={false}>
+  return (
+    <div className="container px-3 sm:px-6 py-4 sm:py-6">
+      {/* ── Page header ───────────────────────────────────────────── */}
+      <PageHeader
+        title="Nhân sự"
+        description="Quản lý hồ sơ toàn bộ nhân sự công ty."
+        actions={
+          isAdminOrManager && (
+            <Button
+              size="sm"
+              onClick={() => {
+                routerNavigate(ROUTES.HRM.CREATE_EMPLOYEE)
+              }}
+              className="gap-1.5 h-8 px-3 text-xs"
+            >
+              <Plus size={13} strokeWidth={2.5} />
+              Thêm nhân sự
+            </Button>
+          )
+        }
+      />
+
+      <PageCard className="p-0 overflow-hidden" noBorder={false}>
         {/* ── Tab bar ───────────────────────────────────────────────── */}
         <nav
           aria-label="Lọc nhân sự"
-          className="flex items-end gap-0 px-5 border-b border-border overflow-x-auto hide-scrollbar"
+          className="flex items-center gap-6 overflow-x-auto border-b border-border px-6 hide-scrollbar"
         >
-          {TAB_DEFINITIONS.map((tab) => (
-            <div key={tab.id} className="flex items-end shrink-0">
-              {tab.separator && <div className="w-px h-3.5 bg-border self-center mx-3 shrink-0" />}
-              <button
-                onClick={() => {
-                  handleTabChange(tab.id)
-                }}
-                className={[
-                  "relative py-3 px-3 text-[13px] font-medium transition-colors duration-150 whitespace-nowrap",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 rounded-t-sm",
-                  activeTab === tab.id
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
-                ].join(" ")}
-              >
-                <span className="flex items-center gap-1.5">
-                  {tab.label}
-                  {activeTab === tab.id && (
-                    <span className="text-[10px] font-semibold px-1.5 py-px rounded-full flex items-center justify-center leading-none tabular-nums bg-primary/10 text-primary min-w-5 h-4.5">
-                      {isFetching ? (
-                        <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                      ) : (
-                        (data?.meta.total ?? 0)
-                      )}
-                    </span>
-                  )}
-                </span>
-                {/* Active underline */}
-                {activeTab === tab.id && (
-                  <span className="absolute bottom-0 inset-x-0 h-0.5 bg-primary rounded-t-xs" />
+          {TAB_DEFINITIONS.map((tab) => {
+            const isActive = activeTab === tab.id
+            return (
+              <Fragment key={tab.id}>
+                {tab.separator && (
+                  <div className="w-px h-4 bg-border self-center shrink-0" />
                 )}
-              </button>
-            </div>
-          ))}
+                <button
+                  onClick={() => {
+                    beginTransition()
+                    handleTabChange(tab.id)
+                  }}
+                  className={`relative flex items-center gap-2 py-4 font-medium text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
+                    isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {tab.label}
+                  <span
+                    className={`inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full text-[11px] font-bold px-1.5 border ${
+                      isActive
+                        ? "bg-primary border-primary text-primary-foreground"
+                        : "bg-background border-border text-muted-foreground"
+                    }`}
+                  >
+                    {getTabCount(tab.id)}
+                  </span>
+                  {isActive && (
+                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-t-full" />
+                  )}
+                </button>
+              </Fragment>
+            )
+          })}
         </nav>
 
         {/* ── Toolbar ──────────────────────────────────────────────── */}
-        <div className="px-5 py-3 flex items-center justify-between gap-3 border-b border-border">
-          <div className="relative w-56">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-            <Input
-              placeholder="Tìm kiếm họ tên, email..."
-              className="pl-8 h-8 text-sm bg-muted/40 border-transparent focus:bg-background focus:border-border transition-colors"
-              onChange={handleSearch}
-            />
+        <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-center justify-between bg-muted/20">
+          <div className="flex flex-1 items-center gap-3 w-full sm:w-auto">
+            {/* Search */}
+            <div className="relative flex-1 sm:max-w-xs">
+              <Input
+                type="text"
+                value={localKeyword}
+                onChange={(e) => {
+                  const val = e.target.value
+                  setLocalKeyword(val)
+                  if (val === "") {
+                    beginTransition()
+                    setQuery((prev) => ({ ...prev, search: "", page: 1 }))
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    beginTransition()
+                    setQuery((prev) => ({ ...prev, search: localKeyword, page: 1 }))
+                  }
+                }}
+                name="employeeSearch"
+                autoComplete="off"
+                placeholder="Tìm kiếm họ tên, email..."
+                aria-label="Tìm kiếm nhân sự"
+                className="h-9 pl-9 pr-4 text-xs bg-background shadow-none border-border"
+              />
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                beginTransition()
+                setQuery((prev) => ({ ...prev, search: localKeyword, page: 1 }))
+              }}
+              className="h-9 px-4 text-xs"
+            >
+              Tìm kiếm
+            </Button>
           </div>
-          <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs text-muted-foreground">
-            <FileDown size={13} />
+          <Button variant="outline" size="sm" className="h-9 px-3 gap-1.5 text-xs text-muted-foreground bg-background border border-border rounded-full hover:bg-accent">
+            <FileDown size={13.5} />
             Xuất Excel
           </Button>
         </div>
@@ -241,10 +308,14 @@ export default function EmployeeList() {
               </tr>
             </thead>
             <tbody>
-              {isLoading ? (
+              {showLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-16 text-center text-sm text-muted-foreground">
-                    Đang tải...
+                  <td colSpan={7} className="p-5">
+                    <div className="space-y-3" aria-label="Đang tải dữ liệu">
+                      {Array.from({ length: 5 }).map((_, index) => (
+                        <Skeleton key={index} className="h-16 w-full rounded-xl" />
+                      ))}
+                    </div>
                   </td>
                 </tr>
               ) : data?.data.length === 0 ? (
@@ -403,56 +474,25 @@ export default function EmployeeList() {
           </table>
         </div>
 
+
+
         {/* ── Pagination ───────────────────────────────────────────── */}
-        <div className="px-5 py-3 border-t border-border flex items-center justify-between">
-          <p className="text-[12px] text-muted-foreground">
-            {pageStart}–{pageEnd}{" "}
-            <span className="text-foreground font-medium">/ {data?.meta.total ?? 0}</span>
-          </p>
-
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs"
-              disabled={query.page === 1}
-              onClick={() => {
-                setQuery((prev) => ({ ...prev, page: Math.max(1, (prev.page || 1) - 1) }))
-              }}
-            >
-              ←
-            </Button>
-
-            {visiblePages.map((p) => (
-              <button
-                key={p}
-                onClick={() => {
-                  setQuery((prev) => ({ ...prev, page: p }))
-                }}
-                className={[
-                  "w-7 h-7 rounded-md text-xs flex items-center justify-center transition-colors",
-                  query.page === p
-                    ? "bg-primary text-primary-foreground font-semibold"
-                    : "text-muted-foreground hover:bg-muted",
-                ].join(" ")}
-              >
-                {p}
-              </button>
-            ))}
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs"
-              disabled={!data || query.page === totalPages || totalPages === 0}
-              onClick={() => {
-                setQuery((prev) => ({ ...prev, page: (prev.page || 1) + 1 }))
-              }}
-            >
-              →
-            </Button>
-          </div>
-        </div>
+        {data && data.data.length > 0 && (
+          <AppPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={(p) => {
+              beginTransition()
+              setQuery((prev) => ({ ...prev, page: p }))
+            }}
+            totalItems={data.meta.total}
+            itemsPerPage={pageSize}
+            onItemsPerPageChange={(limit) => {
+              beginTransition()
+              setQuery((prev) => ({ ...prev, limit, page: 1 }))
+            }}
+          />
+        )}
       </PageCard>
 
       {/* Creation Modal */}

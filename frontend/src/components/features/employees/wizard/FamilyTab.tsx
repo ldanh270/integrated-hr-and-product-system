@@ -9,14 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import type { IFamilyMemberItem, IEmployeeWizardFormData } from "@/types/employee-wizard.types"
 import { ChevronDown, ChevronUp, PlusCircle, Trash2 } from "lucide-react"
 
@@ -44,17 +36,17 @@ export function FamilyTab({
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* ── 1. Thông tin gia đình ────────────────────────────────────────── */}
-      <div className="border border-border rounded-xl bg-card overflow-hidden">
+      <div className="bg-background border border-border rounded-xl overflow-hidden shadow-none">
         <button
           type="button"
           onClick={() => setOpenFamilyInfo(!openFamilyInfo)}
-          className="w-full px-6 py-4 flex items-center justify-between bg-muted/20 border-b border-border text-left font-semibold text-sm text-foreground"
+          className="w-full px-6 py-4 flex items-center justify-between bg-muted/50 border-b border-border text-left font-semibold text-sm text-foreground"
         >
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">
               {openFamilyInfo ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </span>
-            Thông tin gia đình
+            <h2 className="font-semibold text-foreground">Thông tin gia đình</h2>
           </div>
         </button>
 
@@ -73,7 +65,7 @@ export function FamilyTab({
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">Họ và tên chủ hộ</Label>
               <Input
-                placeholder="Nhập họ và tên"
+                placeholder="Nhập tên"
                 value={formData.headFullName}
                 onChange={(e) => updateField("headFullName", e.target.value)}
                 className="rounded-full"
@@ -93,7 +85,7 @@ export function FamilyTab({
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">Số CCCD/ĐDCN</Label>
               <Input
-                placeholder="Nhập số điện thoại"
+                placeholder="Nhập số CCCD/CMND"
                 value={formData.headNationalId}
                 onChange={(e) => updateField("headNationalId", e.target.value)}
                 className="rounded-full"
@@ -103,7 +95,7 @@ export function FamilyTab({
             <div className="space-y-1.5 md:col-span-2">
               <Label className="text-xs font-medium">Địa chỉ hộ khẩu</Label>
               <Input
-                placeholder="Vd: k73/67 Nút Thành"
+                placeholder="Nhập địa chỉ hộ khẩu"
                 value={formData.householdAddress}
                 onChange={(e) => updateField("householdAddress", e.target.value)}
                 className="rounded-full"
@@ -134,8 +126,8 @@ export function FamilyTab({
       </div>
 
       {/* ── 2. Thành viên gia đình ────────────────────────────────────────── */}
-      <div className="border border-border rounded-xl bg-card overflow-hidden">
-        <div className="px-6 py-4 flex items-center justify-between bg-muted/20 border-b border-border">
+      <div className="bg-background border border-border rounded-xl overflow-hidden shadow-none">
+        <div className="px-6 py-4 flex items-center justify-between bg-muted/50 border-b border-border">
           <button
             type="button"
             onClick={() => setOpenMembers(!openMembers)}
@@ -144,7 +136,7 @@ export function FamilyTab({
             <span className="text-muted-foreground">
               {openMembers ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </span>
-            Thành viên gia đình
+            <h2 className="font-semibold text-foreground">Thành viên gia đình</h2>
           </button>
           <Button
             type="button"
@@ -158,7 +150,7 @@ export function FamilyTab({
         </div>
 
         {openMembers && (
-          <div className="p-6 overflow-x-auto">
+          <div className="p-6">
             {formData.familyMembers.length === 0 ? (
               <div className="text-center py-6">
                 <p className="text-xs text-muted-foreground italic mb-2">Chưa có thành viên gia đình nào được thêm</p>
@@ -173,110 +165,112 @@ export function FamilyTab({
                 </Button>
               </div>
             ) : (
-              <Table className="min-w-[800px]">
-                <TableHeader className="bg-muted/40">
-                  <TableRow>
-                    <TableHead className="text-xs">CMND/CCCD/Hộ chiếu</TableHead>
-                    <TableHead className="text-xs w-28">Giới tính</TableHead>
-                    <TableHead className="text-xs w-36">Ngày sinh</TableHead>
-                    <TableHead className="text-xs w-28">Quốc tịch</TableHead>
-                    <TableHead className="text-xs w-28">Dân tộc</TableHead>
-                    <TableHead className="text-xs">Quan hệ</TableHead>
-                    <TableHead className="text-xs">Địa chỉ khai sinh</TableHead>
-                    <TableHead className="text-xs w-24 text-center">Người phụ thuộc</TableHead>
-                    <TableHead className="w-10"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {formData.familyMembers.map((member) => (
-                    <TableRow key={member.id}>
-                      <TableCell className="p-2">
+              <div className="space-y-4">
+                {formData.familyMembers.map((member, idx) => (
+                  <div
+                    key={member.id}
+                    className="p-4 border border-border/70 rounded-xl bg-card/40 space-y-3 relative"
+                  >
+                    <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                      <span className="text-xs font-mono font-semibold text-muted-foreground">
+                        #{idx + 1}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFamilyMember(member.id)}
+                        className="h-7 px-2 text-destructive hover:bg-destructive/10 gap-1 text-xs"
+                      >
+                        <Trash2 size={13} /> Xóa
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-medium text-muted-foreground">Mối quan hệ</Label>
                         <Input
-                          placeholder="Vui lòng nhập..."
+                          placeholder="Vd: Bố, Mẹ, Vợ..."
+                          value={member.relationship}
+                          onChange={(e) => updateFamilyMember(member.id, "relationship", e.target.value)}
+                          className="rounded-full text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-medium text-muted-foreground">Số CCCD/CMND</Label>
+                        <Input
+                          placeholder="Nhập số CCCD"
                           value={member.nationalId}
                           onChange={(e) => updateFamilyMember(member.id, "nationalId", e.target.value)}
                           className="rounded-full text-xs"
                         />
-                      </TableCell>
-                      <TableCell className="p-2">
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-medium text-muted-foreground">Giới tính</Label>
                         <Select
                           value={member.gender}
                           onValueChange={(val) => updateFamilyMember(member.id, "gender", val)}
                         >
-                          <SelectTrigger className="rounded-full text-xs h-8">
-                            <SelectValue placeholder="Chọn" />
+                          <SelectTrigger className="rounded-full text-xs">
+                            <SelectValue placeholder="Chọn giới tính" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="male">Nam</SelectItem>
                             <SelectItem value="female">Nữ</SelectItem>
                           </SelectContent>
                         </Select>
-                      </TableCell>
-                      <TableCell className="p-2">
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-medium text-muted-foreground">Ngày sinh</Label>
                         <Input
                           type="date"
                           value={member.dateOfBirth}
                           onChange={(e) => updateFamilyMember(member.id, "dateOfBirth", e.target.value)}
-                          className="rounded-full text-xs h-8"
+                          className="rounded-full text-xs"
                         />
-                      </TableCell>
-                      <TableCell className="p-2">
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-medium text-muted-foreground">Quốc tịch</Label>
                         <Input
                           placeholder="Việt Nam"
                           value={member.nationality}
                           onChange={(e) => updateFamilyMember(member.id, "nationality", e.target.value)}
                           className="rounded-full text-xs"
                         />
-                      </TableCell>
-                      <TableCell className="p-2">
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-medium text-muted-foreground">Dân tộc</Label>
                         <Input
                           placeholder="Kinh"
                           value={member.ethnicity}
                           onChange={(e) => updateFamilyMember(member.id, "ethnicity", e.target.value)}
                           className="rounded-full text-xs"
                         />
-                      </TableCell>
-                      <TableCell className="p-2">
+                      </div>
+                      <div className="space-y-1 sm:col-span-2">
+                        <Label className="text-[11px] font-medium text-muted-foreground">Địa chỉ khai sinh</Label>
                         <Input
-                          placeholder="Nhập mô tả quan hệ..."
-                          value={member.relationship}
-                          onChange={(e) => updateFamilyMember(member.id, "relationship", e.target.value)}
-                          className="rounded-full text-xs"
-                        />
-                      </TableCell>
-                      <TableCell className="p-2">
-                        <Input
-                          placeholder="Nhập địa chỉ..."
+                          placeholder="Nhập địa chỉ khai sinh"
                           value={member.birthAddress}
                           onChange={(e) => updateFamilyMember(member.id, "birthAddress", e.target.value)}
                           className="rounded-full text-xs"
                         />
-                      </TableCell>
-                      <TableCell className="p-2 text-center">
+                      </div>
+                      <div className="sm:col-span-4 flex items-center gap-2 pt-1">
                         <input
                           type="checkbox"
+                          id={`dependent-${member.id}`}
                           checked={member.isDependent}
-                          onChange={(e) =>
-                            updateFamilyMember(member.id, "isDependent", e.target.checked)
-                          }
+                          onChange={(e) => updateFamilyMember(member.id, "isDependent", e.target.checked)}
                           className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
                         />
-                      </TableCell>
-                      <TableCell className="p-2 text-right">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeFamilyMember(member.id)}
-                          className="h-8 w-8 text-destructive"
-                        >
-                          <Trash2 size={14} />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                        <Label htmlFor={`dependent-${member.id}`} className="text-xs cursor-pointer font-medium">
+                          Là người phụ thuộc
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         )}

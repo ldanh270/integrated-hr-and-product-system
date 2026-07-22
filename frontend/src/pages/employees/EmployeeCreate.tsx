@@ -1,3 +1,4 @@
+import { EntityFormPage } from "@/components/common"
 import { BioTab } from "@/components/features/employees/wizard/BioTab"
 import { FamilyTab } from "@/components/features/employees/wizard/FamilyTab"
 import { JobTab } from "@/components/features/employees/wizard/JobTab"
@@ -17,7 +18,7 @@ import { HelpCircle } from "lucide-react"
 export default function EmployeeCreatePage() {
   const {
     activeTab,
-    setActiveTab,
+    moveToTab,
     formData,
     updateField,
 
@@ -38,31 +39,27 @@ export default function EmployeeCreatePage() {
     handleNextTab,
     handleFinalSubmit,
     isSubmitting,
+    hasAttemptedSubmit,
   } = useEmployeeCreateWizard()
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-4rem)] bg-background">
-      {/* Header Breadcrumb */}
-      <div className="px-8 py-4 border-b border-border bg-card/40 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="cursor-pointer hover:text-foreground" onClick={() => routerNavigate("/hrm/employees")}>
-            Hồ sơ nhân sự
-          </span>
-          <span>&gt;</span>
-          <span className="font-medium text-foreground">Tạo mới hồ sơ nhân sự</span>
-        </div>
-      </div>
-
-      {/* Main Container */}
-      <div className="flex-1 p-8 max-w-7xl w-full mx-auto space-y-6">
+    <EntityFormPage
+      title="Tạo mới hồ sơ nhân sự"
+      onBack={() => routerNavigate("/hrm/employees")}
+      onSubmit={handleNextTab}
+      isPending={isSubmitting}
+      submitLabel={activeTab === "family" ? "Lưu" : "Tiếp tục"}
+      cancelLabel="Huỷ bỏ"
+    >
+      <div className="space-y-6">
         {/* Top Tab Bar Navigation */}
-        <div className="border border-border rounded-xl bg-card overflow-hidden p-1 flex items-center gap-1 shadow-sm">
+        <div className="border border-border rounded-xl bg-card overflow-hidden p-1 flex items-center gap-1 shadow-none">
           <button
             type="button"
-            onClick={() => setActiveTab("bio")}
-            className={`flex-1 py-3 px-6 text-sm font-medium rounded-lg transition-all text-center ${
+            onClick={() => moveToTab("bio")}
+            className={`flex-1 py-2.5 px-5 text-sm font-medium rounded-lg transition-all text-center ${
               activeTab === "bio"
-                ? "bg-primary text-primary-foreground shadow-sm font-semibold"
+                ? "bg-primary text-primary-foreground shadow-none font-semibold"
                 : "text-muted-foreground hover:bg-muted/50"
             }`}
           >
@@ -70,10 +67,10 @@ export default function EmployeeCreatePage() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab("job")}
-            className={`flex-1 py-3 px-6 text-sm font-medium rounded-lg transition-all text-center ${
+            onClick={() => moveToTab("job")}
+            className={`flex-1 py-2.5 px-5 text-sm font-medium rounded-lg transition-all text-center ${
               activeTab === "job"
-                ? "bg-primary text-primary-foreground shadow-sm font-semibold"
+                ? "bg-primary text-primary-foreground shadow-none font-semibold"
                 : "text-muted-foreground hover:bg-muted/50"
             }`}
           >
@@ -81,10 +78,10 @@ export default function EmployeeCreatePage() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab("family")}
-            className={`flex-1 py-3 px-6 text-sm font-medium rounded-lg transition-all text-center ${
+            onClick={() => moveToTab("family")}
+            className={`flex-1 py-2.5 px-5 text-sm font-medium rounded-lg transition-all text-center ${
               activeTab === "family"
-                ? "bg-primary text-primary-foreground shadow-sm font-semibold"
+                ? "bg-primary text-primary-foreground shadow-none font-semibold"
                 : "text-muted-foreground hover:bg-muted/50"
             }`}
           >
@@ -103,10 +100,17 @@ export default function EmployeeCreatePage() {
             addExperience={addExperience}
             updateExperience={updateExperience}
             removeExperience={removeExperience}
+            hasAttemptedSubmit={hasAttemptedSubmit}
           />
         )}
 
-        {activeTab === "job" && <JobTab formData={formData} updateField={updateField} />}
+        {activeTab === "job" && (
+          <JobTab
+            formData={formData}
+            updateField={updateField}
+            hasAttemptedSubmit={hasAttemptedSubmit}
+          />
+        )}
 
         {activeTab === "family" && (
           <FamilyTab
@@ -117,25 +121,6 @@ export default function EmployeeCreatePage() {
             removeFamilyMember={removeFamilyMember}
           />
         )}
-      </div>
-
-      {/* Bottom Sticky Action Bar */}
-      <div className="sticky bottom-0 border-t border-border bg-card/90 backdrop-blur px-8 py-4 flex items-center justify-end gap-3 z-10 shadow-md">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => routerNavigate("/hrm/employees")}
-          className="rounded-full px-6"
-        >
-          Huỷ bỏ
-        </Button>
-        <Button
-          type="button"
-          onClick={handleNextTab}
-          className="rounded-full px-6 bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          {activeTab === "family" ? "Lưu" : "Tiếp tục"}
-        </Button>
       </div>
 
       {/* Confirmation Modal */}
@@ -171,6 +156,6 @@ export default function EmployeeCreatePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </EntityFormPage>
   )
 }

@@ -14,8 +14,8 @@ import type {
   WorkScheduleType,
 } from "@/types/employee.types"
 
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
 
 import { useEmployees, useUpdateEmployeeStatus } from "./queries/useEmployeeQuery"
@@ -30,20 +30,52 @@ import { useUnlockAccount } from "@/hooks/security/queries/use-security-query"
 export const useEmployeeMaster = () => {
   const confirm = useConfirm()
 
-  // Query parameters for fetching the paginated employee list
-  const [query, setQuery] = useState<EmployeeListQuery>({
-    page: 1,
-    limit: SYSTEM_CONFIG.PAGINATION.SMALL_LIMIT,
-  })
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  // The active filter tab (all, full-time, part-time, intern, contractor, terminated, locked)
-  const [activeTab, setActiveTab] = useState<
-    | "all"
-    | EmployeeType
-    | typeof EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME
-    | typeof EMPLOYEE_STATUS.TERMINATED
-    | "locked"
-  >("all")
+  const page = Number(searchParams.get("page")) || 1
+  const limit = Number(searchParams.get("limit")) || SYSTEM_CONFIG.PAGINATION.SMALL_LIMIT
+  const search = searchParams.get("search") || ""
+  const activeTab = (searchParams.get("tab") || "all") as any
+
+  const query: EmployeeListQuery = {
+    page,
+    limit,
+    search: search || undefined,
+  }
+
+  if (activeTab === "locked") {
+    query.status = "locked" as any
+  } else if (activeTab === "terminated") {
+    query.status = EMPLOYEE_STATUS.TERMINATED
+  } else if (activeTab === EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME) {
+    query.type = "part_time" as EmployeeType
+  } else if (activeTab !== "all") {
+    query.type = activeTab as EmployeeType
+  }
+
+  const setQuery = (
+    updater: EmployeeListQuery | ((prev: EmployeeListQuery) => EmployeeListQuery)
+  ) => {
+    const params = new URLSearchParams(searchParams)
+    const prevQuery: EmployeeListQuery = {
+      page,
+      limit,
+      search,
+    }
+    const nextQuery = typeof updater === "function" ? updater(prevQuery) : updater
+    
+    if (nextQuery.page) params.set("page", nextQuery.page.toString())
+    if (nextQuery.limit) params.set("limit", nextQuery.limit.toString())
+    if (nextQuery.search !== undefined) {
+      if (nextQuery.search) {
+        params.set("search", nextQuery.search)
+      } else {
+        params.delete("search")
+      }
+    }
+    setSearchParams(params)
+  }
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [editEmployee, setEditEmployee] = useState<Employee | null>(null)
   const [viewingEmployeeId, setViewingEmployeeId] = useState<string | null>(null)
@@ -67,55 +99,36 @@ export const useEmployeeMaster = () => {
    * @param e Change event from the text input.
    */
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery((prev) => ({ ...prev, search: e.target.value, page: 1 }))
+    const val = e.target.value
+    const params = new URLSearchParams(searchParams)
+    if (val) {
+      params.set("search", val)
+    } else {
+      params.delete("search")
+    }
+    params.set("page", "1")
+    setSearchParams(params)
   }
 
-  /**
-   * Handler for switching tabs (filters) in the employee master dashboard.
-   * Adjusts the query filters accordingly.
-   * @param tab Selected tab identifier.
-   */
   const handleTabChange = (
-    tab:
-      | "all"
-      | EmployeeType
-      | typeof EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME
-      | typeof EMPLOYEE_STATUS.TERMINATED
-      | "locked",
+    tab: "all" | EmployeeType | typeof EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME | typeof EMPLOYEE_STATUS.TERMINATED | "locked"
   ) => {
-    setActiveTab(tab)
-    if (tab === "all") {
-      const newQuery = { ...query, page: 1 }
-      delete newQuery.type
-      delete newQuery.workSchedule
-      delete newQuery.status
-      setQuery(newQuery)
-    } else if (tab === EMPLOYEE_STATUS.TERMINATED) {
-      const newQuery = { ...query, page: 1, status: EMPLOYEE_STATUS.TERMINATED as EmployeeStatus }
-      delete newQuery.type
-      delete newQuery.workSchedule
-      setQuery(newQuery)
-    } else if (tab === EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME) {
-      // Part-time tab filters by workScheduleType, not legacy employeeType=part_time.
-      const newQuery = {
-        ...query,
-        page: 1,
-        workSchedule: WORK_SCHEDULE_TYPE.PART_TIME as WorkScheduleType,
-      }
-      delete newQuery.type
-      delete newQuery.status
-      setQuery(newQuery)
-    } else if (tab === "locked") {
-      const newQuery: EmployeeListQuery = { ...query, page: 1, status: "locked" }
-      delete newQuery.type
-      delete newQuery.workSchedule
-      setQuery(newQuery)
+    const params = new URLSearchParams(searchParams)
+    params.set("tab", tab)
+    params.set("page", "1")
+    setSearchParams(params)
+  }
+
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value
+    const params = new URLSearchParams(searchParams)
+    if (val === "all") {
+      params.delete("status")
     } else {
-      const newQuery = { ...query, page: 1, type: tab }
-      delete newQuery.workSchedule
-      delete newQuery.status
-      setQuery(newQuery)
+      params.set("status", val)
     }
+    params.set("page", "1")
+    setSearchParams(params)
   }
 
   /**
@@ -199,6 +212,7 @@ export const useEmployeeMaster = () => {
     // Handlers
     handleSearch,
     handleTabChange,
+    handleStatusChange,
     handleDelete,
     handleReinstate,
     handleUnlock,

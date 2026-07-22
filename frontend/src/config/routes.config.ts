@@ -10,6 +10,7 @@ export const ROUTES = {
     EMPLOYEES: "/hrm/employees",
     CREATE_EMPLOYEE: "/hrm/employees/create",
     CONTRACTS: "/hrm/contracts",
+    CREATE_CONTRACT: "/hrm/contracts/create",
     INSURANCE: "/hrm/insurance",
     MY_ACTIVITY_LOGS: "/hrm/my-activity-logs",
     LOGIN_HISTORY: "/hrm/login-history",

@@ -44,6 +44,15 @@ export interface PaginatedEmployees {
     limit: number
     totalPages: number
   }
+  stats: {
+    total: number
+    full_time: number
+    part_time: number
+    intern: number
+    contractor: number
+    locked: number
+    terminated: number
+  }
 }
 
 export interface EmployeeListQuery {
