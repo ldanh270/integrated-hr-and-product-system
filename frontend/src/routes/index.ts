@@ -34,6 +34,21 @@ const privateRoutes: RouteConfig[] = [
     layout: MainLayout,
   },
   {
+    path: ROUTES.HRM.CREATE_EMPLOYEE,
+    component: lazy(() => import("@/pages/employees/EmployeeCreate.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: ROUTES.HRM.CONTRACTS,
+    component: lazy(() => import("@/pages/employees/ContractsPage.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: ROUTES.HRM.INSURANCE,
+    component: lazy(() => import("@/pages/employees/InsurancePage.tsx")),
+    layout: MainLayout,
+  },
+  {
     path: ROUTES.HRM.PROFILE,
     component: lazy(() => import("@/pages/Profile.tsx")),
     layout: MainLayout,

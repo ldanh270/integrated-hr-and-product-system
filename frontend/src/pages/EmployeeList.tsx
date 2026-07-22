@@ -1,3 +1,6 @@
+import { ROUTES } from "@/config/routes.config"
+import { routerNavigate } from "@/lib/router-navigator"
+
 import { PageCard, StatusPill } from "@/components/common"
 import { EmployeeCreateModal } from "@/components/features/employees/EmployeeCreateModal"
 import { EmployeeDetailsDrawer } from "@/components/features/employees/EmployeeDetailsDrawer"
@@ -73,7 +76,6 @@ const TAB_DEFINITIONS: TabDefinition[] = [
     label: getWorkScheduleTypeLabel("part_time"),
   },
   { id: EMPLOYEE_TYPES[3], label: getEmployeeTypeLabel(EMPLOYEE_TYPES[3]) },
-  { id: EMPLOYEE_TYPES[2], label: getEmployeeTypeLabel(EMPLOYEE_TYPES[2]) },
   { id: "locked", label: "Bị khóa", separator: true },
   { id: EMPLOYEE_STATUS.TERMINATED, label: "Đã nghỉ việc", separator: true },
 ]
@@ -142,7 +144,7 @@ export default function EmployeeList() {
           <Button
             size="sm"
             onClick={() => {
-              setIsCreateModalOpen(true)
+              routerNavigate(ROUTES.HRM.CREATE_EMPLOYEE)
             }}
             className="gap-1.5 h-8 px-3 text-xs"
           >
