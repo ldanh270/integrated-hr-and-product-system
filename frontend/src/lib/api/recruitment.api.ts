@@ -232,8 +232,8 @@ export const oauthAccountApi = {
     const response = await apiClient.post<{ data: OAuthAccount }>("/recruitment/oauth-accounts", data)
     return response.data.data
   },
-  delete: async (channel: string): Promise<void> => {
-    await apiClient.delete(`/recruitment/oauth-accounts/${channel}`)
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/recruitment/oauth-accounts/${id}`)
   },
 }
 

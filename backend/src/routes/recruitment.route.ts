@@ -109,7 +109,7 @@ router.delete("/background-checks/:id", requirePermission(PERMISSION_CODE.RECRUI
 
 router.get("/oauth-accounts", requirePermission(PERMISSION_CODE.RECRUITMENT_POSTING_MANAGE), (req, res, next) => controller.listOAuthAccounts(req as AuthRequest, res, next))
 router.post("/oauth-accounts", requirePermission(PERMISSION_CODE.RECRUITMENT_POSTING_MANAGE), (req, res, next) => controller.upsertOAuthAccount(req as AuthRequest, res, next))
-router.delete("/oauth-accounts/:channel", requirePermission(PERMISSION_CODE.RECRUITMENT_POSTING_MANAGE), (req, res, next) => controller.deleteOAuthAccount(req as AuthRequest, res, next))
+router.delete("/oauth-accounts/:id", requirePermission(PERMISSION_CODE.RECRUITMENT_POSTING_MANAGE), (req, res, next) => controller.deleteOAuthAccount(req as AuthRequest, res, next))
 
 // ── Google OAuth Flow ─────────────────────────────────────────────────────
 

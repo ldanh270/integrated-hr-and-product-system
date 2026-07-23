@@ -614,7 +614,7 @@ export class RecruitmentController {
   deleteOAuthAccount = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const userId = req.user!.empId
-      await recruitmentOAuthAccountService.delete(userId, req.params.channel as string)
+      await recruitmentOAuthAccountService.delete(userId, (req.params.id || req.params.channel) as string)
       res.status(204).send()
     } catch (e) { next(e) }
   }

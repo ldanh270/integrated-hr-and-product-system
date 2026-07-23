@@ -2,27 +2,15 @@ import { prisma } from "@/libs/database"
 import { RecruitmentChannel } from "@prisma/client"
 
 export class RecruitmentOAuthAccountRepository {
-  upsert(userId: string, data: {
+  create(userId: string, data: {
     channel: string
     name: string
     clientId: string
     clientSecret: string
     refreshToken: string
   }) {
-    return prisma.recruitmentOAuthAccount.upsert({
-      where: {
-        userId_channel: {
-          userId,
-          channel: data.channel as RecruitmentChannel,
-        },
-      },
-      update: {
-        name: data.name,
-        clientId: data.clientId,
-        clientSecret: data.clientSecret,
-        refreshToken: data.refreshToken,
-      },
-      create: {
+    return prisma.recruitmentOAuthAccount.create({
+      data: {
         userId,
         channel: data.channel as RecruitmentChannel,
         name: data.name,
@@ -33,37 +21,53 @@ export class RecruitmentOAuthAccountRepository {
     })
   }
 
-  findByUserAndChannel(userId: string, channel: string) {
+  upsert(userId: string, data: {
+    channel: string
+    name: string
+    clientId: string
+    clientSecret: string
+    refreshToken: string
+  }) {
+    return this.create(userId, data)
+  }
+
+  findById(id: string) {
     return prisma.recruitmentOAuthAccount.findUnique({
+      where: { id },
+    })
+  }
+
+  findByUserAndChannel(userId: string, channel: string) {
+    return prisma.recruitmentOAuthAccount.findFirst({
       where: {
-        userId_channel: {
-          userId,
-          channel: channel as RecruitmentChannel,
-        },
+        userId,
+        channel: channel as RecruitmentChannel,
       },
+      orderBy: { createdAt: "desc" },
     })
   }
 
   listByUser(userId: string) {
     return prisma.recruitmentOAuthAccount.findMany({
       where: { userId },
-      orderBy: { channel: "asc" },
+      orderBy: { createdAt: "desc" },
     })
   }
 
   list() {
     return prisma.recruitmentOAuthAccount.findMany({
-      orderBy: { channel: "asc" },
+      orderBy: { createdAt: "desc" },
     })
   }
 
-  delete(userId: string, channel: string) {
-    return prisma.recruitmentOAuthAccount.delete({
+  delete(userId: string, idOrChannel: string) {
+    return prisma.recruitmentOAuthAccount.deleteMany({
       where: {
-        userId_channel: {
-          userId,
-          channel: channel as RecruitmentChannel,
-        },
+        userId,
+        OR: [
+          { id: idOrChannel },
+          { channel: idOrChannel as RecruitmentChannel },
+        ],
       },
     })
   }

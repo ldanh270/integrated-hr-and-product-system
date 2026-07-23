@@ -1609,7 +1609,6 @@ model RecruitmentOAuthAccount {
 
   postings JobPosting[]
 
-  @@unique([userId, channel])
   @@index([userId])
   @@index([channel])
 }

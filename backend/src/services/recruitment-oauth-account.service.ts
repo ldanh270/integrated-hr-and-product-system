@@ -34,16 +34,8 @@ export class RecruitmentOAuthAccountService {
     return account
   }
 
-  async delete(userId: string, channel: string) {
-    const account = await recruitmentOAuthAccountRepository.findByUserAndChannel(userId, channel)
-    if (!account) {
-      throw new AppError(
-        `Tài khoản OAuth cho kênh ${channel} không tồn tại`,
-        HttpStatusCode.NOT_FOUND,
-        LAYER,
-      )
-    }
-    return recruitmentOAuthAccountRepository.delete(userId, channel)
+  async delete(userId: string, idOrChannel: string) {
+    return recruitmentOAuthAccountRepository.delete(userId, idOrChannel)
   }
 
   async getCredentials(userId: string, channel: string) {
