@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import { AppPagination, DataTableToolbar, PageCard, PageHeader } from "@/components/common"
 import { StatusPill } from "@/components/common/status-pill"
+import { ViewBackgroundCheckDialog } from "@/components/features/recruitment/view-background-check-dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -137,7 +138,7 @@ function BackgroundCheckRow({ bgc, onStart, onComplete }: BackgroundCheckRowProp
           <span className="text-xs text-muted-foreground">—</span>
         )}
       </TableCell>
-      <TableCell className="px-4 py-3 text-right">
+      <TableCell className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-end gap-1">
           {bgc.status === BGC_STATUS.PENDING && (
             <Tooltip>
@@ -186,7 +187,12 @@ function BackgroundCheckRow({ bgc, onStart, onComplete }: BackgroundCheckRowProp
           )}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full hover:bg-muted"
+                onClick={() => onViewDetails(bgc)}
+              >
                 <Eye className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
@@ -199,10 +205,13 @@ function BackgroundCheckRow({ bgc, onStart, onComplete }: BackgroundCheckRowProp
 }
 
 export default function BackgroundChecksPage() {
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(20)
-  const [keyword, setKeyword] = useState("")
-  const [activeTab, setActiveTab] = useState("all")
+  const [selectedBgc, setSelectedBgc] = useState<BackgroundCheck | null>(null)
+  const [viewBgcOpen, setViewBgcOpen] = useState(false)
+
+  const handleViewDetails = (bgc: BackgroundCheck) => {
+    setSelectedBgc(bgc)
+    setViewBgcOpen(true)
+  }
 
   const { data, isLoading } = useBackgroundChecks({
     status: activeTab !== "all" ? activeTab : undefined,
@@ -347,6 +356,7 @@ export default function BackgroundChecksPage() {
                     bgc={bgc}
                     onStart={() => handleStart(bgc.id)}
                     onComplete={(passed) => handleComplete(bgc.id, passed)}
+                    onViewDetails={handleViewDetails}
                   />
                 ))
               )}
@@ -366,6 +376,12 @@ export default function BackgroundChecksPage() {
           }}
         />
       </PageCard>
+
+      <ViewBackgroundCheckDialog
+        open={viewBgcOpen}
+        onOpenChange={setViewBgcOpen}
+        backgroundCheck={selectedBgc}
+      />
     </div>
   )
 }

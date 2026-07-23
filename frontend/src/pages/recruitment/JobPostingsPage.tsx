@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react"
-import { ExternalLink, FileSpreadsheet, Plus, RefreshCw } from "lucide-react"
+import { ExternalLink, Eye, FileSpreadsheet, Plus, RefreshCw } from "lucide-react"
 import { useSearchParams } from "react-router-dom"
 import { AppPagination, DataTableToolbar, PageCard, PageHeader } from "@/components/common"
 import { StatusPill } from "@/components/common/status-pill"
 import { CreateJobPostingDialog } from "@/components/features/recruitment/create-job-posting-dialog"
+import { ViewJobPostingDialog } from "@/components/features/recruitment/view-job-posting-dialog"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -29,6 +30,13 @@ export default function JobPostingsPage() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [createPostingJdId, setCreatePostingJdId] = useState<string | undefined>(params.get("jdId") ?? undefined)
+  const [selectedPosting, setSelectedPosting] = useState<JobPosting | null>(null)
+  const [viewPostingOpen, setViewPostingOpen] = useState(false)
+
+  const handleViewDetails = (posting: JobPosting) => {
+    setSelectedPosting(posting)
+    setViewPostingOpen(true)
+  }
   const { hasPermission } = usePermission()
   const { data: descriptions = [] } = useJobDescriptions()
   const { data: postings = [], isLoading } = useJobPostings()
@@ -146,7 +154,11 @@ export default function JobPostingsPage() {
                 visible.map((posting) => {
                   const jd = descriptions.find((d) => d.id === posting.jobDescriptionId)
                   return (
-                    <TableRow key={posting.id} className="transition-colors duration-100 hover:bg-muted/25">
+                    <TableRow
+                      key={posting.id}
+                      onClick={() => handleViewDetails(posting)}
+                      className="cursor-pointer transition-colors duration-100 hover:bg-muted/25"
+                    >
                       <TableCell className="px-4 py-3">
                         <p className="font-medium text-foreground">{jd?.title ?? "JD đã bị xóa"}</p>
                         <p className="mt-0.5 text-xs text-muted-foreground">
@@ -168,8 +180,8 @@ export default function JobPostingsPage() {
                       <TableCell className="px-4 py-3">
                         <ConnectorStatus posting={posting} />
                       </TableCell>
-                      <TableCell className="px-4 py-3 text-right">
-                        <PostingActions posting={posting} />
+                      <TableCell className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                        <PostingActions posting={posting} onViewDetails={() => handleViewDetails(posting)} />
                       </TableCell>
                     </TableRow>
                   )
@@ -195,6 +207,12 @@ export default function JobPostingsPage() {
         initialJobDescriptionId={createPostingJdId}
         jobDescriptions={descriptions}
       />
+      <ViewJobPostingDialog
+        open={viewPostingOpen}
+        onOpenChange={setViewPostingOpen}
+        posting={selectedPosting}
+        jobDescription={descriptions.find((d) => d.id === selectedPosting?.jobDescriptionId)}
+      />
     </div>
   )
 }
@@ -211,7 +229,7 @@ function ConnectorStatus({ posting }: { posting: JobPosting }) {
   return <StatusPill label="Chưa cấu hình" variant="warning" />
 }
 
-function PostingActions({ posting }: { posting: JobPosting }) {
+function PostingActions({ posting, onViewDetails }: { posting: JobPosting; onViewDetails: () => void }) {
   const publish = usePublishJobPosting()
   const sync = useSyncJobPosting()
   const { hasPermission } = usePermission()
@@ -222,6 +240,19 @@ function PostingActions({ posting }: { posting: JobPosting }) {
 
   return (
     <div className="flex items-center justify-end gap-1.5">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={onViewDetails}
+            className="rounded-full h-8 w-8 p-0 hover:bg-muted"
+          >
+            <Eye className="h-3.5 w-3.5" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Xem chi tiết bài đăng</TooltipContent>
+      </Tooltip>
       {posting.postingUrl && (
         <Tooltip>
           <TooltipTrigger asChild>

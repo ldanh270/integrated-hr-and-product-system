@@ -1,7 +1,7 @@
-import { useState } from "react"
 import { AppPagination, DataTableToolbar, PageCard, PageHeader } from "@/components/common"
-import { Button } from "@/components/ui/button"
+import { ViewCandidateDialog } from "@/components/features/recruitment/view-candidate-dialog"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -11,20 +11,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { Plus, Eye, Mail, Phone } from "lucide-react"
-import { useCandidates } from "@/hooks/recruitment/use-recruitment-queries"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { RECRUITMENT_SOURCE_LABELS } from "@/config/entities/recruitment.config"
+import { useCandidates } from "@/hooks/recruitment/use-recruitment-queries"
 import type { Candidate } from "@/types/recruitment.types"
+import { Eye, Mail, Phone, Plus } from "lucide-react"
+import { useState } from "react"
 
 export default function CandidatesPage() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [keyword, setKeyword] = useState("")
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
+  const [viewCandidateOpen, setViewCandidateOpen] = useState(false)
 
   const { data, isLoading } = useCandidates({
     keyword: keyword || undefined,
@@ -35,13 +34,18 @@ export default function CandidatesPage() {
   const candidates = data?.data ?? []
   const meta = data?.meta
 
+  const handleViewDetails = (candidate: Candidate) => {
+    setSelectedCandidate(candidate)
+    setViewCandidateOpen(true)
+  }
+
   return (
     <div className="container flex flex-col gap-6 px-3 py-4 sm:px-6 sm:py-6">
       <PageHeader
         title="Ứng viên"
         description="Quản lý danh sách ứng viên và hồ sơ"
         actions={
-          <Button className="rounded-full">
+          <Button className="rounded-full" onClick={() => setViewCandidateOpen(false)}>
             <Plus className="mr-2 h-4 w-4" />
             Thêm ứng viên
           </Button>
@@ -88,7 +92,11 @@ export default function CandidatesPage() {
                 </TableRow>
               ) : (
                 candidates.map((candidate: Candidate) => (
-                  <TableRow key={candidate.id} className="transition-colors duration-100 hover:bg-muted/25">
+                  <TableRow
+                    key={candidate.id}
+                    onClick={() => handleViewDetails(candidate)}
+                    className="cursor-pointer transition-colors duration-100 hover:bg-muted/25"
+                  >
                     <TableCell className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -144,10 +152,15 @@ export default function CandidatesPage() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-right">
+                    <TableCell className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="rounded-full hover:bg-muted"
+                            onClick={() => handleViewDetails(candidate)}
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
@@ -173,7 +186,12 @@ export default function CandidatesPage() {
           }}
         />
       </PageCard>
+
+      <ViewCandidateDialog
+        open={viewCandidateOpen}
+        onOpenChange={setViewCandidateOpen}
+        candidate={selectedCandidate}
+      />
     </div>
   )
 }
-

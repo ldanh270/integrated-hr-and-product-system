@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import { AppPagination, DataTableToolbar, PageCard, PageHeader } from "@/components/common"
 import { StatusPill } from "@/components/common/status-pill"
+import { ViewInterviewDialog } from "@/components/features/recruitment/view-interview-dialog"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -154,6 +155,13 @@ export default function InterviewsPage() {
   const [activeTab, setActiveTab] = useState("all")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
+  const [selectedInterview, setSelectedInterview] = useState<InterviewRound | null>(null)
+  const [viewInterviewOpen, setViewInterviewOpen] = useState(false)
+
+  const handleViewDetails = (interview: InterviewRound) => {
+    setSelectedInterview(interview)
+    setViewInterviewOpen(true)
+  }
 
   const { data: upcomingData, isLoading } = useUpcomingInterviews(14)
   const interviews = upcomingData ?? []
@@ -336,7 +344,11 @@ export default function InterviewsPage() {
                   </TableRow>
                 ) : (
                   paginatedInterviews.map((interview: InterviewRound) => (
-                    <TableRow key={interview.id} className="transition-colors duration-100 hover:bg-muted/25">
+                    <TableRow
+                      key={interview.id}
+                      onClick={() => handleViewDetails(interview)}
+                      className="cursor-pointer transition-colors duration-100 hover:bg-muted/25"
+                    >
                       <TableCell className="px-4 py-3 font-medium text-foreground">
                         {interview.candidateName}
                       </TableCell>
@@ -390,10 +402,15 @@ export default function InterviewsPage() {
                           <StatusPill label="Chờ" variant="warning" />
                         )}
                       </TableCell>
-                      <TableCell className="px-4 py-3 text-right">
+                      <TableCell className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="rounded-full hover:bg-muted"
+                              onClick={() => handleViewDetails(interview)}
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
@@ -420,6 +437,12 @@ export default function InterviewsPage() {
           }}
         />
       </PageCard>
+
+      <ViewInterviewDialog
+        open={viewInterviewOpen}
+        onOpenChange={setViewInterviewOpen}
+        interview={selectedInterview}
+      />
     </div>
   )
 }

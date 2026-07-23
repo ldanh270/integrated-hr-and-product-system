@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import { AppPagination, DataTableToolbar, PageCard, PageHeader } from "@/components/common"
 import { StatusPill } from "@/components/common/status-pill"
+import { ViewOfferDialog } from "@/components/features/recruitment/view-offer-dialog"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -71,6 +72,13 @@ export default function OffersPage() {
   const [pageSize, setPageSize] = useState(20)
   const [keyword, setKeyword] = useState("")
   const [activeTab, setActiveTab] = useState("all")
+  const [selectedOffer, setSelectedOffer] = useState<RecruitmentOffer | null>(null)
+  const [viewOfferOpen, setViewOfferOpen] = useState(false)
+
+  const handleViewDetails = (offer: RecruitmentOffer) => {
+    setSelectedOffer(offer)
+    setViewOfferOpen(true)
+  }
 
   const { data, isLoading } = useOffers({ page, pageSize })
   const sendOffer = useSendOffer()
@@ -207,7 +215,11 @@ export default function OffersPage() {
                 </TableRow>
               ) : (
                 filteredOffers.map((offer: RecruitmentOffer) => (
-                  <TableRow key={offer.id} className="transition-colors duration-100 hover:bg-muted/25">
+                  <TableRow
+                    key={offer.id}
+                    onClick={() => handleViewDetails(offer)}
+                    className="cursor-pointer transition-colors duration-100 hover:bg-muted/25"
+                  >
                     <TableCell className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -252,7 +264,7 @@ export default function OffersPage() {
                         <span className="text-xs text-muted-foreground">Chưa phản hồi</span>
                       )}
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-right">
+                    <TableCell className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
                         {offer.status === "draft" && (
                           <Tooltip>
@@ -271,7 +283,12 @@ export default function OffersPage() {
                         )}
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="rounded-full hover:bg-muted"
+                              onClick={() => handleViewDetails(offer)}
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
@@ -298,6 +315,12 @@ export default function OffersPage() {
           }}
         />
       </PageCard>
+
+      <ViewOfferDialog
+        open={viewOfferOpen}
+        onOpenChange={setViewOfferOpen}
+        offer={selectedOffer}
+      />
     </div>
   )
 }
