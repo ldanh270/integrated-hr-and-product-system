@@ -1,9 +1,18 @@
 "use client"
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { APPLICATION_TYPES } from "@/config/entities/attendance.config"
 import type { ApplicationFormState } from "@/hooks/application/useCreateApplicationForm"
 import type { IApprover } from "@/lib/api/employee.api"
 import type { User } from "@/store/auth-store"
+
+const UNASSIGNED_APPROVER_VALUE = "__unassigned_approver__"
 
 interface Props {
   type: string
@@ -42,21 +51,27 @@ export function CreateApplicationInfoSection({
         </div>
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-foreground">Người duyệt</label>
-          <select
-            value={assignedToId}
-            onChange={(e) => {
-              setAssignedToId(e.target.value)
+          <Select
+            value={assignedToId || UNASSIGNED_APPROVER_VALUE}
+            onValueChange={(value) => {
+              setAssignedToId(value === UNASSIGNED_APPROVER_VALUE ? "" : value)
             }}
-            className="h-11 w-full rounded-full border border-input bg-background px-4 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
           >
-            <option value="">-- Không chỉ định (bất kỳ ai có thẩm quyền) --</option>
-            {approvers.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.fullName}
-                {a.position ? ` — ${a.position}` : ""} ({a.role.replace(/_/g, " ")})
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-11 bg-background px-4">
+              <SelectValue placeholder="Chọn người duyệt" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={UNASSIGNED_APPROVER_VALUE}>
+                Không chỉ định (bất kỳ ai có thẩm quyền)
+              </SelectItem>
+              {approvers.map((a) => (
+                <SelectItem key={a.id} value={a.id}>
+                  {a.fullName}
+                  {a.position ? ` — ${a.position}` : ""} ({a.role.replace(/_/g, " ")})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {type === APPLICATION_TYPES.RESIGNATION.LABEL && form && set && (

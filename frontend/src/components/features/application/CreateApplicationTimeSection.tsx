@@ -3,6 +3,13 @@
 import { LEAVE_TYPE_OPTIONS } from "@/components/attendance/attendance-ui.meta"
 import { AddRegimeCategoryDialog } from "@/components/features/application/add-regime-category-dialog"
 import { FileUploader } from "@/components/ui/file-uploader"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { APPLICATION_TYPES } from "@/config/entities/attendance.config"
 import type { ApplicationFormState } from "@/hooks/application/useCreateApplicationForm"
 import { useRegimeCategories } from "@/hooks/attendance/use-regime-categories"
@@ -33,6 +40,10 @@ interface IEmployeeShiftOption {
     endTime: number
   }
 }
+
+const EMPTY_SHIFT_VALUE = "__empty_shift__"
+const EMPTY_REGIME_CATEGORY_VALUE = "__empty_regime_category__"
+const EMPTY_EMPLOYEE_VALUE = "__empty_employee__"
 
 /** Renders type-specific scheduling and evidence fields for an application item. */
 export function CreateApplicationTimeSection({
@@ -179,19 +190,23 @@ export function CreateApplicationTimeSection({
                 </div>
                 <div className="grid grid-cols-[200px_350px_1fr]">
                   <div className="p-3 border-r border-border">
-                    <select
+                    <Select
                       value={form.leaveType}
-                      onChange={(e) => {
-                        set("leaveType", e.target.value)
+                      onValueChange={(value) => {
+                        set("leaveType", value)
                       }}
-                      className="w-full h-9 px-3 text-[13px] border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
                     >
-                      {LEAVE_TYPE_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="h-9 rounded-full bg-background px-3 text-[13px]">
+                        <SelectValue placeholder="Chọn kiểu nghỉ" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LEAVE_TYPE_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>
+                            {o.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="p-3 border-r border-border flex flex-col gap-1 justify-center">
                     <div className="flex gap-2 items-center">
@@ -347,22 +362,26 @@ export function CreateApplicationTimeSection({
                 <label className="text-xs font-medium text-foreground">
                   {type === APPLICATION_TYPES.SHIFT_SWAP.LABEL ? "Ca của bạn" : "Ca làm việc"}
                 </label>
-                <select
-                  value={form.employeeShiftId}
-                  onChange={(e) => {
-                    set("employeeShiftId", e.target.value)
+                <Select
+                  value={form.employeeShiftId || EMPTY_SHIFT_VALUE}
+                  onValueChange={(value) => {
+                    set("employeeShiftId", value === EMPTY_SHIFT_VALUE ? "" : value)
                   }}
-                  className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 >
-                  <option value="">-- Chọn ca làm việc --</option>
-                  {shifts.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.shift
-                        ? `${s.shift.name} (${formatTime(s.shift.startTime)} - ${formatTime(s.shift.endTime)})`
-                        : "Không xác định"}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-9 rounded-full bg-background px-3">
+                    <SelectValue placeholder="Chọn ca làm việc" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={EMPTY_SHIFT_VALUE}>Chọn ca làm việc</SelectItem>
+                    {shifts.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.shift
+                          ? `${s.shift.name} (${formatTime(s.shift.startTime)} - ${formatTime(s.shift.endTime)})`
+                          : "Không xác định"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
 
@@ -400,16 +419,20 @@ export function CreateApplicationTimeSection({
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-foreground">Loại</label>
-                  <select
+                  <Select
                     value={form.isLate ? "true" : "false"}
-                    onChange={(e) => {
-                      set("isLate", e.target.value === "true")
+                    onValueChange={(value) => {
+                      set("isLate", value === "true")
                     }}
-                    className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                   >
-                    <option value="true">Đi muộn</option>
-                    <option value="false">Về sớm</option>
-                  </select>
+                    <SelectTrigger className="h-9 rounded-full bg-background px-3">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true">Đi muộn</SelectItem>
+                      <SelectItem value="false">Về sớm</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </>
             )}
@@ -419,25 +442,32 @@ export function CreateApplicationTimeSection({
                 <div className="space-y-1.5 col-span-2">
                   <label className="text-xs font-medium text-foreground">Loại chế độ</label>
                   <div className="flex gap-2">
-                    <select
-                      value={form.regimeCategoryId}
-                      onChange={(e) => {
-                        const cat = categories.find((category) => category.id === e.target.value)
-                        set("regimeCategoryId", e.target.value)
+                    <Select
+                      value={form.regimeCategoryId || EMPTY_REGIME_CATEGORY_VALUE}
+                      onValueChange={(value) => {
+                        const nextValue = value === EMPTY_REGIME_CATEGORY_VALUE ? "" : value
+                        const cat = categories.find((category) => category.id === nextValue)
+                        set("regimeCategoryId", nextValue)
                         if (cat) {
                           set("regimeLateMinutes", cat.maxLateMinutes)
                           set("regimeEarlyMinutes", cat.maxEarlyMinutes)
                         }
                       }}
-                      className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                     >
-                      <option value="">-- Chọn loại chế độ --</option>
-                      {categories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="h-9 rounded-full bg-background px-3">
+                        <SelectValue placeholder="Chọn loại chế độ" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={EMPTY_REGIME_CATEGORY_VALUE}>
+                          Chọn loại chế độ
+                        </SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <button
                       type="button"
                       onClick={() => {
@@ -548,49 +578,57 @@ export function CreateApplicationTimeSection({
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-foreground">Ca của đồng nghiệp</label>
-                  <select
-                    value={form.swapWithShiftId}
-                    onChange={(e) => {
-                      set("swapWithShiftId", e.target.value)
+                  <Select
+                    value={form.swapWithShiftId || EMPTY_SHIFT_VALUE}
+                    onValueChange={(value) => {
+                      set("swapWithShiftId", value === EMPTY_SHIFT_VALUE ? "" : value)
                     }}
-                    className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                   >
-                    <option value="">-- Chọn ca làm việc --</option>
-                    {partnerShifts.length > 0 ? (
-                      partnerShifts.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.shift?.name ?? s.name} (
-                          {formatTime(s.shift?.startTime ?? s.startTime ?? 0)} -{" "}
-                          {formatTime(s.shift?.endTime ?? s.endTime ?? 0)})
-                        </option>
-                      ))
-                    ) : form.swapWithDate && form.swapWithEmployeeId ? (
-                      <option disabled value="">
-                        Không có ca trong ngày này
-                      </option>
-                    ) : (
-                      <option disabled value="">
-                        Chọn ngày và nhân sự trước
-                      </option>
-                    )}
-                  </select>
+                    <SelectTrigger className="h-9 rounded-full bg-background px-3">
+                      <SelectValue placeholder="Chọn ca làm việc" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={EMPTY_SHIFT_VALUE}>Chọn ca làm việc</SelectItem>
+                      {partnerShifts.length > 0 ? (
+                        partnerShifts.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.shift?.name ?? s.name} (
+                            {formatTime(s.shift?.startTime ?? s.startTime ?? 0)} -{" "}
+                            {formatTime(s.shift?.endTime ?? s.endTime ?? 0)})
+                          </SelectItem>
+                        ))
+                      ) : form.swapWithDate && form.swapWithEmployeeId ? (
+                        <SelectItem disabled value="no_partner_shift">
+                          Không có ca trong ngày này
+                        </SelectItem>
+                      ) : (
+                        <SelectItem disabled value="partner_shift_requires_context">
+                          Chọn ngày và nhân sự trước
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-foreground">Nhân sự đổi ca</label>
-                  <select
-                    value={form.swapWithEmployeeId}
-                    onChange={(e) => {
-                      set("swapWithEmployeeId", e.target.value)
+                  <Select
+                    value={form.swapWithEmployeeId || EMPTY_EMPLOYEE_VALUE}
+                    onValueChange={(value) => {
+                      set("swapWithEmployeeId", value === EMPTY_EMPLOYEE_VALUE ? "" : value)
                     }}
-                    className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                   >
-                    <option value="">-- Chọn nhân sự --</option>
-                    {employees.map((emp) => (
-                      <option key={emp.id} value={emp.id}>
-                        {emp.fullName} ({emp.username})
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="h-9 rounded-full bg-background px-3">
+                      <SelectValue placeholder="Chọn nhân sự" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={EMPTY_EMPLOYEE_VALUE}>Chọn nhân sự</SelectItem>
+                      {employees.map((emp) => (
+                        <SelectItem key={emp.id} value={emp.id}>
+                          {emp.fullName} ({emp.username})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </>
             )}
