@@ -13,7 +13,6 @@ export class RecruitmentApplicationRepository {
     return this.db.recruitmentApplication.create({
       data: {
         requisitionId: data.requisitionId,
-        jobDescriptionId: data.jobDescriptionId,
         postingId: data.postingId,
         candidateId: data.candidateId,
         source: data.source,

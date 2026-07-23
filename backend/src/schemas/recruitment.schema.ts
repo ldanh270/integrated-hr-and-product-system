@@ -73,7 +73,9 @@ export const googleFormFieldSchema = z.object({
 })
 
 export const createJobPostingSchema = z.object({
-  jobDescriptionId: z.string().cuid(),
+  requisitionId: z.string().cuid(),
+  channel: z.enum(RECRUITMENT_CHANNELS).default("google_form"),
+  oauthAccountId: z.string().cuid().optional().nullable(),
   fields: z.array(googleFormFieldSchema).min(2).max(30),
 }).superRefine(({ fields }, context) => {
   const keys = fields.map((field) => field.key)
@@ -98,7 +100,7 @@ export const updateJobPostingSchema = z.object({
 })
 
 export const listJobPostingsQuerySchema = z.object({
-  jobDescriptionId: z.string().cuid().optional(),
+  requisitionId: z.string().cuid().optional(),
   channel: z.enum(RECRUITMENT_CHANNELS).optional(),
   status: z.enum(POSTING_STATUSES).optional(),
   page: z.coerce.number().int().positive().default(1),
@@ -117,7 +119,7 @@ export const intakeRowSchema = z.object({
 })
 
 export const importRecruitmentIntakeSchema = z.object({
-  jobDescriptionId: z.string().cuid(),
+  requisitionId: z.string().cuid(),
   postingId: z.string().cuid().optional(),
   source: z.enum(RECRUITMENT_SOURCES),
   rows: z.array(intakeRowSchema).min(1).max(1000),

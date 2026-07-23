@@ -1,11 +1,9 @@
 import { prisma } from "@/libs/database"
 import { Prisma, type PostingStatus, type PrismaClient, type RecruitmentChannel } from "@prisma/client"
-import type {
-  UpdateJobPostingInput,
-} from "@/schemas/recruitment.schema"
+import type { UpdateJobPostingInput } from "@/schemas/recruitment.schema"
 
 export interface ListJobPostingsQuery {
-  jobDescriptionId?: string
+  requisitionId?: string
   channel?: RecruitmentChannel
   status?: PostingStatus
   page: number
@@ -31,9 +29,9 @@ export class JobPostingRepository {
   }
 
   async list(query: ListJobPostingsQuery) {
-    const { page, pageSize, jobDescriptionId, channel, status } = query
+    const { page, pageSize, requisitionId, channel, status } = query
     const where: Prisma.JobPostingWhereInput = {
-      ...(jobDescriptionId ? { jobDescriptionId } : {}),
+      ...(requisitionId ? { requisitionId } : {}),
       ...(channel ? { channel } : {}),
       ...(status ? { status } : {}),
     }
@@ -80,6 +78,14 @@ export class JobPostingRepository {
     })
   }
 
+  storeConnectorOAuthAccountId(id: string, oauthAccountId: string) {
+    return this.db.jobPosting.update({
+      where: { id },
+      data: { oauthAccountId },
+      include: this.relations,
+    })
+  }
+
   markConnectorError(id: string) {
     return this.db.jobPosting.update({
       where: { id },
@@ -97,9 +103,17 @@ export class JobPostingRepository {
   }
 
   private readonly relations = {
-    jobDescription: {
-      include: {
-        requisition: { select: { id: true, code: true, title: true, status: true } },
+    requisition: {
+      select: {
+        id: true,
+        code: true,
+        title: true,
+        status: true,
+        department: true,
+        summary: true,
+        responsibilities: true,
+        requirements: true,
+        benefits: true,
       },
     },
     oauthAccount: true,

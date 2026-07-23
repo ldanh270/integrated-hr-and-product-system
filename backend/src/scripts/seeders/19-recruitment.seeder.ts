@@ -148,62 +148,10 @@ export class RecruitmentSeeder implements ISeeder {
     const qaReq = createdReqs.find((r) => r.code === "REQ-2026-002")!
     const frontendReq = createdReqs.find((r) => r.code === "REQ-2026-005")!
 
-    // 2. Create Job Descriptions for Approved Requisitions
-    const jdsToCreate = [
-      {
-        requisitionId: nodejsReq.id,
-        title: "Senior NodeJS Developer",
-        summary: "We are looking for a Senior NodeJS Developer to design and build scalable microservices.",
-        responsibilities: "Write clean TS code; Design high-performance DB queries; Mentor junior devs.",
-        requirements: "5+ years backend dev; Extensive experience with Express/Fastify/NestJS; Strong SQL skills.",
-        benefits: "Competitive salary; 13th month bonus; Healthcare package.",
-        salaryMin: 30000000,
-        salaryMax: 50000000,
-      },
-      {
-        requisitionId: qaReq.id,
-        title: "QA Automation Engineer",
-        summary: "Join us to shape and run our automated testing frameworks using Playwright/Cypress.",
-        responsibilities: "Create test automation scripts; Perform API/UI testing; Integrate testing in CI/CD pipeline.",
-        requirements: "3+ years automated test development; Experience in Playwright or Cypress; Strong JS/TS base.",
-        benefits: "Hybrid working; Free lunch & gym; Annual training budget.",
-        salaryMin: 20000000,
-        salaryMax: 35000000,
-      },
-      {
-        requisitionId: frontendReq.id,
-        title: "Junior Frontend Developer",
-        summary: "Looking for an energetic junior dev interested in building premium UI using React 19.",
-        responsibilities: "Collaborate on feature design; Build beautiful responsive UI components; Refactor code.",
-        requirements: "1+ years experience in React; Good HTML/CSS/JS knowledge; Tailwind CSS experience is a plus.",
-        benefits: "Intensive training; High growth opportunities; Fully-equipped workspace.",
-        salaryMin: 15000000,
-        salaryMax: 22000000,
-      },
-    ]
-
-    const createdJds = []
-    for (const jd of jdsToCreate) {
-      const existing = await prisma.jobDescription.findFirst({
-        where: { requisitionId: jd.requisitionId },
-      })
-      if (!existing) {
-        const created = await prisma.jobDescription.create({ data: jd })
-        createdJds.push(created)
-      } else {
-        createdJds.push(existing)
-      }
-    }
-    console.log(`    Seeded ${createdJds.length} Job Descriptions.`)
-
-    const nodejsJd = createdJds.find((j) => j.title.includes("NodeJS"))!
-    const qaJd = createdJds.find((j) => j.title.includes("QA"))!
-    const frontendJd = createdJds.find((j) => j.title.includes("Frontend"))!
-
     // 3. Create Job Postings
     const postingsToCreate = [
       {
-        jobDescriptionId: nodejsJd.id,
+        requisitionId: nodejsReq.id,
         channel: RECRUITMENT_CHANNEL.LINKEDIN,
         source: RECRUITMENT_SOURCE.LINKEDIN,
         sourceCode: "PUB-LN-001",
@@ -211,7 +159,7 @@ export class RecruitmentSeeder implements ISeeder {
         postingUrl: "https://www.linkedin.com/jobs/view/1001",
       },
       {
-        jobDescriptionId: nodejsJd.id,
+        requisitionId: nodejsReq.id,
         channel: RECRUITMENT_CHANNEL.COMPANY_WEBSITE,
         source: RECRUITMENT_SOURCE.COMPANY_WEBSITE,
         sourceCode: "PUB-CW-001",
@@ -219,7 +167,7 @@ export class RecruitmentSeeder implements ISeeder {
         postingUrl: "https://company.com/careers/senior-nodejs",
       },
       {
-        jobDescriptionId: qaJd.id,
+        requisitionId: qaReq.id,
         channel: RECRUITMENT_CHANNEL.FACEBOOK,
         source: RECRUITMENT_SOURCE.FACEBOOK,
         sourceCode: "PUB-FB-002",
@@ -227,7 +175,7 @@ export class RecruitmentSeeder implements ISeeder {
         postingUrl: "https://facebook.com/company/jobs/qa-auto",
       },
       {
-        jobDescriptionId: frontendJd.id,
+        requisitionId: frontendReq.id,
         channel: RECRUITMENT_CHANNEL.LINKEDIN,
         source: RECRUITMENT_SOURCE.LINKEDIN,
         sourceCode: "PUB-LN-003",
@@ -339,7 +287,6 @@ export class RecruitmentSeeder implements ISeeder {
       {
         requisitionId: nodejsReq.id,
         candidateId: linhCandidate.id,
-        jobDescriptionId: nodejsJd.id,
         postingId: nodejsLinkedinPost.id,
         status: RECRUITMENT_APPLICATION_STATUS.INTERVIEWING,
         source: RECRUITMENT_SOURCE.LINKEDIN,
@@ -348,7 +295,6 @@ export class RecruitmentSeeder implements ISeeder {
       {
         requisitionId: qaReq.id,
         candidateId: maiCandidate.id,
-        jobDescriptionId: qaJd.id,
         postingId: qaFacebookPost.id,
         status: RECRUITMENT_APPLICATION_STATUS.HIRED,
         source: RECRUITMENT_SOURCE.FACEBOOK,
@@ -358,7 +304,6 @@ export class RecruitmentSeeder implements ISeeder {
       {
         requisitionId: nodejsReq.id,
         candidateId: namCandidate.id,
-        jobDescriptionId: nodejsJd.id,
         postingId: nodejsLinkedinPost.id,
         status: RECRUITMENT_APPLICATION_STATUS.OFFER_SENT,
         source: RECRUITMENT_SOURCE.LINKEDIN,
@@ -367,7 +312,6 @@ export class RecruitmentSeeder implements ISeeder {
       {
         requisitionId: frontendReq.id,
         candidateId: ducCandidate.id,
-        jobDescriptionId: frontendJd.id,
         postingId: frontendLinkedinPost.id,
         status: RECRUITMENT_APPLICATION_STATUS.NEW,
         source: RECRUITMENT_SOURCE.LINKEDIN,
@@ -376,7 +320,6 @@ export class RecruitmentSeeder implements ISeeder {
       {
         requisitionId: frontendReq.id,
         candidateId: vietCandidate.id,
-        jobDescriptionId: frontendJd.id,
         postingId: frontendLinkedinPost.id,
         status: RECRUITMENT_APPLICATION_STATUS.REJECTED,
         rejectReason: "Lack of commercial React project experience",
@@ -386,7 +329,6 @@ export class RecruitmentSeeder implements ISeeder {
       {
         requisitionId: qaReq.id,
         candidateId: lanCandidate.id,
-        jobDescriptionId: qaJd.id,
         postingId: qaFacebookPost.id,
         status: RECRUITMENT_APPLICATION_STATUS.REVIEWING,
         source: RECRUITMENT_SOURCE.WEBSITE,

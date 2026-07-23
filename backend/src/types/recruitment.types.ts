@@ -16,7 +16,6 @@ import type {
   BackgroundCheck,
   Candidate,
   InterviewRound,
-  JobDescription,
   JobRequisition,
   OfferVersion,
   RecruitmentApplication,
@@ -104,7 +103,6 @@ export type ApplicationStatus =
 
 export interface CreateApplicationInput {
   requisitionId: string
-  jobDescriptionId: string
   postingId?: string
   candidateId: string
   source: RecruitmentSource
@@ -227,15 +225,10 @@ export interface UpdateBackgroundCheckInput {
 // ── Response Types ────────────────────────────────────────────────────────────
 
 export interface JobRequisitionWithRelations extends JobRequisition {
-  jobDescriptions: JobDescription[]
   applications: RecruitmentApplication[]
   requestedBy: { id: string; fullName: string }
   approvedBy?: { id: string; fullName: string } | null
   position?: { id: string; name: string } | null
-}
-
-export interface JobDescriptionWithRelations extends JobDescription {
-  requisition: JobRequisition
 }
 
 export interface CandidateWithRelations extends Candidate {

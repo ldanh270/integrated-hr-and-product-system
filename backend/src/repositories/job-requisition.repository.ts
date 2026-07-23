@@ -49,7 +49,7 @@ export class JobRequisitionRepository {
         approver: { select: { id: true, fullName: true, position: true } },
         approvedBy: { select: { id: true, fullName: true } },
         position: { select: { id: true, name: true } },
-        jobDescriptions: true,
+        postings: true,
         _count: { select: { applications: true } },
       },
     })

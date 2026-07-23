@@ -5,6 +5,7 @@ import {
   type GoogleFormFieldDefinition,
 } from "@/configs/rules/google-form.config"
 import { jobPostingRepository } from "@/repositories/job-posting.repository"
+import { recruitmentOAuthAccountRepository } from "@/repositories/recruitment-oauth-account.repository"
 import { googleFormFieldSchema, intakeRowSchema } from "@/schemas/recruitment.schema"
 import { recruitmentOAuthAccountService } from "@/services/recruitment-oauth-account.service"
 import type { RecruitmentConnector } from "@/services/job-posting.service"
@@ -86,7 +87,7 @@ export class GoogleFormsConnector implements RecruitmentConnector {
       const created = await this.request<GoogleForm>(token, FORMS_API, {
         method: "POST",
         body: JSON.stringify({
-          info: { title: posting.jobDescription.title },
+          info: { title: posting.requisition.title },
         }),
       })
       formId = created.formId
@@ -98,11 +99,11 @@ export class GoogleFormsConnector implements RecruitmentConnector {
 
     const existingIds = new Set(existingItems?.map((item) => item.itemId).filter(Boolean))
     const fields = this.formFields(posting.formFields)
-    const description = this.buildDescription(posting.jobDescription)
+    const description = this.buildDescription(posting.requisition)
     const requests: Array<Record<string, unknown>> = [
       {
         updateFormInfo: {
-          info: { title: posting.jobDescription.title, description },
+          info: { title: posting.requisition.title, description },
           updateMask: "title,description",
         },
       },
@@ -199,7 +200,7 @@ export class GoogleFormsConnector implements RecruitmentConnector {
     return { rows, errors, totalFetched: responses.length }
   }
 
-  private async requireConfig(posting: { oauthAccountId: string | null; oauthAccount?: { clientId: string; clientSecret: string; refreshToken: string } | null }): Promise<GoogleOAuthCredentials> {
+  private async requireConfig(posting: { id?: string; oauthAccountId: string | null; oauthAccount?: { clientId: string; clientSecret: string; refreshToken: string } | null }): Promise<GoogleOAuthCredentials> {
     // Try to use the OAuth account directly linked to the posting first
     if (posting.oauthAccount?.clientId && posting.oauthAccount?.clientSecret && posting.oauthAccount?.refreshToken) {
       return {
@@ -209,8 +210,21 @@ export class GoogleFormsConnector implements RecruitmentConnector {
       }
     }
 
+    // Fallback: search for any active OAuth account linked for google_form channel in database
+    const defaultOAuth = await recruitmentOAuthAccountRepository.findFirstByChannel("google_form")
+    if (defaultOAuth?.clientId && defaultOAuth?.clientSecret && defaultOAuth?.refreshToken) {
+      if (posting.id) {
+        await jobPostingRepository.storeConnectorOAuthAccountId(posting.id, defaultOAuth.id)
+      }
+      return {
+        clientId: defaultOAuth.clientId,
+        clientSecret: defaultOAuth.clientSecret,
+        refreshToken: defaultOAuth.refreshToken,
+      }
+    }
+
     throw new AppError(
-      "Google Form chưa được kết nối với tài khoản OAuth. Vui lòng chọn tài khoản OAuth trước khi xuất bản.",
+      "Google Form chưa được kết nối với tài khoản OAuth. Vui lòng vào trang Kênh tuyển dụng (OAuth) để kết nối trước khi xuất bản.",
       HttpStatusCode.CONFLICT,
       LAYER,
       "CONNECTOR_NOT_CONFIGURED",

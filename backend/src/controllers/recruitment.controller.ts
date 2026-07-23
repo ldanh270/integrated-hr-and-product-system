@@ -8,7 +8,6 @@ import { interviewRoundService } from "@/services/interview-round.service"
 import { scorecardService } from "@/services/scorecard.service"
 import { recruitmentOfferService } from "@/services/recruitment-offer.service"
 import { backgroundCheckService } from "@/services/background-check.service"
-import { jobDescriptionService } from "@/services/job-description.service"
 import { jobPostingService } from "@/services/job-posting.service"
 import { recruitmentIntakeService } from "@/services/recruitment-intake.service"
 import { recruitmentOAuthAccountService } from "@/services/recruitment-oauth-account.service"
@@ -37,9 +36,6 @@ import {
   createBackgroundCheckSchema,
   updateBackgroundCheckSchema,
   listApplicationsQuerySchema,
-  createJobDescriptionSchema,
-  updateJobDescriptionSchema,
-  listJobDescriptionsQuerySchema,
   createJobPostingSchema,
   updateJobPostingSchema,
   listJobPostingsQuerySchema,
@@ -148,34 +144,7 @@ export class RecruitmentController {
     } catch (e) { next(e) }
   }
 
-  // ── Job descriptions, postings and intake ────────────────────────────────
-
-  createJobDescription = async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      const body = this.parseBody(createJobDescriptionSchema, req.body)
-      this.sendCreated(res, await jobDescriptionService.create(body))
-    } catch (e) { next(e) }
-  }
-
-  listJobDescriptions = async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      const query = this.parseQuery(listJobDescriptionsQuerySchema, req.query)
-      this.sendSuccess(res, await jobDescriptionService.list(query))
-    } catch (e) { next(e) }
-  }
-
-  getJobDescription = async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      this.sendSuccess(res, await jobDescriptionService.findById(req.params.id as string))
-    } catch (e) { next(e) }
-  }
-
-  updateJobDescription = async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      const body = this.parseBody(updateJobDescriptionSchema, req.body)
-      this.sendSuccess(res, await jobDescriptionService.update(req.params.id as string, body))
-    } catch (e) { next(e) }
-  }
+  // ── Job postings and intake ────────────────────────────────
 
   createJobPosting = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {

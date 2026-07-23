@@ -6,8 +6,9 @@ import {
 } from "@/configs/entities/recruitment.config"
 import { GOOGLE_FORM_SOURCE_CODE_PREFIX } from "@/configs/rules/google-form.config"
 import { HttpStatusCode } from "@/configs/system/http.config"
-import { jobDescriptionRepository } from "@/repositories/job-description.repository"
+import { jobRequisitionRepository } from "@/repositories/job-requisition.repository"
 import { jobPostingRepository } from "@/repositories/job-posting.repository"
+import { recruitmentOAuthAccountRepository } from "@/repositories/recruitment-oauth-account.repository"
 import type { CreateJobPostingInput, UpdateJobPostingInput } from "@/schemas/recruitment.schema"
 import { AppError } from "@/utils/error.util"
 import { recruitmentIntakeService } from "@/services/recruitment-intake.service"
@@ -26,22 +27,32 @@ export class JobPostingService {
   ) {}
 
   async create(input: CreateJobPostingInput) {
-    const jd = await jobDescriptionRepository.findById(input.jobDescriptionId)
-    if (!jd) throw new AppError("Không tìm thấy JD", HttpStatusCode.NOT_FOUND, LAYER)
-    if (jd.requisition.status !== REQUISITION_STATUS.APPROVED) {
+    const requisition = await jobRequisitionRepository.findById(input.requisitionId)
+    if (!requisition) throw new AppError("Không tìm thấy yêu cầu tuyển dụng", HttpStatusCode.NOT_FOUND, LAYER)
+    if (requisition.status !== REQUISITION_STATUS.APPROVED) {
       throw new AppError(
         "Không thể tạo bài đăng cho yêu cầu chưa được duyệt",
         HttpStatusCode.CONFLICT,
         LAYER,
       )
     }
+
+    const channel = input.channel ?? RECRUITMENT_CHANNEL.GOOGLE_FORM
+    let oauthAccountId = input.oauthAccountId ?? null
+
+    if (!oauthAccountId && channel === RECRUITMENT_CHANNEL.GOOGLE_FORM) {
+      const defaultOAuth = await recruitmentOAuthAccountRepository.findFirstByChannel(RECRUITMENT_CHANNEL.GOOGLE_FORM)
+      oauthAccountId = defaultOAuth?.id ?? null
+    }
+
     const sourceCode = `${GOOGLE_FORM_SOURCE_CODE_PREFIX}_${randomUUID().replaceAll("-", "")}`
     return jobPostingRepository.create({
-      jobDescriptionId: input.jobDescriptionId,
-      channel: RECRUITMENT_CHANNEL.GOOGLE_FORM,
+      requisitionId: input.requisitionId,
+      channel: channel as any,
       source: RECRUITMENT_SOURCE.GOOGLE_FORM,
       sourceCode,
-      formFields: input.fields,
+      formFields: input.fields as any,
+      oauthAccountId,
     })
   }
 
@@ -82,7 +93,7 @@ export class JobPostingService {
     try {
       const result = await connector.sync(id)
       const intake = await recruitmentIntakeService.importConnector({
-        jobDescriptionId: posting.jobDescriptionId,
+        requisitionId: posting.requisitionId,
         postingId: posting.id,
         source: posting.source,
         rows: result.rows,

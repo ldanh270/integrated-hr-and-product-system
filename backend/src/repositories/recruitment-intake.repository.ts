@@ -14,9 +14,8 @@ export interface IntakeRowError {
 }
 
 export class RecruitmentIntakeRepository {
-  async importBatch(
+  async importCandidateBatch(
     input: ImportRecruitmentIntakeInput | ConnectorImportInput,
-    requisitionId: string,
     postingSourceRef?: string | null,
   ) {
     return prisma.$transaction(async (tx) => {
@@ -94,7 +93,7 @@ export class RecruitmentIntakeRepository {
 
         const duplicate = await tx.recruitmentApplication.findFirst({
           where: {
-            requisitionId,
+            requisitionId: input.requisitionId,
             candidateId: candidate.id,
             status: { notIn: [...TERMINAL_APPLICATION_STATUSES] },
           },
@@ -124,9 +123,8 @@ export class RecruitmentIntakeRepository {
 
         const application = await tx.recruitmentApplication.create({
           data: {
-            requisitionId,
+            requisitionId: input.requisitionId,
             candidateId: candidate.id,
-            jobDescriptionId: input.jobDescriptionId,
             postingId: input.postingId,
             source: input.source,
             sourceRef: postingSourceRef ?? row.sourceRef,

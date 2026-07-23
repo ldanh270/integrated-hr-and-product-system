@@ -8,7 +8,6 @@ import type {
 import { canTransitionApplicationStatus } from "@/configs/rules/recruitment.config"
 import { TERMINAL_APPLICATION_STATUSES } from "@/configs/entities/recruitment.config"
 import { jobRequisitionService } from "./job-requisition.service"
-import { jobDescriptionRepository } from "@/repositories/job-description.repository"
 import { jobPostingRepository } from "@/repositories/job-posting.repository"
 import { HttpStatusCode } from "@/configs/system/http.config"
 import { AppError } from "@/utils/error.util"
@@ -27,23 +26,14 @@ export class RecruitmentApplicationService {
       throw new Error("Cannot apply to unapproved requisitions")
     }
 
-    const jd = await jobDescriptionRepository.findById(input.jobDescriptionId)
-    if (!jd || jd.requisitionId !== input.requisitionId) {
-      throw new AppError(
-        "JD không thuộc yêu cầu tuyển dụng đã chọn",
-        HttpStatusCode.BAD_REQUEST,
-        LAYER,
-        "JD_REQUISITION_MISMATCH",
-      )
-    }
     if (input.postingId) {
       const posting = await jobPostingRepository.findById(input.postingId)
-      if (!posting || posting.jobDescriptionId !== input.jobDescriptionId) {
+      if (!posting || posting.requisitionId !== input.requisitionId) {
         throw new AppError(
-          "Bài đăng không thuộc JD đã chọn",
+          "Bài đăng không thuộc Yêu cầu tuyển dụng đã chọn",
           HttpStatusCode.BAD_REQUEST,
           LAYER,
-          "POSTING_JD_MISMATCH",
+          "POSTING_REQUISITION_MISMATCH",
         )
       }
       if (posting.source !== input.source) {

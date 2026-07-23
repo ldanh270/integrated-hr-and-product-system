@@ -25,12 +25,7 @@ router.post("/requisitions/:id/approve", requirePermission(PERMISSION_CODE.RECRU
 router.post("/requisitions/:id/close", requirePermission(PERMISSION_CODE.RECRUITMENT_UPDATE), (req, res, next) => controller.closeRequisition(req as AuthRequest, res, next))
 router.delete("/requisitions/:id", requirePermission(PERMISSION_CODE.RECRUITMENT_DELETE), (req, res, next) => controller.deleteRequisition(req as AuthRequest, res, next))
 
-// ── Job Descriptions & multi-channel postings ─────────────────────────────
-
-router.post("/job-descriptions", requirePermission(PERMISSION_CODE.RECRUITMENT_JD_CREATE), (req, res, next) => controller.createJobDescription(req as AuthRequest, res, next))
-router.get("/job-descriptions", requirePermission(PERMISSION_CODE.RECRUITMENT_JD_READ), (req, res, next) => controller.listJobDescriptions(req as AuthRequest, res, next))
-router.get("/job-descriptions/:id", requirePermission(PERMISSION_CODE.RECRUITMENT_JD_READ), (req, res, next) => controller.getJobDescription(req as AuthRequest, res, next))
-router.patch("/job-descriptions/:id", requirePermission(PERMISSION_CODE.RECRUITMENT_JD_UPDATE), (req, res, next) => controller.updateJobDescription(req as AuthRequest, res, next))
+// ── Job Postings & Intake ─────────────────────────────
 
 router.post("/job-postings", requirePermission(PERMISSION_CODE.RECRUITMENT_POSTING_MANAGE), (req, res, next) => controller.createJobPosting(req as AuthRequest, res, next))
 router.get("/job-postings", requirePermission(PERMISSION_CODE.RECRUITMENT_JD_READ), (req, res, next) => controller.listJobPostings(req as AuthRequest, res, next))

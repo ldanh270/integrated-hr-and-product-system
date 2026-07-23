@@ -1494,6 +1494,12 @@ enum RecruitmentOfferStatus {
   expired
 }
 
+enum IntakeStatus {
+  received
+  processed
+  failed
+}
+
 // ── Models ─────────────────────────────────────────────────────────────────────
 
 // Job Requisition — Hiring request with approval workflow
@@ -1515,6 +1521,11 @@ model JobRequisition {
   targetHireDate  DateTime?           @db.Date
   targetCloseDate DateTime?           @db.Date
 
+  summary          String?  @db.Text
+  responsibilities String?  @db.Text
+  requirements     String?  @db.Text
+  benefits         String?  @db.Text
+
   requestedById   String
   requestedBy     Employee  @relation("RequisitionRequester", fields: [requestedById], references: [id], onDelete: Restrict)
   approverId      String?
@@ -1530,8 +1541,8 @@ model JobRequisition {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  jobDescriptions JobDescription[]
-  applications    RecruitmentApplication[]
+  postings     JobPosting[]
+  applications RecruitmentApplication[]
 
   @@index([status])
   @@index([requestedById])
@@ -1540,34 +1551,11 @@ model JobRequisition {
   @@index([department])
 }
 
-// Job Description — approved content derived from one internal requisition
-model JobDescription {
-  id            String         @id @default(cuid())
-  requisitionId String
-  requisition   JobRequisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
-
-  title            String
-  summary          String?  @db.Text
-  responsibilities String?  @db.Text
-  requirements     String?  @db.Text
-  benefits         String?  @db.Text
-  salaryMin        Decimal? @db.Decimal(15, 2)
-  salaryMax        Decimal? @db.Decimal(15, 2)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  postings     JobPosting[]
-  applications RecruitmentApplication[]
-
-  @@index([requisitionId])
-}
-
-// Job Posting — one channel-specific publication point for a JD
+// Job Posting — one channel-specific publication point for a Requisition
 model JobPosting {
   id               String             @id @default(cuid())
-  jobDescriptionId String
-  jobDescription   JobDescription     @relation(fields: [jobDescriptionId], references: [id], onDelete: Cascade)
+  requisitionId    String
+  requisition      JobRequisition     @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
   channel          RecruitmentChannel
   source           RecruitmentSource
   sourceCode       String             @unique
@@ -1585,13 +1573,33 @@ model JobPosting {
   updatedAt        DateTime           @updatedAt
 
   applications       RecruitmentApplication[]
+  intakeRecords      RecruitmentIntakeRecord[]
   connectorResponses RecruitmentConnectorResponse[]
 
-  @@index([jobDescriptionId])
+  @@index([requisitionId])
   @@index([channel])
   @@index([source])
   @@index([status])
   @@index([oauthAccountId])
+}
+
+// Recruitment Intake Record — Raw provenance data ingested from external forms
+model RecruitmentIntakeRecord {
+  id              String            @id @default(cuid())
+  postingId       String
+  posting         JobPosting        @relation(fields: [postingId], references: [id], onDelete: Cascade)
+  source          RecruitmentSource
+  sourceRef       String            @unique
+  rawPayload      Json
+  processedStatus IntakeStatus      @default(received)
+  errorMessage    String?           @db.Text
+  candidateId     String?
+  applicationId   String?
+
+  createdAt DateTime @default(now())
+
+  @@index([postingId])
+  @@index([processedStatus])
 }
 
 // RecruitmentOAuthAccount — OAuth credentials for posting channels (per user)
@@ -1644,15 +1652,13 @@ model Candidate {
 
 // Recruitment Application — Candidate's application to a requisition
 model RecruitmentApplication {
-  id               String          @id @default(cuid())
-  requisitionId    String
-  requisition      JobRequisition  @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
-  candidateId      String
-  candidate        Candidate       @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  jobDescriptionId String?
-  jobDescription   JobDescription? @relation(fields: [jobDescriptionId], references: [id], onDelete: Restrict)
-  postingId        String?
-  posting          JobPosting?     @relation(fields: [postingId], references: [id], onDelete: Restrict)
+  id            String         @id @default(cuid())
+  requisitionId String
+  requisition   JobRequisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  candidateId   String
+  candidate     Candidate      @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  postingId     String?
+  posting       JobPosting?    @relation(fields: [postingId], references: [id], onDelete: Restrict)
 
   status         RecruitmentApplicationStatus @default(new)
   rejectReason   String?                      @db.Text
@@ -1677,7 +1683,6 @@ model RecruitmentApplication {
   @@index([requisitionId, candidateId])
   @@index([requisitionId])
   @@index([candidateId])
-  @@index([jobDescriptionId])
   @@index([postingId])
   @@index([assignedToId])
   @@index([status])
