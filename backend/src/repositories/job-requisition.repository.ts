@@ -1,12 +1,13 @@
+import { PERMISSION_CODE } from "@/configs/entities/permission.config"
 import { prisma } from "@/libs/database"
-import { Prisma, type PrismaClient, type EmployeeType } from "@prisma/client"
 import type {
   CreateJobRequisitionInput,
-  UpdateJobRequisitionInput,
   ListRequisitionsQuery,
+  UpdateJobRequisitionInput,
 } from "@/types/recruitment.types"
 import { generateRequisitionCode } from "@/types/recruitment.types"
-import { PERMISSION_CODE } from "@/configs/entities/permission.config"
+
+import { type EmployeeType, Prisma, type PrismaClient } from "@prisma/client"
 
 export class JobRequisitionRepository {
   constructor(private readonly db: PrismaClient = prisma) {}
@@ -19,13 +20,22 @@ export class JobRequisitionRepository {
 
     return this.db.jobRequisition.create({
       data: {
-        ...data,
         code: generateRequisitionCode(year, count + 1),
+        title: data.title,
+        department: data.department,
+        positionLevel: data.positionLevel,
+        currency: data.currency,
+        priority: data.priority,
+        reason: data.reason,
         requestedById,
+        approverId: data.approverId,
+        positionId: data.positionId,
         salaryMin: data.salaryMin,
         salaryMax: data.salaryMax,
         headcount: data.headcount ?? 1,
         employmentType: data.employmentType as EmployeeType,
+        targetHireDate: data.targetHireDate ? new Date(data.targetHireDate) : undefined,
+        targetCloseDate: data.targetCloseDate ? new Date(data.targetCloseDate) : undefined,
       },
       select: { id: true },
     })
@@ -90,13 +100,28 @@ export class JobRequisitionRepository {
     if (data.title !== undefined) updateData.title = data.title
     if (data.department !== undefined) updateData.department = data.department
     if (data.positionLevel !== undefined) updateData.positionLevel = data.positionLevel
-    if (data.employmentType !== undefined) updateData.employmentType = data.employmentType as EmployeeType
+    if (data.employmentType !== undefined)
+      updateData.employmentType = data.employmentType as EmployeeType
     if (data.salaryMin !== undefined) updateData.salaryMin = data.salaryMin
     if (data.salaryMax !== undefined) updateData.salaryMax = data.salaryMax
     if (data.headcount !== undefined) updateData.headcount = data.headcount
     if (data.priority !== undefined) updateData.priority = data.priority
-    if (data.targetHiringDate !== undefined) updateData.targetHireDate = new Date(data.targetHiringDate)
-    if (data.positionId !== undefined) updateData.position = data.positionId ? { connect: { id: data.positionId } } : { disconnect: true }
+    if (data.reason !== undefined) updateData.reason = data.reason
+    if (data.targetHireDate !== undefined) {
+      updateData.targetHireDate = data.targetHireDate ? new Date(data.targetHireDate) : null
+    }
+    if (data.targetCloseDate !== undefined) {
+      updateData.targetCloseDate = data.targetCloseDate ? new Date(data.targetCloseDate) : null
+    }
+    if (data.approverId !== undefined) {
+      updateData.approver = data.approverId
+        ? { connect: { id: data.approverId } }
+        : { disconnect: true }
+    }
+    if (data.positionId !== undefined)
+      updateData.position = data.positionId
+        ? { connect: { id: data.positionId } }
+        : { disconnect: true }
 
     return this.db.jobRequisition.update({
       where: { id },

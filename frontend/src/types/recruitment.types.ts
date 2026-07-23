@@ -1,18 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // RECRUITMENT TYPES — Frontend type definitions
 // ═══════════════════════════════════════════════════════════════════════════════
-
 import type {
-  REQUISITION_STATUSES,
-  REQUISITION_PRIORITIES,
-  RECRUITMENT_APPLICATION_STATUSES,
-  RECRUITMENT_SOURCES,
-  INTERVIEW_FORMATS,
-  INTERVIEW_ROUND_STATUSES,
-  INTERVIEW_RESULTS,
   BGC_GROUPS,
   BGC_STATUSES,
+  INTERVIEW_FORMATS,
+  INTERVIEW_RESULTS,
+  INTERVIEW_ROUND_STATUSES,
+  RECRUITMENT_APPLICATION_STATUSES,
   RECRUITMENT_OFFER_STATUSES,
+  RECRUITMENT_SOURCES,
+  REQUISITION_PRIORITIES,
+  REQUISITION_STATUSES,
 } from "@/config/entities/recruitment.config"
 
 // ── Requisition ──────────────────────────────────────────────────────────────
@@ -37,6 +36,7 @@ export interface JobRequisition {
   benefits: string | null
   priority: RequisitionPriority
   status: RequisitionStatus
+  reason: string | null
   requestedById: string
   requestedBy: { id: string; fullName: string } | null
   approverId: string | null
@@ -49,6 +49,7 @@ export interface JobRequisition {
   closedReason: string | null
   filledAt: string | null
   targetHireDate: string | null
+  targetCloseDate: string | null
   createdAt: string
   updatedAt: string
 }

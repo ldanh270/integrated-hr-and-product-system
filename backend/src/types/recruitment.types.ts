@@ -1,28 +1,28 @@
 import type {
-  JobRequisition,
-  JobDescription,
-  Candidate,
-  RecruitmentApplication,
-  InterviewRound,
-  Scorecard,
-  RecruitmentOffer,
-  OfferVersion,
-  BackgroundCheck,
-} from "@prisma/client"
-
-import type {
-  REQUISITION_STATUS,
-  REQUISITION_PRIORITY,
-  POSTING_STATUS,
-  RECRUITMENT_APPLICATION_STATUS,
-  RECRUITMENT_SOURCE,
-  INTERVIEW_FORMAT,
-  INTERVIEW_ROUND_STATUS,
-  INTERVIEW_RESULT,
   BGC_GROUP,
   BGC_STATUS,
+  INTERVIEW_FORMAT,
+  INTERVIEW_RESULT,
+  INTERVIEW_ROUND_STATUS,
+  POSTING_STATUS,
+  RECRUITMENT_APPLICATION_STATUS,
   RECRUITMENT_OFFER_STATUS,
+  RECRUITMENT_SOURCE,
+  REQUISITION_PRIORITY,
+  REQUISITION_STATUS,
 } from "@/configs/entities/recruitment.config"
+
+import type {
+  BackgroundCheck,
+  Candidate,
+  InterviewRound,
+  JobDescription,
+  JobRequisition,
+  OfferVersion,
+  RecruitmentApplication,
+  RecruitmentOffer,
+  Scorecard,
+} from "@prisma/client"
 
 // ── Requisition Types ──────────────────────────────────────────────────────────
 
@@ -40,15 +40,10 @@ export interface CreateJobRequisitionInput {
   headcount?: number
   priority?: RequisitionPriority
   reason?: string
-  targetHiringDate?: string
+  targetHireDate?: string
   targetCloseDate?: string
   positionId?: string
   approverId: string
-}
-
-export interface UpdateJobRequisitionInput extends Partial<Omit<CreateJobRequisitionInput, 'targetHiringDate'>> {
-  status?: RequisitionStatus
-  targetHiringDate?: string
 }
 
 export interface UpdateJobRequisitionInput extends Partial<CreateJobRequisitionInput> {
@@ -75,7 +70,9 @@ export interface CreateJobDescriptionInput {
   salaryMax?: number
 }
 
-export interface UpdateJobDescriptionInput extends Partial<Omit<CreateJobDescriptionInput, "requisitionId">> {}
+export interface UpdateJobDescriptionInput extends Partial<
+  Omit<CreateJobDescriptionInput, "requisitionId">
+> {}
 
 // ── Candidate Types ───────────────────────────────────────────────────────────
 
@@ -102,7 +99,8 @@ export interface UpdateCandidateInput extends Partial<CreateCandidateInput> {
 
 // ── Application Types ────────────────────────────────────────────────────────
 
-export type ApplicationStatus = (typeof RECRUITMENT_APPLICATION_STATUS)[keyof typeof RECRUITMENT_APPLICATION_STATUS]
+export type ApplicationStatus =
+  (typeof RECRUITMENT_APPLICATION_STATUS)[keyof typeof RECRUITMENT_APPLICATION_STATUS]
 
 export interface CreateApplicationInput {
   requisitionId: string
@@ -127,7 +125,8 @@ export interface MoveKanbanInput {
 // ── Interview Types ───────────────────────────────────────────────────────────
 
 export type InterviewFormat = (typeof INTERVIEW_FORMAT)[keyof typeof INTERVIEW_FORMAT]
-export type InterviewRoundStatus = (typeof INTERVIEW_ROUND_STATUS)[keyof typeof INTERVIEW_ROUND_STATUS]
+export type InterviewRoundStatus =
+  (typeof INTERVIEW_ROUND_STATUS)[keyof typeof INTERVIEW_ROUND_STATUS]
 export type InterviewResult = (typeof INTERVIEW_RESULT)[keyof typeof INTERVIEW_RESULT]
 
 export interface CreateInterviewRoundInput {
