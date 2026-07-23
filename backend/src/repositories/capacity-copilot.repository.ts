@@ -26,6 +26,7 @@ export class PrismaCapacityCopilotRepository
     super(prisma)
   }
 
+  /** Distinguishes a missing project (`undefined`) from a project without a deal target (`null`). */
   async getProjectDealTargetPercent(projectId: string): Promise<number | null | undefined> {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
@@ -34,6 +35,7 @@ export class PrismaCapacityCopilotRepository
     return project?.dealTargetPercent
   }
 
+  /** Lists active projects eligible for the scheduled cross-project capacity board. */
   async listProjectsWithDealTarget(): Promise<CapacityProjectRow[]> {
     // Weekly cron/board only forecasts live projects that have a committed deal target.
     const projects = await this.prisma.project.findMany({
@@ -58,6 +60,7 @@ export class PrismaCapacityCopilotRepository
       }))
   }
 
+  /** Limits an availability-triggered refresh to active projects containing that employee. */
   async listProjectsByEmployeeWithDealTarget(employeeId: string): Promise<CapacityProjectRow[]> {
     // Availability update jobs refresh only projects touched by that employee's new free-time slots.
     const members = await this.prisma.projectMember.findMany({
@@ -90,6 +93,7 @@ export class PrismaCapacityCopilotRepository
       }))
   }
 
+  /** Loads active members and resolves their project role with employee-position fallback. */
   async listProjectMembers(projectId: string): Promise<CapacityProjectMemberRow[]> {
     const members = await this.prisma.projectMember.findMany({
       where: { projectId, removedAt: null },
@@ -122,6 +126,7 @@ export class PrismaCapacityCopilotRepository
     }))
   }
 
+  /** Loads submitted/approved free-time slots used to calculate part-time available hours. */
   async listWeeklyAvailabilities(weekStart: Date): Promise<CapacityAvailabilityRow[]> {
     // Submitted rows count as usable forecast input; Admin assignment approval is not required for capacity planning.
     const records = await this.prisma.partTimeWeeklyAvailability.findMany({
@@ -155,6 +160,7 @@ export class PrismaCapacityCopilotRepository
     }))
   }
 
+  /** Aggregates recent completed-task estimates and accepted logged hours for personal velocity. */
   async getEmployeeVelocity(employeeId: string): Promise<CapacityVelocityRow> {
     // Velocity uses completed tasks plus non-rejected spent time; rejected logs are excluded from productivity.
     const tasks = await this.prisma.task.findMany({
@@ -194,6 +200,11 @@ export class PrismaCapacityCopilotRepository
     )
   }
 
+  /**
+   * Builds weekly delivery observations before the forecast week.
+   * Completion percentage uses completed estimated hours divided by the project's total estimate,
+   * while spent hours provide the denominator for historical productivity.
+   */
   async listDeliveryHistory(
     projectId: string,
     beforeWeekStart: Date,

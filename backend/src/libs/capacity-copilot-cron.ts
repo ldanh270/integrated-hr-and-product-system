@@ -9,6 +9,7 @@ import cron from "node-cron"
 
 let lastRunWeekKey: string | null = null
 
+/** Formats a local calendar date without converting it through UTC and shifting the selected week. */
 const formatDateKey = (date: Date): string => {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, "0")
@@ -16,6 +17,7 @@ const formatDateKey = (date: Date): string => {
   return `${year}-${month}-${day}`
 }
 
+/** Normalizes any local date to Monday 00:00 of the same business week. */
 const getWeekStart = (date: Date): Date => {
   const weekStart = new Date(date)
   const day = weekStart.getDay()
@@ -25,6 +27,11 @@ const getWeekStart = (date: Date): Date => {
   return weekStart
 }
 
+/**
+ * Registers the weekly background refresh.
+ * The scheduler polls every minute, but the weekday/time guard performs only one forecast per week
+ * for each server process. Forecasts remain advisory and never assign employees automatically.
+ */
 export const initCapacityCopilotCron = () => {
   // Run every minute to reuse the existing project cron style, then gate by configured weekday/time.
   cron.schedule(CAPACITY_COPILOT_RULES.CRON_POLL_EXPRESSION, async () => {
@@ -40,7 +47,8 @@ export const initCapacityCopilotCron = () => {
 
       const weekStart = getWeekStart(now)
       const weekKey = formatDateKey(weekStart)
-      // Prevent duplicate refreshes if the server clock or cron callback fires more than once that minute.
+      // Process-local idempotency prevents duplicate refreshes when the callback fires twice in one week.
+      // A restart may run it again, which is safe because forecasting does not mutate project staffing.
       if (lastRunWeekKey === weekKey) return
 
       const result = await capacityCopilotService.forecastCapacityBoard({

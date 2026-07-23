@@ -69,9 +69,14 @@ export interface CapacityForecastResult {
   recommendations: string[]
 }
 
+/** Bounds personal velocity so a single abnormal history sample cannot dominate the forecast. */
 export const clampVelocity = (value: number): number =>
   Math.max(CAPACITY_VELOCITY.MIN, Math.min(CAPACITY_VELOCITY.MAX, value))
 
+/**
+ * Calculates delivery velocity as estimated hours divided by accepted spent hours.
+ * Missing history deliberately returns the neutral factor `1`, which is surfaced by confidence.
+ */
 export const calculateVelocity = (estimatedHours: number, spentHours: number): number => {
   if (estimatedHours <= 0 || spentHours <= 0) return CAPACITY_VELOCITY.DEFAULT
   // Velocity > 1 means the employee historically finishes estimated work faster than logged time.
@@ -79,6 +84,11 @@ export const calculateVelocity = (estimatedHours: number, spentHours: number): n
   return clampVelocity(estimatedHours / spentHours)
 }
 
+/**
+ * Main explainable forecast formula:
+ * effective hours = available hours × velocity × skill-match factor;
+ * predicted delivery = total effective hours × historical productivity (% per hour).
+ */
 export const buildCapacityForecast = (
   members: CapacityMemberInput[],
   targetPercent: number,
@@ -153,6 +163,7 @@ export const buildCapacityForecast = (
   }
 }
 
+/** Grades forecast confidence from usable history depth and personal-velocity coverage. */
 const buildConfidenceSignal = (
   history: CapacityForecastResult["history"],
   members: CapacityMemberForecast[],
@@ -193,6 +204,7 @@ const buildConfidenceSignal = (
   return { level: CAPACITY_CONFIDENCE_LEVEL.LOW, reasons }
 }
 
+/** Converts historical completed percentage and logged time into delivery percentage per hour. */
 const calculateProductivityRate = (history: CapacityForecastResult["history"]): number => {
   // Productivity rate converts historical delivery into "% completed per effective hour".
   // If there is no spent-time + done-task history, the UI must show "not enough data" instead of guessing.
@@ -207,6 +219,7 @@ const calculateProductivityRate = (history: CapacityForecastResult["history"]): 
   return totals.completedPercent / totals.spentHours
 }
 
+/** Classifies shortage severity relative to the project's committed target percentage. */
 const getPercentRisk = (percentGap: number, targetPercent: number): string => {
   if (percentGap <= 0) return CAPACITY_RISK.LOW
   if (targetPercent <= 0) return CAPACITY_RISK.LOW
@@ -215,6 +228,7 @@ const getPercentRisk = (percentGap: number, targetPercent: number): string => {
     : CAPACITY_RISK.MEDIUM
 }
 
+/** Produces staffing guidance while leaving the final transfer/scope decision to Admin/PM. */
 const buildRecommendations = (
   productivityRate: number,
   percentGap: number,

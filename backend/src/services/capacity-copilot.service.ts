@@ -25,6 +25,11 @@ export class CapacityCopilotService {
 
   constructor(private repository: ICapacityCopilotRepository) {}
 
+  /**
+   * Forecasts one project's delivery percentage for a normalized week.
+   * The deal target comes from persisted project data; member availability and velocity are
+   * converted into pure formula inputs without changing membership or task assignment.
+   */
   async forecastProjectCapacity(
     projectId: string,
     input: ForecastProjectCapacityDto,
@@ -79,6 +84,7 @@ export class CapacityCopilotService {
     return buildCapacityForecast(memberInputs, dealTargetPercent, history)
   }
 
+  /** Forecasts every eligible project independently so Admin/PM can compare shortages and surplus. */
   async forecastCapacityBoard(
     input: ForecastProjectCapacityDto,
   ): Promise<CapacityBoardForecastResult> {
@@ -131,6 +137,7 @@ export class CapacityCopilotService {
     )
   }
 
+  /** Converts one project failure into an error snapshot instead of failing the entire board. */
   private async safeForecastBoardProject(
     project: CapacityProjectRow,
     input: ForecastProjectCapacityDto,
@@ -148,6 +155,7 @@ export class CapacityCopilotService {
     }
   }
 
+  /** Computes and stores the latest advisory snapshot under a week/lookback-specific key. */
   private async forecastAndCacheProjectCapacity(
     project: CapacityProjectRow,
     input: ForecastProjectCapacityDto,
@@ -165,11 +173,16 @@ export class CapacityCopilotService {
     return snapshot
   }
 
+  /** Separates snapshots for the same project when week or history window changes. */
   private buildCacheKey(projectId: string, weekStart: string, lookbackWeeks?: number): string {
     const lookback = lookbackWeeks ?? CAPACITY_COPILOT_RULES.DEFAULT_LOOKBACK_WEEKS
     return `${projectId}:${formatUtcDateKey(this.normalizeWeekStart(weekStart))}:${lookback}`
   }
 
+  /**
+   * Converts work schedule data to raw available hours.
+   * Full-time uses the configured standard week; part-time requires submitted availability slots.
+   */
   private getAvailableHours(
     workScheduleType: string,
     availability:
@@ -192,6 +205,7 @@ export class CapacityCopilotService {
     }, 0)
   }
 
+  /** Uses UTC date-only parsing to prevent browser/server timezone shifts, then anchors to Monday. */
   private normalizeWeekStart(value: string): Date {
     const date = parseUtcDateOnly(value)
     const day = date.getUTCDay()
