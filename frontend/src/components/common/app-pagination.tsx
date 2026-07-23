@@ -83,8 +83,8 @@ export function AppPagination({
   ).sort((a, b) => a - b)
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t border-border bg-muted/10 text-sm">
-      <div className="flex flex-col sm:flex-row items-center gap-4 text-muted-foreground">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-2.5 border-t border-border text-xs">
+      <div className="flex flex-col sm:flex-row items-center gap-3 text-muted-foreground">
         {onItemsPerPageChange && (
           <div className="flex items-center gap-2">
             <span>Hiển thị</span>
@@ -94,7 +94,7 @@ export function AppPagination({
                 onItemsPerPageChange(Number(val))
               }}
             >
-              <SelectTrigger className="w-[72px] h-8 bg-background rounded-full text-xs font-medium px-2.5">
+              <SelectTrigger size="sm" className="w-16 h-7.5 bg-background rounded-full text-xs font-medium px-2.5 shadow-none border-border">
                 <SelectValue placeholder={itemsPerPage.toString()} />
               </SelectTrigger>
               <SelectContent>
@@ -110,8 +110,8 @@ export function AppPagination({
 
         {totalItems !== undefined && (
           <div className="text-center sm:text-left">
-            Đang xem {totalItems === 0 ? 0 : startItemIndex} - {endItemIndex} trong số{" "}
-            <span className="font-medium text-foreground">{totalItems}</span> bản ghi
+            Đang xem {totalItems === 0 ? 0 : startItemIndex} – {endItemIndex} trong số{" "}
+            <span className="font-semibold text-foreground">{totalItems}</span> bản ghi
           </div>
         )}
       </div>
