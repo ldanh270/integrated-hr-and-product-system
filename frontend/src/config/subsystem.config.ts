@@ -9,6 +9,7 @@ import { PERSONAL_TAB_LABELS } from "@/config/entities/personal.config"
 import { ROUTES } from "@/config/routes.config"
 
 import {
+  BrainCircuit,
   Briefcase,
   CalendarClock,
   CalendarDays,
@@ -60,8 +61,16 @@ export interface SubsystemConfig {
   permissions?: string[]
 }
 
-/** Baseline permission that distinguishes payroll administration from personal payslips. */
+/** Baseline permission that distinguishes payroll administration from personal payslips.
+ * Users without this permission are redirected to ROUTES.PAYROLL.MY_PAYSLIPS instead of
+ * the payroll list — the subsystem stays visible so self-service payslip access is preserved. */
 export const PAYROLL_SUBSYSTEM_PERMISSION = "payroll.read"
+
+/** Baseline permission required for personal and administrative attendance history.
+ * Users without this permission land on the shared holiday calendar when entering
+ * the Attendance subsystem; users with it but without the admin role land on their
+ * own attendance summary. Admins get the full dashboard. */
+export const ATTENDANCE_SUBSYSTEM_PERMISSION = "attendance.read"
 
 export const SUBSYSTEMS: SubsystemConfig[] = [
   {
@@ -334,6 +343,13 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         path: ROUTES.PROJECT.LIST,
         icon: Briefcase,
         permissions: ["project.read"],
+      },
+      // Admin/PM-only board for weekly Capacity Copilot shortage/surplus overview.
+      {
+        name: "Dự báo capacity",
+        path: ROUTES.PROJECT.CAPACITY_BOARD,
+        icon: BrainCircuit,
+        permissions: ["project.update"],
       },
     ],
   },

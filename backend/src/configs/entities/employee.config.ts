@@ -36,6 +36,11 @@ export const WORK_SCHEDULE_TYPE = {
   PART_TIME: "part_time",
 } as const
 
+/** Stable position codes used for cross-module employee lookup. */
+export const EMPLOYEE_POSITION_CODE = {
+  TESTER: "tester",
+} as const
+
 /** Schedule hours drive attendance/payroll branching — independent of employment category (employeeType). */
 
 export const EMPLOYEE_STATUSES = [

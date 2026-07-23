@@ -180,6 +180,7 @@ const privateRoutes: RouteConfig[] = [
     component: lazy(() => import("@/pages/recruitment/RequisitionsPage.tsx")),
     layout: MainLayout,
     permissions: ["recruitment.read"],
+  },
   {
     path: ROUTES.RECRUITMENT.JOB_POSTINGS,
     component: lazy(() => import("@/pages/recruitment/JobPostingsPage.tsx")),
@@ -294,6 +295,12 @@ const privateRoutes: RouteConfig[] = [
     path: ROUTES.PROJECT.LIST,
     component: lazy(() => import("@/pages/project/ProjectList.tsx")),
     layout: MainLayout,
+  },
+  {
+    path: ROUTES.PROJECT.CAPACITY_BOARD,
+    component: lazy(() => import("@/pages/project/ProjectCapacityBoardPage.tsx")),
+    layout: MainLayout,
+    permissions: ["project.update"],
   },
   {
     path: "/project/:id/:tab",

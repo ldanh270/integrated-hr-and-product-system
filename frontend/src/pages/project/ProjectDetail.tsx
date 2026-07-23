@@ -102,31 +102,42 @@ export default function ProjectDetail() {
   }, [tab, projectId, activeTab, navigate])
 
   // Fetch active project metadata
-  const { data: project, isLoading: isLoadingProject } = useQuery({
+  const {
+    data: project,
+    isError: isProjectError,
+    isLoading: isLoadingProject,
+  } = useQuery({
     queryKey: ["project", projectId],
     queryFn: () => projectApi.getOne(projectId),
     enabled: !!projectId,
   })
 
+  // A failed project lookup means a seed/reset removed the stored project; clear only that stale pointer.
+  useEffect(() => {
+    if (isProjectError && projectId) {
+      sessionStorage.removeItem("activeProjectId")
+    }
+  }, [isProjectError, projectId])
+
   // Fetch all tasks for overview statistics mapping (without pagination)
   const { data: overviewTasksData } = useQuery({
     queryKey: ["tasks", "overview", projectId],
     queryFn: () => taskApi.list({ projectId, limit: 1000 }),
-    enabled: !!projectId,
+    enabled: !!project,
   })
 
   // All project Spent Time logs — used for overview totals and lead approval tab
   const { data: spentTimes, isLoading: isLoadingSpent } = useQuery({
     queryKey: ["spentTimes", "project", projectId],
     queryFn: () => taskApi.listSpentTimes({ projectId }),
-    enabled: !!projectId,
+    enabled: !!project,
   })
 
   // Fetch members currently assigned to the project
   const { data: members } = useQuery({
     queryKey: ["members", projectId],
     queryFn: () => projectApi.getMembers(projectId),
-    enabled: !!projectId,
+    enabled: !!project,
   })
 
   // Fetch all active employees (for dropdown select in manager operations)
@@ -218,8 +229,8 @@ export default function ProjectDetail() {
     )
   }
 
-  // Error feedback view if the target project record is not found in database
-  if (!project) {
+  // Error feedback view if the target project record is not found in database.
+  if (isProjectError || !project) {
     return (
       <div className="container p-8 text-center space-y-4">
         <AlertCircle className="size-12 text-destructive mx-auto" />
@@ -335,6 +346,7 @@ export default function ProjectDetail() {
         <TabsContent value={PROJECT_TABS.OVERVIEW}>
           <ProjectOverviewTab
             project={project}
+            projectId={projectId}
             tasks={overviewTasks}
             totalTasksCount={totalTasksCount}
             openTasksCount={openTasksCount}

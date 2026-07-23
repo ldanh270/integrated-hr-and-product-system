@@ -1,3 +1,4 @@
+/** Public backend type barrel; feature modules should export their contracts here deliberately. */
 export * from "./common.types.ts"
 export * from "./employee.types.ts"
 export * from "./repository.interface.ts"
@@ -12,3 +13,4 @@ export * from "./project-task-status.types.ts"
 export * from "./position.types.ts"
 export * from "./project-tracker.types.ts"
 export * from "./project-role.types.ts"
+export * from "./capacity-copilot.types.ts"

@@ -79,6 +79,8 @@ export const ROUTES = {
     BASE: "/project",
     LIST: "/project/list",
     MY_PROJECTS: "/project/my-projects",
+    /** Cross-project weekly Capacity Copilot board for Admin/PM staffing decisions. */
+    CAPACITY_BOARD: "/project/capacity-board",
     POSITIONS: "/project/positions",
     DASHBOARD: "/project/dashboard",
     OVERVIEW: "/project/overview",

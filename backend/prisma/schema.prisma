@@ -989,6 +989,7 @@ model Project {
   startDate          DateTime?
   expectedEndDate    DateTime?
   actualEndDate      DateTime?
+  dealTargetPercent  Float?
   teamLeaderId       String?
   teamLeader         Employee?          @relation("ProjectTeamLeader", fields: [teamLeaderId], references: [id], onDelete: SetNull)
   createdById        String

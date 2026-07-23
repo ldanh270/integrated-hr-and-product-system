@@ -2,6 +2,7 @@ import { DAY_OF_WEEK_VALUES } from "@/configs/entities/attendance.config.ts"
 import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util.ts"
 import {
   PART_TIME_AVAILABILITY_STATUS,
+  PART_TIME_SUGGESTION_DECISION,
 } from "@/configs/entities/part-time-availability.config.ts"
 import { PART_TIME_AVAILABILITY_MESSAGES } from "@/configs/messages/part-time-availability.message.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
@@ -32,9 +33,11 @@ import {
   parseTimeToMinutes,
   shiftFitsAvailabilityDay,
 } from "@/utils/part-time-availability.util.ts"
+import { buildAssignedDaySummaries } from "@/utils/part-time-availability/build-assigned-day-summaries.util.ts"
 import { AppError } from "@/utils/error.util.ts"
 
 import { auditService } from "./audit.service.ts"
+import type { CapacityCopilotService } from "./capacity-copilot.service.ts"
 
 /** Part-time weekly availability: employee free-time submission and admin shift assignment. */
 export class PartTimeAvailabilityService implements IPartTimeAvailabilityService {
@@ -43,6 +46,7 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
     private employeeRepo: IEmployeeRepository,
     private employeeShiftRepo: IEmployeeShiftRepository,
     private workingShiftRepo: IWorkingShiftRepository,
+    private capacityCopilotService?: CapacityCopilotService,
   ) {}
 
   /** Employee reads own weekly availability for the selected Monday weekStart. */
@@ -86,18 +90,48 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
     validateAvailabilityDays(days)
 
     // Every employee save enters the assign queue immediately; client status is ignored.
-    return this.availabilityRepo.upsert({
+    const availability = await this.availabilityRepo.upsert({
       employeeId,
       weekStart,
       note: data.note,
       status: PART_TIME_AVAILABILITY_STATUS.SUBMITTED,
       days,
     })
+
+    this.capacityCopilotService?.runAvailabilityUpdatedJob(employeeId, weekStart)
+
+    return availability
   }
 
-  /** Admin roster: all availability submissions for a given week. */
-  listForWeek(weekStart: string): Promise<IPartTimeWeeklyAvailability[]> {
-    return this.availabilityRepo.listByWeek(normalizeWeekStart(weekStart))
+  /** Admin roster: all availability submissions for a given week, with assigned shift summaries. */
+  async listForWeek(weekStart: string): Promise<IPartTimeWeeklyAvailability[]> {
+    const normalized = normalizeWeekStart(weekStart)
+    const items = await this.availabilityRepo.listByWeek(normalized)
+    if (items.length === 0) return items
+
+    const weekDates = DAY_OF_WEEK_VALUES.map((dayOfWeek) => getDateForWeekDay(normalized, dayOfWeek))
+    const shifts = await this.employeeShiftRepo.listByEmployeesAndDateRange(
+      items.map((item) => item.employeeId),
+      weekDates[0],
+      weekDates[weekDates.length - 1],
+    )
+
+    const shiftsByEmployee = new Map<string, typeof shifts>()
+    for (const row of shifts) {
+      const bucket = shiftsByEmployee.get(row.employeeId) ?? []
+      bucket.push(row)
+      shiftsByEmployee.set(row.employeeId, bucket)
+    }
+
+    return items.map((item) => {
+      const employeeShifts = shiftsByEmployee.get(item.employeeId) ?? []
+      const { summaries, hasAssigned } = buildAssignedDaySummaries(normalized, employeeShifts)
+      return {
+        ...item,
+        assignedDaySummaries: summaries,
+        hasAssignedShifts: hasAssigned,
+      }
+    })
   }
 
   /** Admin drill-down: one employee's availability for a week. */
@@ -218,6 +252,7 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
         weekStart: availability.weekStart,
         assigned,
         skipped,
+        suggestionDecision: data.suggestionDecision ?? PART_TIME_SUGGESTION_DECISION.MANUAL,
       },
     })
 

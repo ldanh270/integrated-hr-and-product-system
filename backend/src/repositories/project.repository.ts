@@ -1,22 +1,24 @@
+import { PROJECT_MEMBER_WORK_MODE } from "@/configs/entities/project.config.ts"
 import {
   CreateProjectDto,
-  Project,
-  ProjectListQuery,
+  GanttDataDto,
   IProjectRepository,
   PaginatedProjectsDto,
+  Project,
+  ProjectListQuery,
   UpdateProjectDto,
-  GanttDataDto,
 } from "@/types"
 
-import { Prisma, PrismaClient, Project as PrismaProject, Employee as PrismaEmployee } from "@prisma/client"
-import { PROJECT_MEMBER_WORK_MODE } from "@/configs/entities/project.config.ts"
+import { Prisma, PrismaClient } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
-type PrismaProjectWithRelations = PrismaProject & {
-  teamLeader?: PrismaEmployee | null
-  createdBy?: PrismaEmployee
-}
+type PrismaProjectWithRelations = Prisma.ProjectGetPayload<{
+  include: {
+    teamLeader: true
+    createdBy: true
+  }
+}>
 
 export class PrismaProjectRepository extends BaseRepository implements IProjectRepository {
   constructor(prisma: PrismaClient) {
@@ -38,6 +40,8 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
       startDate: project.startDate,
       expectedEndDate: project.expectedEndDate,
       actualEndDate: project.actualEndDate,
+      // Expose deal target so Project Overview can forecast delivery capacity.
+      dealTargetPercent: project.dealTargetPercent,
       teamLeaderId: project.teamLeaderId,
       createdById: project.createdById,
       createdAt: project.createdAt,
@@ -100,16 +104,9 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
   async listProjects(
     query: ProjectListQuery,
     userId: string,
-    isAdminOrGM: boolean
+    isAdminOrGM: boolean,
   ): Promise<PaginatedProjectsDto> {
-    const {
-      page = 1,
-      limit = 10,
-      search,
-      status,
-      sortBy = "createdAt",
-      sortOrder = "desc",
-    } = query
+    const { page = 1, limit = 10, search, status, sortBy = "createdAt", sortOrder = "desc" } = query
 
     const skip = (page - 1) * limit
     const where: Prisma.ProjectWhereInput = {}
@@ -183,6 +180,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
         taskCreationPolicy: data.taskCreationPolicy as any,
         startDate: data.startDate ? new Date(data.startDate) : null,
         expectedEndDate: data.expectedEndDate ? new Date(data.expectedEndDate) : null,
+        dealTargetPercent: data.dealTargetPercent,
         teamLeaderId: data.teamLeaderId,
         createdById: data.createdById,
         allowedTaskTrackers: data.allowedTaskTrackers as any,
@@ -201,7 +199,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
    * Returns updated project or null if not found
    */
   async updateProject(id: string, data: UpdateProjectDto): Promise<Project | null> {
-   const updateData: Prisma.ProjectUncheckedUpdateInput = {
+    const updateData: Prisma.ProjectUncheckedUpdateInput = {
       name: data.name,
       description: data.description,
       techStack: data.techStack,
@@ -210,6 +208,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
       startDate: data.startDate ? new Date(data.startDate) : undefined,
       expectedEndDate: data.expectedEndDate ? new Date(data.expectedEndDate) : undefined,
       actualEndDate: data.actualEndDate ? new Date(data.actualEndDate) : undefined,
+      dealTargetPercent: data.dealTargetPercent,
       teamLeaderId: data.teamLeaderId,
       allowedTaskTrackers: data.allowedTaskTrackers as any,
     }
@@ -217,6 +216,7 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
     if (data.startDate === null) updateData.startDate = null
     if (data.expectedEndDate === null) updateData.expectedEndDate = null
     if (data.actualEndDate === null) updateData.actualEndDate = null
+    if (data.dealTargetPercent === null) updateData.dealTargetPercent = null
     if (data.teamLeaderId === null) updateData.teamLeaderId = null
 
     const project = await this.prisma.project.update({
@@ -382,7 +382,9 @@ export class PrismaProjectRepository extends BaseRepository implements IProjectR
       },
       data: {
         ...(data.hourlyRate !== undefined ? { hourlyRate: data.hourlyRate } : {}),
-        ...(data.workMode ? { workMode: data.workMode as Prisma.ProjectMemberUpdateInput["workMode"] } : {}),
+        ...(data.workMode
+          ? { workMode: data.workMode as Prisma.ProjectMemberUpdateInput["workMode"] }
+          : {}),
         ...(data.roleId !== undefined ? { roleId: data.roleId } : {}),
       },
     })

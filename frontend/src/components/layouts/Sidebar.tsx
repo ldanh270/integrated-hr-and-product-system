@@ -47,7 +47,7 @@ export default function Sidebar({ className, isMobile, onNavClick }: SidebarProp
       } ${className || ""}`}
     >
       {/* Sidebar Header (Team Switcher / Logo) */}
-      <div className="flex h-14 items-center px-3 border-b border-border">
+      <div className="flex h-16 items-center px-3 border-b border-border">
         <SubsystemDropdown />
       </div>
 
@@ -110,7 +110,9 @@ export default function Sidebar({ className, isMobile, onNavClick }: SidebarProp
             >
               <Icon size={18} strokeWidth={isActive ? 2 : 1.5} className="shrink-0" />
               {!effectiveCollapsed && (
-                <span className="min-w-0 flex-1 truncate transition-opacity duration-200">{item.name}</span>
+                <span className="min-w-0 flex-1 truncate transition-opacity duration-200">
+                  {item.name}
+                </span>
               )}
             </Link>
           )

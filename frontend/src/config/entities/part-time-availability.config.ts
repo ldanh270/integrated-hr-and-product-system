@@ -82,6 +82,12 @@ export const PART_TIME_AVAILABILITY_ASSIGN_LABELS = {
   FREE_RANGE_HINT: "Giờ làm phải nằm trong khung rảnh",
   ALL_BUSY_WEEK: "Nhân viên bận cả tuần — không thể xếp ca",
   CLEAR_WEEK_SUCCESS: "Đã xóa ca tuần này",
+  SUGGEST: "Gợi ý xếp ca",
+  SUGGEST_SUCCESS: "Đã tạo gợi ý xếp ca tuần này",
+  SUGGEST_EMPTY: "Không có lịch rảnh để gợi ý",
+  APPLY_SUGGESTION: "Áp dụng gợi ý",
+  APPLY_SUGGESTION_SUCCESS: "Đã áp dụng gợi ý — kiểm tra rồi xác nhận xếp ca",
+  SCORE_LABEL: "Điểm tin cậy",
 } as const
 
 export const PART_TIME_AVAILABILITY_ASSIGN_VALIDATION = {
@@ -119,4 +125,5 @@ export const PART_TIME_AVAILABILITY_QUERY_KEYS = {
   LIST: (weekStart: string) => ["part-time-availability", "list", weekStart] as const,
   EMPLOYEE: (employeeId: string, weekStart: string) =>
     ["part-time-availability", "employee", employeeId, weekStart] as const,
+  SUGGEST: (weekStart: string) => ["part-time-availability", "suggest", weekStart] as const,
 } as const

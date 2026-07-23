@@ -1,6 +1,11 @@
+/**
+ * Zod boundaries for employee availability and admin assignment payloads.
+ * Business enum values and limits are imported from config instead of duplicated here.
+ */
 import {
   PART_TIME_AVAILABILITY_RULES,
   PART_TIME_AVAILABILITY_STATUSES,
+  PART_TIME_SUGGESTION_DECISIONS,
 } from "@/configs/entities/part-time-availability.config.ts"
 import { DAY_OF_WEEK_VALUES } from "@/configs/entities/attendance.config.ts"
 
@@ -46,9 +51,35 @@ export const weekStartQuerySchema = z.object({
     .refine((val) => !Number.isNaN(Date.parse(val)), { message: "Invalid date format" }),
 })
 
+export const suggestPartTimeShiftsSchema = z
+  .object({
+    weekStart: z.string().refine((value) => !Number.isNaN(Date.parse(value)), {
+      message: "Invalid date format",
+    }),
+    coverageRequirements: z
+      .array(
+        z
+          .object({
+            shiftId: z.string().min(1),
+            dayOfWeek: z.number().int().min(0).max(6),
+            startTime: z.number().int().min(0).max(1439),
+            endTime: z.number().int().min(1).max(1440),
+            requiredCount: z.number().int().min(1).max(100),
+          })
+          .strict()
+          .refine((value) => value.startTime < value.endTime, {
+            message: "startTime must be before endTime",
+          }),
+      )
+      .max(100)
+      .optional(),
+  })
+  .strict()
+
 // Admin shift assignment: both times null = skip that day; both set = create override within employee free slot.
 export const assignPartTimeShiftsSchema = z
   .object({
+    suggestionDecision: z.enum(PART_TIME_SUGGESTION_DECISIONS).optional(),
     assignments: z
       .array(
         z
