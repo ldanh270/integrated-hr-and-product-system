@@ -145,31 +145,17 @@ export interface CreateJobDescriptionDto {
 }
 
 export interface CreateJobPostingDto {
-  jobDescriptionId: string
+  requisitionId: string
+  channel?: string
+  oauthAccountId?: string | null
   fields: RecruitmentFormField[]
 }
 
 export type PublishJobPostingDto = { id: string; mode: "connector" }
 
-export const jobDescriptionApi = {
-  list: async (): Promise<JobDescription[]> => {
-    const response = await apiClient.get<{ data: JobDescription[] | PaginatedPayload<JobDescription> }>("/recruitment/job-descriptions")
-    const payload = response.data.data
-    return Array.isArray(payload) ? payload : payload.items
-  },
-  create: async (data: CreateJobDescriptionDto): Promise<JobDescription> => {
-    const response = await apiClient.post<{ data: JobDescription }>("/recruitment/job-descriptions", data)
-    return response.data.data
-  },
-  update: async (id: string, data: Partial<CreateJobDescriptionDto>): Promise<JobDescription> => {
-    const response = await apiClient.patch<{ data: JobDescription }>(`/recruitment/job-descriptions/${id}`, data)
-    return response.data.data
-  },
-}
-
 export const jobPostingApi = {
-  list: async (jobDescriptionId?: string): Promise<JobPosting[]> => {
-    const response = await apiClient.get<{ data: JobPosting[] | PaginatedPayload<JobPosting> }>("/recruitment/job-postings", { params: { jobDescriptionId } })
+  list: async (requisitionId?: string): Promise<JobPosting[]> => {
+    const response = await apiClient.get<{ data: JobPosting[] | PaginatedPayload<JobPosting> }>("/recruitment/job-postings", { params: { requisitionId } })
     const payload = response.data.data
     return Array.isArray(payload) ? payload : payload.items
   },
@@ -193,7 +179,7 @@ export const jobPostingApi = {
 
 export const applicantIntakeApi = {
   import: async (data: {
-    jobDescriptionId: string
+    requisitionId: string
     postingId?: string
     source: string
     rows: ApplicantImportRow[]

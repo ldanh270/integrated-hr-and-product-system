@@ -268,12 +268,6 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         permissions: ["recruitment.read"],
       },
       {
-        name: "Mô tả công việc",
-        path: ROUTES.RECRUITMENT.JOB_DESCRIPTIONS,
-        icon: FileText,
-        permissions: ["recruitment.jd.read"],
-      },
-      {
         name: "Đăng tuyển",
         path: ROUTES.RECRUITMENT.JOB_POSTINGS,
         icon: Megaphone,

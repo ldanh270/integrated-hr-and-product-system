@@ -34,37 +34,10 @@ function getRecruitmentErrorMessage(error: RecruitmentApiError, fallback: string
 
 // ── Requisition Hooks ─────────────────────────────────────────────────────────
 
-export function useJobDescriptions() {
-  return useQuery({ queryKey: ["recruitment", "job-descriptions"], queryFn: jobDescriptionApi.list })
-}
-
-export function useJobPostings(jobDescriptionId?: string) {
+export function useJobPostings(requisitionId?: string) {
   return useQuery({
-    queryKey: ["recruitment", "job-postings", jobDescriptionId],
-    queryFn: () => jobPostingApi.list(jobDescriptionId),
-  })
-}
-
-export function useCreateJobDescription() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: jobDescriptionApi.create,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "job-descriptions"] })
-      toast.success("Đã tạo bản mô tả công việc")
-    },
-  })
-}
-
-export function useUpdateJobDescription() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof jobDescriptionApi.update>[1] }) =>
-      jobDescriptionApi.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "job-descriptions"] })
-      toast.success("Đã cập nhật bản mô tả công việc")
-    },
+    queryKey: ["recruitment", "job-postings", requisitionId],
+    queryFn: () => jobPostingApi.list(requisitionId),
   })
 }
 

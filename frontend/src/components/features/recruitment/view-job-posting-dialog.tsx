@@ -3,22 +3,22 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { POSTING_CHANNELS } from "@/config/entities/recruitment.config"
-import type { JobDescription, JobPosting } from "@/types/recruitment.types"
+import type { JobPosting } from "@/types/recruitment.types"
 import { ExternalLink, Globe, Hash } from "lucide-react"
 
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   posting: JobPosting | null
-  jobDescription?: JobDescription | null
 }
 
 const channelLabel = (value: string) => POSTING_CHANNELS.find((item) => item.value === value)?.label ?? value
 
-export function ViewJobPostingDialog({ open, onOpenChange, posting, jobDescription }: Props) {
+export function ViewJobPostingDialog({ open, onOpenChange, posting }: Props) {
   if (!posting) return null
 
   const isGoogleForm = posting.channel === "google_form"
+  const requisition = posting.requisition
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -43,17 +43,17 @@ export function ViewJobPostingDialog({ open, onOpenChange, posting, jobDescripti
           {/* Job Title & Requisition */}
           <div className="rounded-lg bg-muted/30 p-4 border border-border space-y-2">
             <div>
-              <span className="text-xs text-muted-foreground block font-medium">Vị trí công việc</span>
+              <span className="text-xs text-muted-foreground block font-medium">Vị trí tuyển dụng</span>
               <span className="text-sm font-semibold text-foreground">
-                {jobDescription?.title ?? "Mô tả công việc"}
+                {requisition?.title ?? "Vị trí tuyển dụng"}
               </span>
             </div>
-            {jobDescription?.requisition && (
+            {requisition && (
               <div className="text-xs text-muted-foreground">
                 <span>Mã yêu cầu: </span>
-                <span className="font-mono text-primary font-medium">{jobDescription.requisition.code}</span>
+                <span className="font-mono text-primary font-medium">{requisition.code}</span>
                 {" · "}
-                <span>{jobDescription.requisition.department}</span>
+                <span>{requisition.department}</span>
               </div>
             )}
           </div>

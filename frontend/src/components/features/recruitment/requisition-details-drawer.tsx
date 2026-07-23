@@ -247,13 +247,13 @@ export function RequisitionDetailsDrawer({ requisitionId, onClose, onEdit }: Req
                           className="rounded-full gap-1.5 text-primary border-primary/30 hover:bg-primary/10"
                           onClick={() => {
                             onClose()
-                            routerNavigate(`${ROUTES.RECRUITMENT.JOB_DESCRIPTIONS}?requisitionId=${requisition.id}`)
+                            routerNavigate(`${ROUTES.RECRUITMENT.JOB_POSTINGS}?reqId=${requisition.id}`)
                           }}
                         >
-                          <FilePlus2 size={14} /> Tạo bản mô tả công việc (JD)
+                          <FilePlus2 size={14} /> Tạo bài đăng tuyển dụng
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Tạo bản JD chi tiết dựa trên yêu cầu này</TooltipContent>
+                      <TooltipContent>Tạo bài đăng tuyển dụng trực tiếp cho yêu cầu này</TooltipContent>
                     </Tooltip>
                   )}
                 </div>

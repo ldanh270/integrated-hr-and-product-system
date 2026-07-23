@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { useJobDescriptions, useJobPostings, usePublishJobPosting, useSyncJobPosting } from "@/hooks/recruitment/use-recruitment-queries"
+import { useJobPostings, usePublishJobPosting, useRequisitions, useSyncJobPosting } from "@/hooks/recruitment/use-recruitment-queries"
 import { usePermission } from "@/hooks/use-permission"
 import { POSTING_CHANNELS } from "@/config/entities/recruitment.config"
 import type { JobPosting } from "@/types/recruitment.types"
@@ -29,7 +29,8 @@ export default function JobPostingsPage() {
   const [activeTab, setActiveTab] = useState("all")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [createPostingJdId, setCreatePostingJdId] = useState<string | undefined>(params.get("jdId") ?? undefined)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [initialRequisitionId, setInitialRequisitionId] = useState<string | undefined>(params.get("reqId") ?? undefined)
   const [selectedPosting, setSelectedPosting] = useState<JobPosting | null>(null)
   const [viewPostingOpen, setViewPostingOpen] = useState(false)
 
@@ -37,8 +38,10 @@ export default function JobPostingsPage() {
     setSelectedPosting(posting)
     setViewPostingOpen(true)
   }
+
   const { hasPermission } = usePermission()
-  const { data: descriptions = [] } = useJobDescriptions()
+  const { data: requisitionsData } = useRequisitions({ status: "approved" })
+  const requisitions = requisitionsData?.data ?? []
   const { data: postings = [], isLoading } = useJobPostings()
 
   const tabCounts = useMemo(() => {
@@ -53,18 +56,23 @@ export default function JobPostingsPage() {
     return postings.filter((posting) => {
       if (activeTab !== "all" && posting.status !== activeTab) return false
 
-      const jd = descriptions.find((d) => d.id === posting.jobDescriptionId)
       const searchStr = keyword.toLowerCase()
-      return (
-        jd?.title?.toLowerCase().includes(searchStr) ||
-        jd?.requisition?.code?.toLowerCase().includes(searchStr) ||
-        jd?.requisition?.department?.toLowerCase().includes(searchStr) ||
-        posting.sourceCode?.toLowerCase().includes(searchStr)
-      )
-    })
-  }, [postings, descriptions, keyword, activeTab])
+      const title = posting.requisition?.title?.toLowerCase() ?? ""
+      const code = posting.requisition?.code?.toLowerCase() ?? ""
+      const dept = posting.requisition?.department?.toLowerCase() ?? ""
 
-  const visible = filtered.slice((page - 1) * pageSize, page * pageSize)
+      return title.includes(searchStr) || code.includes(searchStr) || dept.includes(searchStr)
+    })
+  }, [postings, activeTab, keyword])
+
+  const visible = useMemo(() => {
+    return filtered.slice((page - 1) * pageSize, page * pageSize)
+  }, [filtered, page, pageSize])
+
+  const handleOpenCreate = (reqId?: string) => {
+    setInitialRequisitionId(reqId)
+    setCreateModalOpen(true)
+  }
 
   return (
     <div className="container flex flex-col gap-6 px-3 py-4 sm:px-6 sm:py-6">
@@ -72,8 +80,8 @@ export default function JobPostingsPage() {
         title="Đăng tuyển"
         description="Tạo và quản lý bài đăng tuyển dụng trên các kênh (Google Form, LinkedIn, Facebook, v.v.)"
         actions={
-          hasPermission("recruitment.posting.manage") && descriptions.length > 0 ? (
-            <Button onClick={() => setCreatePostingJdId(createPostingJdId ?? descriptions[0]?.id)} className="rounded-full">
+          hasPermission("recruitment.posting.manage") ? (
+            <Button className="rounded-full" onClick={() => handleOpenCreate()}>
               <Plus className="mr-2 h-4 w-4" />
               Tạo bài đăng
             </Button>
@@ -83,61 +91,60 @@ export default function JobPostingsPage() {
 
       <PageCard padding="sm" className="p-0 overflow-hidden">
         {/* Status Tab Navigation */}
-        <nav
-          aria-label="Lọc theo trạng thái bài đăng"
-          className="flex items-center gap-6 overflow-x-auto border-b border-border px-6 hide-scrollbar bg-background"
-        >
+        <div className="flex border-b border-border bg-card px-4 pt-3 gap-1 overflow-x-auto">
           {TAB_DEFINITIONS.map((tab) => {
+            const count = tabCounts[tab.id] ?? 0
             const isActive = activeTab === tab.id
-            const count = tabCounts[tab.id] || 0
             return (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => {
                   setActiveTab(tab.id)
                   setPage(1)
                 }}
-                className={`relative flex items-center gap-2 py-4 font-medium text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
-                  isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
+                className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  isActive
+                    ? "border-primary text-primary font-semibold"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {tab.label}
                 <span
-                  className={`inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full text-[11px] font-bold px-1.5 border ${
-                    isActive
-                      ? "bg-primary border-primary text-primary-foreground"
-                      : "bg-background border-border text-muted-foreground"
+                  className={`rounded-full px-2 py-0.5 text-[11px] ${
+                    isActive ? "bg-primary text-primary-foreground font-bold" : "bg-muted text-muted-foreground"
                   }`}
                 >
                   {count}
                 </span>
-                {isActive && (
-                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-t-full" />
-                )}
               </button>
             )
           })}
-        </nav>
+        </div>
 
         <DataTableToolbar
           searchQuery={keyword}
-          onSearchChange={(value) => { setKeyword(value); setPage(1) }}
-          searchPlaceholder="Tìm theo JD, mã yêu cầu, phòng ban..."
+          onSearchChange={(val) => {
+            setKeyword(val)
+            setPage(1)
+          }}
+          searchPlaceholder="Tìm theo vị trí, mã yêu cầu, phòng ban..."
         />
+
         <div className="overflow-x-auto">
           <Table>
             <TableHeader className="bg-muted/40">
               <TableRow>
-                <TableHead className="min-w-72 px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Bài đăng</TableHead>
-                <TableHead className="min-w-40 px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Kênh</TableHead>
-                <TableHead className="w-36 px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Trạng thái</TableHead>
-                <TableHead className="w-40 px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Kết nối</TableHead>
+                <TableHead className="min-w-64 px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Bài đăng / Vị trí</TableHead>
+                <TableHead className="w-48 px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Kênh</TableHead>
+                <TableHead className="w-32 px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Trạng thái</TableHead>
+                <TableHead className="w-36 px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Kết nối</TableHead>
                 <TableHead className="w-44 px-4 py-3 text-right text-xs font-medium uppercase text-muted-foreground">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, index) => (
+                Array.from({ length: 4 }).map((_, index) => (
                   <TableRow key={index}>
                     <TableCell colSpan={5} className="p-3">
                       <Skeleton className="h-12 w-full rounded-lg" />
@@ -147,12 +154,11 @@ export default function JobPostingsPage() {
               ) : visible.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
-                    {keyword || activeTab !== "all" ? "Không tìm thấy dữ liệu phù hợp với bộ lọc" : "Chưa có bài đăng. Tạo JD trước, sau đó tạo bài đăng tại đây."}
+                    {keyword || activeTab !== "all" ? "Không tìm thấy dữ liệu phù hợp với bộ lọc" : "Chưa có bài đăng nào."}
                   </TableCell>
                 </TableRow>
               ) : (
                 visible.map((posting) => {
-                  const jd = descriptions.find((d) => d.id === posting.jobDescriptionId)
                   return (
                     <TableRow
                       key={posting.id}
@@ -160,11 +166,11 @@ export default function JobPostingsPage() {
                       className="cursor-pointer transition-colors duration-100 hover:bg-muted/25"
                     >
                       <TableCell className="px-4 py-3">
-                        <p className="font-medium text-foreground">{jd?.title ?? "JD đã bị xóa"}</p>
+                        <p className="font-medium text-foreground">{posting.requisition?.title ?? "N/A"}</p>
                         <p className="mt-0.5 text-xs text-muted-foreground">
-                          <span className="font-mono text-primary font-medium">{jd?.requisition?.code ?? "—"}</span>
+                          <span className="font-mono text-primary font-medium">{posting.requisition?.code ?? "—"}</span>
                           {" · "}
-                          {jd?.requisition?.department || "Chưa có phòng ban"}
+                          {posting.requisition?.department || "Chưa có phòng ban"}
                         </p>
                       </TableCell>
                       <TableCell className="px-4 py-3">
@@ -201,17 +207,15 @@ export default function JobPostingsPage() {
       </PageCard>
 
       <CreateJobPostingDialog
-        key={createPostingJdId ?? "closed"}
-        open={Boolean(createPostingJdId)}
-        onOpenChange={(open) => !open && setCreatePostingJdId(undefined)}
-        initialJobDescriptionId={createPostingJdId}
-        jobDescriptions={descriptions}
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        initialRequisitionId={initialRequisitionId}
+        jobRequisitions={requisitions}
       />
       <ViewJobPostingDialog
         open={viewPostingOpen}
         onOpenChange={setViewPostingOpen}
         posting={selectedPosting}
-        jobDescription={descriptions.find((d) => d.id === selectedPosting?.jobDescriptionId)}
       />
     </div>
   )

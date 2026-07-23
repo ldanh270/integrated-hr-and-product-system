@@ -180,13 +180,6 @@ const privateRoutes: RouteConfig[] = [
     component: lazy(() => import("@/pages/recruitment/RequisitionsPage.tsx")),
     layout: MainLayout,
     permissions: ["recruitment.read"],
-  },
-  {
-    path: ROUTES.RECRUITMENT.JOB_DESCRIPTIONS,
-    component: lazy(() => import("@/pages/recruitment/JobDescriptionsPage.tsx")),
-    layout: MainLayout,
-    permissions: ["recruitment.jd.read"],
-  },
   {
     path: ROUTES.RECRUITMENT.JOB_POSTINGS,
     component: lazy(() => import("@/pages/recruitment/JobPostingsPage.tsx")),

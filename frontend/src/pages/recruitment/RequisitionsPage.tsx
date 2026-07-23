@@ -546,13 +546,13 @@ function RequisitionRow({
                   variant="ghost"
                   size="icon"
                   className="rounded-full hover:text-primary hover:bg-primary/10"
-                  aria-label={`Tạo JD từ ${requisition.code}`}
-                  onClick={() => routerNavigate(`${ROUTES.RECRUITMENT.JOB_DESCRIPTIONS}?requisitionId=${requisition.id}`)}
+                  aria-label={`Tạo bài đăng từ ${requisition.code}`}
+                  onClick={() => routerNavigate(`${ROUTES.RECRUITMENT.JOB_POSTINGS}?reqId=${requisition.id}`)}
                 >
                   <FilePlus2 className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Tạo mô tả công việc (JD)</TooltipContent>
+              <TooltipContent>Tạo bài đăng tuyển dụng</TooltipContent>
             </Tooltip>
           )}
         </div>

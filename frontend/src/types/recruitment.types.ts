@@ -92,8 +92,9 @@ export interface JobDescription {
 
 export interface JobPosting {
   id: string
-  jobDescriptionId: string
-  jobDescription?: JobDescription
+  requisitionId: string
+  requisition?: JobRequisition | null
+  oauthAccountId?: string | null
   channel: PostingChannel
   source: string
   sourceCode: string
