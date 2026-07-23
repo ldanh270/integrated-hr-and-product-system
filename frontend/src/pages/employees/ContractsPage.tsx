@@ -36,7 +36,7 @@ import { useContracts, useUpdateContract } from "@/hooks/employee-contract/use-c
 import { routerNavigate } from "@/lib/router-navigator"
 import { formatCurrency } from "@/lib/utils"
 import type { IContract } from "@/types/employee-contract.types"
-import { FileText, Filter, MoreHorizontal, Plus, RotateCcw, Search } from "lucide-react"
+import { FileText, MoreHorizontal, Plus, Search } from "lucide-react"
 
 const EMPTY_CONTRACTS: IContract[] = []
 

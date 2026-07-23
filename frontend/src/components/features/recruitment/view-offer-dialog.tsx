@@ -15,16 +15,16 @@ interface Props {
   offer: RecruitmentOffer | null
 }
 
-const statusVariantMap: Record<string, "default" | "primary" | "success" | "warning" | "danger" | "info"> = {
-  draft: "neutral" as any,
-  sent: "primary",
+const statusVariantMap: Record<string, "success" | "warning" | "danger" | "info" | "neutral"> = {
+  draft: "neutral",
+  sent: "info",
   accepted: "success",
   declined: "danger",
   rescinded: "danger",
   expired: "warning",
 }
 
-const responseVariantMap: Record<string, "default" | "primary" | "success" | "warning" | "danger" | "info"> = {
+const responseVariantMap: Record<string, "success" | "warning" | "danger" | "info" | "neutral"> = {
   accept: "success",
   decline: "danger",
   negotiate: "warning",
@@ -51,7 +51,7 @@ export function ViewOfferDialog({ open, onOpenChange, offer }: Props) {
             </Badge>
             <StatusPill
               label={OFFER_STATUS_LABELS[offer.status] || offer.status}
-              variant={statusVariantMap[offer.status] || "default"}
+              variant={statusVariantMap[offer.status] || "neutral"}
             />
           </div>
           <DialogTitle className="mt-2 text-xl font-bold text-foreground flex items-center gap-2">
@@ -102,7 +102,7 @@ export function ViewOfferDialog({ open, onOpenChange, offer }: Props) {
             {offer.response ? (
               <StatusPill
                 label={OFFER_RESPONSE_LABELS[offer.response] || offer.response}
-                variant={responseVariantMap[offer.response] || "default"}
+                variant={responseVariantMap[offer.response] || "neutral"}
               />
             ) : (
               <span className="text-xs text-muted-foreground font-medium">Chưa phản hồi</span>

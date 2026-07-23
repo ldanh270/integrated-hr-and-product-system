@@ -68,9 +68,10 @@ interface BackgroundCheckRowProps {
   bgc: BackgroundCheck
   onStart: () => void
   onComplete: (passed: boolean) => void
+  onViewDetails: (bgc: BackgroundCheck) => void
 }
 
-function BackgroundCheckRow({ bgc, onStart, onComplete }: BackgroundCheckRowProps) {
+function BackgroundCheckRow({ bgc, onStart, onComplete, onViewDetails }: BackgroundCheckRowProps) {
   const hasIdVerification = bgc.idVerified !== null && bgc.idVerified !== undefined
   const hasAddressVerification = bgc.addressVerified !== null && bgc.addressVerified !== undefined
   const hasCriminalCheck = bgc.criminalRecordCheck !== null && bgc.criminalRecordCheck !== undefined
@@ -205,6 +206,10 @@ function BackgroundCheckRow({ bgc, onStart, onComplete }: BackgroundCheckRowProp
 }
 
 export default function BackgroundChecksPage() {
+  const [activeTab, setActiveTab] = useState("all")
+  const [keyword, setKeyword] = useState("")
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [selectedBgc, setSelectedBgc] = useState<BackgroundCheck | null>(null)
   const [viewBgcOpen, setViewBgcOpen] = useState(false)
 

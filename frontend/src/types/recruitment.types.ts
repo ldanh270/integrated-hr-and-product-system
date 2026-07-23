@@ -151,6 +151,7 @@ export interface Candidate {
   noticePeriod: string | null
   notes: string | null
   avatarUrl: string | null
+  nationalId?: string
   createdAt: string
   updatedAt: string
 }
@@ -257,6 +258,7 @@ export interface InterviewRound {
   result: InterviewResult | null
   feedback: string | null
   scorecards?: Scorecard[]
+  notes?: string
   // Computed fields for convenience
   candidateName?: string
   positionTitle?: string
@@ -297,6 +299,7 @@ export interface RecruitmentOffer {
   // Computed fields for convenience
   candidateName?: string
   candidateEmail?: string
+  expirationDate?: string
   offeredSalary: number
   currency: string
   startDate: string
@@ -363,6 +366,9 @@ export interface BackgroundCheck {
   // Computed fields for convenience
   candidateName?: string
   candidateEmail?: string
+  positionTitle?: string
+  verifiedByName?: string
+  remarks?: string
   createdAt: string
   updatedAt: string
 }

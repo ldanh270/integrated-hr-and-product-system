@@ -25,15 +25,13 @@ import {
 } from "@/config/entities/employee.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useEmployeeMaster } from "@/hooks/employees/useEmployeeMaster"
-import type { EmployeeStatus } from "@/types/employee.types"
+import type { EmployeeType } from "@/types/employee.types"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useEffect, useMemo, useState, Fragment } from "react"
+import { useEffect, useState, Fragment } from "react"
 
 import {
   Edit,
   FileDown,
-  Filter,
-  Loader2,
   MoreHorizontal,
   Plus,
   RotateCcw,
@@ -41,7 +39,6 @@ import {
   Trash2,
   User,
   Unlock,
-  ChevronRight,
 } from "lucide-react"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -80,11 +77,6 @@ const TAB_DEFINITIONS: TabDefinition[] = [
   { id: EMPLOYEE_STATUS.TERMINATED, label: "Đã nghỉ việc", separator: true },
 ]
 
-/**
- * Maximum number of page buttons to display in pagination bar.
- */
-const MAX_VISIBLE_PAGES = SYSTEM_CONFIG.PAGINATION.MAX_VISIBLE_PAGES
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 /**
@@ -107,14 +99,11 @@ export default function EmployeeList() {
     data,
     isLoading,
     isFetching,
-    handleSearch,
     handleTabChange,
-    handleStatusChange,
     handleDelete,
     handleReinstate,
     handleUnlock,
     isAdminOrManager,
-    navigate,
   } = useEmployeeMaster()
 
   const [localKeyword, setLocalKeyword] = useState(query.search || "")
@@ -144,14 +133,6 @@ export default function EmployeeList() {
   const currentPage = query.page ?? 1
   const pageSize = query.limit ?? SYSTEM_CONFIG.PAGINATION.SMALL_LIMIT
   const totalPages = data?.meta.totalPages ?? 0
-  const pageStart = (currentPage - 1) * pageSize + (data?.data.length ? 1 : 0)
-  const pageEnd = (currentPage - 1) * pageSize + (data?.data.length || 0)
-
-  // Calculate which page numbers to display in pagination bar (capped at MAX_VISIBLE_PAGES)
-  const visiblePages = useMemo(
-    () => Array.from({ length: Math.min(MAX_VISIBLE_PAGES, totalPages) }, (_, i) => i + 1),
-    [totalPages],
-  )
 
   const getTabCount = (tabId: ActiveTab) => {
     if (!data?.stats) return 0

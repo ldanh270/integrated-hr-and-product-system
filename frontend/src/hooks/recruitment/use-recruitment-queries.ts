@@ -9,7 +9,6 @@ import {
   offerApi,
   backgroundCheckApi,
   applicantIntakeApi,
-  jobDescriptionApi,
   jobPostingApi,
   oauthAccountApi,
 } from "@/lib/api/recruitment.api"

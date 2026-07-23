@@ -2,19 +2,16 @@ import { useConfirm } from "@/components/common"
 import {
   EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME,
   EMPLOYEE_STATUS,
-  WORK_SCHEDULE_TYPE,
 } from "@/config/entities/employee.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import { usePermission } from "@/hooks/use-permission"
 import type {
   Employee,
   EmployeeListQuery,
-  EmployeeStatus,
   EmployeeType,
-  WorkScheduleType,
 } from "@/types/employee.types"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
 

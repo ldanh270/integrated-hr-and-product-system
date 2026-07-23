@@ -10,7 +10,6 @@ import {
   Calendar,
   Compass,
   CreditCard,
-  FileQuestion,
   FileText,
   FolderKanban,
   Home,

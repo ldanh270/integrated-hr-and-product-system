@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { useEmployees } from "@/hooks/employees/queries/useEmployeeQuery"
 import { formatCurrency } from "@/lib/utils"
 import type { Employee } from "@/types/employee.types"
-import { Filter, Plus, RotateCcw, Search } from "lucide-react"
+import { Plus, Search } from "lucide-react"
 
 const EMPTY_EMPLOYEES: Employee[] = []
 

@@ -16,11 +16,11 @@ interface Props {
   interview: InterviewRound | null
 }
 
-const resultVariantMap: Record<string, "default" | "primary" | "success" | "warning" | "danger" | "info"> = {
+const resultVariantMap: Record<string, "success" | "warning" | "danger" | "info" | "neutral"> = {
   pass: "success",
   fail: "danger",
   pending: "warning",
-  no_show: "default",
+  no_show: "neutral",
 }
 
 export function ViewInterviewDialog({ open, onOpenChange, interview }: Props) {
@@ -39,7 +39,7 @@ export function ViewInterviewDialog({ open, onOpenChange, interview }: Props) {
             {interview.result ? (
               <StatusPill
                 label={INTERVIEW_RESULT_LABELS[interview.result] || interview.result}
-                variant={resultVariantMap[interview.result] || "default"}
+                variant={resultVariantMap[interview.result] || "neutral"}
               />
             ) : (
               <StatusPill label="Chờ phỏng vấn" variant="warning" />

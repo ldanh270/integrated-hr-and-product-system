@@ -14,7 +14,6 @@ import type {
   OfferStats,
   BackgroundCheckStats,
   OfferVersion,
-  JobDescription,
   JobPosting,
   ApplicantImportRow,
   ApplicantImportResult,

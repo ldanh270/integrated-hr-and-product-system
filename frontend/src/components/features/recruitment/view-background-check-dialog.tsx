@@ -12,10 +12,10 @@ interface Props {
   backgroundCheck: BackgroundCheck | null
 }
 
-const statusVariantMap: Record<string, "default" | "primary" | "success" | "warning" | "danger" | "info"> = {
+const statusVariantMap: Record<string, "success" | "warning" | "danger" | "info" | "neutral"> = {
   pending: "warning",
   in_progress: "info",
-  completed: "primary",
+  completed: "info",
   passed: "success",
   failed: "danger",
 }
@@ -33,7 +33,7 @@ export function ViewBackgroundCheckDialog({ open, onOpenChange, backgroundCheck 
             </Badge>
             <StatusPill
               label={BGC_STATUS_LABELS[backgroundCheck.status] || backgroundCheck.status}
-              variant={statusVariantMap[backgroundCheck.status] || "default"}
+              variant={statusVariantMap[backgroundCheck.status] || "neutral"}
             />
           </div>
           <DialogTitle className="mt-2 text-xl font-bold text-foreground flex items-center gap-2">
