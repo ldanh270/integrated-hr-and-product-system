@@ -28,18 +28,21 @@ import {
 } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import { PROJECT_STATUSES, TASK_CREATION_POLICIES } from "@/config/entities/project.config"
+import { CAPACITY_COPILOT_RULES } from "@/config/rules/capacity-copilot.config"
 import { usePermission } from "@/hooks/use-permission"
 import { employeeApi } from "@/lib/api/employee.api"
 import { projectApi } from "@/lib/api/project.api"
+import { useProjectTrackers } from "@/pages/project/hooks/use-project-tracker"
+import { extractErrorMessage } from "@/utils/error-helper"
+
+import React, { useState } from "react"
+
 // Import React Query utilities for data handling and server mutations
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 // Import Lucide visual icons
-import { FolderKanban, Plus, Search, Users, ChevronDown, CheckSquare, Square } from "lucide-react"
-import React, { useState } from "react"
+import { CheckSquare, ChevronDown, FolderKanban, Plus, Search, Square, Users } from "lucide-react"
 // Import router link navigation
 import { useNavigate } from "react-router-dom"
-import { extractErrorMessage } from "@/utils/error-helper"
-import { useProjectTrackers } from "@/pages/project/hooks/use-project-tracker"
 
 /**
  * Component displaying the main project list dashboard.
@@ -68,6 +71,7 @@ export default function ProjectList() {
   const [newProjectPolicy, setNewProjectPolicy] = useState("all_members") // Who is authorized to create tasks
   const [newProjectStart, setNewProjectStart] = useState("") // Planned start date
   const [newProjectEnd, setNewProjectEnd] = useState("") // Planned expected end date
+  const [newProjectDealTarget, setNewProjectDealTarget] = useState("")
   const [newProjectTrackers, setNewProjectTrackers] = useState<string[]>([])
   const [createError, setCreateError] = useState<string | null>(null) // Submission error warning banner
   const [isCreateDropdownOpen, setIsCreateDropdownOpen] = useState(false)
@@ -93,18 +97,19 @@ export default function ProjectList() {
   const firstProjectId = projects[0]?.id || ""
   const { data: dbTrackers = [] } = useProjectTrackers(firstProjectId)
 
-  const trackersList = dbTrackers.length > 0
-    ? dbTrackers.map((t) => ({ key: t.code, label: `${t.name} (${t.code})` }))
-    : [
-        { key: "feature", label: "Tính năng (feature)" },
-        { key: "bug", label: "Lỗi (bug)" },
-        { key: "support", label: "Hỗ trợ (support)" },
-        { key: "task", label: "Công việc (task)" },
-        { key: "meeting", label: "Cuộc họp (meeting)" },
-        { key: "test", label: "Kiểm thử (test)" },
-        { key: "subtask", label: "Công việc con (subtask)" },
-        { key: "management", label: "Quản lý (management)" },
-      ]
+  const trackersList =
+    dbTrackers.length > 0
+      ? dbTrackers.map((t) => ({ key: t.code, label: `${t.name} (${t.code})` }))
+      : [
+          { key: "feature", label: "Tính năng (feature)" },
+          { key: "bug", label: "Lỗi (bug)" },
+          { key: "support", label: "Hỗ trợ (support)" },
+          { key: "task", label: "Công việc (task)" },
+          { key: "meeting", label: "Cuộc họp (meeting)" },
+          { key: "test", label: "Kiểm thử (test)" },
+          { key: "subtask", label: "Công việc con (subtask)" },
+          { key: "management", label: "Quản lý (management)" },
+        ]
 
   // Perform client-side filter computation on the fetched projects list
   const filteredProjects = projects.filter((proj) => {
@@ -147,6 +152,7 @@ export default function ProjectList() {
         taskCreationPolicy: newProjectPolicy as (typeof TASK_CREATION_POLICIES)[number],
         startDate: newProjectStart || null,
         expectedEndDate: newProjectEnd || null,
+        dealTargetPercent: newProjectDealTarget ? Number(newProjectDealTarget) : null,
         teamLeaderId: newProjectLeader === "none" ? null : newProjectLeader,
         allowedTaskTrackers: newProjectTrackers,
       })
@@ -163,6 +169,7 @@ export default function ProjectList() {
       setNewProjectPolicy("all_members")
       setNewProjectStart("")
       setNewProjectEnd("")
+      setNewProjectDealTarget("")
       setNewProjectTrackers([])
       setCreateError(null)
     },
@@ -460,13 +467,39 @@ export default function ProjectList() {
               </div>
             </div>
 
+            {/* Project-level deal target used by Capacity Copilot, not by Project Task assignment AI. */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="projDealTarget"
+                className="text-xs font-semibold text-muted-foreground"
+              >
+                Cam kết tuần/milestone (Deal target %)
+              </Label>
+              <Input
+                id="projDealTarget"
+                type="number"
+                min={CAPACITY_COPILOT_RULES.DEAL_TARGET_PERCENT_MIN}
+                max={CAPACITY_COPILOT_RULES.DEAL_TARGET_PERCENT_MAX}
+                placeholder={CAPACITY_COPILOT_RULES.DEAL_TARGET_PERCENT_PLACEHOLDER}
+                value={newProjectDealTarget}
+                onChange={(e) => {
+                  setNewProjectDealTarget(e.target.value)
+                }}
+                className="h-10 text-sm border-border rounded-full px-4"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Dùng cho Capacity Copilot để so sánh dự đoán tuần tới với cam kết khách hàng.
+              </p>
+            </div>
+
             {/* Allowed Task Trackers (Các loại yêu cầu) */}
             <div className="space-y-1.5 relative">
               <Label className="text-xs font-semibold text-muted-foreground">
                 Các loại yêu cầu được phép hoạt động
               </Label>
               <p className="text-[10px] text-muted-foreground mt-0.5 mb-2">
-                Chỉ chọn các loại yêu cầu được phép tạo trong dự án này (để trống nếu cho phép tất cả).
+                Chỉ chọn các loại yêu cầu được phép tạo trong dự án này (để trống nếu cho phép tất
+                cả).
               </p>
 
               {isCreateDropdownOpen && (
@@ -495,7 +528,9 @@ export default function ProjectList() {
                 {isCreateDropdownOpen && (
                   <div className="absolute left-0 mt-1 w-full bg-popover border border-border rounded-xl p-3 shadow-lg z-50 space-y-2">
                     <div className="flex items-center justify-between border-b border-border pb-1.5 mb-1.5">
-                      <span className="text-[10px] font-bold text-muted-foreground">Chọn loại công việc</span>
+                      <span className="text-[10px] font-bold text-muted-foreground">
+                        Chọn loại công việc
+                      </span>
                       <div className="flex gap-2">
                         <button
                           type="button"
@@ -528,11 +563,13 @@ export default function ProjectList() {
                               setNewProjectTrackers((prev) =>
                                 prev.includes(tracker.key)
                                   ? prev.filter((k) => k !== tracker.key)
-                                  : [...prev, tracker.key]
+                                  : [...prev, tracker.key],
                               )
                             }}
                             className={`flex items-center gap-2 p-2 rounded-lg text-left transition-all duration-200 cursor-pointer ${
-                              isChecked ? "bg-primary/5 text-primary" : "hover:bg-muted/40 text-foreground"
+                              isChecked
+                                ? "bg-primary/5 text-primary"
+                                : "hover:bg-muted/40 text-foreground"
                             }`}
                           >
                             {isChecked ? (
@@ -540,7 +577,9 @@ export default function ProjectList() {
                             ) : (
                               <Square className="size-3.5 shrink-0 text-muted-foreground" />
                             )}
-                            <span className="text-xs font-semibold leading-tight line-clamp-1">{tracker.label}</span>
+                            <span className="text-xs font-semibold leading-tight line-clamp-1">
+                              {tracker.label}
+                            </span>
                           </button>
                         )
                       })}

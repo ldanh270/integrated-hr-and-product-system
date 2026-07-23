@@ -47,7 +47,7 @@ export default function Sidebar({ className, isMobile, onNavClick }: SidebarProp
       } ${className || ""}`}
     >
       {/* Sidebar Header (Team Switcher / Logo) */}
-      <div className="flex h-14 items-center px-3 border-b border-border">
+      <div className="flex h-16 items-center px-3 border-b border-border">
         <SubsystemDropdown />
       </div>
 
@@ -100,7 +100,7 @@ export default function Sidebar({ className, isMobile, onNavClick }: SidebarProp
               to={item.path}
               title={effectiveCollapsed ? item.name : undefined}
               onClick={onNavClick}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150 ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-full text-sm font-medium transition-all duration-150 ${
                 isActive
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"

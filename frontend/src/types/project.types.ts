@@ -13,6 +13,7 @@ export interface Project {
   startDate: string | null
   expectedEndDate: string | null
   actualEndDate: string | null
+  dealTargetPercent: number | null
   teamLeaderId: string | null
   createdById: string
   createdAt: string
@@ -38,6 +39,7 @@ export interface CreateProjectDto {
   taskCreationPolicy?: TaskCreationPolicy
   startDate?: string | null
   expectedEndDate?: string | null
+  dealTargetPercent?: number | null
   teamLeaderId?: string | null
   allowedTaskTrackers?: string[]
 }
@@ -51,6 +53,7 @@ export interface UpdateProjectDto {
   startDate?: string | null
   expectedEndDate?: string | null
   actualEndDate?: string | null
+  dealTargetPercent?: number | null
   teamLeaderId?: string | null
   allowedTaskTrackers?: string[]
 }

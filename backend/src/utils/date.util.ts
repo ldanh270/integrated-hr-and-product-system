@@ -1,5 +1,24 @@
 import { getVietnamHolidayByDate } from "@/configs/entities/vietnam-holidays.config.ts"
 
+const DATE_ONLY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/
+
+/** Parses YYYY-MM-DD as UTC so date-only database values cannot shift across time zones. */
+export function parseUtcDateOnly(value: string): Date {
+  const match = DATE_ONLY_PATTERN.exec(value)
+  if (!match) return new Date(value)
+
+  const [, year, month, day] = match
+  return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)))
+}
+
+/** Formats one UTC calendar date as a stable YYYY-MM-DD API/database key. */
+export function formatUtcDateKey(date: Date): string {
+  const year = date.getUTCFullYear()
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0")
+  const day = String(date.getUTCDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
 /**
  * Calculates the number of working days between two dates.
  * Working days exclude weekends (Saturday, Sunday) and national holidays.

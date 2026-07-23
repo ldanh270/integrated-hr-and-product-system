@@ -1,5 +1,12 @@
+/**
+ * Drawer shell for assigning one employee's submitted availability.
+ * Form state remains in the panel so opening and closing the drawer has no persistence side effect.
+ */
 import { AppDrawer } from "@/components/common/app-drawer"
-import type { IPartTimeWeeklyAvailability } from "@/types/part-time-availability.types"
+import type {
+  IPartTimeWeeklyAvailability,
+  ISuggestPartTimeEmployeeSuggestion,
+} from "@/types/part-time-availability.types"
 
 import { AdminPartTimeAvailabilityAssignPanel } from "./admin-part-time-availability-assign-panel"
 
@@ -9,6 +16,7 @@ interface AdminPartTimeAvailabilityAssignDrawerProps {
   weekStartKey: string
   isOpen: boolean
   onClose: () => void
+  suggestion?: ISuggestPartTimeEmployeeSuggestion
 }
 
 /** Wide drawer shell for admin shift assignment (wraps assign panel). */
@@ -18,6 +26,7 @@ export function AdminPartTimeAvailabilityAssignDrawer({
   weekStartKey,
   isOpen,
   onClose,
+  suggestion,
 }: AdminPartTimeAvailabilityAssignDrawerProps) {
   if (!availability) return null
 
@@ -29,6 +38,7 @@ export function AdminPartTimeAvailabilityAssignDrawer({
         weekStartKey={weekStartKey}
         // Close drawer after successful assign so admin sees refreshed roster.
         onAssigned={onClose}
+        suggestion={suggestion}
       />
     </AppDrawer>
   )

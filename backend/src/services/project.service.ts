@@ -3,7 +3,6 @@ import {
   PROJECT_STATUS,
   TASK_CREATION_POLICY,
 } from "@/configs/entities/project.config.ts"
-import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { authorizationService } from "@/services/authorization.service.ts"
 import {
@@ -18,6 +17,7 @@ import {
   ProjectListQuery,
   UpdateProjectDto,
 } from "@/types"
+import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util.ts"
 import { AppError } from "@/utils/error.util.ts"
 
 import { PrismaClient } from "@prisma/client"
@@ -87,7 +87,11 @@ export class ProjectService implements IProjectService {
     if (data.teamLeaderId) {
       const leader = await this.employeeRepository.findById(data.teamLeaderId)
       if (!leader) {
-        throw new AppError("Team Leader employee not found", HttpStatusCode.NOT_FOUND, "ProjectService")
+        throw new AppError(
+          "Team Leader employee not found",
+          HttpStatusCode.NOT_FOUND,
+          "ProjectService",
+        )
       }
     }
 
@@ -119,7 +123,10 @@ export class ProjectService implements IProjectService {
           createdById: userId,
           startDate: data.startDate ? new Date(data.startDate) : null,
           expectedEndDate: data.expectedEndDate ? new Date(data.expectedEndDate) : null,
+          // Project deal metadata used by Capacity Copilot; task assignment logic reads none of this.
+          dealTargetPercent: data.dealTargetPercent ?? null,
           taskCreationPolicy: data.taskCreationPolicy || TASK_CREATION_POLICY.LEADER_ONLY,
+          allowedTaskTrackers: data.allowedTaskTrackers ?? [],
         },
       })
 
@@ -164,7 +171,11 @@ export class ProjectService implements IProjectService {
     if (data.teamLeaderId) {
       const leader = await this.employeeRepository.findById(data.teamLeaderId)
       if (!leader) {
-        throw new AppError("Team Leader employee not found", HttpStatusCode.NOT_FOUND, "ProjectService")
+        throw new AppError(
+          "Team Leader employee not found",
+          HttpStatusCode.NOT_FOUND,
+          "ProjectService",
+        )
       }
     }
 
@@ -315,7 +326,11 @@ export class ProjectService implements IProjectService {
 
     const isMember = await this.repository.isMember(projectId, employeeId)
     if (!isMember) {
-      throw new AppError("Employee is not a member of this project", HttpStatusCode.NOT_FOUND, "ProjectService")
+      throw new AppError(
+        "Employee is not a member of this project",
+        HttpStatusCode.NOT_FOUND,
+        "ProjectService",
+      )
     }
 
     return this.repository.removeMember(projectId, employeeId)
@@ -347,7 +362,11 @@ export class ProjectService implements IProjectService {
 
     const isMember = await this.repository.isMember(projectId, employeeId)
     if (!isMember) {
-      throw new AppError("Employee is not a member of this project", HttpStatusCode.NOT_FOUND, "ProjectService")
+      throw new AppError(
+        "Employee is not a member of this project",
+        HttpStatusCode.NOT_FOUND,
+        "ProjectService",
+      )
     }
 
     const employee = await this.employeeRepository.findById(employeeId)

@@ -6,10 +6,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { SUBSYSTEMS } from "@/config/subsystem.config"
 import type { SubsystemId } from "@/config/subsystem.config"
+import { useProfile } from "@/hooks/use-profile"
 import { useAuthStore } from "@/store/auth-store"
 import { useSidebarStore } from "@/store/sidebar-store"
 import { useSubsystemStore } from "@/store/subsystem-store"
-import { useProfile } from "@/hooks/use-profile"
 import { filterNavItems } from "@/utils/navigation/filter-nav-items"
 import { resolveSubsystemDestination } from "@/utils/navigation/resolve-subsystem-destination"
 
@@ -21,22 +21,24 @@ export default function SubsystemDropdown() {
   const { activeSubsystem, setActiveSubsystem, getActiveSubsystemConfig } = useSubsystemStore()
   const { isCollapsed } = useSidebarStore()
   const user = useAuthStore((state) => state.user)
-
   const { data: profile } = useProfile()
+
   const activeConfig = getActiveSubsystemConfig()
 
+  // A subsystem-level permission hides whole admin-only modules. Payroll deliberately
+  // has no such gate because its self-service payslip item is available to all employees.
   const navSubsystems = SUBSYSTEMS.filter((subsystem) => {
-    const hasModulePerm = !subsystem.permissions || (user && subsystem.permissions.every((p) => user.permissions?.includes(p)))
-    if (!hasModulePerm) return false
+    const hasSubsystemPermission =
+      !subsystem.permissions ||
+      Boolean(
+        user && subsystem.permissions.every((permission) => user.permissions.includes(permission)),
+      )
+    if (!hasSubsystemPermission) return false
 
-    const visibleTabs = filterNavItems(
-      subsystem.sidebarItems,
-      user,
-      profile?.employeeType,
-      profile?.workScheduleType,
+    return (
+      filterNavItems(subsystem.sidebarItems, user, profile?.employeeType, profile?.workScheduleType)
+        .length > 0
     )
-
-    return visibleTabs.length > 0
   })
 
   const handleSelectSubsystem = (subsystemId: SubsystemId, routePrefix: string) => {
@@ -58,20 +60,22 @@ export default function SubsystemDropdown() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className={`flex items-center gap-2 rounded-lg text-sm font-medium transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-            isCollapsed ? "justify-center w-full" : "w-full justify-between"
+          className={`flex h-12 min-w-0 items-center gap-2 rounded-full px-2 text-sm font-medium transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+            isCollapsed ? "w-full justify-center" : "w-full justify-between"
           }`}
           title={isCollapsed ? activeConfig?.name : undefined}
         >
-          <div className="flex items-center gap-2 overflow-hidden">
-            <div className="flex items-center justify-center h-9.5 w-9.5 gap-3 p-2.5 rounded-md text-sm font-medium transition-all duration-150 bg-primary text-primary-foreground shadow-sm">
+          <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-medium text-primary-foreground shadow-sm transition-all duration-150">
               <span className="font-bold text-xs">HRP</span>
             </div>
             {!isCollapsed && (
-              <div className="flex flex-col items-start overflow-hidden text-left leading-none">
-                <span className="truncate font-semibold text-foreground">HRP Platform</span>
+              <div className="flex min-w-0 flex-1 flex-col items-start overflow-hidden text-left leading-tight">
+                <span className="max-w-full truncate font-semibold text-foreground">
+                  HRP Platform
+                </span>
                 <span className="truncate text-xs text-muted-foreground">
-                  Integrated HR and Product{" "}
+                  Integrated HR and Product
                 </span>
               </div>
             )}
@@ -97,14 +101,14 @@ export default function SubsystemDropdown() {
                 onClick={() => {
                   handleSelectSubsystem(subsystem.id, subsystem.routePrefix)
                 }}
-                className={`flex cursor-pointer items-center gap-2 rounded-md p-2 transition-colors ${
+                className={`flex cursor-pointer items-center gap-2 rounded-full p-2 transition-colors ${
                   isActive
                     ? "bg-primary/10 text-primary focus:bg-primary/15 focus:text-primary"
                     : "text-foreground focus:bg-muted"
                 }`}
               >
                 <div
-                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-sm ${
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${
                     isActive
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground"

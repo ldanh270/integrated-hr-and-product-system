@@ -1,6 +1,4 @@
-import { startTransition, useState, useEffect } from "react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -8,10 +6,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -19,21 +15,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import { PROJECT_STATUSES, TASK_CREATION_POLICIES } from "@/config/entities/project.config"
+import { CAPACITY_COPILOT_RULES } from "@/config/rules/capacity-copilot.config"
 import { projectApi } from "@/lib/api/project.api"
-import { extractErrorMessage } from "@/utils/error-helper"
-import { ChevronDown, CheckSquare, Square, Edit2, Trash2, Plus, Check, X } from "lucide-react"
 import {
-  useProjectTrackers,
   useCreateProjectTracker,
-  useUpdateProjectTracker,
   useDeleteProjectTracker,
+  useProjectTrackers,
+  useUpdateProjectTracker,
 } from "@/pages/project/hooks/use-project-tracker"
-import {
-  PROJECT_STATUSES,
-  TASK_CREATION_POLICIES,
-} from "@/config/entities/project.config"
 import type { Employee } from "@/types/employee.types"
 import type { Project } from "@/types/project.types"
+import { extractErrorMessage } from "@/utils/error-helper"
+
+import { startTransition, useEffect, useState } from "react"
+
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { Check, CheckSquare, ChevronDown, Edit2, Plus, Square, Trash2, X } from "lucide-react"
+import { toast } from "sonner"
 
 /**
  * Properties for EditProjectModal component.
@@ -76,6 +76,7 @@ export function EditProjectModal({
   const [editProjectLeader, setEditProjectLeader] = useState(SELECT_NONE_VALUE)
   const [editProjectStart, setEditProjectStart] = useState("")
   const [editProjectEnd, setEditProjectEnd] = useState("")
+  const [editProjectDealTarget, setEditProjectDealTarget] = useState("")
   const [editProjectTrackers, setEditProjectTrackers] = useState<string[]>([])
   const [tempTrackers, setTempTrackers] = useState<string[]>([])
   const [editProjectError, setEditProjectError] = useState<string | null>(null)
@@ -101,7 +102,7 @@ export function EditProjectModal({
           setEditProjectTrackers((prev) => [...prev, newTracker.code])
           setTempTrackers((prev) => [...prev, newTracker.code])
         },
-      }
+      },
     )
   }
 
@@ -118,14 +119,14 @@ export function EditProjectModal({
           setEditingTrackerId("")
           if (oldTracker) {
             setEditProjectTrackers((prev) =>
-              prev.map((code) => (code === oldTracker.code ? updatedTracker.code : code))
+              prev.map((code) => (code === oldTracker.code ? updatedTracker.code : code)),
             )
             setTempTrackers((prev) =>
-              prev.map((code) => (code === oldTracker.code ? updatedTracker.code : code))
+              prev.map((code) => (code === oldTracker.code ? updatedTracker.code : code)),
             )
           }
         },
-      }
+      },
     )
   }
 
@@ -149,18 +150,20 @@ export function EditProjectModal({
         setEditProjectPolicy(project.taskCreationPolicy)
         setEditProjectLeader(project.teamLeaderId || SELECT_NONE_VALUE)
         setEditProjectStart(
-          project.startDate
-            ? new Date(project.startDate).toISOString().split("T")[0]
-            : ""
+          project.startDate ? new Date(project.startDate).toISOString().split("T")[0] : "",
         )
         setEditProjectEnd(
           project.expectedEndDate
             ? new Date(project.expectedEndDate).toISOString().split("T")[0]
-            : ""
+            : "",
         )
-        const initialTrackers = project.allowedTaskTrackers && project.allowedTaskTrackers.length > 0
-          ? project.allowedTaskTrackers
-          : trackers.map((t) => t.code)
+        setEditProjectDealTarget(
+          project.dealTargetPercent != null ? String(project.dealTargetPercent) : "",
+        )
+        const initialTrackers =
+          project.allowedTaskTrackers && project.allowedTaskTrackers.length > 0
+            ? project.allowedTaskTrackers
+            : trackers.map((t) => t.code)
         setEditProjectTrackers(initialTrackers)
         setEditProjectError(null)
       })
@@ -187,6 +190,7 @@ export function EditProjectModal({
         teamLeaderId: editProjectLeader === SELECT_NONE_VALUE ? null : editProjectLeader,
         startDate: editProjectStart || null,
         expectedEndDate: editProjectEnd || null,
+        dealTargetPercent: editProjectDealTarget ? Number(editProjectDealTarget) : null,
         allowedTaskTrackers: editProjectTrackers,
       })
     },
@@ -218,7 +222,13 @@ export function EditProjectModal({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); else onOpenChange(true); }}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) handleClose()
+        else onOpenChange(true)
+      }}
+    >
       <DialogContent className="sm:max-w-[550px] rounded-xl bg-background border-border p-6 shadow-lg">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold text-foreground">Chỉnh sửa dự án</DialogTitle>
@@ -241,7 +251,9 @@ export function EditProjectModal({
             <Input
               id="editProjName"
               value={editProjectName}
-              onChange={(e) => { setEditProjectName(e.target.value); }}
+              onChange={(e) => {
+                setEditProjectName(e.target.value)
+              }}
               className="h-10 text-sm border-border rounded-full px-4"
               required
             />
@@ -254,7 +266,9 @@ export function EditProjectModal({
             <Textarea
               id="editProjDesc"
               value={editProjectDesc}
-              onChange={(e) => { setEditProjectDesc(e.target.value); }}
+              onChange={(e) => {
+                setEditProjectDesc(e.target.value)
+              }}
               className="min-h-[80px] rounded-xl border-border p-3 text-sm focus-visible:ring-1 focus-visible:ring-ring"
               placeholder="Mô tả ngắn gọn về dự án..."
             />
@@ -262,11 +276,17 @@ export function EditProjectModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="editProjStatus" className="text-xs font-semibold text-muted-foreground">
+              <Label
+                htmlFor="editProjStatus"
+                className="text-xs font-semibold text-muted-foreground"
+              >
                 Trạng thái
               </Label>
               <Select value={editProjectStatus} onValueChange={setEditProjectStatus}>
-                <SelectTrigger id="editProjStatus" className="w-full h-10 border-border rounded-full px-4 bg-background">
+                <SelectTrigger
+                  id="editProjStatus"
+                  className="w-full h-10 border-border rounded-full px-4 bg-background"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent position="popper" className="rounded-xl border-border bg-popover">
@@ -280,11 +300,17 @@ export function EditProjectModal({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="editProjPolicy" className="text-xs font-semibold text-muted-foreground">
+              <Label
+                htmlFor="editProjPolicy"
+                className="text-xs font-semibold text-muted-foreground"
+              >
                 Ai được tạo task?
               </Label>
               <Select value={editProjectPolicy} onValueChange={setEditProjectPolicy}>
-                <SelectTrigger id="editProjPolicy" className="w-full h-10 border-border rounded-full px-4 bg-background">
+                <SelectTrigger
+                  id="editProjPolicy"
+                  className="w-full h-10 border-border rounded-full px-4 bg-background"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent position="popper" className="rounded-xl border-border bg-popover">
@@ -303,11 +329,16 @@ export function EditProjectModal({
               Trưởng dự án (Team Leader)
             </Label>
             <Select value={editProjectLeader} onValueChange={setEditProjectLeader}>
-              <SelectTrigger id="editProjLeader" className="w-full h-10 border-border rounded-full px-4 bg-background">
+              <SelectTrigger
+                id="editProjLeader"
+                className="w-full h-10 border-border rounded-full px-4 bg-background"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent position="popper" className="rounded-xl border-border bg-popover">
-                <SelectItem value={SELECT_NONE_VALUE} className="rounded-lg">Chưa phân công</SelectItem>
+                <SelectItem value={SELECT_NONE_VALUE} className="rounded-lg">
+                  Chưa phân công
+                </SelectItem>
                 {allEmployees.map((emp) => (
                   <SelectItem key={emp.id} value={emp.id} className="rounded-lg">
                     {emp.fullName}
@@ -317,18 +348,46 @@ export function EditProjectModal({
             </Select>
           </div>
 
+          {/* Project-level deal target used by Capacity Copilot, not by Project Task assignment AI. */}
+          <div className="space-y-1.5">
+            <Label
+              htmlFor="editProjDealTarget"
+              className="text-xs font-semibold text-muted-foreground"
+            >
+              Cam kết tuần/milestone (Deal target %)
+            </Label>
+            <Input
+              id="editProjDealTarget"
+              type="number"
+              min={CAPACITY_COPILOT_RULES.DEAL_TARGET_PERCENT_MIN}
+              max={CAPACITY_COPILOT_RULES.DEAL_TARGET_PERCENT_MAX}
+              value={editProjectDealTarget}
+              onChange={(e) => {
+                setEditProjectDealTarget(e.target.value)
+              }}
+              className="h-10 text-sm border-border rounded-full px-4"
+              placeholder={CAPACITY_COPILOT_RULES.DEAL_TARGET_PERCENT_PLACEHOLDER}
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Capacity Copilot dùng số này làm target % khi forecast delivery tuần.
+            </p>
+          </div>
+
           <div className="space-y-1.5 relative">
             <Label className="text-xs font-semibold text-muted-foreground">
               Các loại yêu cầu được phép hoạt động
             </Label>
             <p className="text-[10px] text-muted-foreground mt-0.5 mb-2">
-              Chỉ chọn các loại yêu cầu được phép tạo trong dự án này (để trống nếu cho phép tất cả).
+              Chỉ chọn các loại yêu cầu được phép tạo trong dự án này (để trống nếu cho phép tất
+              cả).
             </p>
-            
+
             {isDropdownOpen && (
               <div
                 className="fixed inset-0 z-40"
-                onClick={() => setIsDropdownOpen(false)}
+                onClick={() => {
+                  setIsDropdownOpen(false)
+                }}
               />
             )}
 
@@ -346,10 +405,10 @@ export function EditProjectModal({
                   {editProjectTrackers.length === trackers.length
                     ? "Cho phép tất cả"
                     : editProjectTrackers.length === 0
-                    ? "Chọn ít nhất 1 loại yêu cầu"
-                    : editProjectTrackers
-                        .map((k) => trackers.find((t) => t.code === k)?.name || k)
-                        .join(", ")}
+                      ? "Chọn ít nhất 1 loại yêu cầu"
+                      : editProjectTrackers
+                          .map((k) => trackers.find((t) => t.code === k)?.name || k)
+                          .join(", ")}
                 </span>
                 <ChevronDown className="size-4 shrink-0 text-muted-foreground ml-1" />
               </button>
@@ -357,7 +416,9 @@ export function EditProjectModal({
               {isDropdownOpen && (
                 <div className="absolute left-0 mt-1 w-full bg-popover border border-border rounded-xl p-3 shadow-lg z-50 space-y-2">
                   <div className="flex items-center justify-between border-b border-border pb-1.5 mb-1.5">
-                    <span className="text-[10px] font-bold text-muted-foreground">Chọn loại công việc</span>
+                    <span className="text-[10px] font-bold text-muted-foreground">
+                      Chọn loại công việc
+                    </span>
                     <div className="flex items-center gap-2">
                       <div className="flex gap-1.5 mr-1 border-r border-border pr-2">
                         <button
@@ -408,7 +469,10 @@ export function EditProjectModal({
                     {trackers.map((tracker) => {
                       const isChecked = tempTrackers.includes(tracker.code)
                       return (
-                        <div key={tracker.id} className="group flex items-center justify-between gap-1 p-1 hover:bg-muted/30 rounded-lg">
+                        <div
+                          key={tracker.id}
+                          className="group flex items-center justify-between gap-1 p-1 hover:bg-muted/30 rounded-lg"
+                        >
                           <button
                             type="button"
                             onClick={() => {
@@ -416,7 +480,7 @@ export function EditProjectModal({
                               setTempTrackers((prev) =>
                                 prev.includes(tracker.code)
                                   ? prev.filter((k) => k !== tracker.code)
-                                  : [...prev, tracker.code]
+                                  : [...prev, tracker.code],
                               )
                             }}
                             className={`flex items-center gap-2 p-1 flex-1 rounded-lg text-left transition-all duration-200 cursor-pointer ${
@@ -446,10 +510,12 @@ export function EditProjectModal({
                                 onClick={(e) => e.stopPropagation()}
                               />
                             ) : (
-                              <span className="text-xs font-semibold leading-tight line-clamp-1">{tracker.name}</span>
+                              <span className="text-xs font-semibold leading-tight line-clamp-1">
+                                {tracker.name}
+                              </span>
                             )}
                           </button>
-                          
+
                           {editingTrackerId !== tracker.id && (
                             <div className="flex opacity-0 group-hover:opacity-100 transition-opacity">
                               <button
@@ -511,14 +577,19 @@ export function EditProjectModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="editProjStart" className="text-xs font-semibold text-muted-foreground">
+              <Label
+                htmlFor="editProjStart"
+                className="text-xs font-semibold text-muted-foreground"
+              >
                 Ngày bắt đầu
               </Label>
               <Input
                 id="editProjStart"
                 type="date"
                 value={editProjectStart}
-                onChange={(e) => { setEditProjectStart(e.target.value); }}
+                onChange={(e) => {
+                  setEditProjectStart(e.target.value)
+                }}
                 className="h-10 text-sm border-border rounded-full px-4"
               />
             </div>
@@ -531,7 +602,9 @@ export function EditProjectModal({
                 id="editProjEnd"
                 type="date"
                 value={editProjectEnd}
-                onChange={(e) => { setEditProjectEnd(e.target.value); }}
+                onChange={(e) => {
+                  setEditProjectEnd(e.target.value)
+                }}
                 className="h-10 text-sm border-border rounded-full px-4"
               />
             </div>

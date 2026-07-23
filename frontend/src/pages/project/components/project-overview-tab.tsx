@@ -1,6 +1,5 @@
 import { PageCard } from "@/components/common"
 import { Button } from "@/components/ui/button"
-import { Clock, Users, BarChart3, TrendingUp } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -13,8 +12,13 @@ import { TASK_TRACKERS, getProjectMemberWorkModeLabel } from "@/config/entities/
 import type { Project, ProjectMember } from "@/types/project.types"
 import type { Task } from "@/types/task.types"
 
+import { BarChart3, Clock, TrendingUp, Users } from "lucide-react"
+
+import { ProjectCapacityCopilotCard } from "./project-capacity-copilot-card"
+
 interface ProjectOverviewTabProps {
   project: Project
+  projectId: string
   tasks: Task[]
   totalTasksCount: number
   openTasksCount: number
@@ -30,6 +34,7 @@ interface ProjectOverviewTabProps {
 
 export function ProjectOverviewTab({
   project,
+  projectId,
   tasks,
   totalTasksCount,
   openTasksCount,
@@ -60,12 +65,48 @@ export function ProjectOverviewTab({
 
   // Define details for each status segment including labels, styling classes, and values
   const segments = [
-    { value: done, label: "Đã xong (Done)", color: "stroke-emerald-500", text: "text-emerald-500", bg: "bg-emerald-500" },
-    { value: inProgress, label: "Đang làm (In Progress)", color: "stroke-blue-500", text: "text-blue-500", bg: "bg-blue-500" },
-    { value: inReview, label: "Đang duyệt (In Review)", color: "stroke-yellow-500", text: "text-yellow-500", bg: "bg-yellow-500" },
-    { value: reopened, label: "Mở lại (Reopened)", color: "stroke-purple-500", text: "text-purple-500", bg: "bg-purple-500" },
-    { value: todo, label: "Cần làm (To Do)", color: "stroke-slate-400", text: "text-slate-400", bg: "bg-slate-400" },
-    { value: cancelled, label: "Đã hủy (Cancelled)", color: "stroke-red-500", text: "text-red-500", bg: "bg-red-500" },
+    {
+      value: done,
+      label: "Đã xong (Done)",
+      color: "stroke-emerald-500",
+      text: "text-emerald-500",
+      bg: "bg-emerald-500",
+    },
+    {
+      value: inProgress,
+      label: "Đang làm (In Progress)",
+      color: "stroke-blue-500",
+      text: "text-blue-500",
+      bg: "bg-blue-500",
+    },
+    {
+      value: inReview,
+      label: "Đang duyệt (In Review)",
+      color: "stroke-yellow-500",
+      text: "text-yellow-500",
+      bg: "bg-yellow-500",
+    },
+    {
+      value: reopened,
+      label: "Mở lại (Reopened)",
+      color: "stroke-purple-500",
+      text: "text-purple-500",
+      bg: "bg-purple-500",
+    },
+    {
+      value: todo,
+      label: "Cần làm (To Do)",
+      color: "stroke-slate-400",
+      text: "text-slate-400",
+      bg: "bg-slate-400",
+    },
+    {
+      value: cancelled,
+      label: "Đã hủy (Cancelled)",
+      color: "stroke-red-500",
+      text: "text-red-500",
+      bg: "bg-red-500",
+    },
   ].filter((s) => s.value > 0) // Only render segments with positive values
 
   // Track the accumulated offset while rendering consecutive SVG circles
@@ -76,7 +117,7 @@ export function ProjectOverviewTab({
       {/* Dashboard KPI cards section */}
       <div className="col-span-12 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Card showing the visual circular project completion percentage */}
-        <PageCard className="p-6 flex flex-col items-center justify-center text-center relative overflow-hidden bg-gradient-to-br from-card to-card/50">
+        <PageCard className="p-6 flex flex-col items-center justify-center text-center relative overflow-hidden bg-linear-to-br from-card to-card/50">
           <div className="absolute top-3 left-4 flex items-center gap-1.5 text-xs text-muted-foreground font-semibold">
             <TrendingUp className="size-3.5 text-emerald-500" />
             Tiến độ dự án (Progress)
@@ -110,12 +151,13 @@ export function ProjectOverviewTab({
             </div>
           </div>
           <div className="text-xs font-semibold text-muted-foreground">
-            Đã hoàn thành <span className="text-emerald-500 font-bold">{done}</span> trên tổng số <span className="text-foreground font-bold">{totalTasksCount}</span> công việc
+            Đã hoàn thành <span className="text-emerald-500 font-bold">{done}</span> trên tổng số{" "}
+            <span className="text-foreground font-bold">{totalTasksCount}</span> công việc
           </div>
         </PageCard>
 
         {/* Status Distribution Chart Card */}
-        <PageCard className="p-6 col-span-1 lg:col-span-2 flex flex-col md:flex-row items-center gap-8 bg-gradient-to-br from-card to-card/50">
+        <PageCard className="p-6 col-span-1 lg:col-span-2 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden bg-linear-to-br from-card to-card/50">
           <div className="absolute top-3 left-4 flex items-center gap-1.5 text-xs text-muted-foreground font-semibold">
             <BarChart3 className="size-3.5 text-blue-500" />
             Trạng thái công việc (Task Status)
@@ -126,16 +168,25 @@ export function ProjectOverviewTab({
             {totalTasksCount === 0 ? (
               <div className="flex flex-col items-center justify-center text-center">
                 <svg className="size-32">
-                  <circle cx="64" cy="64" r="50" className="stroke-muted/20" strokeWidth="12" fill="transparent" />
+                  <circle
+                    cx="64"
+                    cy="64"
+                    r="50"
+                    className="stroke-muted/20"
+                    strokeWidth="12"
+                    fill="transparent"
+                  />
                 </svg>
-                <div className="absolute text-[10px] text-muted-foreground font-medium">Không có dữ liệu</div>
+                <div className="absolute text-[10px] text-muted-foreground font-medium">
+                  Không có dữ liệu
+                </div>
               </div>
             ) : (
               <>
                 <svg className="size-32 transform -rotate-90">
                   {segments.map((seg, idx) => {
                     const segmentPercent = (seg.value / totalTasksCount) * 100
-                    const accumulatedOffset = - (currentAccumulated / 100) * circumference
+                    const accumulatedOffset = -(currentAccumulated / 100) * circumference
                     currentAccumulated += segmentPercent
                     return (
                       <circle
@@ -168,16 +219,24 @@ export function ProjectOverviewTab({
               </div>
             ) : (
               segments.map((seg, idx) => {
-                const percent = totalTasksCount > 0 ? Math.round((seg.value / totalTasksCount) * 100) : 0
+                const percent =
+                  totalTasksCount > 0 ? Math.round((seg.value / totalTasksCount) * 100) : 0
                 return (
-                  <div key={idx} className="flex items-center justify-between p-2 rounded-xl border border-border/40 bg-muted/10 hover:bg-muted/20 transition-all duration-200">
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-2 rounded-xl border border-border/40 bg-muted/10 hover:bg-muted/20 transition-all duration-200"
+                  >
                     <div className="flex items-center gap-2 min-w-0">
                       <div className={`size-2.5 rounded-full ${seg.bg} shrink-0`} />
-                      <span className="text-xs font-semibold text-muted-foreground truncate">{seg.label}</span>
+                      <span className="text-xs font-semibold text-muted-foreground truncate">
+                        {seg.label}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0 ml-2">
                       <span className="text-xs font-bold text-foreground">{seg.value}</span>
-                      <span className="text-[9px] text-muted-foreground font-medium">({percent}%)</span>
+                      <span className="text-[9px] text-muted-foreground font-medium">
+                        ({percent}%)
+                      </span>
                     </div>
                   </div>
                 )
@@ -222,16 +281,17 @@ export function ProjectOverviewTab({
                       <TableCell className="text-center font-semibold text-xs text-emerald-600 dark:text-emerald-400">
                         {stat.closed}
                       </TableCell>
-                      <TableCell className="text-right font-bold text-xs">
-                        {stat.total}
-                      </TableCell>
+                      <TableCell className="text-right font-bold text-xs">{stat.total}</TableCell>
                     </TableRow>
                   )
                 })}
                 {/* Show empty placeholder text if no tasks are present in project */}
                 {totalTasksCount === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-xs text-muted-foreground py-6">
+                    <TableCell
+                      colSpan={4}
+                      className="text-center text-xs text-muted-foreground py-6"
+                    >
                       Chưa có công việc nào được tạo.
                     </TableCell>
                   </TableRow>
@@ -246,9 +306,7 @@ export function ProjectOverviewTab({
                     <TableCell className="text-center text-xs text-emerald-600 dark:text-emerald-400">
                       {closedTasksCount}
                     </TableCell>
-                    <TableCell className="text-right text-xs">
-                      {totalTasksCount}
-                    </TableCell>
+                    <TableCell className="text-right text-xs">{totalTasksCount}</TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -264,7 +322,9 @@ export function ProjectOverviewTab({
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <div className="rounded-xl border border-border p-4 bg-muted/20 flex flex-col justify-center">
-              <span className="text-xs text-muted-foreground font-semibold">Ước tính (Estimated)</span>
+              <span className="text-xs text-muted-foreground font-semibold">
+                Ước tính (Estimated)
+              </span>
               <span className="text-2xl font-black mt-1 text-foreground">
                 {totalEstimatedHours.toFixed(1)} <span className="text-xs font-normal">giờ</span>
               </span>
@@ -277,6 +337,12 @@ export function ProjectOverviewTab({
             </div>
           </div>
         </PageCard>
+
+        <ProjectCapacityCopilotCard
+          projectId={projectId}
+          members={members}
+          dealTargetPercent={project.dealTargetPercent}
+        />
       </div>
 
       {/* Members and team assignment list panel */}
@@ -315,7 +381,7 @@ export function ProjectOverviewTab({
               <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block mb-2">
                 Thành viên tham gia
               </span>
-              <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-70 overflow-y-auto pr-1">
                 {members.length > 0 ? (
                   members.map((member) => (
                     <div
@@ -327,7 +393,8 @@ export function ProjectOverviewTab({
                           {member.employee?.fullName || "Chưa rõ"}
                         </div>
                         <div className="text-[10px] text-muted-foreground mt-0.5">
-                          {member.employee?.email || ""}{member.role?.name ? ` · ${member.role.name}` : ""}
+                          {member.employee?.email || ""}
+                          {member.role?.name ? ` · ${member.role.name}` : ""}
                         </div>
                         {(member.hourlyRate != null || member.workMode) && (
                           <div className="text-[10px] text-muted-foreground mt-0.5">
@@ -336,7 +403,9 @@ export function ProjectOverviewTab({
                               ? `${member.hourlyRate.toLocaleString("vi-VN")} đ/giờ`
                               : null}
                             {member.hourlyRate != null && member.workMode ? " · " : null}
-                            {member.workMode ? getProjectMemberWorkModeLabel(member.workMode) : null}
+                            {member.workMode
+                              ? getProjectMemberWorkModeLabel(member.workMode)
+                              : null}
                           </div>
                         )}
                       </div>

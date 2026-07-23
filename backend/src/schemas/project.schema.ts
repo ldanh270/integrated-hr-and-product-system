@@ -1,4 +1,10 @@
-import { PROJECT_STATUSES, TASK_CREATION_POLICIES, PROJECT_MEMBER_WORK_MODES, TASK_TRACKERS } from "@/configs/entities/project.config.ts"
+import {
+  PROJECT_MEMBER_WORK_MODES,
+  PROJECT_STATUSES,
+  TASK_CREATION_POLICIES,
+  TASK_TRACKERS,
+} from "@/configs/entities/project.config.ts"
+import { CAPACITY_COPILOT_RULES } from "@/configs/rules/capacity-copilot.config.ts"
 
 import { z } from "zod"
 
@@ -27,6 +33,13 @@ export const createProjectSchema = z
     expectedEndDate: z
       .string()
       .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid expectedEndDate format" })
+      .optional()
+      .nullable(),
+
+    dealTargetPercent: z
+      .number()
+      .min(CAPACITY_COPILOT_RULES.DEAL_TARGET_PERCENT_MIN)
+      .max(CAPACITY_COPILOT_RULES.DEAL_TARGET_PERCENT_MAX)
       .optional()
       .nullable(),
 
@@ -72,6 +85,13 @@ export const updateProjectSchema = z
       .optional()
       .nullable(),
 
+    dealTargetPercent: z
+      .number()
+      .min(CAPACITY_COPILOT_RULES.DEAL_TARGET_PERCENT_MIN)
+      .max(CAPACITY_COPILOT_RULES.DEAL_TARGET_PERCENT_MAX)
+      .optional()
+      .nullable(),
+
     teamLeaderId: z.string().optional().nullable(),
     allowedTaskTrackers: z.array(z.string()).optional(),
   })
@@ -110,8 +130,12 @@ export const updateProjectMemberSchema = z
     roleId: z.string().optional().nullable(),
   })
   .strict()
-  .refine((data) => data.hourlyRate !== undefined || data.workMode !== undefined || data.roleId !== undefined, {
-    message: "At least one field must be provided",
-  })
+  .refine(
+    (data) =>
+      data.hourlyRate !== undefined || data.workMode !== undefined || data.roleId !== undefined,
+    {
+      message: "At least one field must be provided",
+    },
+  )
 
 export type UpdateProjectMemberSchemaType = z.infer<typeof updateProjectMemberSchema>

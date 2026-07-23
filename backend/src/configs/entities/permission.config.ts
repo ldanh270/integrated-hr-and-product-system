@@ -1,3 +1,4 @@
+/** Canonical permission codes shared by route guards, seeds, and authorization services. */
 export const PERMISSION_CODE = {
   PERMISSION_READ: "permission.read",
   PERMISSION_CREATE: "permission.create",
@@ -7,6 +8,7 @@ export const PERMISSION_CODE = {
   ROLE_PERMISSION_UPDATE: "role.permission.update",
   EMPLOYEE_ROLE_READ: "employee.role.read",
   EMPLOYEE_ROLE_UPDATE: "employee.role.update",
+  PROJECT_UPDATE: "project.update",
   APPLICATION_READ: "application.read",
   APPLICATION_APPROVE: "application.approve",
   ATTENDANCE_WEEKLY_SCHEDULE_READ: "attendance.weekly_schedule.read",
@@ -22,6 +24,7 @@ export const PERMISSION_CODES = [
   PERMISSION_CODE.ROLE_PERMISSION_UPDATE,
   PERMISSION_CODE.EMPLOYEE_ROLE_READ,
   PERMISSION_CODE.EMPLOYEE_ROLE_UPDATE,
+  PERMISSION_CODE.PROJECT_UPDATE,
   PERMISSION_CODE.APPLICATION_READ,
   PERMISSION_CODE.APPLICATION_APPROVE,
   PERMISSION_CODE.ATTENDANCE_WEEKLY_SCHEDULE_READ,

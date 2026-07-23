@@ -1,3 +1,7 @@
+/**
+ * Controlled weekly assignment form for an admin-selected employee.
+ * It validates assigned slots against submitted free-time before producing the save payload.
+ */
 import { Button } from "@/components/ui/button"
 import {
   DAY_OF_WEEK_LABELS,
@@ -8,9 +12,14 @@ import {
   PART_TIME_AVAILABILITY_ASSIGN_VALIDATION,
 } from "@/config/entities/part-time-availability.config"
 import { useAssignPartTimeShifts } from "@/hooks/attendance/use-part-time-availability"
-import type { IPartTimeWeeklyAvailability } from "@/types/part-time-availability.types"
+import { schedulesApi } from "@/lib/api/attendance.api"
+import type {
+  IPartTimeWeeklyAvailability,
+  ISuggestPartTimeAssignment,
+} from "@/types/part-time-availability.types"
+import { buildPartTimeAssignmentsFromPlannedWeek } from "@/utils/attendance/part-time-availability/build-part-time-assignments-from-planned-week.util"
+import { mapSuggestionAssignmentsToForm } from "@/utils/attendance/part-time-availability/map-suggestion-assignments-to-form.util"
 import {
-  buildDefaultPartTimeAssignments,
   collectPartTimeAssignmentIssues,
   flattenPartTimeAssignments,
   type IPartTimeAssignmentDayForm,
@@ -19,7 +28,8 @@ import { getWeekDates } from "@/utils/attendance/get-week-dates"
 
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
-import { Loader2 } from "lucide-react"
+import { Loader2, Sparkles } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
 
 import { AdminPartTimeAssignDayColumn } from "./admin-part-time-assign-day-column"
 
@@ -30,6 +40,7 @@ export interface AdminPartTimeAvailabilityAssignPanelFormProps {
   canAssign: boolean
   weekDates: ReturnType<typeof getWeekDates>
   dayMap: Map<number, IPartTimeWeeklyAvailability["days"][number]>
+  suggestionAssignments?: ISuggestPartTimeAssignment[]
 }
 
 /** Stateful assign form — one row per weekday, validates slots before POST. */
@@ -40,11 +51,41 @@ export function AdminPartTimeAvailabilityAssignPanelForm({
   canAssign,
   weekDates,
   dayMap,
+  suggestionAssignments,
 }: AdminPartTimeAvailabilityAssignPanelFormProps) {
   const assignMutation = useAssignPartTimeShifts(weekStartKey)
-  const [assignments, setAssignments] = useState<IPartTimeAssignmentDayForm[]>(() =>
-    buildDefaultPartTimeAssignments(availability),
+  const { data: plannedWeek } = useQuery({
+    queryKey: ["employee-planned-week", availability.employeeId, weekStartKey],
+    queryFn: () => schedulesApi.getEmployeePlannedWeek(availability.employeeId, weekStartKey),
+  })
+
+  const initialAssignments = useMemo(
+    () => buildPartTimeAssignmentsFromPlannedWeek(availability, plannedWeek),
+    [availability, plannedWeek],
   )
+
+  const assignmentKey = `${availability.id}:${weekStartKey}`
+  const [editedAssignments, setEditedAssignments] = useState<{
+    key: string
+    value: IPartTimeAssignmentDayForm[]
+  } | null>(null)
+  const [usedSuggestion, setUsedSuggestion] = useState(false)
+  const assignments =
+    editedAssignments?.key === assignmentKey ? editedAssignments.value : initialAssignments
+
+  const setAssignments = (
+    update:
+      | IPartTimeAssignmentDayForm[]
+      | ((current: IPartTimeAssignmentDayForm[]) => IPartTimeAssignmentDayForm[]),
+  ) => {
+    setEditedAssignments((current) => {
+      const currentAssignments = current?.key === assignmentKey ? current.value : assignments
+      return {
+        key: assignmentKey,
+        value: typeof update === "function" ? update(currentAssignments) : update,
+      }
+    })
+  }
 
   const validationIssues = useMemo(
     () => collectPartTimeAssignmentIssues(assignments, dayMap, DAY_OF_WEEK_LABELS),
@@ -58,6 +99,14 @@ export function AdminPartTimeAvailabilityAssignPanelForm({
   )
 
   const hasValidationErrors = validationIssues.length > 0
+  const hasSuggestion = Boolean(suggestionAssignments && suggestionAssignments.length > 0)
+
+  const handleApplySuggestion = () => {
+    if (!suggestionAssignments || suggestionAssignments.length === 0) return
+    setAssignments(mapSuggestionAssignmentsToForm(suggestionAssignments))
+    setUsedSuggestion(true)
+    toast.success(PART_TIME_AVAILABILITY_ASSIGN_LABELS.APPLY_SUGGESTION_SUCCESS)
+  }
 
   const handleAssign = async () => {
     if (isAllBusyWeek) {
@@ -74,6 +123,7 @@ export function AdminPartTimeAvailabilityAssignPanelForm({
       const result = await assignMutation.mutateAsync({
         id: availability.id,
         assignments: flattenPartTimeAssignments(assignments),
+        suggestionDecision: usedSuggestion ? "edited" : "manual",
       })
       if (result.assigned === 0) {
         toast.success(PART_TIME_AVAILABILITY_ASSIGN_LABELS.CLEAR_WEEK_SUCCESS)
@@ -134,19 +184,33 @@ export function AdminPartTimeAvailabilityAssignPanelForm({
         <p className="text-xs text-muted-foreground">
           Chọn Làm/Không làm từng ngày. Giờ xếp ca phải nằm trong khung rảnh nhân viên đã gửi.
         </p>
-        <Button
-          type="button"
-          className="rounded-full"
-          disabled={
-            !canAssign || assignMutation.isPending || hasValidationErrors || isAllBusyWeek
-          }
-          onClick={() => {
-            void handleAssign()
-          }}
-        >
-          {assignMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Xếp ca tuần này
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {hasSuggestion ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-full"
+              disabled={!canAssign || isAllBusyWeek}
+              onClick={handleApplySuggestion}
+            >
+              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+              {PART_TIME_AVAILABILITY_ASSIGN_LABELS.APPLY_SUGGESTION}
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            className="rounded-full"
+            disabled={
+              !canAssign || assignMutation.isPending || hasValidationErrors || isAllBusyWeek
+            }
+            onClick={() => {
+              void handleAssign()
+            }}
+          >
+            {assignMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Xếp ca tuần này
+          </Button>
+        </div>
       </div>
     </>
   )

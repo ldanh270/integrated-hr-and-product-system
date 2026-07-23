@@ -1,5 +1,6 @@
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { PORT } from "@/configs/system/server.config.ts"
+import { initCapacityCopilotCron } from "@/libs/capacity-copilot-cron.ts"
 import { connectDB } from "@/libs/database.ts"
 import { initCronJobs } from "@/libs/payroll-cron.ts"
 import { initWeeklyScheduleCron } from "@/libs/weekly-schedule-cron.ts"
@@ -10,6 +11,7 @@ import approvalRoutes from "@/routes/approval.route.ts"
 import attendanceRoutes from "@/routes/attendance.route.ts"
 import auditRoutes from "@/routes/audit.route.ts"
 import authRoutes from "@/routes/auth.route.ts"
+import capacityCopilotRoutes from "@/routes/capacity-copilot.route.ts"
 import customQueryRoutes from "@/routes/custom-query.route.ts"
 import debugRoutes from "@/routes/debug.route.ts"
 import employeeSalaryConfigRoutes from "@/routes/employee-salary-config.route.ts"
@@ -95,6 +97,7 @@ app.use("/api/payrolls", payrollRoutes)
 app.use("/api/projects", projectRoutes)
 app.use("/api/tasks", taskRoutes)
 app.use("/api/task-estimate-ai", taskEstimateAiRoutes)
+app.use("/api/capacity-copilot", capacityCopilotRoutes)
 app.use("/api/permissions", permissionRoutes)
 app.use("/api/roles", roleRoutes)
 app.use("/api/positions", positionRoutes)
@@ -129,6 +132,8 @@ void connectDB()
       console.log("Server start on port " + PORT)
       initCronJobs()
       initWeeklyScheduleCron()
+      // Capacity Copilot refreshes weekly forecasts in the background; UI reads advisory results.
+      initCapacityCopilotCron()
     })
   })
   .catch((error) => {

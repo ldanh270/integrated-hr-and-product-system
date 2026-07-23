@@ -230,6 +230,12 @@ const privateRoutes: RouteConfig[] = [
     layout: MainLayout,
   },
   {
+    path: ROUTES.PROJECT.CAPACITY_BOARD,
+    component: lazy(() => import("@/pages/project/ProjectCapacityBoardPage.tsx")),
+    layout: MainLayout,
+    permissions: ["project.update"],
+  },
+  {
     path: "/project/:id/:tab",
     component: lazy(() => import("@/pages/project/ProjectDetail.tsx")),
     layout: MainLayout,
