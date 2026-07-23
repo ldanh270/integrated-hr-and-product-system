@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/common"
+import { StatusPill } from "@/components/common/status-pill"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { POSTING_CHANNELS } from "@/config/entities/recruitment.config"
@@ -71,12 +72,12 @@ export default function OAuthAccountsPage() {
       {isLoading ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse">
+            <Card key={i} className="animate-pulse rounded-xl">
               <CardHeader>
-                <div className="h-4 bg-muted rounded w-1/2" />
+                <div className="h-4 bg-muted rounded-full w-1/2" />
               </CardHeader>
               <CardContent>
-                <div className="h-8 bg-muted rounded" />
+                <div className="h-8 bg-muted rounded-full" />
               </CardContent>
             </Card>
           ))}
@@ -86,12 +87,12 @@ export default function OAuthAccountsPage() {
           {POSTING_CHANNELS.map((channel) => {
             const account = getAccount(channel.value)
             return (
-              <Card key={channel.value}>
+              <Card key={channel.value} className="rounded-xl">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-base">{channel.label}</CardTitle>
-                      <CardDescription>
+                      <CardTitle className="text-base font-semibold">{channel.label}</CardTitle>
+                      <CardDescription className="text-xs text-muted-foreground mt-0.5">
                         {account?.name
                           ? `Đã kết nối: ${account.name}`
                           : channel.value === "google_form"
@@ -104,7 +105,10 @@ export default function OAuthAccountsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <StatusBadge connected={!!account?.refreshToken} />
+                    <StatusPill
+                      label={account?.refreshToken ? "Đã kết nối" : "Chưa kết nối"}
+                      variant={account?.refreshToken ? "success" : "warning"}
+                    />
                     <div className="flex gap-2">
                       {channel.value === "google_form" && (
                         <>
@@ -112,6 +116,7 @@ export default function OAuthAccountsPage() {
                             <Button
                               variant="outline"
                               size="sm"
+                              className="rounded-full text-xs"
                               onClick={() => handleDisconnect(channel.value)}
                               disabled={deleteMutation.isPending}
                             >
@@ -120,6 +125,7 @@ export default function OAuthAccountsPage() {
                           ) : (
                             <Button
                               size="sm"
+                              className="rounded-full text-xs"
                               onClick={() => handleConnect(channel.value)}
                               disabled={connectingChannel === channel.value}
                             >
@@ -129,7 +135,7 @@ export default function OAuthAccountsPage() {
                         </>
                       )}
                       {channel.value !== "google_form" && (
-                        <span className="text-xs text-muted-foreground px-2 py-1">Sắp có</span>
+                        <span className="text-xs text-muted-foreground px-2 py-1 font-medium">Sắp có</span>
                       )}
                     </div>
                   </div>
@@ -140,18 +146,18 @@ export default function OAuthAccountsPage() {
         </div>
       )}
 
-      <div className="rounded-lg border bg-muted/50 p-4">
-        <h3 className="font-medium mb-2">Hướng dẫn kết nối Google Form</h3>
-        <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+      <div className="rounded-xl border border-border bg-muted/40 p-5">
+        <h3 className="font-semibold text-sm mb-2">Hướng dẫn kết nối Google Form</h3>
+        <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
           <li>Click nút "Kết nối" bên trên</li>
           <li>Đăng nhập tài khoản Google của bạn</li>
           <li>Cho phép ứng dụng truy cập Google Forms</li>
           <li>Sau khi xác thực thành công, bạn sẽ được chuyển về trang này</li>
         </ol>
-        <p className="text-xs text-muted-foreground mt-3">
+        <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border">
           <strong>Lưu ý:</strong> Cần có{" "}
-          <code className="bg-muted px-1 rounded">GOOGLE_OAUTH_CLIENT_ID</code> và{" "}
-          <code className="bg-muted px-1 rounded">GOOGLE_OAUTH_CLIENT_SECRET</code> trong file .env
+          <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-[11px]">GOOGLE_OAUTH_CLIENT_ID</code> và{" "}
+          <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-[11px]">GOOGLE_OAUTH_CLIENT_SECRET</code> trong file .env
           phía server.
         </p>
       </div>
@@ -159,16 +165,3 @@ export default function OAuthAccountsPage() {
   )
 }
 
-function StatusBadge({ connected }: { connected: boolean }) {
-  return (
-    <span
-      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-        connected
-          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-          : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-      }`}
-    >
-      {connected ? "Đã kết nối" : "Chưa kết nối"}
-    </span>
-  )
-}

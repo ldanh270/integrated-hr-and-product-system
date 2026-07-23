@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { PageHeader } from "@/components/common/page-header"
+import { PageHeader } from "@/components/common"
 import { StatusPill } from "@/components/common/status-pill"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -43,31 +43,31 @@ interface KanbanCardProps {
 
 function KanbanCard({ application, onMove }: KanbanCardProps) {
   return (
-    <Card className="p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow">
+    <Card className="p-3.5 mb-2.5 cursor-pointer hover:shadow-md transition-all rounded-xl border-border bg-card">
       <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-            <span className="text-xs font-medium text-primary">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+            <span className="text-xs font-semibold text-primary">
               {application.candidate?.fullName?.charAt(0)?.toUpperCase() ?? "?"}
             </span>
           </div>
           <div className="min-w-0">
-            <p className="font-medium text-sm truncate">{application.candidateName}</p>
+            <p className="font-medium text-sm text-foreground truncate">{application.candidateName}</p>
             <p className="text-xs text-muted-foreground truncate">{application.positionTitle}</p>
           </div>
         </div>
       </div>
 
       {application.requisitionCode && (
-        <p className="text-xs text-muted-foreground mb-2">@{application.requisitionCode}</p>
+        <p className="text-xs font-mono text-primary font-medium mb-2">@{application.requisitionCode}</p>
       )}
 
-      <div className="flex items-center justify-between">
-        {application.source && (
-          <Badge variant="outline" className="text-[10px]">
+      <div className="flex items-center justify-between border-t border-border/60 pt-2">
+        {application.source ? (
+          <Badge variant="outline" className="rounded-full text-[10px]">
             {application.source}
           </Badge>
-        )}
+        ) : <div />}
         <div className="flex gap-1 ml-auto">
           {KANBAN_COLUMNS
             .filter((col) => col !== application.status)
@@ -77,7 +77,7 @@ function KanbanCard({ application, onMove }: KanbanCardProps) {
                 key={col}
                 variant="ghost"
                 size="sm"
-                className="h-6 px-1 text-[10px]"
+                className="h-6 px-1.5 rounded-full text-[10px] hover:bg-muted"
                 onClick={(e) => {
                   e.stopPropagation()
                   onMove(col)
@@ -100,20 +100,20 @@ interface KanbanColumnProps {
 
 function KanbanColumn({ status, applications, onMove }: KanbanColumnProps) {
   return (
-    <div className="flex-shrink-0 w-[280px]">
-      <div className="flex items-center justify-between mb-2 px-1">
+    <div className="flex-shrink-0 w-[285px]">
+      <div className="flex items-center justify-between mb-3 px-1">
         <div className="flex items-center gap-2">
           <StatusPill
-            label={APPLICATION_STATUS_LABELS[status]}
+            label={APPLICATION_STATUS_LABELS[status] || status}
             variant={columnVariantMap[status]}
           />
-          <Badge variant="secondary" className="text-[10px]">
+          <Badge variant="secondary" className="rounded-full text-[11px] font-semibold px-2">
             {applications.length}
           </Badge>
         </div>
       </div>
 
-      <ScrollArea className="h-[calc(100vh-280px)]">
+      <ScrollArea className="h-[calc(100vh-260px)]">
         <div className="pr-3">
           {applications.map((app) => (
             <KanbanCard
@@ -123,9 +123,11 @@ function KanbanColumn({ status, applications, onMove }: KanbanColumnProps) {
             />
           ))}
           {applications.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-4">
-              Chưa có ứng viên
-            </p>
+            <div className="border border-dashed border-border/80 rounded-xl p-4 text-center">
+              <p className="text-xs text-muted-foreground">
+                Chưa có ứng viên
+              </p>
+            </div>
           )}
         </div>
       </ScrollArea>
@@ -166,7 +168,7 @@ export default function KanbanPage() {
   }
 
   return (
-    <div className="container flex flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
+    <div className="container flex flex-col gap-6 px-3 py-4 sm:px-6 sm:py-6">
       <PageHeader
         title="Kanban Tuyển dụng"
         description="Quản lý pipeline ứng viên theo từng giai đoạn"
@@ -188,3 +190,4 @@ export default function KanbanPage() {
     </div>
   )
 }
+

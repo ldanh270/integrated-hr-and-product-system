@@ -1,10 +1,9 @@
-import { useState } from "react"
-import { PageHeader } from "@/components/common/page-header"
+import { useMemo, useState } from "react"
+import { AppPagination, DataTableToolbar, PageCard, PageHeader } from "@/components/common"
 import { StatusPill } from "@/components/common/status-pill"
-import { DataTableToolbar } from "@/components/common/data-table-toolbar"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -13,6 +12,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import {
   useBackgroundChecks,
   useStartBackgroundCheck,
@@ -42,8 +46,16 @@ const statusVariantMap: Record<string, "success" | "warning" | "danger" | "info"
   [BGC_STATUS.FAILED]: "danger",
 }
 
+const TAB_DEFINITIONS = [
+  { id: "all", label: "Tất cả" },
+  { id: BGC_STATUS.PENDING, label: BGC_STATUS_LABELS[BGC_STATUS.PENDING] || "Chờ xử lý" },
+  { id: BGC_STATUS.IN_PROGRESS, label: BGC_STATUS_LABELS[BGC_STATUS.IN_PROGRESS] || "Đang kiểm tra" },
+  { id: BGC_STATUS.PASSED, label: BGC_STATUS_LABELS[BGC_STATUS.PASSED] || "Đạt" },
+  { id: BGC_STATUS.FAILED, label: BGC_STATUS_LABELS[BGC_STATUS.FAILED] || "Không đạt" },
+]
+
 const formatDate = (dateStr: string | null | undefined) => {
-  if (!dateStr) return "-"
+  if (!dateStr) return "—"
   try {
     return format(parseISO(dateStr), "dd/MM/yyyy", { locale: vi })
   } catch {
@@ -63,103 +75,123 @@ function BackgroundCheckRow({ bgc, onStart, onComplete }: BackgroundCheckRowProp
   const hasCriminalCheck = bgc.criminalRecordCheck !== null && bgc.criminalRecordCheck !== undefined
 
   return (
-    <TableRow>
-      <TableCell>
+    <TableRow className="transition-colors duration-100 hover:bg-muted/25">
+      <TableCell className="px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <span className="text-sm font-medium text-primary">
+          <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+            <span className="text-xs font-semibold text-primary">
               {bgc.candidateName?.charAt(0)?.toUpperCase() ?? "?"}
             </span>
           </div>
           <div>
-            <p className="font-medium">{bgc.candidateName}</p>
-            <p className="text-xs text-muted-foreground">{bgc.candidateEmail}</p>
+            <p className="font-medium text-foreground text-sm">{bgc.candidateName}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{bgc.candidateEmail}</p>
           </div>
         </div>
       </TableCell>
-      <TableCell>
-        <Badge variant="outline">{BGC_GROUP_LABELS[bgc.group]}</Badge>
+      <TableCell className="px-4 py-3">
+        <Badge variant="outline" className="rounded-full text-[11px]">{BGC_GROUP_LABELS[bgc.group] || bgc.group}</Badge>
       </TableCell>
-      <TableCell>
+      <TableCell className="px-4 py-3">
         <StatusPill
-          label={BGC_STATUS_LABELS[bgc.status]}
+          label={BGC_STATUS_LABELS[bgc.status] || bgc.status}
           variant={statusVariantMap[bgc.status]}
         />
       </TableCell>
-      <TableCell>
+      <TableCell className="px-4 py-3">
         <div className="flex items-center gap-2 text-sm">
           <div className="flex items-center gap-1">
             {hasIdVerification ? (
-              <CheckCircle className="h-4 w-4 text-green-500" />
+              <CheckCircle className="h-3.5 w-3.5 text-green-500" />
             ) : (
-              <div className="h-4 w-4 rounded-full border border-muted-foreground/30" />
+              <div className="h-3.5 w-3.5 rounded-full border border-muted-foreground/30" />
             )}
             <span className="text-xs">CCCD</span>
           </div>
           <div className="flex items-center gap-1">
             {hasAddressVerification ? (
-              <CheckCircle className="h-4 w-4 text-green-500" />
+              <CheckCircle className="h-3.5 w-3.5 text-green-500" />
             ) : (
-              <div className="h-4 w-4 rounded-full border border-muted-foreground/30" />
+              <div className="h-3.5 w-3.5 rounded-full border border-muted-foreground/30" />
             )}
             <span className="text-xs">Địa chỉ</span>
           </div>
           <div className="flex items-center gap-1">
             {hasCriminalCheck ? (
-              <CheckCircle className="h-4 w-4 text-green-500" />
+              <CheckCircle className="h-3.5 w-3.5 text-green-500" />
             ) : (
-              <div className="h-4 w-4 rounded-full border border-muted-foreground/30" />
+              <div className="h-3.5 w-3.5 rounded-full border border-muted-foreground/30" />
             )}
             <span className="text-xs">LLHP</span>
           </div>
         </div>
       </TableCell>
-      <TableCell className="text-sm">{formatDate(bgc.startedAt)}</TableCell>
-      <TableCell className="text-sm">{formatDate(bgc.completedAt)}</TableCell>
-      <TableCell>
+      <TableCell className="hidden md:table-cell px-4 py-3 text-sm">{formatDate(bgc.startedAt)}</TableCell>
+      <TableCell className="hidden md:table-cell px-4 py-3 text-sm">{formatDate(bgc.completedAt)}</TableCell>
+      <TableCell className="hidden lg:table-cell px-4 py-3">
         {bgc.failReason ? (
           <p className="text-xs text-destructive max-w-[150px] truncate" title={bgc.failReason}>
             {bgc.failReason}
           </p>
         ) : (
-          <span className="text-xs text-muted-foreground">-</span>
+          <span className="text-xs text-muted-foreground">—</span>
         )}
       </TableCell>
-      <TableCell>
-        <div className="flex items-center gap-1">
+      <TableCell className="px-4 py-3 text-right">
+        <div className="flex items-center justify-end gap-1">
           {bgc.status === BGC_STATUS.PENDING && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onStart}
-              title="Bắt đầu kiểm tra"
-            >
-              <Play className="h-4 w-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full hover:bg-muted"
+                  onClick={onStart}
+                >
+                  <Play className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Bắt đầu kiểm tra</TooltipContent>
+            </Tooltip>
           )}
           {bgc.status === BGC_STATUS.IN_PROGRESS && (
             <>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onComplete(true)}
-                title="Đạt"
-              >
-                <CheckCircle className="h-4 w-4 text-green-500" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onComplete(false)}
-                title="Không đạt"
-              >
-                <XCircle className="h-4 w-4 text-red-500" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full hover:bg-muted"
+                    onClick={() => onComplete(true)}
+                  >
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Xác nhận Đạt</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full hover:bg-muted"
+                    onClick={() => onComplete(false)}
+                  >
+                    <XCircle className="h-4 w-4 text-red-500" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Xác nhận Không đạt</TooltipContent>
+              </Tooltip>
             </>
           )}
-          <Button variant="ghost" size="icon" title="Xem chi tiết">
-            <Eye className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted">
+                <Eye className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Xem chi tiết kiểm tra</TooltipContent>
+          </Tooltip>
         </div>
       </TableCell>
     </TableRow>
@@ -168,11 +200,12 @@ function BackgroundCheckRow({ bgc, onStart, onComplete }: BackgroundCheckRowProp
 
 export default function BackgroundChecksPage() {
   const [page, setPage] = useState(1)
-  const [pageSize] = useState(20)
-  const [statusFilter, setStatusFilter] = useState<string>("")
+  const [pageSize, setPageSize] = useState(20)
+  const [keyword, setKeyword] = useState("")
+  const [activeTab, setActiveTab] = useState("all")
 
   const { data, isLoading } = useBackgroundChecks({
-    status: statusFilter || undefined,
+    status: activeTab !== "all" ? activeTab : undefined,
     page,
     pageSize,
   })
@@ -181,6 +214,28 @@ export default function BackgroundChecksPage() {
 
   const backgroundChecks = data?.data ?? []
   const meta = data?.meta
+
+  const tabCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: backgroundChecks.length }
+    for (const item of backgroundChecks) {
+      counts[item.status] = (counts[item.status] || 0) + 1
+    }
+    return counts
+  }, [backgroundChecks])
+
+  const filteredChecks = useMemo(() => {
+    return backgroundChecks.filter((bgc) => {
+      if (activeTab !== "all" && bgc.status !== activeTab) return false
+
+      const searchStr = keyword.toLowerCase().trim()
+      if (!searchStr) return true
+
+      const name = (bgc.candidateName ?? "").toLowerCase()
+      const email = (bgc.candidateEmail ?? "").toLowerCase()
+
+      return name.includes(searchStr) || email.includes(searchStr)
+    })
+  }, [backgroundChecks, activeTab, keyword])
 
   const handleStart = (id: string) => {
     startBgc.mutate(id)
@@ -197,90 +252,121 @@ export default function BackgroundChecksPage() {
   }
 
   return (
-    <div className="container flex flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
+    <div className="container flex flex-col gap-6 px-3 py-4 sm:px-6 sm:py-6">
       <PageHeader
         title="Kiểm tra Background"
         description="Quản lý kiểm tra lý lịch ứng viên trước khi tuyển dụng"
         actions={
-          <Button>
+          <Button className="rounded-full">
             <Shield className="mr-2 h-4 w-4" />
             Tạo kiểm tra mới
           </Button>
         }
       />
 
-      <Card>
+      <PageCard padding="sm" className="p-0 overflow-hidden">
+        {/* Status Tab Navigation */}
+        <nav
+          aria-label="Lọc theo trạng thái kiểm tra"
+          className="flex items-center gap-6 overflow-x-auto border-b border-border px-6 hide-scrollbar bg-background"
+        >
+          {TAB_DEFINITIONS.map((tab) => {
+            const isActive = activeTab === tab.id
+            const count = tabCounts[tab.id] || 0
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id)
+                  setPage(1)
+                }}
+                className={`relative flex items-center gap-2 py-4 font-medium text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
+                  isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab.label}
+                <span
+                  className={`inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full text-[11px] font-bold px-1.5 border ${
+                    isActive
+                      ? "bg-primary border-primary text-primary-foreground"
+                      : "bg-background border-border text-muted-foreground"
+                  }`}
+                >
+                  {count}
+                </span>
+                {isActive && (
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-t-full" />
+                )}
+              </button>
+            )
+          })}
+        </nav>
+
         <DataTableToolbar
-          searchQuery={statusFilter}
-          onSearchChange={setStatusFilter}
-          searchPlaceholder="Lọc theo trạng thái..."
+          searchQuery={keyword}
+          onSearchChange={(val) => {
+            setKeyword(val)
+            setPage(1)
+          }}
+          searchPlaceholder="Tìm theo tên ứng viên, email..."
         />
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Ứng viên</TableHead>
-              <TableHead>Nhóm</TableHead>
-              <TableHead>Trạng thái</TableHead>
-              <TableHead>Xác minh</TableHead>
-              <TableHead>Ngày bắt đầu</TableHead>
-              <TableHead>Ngày hoàn thành</TableHead>
-              <TableHead>Lý do thất bại</TableHead>
-              <TableHead className="w-[120px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-muted/40">
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                  Đang tải...
-                </TableCell>
+                <TableHead className="min-w-64 px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Ứng viên</TableHead>
+                <TableHead className="w-36 px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Nhóm</TableHead>
+                <TableHead className="w-36 px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Trạng thái</TableHead>
+                <TableHead className="w-44 px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Xác minh</TableHead>
+                <TableHead className="hidden md:table-cell w-36 px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Ngày bắt đầu</TableHead>
+                <TableHead className="hidden md:table-cell w-36 px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Ngày hoàn thành</TableHead>
+                <TableHead className="hidden lg:table-cell w-44 px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Lý do thất bại</TableHead>
+                <TableHead className="w-32 px-4 py-3 text-right text-xs font-medium uppercase text-muted-foreground">Thao tác</TableHead>
               </TableRow>
-            ) : backgroundChecks.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                  Chưa có kiểm tra background nào
-                </TableCell>
-              </TableRow>
-            ) : (
-              backgroundChecks.map((bgc: BackgroundCheck) => (
-                <BackgroundCheckRow
-                  key={bgc.id}
-                  bgc={bgc}
-                  onStart={() => handleStart(bgc.id)}
-                  onComplete={(passed) => handleComplete(bgc.id, passed)}
-                />
-              ))
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, index) => (
+                  <TableRow key={index}>
+                    <TableCell colSpan={8} className="p-3">
+                      <Skeleton className="h-12 w-full rounded-lg" />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : filteredChecks.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
+                    {keyword || activeTab !== "all" ? "Không tìm thấy kết quả phù hợp với bộ lọc" : "Chưa có kiểm tra background nào"}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredChecks.map((bgc: BackgroundCheck) => (
+                  <BackgroundCheckRow
+                    key={bgc.id}
+                    bgc={bgc}
+                    onStart={() => handleStart(bgc.id)}
+                    onComplete={(passed) => handleComplete(bgc.id, passed)}
+                  />
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-        {meta && meta.total > pageSize && (
-          <div className="flex items-center justify-between border-t p-4">
-            <p className="text-sm text-muted-foreground">
-              Hiển thị {backgroundChecks.length} / {meta.total} kết quả
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                Trước
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={backgroundChecks.length < pageSize}
-              >
-                Sau
-              </Button>
-            </div>
-          </div>
-        )}
-      </Card>
+        <AppPagination
+          currentPage={page}
+          totalPages={meta ? Math.max(1, Math.ceil(meta.total / pageSize)) : 1}
+          onPageChange={setPage}
+          totalItems={meta?.total ?? filteredChecks.length}
+          itemsPerPage={pageSize}
+          onItemsPerPageChange={(val) => {
+            setPageSize(val)
+            setPage(1)
+          }}
+        />
+      </PageCard>
     </div>
   )
 }
+

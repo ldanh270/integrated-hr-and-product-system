@@ -1,5 +1,5 @@
-import { useNavigate } from "react-router"
-import { PageHeader } from "@/components/common/page-header"
+import { routerNavigate } from "@/lib/router-navigator"
+import { PageHeader } from "@/components/common"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -38,13 +38,15 @@ function StatCard({
   onClick?: () => void
 }) {
   return (
-    <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={onClick}>
+    <Card className="cursor-pointer hover:shadow-md transition-all rounded-xl" onClick={onClick}>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <CardTitle className="text-xs font-semibold uppercase text-muted-foreground">{title}</CardTitle>
+        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+          <Icon className="h-4 w-4 text-primary" />
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-2xl font-bold text-foreground">{value}</div>
         {description && (
           <p className="text-xs text-muted-foreground mt-1">{description}</p>
         )}
@@ -84,22 +86,22 @@ function InterviewItem({
   }
 
   return (
-    <div className="flex items-center justify-between py-2">
+    <div className="flex items-center justify-between py-2.5">
       <div className="flex items-center gap-3">
-        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-          <span className="text-xs font-medium text-primary">
+        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+          <span className="text-xs font-semibold text-primary">
             {candidateName?.charAt(0)?.toUpperCase() ?? "?"}
           </span>
         </div>
         <div>
-          <p className="text-sm font-medium">{candidateName}</p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm font-medium text-foreground">{candidateName}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
             {positionTitle} • Vòng {roundNumber}
           </p>
         </div>
       </div>
       <div className="text-right">
-        <p className="text-sm font-medium">{formatDate(scheduledAt)}</p>
+        <p className="text-sm font-medium text-foreground">{formatDate(scheduledAt)}</p>
         <p className="text-xs text-muted-foreground">{formatTime(scheduledAt)}</p>
       </div>
     </div>
@@ -119,37 +121,33 @@ function QuickLink({
   to: string
   count?: number
 }) {
-  const navigate = useNavigate()
-
   return (
     <Card
-      className="cursor-pointer hover:shadow-md transition-shadow"
-      onClick={() => navigate(to)}
+      className="cursor-pointer hover:shadow-md transition-all rounded-xl"
+      onClick={() => routerNavigate(to)}
     >
       <CardContent className="flex items-center gap-4 p-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 shrink-0">
           <Icon className="h-5 w-5 text-primary" />
         </div>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className="font-medium">{title}</p>
-            {count !== undefined && (
-              <Badge variant="secondary" className="text-xs">
+            <p className="font-medium text-sm text-foreground truncate">{title}</p>
+            {count !== undefined && count > 0 && (
+              <Badge variant="secondary" className="rounded-full text-[10px] font-bold">
                 {count}
               </Badge>
             )}
           </div>
-          <p className="text-xs text-muted-foreground">{description}</p>
+          <p className="text-xs text-muted-foreground truncate mt-0.5">{description}</p>
         </div>
-        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+        <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
       </CardContent>
     </Card>
   )
 }
 
 export default function RecruitmentDashboard() {
-  const navigate = useNavigate()
-
   const { data: reqStats, isLoading: isLoadingReqStats } = useRequisitionStats()
   const { data: appStats, isLoading: isLoadingAppStats } = useApplicationStats()
   const { data: upcomingInterviews, isLoading: isLoadingInterviews } = useUpcomingInterviews(7)
@@ -174,10 +172,10 @@ export default function RecruitmentDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {isLoading ? (
           <>
-            <Skeleton className="h-[120px]" />
-            <Skeleton className="h-[120px]" />
-            <Skeleton className="h-[120px]" />
-            <Skeleton className="h-[120px]" />
+            <Skeleton className="h-[120px] rounded-xl" />
+            <Skeleton className="h-[120px] rounded-xl" />
+            <Skeleton className="h-[120px] rounded-xl" />
+            <Skeleton className="h-[120px] rounded-xl" />
           </>
         ) : (
           <>
@@ -186,28 +184,28 @@ export default function RecruitmentDashboard() {
               value={reqStats?.total ?? 0}
               description={`${reqStats?.pending ?? 0} đang chờ phê duyệt`}
               icon={FileText}
-              onClick={() => navigate(ROUTES.RECRUITMENT.REQUISITIONS)}
+              onClick={() => routerNavigate(ROUTES.RECRUITMENT.REQUISITIONS)}
             />
             <StatCard
               title="Ứng viên"
               value={appStats?.total ?? 0}
               description={`${appStats?.active ?? 0} đang trong quá trình`}
               icon={Users}
-              onClick={() => navigate(ROUTES.RECRUITMENT.KANBAN)}
+              onClick={() => routerNavigate(ROUTES.RECRUITMENT.KANBAN)}
             />
             <StatCard
               title="Offer"
               value={offerStats?.total ?? 0}
               description={`${offerStats?.pending ?? 0} đang chờ phản hồi`}
               icon={Briefcase}
-              onClick={() => navigate(ROUTES.RECRUITMENT.OFFERS)}
+              onClick={() => routerNavigate(ROUTES.RECRUITMENT.OFFERS)}
             />
             <StatCard
               title="Background Check"
               value={bgcStats?.total ?? 0}
               description={`${bgcStats?.inProgress ?? 0} đang kiểm tra`}
               icon={CheckCircle}
-              onClick={() => navigate(ROUTES.RECRUITMENT.BACKGROUND_CHECKS)}
+              onClick={() => routerNavigate(ROUTES.RECRUITMENT.BACKGROUND_CHECKS)}
             />
           </>
         )}
@@ -215,30 +213,31 @@ export default function RecruitmentDashboard() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Upcoming Interviews */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="rounded-xl">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
             <div>
-              <CardTitle className="text-base">Lịch phỏng vấn sắp tới</CardTitle>
-              <CardDescription>7 ngày tới</CardDescription>
+              <CardTitle className="text-base font-semibold">Lịch phỏng vấn sắp tới</CardTitle>
+              <CardDescription className="text-xs">7 ngày tới</CardDescription>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate(ROUTES.RECRUITMENT.INTERVIEWS)}
+              className="rounded-full text-xs"
+              onClick={() => routerNavigate(ROUTES.RECRUITMENT.INTERVIEWS)}
             >
               Xem tất cả
-              <ArrowRight className="ml-1 h-4 w-4" />
+              <ArrowRight className="ml-1 h-3.5 w-3.5" />
             </Button>
           </CardHeader>
           <CardContent>
             {isLoadingInterviews ? (
               <div className="space-y-2">
-                <Skeleton className="h-12" />
-                <Skeleton className="h-12" />
-                <Skeleton className="h-12" />
+                <Skeleton className="h-12 rounded-lg" />
+                <Skeleton className="h-12 rounded-lg" />
+                <Skeleton className="h-12 rounded-lg" />
               </div>
             ) : upcomingInterviews && upcomingInterviews.length > 0 ? (
-              <div className="divide-y">
+              <div className="divide-y divide-border">
                 {upcomingInterviews.slice(0, 5).map((interview) => (
                   <InterviewItem
                     key={interview.id}
@@ -261,71 +260,72 @@ export default function RecruitmentDashboard() {
         </Card>
 
         {/* Application Pipeline Summary */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="rounded-xl">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
             <div>
-              <CardTitle className="text-base">Pipeline ứng viên</CardTitle>
-              <CardDescription>Theo trạng thái</CardDescription>
+              <CardTitle className="text-base font-semibold">Pipeline ứng viên</CardTitle>
+              <CardDescription className="text-xs">Theo trạng thái</CardDescription>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate(ROUTES.RECRUITMENT.KANBAN)}
+              className="rounded-full text-xs"
+              onClick={() => routerNavigate(ROUTES.RECRUITMENT.KANBAN)}
             >
               Xem Kanban
-              <ArrowRight className="ml-1 h-4 w-4" />
+              <ArrowRight className="ml-1 h-3.5 w-3.5" />
             </Button>
           </CardHeader>
           <CardContent>
             {isLoadingAppStats ? (
               <div className="space-y-2">
-                <Skeleton className="h-8" />
-                <Skeleton className="h-8" />
-                <Skeleton className="h-8" />
+                <Skeleton className="h-8 rounded-lg" />
+                <Skeleton className="h-8 rounded-lg" />
+                <Skeleton className="h-8 rounded-lg" />
               </div>
             ) : appStats ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-blue-500" />
+                    <div className="h-2 w-2 rounded-full bg-primary" />
                     <span className="text-sm">Mới</span>
                   </div>
-                  <span className="text-sm font-medium">{appStats.byStatus?.new ?? 0}</span>
+                  <span className="text-sm font-semibold">{appStats.byStatus?.new ?? 0}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-yellow-500" />
+                    <div className="h-2 w-2 rounded-full bg-primary/70" />
                     <span className="text-sm">Đang xem xét</span>
                   </div>
-                  <span className="text-sm font-medium">{appStats.byStatus?.reviewing ?? 0}</span>
+                  <span className="text-sm font-semibold">{appStats.byStatus?.reviewing ?? 0}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-orange-500" />
+                    <div className="h-2 w-2 rounded-full bg-primary/50" />
                     <span className="text-sm">Phỏng vấn</span>
                   </div>
-                  <span className="text-sm font-medium">{appStats.byStatus?.interviewing ?? 0}</span>
+                  <span className="text-sm font-semibold">{appStats.byStatus?.interviewing ?? 0}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-green-500" />
+                    <div className="h-2 w-2 rounded-full bg-primary/80" />
                     <span className="text-sm">Offer</span>
                   </div>
-                  <span className="text-sm font-medium">{appStats.byStatus?.offer_sent ?? 0}</span>
+                  <span className="text-sm font-semibold">{appStats.byStatus?.offer_sent ?? 0}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                    <div className="h-2 w-2 rounded-full bg-primary font-bold" />
                     <span className="text-sm">Đã tuyển</span>
                   </div>
-                  <span className="text-sm font-medium">{appStats.byStatus?.hired ?? 0}</span>
+                  <span className="text-sm font-semibold">{appStats.byStatus?.hired ?? 0}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-red-500" />
+                    <div className="h-2 w-2 rounded-full bg-destructive" />
                     <span className="text-sm">Từ chối</span>
                   </div>
-                  <span className="text-sm font-medium">{appStats.rejected ?? 0}</span>
+                  <span className="text-sm font-semibold">{appStats.rejected ?? 0}</span>
                 </div>
               </div>
             ) : (
@@ -340,7 +340,7 @@ export default function RecruitmentDashboard() {
 
       {/* Quick Links */}
       <div>
-        <h3 className="text-lg font-semibold mb-3">Thao tác nhanh</h3>
+        <h3 className="text-sm font-semibold uppercase text-muted-foreground mb-3">Thao tác nhanh</h3>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <QuickLink
             title="Yêu cầu tuyển dụng"
@@ -373,3 +373,4 @@ export default function RecruitmentDashboard() {
     </div>
   )
 }
+
