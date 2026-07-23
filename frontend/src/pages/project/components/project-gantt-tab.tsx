@@ -886,7 +886,7 @@ export function ProjectGanttTab({ projectId, project }: ProjectGanttTabProps) {
                             onClick={() => { setSelectedTaskForReview(task); }}
                             className="text-blue-600 dark:text-blue-400 hover:underline font-normal shrink-0 mr-1"
                           >
-                            {task.tracker ? task.tracker.charAt(0).toUpperCase() + task.tracker.slice(1) : "Task"} #{task.id.slice(-5)}
+                            {task.tracker ? task.tracker.charAt(0).toUpperCase() + task.tracker.slice(1) : "Task"} #{task?.id ? task.id.slice(-5) : "—"}
                           </button>
                           <span className="truncate text-foreground" title={task.title}>
                             :{" "}

@@ -364,7 +364,7 @@ export default function EmployeeList() {
                     {/* Mã NV */}
                     <td className="px-5 py-3">
                       <span className="font-mono text-[11px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">
-                        {employee.id.slice(-6).toUpperCase()}
+                        {employee?.id ? employee.id.slice(-6).toUpperCase() : "—"}
                       </span>
                     </td>
 

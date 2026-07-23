@@ -122,14 +122,14 @@ export default function CandidatesPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1 max-w-[200px]">
-                      {candidate.skills.slice(0, 3).map((skill, i) => (
+                      {(candidate.skills || []).slice(0, 3).map((skill, i) => (
                         <Badge key={i} variant="secondary" className="text-[10px]">
                           {skill}
                         </Badge>
                       ))}
-                      {candidate.skills.length > 3 && (
+                      {(candidate.skills || []).length > 3 && (
                         <Badge variant="secondary" className="text-[10px]">
-                          +{candidate.skills.length - 3}
+                          +{(candidate.skills || []).length - 3}
                         </Badge>
                       )}
                     </div>

@@ -243,7 +243,7 @@ export default function EmployeeContractCreate() {
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium">Mã nhân sự</Label>
                 <Input
-                  value={selectedEmployee ? selectedEmployee.id.slice(-6).toUpperCase() : ""}
+                  value={selectedEmployee?.id ? selectedEmployee.id.slice(-6).toUpperCase() : ""}
                   placeholder="Mã nhân sự"
                   disabled
                   className="rounded-full bg-muted/40 font-mono"

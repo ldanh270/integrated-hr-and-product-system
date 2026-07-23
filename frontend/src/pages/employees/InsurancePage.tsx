@@ -125,9 +125,9 @@ export default function InsurancePage() {
                 : paginatedEmployees.map((employee: Employee) => (
                   <tr key={employee.id} className="border-b border-border last:border-0 transition-colors duration-100 hover:bg-muted/25">
                     <td className="px-5 py-3"><div className="text-[13px] font-medium text-foreground">{employee.fullName}</div><div className="text-[11px] text-muted-foreground">{employee.username}</div></td>
-                    <td className="px-5 py-3"><span className="rounded bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">{employee.id.slice(-6).toUpperCase()}</span></td>
-                    <td className="px-5 py-3 font-mono text-[11px] text-muted-foreground">{employee.nationalId ? `79${employee.nationalId.slice(0, 8)}` : "—"}</td>
-                    <td className="px-5 py-3 font-mono text-[11px] text-muted-foreground">{employee.nationalId ? `DN4${employee.nationalId.slice(0, 10)}` : "—"}</td>
+                    <td className="px-5 py-3"><span className="rounded bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">{employee?.id ? employee.id.slice(-6).toUpperCase() : "—"}</span></td>
+                    <td className="px-5 py-3 font-mono text-[11px] text-muted-foreground">{employee?.nationalId ? `79${employee.nationalId.slice(0, 8)}` : "—"}</td>
+                    <td className="px-5 py-3 font-mono text-[11px] text-muted-foreground">{employee?.nationalId ? `DN4${employee.nationalId.slice(0, 10)}` : "—"}</td>
                     <td className="px-5 py-3 text-right text-[13px] text-foreground">{formatCurrency(5000000)}</td>
                     <td className="px-5 py-3"><Badge className="px-2 py-0 text-[10px]">Đang đóng BHXH</Badge></td>
                   </tr>

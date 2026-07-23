@@ -168,7 +168,7 @@ export function EmployeeDetailsDrawer({ employeeId, onClose }: EmployeeDetailsDr
                 </div>
                 <div className="flex items-center gap-3 text-[13px] text-muted-foreground">
                   <span className="font-mono bg-background border border-border px-1.5 py-0.5 rounded text-[11px]">
-                    {employee.id.slice(-6).toUpperCase()}
+                    {employee?.id ? employee.id.slice(-6).toUpperCase() : "—"}
                   </span>
                   <span>@{employee.username}</span>
                 </div>
