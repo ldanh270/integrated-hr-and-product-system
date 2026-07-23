@@ -260,7 +260,7 @@ export default function RequisitionsPage() {
           />
 
           {/* ── Table View ── */}
-          <div className="overflow-x-auto border-b border-border">
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader className="bg-muted/40">
                 <TableRow>
@@ -318,19 +318,17 @@ export default function RequisitionsPage() {
             </Table>
           </div>
 
-          <div className="p-4">
-            <AppPagination
-              currentPage={page}
-              totalPages={totalPages}
-              onPageChange={setPage}
-              totalItems={totalItems}
-              itemsPerPage={pageSize}
-              onItemsPerPageChange={(value) => {
-                setPageSize(value)
-                setPage(1)
-              }}
-            />
-          </div>
+          <AppPagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            totalItems={totalItems}
+            itemsPerPage={pageSize}
+            onItemsPerPageChange={(value) => {
+              setPageSize(value)
+              setPage(1)
+            }}
+          />
         </PageCard>
 
         {/* Dialog create / edit */}
