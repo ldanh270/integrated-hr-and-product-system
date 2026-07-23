@@ -33,7 +33,7 @@ export function AppPagination({
   totalItems,
   itemsPerPage = 10,
   onItemsPerPageChange,
-  pageSizeOptions = [10, 20, 50],
+  pageSizeOptions = [5, 10, 20, 50],
 }: AppPaginationProps) {
   if (totalPages <= 1 && !totalItems) return null
 
@@ -78,6 +78,10 @@ export function AppPagination({
   const startItemIndex = totalItems ? (currentPage - 1) * itemsPerPage + 1 : 0
   const endItemIndex = totalItems ? Math.min(currentPage * itemsPerPage, totalItems) : 0
 
+  const effectivePageSizeOptions = Array.from(
+    new Set([...pageSizeOptions, itemsPerPage])
+  ).sort((a, b) => a - b)
+
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t border-border bg-muted/10 text-sm">
       <div className="flex flex-col sm:flex-row items-center gap-4 text-muted-foreground">
@@ -90,11 +94,11 @@ export function AppPagination({
                 onItemsPerPageChange(Number(val))
               }}
             >
-              <SelectTrigger className="w-17.5 h-8 bg-background">
-                <SelectValue />
+              <SelectTrigger className="w-[72px] h-8 bg-background rounded-full text-xs font-medium px-2.5">
+                <SelectValue placeholder={itemsPerPage.toString()} />
               </SelectTrigger>
               <SelectContent>
-                {pageSizeOptions.map((opt) => (
+                {effectivePageSizeOptions.map((opt) => (
                   <SelectItem key={opt} value={opt.toString()}>
                     {opt}
                   </SelectItem>
