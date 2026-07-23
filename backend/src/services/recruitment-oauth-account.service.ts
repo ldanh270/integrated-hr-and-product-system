@@ -11,8 +11,8 @@ export class RecruitmentOAuthAccountService {
     clientId: string
     clientSecret: string
     refreshToken: string
-  }) {
-    return recruitmentOAuthAccountRepository.upsert(userId, input)
+  }, accountId?: string) {
+    return recruitmentOAuthAccountRepository.upsert(userId, input, accountId)
   }
 
   async list(userId?: string) {
@@ -52,12 +52,12 @@ export class RecruitmentOAuthAccountService {
     clientId: string
     clientSecret: string
     refreshToken: string
-  }) {
+  }, accountId?: string) {
     return recruitmentOAuthAccountRepository.upsert(userId, {
       channel,
       name,
       ...tokens,
-    })
+    }, accountId)
   }
 }
 

@@ -21,13 +21,28 @@ export class RecruitmentOAuthAccountRepository {
     })
   }
 
-  upsert(userId: string, data: {
+  async upsert(userId: string, data: {
     channel: string
     name: string
     clientId: string
     clientSecret: string
     refreshToken: string
-  }) {
+  }, accountId?: string) {
+    if (accountId) {
+      const existing = await this.findById(accountId)
+      if (existing && existing.userId === userId) {
+        return prisma.recruitmentOAuthAccount.update({
+          where: { id: accountId },
+          data: {
+            name: data.name,
+            channel: data.channel as RecruitmentChannel,
+            clientId: data.clientId,
+            clientSecret: data.clientSecret,
+            refreshToken: data.refreshToken,
+          },
+        })
+      }
+    }
     return this.create(userId, data)
   }
 

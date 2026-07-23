@@ -637,13 +637,13 @@ export class RecruitmentController {
       }
 
       const userId = req.user!.empId
-      const { channel, name } = req.query as { channel?: string; name?: string }
+      const { channel, name, accountId } = req.query as { channel?: string; name?: string; accountId?: string }
       if (!channel || !name) {
         throw new AppError("Thiếu channel hoặc name", HttpStatusCode.BAD_REQUEST, "OAuthController")
       }
 
-      // Encode userId + channel + name in state
-      const state = Buffer.from(JSON.stringify({ userId, channel, name })).toString("base64")
+      // Encode userId + channel + name + accountId in state
+      const state = Buffer.from(JSON.stringify({ userId, channel, name, accountId })).toString("base64")
       const authUrl = buildGoogleAuthUrl(state)
 
       this.sendSuccess(res, { authUrl })
@@ -671,8 +671,8 @@ export class RecruitmentController {
     }
 
     try {
-      // Decode state to get userId + channel + name
-      const { userId, channel, name } = JSON.parse(Buffer.from(state, "base64").toString("utf8"))
+      // Decode state to get userId + channel + name + accountId
+      const { userId, channel, name, accountId } = JSON.parse(Buffer.from(state, "base64").toString("utf8"))
       const config = getGoogleOAuthConfig()
 
       // Exchange code for tokens
@@ -683,7 +683,7 @@ export class RecruitmentController {
         clientId: config!.clientId,
         clientSecret: config!.clientSecret,
         refreshToken: tokens.refreshToken,
-      })
+      }, accountId)
 
       return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?success=connected`)
     } catch (err) {

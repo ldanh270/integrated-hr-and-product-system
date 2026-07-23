@@ -67,6 +67,7 @@ export default function OAuthAccountsPage() {
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false)
   const [selectedChannel, setSelectedChannel] = useState<string>("google_form")
   const [accountName, setAccountName] = useState<string>("")
+  const [targetAccountId, setTargetAccountId] = useState<string | null>(null)
   const [isConnecting, setIsConnecting] = useState(false)
 
   // Handle OAuth callback searchParams
@@ -160,7 +161,11 @@ export default function OAuthAccountsPage() {
       const response = await apiClient.get<{ data: { authUrl: string } }>(
         "/recruitment/oauth/google/connect",
         {
-          params: { channel: selectedChannel, name: nameToUse },
+          params: {
+            channel: selectedChannel,
+            name: nameToUse,
+            accountId: targetAccountId || undefined,
+          },
         },
       )
       window.location.assign(response.data.data.authUrl)
@@ -192,6 +197,7 @@ export default function OAuthAccountsPage() {
             size="sm"
             className="rounded-full px-4 h-9 gap-1.5 text-xs font-medium shadow-xs"
             onClick={() => {
+              setTargetAccountId(null)
               setAccountName("")
               setSelectedChannel("google_form")
               setIsConnectModalOpen(true)
@@ -406,6 +412,7 @@ export default function OAuthAccountsPage() {
                                   size="icon"
                                   className="rounded-full hover:bg-muted"
                                   onClick={() => {
+                                    setTargetAccountId(account.id)
                                     setAccountName(account.name)
                                     setSelectedChannel(account.channel)
                                     setIsConnectModalOpen(true)
