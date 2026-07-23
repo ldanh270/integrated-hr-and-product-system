@@ -125,8 +125,8 @@ export class RecruitmentOfferRepository {
       where: { id },
       data: {
         status: "accepted",
-        acceptedAt: new Date(),
-        candidateResponseNote: responseNote,
+        respondedAt: new Date(),
+        responseNote,
       },
     })
   }
@@ -136,7 +136,8 @@ export class RecruitmentOfferRepository {
       where: { id },
       data: {
         status: "declined",
-        candidateResponseNote: responseNote,
+        respondedAt: new Date(),
+        responseNote,
       },
     })
   }

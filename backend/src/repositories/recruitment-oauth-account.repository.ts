@@ -62,6 +62,15 @@ export class RecruitmentOAuthAccountRepository {
     })
   }
 
+  findFirstByChannel(channel: string) {
+    return prisma.recruitmentOAuthAccount.findFirst({
+      where: {
+        channel: channel as RecruitmentChannel,
+      },
+      orderBy: { createdAt: "desc" },
+    })
+  }
+
   listByUser(userId: string) {
     return prisma.recruitmentOAuthAccount.findMany({
       where: { userId },
