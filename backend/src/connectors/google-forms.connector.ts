@@ -37,7 +37,15 @@ export const GOOGLE_FORM_QUESTION_IDS = {
 interface GoogleForm {
   formId: string
   responderUri?: string
-  items?: Array<{ itemId?: string }>
+  items?: Array<{
+    itemId?: string
+    title?: string
+    questionItem?: {
+      question?: {
+        questionId?: string
+      }
+    }
+  }>
 }
 
 interface GoogleAnswer {
@@ -97,7 +105,9 @@ export class GoogleFormsConnector implements RecruitmentConnector {
       existingItems = existing.items
     }
 
-    const existingIds = new Set(existingItems?.map((item) => item.itemId).filter(Boolean))
+    const existingTitles = new Set(
+      (existingItems ?? []).map((item) => item.title?.trim()).filter((t): t is string => Boolean(t))
+    )
     const fields = this.formFields(posting.formFields)
     const description = this.buildDescription(posting.requisition)
     const requests: Array<Record<string, unknown>> = [
@@ -107,7 +117,7 @@ export class GoogleFormsConnector implements RecruitmentConnector {
           updateMask: "title,description",
         },
       },
-      ...this.questionRequests(fields, existingIds),
+      ...this.questionRequests(fields, existingTitles),
     ]
     await this.request(token, `${FORMS_API}/${formId}:batchUpdate`, {
       method: "POST",
@@ -149,6 +159,22 @@ export class GoogleFormsConnector implements RecruitmentConnector {
 
     const config = await this.requireConfig(posting)
     const token = await this.getAccessToken(config)
+    const form = await this.request<GoogleForm>(token, `${FORMS_API}/${posting.externalId}`)
+    const fields = this.formFields(posting.formFields)
+
+    const questionIdMap = new Map<string, string>()
+    for (const item of form.items ?? []) {
+      const qId = item.questionItem?.question?.questionId
+      const title = item.title?.trim()
+      if (!qId || !title) continue
+      const matchedField = fields.find(
+        (f) => f.label.trim() === title || f.key.trim().toLowerCase() === title.toLowerCase()
+      )
+      if (matchedField) {
+        questionIdMap.set(matchedField.key, qId)
+      }
+    }
+
     const responses: GoogleFormResponse[] = []
     let pageToken: string | undefined
     do {
@@ -164,18 +190,20 @@ export class GoogleFormsConnector implements RecruitmentConnector {
 
     const rows: ConnectorIntakeRow[] = []
     const errors: ConnectorRowError[] = []
-    const fields = this.formFields(posting.formFields)
     for (const [index, response] of responses.entries()) {
       const responseId = response.responseId?.trim()
-      const responseData = Object.fromEntries(fields.map((field) => [
-        field.key,
-        this.text(response, googleFormQuestionId(field.key)),
-      ]))
+      const responseData = Object.fromEntries(
+        fields.map((field) => {
+          const qId = questionIdMap.get(field.key)
+          return [field.key, qId ? this.text(response, qId) : ""]
+        })
+      )
+      const cvQId = questionIdMap.get("cv_url")
       const raw = {
         fullName: responseData.full_name ?? "",
         email: (responseData.email ?? "").toLowerCase(),
         phone: responseData.phone || undefined,
-        cvUrl: this.cvUrl(response, googleFormQuestionId("cv_url")),
+        cvUrl: cvQId ? this.cvUrl(response, cvQId) : undefined,
         notes: responseData.notes || undefined,
       }
       const parsed = intakeRowSchema.safeParse(raw)
@@ -277,30 +305,28 @@ export class GoogleFormsConnector implements RecruitmentConnector {
 
   private questionRequests(
     fields: readonly GoogleFormFieldDefinition[],
-    existingIds: Set<string | undefined>,
+    existingTitles: Set<string>,
   ): Array<Record<string, unknown>> {
     return fields.flatMap((field, index) => {
-      const id = googleFormQuestionId(field.key)
-      return (
-      existingIds.has(id)
-        ? []
-        : [{
-            createItem: {
-              item: {
-                itemId: id,
-                title: field.label,
-                questionItem: {
-                  question: {
-                    questionId: id,
-                    required: field.required,
-                    textQuestion: { paragraph: field.type === "paragraph" },
-                  },
+      if (existingTitles.has(field.label.trim())) {
+        return []
+      }
+      return [
+        {
+          createItem: {
+            item: {
+              title: field.label,
+              questionItem: {
+                question: {
+                  required: field.required,
+                  textQuestion: { paragraph: field.type === "paragraph" },
                 },
               },
-              location: { index },
             },
-          }]
-      )
+            location: { index },
+          },
+        },
+      ]
     })
   }
 

@@ -30,8 +30,8 @@ export const createJobRequisitionSchema = z.object({
   reason: z.string().max(1000).optional(),
   targetHireDate: z.string().datetime().optional(),
   targetCloseDate: z.string().datetime().optional(),
-  positionId: z.string().cuid().optional(),
-  approverId: z.string().cuid("Người duyệt không hợp lệ"),
+  positionId: z.string().min(1).optional(),
+  approverId: z.string().min(1, "Người duyệt không hợp lệ"),
 })
 
 export const updateJobRequisitionSchema = createJobRequisitionSchema.partial().extend({

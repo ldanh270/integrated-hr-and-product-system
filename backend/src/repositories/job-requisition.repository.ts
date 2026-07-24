@@ -114,14 +114,15 @@ export class JobRequisitionRepository {
       updateData.targetCloseDate = data.targetCloseDate ? new Date(data.targetCloseDate) : null
     }
     if (data.approverId !== undefined) {
-      updateData.approver = data.approverId
+      updateData.approver = (data.approverId && data.approverId.trim() !== "")
         ? { connect: { id: data.approverId } }
         : { disconnect: true }
     }
-    if (data.positionId !== undefined)
-      updateData.position = data.positionId
+    if (data.positionId !== undefined) {
+      updateData.position = (data.positionId && data.positionId.trim() !== "")
         ? { connect: { id: data.positionId } }
         : { disconnect: true }
+    }
 
     return this.db.jobRequisition.update({
       where: { id },

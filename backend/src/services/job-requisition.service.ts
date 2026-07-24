@@ -13,7 +13,11 @@ export class JobRequisitionService {
   async create(input: CreateJobRequisitionInput, requestedById: string) {
     // Validate salary range
     if (input.salaryMin && input.salaryMax && input.salaryMin > input.salaryMax) {
-      throw new Error("Minimum salary cannot exceed maximum salary")
+      throw new AppError(
+        "Lương tối thiểu không được lớn hơn lương tối đa",
+        HttpStatusCode.BAD_REQUEST,
+        "JobRequisitionService",
+      )
     }
 
     await this.assertEligibleApprover(input.approverId)
@@ -24,7 +28,11 @@ export class JobRequisitionService {
   async findById(id: string) {
     const requisition = await jobRequisitionRepository.findById(id)
     if (!requisition) {
-      throw new Error("Job requisition not found")
+      throw new AppError(
+        "Không tìm thấy yêu cầu tuyển dụng",
+        HttpStatusCode.NOT_FOUND,
+        "JobRequisitionService",
+      )
     }
     return requisition
   }
@@ -32,7 +40,11 @@ export class JobRequisitionService {
   async findByCode(code: string) {
     const requisition = await jobRequisitionRepository.findByCode(code)
     if (!requisition) {
-      throw new Error("Job requisition not found")
+      throw new AppError(
+        "Không tìm thấy yêu cầu tuyển dụng",
+        HttpStatusCode.NOT_FOUND,
+        "JobRequisitionService",
+      )
     }
     return requisition
   }
@@ -46,12 +58,20 @@ export class JobRequisitionService {
 
     // Prevent updates to closed requisitions
     if (existing.status === REQUISITION_STATUS.CLOSED || existing.status === REQUISITION_STATUS.FILLED) {
-      throw new Error("Cannot update closed or filled requisitions")
+      throw new AppError(
+        "Không thể chỉnh sửa yêu cầu tuyển dụng đã đóng hoặc đã tuyển đủ",
+        HttpStatusCode.BAD_REQUEST,
+        "JobRequisitionService",
+      )
     }
 
     // Validate salary range
     if (input.salaryMin && input.salaryMax && input.salaryMin > input.salaryMax) {
-      throw new Error("Minimum salary cannot exceed maximum salary")
+      throw new AppError(
+        "Lương tối thiểu không được lớn hơn lương tối đa",
+        HttpStatusCode.BAD_REQUEST,
+        "JobRequisitionService",
+      )
     }
 
     if (input.approverId) await this.assertEligibleApprover(input.approverId)
@@ -76,7 +96,11 @@ export class JobRequisitionService {
     const existing = await this.findById(id)
 
     if (existing.status !== REQUISITION_STATUS.DRAFT) {
-      throw new Error("Only draft requisitions can be submitted for approval")
+      throw new AppError(
+        "Chỉ yêu cầu tuyển dụng nháp mới được gửi duyệt",
+        HttpStatusCode.BAD_REQUEST,
+        "JobRequisitionService",
+      )
     }
 
     if (!existing.approverId) {
@@ -96,7 +120,11 @@ export class JobRequisitionService {
     const existing = await this.findById(id)
 
     if (existing.status !== REQUISITION_STATUS.PENDING_APPROVAL) {
-      throw new Error("Only pending requisitions can be approved")
+      throw new AppError(
+        "Chỉ yêu cầu tuyển dụng đang chờ duyệt mới được duyệt",
+        HttpStatusCode.BAD_REQUEST,
+        "JobRequisitionService",
+      )
     }
 
     if (existing.approverId !== approverId) {
@@ -114,7 +142,11 @@ export class JobRequisitionService {
     const existing = await this.findById(id)
 
     if (existing.status === REQUISITION_STATUS.CLOSED || existing.status === REQUISITION_STATUS.FILLED) {
-      throw new Error("Requisition is already closed")
+      throw new AppError(
+        "Yêu cầu tuyển dụng đã đóng",
+        HttpStatusCode.BAD_REQUEST,
+        "JobRequisitionService",
+      )
     }
 
     return jobRequisitionRepository.close(id)
@@ -124,7 +156,11 @@ export class JobRequisitionService {
     const existing = await this.findById(id)
 
     if (existing.status === REQUISITION_STATUS.FILLED) {
-      throw new Error("Requisition is already filled")
+      throw new AppError(
+        "Yêu cầu tuyển dụng đã tuyển đủ",
+        HttpStatusCode.BAD_REQUEST,
+        "JobRequisitionService",
+      )
     }
 
     return jobRequisitionRepository.update(id, { status: REQUISITION_STATUS.FILLED })
@@ -149,7 +185,11 @@ export class JobRequisitionService {
     const existing = await this.findById(id)
 
     if (existing.status !== REQUISITION_STATUS.DRAFT) {
-      throw new Error("Only draft requisitions can be deleted")
+      throw new AppError(
+        "Chỉ yêu cầu tuyển dụng nháp mới được xóa",
+        HttpStatusCode.BAD_REQUEST,
+        "JobRequisitionService",
+      )
     }
 
     return jobRequisitionRepository.delete(id)
