@@ -225,6 +225,8 @@ export class TaskEstimateAiService {
         s.finalScore = Math.round(finalScore * 10) / 10
         s.reasons = ["Gặp lỗi khi gọi AI API. Đây là điểm số dự phòng có tính đến tốc độ."]
       }
+      // Đảm bảo danh sách dự phòng vẫn được sắp xếp giảm dần theo điểm số
+      suggestions.sort((a, b) => b.finalScore - a.finalScore)
     }
 
     return suggestions
