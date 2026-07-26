@@ -28,16 +28,14 @@ function fixWindowsPathPlugin(): Plugin {
     name: "fix-windows-path-plugin",
     enforce: "pre",
     configResolved(config: ResolvedConfig) {
-      if (config.root) {
-        ;(config as { root: string }).root = normalizeDriveLetter(config.root)
-      }
+      ;(config as { root: string }).root = normalizeDriveLetter(config.root)
     },
     buildStart() {
       const context = this as unknown as CustomPluginContext
       const originalEmitFile = context.emitFile
       if (typeof originalEmitFile === "function") {
         context.emitFile = function (emittedFile: CustomEmittedFile): string {
-          if (emittedFile && typeof emittedFile.fileName === "string") {
+          if (typeof emittedFile.fileName === "string") {
             const fileName = emittedFile.fileName
             if (path.isAbsolute(fileName) || /^[a-zA-Z]:/.test(fileName)) {
               emittedFile.fileName = path.basename(fileName)
