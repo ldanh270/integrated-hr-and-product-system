@@ -1,41 +1,49 @@
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
 import path from "node:path"
-import fs from "node:fs"
 import { defineConfig, loadEnv } from "vite"
+import type { Plugin, ResolvedConfig } from "vite"
 
-// Resolve real path to handle Windows drive letter aliases (e.g. E: vs G:)
-const getRealPath = (p: string) => {
-  try {
-    return fs.realpathSync(p)
-  } catch {
-    return p
-  }
+interface CustomEmittedFile {
+  fileName?: string
+  [key: string]: unknown
 }
 
-const projectRoot = getRealPath(path.resolve(__dirname))
+interface CustomPluginContext {
+  emitFile?: (emittedFile: CustomEmittedFile) => string
+}
 
-function fixWindowsPathPlugin() {
+const normalizeDriveLetter = (p: string): string => {
+  const resolved = path.resolve(p)
+  if (/^[a-z]:/i.test(resolved)) {
+    return resolved.charAt(0).toUpperCase() + resolved.slice(1)
+  }
+  return resolved
+}
+
+const projectRoot = normalizeDriveLetter(__dirname)
+
+function fixWindowsPathPlugin(): Plugin {
   return {
     name: "fix-windows-path-plugin",
-    enforce: "pre" as const,
-    configResolved(config: any) {
+    enforce: "pre",
+    configResolved(config: ResolvedConfig) {
       if (config.root) {
-        config.root = getRealPath(config.root)
+        ;(config as { root: string }).root = normalizeDriveLetter(config.root)
       }
     },
-    buildStart(this: any) {
-      // Ensure plugin context emitFile cleans absolute path fileNames if any
-      const originalEmitFile = this.emitFile
-      if (originalEmitFile) {
-        this.emitFile = function (emittedFile: any) {
+    buildStart() {
+      const context = this as unknown as CustomPluginContext
+      const originalEmitFile = context.emitFile
+      if (typeof originalEmitFile === "function") {
+        context.emitFile = function (emittedFile: CustomEmittedFile): string {
           if (emittedFile && typeof emittedFile.fileName === "string") {
             const fileName = emittedFile.fileName
             if (path.isAbsolute(fileName) || /^[a-zA-Z]:/.test(fileName)) {
               emittedFile.fileName = path.basename(fileName)
             }
           }
-          return originalEmitFile.call(this, emittedFile)
+          return originalEmitFile.call(context, emittedFile)
         }
       }
     },

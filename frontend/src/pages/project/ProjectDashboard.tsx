@@ -614,7 +614,9 @@ export default function ProjectDashboard() {
         y={contextMenu.y}
         task={contextMenu.task}
         projectMembers={activeProjectMembers}
-        onClose={() => setContextMenu({ isOpen: false, x: 0, y: 0, task: null })}
+        onClose={() => {
+          setContextMenu({ isOpen: false, x: 0, y: 0, task: null })
+        }}
         onUpdateTask={handleUpdateTask}
         onLogTime={(t) => {
           setLogTimeTask(t)

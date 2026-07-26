@@ -131,7 +131,9 @@ export function TaskContextMenu({
       ref={menuRef}
       style={{ top: `${pos.top}px`, left: `${pos.left}px` }}
       className="fixed z-[9999] w-44 bg-background border border-border rounded-xl shadow-xl p-1 text-xs space-y-0.5 transition-all duration-75 select-none"
-      onClick={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation()
+      }}
     >
       {/* Submenu: Status */}
       <div className="relative group/sub">
@@ -151,7 +153,7 @@ export function TaskContextMenu({
           <div
             className={`bg-background border border-border rounded-xl shadow-lg p-1 min-w-[140px] max-h-[220px] overflow-y-auto ${submenuAlignClass}`}
           >
-            {statuses && statuses.length > 0 ? (
+            {statuses.length > 0 ? (
               statuses.map((st) => {
                 const isActive = task.statusId === st.id || task.status === st.id
                 return (
