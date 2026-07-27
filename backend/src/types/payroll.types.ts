@@ -192,11 +192,23 @@ export interface IEmployeeSalaryConfigService {
     data: ICreateSalaryConfigDTO,
     createdById: string,
   ): Promise<EmployeeSalaryConfig>
+  bulkAssignTemplate(
+    data: IBulkAssignSalaryTemplateDTO,
+    createdById: string,
+  ): Promise<{ assignedCount: number }>
 }
 
 export interface ICreateSalaryConfigDTO {
   templateId: string
   baseSalary: number
+  effectiveFrom: Date
+  note?: string
+}
+
+export interface IBulkAssignSalaryTemplateDTO {
+  employeeIds: string[]
+  templateId: string
+  defaultBaseSalary: number
   effectiveFrom: Date
   note?: string
 }

@@ -62,6 +62,31 @@ export function useAssignSalaryConfig() {
   })
 }
 
+export function useBulkAssignSalaryTemplate() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (data: {
+      employeeIds: string[]
+      templateId: string
+      defaultBaseSalary: number
+      effectiveFrom: string
+      note?: string
+    }) => {
+      const response = await apiClient.post(
+        API_ENDPOINTS.PAYROLL.BULK_ASSIGN_SALARY_TEMPLATE,
+        data,
+      )
+      return response.data.data as { assignedCount: number }
+    },
+    onSuccess: () => {
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: PAYROLL_QUERY_KEYS.EMPLOYEE_SALARY_CONFIG }),
+        queryClient.invalidateQueries({ queryKey: ["employees"] }),
+      ])
+    },
+  })
+}
+
 export function usePayslipTemplates() {
   return useQuery({
     queryKey: ["payslip-templates"],

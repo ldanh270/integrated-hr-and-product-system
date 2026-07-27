@@ -17,6 +17,7 @@ export const API_ENDPOINTS = {
     SALARY_COMPONENTS: "/salary-components",
     PAYSLIP_TEMPLATES: "/payslip-templates",
     EMPLOYEE_SALARY_CONFIG: "/employees",
+    BULK_ASSIGN_SALARY_TEMPLATE: "/employees/salary-config/bulk-assign",
   },
   ATTENDANCE: {
     BASE: "/attendance",

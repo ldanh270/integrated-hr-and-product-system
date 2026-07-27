@@ -2,6 +2,7 @@ import { PAYROLL_MESSAGES } from "@/configs/messages/payroll.message"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
+  IBulkAssignSalaryTemplateDTO,
   ICreateSalaryConfigDTO,
   IEmployeeSalaryConfigRepository,
   IEmployeeSalaryConfigService,
@@ -85,6 +86,69 @@ export class EmployeeSalaryConfigService implements IEmployeeSalaryConfigService
           createdById,
         },
       })
+    })
+  }
+
+  async bulkAssignTemplate(
+    data: IBulkAssignSalaryTemplateDTO,
+    createdById: string,
+  ): Promise<{ assignedCount: number }> {
+    return this.prisma.$transaction(async (tx) => {
+      const employeeIds = Array.from(new Set(data.employeeIds))
+      const template = await tx.payslipTemplate.findFirst({
+        where: { id: data.templateId, isActive: true },
+        select: { id: true },
+      })
+      if (!template) {
+        throw new AppError(
+          PAYROLL_MESSAGES.ERRORS.TEMPLATE_NOT_FOUND_UPDATE,
+          HttpStatusCode.NOT_FOUND,
+          ErrorLayer.SERVICE,
+        )
+      }
+
+      const employees = await tx.employee.findMany({
+        where: { id: { in: employeeIds } },
+        select: { id: true },
+      })
+      if (employees.length !== employeeIds.length) {
+        throw new AppError(
+          "Một số nhân viên không tồn tại",
+          HttpStatusCode.BAD_REQUEST,
+          ErrorLayer.SERVICE,
+        )
+      }
+
+      const effectiveTo = new Date(data.effectiveFrom)
+      effectiveTo.setDate(effectiveTo.getDate() - 1)
+
+      const activeConfigs = await tx.employeeSalaryConfig.findMany({
+        where: {
+          employeeId: { in: employeeIds },
+          effectiveFrom: { lte: data.effectiveFrom },
+          OR: [{ effectiveTo: null }, { effectiveTo: { gte: data.effectiveFrom } }],
+        },
+        orderBy: { effectiveFrom: "desc" },
+      })
+      const activeByEmployee = new Map(activeConfigs.map((config) => [config.employeeId, config]))
+
+      await tx.employeeSalaryConfig.updateMany({
+        where: { id: { in: activeConfigs.map((config) => config.id) } },
+        data: { effectiveTo },
+      })
+
+      await tx.employeeSalaryConfig.createMany({
+        data: employeeIds.map((employeeId) => ({
+          employeeId,
+          templateId: data.templateId,
+          baseSalary: activeByEmployee.get(employeeId)?.baseSalary ?? data.defaultBaseSalary,
+          effectiveFrom: data.effectiveFrom,
+          note: data.note,
+          createdById,
+        })),
+      })
+
+      return { assignedCount: employeeIds.length }
     })
   }
 }
