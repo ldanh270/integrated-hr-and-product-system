@@ -11,6 +11,7 @@ export interface IPartTimeAssignmentDayForm {
 
 export interface IPartTimeAssignmentForm {
   dayOfWeek: number
+  assignedDate?: string
   startTime: string | null
   endTime: string | null
 }

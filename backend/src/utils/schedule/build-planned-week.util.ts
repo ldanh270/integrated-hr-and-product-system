@@ -1,4 +1,4 @@
-import { SCHEDULE_INSIGHTS } from "@/configs/entities/attendance.config.ts"
+import { WEEKLY_SCHEDULE_PLANNING } from "@/configs/entities/attendance.config.ts"
 import type { IShiftScheduleWithDays } from "@/types/shift-schedule.types.ts"
 import type { IEmployeeShiftWithShift } from "@/types/shift.types.ts"
 import {
@@ -69,7 +69,7 @@ function mapTemplateShift(
       name: shift.name ?? "Ca làm",
       startTime: shift.startTime,
       endTime: shift.endTime,
-      gracePeriodMinutes: SCHEDULE_INSIGHTS.DEFAULT_GRACE_PERIOD_MINUTES,
+      gracePeriodMinutes: WEEKLY_SCHEDULE_PLANNING.DEFAULT_GRACE_PERIOD_MINUTES,
       gpsLat: null,
       gpsLng: null,
       gpsRadiusMeters: null,
@@ -86,7 +86,7 @@ export function buildPlannedWeek(params: {
   const { weekStart, employeeShifts, getScheduleForDate } = params
   const start = normalizeScheduleDate(weekStart)
   const end = new Date(start)
-  end.setDate(end.getDate() + SCHEDULE_INSIGHTS.WEEK_END_OFFSET_DAYS)
+  end.setDate(end.getDate() + WEEKLY_SCHEDULE_PLANNING.WEEK_END_OFFSET_DAYS)
 
   const shiftsByDate = new Map<string, IEmployeeShiftWithShift[]>()
   for (const row of employeeShifts) {

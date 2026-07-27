@@ -17,10 +17,6 @@ import type {
   IProcessApprovalPayload,
   IPlannedWeek,
   ISchedule,
-  IScheduleInsightsResult,
-  ISimulateWeeklyTemplateDraft,
-  ISimulateWeeklyTemplateResult,
-  ISuggestWeeklyTemplatesResult,
   IShiftChangeRequest,
   ISubmitShiftChangeRequestPayload,
   IUpdateShiftPayload,
@@ -166,34 +162,6 @@ export const schedulesApi = {
     return res.data.data
   },
 
-  /** FT template attendance patterns by day-of-week (read-only insights). */
-  getInsights: async (lookbackDays?: number): Promise<IScheduleInsightsResult> => {
-    const res = await apiClient.get<ApiResponse<IScheduleInsightsResult>>(
-      API_ENDPOINTS.SCHEDULES.INSIGHTS,
-      { params: lookbackDays !== undefined ? { lookbackDays } : undefined },
-    )
-    return res.data.data
-  },
-
-  /** Heuristic weekly template candidates from insights + shift catalog. */
-  suggestTemplates: async (lookbackDays?: number): Promise<ISuggestWeeklyTemplatesResult> => {
-    const res = await apiClient.get<ApiResponse<ISuggestWeeklyTemplatesResult>>(
-      API_ENDPOINTS.SCHEDULES.SUGGEST_TEMPLATES,
-      { params: lookbackDays !== undefined ? { lookbackDays } : undefined },
-    )
-    return res.data.data
-  },
-
-  /** What-if late/absent risk for a draft weekly template. */
-  simulateTemplate: async (
-    draft: ISimulateWeeklyTemplateDraft,
-  ): Promise<ISimulateWeeklyTemplateResult> => {
-    const res = await apiClient.post<ApiResponse<ISimulateWeeklyTemplateResult>>(
-      API_ENDPOINTS.SCHEDULES.SIMULATE_TEMPLATE,
-      draft,
-    )
-    return res.data.data
-  },
 }
 
 /**

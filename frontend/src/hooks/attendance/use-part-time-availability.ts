@@ -57,13 +57,15 @@ export function useAssignPartTimeShifts(weekStart: string) {
   return useMutation({
     mutationFn: ({ id, ...payload }: IAssignPartTimeShiftsPayload & { id: string }) =>
       partTimeAvailabilityApi.assignShifts(id, payload),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: PART_TIME_AVAILABILITY_QUERY_KEYS.LIST(weekStart),
-      })
-      void queryClient.invalidateQueries({ queryKey: ["my-planned-week", weekStart] })
-      void queryClient.invalidateQueries({ queryKey: ["my-schedule", weekStart] })
-      void queryClient.invalidateQueries({ queryKey: ["employee-planned-week"] })
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: PART_TIME_AVAILABILITY_QUERY_KEYS.LIST(weekStart),
+        }),
+        queryClient.invalidateQueries({ queryKey: ["my-planned-week", weekStart] }),
+        queryClient.invalidateQueries({ queryKey: ["my-schedule", weekStart] }),
+        queryClient.invalidateQueries({ queryKey: ["employee-planned-week"] }),
+      ])
     },
   })
 }
