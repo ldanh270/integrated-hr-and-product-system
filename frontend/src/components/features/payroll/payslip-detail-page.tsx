@@ -107,6 +107,8 @@ export function PayslipDetailPage({ payslip, onClose }: PayslipDetailPageProps) 
     )
   }
 
+  const dailyWorkLogs = payslip.dailyWorkLogs ?? []
+
   return (
     <EntityFormPage title="Chi tiết phiếu lương" isReadOnly={true} onBack={onClose}>
       <div className="space-y-6">
@@ -142,7 +144,13 @@ export function PayslipDetailPage({ payslip, onClose }: PayslipDetailPageProps) 
               </div>
             </div>
             {payslip.canFeedback ? (
-              <Button type="button" className="rounded-full" onClick={() => openFeedback()}>
+              <Button
+                type="button"
+                className="rounded-full"
+                onClick={() => {
+                  openFeedback()
+                }}
+              >
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Feedback
               </Button>
@@ -201,7 +209,14 @@ export function PayslipDetailPage({ payslip, onClose }: PayslipDetailPageProps) 
               </TabsTrigger>
             </TabsList>
             {payslip.canFeedback ? (
-              <Button variant="outline" size="sm" className="rounded-full shrink-0" onClick={() => openFeedback()}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full shrink-0"
+                onClick={() => {
+                  openFeedback()
+                }}
+              >
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Báo sai lệch
               </Button>
@@ -223,7 +238,7 @@ export function PayslipDetailPage({ payslip, onClose }: PayslipDetailPageProps) 
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(payslip.dailyWorkLogs ?? []).map((day) => (
+                  {dailyWorkLogs.map((day) => (
                     <TableRow key={day.date}>
                       <TableCell className="font-medium">
                         Ngày {day.dayOfMonth}
@@ -246,7 +261,9 @@ export function PayslipDetailPage({ payslip, onClose }: PayslipDetailPageProps) 
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 rounded-full"
-                            onClick={() => openFeedback(day.date)}
+                            onClick={() => {
+                              openFeedback(day.date)
+                            }}
                           >
                             <MessageSquare className="h-4 w-4" />
                           </Button>
@@ -254,7 +271,7 @@ export function PayslipDetailPage({ payslip, onClose }: PayslipDetailPageProps) 
                       </TableCell>
                     </TableRow>
                   ))}
-                  {(payslip.dailyWorkLogs ?? []).length === 0 ? (
+                  {dailyWorkLogs.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                         Chưa có dữ liệu công theo ngày.
@@ -331,7 +348,9 @@ export function PayslipDetailPage({ payslip, onClose }: PayslipDetailPageProps) 
                 id="payroll-feedback-date"
                 type="date"
                 value={feedbackDate}
-                onChange={(event) => setFeedbackDate(event.target.value)}
+                onChange={(event) => {
+                  setFeedbackDate(event.target.value)
+                }}
                 className="h-10 rounded-full"
               />
             </div>
@@ -344,7 +363,9 @@ export function PayslipDetailPage({ payslip, onClose }: PayslipDetailPageProps) 
                   id="payroll-feedback-check-in"
                   type="time"
                   value={checkInAt}
-                  onChange={(event) => setCheckInAt(event.target.value)}
+                  onChange={(event) => {
+                    setCheckInAt(event.target.value)
+                  }}
                   className="h-10 rounded-full"
                 />
               </div>
@@ -356,7 +377,9 @@ export function PayslipDetailPage({ payslip, onClose }: PayslipDetailPageProps) 
                   id="payroll-feedback-check-out"
                   type="time"
                   value={checkOutAt}
-                  onChange={(event) => setCheckOutAt(event.target.value)}
+                  onChange={(event) => {
+                    setCheckOutAt(event.target.value)
+                  }}
                   className="h-10 rounded-full"
                 />
               </div>
@@ -368,14 +391,23 @@ export function PayslipDetailPage({ payslip, onClose }: PayslipDetailPageProps) 
               <Textarea
                 id="payroll-feedback-reason"
                 value={feedbackReason}
-                onChange={(event) => setFeedbackReason(event.target.value)}
+                onChange={(event) => {
+                  setFeedbackReason(event.target.value)
+                }}
                 placeholder="Ví dụ: ngày này em có làm nhưng hệ thống tính thiếu giờ..."
                 className="min-h-24 resize-none rounded-xl"
               />
             </div>
           </div>
           <DialogFooter className="px-5 py-4 border-t border-border bg-muted/30">
-            <Button variant="outline" size="sm" className="rounded-full" onClick={() => setFeedbackOpen(false)}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              onClick={() => {
+                setFeedbackOpen(false)
+              }}
+            >
               Huỷ
             </Button>
             <Button

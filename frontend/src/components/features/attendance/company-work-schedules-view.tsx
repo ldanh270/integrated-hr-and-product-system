@@ -67,7 +67,7 @@ export function CompanyWorkSchedulesView() {
   const holidaysByDate = groupHolidaysByDate(holidays ?? [])
   const plannedWeeksByEmployeeId = new Map(
     employees.flatMap((employee, index) => {
-      const plannedWeek = scheduleQueries[index]?.data
+      const plannedWeek = scheduleQueries.at(index)?.data
       return plannedWeek ? [[employee.id, plannedWeek]] : []
     }),
   )

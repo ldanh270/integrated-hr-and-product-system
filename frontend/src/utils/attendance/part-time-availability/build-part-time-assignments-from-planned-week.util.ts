@@ -26,10 +26,15 @@ function getAssignedSlotsFromAvailability(
   availability: IPartTimeWeeklyAvailability,
   dayOfWeek: number,
 ): IPartTimeAssignmentSlotForm[] {
-  const structuredSlots = availability.assignedDaySlots?.[dayOfWeek]
+  const structuredSlots = new Map(Object.entries(availability.assignedDaySlots ?? {})).get(
+    String(dayOfWeek),
+  )
   if (structuredSlots?.length) return structuredSlots
 
-  return parseAssignedSummary(availability.assignedDaySummaries?.[dayOfWeek])
+  const summary = new Map(Object.entries(availability.assignedDaySummaries ?? {})).get(
+    String(dayOfWeek),
+  )
+  return parseAssignedSummary(summary)
 }
 
 /**

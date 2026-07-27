@@ -116,7 +116,9 @@ export function ApplyWeeklyScheduleTemplateDialog({
                 id="template-valid-from"
                 type="date"
                 value={validFrom}
-                onChange={(event) => setValidFrom(event.target.value)}
+                onChange={(event) => {
+                  setValidFrom(event.target.value)
+                }}
                 className="rounded-full"
               />
             </div>
@@ -126,7 +128,9 @@ export function ApplyWeeklyScheduleTemplateDialog({
                 id="template-valid-to"
                 type="date"
                 value={validTo}
-                onChange={(event) => setValidTo(event.target.value)}
+                onChange={(event) => {
+                  setValidTo(event.target.value)
+                }}
                 className="rounded-full"
               />
             </div>
@@ -147,7 +151,9 @@ export function ApplyWeeklyScheduleTemplateDialog({
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => {
+                  setSearch(event.target.value)
+                }}
                 placeholder="Tìm nhân viên toàn thời gian"
                 className="rounded-full pl-9"
               />
@@ -172,7 +178,9 @@ export function ApplyWeeklyScheduleTemplateDialog({
                     <input
                       type="checkbox"
                       checked={selectedIds.includes(employee.id)}
-                      onChange={() => toggleOne(employee.id)}
+                      onChange={() => {
+                        toggleOne(employee.id)
+                      }}
                       className="h-4 w-4 rounded border-border accent-primary"
                     />
                     <span className="min-w-0">
@@ -194,7 +202,13 @@ export function ApplyWeeklyScheduleTemplateDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" className="rounded-full" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            className="rounded-full"
+            onClick={() => {
+              onOpenChange(false)
+            }}
+          >
             Hủy
           </Button>
           <Button

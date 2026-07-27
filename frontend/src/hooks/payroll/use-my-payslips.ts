@@ -32,7 +32,7 @@ export function useSubmitPayslipFeedback() {
       return response.data.data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PAYROLL_QUERY_KEYS.MY_PAYSLIPS })
+      void queryClient.invalidateQueries({ queryKey: PAYROLL_QUERY_KEYS.MY_PAYSLIPS })
     },
   })
 }
