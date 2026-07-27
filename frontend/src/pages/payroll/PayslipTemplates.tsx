@@ -185,7 +185,9 @@ export default function PayslipTemplates() {
                     </TableCell>
                     <TableCell className="px-4 py-3 text-foreground font-medium whitespace-nowrap">
                       <button
-                        onClick={() => handleOpenView(template)}
+                        onClick={() => {
+                          handleOpenView(template)
+                        }}
                         className="hover:text-primary hover:underline focus:outline-none"
                       >
                         {template.name}
@@ -210,15 +212,25 @@ export default function PayslipTemplates() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setTemplateToAssign(template)}>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setTemplateToAssign(template)
+                            }}
+                          >
                             Gán cho nhân viên
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleOpenEdit(template)}>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              handleOpenEdit(template)
+                            }}
+                          >
                             Chỉnh sửa
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                            onClick={() => setTemplateToDelete(template)}
+                            onClick={() => {
+                              setTemplateToDelete(template)
+                            }}
                           >
                             Xoá
                           </DropdownMenuItem>
@@ -247,7 +259,12 @@ export default function PayslipTemplates() {
         )}
       </PageCard>
 
-      <Dialog open={!!templateToDelete} onOpenChange={() => setTemplateToDelete(null)}>
+      <Dialog
+        open={!!templateToDelete}
+        onOpenChange={() => {
+          setTemplateToDelete(null)
+        }}
+      >
         <DialogContent className="sm:max-w-106.25 rounded-xl border border-border">
           <DialogHeader>
             <DialogTitle className="text-foreground text-xl">Xác nhận xoá</DialogTitle>
@@ -261,7 +278,9 @@ export default function PayslipTemplates() {
             <Button
               variant="outline"
               className="rounded-full border-border hover:bg-accent px-6 shadow-none"
-              onClick={() => setTemplateToDelete(null)}
+              onClick={() => {
+                setTemplateToDelete(null)
+              }}
               disabled={isDeleting}
             >
               Huỷ bỏ

@@ -50,8 +50,14 @@ const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
   no_record: "Chưa có dữ liệu",
 }
 
+const ATTENDANCE_STATUS_LABEL_MAP = new Map(Object.entries(ATTENDANCE_STATUS_LABELS))
+
 function formatWorkHours(hours: number) {
   return `${Math.max(0, hours).toFixed(2).replace(/\.00$/, "")} giờ`
+}
+
+function getAttendanceStatusLabel(status: string) {
+  return ATTENDANCE_STATUS_LABEL_MAP.get(status) || status
 }
 
 export function PayslipDetailPage({ payslip, onClose }: PayslipDetailPageProps) {
@@ -247,7 +253,7 @@ export function PayslipDetailPage({ payslip, onClose }: PayslipDetailPageProps) 
                       <TableCell>{day.shiftName || "-"}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="rounded-full shadow-none">
-                          {ATTENDANCE_STATUS_LABELS[day.status] ?? day.status}
+                          {getAttendanceStatusLabel(day.status)}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">{formatWorkHours(day.workHours)}</TableCell>
