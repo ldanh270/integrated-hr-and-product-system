@@ -27,7 +27,7 @@ import {
 import { usePayrollSettings } from "@/hooks/payroll/use-payroll-settings"
 import type { IPayrollSettings } from "@/types/payroll.types"
 
-import { CalendarClock, Info, Settings2 } from "lucide-react"
+import { CalendarCheck, CalendarClock, Info, Settings2 } from "lucide-react"
 import { type Control, useWatch } from "react-hook-form"
 import { useNavigate } from "react-router-dom"
 
@@ -44,8 +44,7 @@ function CycleContextPanel() {
           <h3 className="text-lg font-medium tracking-tight">Cấu hình hệ thống</h3>
         </div>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Thiết lập thời điểm chính xác để hệ thống tự động khóa bảng công và khởi tạo bảng lương
-          nháp hằng tháng.
+          Thiết lập ngày tự động tạo bảng lương và ngày tự động duyệt bảng lương hằng tháng.
         </p>
       </div>
 
@@ -62,14 +61,15 @@ function CycleContextPanel() {
                   <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent side="right" className="max-w-62.5 text-xs">
-                  Quy trình này sẽ chạy background job để chốt dữ liệu, bạn không cần thao tác tay.
+                  Quy trình này chạy background job để tạo payroll trước, sau đó tự duyệt theo
+                  lịch phát lương đã cấu hình.
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Đảm bảo quy trình vận hành nhất quán, loại bỏ rủi ro sai lệch thời gian do thao tác thủ
-            công.
+            Payroll được tạo trước để nhân viên xem payslip và gửi feedback, rồi hệ thống duyệt tự
+            động vào ngày phát lương.
           </p>
         </div>
       </div>
@@ -81,29 +81,51 @@ function SchedulePreviewBadge({ control }: { control: Control<SettingsFormValues
   const triggerDay = useWatch({ control, name: "triggerDay" })
   const triggerHour = useWatch({ control, name: "triggerHour" })
   const triggerMinute = useWatch({ control, name: "triggerMinute" })
+  const approvalDay = useWatch({ control, name: "approvalDay" })
+  const approvalHour = useWatch({ control, name: "approvalHour" })
+  const approvalMinute = useWatch({ control, name: "approvalMinute" })
 
   return (
-    <Badge
-      variant="secondary"
-      className="font-normal text-xs px-3 py-1 bg-primary/5 text-primary border-primary/10 rounded-full"
-    >
-      Kích hoạt ngày {triggerDay || "..."} hàng tháng lúc{" "}
-      {triggerHour?.toString().padStart(2, "0") || "00"}:
-      {triggerMinute?.toString().padStart(2, "0") || "00"}
-    </Badge>
+    <div className="flex flex-wrap gap-2">
+      <Badge
+        variant="secondary"
+        className="font-normal text-xs px-3 py-1 bg-primary/5 text-primary border-primary/10 rounded-full"
+      >
+        Tạo: ngày {triggerDay || "..."} lúc {triggerHour?.toString().padStart(2, "0") || "00"}:
+        {triggerMinute?.toString().padStart(2, "0") || "00"}
+      </Badge>
+      <Badge
+        variant="secondary"
+        className="font-normal text-xs px-3 py-1 bg-success/10 text-success border-success/20 rounded-full"
+      >
+        Duyệt: ngày {approvalDay || "..."} lúc{" "}
+        {approvalHour?.toString().padStart(2, "0") || "00"}:
+        {approvalMinute?.toString().padStart(2, "0") || "00"}
+      </Badge>
+    </div>
   )
 }
 
-function TriggerTimeField({ control }: { control: Control<SettingsFormValues> }) {
+function ScheduleTimeField({
+  control,
+  hourName,
+  minuteName,
+  label,
+}: {
+  control: Control<SettingsFormValues>
+  hourName: "triggerHour" | "approvalHour"
+  minuteName: "triggerMinute" | "approvalMinute"
+  label: string
+}) {
   return (
     <div className="space-y-4">
       <FormLabel className="text-sm font-medium text-foreground block">
-        Thời gian chính xác
+        {label}
       </FormLabel>
       <div className="flex items-center gap-3">
         <FormField
           control={control}
-          name="triggerHour"
+          name={hourName}
           render={({ field }) => (
             <FormItem>
               <Select
@@ -130,7 +152,7 @@ function TriggerTimeField({ control }: { control: Control<SettingsFormValues> })
         <span className="text-muted-foreground font-medium pb-2">:</span>
         <FormField
           control={control}
-          name="triggerMinute"
+          name={minuteName}
           render={({ field }) => (
             <FormItem>
               <Select
@@ -156,25 +178,33 @@ function TriggerTimeField({ control }: { control: Control<SettingsFormValues> })
         />
       </div>
       <FormDescription className="text-xs max-w-sm mt-1.5 leading-relaxed">
-        Nên chọn thời điểm ngoài giờ hành chính (ví dụ 00:00 hoặc 02:00 sáng) để không làm gián đoạn
-        trải nghiệm của nhân sự.
+        Nên chọn thời điểm ngoài giờ hành chính để hạn chế ảnh hưởng thao tác của HR và nhân viên.
       </FormDescription>
     </div>
   )
 }
 
-function TriggerDayField({ control }: { control: Control<SettingsFormValues> }) {
+function ScheduleDayField({
+  control,
+  name,
+  label,
+  description,
+}: {
+  control: Control<SettingsFormValues>
+  name: "triggerDay" | "approvalDay"
+  label: string
+  description: string
+}) {
   return (
     <FormField
       control={control}
-      name="triggerDay"
+      name={name}
       render={({ field }) => (
         <FormItem className="space-y-4">
           <div className="space-y-1">
-            <FormLabel className="text-sm font-medium text-foreground">Ngày kích hoạt</FormLabel>
+            <FormLabel className="text-sm font-medium text-foreground">{label}</FormLabel>
             <FormDescription className="text-xs leading-relaxed max-w-md">
-              Ngày trong tháng mà hệ thống sẽ chốt công và tạo bảng lương. Thường là ngày 1 hoặc 5
-              hằng tháng.
+              {description}
             </FormDescription>
           </div>
           <Select
@@ -183,7 +213,7 @@ function TriggerDayField({ control }: { control: Control<SettingsFormValues> }) 
           >
             <FormControl>
               <SelectTrigger className="w-full max-w-xs rounded-full border-border h-10 shadow-sm transition-shadow hover:shadow-md focus:shadow-md">
-                <SelectValue placeholder="Chọn ngày chạy (1-28)" />
+                <SelectValue placeholder="Chọn ngày (1-28)" />
               </SelectTrigger>
             </FormControl>
             <SelectContent position="popper" className="max-h-64 rounded-xl">
@@ -249,10 +279,10 @@ function PayrollCycleForm({ settings }: { settings: IPayrollSettings }) {
       <Form {...form}>
         <form id="payroll-cycle-form" onSubmit={onSubmit} className="h-full">
           <Card className="rounded-xl shadow-sm border-border overflow-hidden p-0">
-            <div className="flex flex-col md:flex-row">
+            <div className="flex flex-col xl:flex-row">
               <CycleContextPanel />
 
-              <div className="p-8 md:p-10 md:w-2/3 bg-background">
+              <div className="p-6 md:p-8 xl:p-10 xl:flex-1 bg-background min-w-0">
                 <div className="space-y-8">
                   <div className="flex items-center justify-between flex-wrap gap-4">
                     <h3 className="text-lg font-medium tracking-tight">Chi tiết lịch trình</h3>
@@ -261,9 +291,44 @@ function PayrollCycleForm({ settings }: { settings: IPayrollSettings }) {
 
                   <Separator className="bg-border/50" />
 
-                  <div className="max-w-2xl space-y-8">
-                    <TriggerDayField control={form.control} />
-                    <TriggerTimeField control={form.control} />
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <div className="rounded-xl border border-border p-5 space-y-5">
+                      <div className="flex items-center gap-2">
+                        <CalendarClock className="h-4 w-4 text-primary" />
+                        <h4 className="font-medium">Tự động tạo payroll</h4>
+                      </div>
+                      <ScheduleDayField
+                        control={form.control}
+                        name="triggerDay"
+                        label="Ngày tạo payroll"
+                        description="Ngày hệ thống tự tạo bảng lương nháp để nhân viên xem payslip và gửi feedback."
+                      />
+                      <ScheduleTimeField
+                        control={form.control}
+                        hourName="triggerHour"
+                        minuteName="triggerMinute"
+                        label="Giờ tạo payroll"
+                      />
+                    </div>
+
+                    <div className="rounded-xl border border-border p-5 space-y-5">
+                      <div className="flex items-center gap-2">
+                        <CalendarCheck className="h-4 w-4 text-success" />
+                        <h4 className="font-medium">Tự động duyệt payroll</h4>
+                      </div>
+                      <ScheduleDayField
+                        control={form.control}
+                        name="approvalDay"
+                        label="Ngày duyệt payroll"
+                        description="Ngày hệ thống tự duyệt payroll đã tạo, thường là ngày phát lương."
+                      />
+                      <ScheduleTimeField
+                        control={form.control}
+                        hourName="approvalHour"
+                        minuteName="approvalMinute"
+                        label="Giờ duyệt payroll"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

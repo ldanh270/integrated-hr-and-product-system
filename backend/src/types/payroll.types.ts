@@ -46,6 +46,36 @@ export type IMyPayslipSummary = Payslip & {
   periodMonth?: number
   periodYear?: number
   status?: PayrollStatus
+  receiptStatus?: IPayslipReceiptStatus
+  isPreview?: boolean
+  canFeedback?: boolean
+  dailyWorkLogs?: IPayslipDailyWorkLog[]
+}
+
+export type IPayslipReceiptStatus = "not_received" | "received"
+
+export interface IPayslipDailyWorkLog {
+  date: string
+  dayOfMonth: number
+  employeeShiftId?: string | null
+  shiftName?: string | null
+  status: string
+  workMinutes: number
+  workHours: number
+  overtimeMinutes: number
+  lateMinutes: number
+  earlyLeaveMinutes: number
+  checkInAt?: string | null
+  checkOutAt?: string | null
+  note?: string | null
+}
+
+export interface IPayslipFeedbackDTO {
+  payslipId: string
+  date: string
+  reason: string
+  checkInAt?: string | null
+  checkOutAt?: string | null
 }
 
 // ── SalaryVariable ──────────────────────────────────────────────────────────
@@ -199,6 +229,7 @@ export interface IPayrollService {
   rejectPayroll(payrollId: string, approverId: string, reason: string): Promise<Payroll>
   getPayslip(payrollId: string, employeeId: string): Promise<PayslipWithDetails>
   getMyPayslips(employeeId: string): Promise<IMyPayslipSummary[]>
+  submitMyPayslipFeedback(employeeId: string, data: IPayslipFeedbackDTO): Promise<unknown>
 }
 
 export interface IUpdatePayrollStatusDTO {

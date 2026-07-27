@@ -24,6 +24,24 @@ export interface IPayslipDetail {
   value: number
 }
 
+export type PayslipReceiptStatus = "not_received" | "received"
+
+export interface IPayslipDailyWorkLog {
+  date: string
+  dayOfMonth: number
+  employeeShiftId?: string | null
+  shiftName?: string | null
+  status: string
+  workMinutes: number
+  workHours: number
+  overtimeMinutes: number
+  lateMinutes: number
+  earlyLeaveMinutes: number
+  checkInAt?: string | null
+  checkOutAt?: string | null
+  note?: string | null
+}
+
 export interface IPayslip {
   id: string
   payrollId: string
@@ -31,6 +49,9 @@ export interface IPayslip {
   periodMonth?: number
   periodYear?: number
   status?: PayrollStatus
+  receiptStatus?: PayslipReceiptStatus
+  isPreview?: boolean
+  canFeedback?: boolean
   netSalary: number
   totalAdditions: number
   totalDeductions: number
@@ -38,8 +59,16 @@ export interface IPayslip {
   absentDays: number
   overtimeMinutes: number
   details: IPayslipDetail[]
+  dailyWorkLogs?: IPayslipDailyWorkLog[]
   createdAt: string
   updatedAt: string
+}
+
+export interface IPayslipFeedbackPayload {
+  date: string
+  reason: string
+  checkInAt?: string | null
+  checkOutAt?: string | null
 }
 
 export interface IPayslipWithEmployee extends IPayslip {
@@ -104,6 +133,9 @@ export interface IPayrollSettings {
   triggerDay: number
   triggerHour: number
   triggerMinute: number
+  approvalDay: number
+  approvalHour: number
+  approvalMinute: number
   updatedById?: string
   createdAt?: string
   updatedAt?: string

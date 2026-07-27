@@ -15,8 +15,25 @@ export class PayrollSettingsSeeder implements ISeeder {
 
     await prisma.payrollSettings.upsert({
       where: { id: "GLOBAL" },
-      update: { triggerDay: 25, updatedById: adminId },
-      create: { id: "GLOBAL", triggerDay: 25, updatedById: adminId },
+      update: {
+        triggerDay: 5,
+        triggerHour: 0,
+        triggerMinute: 0,
+        approvalDay: 10,
+        approvalHour: 0,
+        approvalMinute: 0,
+        updatedById: adminId,
+      },
+      create: {
+        id: "GLOBAL",
+        triggerDay: 5,
+        triggerHour: 0,
+        triggerMinute: 0,
+        approvalDay: 10,
+        approvalHour: 0,
+        approvalMinute: 0,
+        updatedById: adminId,
+      },
     })
 
     console.log(`  Seeded global payroll settings.`)

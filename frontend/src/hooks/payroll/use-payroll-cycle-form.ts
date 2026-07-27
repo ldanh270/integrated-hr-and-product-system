@@ -7,11 +7,19 @@ import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
 
-export const settingsSchema = z.object({
-  triggerDay: z.number().min(1).max(28, PAYROLL_MESSAGES.VALIDATION.TRIGGER_DAY_RANGE),
-  triggerHour: z.number().min(0).max(23),
-  triggerMinute: z.number().min(0).max(59),
-})
+export const settingsSchema = z
+  .object({
+    triggerDay: z.number().min(1).max(28, PAYROLL_MESSAGES.VALIDATION.TRIGGER_DAY_RANGE),
+    triggerHour: z.number().min(0).max(23),
+    triggerMinute: z.number().min(0).max(59),
+    approvalDay: z.number().min(1).max(28, PAYROLL_MESSAGES.VALIDATION.TRIGGER_DAY_RANGE),
+    approvalHour: z.number().min(0).max(23),
+    approvalMinute: z.number().min(0).max(59),
+  })
+  .refine((values) => values.approvalDay >= values.triggerDay, {
+    message: "Ngày duyệt payroll phải sau hoặc bằng ngày tạo payroll",
+    path: ["approvalDay"],
+  })
 
 export type SettingsFormValues = z.infer<typeof settingsSchema>
 
@@ -30,6 +38,9 @@ export function usePayrollCycleForm({
       triggerDay: initialData?.triggerDay || 5,
       triggerHour: initialData?.triggerHour || 0,
       triggerMinute: initialData?.triggerMinute || 0,
+      approvalDay: initialData?.approvalDay || 10,
+      approvalHour: initialData?.approvalHour || 0,
+      approvalMinute: initialData?.approvalMinute || 0,
     },
   })
 
