@@ -244,7 +244,7 @@ export function PayslipDetailPage({ payslip, onClose }: PayslipDetailPageProps) 
                         Ngày {day.dayOfMonth}
                         <div className="text-xs text-muted-foreground">{day.date}</div>
                       </TableCell>
-                      <TableCell>{day.shiftName ?? "-"}</TableCell>
+                      <TableCell>{day.shiftName || "-"}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="rounded-full shadow-none">
                           {ATTENDANCE_STATUS_LABELS[day.status] ?? day.status}

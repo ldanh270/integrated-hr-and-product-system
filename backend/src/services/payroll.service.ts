@@ -565,7 +565,7 @@ export class PayrollService implements IPayrollService {
   ): Promise<IMyPayslipSummary | null> {
     const settings = await this.settingsRepo.findGlobal()
     const today = new Date()
-    const triggerDay = Number(settings?.triggerDay)
+    const triggerDay = Number(settings.triggerDay)
     const previewStartDay = Math.max(1, triggerDay - 5)
     if (today.getDate() < previewStartDay) return null
 
