@@ -41,12 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+
 
 import { taskApi } from "@/lib/api/task.api"
 import { projectTaskStatusApi } from "@/lib/api/project-task-status.api"
@@ -57,6 +52,9 @@ import {
 } from "@/config/entities/project.config"
 import type { Task, TaskTracker, TaskPriority } from "@/types/task.types"
 import type { ProjectMember } from "@/types/project.types"
+import LogTimeModal from "@/components/features/project/LogTimeModal"
+import { TaskContextMenu } from "./task-context-menu"
+import { useTaskUrlFilters } from "../hooks/use-task-url-filters"
 
 /**
  * Properties for ProjectIssuesTab component.
@@ -287,17 +285,64 @@ export function ProjectIssuesTab({
   const [searchParams, setSearchParams] = useSearchParams()
   const [appliedUrlQueryId, setAppliedUrlQueryId] = useState<string | null>(null)
 
-  // Filter & Pagination States
-  const [issueSearch, setIssueSearch] = useState("")
-  const [trackerFilter, setTrackerFilter] = useState<string>(ALL_FILTER_VALUE)
-  const [statusFilter, setStatusFilter] = useState<string>(ALL_FILTER_VALUE)
-  const [priorityFilter, setPriorityFilter] = useState<string>(ALL_FILTER_VALUE)
-  const [assigneeFilter, setAssigneeFilter] = useState<string>(ALL_FILTER_VALUE)
-  const [createdByIdFilter, setCreatedByIdFilter] = useState<string>(ALL_FILTER_VALUE)
+  // Filter & Pagination States with 2-way URL synchronization
+  const {
+    issueSearch,
+    setIssueSearch,
+    trackerFilter,
+    setTrackerFilter,
+    statusFilter,
+    setStatusFilter,
+    priorityFilter,
+    setPriorityFilter,
+    assigneeFilter,
+    setAssigneeFilter,
+    createdByIdFilter,
+    setCreatedByIdFilter,
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+  } = useTaskUrlFilters()
+
   const [sortBy, setSortBy] = useState<string>("createdAt")
   const [sortOrder, setSortOrder] = useState<string>("desc")
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(25)
+
+  // Context Menu & Log Time States
+  const [contextMenu, setContextMenu] = useState<{
+    isOpen: boolean
+    x: number
+    y: number
+    task: Task | null
+  }>({
+    isOpen: false,
+    x: 0,
+    y: 0,
+    task: null,
+  })
+
+  const [isLogTimeOpen, setIsLogTimeOpen] = useState(false)
+  const [logTimeTask, setLogTimeTask] = useState<{ id: string; title: string } | null>(null)
+
+  const updateTaskMutation = useMutation({
+    mutationFn: async (payload: { taskId: string; data: Record<string, unknown> }) => {
+      return taskApi.update(payload.taskId, payload.data)
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["tasks", "project", projectId] })
+      void queryClient.invalidateQueries({ queryKey: ["tasks", "overview", projectId] })
+      toast.success("Cập nhật công việc thành công")
+      setContextMenu({ isOpen: false, x: 0, y: 0, task: null })
+    },
+    onError: (err: unknown) => {
+      toast.error(extractErrorMessage(err))
+    },
+  })
+
+  const handleUpdateTask = (data: Record<string, unknown>) => {
+    if (!contextMenu.task) return
+    updateTaskMutation.mutate({ taskId: contextMenu.task.id, data })
+  }
 
   // Display Columns State
   const [displayColumns, setDisplayColumns] = useState<string[]>([
@@ -625,20 +670,7 @@ export function ProjectIssuesTab({
     enabled: !!projectId,
   })
 
-  // Quick Status update mutation
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ taskId, statusId }: { taskId: string; statusId: string }) => {
-      return taskApi.update(taskId, { statusId })
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["tasks", "project", projectId] })
-      void queryClient.invalidateQueries({ queryKey: ["tasks", "overview", projectId] })
-      toast.success("Cập nhật trạng thái công việc thành công")
-    },
-    onError: (err: unknown) => {
-      toast.error(extractErrorMessage(err))
-    },
-  })
+
 
   const tasks = tasksData?.data || []
   const totalItems = tasksData?.meta.total || 0
@@ -797,7 +829,19 @@ export function ProjectIssuesTab({
                   </TableHeader>
                   <TableBody>
                     {tasks.map((task) => (
-                      <TableRow key={task.id} className="h-14 hover:bg-muted/30">
+                      <TableRow
+                        key={task.id}
+                        className="h-14 hover:bg-muted/30 cursor-pointer"
+                        onContextMenu={(e) => {
+                          e.preventDefault()
+                          setContextMenu({
+                            isOpen: true,
+                            x: e.clientX,
+                            y: e.clientY,
+                            task,
+                          })
+                        }}
+                      >
                         {displayColumns.map((colKey) => {
                           const col = COLUMN_METADATA[colKey as keyof typeof COLUMN_METADATA]
                           const renderFn = col.render as (t: Task, s?: typeof statuses) => React.ReactNode
@@ -806,33 +850,24 @@ export function ProjectIssuesTab({
                           }
                           return renderFn(task)
                         })}
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon-xs" className="rounded-full cursor-pointer">
-                                <MoreVertical className="size-3.5" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="rounded-xl border-border bg-popover">
-                              <DropdownMenuItem
-                                asChild
-                                className="rounded-lg text-xs font-semibold cursor-pointer"
-                              >
-                                <Link to={`/project/task/${task.id}`}>Xem chi tiết</Link>
-                              </DropdownMenuItem>
-                              {statuses.map((st) => (
-                                <DropdownMenuItem
-                                  key={st.id}
-                                  className="rounded-lg text-xs font-medium cursor-pointer"
-                                  onClick={() => {
-                                    updateStatusMutation.mutate({ taskId: task.id, statusId: st.id })
-                                  }}
-                                >
-                                  Đổi thành: {st.name}
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            className="rounded-full cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              const rect = e.currentTarget.getBoundingClientRect()
+                              setContextMenu({
+                                isOpen: true,
+                                x: rect.left,
+                                y: rect.bottom,
+                                task,
+                              })
+                            }}
+                          >
+                            <MoreVertical className="size-3.5" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1598,6 +1633,34 @@ export function ProjectIssuesTab({
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Floating Task Context Menu with Auto Positioning */}
+      <TaskContextMenu
+        isOpen={contextMenu.isOpen}
+        x={contextMenu.x}
+        y={contextMenu.y}
+        task={contextMenu.task}
+        projectMembers={members}
+        statuses={statuses}
+        onClose={() => {
+          setContextMenu({ isOpen: false, x: 0, y: 0, task: null })
+        }}
+        onUpdateTask={handleUpdateTask}
+        onLogTime={(t) => {
+          setLogTimeTask(t)
+          setIsLogTimeOpen(true)
+        }}
+      />
+
+      {/* Log Time Modal */}
+      {logTimeTask && (
+        <LogTimeModal
+          open={isLogTimeOpen}
+          onOpenChange={setIsLogTimeOpen}
+          taskId={logTimeTask.id}
+          taskTitle={logTimeTask.title}
+        />
+      )}
     </div>
   )
 }
