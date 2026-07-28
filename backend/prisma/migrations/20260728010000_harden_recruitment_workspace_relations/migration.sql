@@ -1,6 +1,21 @@
 -- Recruitment workspace ownership:
 -- Requisition 1-N Posting; Posting 1-N Application and 1-N PipelineStage.
 
+-- JobPosting originally belonged to JobDescription. Promote that relationship
+-- to the requisition before this migration creates or queries postings by
+-- requisitionId.
+ALTER TABLE "JobPosting" ADD COLUMN "requisitionId" TEXT;
+
+UPDATE "JobPosting" posting
+SET "requisitionId" = description."requisitionId"
+FROM "JobDescription" description
+WHERE description."id" = posting."jobDescriptionId";
+
+ALTER TABLE "JobPosting" ALTER COLUMN "requisitionId" SET NOT NULL;
+ALTER TABLE "JobPosting" DROP CONSTRAINT IF EXISTS "JobPosting_jobDescriptionId_fkey";
+DROP INDEX IF EXISTS "JobPosting_jobDescriptionId_idx";
+ALTER TABLE "JobPosting" DROP COLUMN "jobDescriptionId";
+
 -- Preserve historical applications that predate postings by grouping them in a
 -- generated archived posting under their original requisition.
 INSERT INTO "JobPosting" (

@@ -54,12 +54,12 @@ WITH latest_posting_schema AS (
 INSERT INTO "CandidateFieldDefinition"
   ("id", "requisitionId", "key", "label", "type", "required", "position", "createdAt", "updatedAt")
 SELECT
-  'cfd_' || md5(schema."requisitionId" || field.value->>'key'),
+  'cfd_' || md5(schema."requisitionId" || ((field.value::jsonb) ->> 'key')),
   schema."requisitionId",
-  field.value->>'key',
-  field.value->>'label',
-  CASE WHEN field.value->>'type' = 'paragraph' THEN 'paragraph'::"RecruitmentFieldType" ELSE 'short_text'::"RecruitmentFieldType" END,
-  COALESCE((field.value->>'required')::boolean, false),
+  (field.value::jsonb)->>'key',
+  (field.value::jsonb)->>'label',
+  CASE WHEN (field.value::jsonb)->>'type' = 'paragraph' THEN 'paragraph'::"RecruitmentFieldType" ELSE 'short_text'::"RecruitmentFieldType" END,
+  COALESCE(((field.value::jsonb)->>'required')::boolean, false),
   field.ordinality - 1,
   CURRENT_TIMESTAMP,
   CURRENT_TIMESTAMP
@@ -93,16 +93,15 @@ WHERE NOT EXISTS (
 INSERT INTO "PostingFieldSnapshot"
   ("id", "postingId", "fieldKey", "label", "type", "required", "position", "createdAt", "updatedAt")
 SELECT
-  'pfs_' || md5(p."id" || field.value->>'key'),
+  'pfs_' || md5(p."id" || ((field.value::jsonb) ->> 'key')),
   p."id",
-  field.value->>'key',
-  field.value->>'label',
-  CASE WHEN field.value->>'type' = 'paragraph' THEN 'paragraph'::"RecruitmentFieldType" ELSE 'short_text'::"RecruitmentFieldType" END,
-  COALESCE((field.value->>'required')::boolean, false),
+  (field.value::jsonb)->>'key',
+  (field.value::jsonb)->>'label',
+  CASE WHEN (field.value::jsonb)->>'type' = 'paragraph' THEN 'paragraph'::"RecruitmentFieldType" ELSE 'short_text'::"RecruitmentFieldType" END,
+  COALESCE(((field.value::jsonb)->>'required')::boolean, false),
   field.ordinality - 1,
   CURRENT_TIMESTAMP,
   CURRENT_TIMESTAMP
 FROM "JobPosting" p
 CROSS JOIN LATERAL jsonb_array_elements(p."formFields") WITH ORDINALITY AS field(value, ordinality)
 WHERE jsonb_typeof(p."formFields") = 'array';
-
