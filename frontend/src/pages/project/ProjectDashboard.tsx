@@ -20,7 +20,7 @@ import { useAuthStore } from "@/store/auth-store"
 // Import TanStack Query hooks for client state cache and mutations
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 // Import Lucide icons for layouts
-import { ClipboardList, ExternalLink, Inbox, Folder, User, Plus, Clock, ChevronRight } from "lucide-react"
+import { ClipboardList, ExternalLink, Inbox, Folder, User, Plus } from "lucide-react"
 // Import React Router Navigation link
 import { Link, useNavigate } from "react-router-dom"
 // Import standard React hooks
@@ -29,6 +29,7 @@ import { useState, useEffect } from "react"
 import { toast } from "sonner"
 // Import Spent Time log modal feature component
 import LogTimeModal from "@/components/features/project/LogTimeModal"
+import { TaskContextMenu } from "./components/task-context-menu"
 import { usePermission } from "@/hooks/use-permission"
 // Import Task data type structure
 import type { Task } from "@/types/task.types"
@@ -430,9 +431,6 @@ export default function ProjectDashboard() {
     )
   }
 
-  // Active targeted context task reference
-  const activeTask = contextMenu.task
-
   return (
     <div className="container p-8 space-y-6">
       {/* Page header title details */}
@@ -609,255 +607,22 @@ export default function ProjectDashboard() {
         </div>
       </div>
 
-      {/* Floating Context Menu - Renders dynamically at mouse cursor coordinates on right clicks */}
-      {contextMenu.isOpen && activeTask && (
-        <div
-          id="dashboard-context-menu"
-          className="fixed z-50 min-w-[160px] bg-background border border-border rounded-lg shadow-lg p-1.5 flex flex-col select-none"
-          style={{ top: contextMenu.y, left: contextMenu.x }}
-        >
-          {/* Link to edit page / details page */}
-          <Link
-            to={`/project/task/${activeTask.id}`}
-            onClick={() => { setContextMenu({ isOpen: false, x: 0, y: 0, task: null }); }}
-            className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground hover:no-underline"
-          >
-            <User size={12} className="shrink-0" />
-            <span>Chỉnh sửa</span>
-          </Link>
-
-          {/* Submenu choice for Task Status */}
-          <div className="relative group/sub">
-            <button className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer">
-              <span className="flex items-center gap-2">
-                <ClipboardList size={12} className="shrink-0" />
-                <span>Trạng thái</span>
-              </span>
-              <ChevronRight size={10} className="shrink-0" />
-            </button>
-            <div className="absolute left-full top-0 -ml-2 pl-3 hidden group-hover/sub:block z-50">
-              <div className="bg-background border border-border rounded-lg shadow-md p-1 min-w-[130px]">
-                {[
-                  { name: "Đang mở", id: "todo" },
-                  { name: "Mở lại", id: "reopened" },
-                  { name: "Đang làm", id: "in_progress" },
-                  { name: "Đánh giá", id: "in_review" },
-                  { name: "Hoàn thành", id: "done" },
-                  { name: "Hủy bỏ", id: "cancelled" },
-                ].map((st) => {
-                  const isActive = activeTask.status === st.id
-                  return (
-                    <button
-                      key={st.name}
-                      onClick={() => { handleUpdateTask({ status: st.id }); }}
-                      className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between"
-                    >
-                      <span>{st.name}</span>
-                      {isActive && <span className="text-[10px] font-bold">✓</span>}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Submenu choice for Tracker Type */}
-          <div className="relative group/sub">
-            <button className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer">
-              <span className="flex items-center gap-2">
-                <Folder size={12} className="shrink-0" />
-                <span>Loại công việc</span>
-              </span>
-              <ChevronRight size={10} className="shrink-0" />
-            </button>
-            <div className="absolute left-full top-0 -ml-2 pl-3 hidden group-hover/sub:block z-50">
-              <div className="bg-background border border-border rounded-lg shadow-md p-1 min-w-[130px]">
-                {[
-                  { label: "Lỗi (Bug)", value: "bug" },
-                  { label: "Tính năng", value: "feature" },
-                  { label: "Hỗ trợ", value: "support" },
-                  { label: "Nhiệm vụ", value: "task" },
-                ].map((tr) => {
-                  const isActive = activeTask.tracker === tr.value
-                  return (
-                    <button
-                      key={tr.value}
-                      onClick={() => { handleUpdateTask({ tracker: tr.value }); }}
-                      className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between"
-                    >
-                      <span>{tr.label}</span>
-                      {isActive && <span className="text-[10px] font-bold">✓</span>}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Submenu choice for Task Priority */}
-          <div className="relative group/sub">
-            <button className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer">
-              <span className="flex items-center gap-2">
-                <Plus size={12} className="shrink-0" />
-                <span>Độ ưu tiên</span>
-              </span>
-              <ChevronRight size={10} className="shrink-0" />
-            </button>
-            <div className="absolute left-full top-0 -ml-2 pl-3 hidden group-hover/sub:block z-50">
-              <div className="bg-background border border-border rounded-lg shadow-md p-1 min-w-[130px]">
-                {[
-                  { label: "Thấp", value: "low" },
-                  { label: "Trung bình", value: "medium" },
-                  { label: "Cao", value: "high" },
-                  { label: "Khẩn cấp", value: "urgent" },
-                ].map((pr) => {
-                  const isActive = activeTask.priority === pr.value
-                  return (
-                    <button
-                      key={pr.value}
-                      onClick={() => { handleUpdateTask({ priority: pr.value }); }}
-                      className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between"
-                    >
-                      <span>{pr.label}</span>
-                      {isActive && <span className="text-[10px] font-bold">✓</span>}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Submenu choice for Assignee Member */}
-          <div className="relative group/sub">
-            <button className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer">
-              <span className="flex items-center gap-2">
-                <User size={12} className="shrink-0" />
-                <span>Người thực hiện</span>
-              </span>
-              <ChevronRight size={10} className="shrink-0" />
-            </button>
-            <div className="absolute left-full top-0 -ml-2 pl-3 hidden group-hover/sub:block z-50">
-              <div className="bg-background border border-border rounded-lg shadow-md p-1 min-w-[150px] max-h-[180px] overflow-y-auto">
-                <button
-                  onClick={() => { handleUpdateTask({ assigneeId: null }); }}
-                  className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between border-b border-border/40 pb-1"
-                >
-                  <span>Chưa phân công</span>
-                  {!activeTask.assigneeId && <span className="text-[10px] font-bold">✓</span>}
-                </button>
-                {activeProjectMembers?.map((m) => {
-                  const isActive = activeTask.assigneeId === m.employeeId
-                  return (
-                    <button
-                      key={m.id}
-                      onClick={() => { handleUpdateTask({ assigneeId: m.employeeId }); }}
-                      className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between"
-                    >
-                      <span className="truncate">{m.employee?.fullName || "Chưa rõ"}</span>
-                      {isActive && <span className="text-[10px] font-bold">✓</span>}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Submenu choice for progress value */}
-          <div className="relative group/sub">
-            <button className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer">
-              <span className="flex items-center gap-2">
-                <ClipboardList size={12} className="shrink-0" />
-                <span>Tiến độ (%)</span>
-              </span>
-              <ChevronRight size={10} className="shrink-0" />
-            </button>
-            <div className="absolute left-full top-0 -ml-2 pl-3 hidden group-hover/sub:block z-50">
-              <div className="bg-background border border-border rounded-lg shadow-md p-1 min-w-[100px] max-h-[180px] overflow-y-auto">
-                {["0", "10", "20", "30", "40", "50", "60", "70", "80", "90", "100"].map((p) => {
-                  const isActive = activeTask.progress === Number(p)
-                  return (
-                    <button
-                      key={p}
-                      onClick={() => { handleUpdateTask({ progress: Number(p) }); }}
-                      className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer flex items-center justify-between font-mono"
-                    >
-                      <span>{p} %</span>
-                      {isActive && <span className="text-[10px] font-bold">✓</span>}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Submenu displaying Watchers list */}
-          <div className="relative group/sub">
-            <button className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer">
-              <span className="flex items-center gap-2">
-                <User size={12} className="shrink-0" />
-                <span>Người theo dõi</span>
-              </span>
-              <ChevronRight size={10} className="shrink-0" />
-            </button>
-            <div className="absolute left-full top-0 -ml-2 pl-3 hidden group-hover/sub:block z-50">
-              <div className="bg-background border border-border rounded-lg shadow-md p-1 min-w-[150px] max-h-[180px] overflow-y-auto">
-                {activeProjectMembers?.map((m) => (
-                  <button
-                    key={m.id}
-                    onClick={() => {
-                      if (m.employee?.fullName) {
-                        toast.success(`Đang theo dõi bởi: ${m.employee.fullName}`);
-                      }
-                    }}
-                    className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer truncate"
-                  >
-                    {m.employee?.fullName || "Chưa rõ"}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="h-px bg-border my-1" />
-
-          {/* Shortcut option to Log Time spent on active task */}
-          <button
-            onClick={() => {
-              setLogTimeTask({ id: activeTask.id, title: activeTask.title })
-              setIsLogTimeOpen(true)
-              setContextMenu({ isOpen: false, x: 0, y: 0, task: null })
-            }}
-            className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer text-left"
-          >
-            <Clock size={12} className="shrink-0" />
-            <span>Ghi nhận thời gian</span>
-          </button>
-
-          {/* Shortcut link to add subtask associated with active task */}
-          <Link
-            to={`/project/${activeTask.projectId}/task/new`}
-            onClick={() => { sessionStorage.setItem("activeProjectId", activeTask.projectId); sessionStorage.setItem("parentTaskId", activeTask.id); setContextMenu({ isOpen: false, x: 0, y: 0, task: null }); }}
-            className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground hover:no-underline"
-          >
-            <Plus size={12} className="shrink-0" />
-            <span>Thêm công việc con</span>
-          </Link>
-
-          {/* Shortcut button to copy link address of active task to clipboard */}
-          <button
-            onClick={() => {
-              const link = window.location.origin + `/project/task/${activeTask.id}`
-              void navigator.clipboard.writeText(link)
-              toast.success("Đã sao chép liên kết vào bộ nhớ tạm")
-              setContextMenu({ isOpen: false, x: 0, y: 0, task: null })
-            }}
-            className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-blue-600 hover:text-white rounded text-xs transition-colors font-semibold text-foreground cursor-pointer text-left"
-          >
-            <ExternalLink size={12} className="shrink-0" />
-            <span>Sao chép liên kết</span>
-          </button>
-        </div>
-      )}
+      {/* Floating Context Menu - Renders dynamically with auto-positioning */}
+      <TaskContextMenu
+        isOpen={contextMenu.isOpen}
+        x={contextMenu.x}
+        y={contextMenu.y}
+        task={contextMenu.task}
+        projectMembers={activeProjectMembers}
+        onClose={() => {
+          setContextMenu({ isOpen: false, x: 0, y: 0, task: null })
+        }}
+        onUpdateTask={handleUpdateTask}
+        onLogTime={(t) => {
+          setLogTimeTask(t)
+          setIsLogTimeOpen(true)
+        }}
+      />
 
       {/* Reusable Log Time Modal Dialog */}
       {logTimeTask && (
