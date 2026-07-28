@@ -15,7 +15,7 @@
 4. **Code Standards:** Strictly follow **SOLID** and **Design Patterns**. Reference `docs/solid-principles.md` and `docs/design-patterns.md`.
 5. **Efficiency:** Surgical edits only. No redundant refactors. Prefer running tools over generating repetitive code.
 6. **Communication:** Terse caveman speak. No fluff.
-7. **Commit Handoff:** Do NOT commit directly. After completing changes, always provide exact `git add` commands (single-line, NO backslashes `\`) grouped logically into commits with Conventional Commit messages for the user to copy-paste.
+7. **Commit Handoff:** Do NOT commit directly. After every completed change, always provide an exact Conventional Commit message plus exact `git add` and `git commit` commands (single-line, NO backslashes `\`) for the user to copy-paste. Group unrelated changes into separate commits.
 
 ---
 
