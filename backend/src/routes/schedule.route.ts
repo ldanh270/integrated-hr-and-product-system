@@ -25,11 +25,13 @@ const controller = new ScheduleController(service)
 
 scheduleRoutes.use(authenticate)
 
+// Employee self-service schedule reads.
 scheduleRoutes.get("/my", controller.getEmployeeSchedule)
 scheduleRoutes.get("/my/shifts", controller.getMyShifts)
 scheduleRoutes.get("/my/week", controller.getEmployeePlannedWeek)
 scheduleRoutes.get("/my/all", controller.listEmployeeSchedules)
 
+// Admin roster reads and writes stay permission-gated under attendance scopes.
 scheduleRoutes.get(
   "/employee/:employeeId",
   requirePermission("attendance.read"),

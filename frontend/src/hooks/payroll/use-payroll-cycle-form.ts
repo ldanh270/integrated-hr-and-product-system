@@ -17,6 +17,7 @@ export const settingsSchema = z
     approvalMinute: z.number().min(0).max(59),
   })
   .refine((values) => values.approvalDay >= values.triggerDay, {
+    // Keep the client aligned with the API rule that preserves the employee feedback window.
     message: "Ngày duyệt payroll phải sau hoặc bằng ngày tạo payroll",
     path: ["approvalDay"],
   })

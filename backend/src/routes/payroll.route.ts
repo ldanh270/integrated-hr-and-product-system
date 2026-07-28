@@ -35,6 +35,7 @@ const DEFAULT_PAYROLL_SETTINGS = {
 const settingsRepo = {
   findGlobal: async () => {
     const s = await prisma.payrollSettings.findUnique({ where: { id: "GLOBAL" } })
+    // Routes and cron share the same defaults until the GLOBAL settings row exists.
     return s || DEFAULT_PAYROLL_SETTINGS
   },
 }
@@ -120,6 +121,7 @@ payrollRoutes.put(
         )
       }
 
+      // Approval must happen after preview/generation so employees still have a feedback window.
       if (Number(approvalDay) < Number(triggerDay)) {
         throw new AppError(
           "Approval day must be greater than or equal to payroll creation day",

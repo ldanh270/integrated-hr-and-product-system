@@ -28,6 +28,7 @@ const DEFAULT_PAYROLL_SETTINGS = {
 const settingsRepo = {
   findGlobal: async () => {
     const s = await prisma.payrollSettings.findUnique({ where: { id: "GLOBAL" } })
+    // Keep automation bootable before the singleton settings row is seeded.
     return s || DEFAULT_PAYROLL_SETTINGS
   },
 }
@@ -61,6 +62,7 @@ export const initCronJobs = () => {
         today.getHours() === settings.triggerHour &&
         today.getMinutes() === settings.triggerMinute
       ) {
+        // The period/name guard makes the every-minute scheduler idempotent for a month.
         const existing = await payrollRepo.findByPeriod(month, year, name)
         if (!existing) {
           console.log(`[CRON] Generating Payroll for ${month}/${year}...`)
@@ -81,6 +83,7 @@ export const initCronJobs = () => {
       if (!payroll || payroll.status === PAYROLL_STATUS.APPROVED || payroll.status === PAYROLL_STATUS.PAID) {
         return
       }
+      // Rejected payrolls require human correction; cron must not silently approve them later.
       if (payroll.status === PAYROLL_STATUS.REJECTED) return
 
       console.log(`[CRON] Approving Payroll ${month}/${year}...`)

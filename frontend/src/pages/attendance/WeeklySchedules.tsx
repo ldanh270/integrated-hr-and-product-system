@@ -45,6 +45,7 @@ export default function WeeklySchedules() {
   const deleteMutation = useDeleteWeeklyScheduleTemplate()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<IWeeklyScheduleTemplate | null>(null)
+  // Non-null means the apply dialog owns the selected template until it closes.
   const [applying, setApplying] = useState<IWeeklyScheduleTemplate | null>(null)
 
   const handleCreate = () => {

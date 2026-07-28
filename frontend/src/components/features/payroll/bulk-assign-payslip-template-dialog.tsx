@@ -44,6 +44,7 @@ export function BulkAssignPayslipTemplateDialog({
     search,
   })
   const employees = employeeData?.data ?? []
+  // Selection is cumulative across searches; "visible" means the current server-filtered page.
   const visibleIds = employees.map((employee) => employee.id)
   const allVisibleSelected =
     visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id))
@@ -70,6 +71,7 @@ export function BulkAssignPayslipTemplateDialog({
       const result = await assignMutation.mutateAsync({
         employeeIds: selectedIds,
         templateId: template.id,
+        // Backend keeps existing base salaries and uses this only when an employee has no active config.
         defaultBaseSalary,
         effectiveFrom: new Date(effectiveFrom).toISOString(),
         note: note || undefined,
