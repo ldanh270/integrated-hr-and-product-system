@@ -26,6 +26,7 @@ export interface IPayslipDetail {
 
 export type PayslipReceiptStatus = "not_received" | "received"
 
+// Daily logs are denormalized for the payslip UI so employees can audit attendance per day.
 export interface IPayslipDailyWorkLog {
   date: string
   dayOfMonth: number
@@ -67,6 +68,7 @@ export interface IPayslip {
 export interface IPayslipFeedbackPayload {
   date: string
   reason: string
+  // Optional corrected punches are converted by the API into the attendance forgot-card workflow.
   checkInAt?: string | null
   checkOutAt?: string | null
 }
@@ -133,6 +135,7 @@ export interface IPayrollSettings {
   triggerDay: number
   triggerHour: number
   triggerMinute: number
+  // Approval schedule is separate from trigger schedule to leave room for payslip feedback.
   approvalDay: number
   approvalHour: number
   approvalMinute: number

@@ -57,6 +57,7 @@ export function ApplyWeeklyScheduleTemplateDialog({
         .includes(keyword),
     )
   }, [data?.data, search])
+  // Bulk actions target the filtered list only, while prior selections outside the filter stay selected.
   const visibleIds = employees.map((employee) => employee.id)
   const allVisibleSelected =
     visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id))
@@ -77,6 +78,7 @@ export function ApplyWeeklyScheduleTemplateDialog({
 
   const handleSubmit = () => {
     if (!template) return
+    // generateShifts controls whether the backend materializes EmployeeShift rows immediately.
     applyMutation.mutate(
       {
         templateId: template.id,

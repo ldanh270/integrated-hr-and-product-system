@@ -32,6 +32,7 @@ export function useSubmitPayslipFeedback() {
       return response.data.data
     },
     onSuccess: () => {
+      // Feedback can create an attendance correction, so refresh previews and persisted payslips together.
       void queryClient.invalidateQueries({ queryKey: PAYROLL_QUERY_KEYS.MY_PAYSLIPS })
     },
   })

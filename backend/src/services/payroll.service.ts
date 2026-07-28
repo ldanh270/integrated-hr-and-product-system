@@ -47,7 +47,7 @@ import {
 } from "@prisma/client"
 import * as math from "mathjs"
 
-// Need an interface for SettingsRepository
+// Payroll settings are read through this narrow port by HTTP routes and cron wiring.
 interface IPayrollSettingsRepository {
   findGlobal(): Promise<{ triggerDay: number }>
 }
@@ -494,6 +494,7 @@ export class PayrollService implements IPayrollService {
           : [],
     })))
 
+    // Surface an in-memory current-month preview before payroll generation so employees can flag attendance issues early.
     const preview = await this.buildCurrentPreviewPayslip(employeeId, summaries)
     return preview ? [preview, ...summaries] : summaries
   }
@@ -535,6 +536,7 @@ export class PayrollService implements IPayrollService {
       ? this.combineDateAndTime(day, data.checkOutAt, employeeShift.shift, "checkout")
       : null
 
+    // Payroll feedback reuses the forgot-card workflow so HR validates one attendance correction pipeline.
     return this.prisma.application.create({
       data: {
         employeeId,
@@ -580,6 +582,7 @@ export class PayrollService implements IPayrollService {
     if (!snapshot) return null
 
     const now = new Date()
+    // Synthetic IDs keep preview rows distinguishable from persisted payslips on the client.
     return {
       id: `preview-${year}-${String(month).padStart(2, "0")}-${employeeId}`,
       payrollId: `preview-${year}-${String(month).padStart(2, "0")}`,
@@ -817,6 +820,7 @@ export class PayrollService implements IPayrollService {
     year: number,
     records: IAttendanceRecordDTO[],
   ): IPayslipDailyWorkLog[] {
+    // Multiple records can exist for a day, so the payslip view collapses them into one daily row.
     const byDate = new Map<string, IAttendanceRecordDTO[]>()
     records.forEach((record) => {
       const key = this.formatDateKey(new Date(record.date))
@@ -938,6 +942,7 @@ export class PayrollService implements IPayrollService {
       && shift.endTime < shift.startTime
       && minutesFromMidnight <= shift.endTime
     ) {
+      // Overnight shifts store checkout after midnight on the following calendar day.
       result.setDate(result.getDate() + 1)
     }
     return result

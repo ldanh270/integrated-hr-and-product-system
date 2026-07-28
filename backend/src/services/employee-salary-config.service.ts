@@ -62,14 +62,11 @@ export class EmployeeSalaryConfigService implements IEmployeeSalaryConfigService
     createdById: string,
   ): Promise<EmployeeSalaryConfig> {
     return this.prisma.$transaction(async (tx) => {
-      // effectiveFrom of new config minus 1 ms or 1 day. Prisma DateTime can handle milliseconds.
-      // For simplicity, we just use the date of effectiveFrom, but maybe minus 1 day.
+      // Salary config ranges are day-based; the previous active range ends the day before this one.
       const effectiveTo = new Date(data.effectiveFrom)
       effectiveTo.setDate(effectiveTo.getDate() - 1)
 
-      // We actually need to execute the closeCurrentConfig in transaction, but configRepo is likely using the outer prisma
-      // unless we pass tx. For now, we update directly using tx here or ensure repository supports transactions.
-      // Since BaseRepository doesn't inject tx seamlessly by default, we do the manual query:
+      // Close and create inside one transaction so employees never see overlapping active configs.
       await tx.employeeSalaryConfig.updateMany({
         where: { employeeId, effectiveTo: null },
         data: { effectiveTo },
@@ -119,6 +116,7 @@ export class EmployeeSalaryConfigService implements IEmployeeSalaryConfigService
         )
       }
 
+      // Close the currently active range the day before the new template takes effect.
       const effectiveTo = new Date(data.effectiveFrom)
       effectiveTo.setDate(effectiveTo.getDate() - 1)
 
@@ -130,6 +128,7 @@ export class EmployeeSalaryConfigService implements IEmployeeSalaryConfigService
         },
         orderBy: { effectiveFrom: "desc" },
       })
+      // Preserve existing base salary per employee; defaultBaseSalary only fills first-time configs.
       const activeByEmployee = new Map(activeConfigs.map((config) => [config.employeeId, config]))
 
       await tx.employeeSalaryConfig.updateMany({

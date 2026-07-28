@@ -79,6 +79,7 @@ export function useBulkAssignSalaryTemplate() {
       return response.data.data as { assignedCount: number }
     },
     onSuccess: () => {
+      // Bulk assignment can alter many employees, so refresh both salary configs and employee summaries.
       return Promise.all([
         queryClient.invalidateQueries({ queryKey: PAYROLL_QUERY_KEYS.EMPLOYEE_SALARY_CONFIG }),
         queryClient.invalidateQueries({ queryKey: ["employees"] }),
