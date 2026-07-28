@@ -77,10 +77,12 @@ export class JobRequisitionService {
     if (input.approverId) await this.assertEligibleApprover(input.approverId)
 
     // Only draft and pending approval requisitions can update most fields
+    const updatesCandidateSchemaOnly = Object.keys(input).every((field) => field === "candidateSchema")
     if (
       existing.status !== REQUISITION_STATUS.DRAFT &&
       existing.status !== REQUISITION_STATUS.PENDING_APPROVAL &&
-      input.status === undefined
+      input.status === undefined &&
+      !updatesCandidateSchemaOnly
     ) {
       throw new AppError(
         "Chỉ yêu cầu tuyển dụng nháp hoặc chờ duyệt mới được chỉnh sửa",

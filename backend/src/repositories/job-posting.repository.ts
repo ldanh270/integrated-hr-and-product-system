@@ -2,6 +2,7 @@ import { prisma } from "@/libs/database"
 import { Prisma, type PostingStatus, type PrismaClient, type RecruitmentChannel } from "@prisma/client"
 import type { UpdateJobPostingInput } from "@/schemas/recruitment.schema"
 import { RECRUITMENT_PIPELINE_STAGE_TEMPLATE } from "@/configs/entities/recruitment.config"
+import type { GoogleFormFieldDefinition } from "@/configs/rules/google-form.config"
 
 export interface ListJobPostingsQuery {
   requisitionId?: string
@@ -14,8 +15,21 @@ export interface ListJobPostingsQuery {
 export class JobPostingRepository {
   constructor(private readonly db: PrismaClient = prisma) {}
 
-  create(data: Prisma.JobPostingUncheckedCreateInput) {
-    return this.db.jobPosting.create({ data, include: this.relations })
+  create(data: Prisma.JobPostingUncheckedCreateInput, fields: readonly GoogleFormFieldDefinition[]) {
+    return this.db.$transaction(async (tx) => {
+      const posting = await tx.jobPosting.create({ data })
+      await tx.postingFieldSnapshot.createMany({
+        data: fields.map((field, position) => ({
+          postingId: posting.id,
+          fieldKey: field.key,
+          label: field.label,
+          type: field.type,
+          required: field.required,
+          position,
+        })),
+      })
+      return tx.jobPosting.findUniqueOrThrow({ where: { id: posting.id }, include: this.relations })
+    })
   }
 
   createDefaultPipelineStages(postingId: string) {
@@ -193,6 +207,18 @@ export class JobPostingRepository {
     })
   }
 
+  updateFieldQuestionIds(
+    postingId: string,
+    mappings: ReadonlyArray<{ fieldKey: string; externalQuestionId: string }>,
+  ) {
+    return this.db.$transaction(
+      mappings.map((mapping) => this.db.postingFieldSnapshot.update({
+        where: { postingId_fieldKey: { postingId, fieldKey: mapping.fieldKey } },
+        data: { externalQuestionId: mapping.externalQuestionId },
+      })),
+    )
+  }
+
   markConnectorError(id: string) {
     return this.db.jobPosting.update({
       where: { id },
@@ -257,9 +283,11 @@ export class JobPostingRepository {
         responsibilities: true,
         requirements: true,
         benefits: true,
+        candidateFields: { orderBy: { position: "asc" as const } },
       },
     },
     oauthAccount: true,
+    fieldSnapshots: { orderBy: { position: "asc" as const } },
   }
 }
 

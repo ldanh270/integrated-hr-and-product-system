@@ -6,6 +6,7 @@ import {
   REQUISITION_STATUS,
 } from "@/configs/entities/recruitment.config"
 import { GOOGLE_FORM_SOURCE_CODE_PREFIX } from "@/configs/rules/google-form.config"
+import { GOOGLE_FORM_DEFAULT_FIELDS } from "@/configs/rules/google-form.config"
 import { HttpStatusCode } from "@/configs/system/http.config"
 import { jobRequisitionRepository } from "@/repositories/job-requisition.repository"
 import { jobPostingRepository } from "@/repositories/job-posting.repository"
@@ -51,14 +52,17 @@ export class JobPostingService {
     }
 
     const sourceCode = `${GOOGLE_FORM_SOURCE_CODE_PREFIX}_${randomUUID().replaceAll("-", "")}`
+    const fields = requisition.candidateFields.length > 0
+      ? requisition.candidateFields.map(({ key, label, type, required }) => ({ key, label, type, required }))
+      : input.fields ?? GOOGLE_FORM_DEFAULT_FIELDS
     const posting = await jobPostingRepository.create({
       requisitionId: input.requisitionId,
       channel: channel as any,
       source: RECRUITMENT_SOURCE.GOOGLE_FORM,
       sourceCode,
-      formFields: input.fields as any,
+      formFields: fields as any,
       oauthAccountId,
-    })
+    }, fields)
     await jobPostingRepository.createDefaultPipelineStages(posting.id)
     await recruitmentPostingActivityService.record(
       posting.id,

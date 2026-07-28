@@ -52,6 +52,7 @@ export interface JobRequisition {
   targetCloseDate: string | null
   createdAt: string
   updatedAt: string
+  candidateFields?: RecruitmentFormField[]
 }
 
 export type PostingChannel =
@@ -68,10 +69,12 @@ export type ConnectorStatus = "not_configured" | "ready" | "error"
 export type RecruitmentFormFieldType = "short_text" | "paragraph"
 
 export interface RecruitmentFormField {
+  id?: string
   key: string
   label: string
   type: RecruitmentFormFieldType
   required: boolean
+  position?: number
 }
 
 export interface JobDescription {

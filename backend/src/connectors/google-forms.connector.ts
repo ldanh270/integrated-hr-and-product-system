@@ -66,7 +66,7 @@ interface GoogleResponsesPage {
 
 type PostingRepository = Pick<
   typeof jobPostingRepository,
-  "findById" | "storeConnectorExternalId"
+  "findById" | "storeConnectorExternalId" | "updateFieldQuestionIds"
 >
 
 export class GoogleFormsConnector implements RecruitmentConnector {
@@ -109,7 +109,7 @@ export class GoogleFormsConnector implements RecruitmentConnector {
     const existingTitles = new Set(
       (existingItems ?? []).map((item) => item.title?.trim()).filter((t): t is string => Boolean(t))
     )
-    const fields = this.formFields(posting.formFields)
+    const fields = this.postingFields(posting)
     const description = this.buildDescription(posting.requisition)
     const requests: Array<Record<string, unknown>> = [
       {
@@ -136,6 +136,10 @@ export class GoogleFormsConnector implements RecruitmentConnector {
     if (!published.responderUri) {
       throw this.apiError("Google Forms không trả về đường dẫn ứng tuyển")
     }
+    const mappings = this.questionIdMappings(fields, published.items ?? [])
+    if (mappings.length > 0) {
+      await this.postingRepository.updateFieldQuestionIds(postingId, mappings)
+    }
     return { externalId: formId, postingUrl: published.responderUri }
   }
 
@@ -161,9 +165,13 @@ export class GoogleFormsConnector implements RecruitmentConnector {
     const config = await this.requireConfig(posting)
     const token = await this.getAccessToken(config)
     const form = await this.request<GoogleForm>(token, `${FORMS_API}/${posting.externalId}`)
-    const fields = this.formFields(posting.formFields)
+    const fields = this.postingFields(posting)
 
-    const questionIdMap = new Map<string, string>()
+    const questionIdMap = new Map(
+      posting.fieldSnapshots
+        .filter((field) => Boolean(field.externalQuestionId))
+        .map((field) => [field.fieldKey, field.externalQuestionId!]),
+    )
     for (const item of form.items ?? []) {
       const qId = item.questionItem?.question?.questionId
       const title = item.title?.trim()
@@ -172,6 +180,14 @@ export class GoogleFormsConnector implements RecruitmentConnector {
       if (matchedField) {
         questionIdMap.set(matchedField.key, qId)
       }
+    }
+    const learnedMappings = posting.fieldSnapshots.flatMap((field) => {
+      if (field.externalQuestionId) return []
+      const externalQuestionId = questionIdMap.get(field.fieldKey)
+      return externalQuestionId ? [{ fieldKey: field.fieldKey, externalQuestionId }] : []
+    })
+    if (learnedMappings.length > 0) {
+      await this.postingRepository.updateFieldQuestionIds(postingId, learnedMappings)
     }
 
     const responses: GoogleFormResponse[] = []
@@ -363,6 +379,35 @@ export class GoogleFormsConnector implements RecruitmentConnector {
       const parsed = googleFormFieldSchema.safeParse(field)
       if (!parsed.success) throw this.apiError("Cấu hình trường Google Form không hợp lệ")
       return parsed.data
+    })
+  }
+
+  private postingFields(posting: {
+    formFields: unknown
+    fieldSnapshots: Array<{ fieldKey: string; label: string; type: "short_text" | "paragraph"; required: boolean }>
+  }): readonly GoogleFormFieldDefinition[] {
+    if (posting.fieldSnapshots.length > 0) {
+      return posting.fieldSnapshots.map((field) => ({
+        key: field.fieldKey,
+        label: field.label,
+        type: field.type,
+        required: field.required,
+      }))
+    }
+    return this.formFields(posting.formFields)
+  }
+
+  private questionIdMappings(
+    fields: readonly GoogleFormFieldDefinition[],
+    items: NonNullable<GoogleForm["items"]>,
+  ): Array<{ fieldKey: string; externalQuestionId: string }> {
+    return fields.flatMap((field) => {
+      const item = items.find((candidate) => {
+        const title = candidate.title?.trim()
+        return title ? this.matchesField(field, title) : false
+      })
+      const externalQuestionId = item?.questionItem?.question?.questionId
+      return externalQuestionId ? [{ fieldKey: field.key, externalQuestionId }] : []
     })
   }
 

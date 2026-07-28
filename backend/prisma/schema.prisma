@@ -1503,6 +1503,11 @@ enum IntakeStatus {
   failed
 }
 
+enum RecruitmentFieldType {
+  short_text
+  paragraph
+}
+
 // ── Models ─────────────────────────────────────────────────────────────────────
 
 // Job Requisition — Hiring request with approval workflow
@@ -1546,6 +1551,7 @@ model JobRequisition {
 
   postings     JobPosting[]
   applications RecruitmentApplication[]
+  candidateFields CandidateFieldDefinition[]
 
   @@index([status])
   @@index([requestedById])
@@ -1583,6 +1589,7 @@ model JobPosting {
   connectorResponses RecruitmentConnectorResponse[]
   activities         RecruitmentPostingActivity[]
   pipelineStages     RecruitmentPipelineStage[]
+  fieldSnapshots     PostingFieldSnapshot[]
 
   @@index([requisitionId])
   @@unique([id, requisitionId])
@@ -1591,6 +1598,42 @@ model JobPosting {
   @@index([status])
   @@index([oauthAccountId])
   @@index([archivedById])
+}
+
+model CandidateFieldDefinition {
+  id            String               @id @default(cuid())
+  requisitionId String
+  requisition   JobRequisition       @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  key           String
+  label         String
+  type          RecruitmentFieldType
+  required      Boolean              @default(false)
+  position      Int
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@unique([requisitionId, key])
+  @@unique([requisitionId, position])
+  @@index([requisitionId])
+}
+
+model PostingFieldSnapshot {
+  id                 String               @id @default(cuid())
+  postingId          String
+  posting            JobPosting           @relation(fields: [postingId], references: [id], onDelete: Cascade)
+  fieldKey           String
+  label              String
+  type               RecruitmentFieldType
+  required           Boolean              @default(false)
+  position           Int
+  externalQuestionId String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@unique([postingId, fieldKey])
+  @@unique([postingId, position])
+  @@index([postingId])
+  @@index([externalQuestionId])
 }
 
 // Recruitment Intake Record — Raw provenance data ingested from external forms

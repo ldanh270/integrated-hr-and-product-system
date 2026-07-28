@@ -64,6 +64,7 @@ export interface CreateRequisitionDto {
   targetHireDate?: string
   targetCloseDate?: string
   approverId: string
+  candidateSchema?: RecruitmentFormField[]
 }
 
 export interface RequisitionApprover {
@@ -148,7 +149,7 @@ export interface CreateJobPostingDto {
   requisitionId: string
   channel?: string
   oauthAccountId?: string | null
-  fields: RecruitmentFormField[]
+  fields?: RecruitmentFormField[]
 }
 
 export type PublishJobPostingDto = { id: string; mode: "connector" }
