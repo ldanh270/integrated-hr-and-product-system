@@ -18,6 +18,7 @@ import type {
   ApplicantImportRow,
   ApplicantImportResult,
   RecruitmentFormField,
+  RecruitmentPostingActivity,
 } from "@/types/recruitment.types"
 
 interface PaginatedPayload<T> {
@@ -153,6 +154,11 @@ export interface CreateJobPostingDto {
 export type PublishJobPostingDto = { id: string; mode: "connector" }
 
 export const jobPostingApi = {
+  overview: async (id: string): Promise<{ posting: JobPosting; applicationTotal: number; stageGroups: Array<{ pipelineStageId: string | null; _count: { _all: number } }> }> => (await apiClient.get(`/recruitment/job-postings/${id}/overview`)).data.data,
+  getOne: async (id: string): Promise<JobPosting> => {
+    const response = await apiClient.get<{ data: JobPosting }>(`/recruitment/job-postings/${id}`)
+    return response.data.data
+  },
   list: async (requisitionId?: string): Promise<JobPosting[]> => {
     const response = await apiClient.get<{ data: JobPosting[] | PaginatedPayload<JobPosting> }>("/recruitment/job-postings", { params: { requisitionId } })
     const payload = response.data.data
@@ -174,12 +180,31 @@ export const jobPostingApi = {
     const response = await apiClient.post<{ data: ApplicantImportResult & { postingId: string; syncedAt: string } }>(`/recruitment/job-postings/${id}/sync`)
     return response.data.data
   },
+  archive: async (id: string): Promise<JobPosting> => {
+    const response = await apiClient.delete<{ data: JobPosting }>(`/recruitment/job-postings/${id}`)
+    return response.data.data
+  },
+  activities: async (id: string): Promise<RecruitmentPostingActivity[]> => {
+    const response = await apiClient.get<{ data: PaginatedPayload<RecruitmentPostingActivity> }>(`/recruitment/job-postings/${id}/activities`)
+    return response.data.data.items
+  },
+  responses: async (id: string): Promise<Array<{ id: string; applicationId: string | null; errorMessage: string | null; responseData: Record<string, string> | null }>> => {
+    const response = await apiClient.get<{ data: Array<{ id: string; applicationId: string | null; errorMessage: string | null; responseData: Record<string, string> | null }>}>(`/recruitment/job-postings/${id}/responses`)
+    return response.data.data
+  },
+  stages: async (id: string): Promise<import("@/types/recruitment.types").RecruitmentPipelineStage[]> => (await apiClient.get(`/recruitment/job-postings/${id}/stages`)).data.data,
+  createStage: async (id: string, data: { name: string; color?: string; isDefault?: boolean; isCompleted?: boolean }) => (await apiClient.post(`/recruitment/job-postings/${id}/stages`, data)).data.data,
+  updateStage: async (postingId: string, stageId: string, data: Record<string, unknown>) => (await apiClient.patch(`/recruitment/job-postings/${postingId}/stages/${stageId}`, data)).data.data,
+  deleteStage: async (postingId: string, stageId: string, fallbackStageId: string) => apiClient.delete(`/recruitment/job-postings/${postingId}/stages/${stageId}`, { params: { fallbackStageId } }),
+  reorderStages: async (postingId: string, stageIds: string[]): Promise<import("@/types/recruitment.types").RecruitmentPipelineStage[]> => (await apiClient.put(`/recruitment/job-postings/${postingId}/stages/reorder`, { stageIds })).data.data,
+  moveApplicationStage: async (postingId: string, applicationId: string, pipelineStageId: string) => (await apiClient.post(`/recruitment/job-postings/${postingId}/stages/move`, { applicationId, pipelineStageId })).data.data,
+  createCandidate: async (postingId: string, data: Omit<CreateCandidateDto, "source">) => (await apiClient.post(`/recruitment/job-postings/${postingId}/candidates`, data)).data.data,
 }
 
 export const applicantIntakeApi = {
   import: async (data: {
     requisitionId: string
-    postingId?: string
+    postingId: string
     source: string
     rows: ApplicantImportRow[]
   }): Promise<ApplicantImportResult> => {
@@ -283,6 +308,7 @@ export const candidateApi = {
 
 export interface CreateApplicationDto {
   requisitionId: string
+  postingId: string
   candidateId: string
   source: string
 }
@@ -301,6 +327,7 @@ export interface MoveKanbanDto {
 export const applicationApi = {
   list: async (query?: {
     requisitionId?: string
+    postingId?: string
     status?: string
     assignedToId?: string
     page?: number
@@ -327,6 +354,7 @@ export const applicationApi = {
 
   listKanban: async (query?: {
     requisitionId?: string
+    postingId?: string
     assignedToId?: string
     page?: number
     pageSize?: number

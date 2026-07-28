@@ -76,6 +76,40 @@ export const CONNECTOR_STATUS = {
   ERROR: "error",
 } as const
 
+export const RECRUITMENT_POSTING_ACTIVITY_TYPE = {
+  CREATED: "created",
+  UPDATED: "updated",
+  PUBLISHED: "published",
+  ARCHIVED: "archived",
+  SYNC_STARTED: "sync_started",
+  SYNC_COMPLETED: "sync_completed",
+  SYNC_FAILED: "sync_failed",
+  STAGE_CREATED: "stage_created",
+  STAGE_UPDATED: "stage_updated",
+  STAGE_DELETED: "stage_deleted",
+  STAGES_REORDERED: "stages_reordered",
+  APPLICATION_STAGE_CHANGED: "application_stage_changed",
+  CANDIDATE_CREATED: "candidate_created",
+  CANDIDATE_PROFILE_UPDATED: "candidate_profile_updated",
+  CONNECTOR_RESPONSE_FAILED: "connector_response_failed",
+} as const
+
+export const RECRUITMENT_POSTING_ACTIVITY_TYPES = Object.values(
+  RECRUITMENT_POSTING_ACTIVITY_TYPE,
+) as [
+  (typeof RECRUITMENT_POSTING_ACTIVITY_TYPE)[keyof typeof RECRUITMENT_POSTING_ACTIVITY_TYPE],
+  ...(typeof RECRUITMENT_POSTING_ACTIVITY_TYPE)[keyof typeof RECRUITMENT_POSTING_ACTIVITY_TYPE][],
+]
+
+export const RECRUITMENT_PIPELINE_STAGE_TEMPLATE = [
+  { name: "Nộp CV", color: "#3B82F6", position: 0, isDefault: true, isCompleted: false },
+  { name: "Phỏng vấn vòng 1", color: "#F59E0B", position: 1, isDefault: false, isCompleted: false },
+  { name: "Phỏng vấn vòng 2", color: "#8B5CF6", position: 2, isDefault: false, isCompleted: false },
+  { name: "Đang offer", color: "#EC4899", position: 3, isDefault: false, isCompleted: false },
+  { name: "Đã nhận", color: "#10B981", position: 4, isDefault: false, isCompleted: true },
+  { name: "Đã từ chối", color: "#EF4444", position: 5, isDefault: false, isCompleted: true },
+] as const
+
 // ── Recruitment Application ────────────────────────────────────────────────────
 
 export const RECRUITMENT_APPLICATION_STATUS = {

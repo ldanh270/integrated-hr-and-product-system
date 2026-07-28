@@ -103,7 +103,7 @@ export type ApplicationStatus =
 
 export interface CreateApplicationInput {
   requisitionId: string
-  postingId?: string
+  postingId: string
   candidateId: string
   source: RecruitmentSource
   sourceRef?: string
@@ -293,6 +293,7 @@ export interface ListCandidatesQuery {
 
 export interface ListApplicationsQuery {
   requisitionId?: string
+  postingId?: string
   status?: ApplicationStatus
   assignedToId?: string
   page?: number

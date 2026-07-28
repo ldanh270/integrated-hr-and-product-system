@@ -26,8 +26,9 @@ export class CandidateRepository {
   }
 
   async findByEmail(email: string) {
-    return this.db.candidate.findUnique({
+    return this.db.candidate.findFirst({
       where: { email },
+      orderBy: { createdAt: "desc" },
       include: {
         applications: {
           include: {

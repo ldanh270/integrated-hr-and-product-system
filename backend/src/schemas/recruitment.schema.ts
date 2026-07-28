@@ -120,7 +120,7 @@ export const intakeRowSchema = z.object({
 
 export const importRecruitmentIntakeSchema = z.object({
   requisitionId: z.string().cuid(),
-  postingId: z.string().cuid().optional(),
+  postingId: z.string().cuid(),
   source: z.enum(RECRUITMENT_SOURCES),
   rows: z.array(intakeRowSchema).min(1).max(1000),
 })
@@ -146,12 +146,13 @@ export const updateCandidateSchema = createCandidateSchema.partial().extend({
   id: z.string().cuid(),
 })
 
+export const createPostingCandidateSchema = createCandidateSchema.omit({ source: true })
+
 // ── Application Schemas ────────────────────────────────────────────────────────
 
 export const createApplicationSchema = z.object({
   requisitionId: z.string().cuid(),
-  jobDescriptionId: z.string().cuid(),
-  postingId: z.string().cuid().optional(),
+  postingId: z.string().cuid(),
   candidateId: z.string().cuid(),
   source: z.enum(RECRUITMENT_SOURCES),
   sourceRef: z.string().max(255).optional(),
@@ -279,6 +280,7 @@ export const listCandidatesQuerySchema = z.object({
 
 export const listApplicationsQuerySchema = z.object({
   requisitionId: z.string().cuid().optional(),
+  postingId: z.string().cuid().optional(),
   status: z.enum(RECRUITMENT_APPLICATION_STATUSES).optional(),
   assignedToId: z.string().cuid().optional(),
   page: z.coerce.number().int().positive().default(1),
@@ -299,6 +301,7 @@ export type ImportRecruitmentIntakeInput = z.infer<typeof importRecruitmentIntak
 
 export type CreateCandidateInput = z.infer<typeof createCandidateSchema>
 export type UpdateCandidateInput = z.infer<typeof updateCandidateSchema>
+export type CreatePostingCandidateInput = z.infer<typeof createPostingCandidateSchema>
 
 export type CreateApplicationInput = z.infer<typeof createApplicationSchema>
 export type UpdateApplicationStatusInput = z.infer<typeof updateApplicationStatusSchema>

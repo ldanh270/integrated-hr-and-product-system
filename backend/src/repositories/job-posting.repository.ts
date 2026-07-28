@@ -1,6 +1,7 @@
 import { prisma } from "@/libs/database"
 import { Prisma, type PostingStatus, type PrismaClient, type RecruitmentChannel } from "@prisma/client"
 import type { UpdateJobPostingInput } from "@/schemas/recruitment.schema"
+import { RECRUITMENT_PIPELINE_STAGE_TEMPLATE } from "@/configs/entities/recruitment.config"
 
 export interface ListJobPostingsQuery {
   requisitionId?: string
@@ -15,6 +16,112 @@ export class JobPostingRepository {
 
   create(data: Prisma.JobPostingUncheckedCreateInput) {
     return this.db.jobPosting.create({ data, include: this.relations })
+  }
+
+  createDefaultPipelineStages(postingId: string) {
+    return this.db.recruitmentPipelineStage.createMany({
+      data: RECRUITMENT_PIPELINE_STAGE_TEMPLATE.map((stage) => ({ postingId, ...stage })),
+    })
+  }
+
+  listPipelineStages(postingId: string) {
+    return this.db.recruitmentPipelineStage.findMany({ where: { postingId }, orderBy: { position: "asc" } })
+  }
+
+  createPipelineStage(postingId: string, data: { name: string; color?: string; isDefault?: boolean; isCompleted?: boolean }) {
+    return this.db.$transaction(async (tx) => {
+      if (data.isDefault) await tx.recruitmentPipelineStage.updateMany({ where: { postingId }, data: { isDefault: false } })
+      const max = await tx.recruitmentPipelineStage.aggregate({ where: { postingId }, _max: { position: true } })
+      return tx.recruitmentPipelineStage.create({ data: { postingId, name: data.name, color: data.color ?? "#6366F1", position: (max._max.position ?? -1) + 1, isDefault: data.isDefault ?? false, isCompleted: data.isCompleted ?? false } })
+    })
+  }
+
+  updatePipelineStage(id: string, data: { name?: string; color?: string; position?: number; isDefault?: boolean; isCompleted?: boolean }) {
+    return this.db.$transaction(async (tx) => {
+      const stage = await tx.recruitmentPipelineStage.findUniqueOrThrow({ where: { id } })
+      if (data.isDefault) await tx.recruitmentPipelineStage.updateMany({ where: { postingId: stage.postingId }, data: { isDefault: false } })
+      return tx.recruitmentPipelineStage.update({ where: { id }, data })
+    })
+  }
+
+  async deletePipelineStage(id: string, fallbackStageId: string) {
+    return this.db.$transaction(async (tx) => {
+      const [stage, fallback] = await Promise.all([
+        tx.recruitmentPipelineStage.findUniqueOrThrow({ where: { id } }),
+        tx.recruitmentPipelineStage.findUniqueOrThrow({ where: { id: fallbackStageId } }),
+      ])
+      if (stage.id === fallback.id || stage.postingId !== fallback.postingId) {
+        throw new Error("Giai đoạn thay thế phải thuộc cùng bài đăng tuyển dụng")
+      }
+      await tx.recruitmentApplication.updateMany({ where: { pipelineStageId: id }, data: { pipelineStageId: fallbackStageId } })
+      await tx.recruitmentPipelineStage.delete({ where: { id } })
+      const remaining = await tx.recruitmentPipelineStage.findMany({
+        where: { postingId: stage.postingId },
+        orderBy: { position: "asc" },
+        select: { id: true, position: true },
+      })
+      const maxPosition = remaining.reduce((max, item) => Math.max(max, item.position), -1)
+      const temporaryOffset = maxPosition + remaining.length + 1
+      await Promise.all(remaining.map((item, position) => tx.recruitmentPipelineStage.update({ where: { id: item.id }, data: { position: temporaryOffset + position } })))
+      await Promise.all(remaining.map((item, position) => tx.recruitmentPipelineStage.update({ where: { id: item.id }, data: { position } })))
+    })
+  }
+
+  async reorderPipelineStages(postingId: string, stageIds: string[]) {
+    return this.db.$transaction(async (tx) => {
+      const stages = await tx.recruitmentPipelineStage.findMany({
+        where: { postingId },
+        select: { id: true },
+      })
+      if (stages.length !== stageIds.length || new Set(stageIds).size !== stageIds.length || stages.some((stage) => !stageIds.includes(stage.id))) {
+        throw new Error("Danh sách thứ tự giai đoạn không hợp lệ")
+      }
+      const currentMax = await tx.recruitmentPipelineStage.aggregate({ where: { postingId }, _max: { position: true } })
+      const temporaryOffset = (currentMax._max.position ?? -1) + stages.length + 1
+      await Promise.all(stages.map((stage, index) => tx.recruitmentPipelineStage.update({ where: { id: stage.id }, data: { position: temporaryOffset + index } })))
+      await Promise.all(stageIds.map((id, position) => tx.recruitmentPipelineStage.update({ where: { id }, data: { position } })))
+      return tx.recruitmentPipelineStage.findMany({ where: { postingId }, orderBy: { position: "asc" } })
+    })
+  }
+
+  moveApplicationToPipelineStage(applicationId: string, pipelineStageId: string) {
+    return this.db.$transaction(async (tx) => {
+      const [application, stage] = await Promise.all([
+        tx.recruitmentApplication.findUniqueOrThrow({ where: { id: applicationId } }),
+        tx.recruitmentPipelineStage.findUniqueOrThrow({ where: { id: pipelineStageId } }),
+      ])
+      if (application.postingId !== stage.postingId) throw new Error("Ứng viên và giai đoạn không thuộc cùng bài đăng")
+      return tx.recruitmentApplication.update({ where: { id: applicationId }, data: { pipelineStageId } })
+    })
+  }
+
+  async createCandidateApplication(
+    postingId: string,
+    candidate: Prisma.CandidateUncheckedCreateInput,
+  ) {
+    return this.db.$transaction(async (tx) => {
+      const posting = await tx.jobPosting.findUniqueOrThrow({ where: { id: postingId } })
+      const defaultStage = await tx.recruitmentPipelineStage.findFirst({
+        where: { postingId, isDefault: true },
+        orderBy: { position: "asc" },
+      })
+      if (!defaultStage) throw new Error("Bài đăng chưa có giai đoạn mặc định")
+      const createdCandidate = await tx.candidate.create({ data: candidate })
+      return tx.recruitmentApplication.create({
+        data: {
+          requisitionId: posting.requisitionId,
+          postingId,
+          pipelineStageId: defaultStage.id,
+          candidateId: createdCandidate.id,
+          source: candidate.source,
+          sourceRef: posting.sourceCode,
+        },
+        include: {
+          candidate: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true } },
+          pipelineStage: { select: { id: true, name: true, color: true, position: true } },
+        },
+      })
+    })
   }
 
   findById(id: string) {
@@ -99,6 +206,42 @@ export class JobPostingRepository {
       where: { id },
       data: { lastSyncedAt: new Date(), connectorStatus: "ready" },
       include: this.relations,
+    })
+  }
+
+  archive(id: string, archivedById: string) {
+    return this.db.jobPosting.update({
+      where: { id },
+      data: { status: "archived", archivedAt: new Date(), archivedById },
+      include: this.relations,
+    })
+  }
+
+  async getOverview(id: string) {
+    const [posting, applicationTotal, statusGroups, stageGroups] = await this.db.$transaction([
+      this.db.jobPosting.findUnique({ where: { id }, include: this.relations }),
+      this.db.recruitmentApplication.count({ where: { postingId: id } }),
+      this.db.recruitmentApplication.groupBy({
+        by: ["status"],
+        where: { postingId: id },
+        _count: { _all: true },
+      }),
+      this.db.recruitmentApplication.groupBy({
+        by: ["pipelineStageId"],
+        where: { postingId: id },
+        _count: { _all: true },
+      }),
+    ])
+    return { posting, applicationTotal, statusGroups, stageGroups }
+  }
+
+  listConnectorResponses(postingId: string) {
+    return this.db.recruitmentConnectorResponse.findMany({
+      where: { postingId },
+      orderBy: { processedAt: "desc" },
+      include: {
+        application: { select: { id: true } },
+      },
     })
   }
 
