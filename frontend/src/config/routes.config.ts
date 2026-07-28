@@ -57,6 +57,7 @@ export const ROUTES = {
     REQUISITION_DETAIL: "/recruitment/requisitions/:id",
     JOB_DESCRIPTIONS: "/recruitment/job-descriptions",
     JOB_POSTINGS: "/recruitment/job-postings",
+    JOB_POSTING_DETAIL: "/recruitment/job-postings/:id/:tab",
     OAUTH_ACCOUNTS: "/recruitment/oauth-accounts",
     APPLICANT_INTAKE: "/recruitment/applicant-intake",
     CANDIDATES: "/recruitment/candidates",

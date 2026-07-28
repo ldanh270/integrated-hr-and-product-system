@@ -277,7 +277,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         permissions: ["recruitment.read"],
       },
       {
-        name: "Đăng tuyển",
+        name: "Bài đăng tuyển dụng",
         path: ROUTES.RECRUITMENT.JOB_POSTINGS,
         icon: Megaphone,
         permissions: ["recruitment.posting.manage"],

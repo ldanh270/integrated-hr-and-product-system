@@ -282,6 +282,16 @@ const privateRoutes: RouteConfig[] = [
     layout: MainLayout,
   },
   {
+    path: "/recruitment/job-postings/:id/:tab",
+    component: lazy(() => import("@/pages/recruitment/JobPostingDetailPage.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: "/recruitment/job-postings/:id",
+    component: lazy(() => import("@/pages/recruitment/JobPostingDetailPage.tsx")),
+    layout: MainLayout,
+  },
+  {
     path: ROUTES.PROJECT.MY_PROJECTS,
     component: lazy(() => import("@/pages/project/ProjectDashboard.tsx")),
     layout: MainLayout,
