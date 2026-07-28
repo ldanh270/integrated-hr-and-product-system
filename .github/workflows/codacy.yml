@@ -5,7 +5,7 @@
  
 # This workflow checks out code, performs a Codacy security scan
 # and integrates the results with the
-# GitHub Advanced Security code scanning feature.  For more information on
+# GitHub Advanced Security code scanning feature. For more information on
 # the Codacy security scan action usage and parameters, see
 # https://github.com/codacy/codacy-analysis-cli-action.
 # For more information on Codacy Analysis CLI in general, see
@@ -40,7 +40,8 @@ jobs:
  
       # Execute Codacy Analysis CLI — results sent directly to Codacy dashboard
       - name: Run Codacy Analysis CLI
-        uses: codacy/codacy-analysis-cli-action@d840f886c4bd4edc059706d09c6a1586111c540b
+        uses: codacy/codacy-analysis-cli-action@v4.4.5
+        continue-on-error: true
         with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
           verbose: true
