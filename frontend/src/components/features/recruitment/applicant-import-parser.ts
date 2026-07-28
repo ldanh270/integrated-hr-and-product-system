@@ -6,28 +6,31 @@ const COLUMN_ALIASES: Record<string, keyof ApplicantImportRow> = {
   cvurl: "cvUrl", cv: "cvUrl", notes: "notes", "ghi chú": "notes", "ghi chu": "notes",
 }
 
-function splitCsvLine(line: string): string[] {
-  const values: string[] = []
-  let current = ""
-  let quoted = false
-  for (let index = 0; index < line.length; index += 1) {
-    const char = line[index]
-    if (char === '"' && line[index + 1] === '"') { current += '"'; index += 1 }
-    else if (char === '"') quoted = !quoted
-    else if (char === "," && !quoted) { values.push(current.trim()); current = "" }
-    else current += char
+function parseDelimitedRows(value: string): string[][] {
+  const delimiter = value.split(/\r?\n/, 1)[0]?.includes(";") ? ";" : ","
+  const rows: string[][] = []; let row: string[] = []; let cell = ""; let quoted = false
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index]
+    if (char === '"' && quoted && value[index + 1] === '"') { cell += '"'; index += 1; continue }
+    if (char === '"') { quoted = !quoted; continue }
+    if (char === delimiter && !quoted) { row.push(cell.trim()); cell = ""; continue }
+    if ((char === "\n" || char === "\r") && !quoted) {
+      if (char === "\r" && value[index + 1] === "\n") index += 1
+      row.push(cell.trim()); if (row.some(Boolean)) rows.push(row); row = []; cell = ""; continue
+    }
+    cell += char
   }
-  values.push(current.trim())
-  return values
+  row.push(cell.trim()); if (row.some(Boolean)) rows.push(row)
+  return rows
 }
 
 export function parseApplicantCsv(value: string): ApplicantImportRow[] {
-  const lines = value.split(/\r?\n/).filter((line) => line.trim())
-  if (lines.length < 2) return []
-  const headers = splitCsvLine(lines[0]).map((header) => COLUMN_ALIASES[header.trim().toLowerCase()])
-  return lines.slice(1).map((line) => {
+  const rows = parseDelimitedRows(value.replace(/^\uFEFF/, ""))
+  if (rows.length < 2) return []
+  const headers = rows[0].map((header) => COLUMN_ALIASES[header.trim().toLowerCase()])
+  return rows.slice(1).map((cells) => {
     const row: Partial<ApplicantImportRow> = {}
-    splitCsvLine(line).forEach((cell, index) => { const key = headers[index]; if (key) row[key] = cell })
+    cells.forEach((cell, index) => { const key = headers[index]; if (key) row[key] = cell })
     return row
   }) as ApplicantImportRow[]
 }

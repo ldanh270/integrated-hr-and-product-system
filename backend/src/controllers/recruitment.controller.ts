@@ -14,6 +14,7 @@ import { recruitmentOAuthAccountService } from "@/services/recruitment-oauth-acc
 import { recruitmentPostingActivityService } from "@/services/recruitment-posting-activity.service"
 import { RECRUITMENT_POSTING_ACTIVITY_TYPE } from "@/configs/entities/recruitment.config"
 import { buildGoogleAuthUrl, exchangeGoogleCode, getGoogleOAuthConfig } from "@/configs/system/oauth-google.config"
+import { consumeOAuthState, createOAuthState } from "@/utils/oauth-state.util"
 import { HttpStatusCode } from "@/configs/system/http.config"
 import { AppError } from "@/utils/error.util"
 import type { AuthRequest } from "@/middlewares/auth.middleware"
@@ -89,6 +90,58 @@ export class RecruitmentController {
     } catch (e) { next(e) }
   }
 
+  getRequisitionWorkspace = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try { this.sendSuccess(res, await jobRequisitionService.getWorkspace(req.params.id as string)) } catch (e) { next(e) }
+  }
+
+  getRequisitionActivities = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const page = Math.max(1, Number(req.query.page) || 1)
+      const pageSize = Math.min(100, Math.max(1, Number(req.query.pageSize) || 50))
+      this.sendSuccess(res, await jobRequisitionService.listActivities(req.params.id as string, page, pageSize))
+    } catch (e) { next(e) }
+  }
+
+  listRequisitionStages = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try { this.sendSuccess(res, await jobRequisitionService.listPipelineStages(req.params.id as string)) } catch (e) { next(e) }
+  }
+
+  createRequisitionStage = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const body = z.object({ name: z.string().trim().min(1).max(100), color: z.string().max(32).optional(), isDefault: z.boolean().optional(), isCompleted: z.boolean().optional() }).parse(req.body)
+      this.sendCreated(res, await jobRequisitionService.createPipelineStage(req.params.id as string, body, req.user!.empId))
+    } catch (e) { next(e) }
+  }
+
+  updateRequisitionStage = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const body = z.object({ name: z.string().trim().min(1).max(100).optional(), color: z.string().max(32).optional(), isDefault: z.boolean().optional(), isCompleted: z.boolean().optional() }).parse(req.body)
+      this.sendSuccess(res, await jobRequisitionService.updatePipelineStage(req.params.id as string, req.params.stageId as string, body, req.user!.empId))
+    } catch (e) { next(e) }
+  }
+
+  deleteRequisitionStage = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const fallbackStageId = z.string().cuid().parse(req.query.fallbackStageId)
+      await jobRequisitionService.deletePipelineStage(req.params.id as string, req.params.stageId as string, fallbackStageId, req.user!.empId)
+      res.status(204).send()
+    } catch (e) { next(e) }
+  }
+
+  reorderRequisitionStages = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const body = z.object({ stageIds: z.array(z.string().cuid()).min(1) }).parse(req.body)
+      this.sendSuccess(res, await jobRequisitionService.reorderPipelineStages(req.params.id as string, body.stageIds, req.user!.empId))
+    } catch (e) { next(e) }
+  }
+
+  moveRequisitionApplication = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const body = z.object({ applicationId: z.string().cuid(), pipelineStageId: z.string().cuid() }).parse(req.body)
+      this.sendSuccess(res, await jobRequisitionService.moveApplicationToPipelineStage(req.params.id as string, body.applicationId, body.pipelineStageId, req.user!.empId))
+    } catch (e) { next(e) }
+  }
+
   listRequisitionApprovers = async (_req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const result = await jobRequisitionService.listApprovers()
@@ -134,8 +187,9 @@ export class RecruitmentController {
     } catch (e) { next(e) }
   }
 
-  deleteRequisition = async (_req: AuthRequest, res: Response, next: NextFunction) => {
+  deleteRequisition = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
+      await jobRequisitionService.delete(req.params.id as string)
       res.status(204).send()
     } catch (e) { next(e) }
   }
@@ -275,8 +329,9 @@ export class RecruitmentController {
     } catch (e) { next(e) }
   }
 
-  deleteCandidate = async (_req: AuthRequest, res: Response, next: NextFunction) => {
+  deleteCandidate = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
+      await candidateService.delete(req.params.id as string)
       res.status(204).send()
     } catch (e) { next(e) }
   }
@@ -660,8 +715,7 @@ export class RecruitmentController {
         throw new AppError("Thiếu channel hoặc name", HttpStatusCode.BAD_REQUEST, "OAuthController")
       }
 
-      // Encode userId + channel + name + accountId in state
-      const state = Buffer.from(JSON.stringify({ userId, channel, name, accountId })).toString("base64")
+      const state = createOAuthState({ userId, channel, name, accountId })
       const authUrl = buildGoogleAuthUrl(state)
 
       this.sendSuccess(res, { authUrl })
@@ -680,17 +734,18 @@ export class RecruitmentController {
     }
     const frontendUrl = process.env.FRONTEND_URL ?? "http://localhost:5173"
 
-    if (error) {
-      return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=${encodeURIComponent(error)}`)
-    }
-
-    if (!code || !state) {
+    if (!state || (!code && !error)) {
       return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=missing_params`)
     }
 
     try {
-      // Decode state to get userId + channel + name + accountId
-      const { userId, channel, name, accountId } = JSON.parse(Buffer.from(state, "base64").toString("utf8"))
+      const { userId, channel, name, accountId } = consumeOAuthState(state)
+      if (error) {
+        return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=${encodeURIComponent(error)}`)
+      }
+      if (!code) {
+        return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=missing_code`)
+      }
       const config = getGoogleOAuthConfig()
 
       // Exchange code for tokens

@@ -1,4 +1,5 @@
 import { AppDrawer, StatusPill } from "@/components/common"
+import { RejectRequisitionDialog } from "@/components/features/recruitment/reject-requisition-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -8,7 +9,6 @@ import {
   REQUISITION_PRIORITY_LABELS,
   REQUISITION_STATUS_LABELS,
 } from "@/config/entities/recruitment.config"
-import { ROUTES } from "@/config/routes.config"
 import {
   useApproveRequisition,
   useRequisition,
@@ -36,6 +36,7 @@ import {
   X,
   XCircle,
 } from "lucide-react"
+import { useState } from "react"
 
 interface RequisitionDetailsDrawerProps {
   /** The unique ID of the requisition to load, or null to close the drawer */
@@ -90,6 +91,7 @@ export function RequisitionDetailsDrawer({ requisitionId, onClose, onEdit }: Req
 
   const submitMutation = useSubmitRequisitionForApproval()
   const approveMutation = useApproveRequisition()
+  const [isRejectOpen, setIsRejectOpen] = useState(false)
 
   const canCreateJd = hasPermission("recruitment.jd.create")
   const canSubmit =
@@ -228,7 +230,7 @@ export function RequisitionDetailsDrawer({ requisitionId, onClose, onEdit }: Req
                             size="sm"
                             className="rounded-full gap-1.5"
                             disabled={approveMutation.isPending}
-                            onClick={() => approveMutation.mutate({ id: requisition.id, data: { approved: false } })}
+                            onClick={() => setIsRejectOpen(true)}
                           >
                             <X size={14} /> Từ chối
                           </Button>
@@ -247,7 +249,7 @@ export function RequisitionDetailsDrawer({ requisitionId, onClose, onEdit }: Req
                           className="rounded-full gap-1.5 text-primary border-primary/30 hover:bg-primary/10"
                           onClick={() => {
                             onClose()
-                            routerNavigate(`${ROUTES.RECRUITMENT.JOB_POSTINGS}?reqId=${requisition.id}`)
+                            routerNavigate(`/recruitment/requisitions/${requisition.id}/postings?createPosting=1`)
                           }}
                         >
                           <FilePlus2 size={14} /> Tạo bài đăng tuyển dụng
@@ -420,6 +422,7 @@ export function RequisitionDetailsDrawer({ requisitionId, onClose, onEdit }: Req
           </div>
         )}
       </TooltipProvider>
+      <RejectRequisitionDialog requisitionCode={requisition?.code ?? ""} open={isRejectOpen} pending={approveMutation.isPending} onOpenChange={setIsRejectOpen} onConfirm={(comment) => requisition && approveMutation.mutate({ id: requisition.id, data: { approved: false, comment } }, { onSuccess: () => setIsRejectOpen(false) })} />
     </AppDrawer>
   )
 }

@@ -53,6 +53,8 @@ export interface JobRequisition {
   createdAt: string
   updatedAt: string
   candidateFields?: RecruitmentFormField[]
+  postings?: JobPosting[]
+  _count?: { applications: number }
 }
 
 export type PostingChannel =
@@ -120,7 +122,7 @@ export interface RecruitmentPostingActivity {
   application: { id: string; candidate: { id: string; fullName: string } } | null
 }
 
-export interface RecruitmentPipelineStage { id: string; postingId: string; name: string; color: string; position: number; isDefault: boolean; isCompleted: boolean }
+export interface RecruitmentPipelineStage { id: string; requisitionId?: string | null; postingId?: string | null; name: string; color: string; position: number; isDefault: boolean; isCompleted: boolean }
 
 export interface ApplicantImportRow {
   fullName: string
@@ -221,6 +223,8 @@ export interface ApplicationNote {
 
 export interface KanbanApplication {
   id: string
+  requisitionId: string
+  postingId: string
   candidateId: string
   status: ApplicationStatus
   source: (typeof RECRUITMENT_SOURCES)[number]
@@ -251,7 +255,29 @@ export interface KanbanApplication {
   candidateName: string
   positionTitle: string
   requisitionCode: string
-  interviewRounds?: { id: string; roundNumber: number; status: string }[]
+  interviewRounds?: {
+    id: string
+    roundNumber: number
+    title: string
+    format: string
+    scheduledAt: string
+    durationMinutes: number
+    status: string
+    result: string
+  }[]
+  offers?: {
+    id: string
+    status: string
+    offeredSalary: number | string
+    currency: string
+    startDate: string
+    jobTitle: string | null
+    backgroundCheck: {
+      id: string
+      status: string
+      group: string
+    } | null
+  }[]
 }
 
 // ── Interview ────────────────────────────────────────────────────────────────

@@ -181,12 +181,6 @@ const privateRoutes: RouteConfig[] = [
     layout: MainLayout,
     permissions: ["recruitment.read"],
   {
-    path: ROUTES.RECRUITMENT.JOB_POSTINGS,
-    component: lazy(() => import("@/pages/recruitment/JobPostingsPage.tsx")),
-    layout: MainLayout,
-    permissions: ["recruitment.posting.manage"],
-  },
-  {
     path: ROUTES.RECRUITMENT.OAUTH_ACCOUNTS,
     component: lazy(() => import("@/pages/recruitment/OAuthAccountsPage.tsx")),
     layout: MainLayout,
@@ -197,36 +191,6 @@ const privateRoutes: RouteConfig[] = [
     component: lazy(() => import("@/pages/recruitment/ApplicantIntakePage.tsx")),
     layout: MainLayout,
     permissions: ["recruitment.intake.manage"],
-  },
-  {
-    path: ROUTES.RECRUITMENT.CANDIDATES,
-    component: lazy(() => import("@/pages/recruitment/CandidatesPage.tsx")),
-    layout: MainLayout,
-    permissions: ["recruitment.read"],
-  },
-  {
-    path: ROUTES.RECRUITMENT.KANBAN,
-    component: lazy(() => import("@/pages/recruitment/KanbanPage.tsx")),
-    layout: MainLayout,
-    permissions: ["recruitment.read"],
-  },
-  {
-    path: ROUTES.RECRUITMENT.INTERVIEWS,
-    component: lazy(() => import("@/pages/recruitment/InterviewsPage.tsx")),
-    layout: MainLayout,
-    permissions: ["recruitment.read"],
-  },
-  {
-    path: ROUTES.RECRUITMENT.OFFERS,
-    component: lazy(() => import("@/pages/recruitment/OffersPage.tsx")),
-    layout: MainLayout,
-    permissions: ["recruitment.read"],
-  },
-  {
-    path: ROUTES.RECRUITMENT.BACKGROUND_CHECKS,
-    component: lazy(() => import("@/pages/recruitment/BackgroundChecksPage.tsx")),
-    layout: MainLayout,
-    permissions: ["recruitment.read"],
   },
   {
     path: ROUTES.HRM.DASHBOARD,
@@ -281,14 +245,16 @@ const privateRoutes: RouteConfig[] = [
     layout: MainLayout,
   },
   {
-    path: "/recruitment/job-postings/:id/:tab",
-    component: lazy(() => import("@/pages/recruitment/JobPostingDetailPage.tsx")),
+    path: "/recruitment/requisitions/:id/:tab",
+    component: lazy(() => import("@/pages/recruitment/RequisitionDetailPage.tsx")),
     layout: MainLayout,
+    permissions: ["recruitment.read"],
   },
   {
-    path: "/recruitment/job-postings/:id",
-    component: lazy(() => import("@/pages/recruitment/JobPostingDetailPage.tsx")),
+    path: "/recruitment/requisitions/:id",
+    component: lazy(() => import("@/pages/recruitment/RequisitionDetailPage.tsx")),
     layout: MainLayout,
+    permissions: ["recruitment.read"],
   },
   {
     path: ROUTES.PROJECT.MY_PROJECTS,

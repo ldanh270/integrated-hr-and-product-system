@@ -68,4 +68,23 @@ describe("GoogleFormsConnector", () => {
     ])
     expect(updateFieldQuestionIds).not.toHaveBeenCalled()
   })
+
+  it("does not fall back to an unrelated OAuth account", async () => {
+    const postingRepository = {
+      findById: jest.fn().mockResolvedValue({
+        id: "posting-without-account",
+        channel: "google_form",
+        externalId: "form-1",
+        formFields: null,
+        oauthAccountId: null,
+        oauthAccount: null,
+        fieldSnapshots: [],
+      }),
+    }
+    const connector = new GoogleFormsConnector(jest.fn() as never, postingRepository as never)
+
+    await expect(connector.sync("posting-without-account")).rejects.toMatchObject({
+      errorCode: "CONNECTOR_NOT_CONFIGURED",
+    })
+  })
 })

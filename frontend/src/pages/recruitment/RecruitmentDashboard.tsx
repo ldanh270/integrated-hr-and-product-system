@@ -191,21 +191,21 @@ export default function RecruitmentDashboard() {
               value={appStats?.total ?? 0}
               description={`${appStats?.active ?? 0} đang trong quá trình`}
               icon={Users}
-              onClick={() => routerNavigate(ROUTES.RECRUITMENT.KANBAN)}
+              onClick={() => routerNavigate(ROUTES.RECRUITMENT.REQUISITIONS)}
             />
             <StatCard
               title="Offer"
               value={offerStats?.total ?? 0}
               description={`${offerStats?.pending ?? 0} đang chờ phản hồi`}
               icon={Briefcase}
-              onClick={() => routerNavigate(ROUTES.RECRUITMENT.OFFERS)}
+              onClick={() => routerNavigate(ROUTES.RECRUITMENT.REQUISITIONS)}
             />
             <StatCard
               title="Background Check"
               value={bgcStats?.total ?? 0}
               description={`${bgcStats?.inProgress ?? 0} đang kiểm tra`}
               icon={CheckCircle}
-              onClick={() => routerNavigate(ROUTES.RECRUITMENT.BACKGROUND_CHECKS)}
+              onClick={() => routerNavigate(ROUTES.RECRUITMENT.REQUISITIONS)}
             />
           </>
         )}
@@ -223,7 +223,7 @@ export default function RecruitmentDashboard() {
               variant="ghost"
               size="sm"
               className="rounded-full text-xs"
-              onClick={() => routerNavigate(ROUTES.RECRUITMENT.INTERVIEWS)}
+              onClick={() => routerNavigate(ROUTES.RECRUITMENT.REQUISITIONS)}
             >
               Xem tất cả
               <ArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -270,7 +270,7 @@ export default function RecruitmentDashboard() {
               variant="ghost"
               size="sm"
               className="rounded-full text-xs"
-              onClick={() => routerNavigate(ROUTES.RECRUITMENT.KANBAN)}
+              onClick={() => routerNavigate(ROUTES.RECRUITMENT.REQUISITIONS)}
             >
               Xem Kanban
               <ArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -353,19 +353,19 @@ export default function RecruitmentDashboard() {
             title="Quản lý ứng viên"
             description="Xem danh sách ứng viên"
             icon={Users}
-            to={ROUTES.RECRUITMENT.CANDIDATES}
+            to={ROUTES.RECRUITMENT.REQUISITIONS}
           />
           <QuickLink
             title="Pipeline Kanban"
             description="Quản lý theo giai đoạn"
             icon={TrendingUp}
-            to={ROUTES.RECRUITMENT.KANBAN}
+            to={ROUTES.RECRUITMENT.REQUISITIONS}
           />
           <QuickLink
             title="Background Check"
             description="Kiểm tra lý lịch"
             icon={CheckCircle}
-            to={ROUTES.RECRUITMENT.BACKGROUND_CHECKS}
+            to={ROUTES.RECRUITMENT.REQUISITIONS}
             count={bgcStats?.pending ?? 0}
           />
         </div>
@@ -373,4 +373,3 @@ export default function RecruitmentDashboard() {
     </div>
   )
 }
-

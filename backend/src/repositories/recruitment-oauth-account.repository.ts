@@ -52,6 +52,12 @@ export class RecruitmentOAuthAccountRepository {
     })
   }
 
+  findByIdForUser(id: string, userId: string) {
+    return prisma.recruitmentOAuthAccount.findFirst({
+      where: { id, userId },
+    })
+  }
+
   findByUserAndChannel(userId: string, channel: string) {
     return prisma.recruitmentOAuthAccount.findFirst({
       where: {

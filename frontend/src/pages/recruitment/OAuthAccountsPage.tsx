@@ -362,7 +362,7 @@ export default function OAuthAccountsPage() {
                 </TableRow>
               ) : (
                 paginatedAccounts.map((account) => {
-                  const isConnected = !!account.refreshToken
+                  const isConnected = account.hasRefreshToken
                   return (
                     <TableRow
                       key={account.id}

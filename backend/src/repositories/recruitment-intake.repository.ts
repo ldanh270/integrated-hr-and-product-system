@@ -26,7 +26,7 @@ export class RecruitmentIntakeRepository {
       const errors: IntakeRowError[] = []
       const isConnectorImport = "connectorErrors" in input
       const defaultStage = await tx.recruitmentPipelineStage.findFirst({
-        where: { postingId: input.postingId, isDefault: true },
+        where: { requisitionId: input.requisitionId, isDefault: true },
         orderBy: { position: "asc" },
         select: { id: true },
       })

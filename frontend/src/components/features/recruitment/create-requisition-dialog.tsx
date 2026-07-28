@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectContent,
@@ -98,7 +99,6 @@ const defaultCandidateSchema: RecruitmentFormField[] = [
   { key: "email", label: "Email", type: "short_text", required: true },
   { key: "phone", label: "Số điện thoại", type: "short_text", required: false },
   { key: "cv_url", label: "Đường dẫn CV", type: "short_text", required: false },
-  { key: "notes", label: "Thông tin bổ sung", type: "paragraph", required: false },
 ]
 
 const isEmployeeType = (value: string): value is RequisitionFormValues["employmentType"] =>
@@ -206,10 +206,10 @@ export function CreateRequisitionDialog({
           </DialogHeader>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Vị trí cần tuyển" error={errors.title?.message} className="sm:col-span-2">
+            <Field label="Vị trí cần tuyển" required error={errors.title?.message} className="sm:col-span-2">
               <Input placeholder="Ví dụ: Frontend Developer" {...form.register("title")} />
             </Field>
-            <Field label="Loại hình làm việc" error={errors.employmentType?.message}>
+            <Field label="Loại hình làm việc" required error={errors.employmentType?.message}>
               <Select
                 value={employmentType}
                 onValueChange={(value) =>
@@ -232,7 +232,7 @@ export function CreateRequisitionDialog({
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Số lượng" error={errors.headcount?.message}>
+            <Field label="Số lượng" required error={errors.headcount?.message}>
               <Input
                 type="number"
                 inputMode="numeric"
@@ -273,7 +273,7 @@ export function CreateRequisitionDialog({
                 {...form.register("salaryMax")}
               />
             </Field>
-            <Field label="Ưu tiên" error={errors.priority?.message}>
+            <Field label="Ưu tiên" required error={errors.priority?.message}>
               <Select
                 value={priority}
                 onValueChange={(value) =>
@@ -294,28 +294,30 @@ export function CreateRequisitionDialog({
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Người duyệt" error={errors.approverId?.message}>
-              <Select
-                value={approverId}
-                onValueChange={(value) =>
-                  form.setValue("approverId", value, { shouldValidate: true })
-                }
-                disabled={isLoadingApprovers || approvers.length === 0}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue
-                    placeholder={isLoadingApprovers ? "Đang tải..." : "Chọn người có quyền duyệt"}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {approvers.map((approver) => (
-                    <SelectItem key={approver.id} value={approver.id}>
-                      {approver.fullName}
-                      {approver.position ? ` — ${approver.position}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <Field label="Người duyệt" required error={errors.approverId?.message}>
+              {isLoadingApprovers ? (
+                <Skeleton className="h-10 w-full rounded-full" />
+              ) : (
+                <Select
+                  value={approverId}
+                  onValueChange={(value) =>
+                    form.setValue("approverId", value, { shouldValidate: true })
+                  }
+                  disabled={approvers.length === 0}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Chọn người có quyền duyệt" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {approvers.map((approver) => (
+                      <SelectItem key={approver.id} value={approver.id}>
+                        {approver.fullName}
+                        {approver.position ? ` — ${approver.position}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               {!isLoadingApprovers && approvers.length === 0 && (
                 <p className="text-sm text-destructive">
                   Chưa có nhân viên nào được cấp quyền recruitment.requisition.approve.
@@ -365,18 +367,20 @@ export function CreateRequisitionDialog({
 
 function Field({
   label,
+  required,
   error,
   className,
   children,
 }: {
   label: string
+  required?: boolean
   error?: string
   className?: string
   children: ReactNode
 }) {
   return (
     <div className={`grid gap-2 ${className ?? ""}`}>
-      <Label>{label}</Label>
+      <Label>{label}{required && <span className="ml-1 text-destructive" aria-hidden="true">*</span>}</Label>
       {children}
       {error && <p className="text-sm text-destructive">{error}</p>}
     </div>

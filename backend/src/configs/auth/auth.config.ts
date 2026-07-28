@@ -1,5 +1,6 @@
 export const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET || ""
 export const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || ""
+export const OAUTH_STATE_SECRET = process.env.OAUTH_STATE_SECRET || ACCESS_TOKEN_SECRET
 
 export const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000 // 15 phút
 export const ACCESS_TOKEN_TTL = "15m"
@@ -80,4 +81,3 @@ export const PROTECTED_PERMISSIONS = process.env.PROTECTED_PERMISSIONS
       "employee.role.update",
       "role.permission.update",
     ]
-

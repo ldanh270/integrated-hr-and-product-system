@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { EXTERNAL_URL_PROTOCOLS } from "@/configs/system/url.config"
 import {
   REQUISITION_STATUSES,
   REQUISITION_PRIORITIES,
@@ -14,6 +15,11 @@ import {
   RECRUITMENT_CHANNELS,
 } from "@/configs/entities/recruitment.config"
 import { GOOGLE_FORM_FIELD_TYPES } from "@/configs/rules/google-form.config"
+
+const secureExternalUrlSchema = z.string().url("Invalid URL format").refine(
+  (value) => EXTERNAL_URL_PROTOCOLS.includes(new URL(value).protocol as (typeof EXTERNAL_URL_PROTOCOLS)[number]),
+  "Only HTTPS URLs are allowed",
+)
 
 // ── Requisition Schemas ────────────────────────────────────────────────────────
 
@@ -64,15 +70,17 @@ export const createJobRequisitionSchema = jobRequisitionFieldsSchema.superRefine
   ({ candidateSchema }, context) => validateCandidateSchema(candidateSchema, context, "candidateSchema"),
 )
 
-export const updateJobRequisitionSchema = jobRequisitionFieldsSchema.partial().extend({
-  status: z.enum(REQUISITION_STATUSES).optional(),
-}).superRefine(
+export const updateJobRequisitionSchema = jobRequisitionFieldsSchema.partial().strict().superRefine(
   ({ candidateSchema }, context) => validateCandidateSchema(candidateSchema, context, "candidateSchema"),
 )
 
 export const approveRequisitionSchema = z.object({
   approved: z.boolean(),
   comment: z.string().max(500).optional(),
+}).superRefine(({ approved, comment }, context) => {
+  if (!approved && !comment?.trim()) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["comment"], message: "Rejection reason is required" })
+  }
 })
 
 // ── Job Description Schemas ────────────────────────────────────────────────────
@@ -108,7 +116,7 @@ export const createJobPostingSchema = z.object({
 
 export const updateJobPostingSchema = z.object({
   status: z.enum(POSTING_STATUSES).optional(),
-  postingUrl: z.string().url().optional(),
+  postingUrl: secureExternalUrlSchema.optional(),
 })
 
 export const listJobPostingsQuerySchema = z.object({
@@ -125,7 +133,7 @@ export const intakeRowSchema = z.object({
   fullName: z.string().min(1).max(255),
   email: z.string().email(),
   phone: z.string().max(20).optional(),
-  cvUrl: z.string().url().optional(),
+  cvUrl: secureExternalUrlSchema.optional(),
   notes: z.string().max(2000).optional(),
   sourceRef: z.string().max(255).optional(),
 })
@@ -147,10 +155,10 @@ export const createCandidateSchema = z.object({
   address: z.string().max(500).optional(),
   nationalId: z.string().max(20).optional(),
   source: z.enum(RECRUITMENT_SOURCES),
-  linkedinUrl: z.string().url().optional(),
-  portfolioUrl: z.string().url().optional(),
-  cvUrl: z.string().url().optional(),
-  avatarUrl: z.string().url().optional(),
+  linkedinUrl: secureExternalUrlSchema.optional(),
+  portfolioUrl: secureExternalUrlSchema.optional(),
+  cvUrl: secureExternalUrlSchema.optional(),
+  avatarUrl: secureExternalUrlSchema.optional(),
   notes: z.string().max(2000).optional(),
 })
 
@@ -191,15 +199,15 @@ export const createInterviewRoundSchema = z.object({
   scheduledAt: z.string().datetime("Invalid datetime format"),
   durationMinutes: z.number().int().positive().default(60),
   location: z.string().max(255).optional(),
-  meetingLink: z.string().url().optional(),
+  meetingLink: secureExternalUrlSchema.optional(),
   interviewerIds: z.array(z.string().cuid()).min(1, "At least one interviewer is required"),
 })
 
-export const updateInterviewRoundSchema = createInterviewRoundSchema.partial().extend({
-  status: z.enum(INTERVIEW_ROUND_STATUSES).optional(),
-  result: z.enum(INTERVIEW_RESULTS).optional(),
-  feedback: z.string().max(2000).optional(),
-})
+export const updateInterviewRoundSchema = createInterviewRoundSchema
+  .omit({ applicationId: true, roundNumber: true })
+  .partial()
+  .extend({ feedback: z.string().max(2000).optional() })
+  .strict()
 
 // ── Scorecard Schemas ─────────────────────────────────────────────────────────
 
@@ -260,7 +268,6 @@ export const createBackgroundCheckSchema = z.object({
 })
 
 export const updateBackgroundCheckSchema = z.object({
-  status: z.enum(BGC_STATUSES).optional(),
   idVerified: z.boolean().optional(),
   addressVerified: z.boolean().optional(),
   criminalRecordCheck: z.boolean().optional(),
@@ -271,7 +278,7 @@ export const updateBackgroundCheckSchema = z.object({
   creditScoreCheck: z.boolean().optional(),
   failReason: z.string().max(1000).optional(),
   documents: z.record(z.string(), z.unknown()).optional(),
-})
+}).strict()
 
 // ── Query Schemas ─────────────────────────────────────────────────────────────
 

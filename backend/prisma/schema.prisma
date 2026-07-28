@@ -1555,6 +1555,7 @@ model JobRequisition {
   postings     JobPosting[]
   applications RecruitmentApplication[]
   candidateFields CandidateFieldDefinition[]
+  pipelineStages RecruitmentPipelineStage[]
 
   @@index([status])
   @@index([requestedById])
@@ -1768,8 +1769,10 @@ model RecruitmentApplication {
 
 model RecruitmentPipelineStage {
   id          String   @id @default(cuid())
-  postingId   String
-  posting     JobPosting @relation(fields: [postingId], references: [id], onDelete: Cascade)
+  postingId   String?
+  posting     JobPosting? @relation(fields: [postingId], references: [id], onDelete: Cascade)
+  requisitionId String?
+  requisition JobRequisition? @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
   name        String
   color       String
   position    Int
@@ -1782,6 +1785,7 @@ model RecruitmentPipelineStage {
   @@unique([postingId, position])
   @@unique([id, postingId])
   @@index([postingId])
+  @@index([requisitionId, position])
 }
 
 // Recruitment Posting Activity — immutable workspace history for a posting

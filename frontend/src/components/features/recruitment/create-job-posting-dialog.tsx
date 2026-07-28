@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 import { POSTING_CHANNELS } from "@/config/entities/recruitment.config"
 import { useCreateJobPosting, useOAuthAccounts, useRequisitions } from "@/hooks/recruitment/use-recruitment-queries"
 import type { JobRequisition, RecruitmentFormField } from "@/types/recruitment.types"
@@ -14,7 +15,6 @@ const DEFAULT_FIELDS: RecruitmentFormField[] = [
   { key: "email", label: "Email", type: "short_text", required: true },
   { key: "phone", label: "Số điện thoại", type: "short_text", required: false },
   { key: "cv_url", label: "Đường dẫn CV", type: "short_text", required: false },
-  { key: "notes", label: "Thông tin bổ sung", type: "paragraph", required: false },
 ]
 
 const FIELD_KEY_PATTERN = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/
@@ -37,8 +37,8 @@ function getFieldError(fields: RecruitmentFormField[]): string | null {
 
 export function CreateJobPostingDialog({ open, onOpenChange, jobRequisitions, initialRequisitionId }: Props) {
   const create = useCreateJobPosting()
-  const { data: reqData } = useRequisitions({ status: "approved" })
-  const { data: oauthAccounts = [] } = useOAuthAccounts()
+  const { data: reqData, isLoading: isLoadingRequisitions } = useRequisitions({ status: "approved" })
+  const { data: oauthAccounts = [], isLoading: isLoadingOAuthAccounts } = useOAuthAccounts()
 
   const requisitions = useMemo(() => {
     const list = jobRequisitions ?? reqData?.data ?? []
@@ -95,30 +95,34 @@ export function CreateJobPostingDialog({ open, onOpenChange, jobRequisitions, in
         <div className="grid gap-5 py-2">
           {/* Requisition Select */}
           <div className="grid gap-2">
-            <Label className="text-sm font-medium text-foreground">Yêu cầu tuyển dụng (Requisition APPROVED)</Label>
-            <Select value={requisitionId} onValueChange={setRequisitionId}>
-              <SelectTrigger className="h-10 w-full rounded-full border-border bg-background px-4 text-sm">
-                <SelectValue placeholder="Chọn Yêu cầu tuyển dụng..." />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-border">
-                {requisitions.map((req) => (
-                  <SelectItem key={req.id} value={req.id}>
-                    <span className="font-semibold text-primary">{req.code}</span>
-                    <span className="mx-1.5 text-muted-foreground">·</span>
-                    <span>{req.title}</span>
-                    <span className="mx-1.5 text-muted-foreground">·</span>
-                    <span className="text-xs text-muted-foreground">{req.department}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-sm font-medium text-foreground">Yêu cầu tuyển dụng (Requisition APPROVED) <span className="text-destructive" aria-hidden="true">*</span></Label>
+            {!jobRequisitions && isLoadingRequisitions ? (
+              <Skeleton className="h-10 w-full rounded-full" />
+            ) : (
+              <Select value={requisitionId} onValueChange={setRequisitionId}>
+                <SelectTrigger className="h-10 w-full rounded-full border-border bg-background px-4 text-sm">
+                  <SelectValue placeholder="Chọn Yêu cầu tuyển dụng..." />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border">
+                  {requisitions.map((req) => (
+                    <SelectItem key={req.id} value={req.id}>
+                      <span className="font-semibold text-primary">{req.code}</span>
+                      <span className="mx-1.5 text-muted-foreground">·</span>
+                      <span>{req.title}</span>
+                      <span className="mx-1.5 text-muted-foreground">·</span>
+                      <span className="text-xs text-muted-foreground">{req.department}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Channel & OAuth Account Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Channel Select */}
             <div className="grid gap-2">
-              <Label className="text-sm font-medium text-foreground">Kênh đăng tuyển</Label>
+              <Label className="text-sm font-medium text-foreground">Kênh đăng tuyển <span className="text-destructive" aria-hidden="true">*</span></Label>
               <Select value={channel} onValueChange={setChannel}>
                 <SelectTrigger className="h-10 w-full rounded-full border-border bg-background px-4 text-sm">
                   <SelectValue placeholder="Chọn Kênh đăng tuyển" />
@@ -141,26 +145,30 @@ export function CreateJobPostingDialog({ open, onOpenChange, jobRequisitions, in
             {/* OAuth Account Select */}
             <div className="grid gap-2">
               <Label className="text-sm font-medium text-foreground">Tài khoản kết nối (OAuth)</Label>
-              <Select value={oauthAccountId} onValueChange={setOauthAccountId}>
-                <SelectTrigger className="h-10 w-full rounded-full border-border bg-background px-4 text-sm">
-                  <SelectValue placeholder={filteredOAuthAccounts.length > 0 ? "Chọn tài khoản kết nối..." : "Chưa kết nối tài khoản"} />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-border">
-                  {filteredOAuthAccounts.map((acc) => (
-                    <SelectItem key={acc.id} value={acc.id}>
-                      <div className="flex items-center gap-2">
-                        <KeyRound className="h-3.5 w-3.5 text-primary shrink-0" />
-                        <span className="font-medium">{acc.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isLoadingOAuthAccounts ? (
+                <Skeleton className="h-10 w-full rounded-full" />
+              ) : (
+                <Select value={oauthAccountId} onValueChange={setOauthAccountId}>
+                  <SelectTrigger className="h-10 w-full rounded-full border-border bg-background px-4 text-sm">
+                    <SelectValue placeholder={filteredOAuthAccounts.length > 0 ? "Chọn tài khoản kết nối..." : "Chưa kết nối tài khoản"} />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-border">
+                    {filteredOAuthAccounts.map((acc) => (
+                      <SelectItem key={acc.id} value={acc.id}>
+                        <div className="flex items-center gap-2">
+                          <KeyRound className="h-3.5 w-3.5 text-primary shrink-0" />
+                          <span className="font-medium">{acc.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
 
           {/* OAuth Missing Warning Card */}
-          {channel === "google_form" && filteredOAuthAccounts.length === 0 && (
+          {!isLoadingOAuthAccounts && channel === "google_form" && filteredOAuthAccounts.length === 0 && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm">
               <div className="flex items-start gap-3">
                 <ShieldAlert className="mt-0.5 h-5 w-5 text-amber-600 dark:text-amber-500 shrink-0" />

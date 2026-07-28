@@ -5,7 +5,6 @@ import {
   type GoogleFormFieldDefinition,
 } from "@/configs/rules/google-form.config"
 import { jobPostingRepository } from "@/repositories/job-posting.repository"
-import { recruitmentOAuthAccountRepository } from "@/repositories/recruitment-oauth-account.repository"
 import { googleFormFieldSchema, intakeRowSchema } from "@/schemas/recruitment.schema"
 import { recruitmentOAuthAccountService } from "@/services/recruitment-oauth-account.service"
 import type { RecruitmentConnector } from "@/services/job-posting.service"
@@ -253,21 +252,8 @@ export class GoogleFormsConnector implements RecruitmentConnector {
       }
     }
 
-    // Fallback: search for any active OAuth account linked for google_form channel in database
-    const defaultOAuth = await recruitmentOAuthAccountRepository.findFirstByChannel("google_form")
-    if (defaultOAuth?.clientId && defaultOAuth?.clientSecret && defaultOAuth?.refreshToken) {
-      if (posting.id) {
-        await jobPostingRepository.storeConnectorOAuthAccountId(posting.id, defaultOAuth.id)
-      }
-      return {
-        clientId: defaultOAuth.clientId,
-        clientSecret: defaultOAuth.clientSecret,
-        refreshToken: defaultOAuth.refreshToken,
-      }
-    }
-
     throw new AppError(
-      "Google Form chưa được kết nối với tài khoản OAuth. Vui lòng vào trang Kênh tuyển dụng (OAuth) để kết nối trước khi xuất bản.",
+      "Bài đăng chưa được gắn tài khoản OAuth. Hãy chọn đúng tài khoản của bạn rồi thử lại.",
       HttpStatusCode.CONFLICT,
       LAYER,
       "CONNECTOR_NOT_CONFIGURED",

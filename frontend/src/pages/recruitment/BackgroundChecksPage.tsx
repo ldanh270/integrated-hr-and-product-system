@@ -30,7 +30,6 @@ import {
 } from "@/config/entities/recruitment.config"
 import type { BackgroundCheck } from "@/types/recruitment.types"
 import {
-  Shield,
   CheckCircle,
   XCircle,
   Eye,
@@ -269,13 +268,7 @@ export default function BackgroundChecksPage() {
     <div className="container flex flex-col gap-6 px-3 py-4 sm:px-6 sm:py-6">
       <PageHeader
         title="Kiểm tra Background"
-        description="Quản lý kiểm tra lý lịch ứng viên trước khi tuyển dụng"
-        actions={
-          <Button className="rounded-full">
-            <Shield className="mr-2 h-4 w-4" />
-            Tạo kiểm tra mới
-          </Button>
-        }
+        description="Kiểm tra được tạo tự động sau khi ứng viên chấp nhận offer. Tại đây chỉ theo dõi và xử lý kiểm tra."
       />
 
       <PageCard padding="sm" className="p-0 overflow-hidden">
@@ -390,4 +383,3 @@ export default function BackgroundChecksPage() {
     </div>
   )
 }
-

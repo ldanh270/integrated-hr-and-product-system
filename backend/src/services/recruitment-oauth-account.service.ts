@@ -1,8 +1,27 @@
 import { HttpStatusCode } from "@/configs/system/http.config"
 import { recruitmentOAuthAccountRepository } from "@/repositories/recruitment-oauth-account.repository"
 import { AppError } from "@/utils/error.util"
+import { RecruitmentOAuthAccount } from "@prisma/client"
 
 const LAYER = "RecruitmentOAuthAccountService"
+
+export type RecruitmentOAuthAccountPublic = Pick<
+  RecruitmentOAuthAccount,
+  "id" | "userId" | "channel" | "name" | "clientId" | "createdAt" | "updatedAt"
+> & {
+  hasRefreshToken: boolean
+}
+
+export const toPublicOAuthAccount = (account: RecruitmentOAuthAccount): RecruitmentOAuthAccountPublic => ({
+  id: account.id,
+  userId: account.userId,
+  channel: account.channel,
+  name: account.name,
+  clientId: account.clientId,
+  createdAt: account.createdAt,
+  updatedAt: account.updatedAt,
+  hasRefreshToken: account.refreshToken.length > 0,
+})
 
 export class RecruitmentOAuthAccountService {
   async upsert(userId: string, input: {
@@ -12,14 +31,17 @@ export class RecruitmentOAuthAccountService {
     clientSecret: string
     refreshToken: string
   }, accountId?: string) {
-    return recruitmentOAuthAccountRepository.upsert(userId, input, accountId)
+    const account = await recruitmentOAuthAccountRepository.upsert(userId, input, accountId)
+    return toPublicOAuthAccount(account)
   }
 
   async list(userId?: string) {
     if (userId) {
-      return recruitmentOAuthAccountRepository.listByUser(userId)
+      const accounts = await recruitmentOAuthAccountRepository.listByUser(userId)
+      return accounts.map(toPublicOAuthAccount)
     }
-    return recruitmentOAuthAccountRepository.list()
+    const accounts = await recruitmentOAuthAccountRepository.list()
+    return accounts.map(toPublicOAuthAccount)
   }
 
   async getByChannel(userId: string, channel: string) {
@@ -31,7 +53,7 @@ export class RecruitmentOAuthAccountService {
         LAYER,
       )
     }
-    return account
+    return toPublicOAuthAccount(account)
   }
 
   async delete(userId: string, id: string) {
@@ -61,11 +83,12 @@ export class RecruitmentOAuthAccountService {
     clientSecret: string
     refreshToken: string
   }, accountId?: string) {
-    return recruitmentOAuthAccountRepository.upsert(userId, {
+    const account = await recruitmentOAuthAccountRepository.upsert(userId, {
       channel,
       name,
       ...tokens,
     }, accountId)
+    return toPublicOAuthAccount(account)
   }
 }
 

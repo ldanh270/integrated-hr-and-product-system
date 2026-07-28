@@ -38,8 +38,8 @@ const formatCurrency = (val: number | undefined, currency = "VND") => {
 export function ViewOfferDialog({ open, onOpenChange, offer }: Props) {
   if (!offer) return null
 
-  const candidateName = (offer as any).application?.candidate?.fullName || (offer as any).candidateName || "Ứng viên"
-  const candidateEmail = (offer as any).application?.candidate?.email || (offer as any).candidateEmail || ""
+  const candidateName = offer.application?.candidate.fullName ?? offer.candidateName ?? offer.candidate.fullName ?? "Ứng viên"
+  const candidateEmail = offer.application?.candidate.email ?? offer.candidateEmail ?? offer.candidate.email ?? ""
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

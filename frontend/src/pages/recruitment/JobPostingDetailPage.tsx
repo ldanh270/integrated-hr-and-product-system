@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Archive, ArrowLeft, ExternalLink, FileSpreadsheet, Plus, RefreshCw, Search, Users } from "lucide-react"
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageCard, useConfirm } from "@/components/common"
 import { StatusPill } from "@/components/common/status-pill"
+import { RecruitmentWorkspaceSkeleton } from "@/components/features/recruitment/recruitment-workspace-skeleton"
 import { applicationApi, jobPostingApi } from "@/lib/api/recruitment.api"
 import { useArchiveJobPosting, useJobPosting, useSyncJobPosting } from "@/hooks/recruitment/use-recruitment-queries"
 import { extractErrorMessage } from "@/utils/error-helper"
@@ -21,19 +22,20 @@ export default function JobPostingDetailPage() {
   const { id = "", tab } = useParams<{ id: string; tab?: string }>()
   const navigate = useNavigate()
   const activeTab = TABS.some(([value]) => value === tab) ? tab! : "overview"
-  const { data: posting, isLoading } = useJobPosting(id)
+  const { data: posting, isLoading, isError } = useJobPosting(id)
   const { data: overview } = useQuery({ queryKey: ["recruitment", "job-posting-overview", id], queryFn: () => jobPostingApi.overview(id), enabled: Boolean(id) })
   const { data: stages = [] } = useQuery({ queryKey: ["recruitment", "posting-stages", id], queryFn: () => jobPostingApi.stages(id), enabled: Boolean(id) })
   const { data: applications } = useQuery({ queryKey: ["recruitment", "applications", "posting", id], queryFn: () => applicationApi.list({ postingId: id, pageSize: 100 }), enabled: Boolean(id) })
   const { data: activities = [] } = useQuery({ queryKey: ["recruitment", "job-postings", id, "activities"], queryFn: () => jobPostingApi.activities(id), enabled: Boolean(id) })
   const { data: responses = [] } = useQuery({ queryKey: ["recruitment", "job-postings", id, "responses"], queryFn: () => jobPostingApi.responses(id), enabled: Boolean(id) })
-  const sync = useSyncJobPosting(); const archive = useArchiveJobPosting(); const confirm = useConfirm(); const syncedOnEntry = useRef<string | null>(null)
+  const sync = useSyncJobPosting(); const archive = useArchiveJobPosting(); const confirm = useConfirm()
   const [query, setQuery] = useState(""); const [isCreateOpen, setIsCreateOpen] = useState(false)
   const candidates = applications?.data ?? []
 
   useEffect(() => { if (id && tab !== activeTab) navigate(`/recruitment/job-postings/${id}/${activeTab}`, { replace: true }) }, [activeTab, id, navigate, tab])
-  useEffect(() => { const shouldSync = posting?.channel === "google_form" && posting.status === "open" && posting.connectorStatus === "ready"; if (shouldSync && syncedOnEntry.current !== id) { syncedOnEntry.current = id; sync.mutate(id) } }, [id, posting?.channel, posting?.connectorStatus, posting?.status, sync])
-  if (isLoading || !posting) return <div className="container p-8 text-muted-foreground">Đang tải bài đăng tuyển dụng...</div>
+  useEffect(() => { if (posting?.requisitionId) navigate(`/recruitment/requisitions/${posting.requisitionId}/postings?postingId=${id}`, { replace: true }) }, [id, navigate, posting?.requisitionId])
+  if (isLoading) return <RecruitmentWorkspaceSkeleton />
+  if (isError || !posting) return <div className="container space-y-3 p-8"><p className="font-semibold text-destructive">Không tải được bài đăng tuyển dụng.</p><Button asChild variant="outline" className="rounded-full"><Link to="/recruitment/requisitions">Quay lại yêu cầu tuyển dụng</Link></Button></div>
   const canSync = posting.channel === "google_form" && posting.status === "open"
   const invalidResponses = responses.filter((response) => !response.applicationId)
   const filteredCandidates = candidates.filter((application) => `${application.candidate.fullName} ${application.candidate.email} ${application.pipelineStage?.name ?? ""}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))
@@ -52,7 +54,7 @@ export default function JobPostingDetailPage() {
 function CreateCandidateDialog({ postingId, open, onOpenChange }: { postingId: string; open: boolean; onOpenChange: (open: boolean) => void }) {
   const queryClient = useQueryClient(); const [fullName, setFullName] = useState(""); const [email, setEmail] = useState(""); const [phone, setPhone] = useState(""); const [cvUrl, setCvUrl] = useState(""); const [notes, setNotes] = useState("")
   const create = useMutation({ mutationFn: () => jobPostingApi.createCandidate(postingId, { fullName, email, phone: phone || undefined, cvUrl: cvUrl || undefined, notes: notes || undefined }), onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ["recruitment", "applications"] }); void queryClient.invalidateQueries({ queryKey: ["recruitment", "posting-kanban", postingId] }); void queryClient.invalidateQueries({ queryKey: ["recruitment", "job-posting-overview", postingId] }); toast.success("Đã thêm ứng viên vào giai đoạn mặc định"); onOpenChange(false); setFullName(""); setEmail(""); setPhone(""); setCvUrl(""); setNotes("") }, onError: (error) => toast.error(extractErrorMessage(error)) })
-  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-w-md rounded-2xl"><DialogHeader><DialogTitle>Thêm ứng viên</DialogTitle></DialogHeader><form onSubmit={(event) => { event.preventDefault(); create.mutate() }} className="space-y-3"><div><Label>Họ và tên</Label><Input required value={fullName} onChange={(event) => setFullName(event.target.value)} className="mt-1 rounded-lg" /></div><div><Label>Email</Label><Input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-1 rounded-lg" /></div><div><Label>Số điện thoại</Label><Input value={phone} onChange={(event) => setPhone(event.target.value)} className="mt-1 rounded-lg" /></div><div><Label>Link CV</Label><Input type="url" value={cvUrl} onChange={(event) => setCvUrl(event.target.value)} className="mt-1 rounded-lg" /></div><div><Label>Ghi chú</Label><Input value={notes} onChange={(event) => setNotes(event.target.value)} className="mt-1 rounded-lg" /></div><DialogFooter><Button type="button" variant="outline" className="rounded-full" onClick={() => onOpenChange(false)}>Hủy</Button><Button type="submit" disabled={create.isPending} className="rounded-full">Tạo ứng viên</Button></DialogFooter></form></DialogContent></Dialog>
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-w-md rounded-2xl"><DialogHeader><DialogTitle>Thêm ứng viên</DialogTitle></DialogHeader><form onSubmit={(event) => { event.preventDefault(); create.mutate() }} className="space-y-3"><div><Label>Họ và tên <span className="text-destructive" aria-hidden="true">*</span></Label><Input required value={fullName} onChange={(event) => setFullName(event.target.value)} className="mt-1 rounded-lg" /></div><div><Label>Email <span className="text-destructive" aria-hidden="true">*</span></Label><Input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-1 rounded-lg" /></div><div><Label>Số điện thoại</Label><Input value={phone} onChange={(event) => setPhone(event.target.value)} className="mt-1 rounded-lg" /></div><div><Label>Link CV</Label><Input type="url" value={cvUrl} onChange={(event) => setCvUrl(event.target.value)} className="mt-1 rounded-lg" /></div><div><Label>Ghi chú</Label><Input value={notes} onChange={(event) => setNotes(event.target.value)} className="mt-1 rounded-lg" /></div><DialogFooter><Button type="button" variant="outline" className="rounded-full" onClick={() => onOpenChange(false)}>Hủy</Button><Button type="submit" disabled={create.isPending} className="rounded-full">Tạo ứng viên</Button></DialogFooter></form></DialogContent></Dialog>
 }
 function Metric({ icon, label, value }: { icon: ReactNode; label: string; value: ReactNode }) { return <PageCard className="flex items-center gap-3"><div className="rounded-full bg-primary/10 p-3 text-primary">{icon}</div><div><p className="text-xs text-muted-foreground">{label}</p><p className="text-lg font-bold">{value}</p></div></PageCard> }
 function formatActivity(type: string) { return type.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase()) }

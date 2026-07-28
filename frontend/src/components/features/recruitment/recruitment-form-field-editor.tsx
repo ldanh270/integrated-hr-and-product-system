@@ -46,7 +46,7 @@ export function RecruitmentFormFieldEditor({ fields, onChange }: Props) {
           return (
             <div key={`${field.key}-${index}`} className="grid gap-3 rounded-lg border border-border p-4 sm:grid-cols-[1.4fr_1fr_auto]">
               <div className="grid gap-2">
-                <Label htmlFor={`field-label-${index}`}>Nhãn hiển thị</Label>
+                <Label htmlFor={`field-label-${index}`}>Nhãn hiển thị <span className="text-destructive" aria-hidden="true">*</span></Label>
                 <Input
                   id={`field-label-${index}`}
                   value={field.label}
@@ -56,7 +56,7 @@ export function RecruitmentFormFieldEditor({ fields, onChange }: Props) {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor={`field-key-${index}`}>Mã field</Label>
+                <Label htmlFor={`field-key-${index}`}>Mã field <span className="text-destructive" aria-hidden="true">*</span></Label>
                 <Input
                   id={`field-key-${index}`}
                   value={field.key}

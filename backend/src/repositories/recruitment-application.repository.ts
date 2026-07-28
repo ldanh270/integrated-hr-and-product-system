@@ -11,7 +11,7 @@ export class RecruitmentApplicationRepository {
 
   async create(data: CreateApplicationInput): Promise<{ id: string }> {
     return this.db.$transaction(async (tx) => {
-      const defaultStage = await tx.recruitmentPipelineStage.findFirst({ where: { postingId: data.postingId, isDefault: true }, orderBy: { position: "asc" }, select: { id: true } })
+      const defaultStage = await tx.recruitmentPipelineStage.findFirst({ where: { requisitionId: data.requisitionId, isDefault: true }, orderBy: { position: "asc" }, select: { id: true } })
       if (!defaultStage) throw new Error("Bài đăng chưa có giai đoạn mặc định")
       return tx.recruitmentApplication.create({
         data: {
@@ -186,9 +186,31 @@ export class RecruitmentApplicationRepository {
           assignedTo: { select: { id: true, fullName: true } },
           pipelineStage: { select: { id: true, name: true, color: true, position: true, isCompleted: true } },
           interviewRounds: {
-            select: { id: true, roundNumber: true, status: true },
+            select: {
+              id: true,
+              roundNumber: true,
+              title: true,
+              format: true,
+              scheduledAt: true,
+              durationMinutes: true,
+              status: true,
+              result: true,
+            },
             orderBy: { roundNumber: "desc" },
-            take: 1,
+          },
+          offers: {
+            select: {
+              id: true,
+              status: true,
+              offeredSalary: true,
+              currency: true,
+              startDate: true,
+              jobTitle: true,
+              backgroundCheck: {
+                select: { id: true, status: true, group: true },
+              },
+            },
+            orderBy: { createdAt: "desc" },
           },
         },
       }),
