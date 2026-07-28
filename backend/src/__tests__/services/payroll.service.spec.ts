@@ -156,6 +156,7 @@ describe('PayrollService', () => {
     mockSettingsRepo = {
       findGlobal: jest.fn(),
     };
+    mockSettingsRepo.findGlobal.mockResolvedValue({ triggerDay: 25 });
     mockPrismaClient = {
       salaryVariable: { findMany: jest.fn() },
       application: { findMany: jest.fn() },
