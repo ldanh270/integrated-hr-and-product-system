@@ -27,6 +27,18 @@ export const PAYROLL_STATUS_BADGE: Record<
   paid: "outline",
 }
 
+export const PAYSLIP_RECEIPT_STATUS = {
+  NOT_RECEIVED: "not_received",
+  RECEIVED: "received",
+} as const
+export type PayslipReceiptStatus =
+  (typeof PAYSLIP_RECEIPT_STATUS)[keyof typeof PAYSLIP_RECEIPT_STATUS]
+
+export const PAYSLIP_RECEIPT_STATUS_LABELS: Record<PayslipReceiptStatus, string> = {
+  not_received: "Chưa nhận",
+  received: "Đã nhận",
+}
+
 export const SALARY_COMPONENT_TYPES = ["addition", "deduction"] as const
 
 export const COMPONENT_TYPE = { ADDITION: "addition", DEDUCTION: "deduction" } as const
@@ -61,7 +73,14 @@ export const FORMULA_VALIDATION_STATUS = {
 export type FormulaValidationStatus =
   (typeof FORMULA_VALIDATION_STATUS)[keyof typeof FORMULA_VALIDATION_STATUS]
 
-export const PAYROLL_SETTINGS_FIELDS = ["triggerDay", "triggerHour", "triggerMinute"] as const
+export const PAYROLL_SETTINGS_FIELDS = [
+  "triggerDay",
+  "triggerHour",
+  "triggerMinute",
+  "approvalDay",
+  "approvalHour",
+  "approvalMinute",
+] as const
 
 export const PAYROLL_QUERY_KEYS = {
   SETTINGS: ["payroll-settings"] as const,

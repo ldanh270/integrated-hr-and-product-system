@@ -2,6 +2,7 @@ import { PAYROLL_MESSAGES } from "@/configs/messages/payroll.message"
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
+  IBulkAssignSalaryTemplateDTO,
   ICreateSalaryConfigDTO,
   IEmployeeSalaryConfigRepository,
   IEmployeeSalaryConfigService,
@@ -61,14 +62,11 @@ export class EmployeeSalaryConfigService implements IEmployeeSalaryConfigService
     createdById: string,
   ): Promise<EmployeeSalaryConfig> {
     return this.prisma.$transaction(async (tx) => {
-      // effectiveFrom of new config minus 1 ms or 1 day. Prisma DateTime can handle milliseconds.
-      // For simplicity, we just use the date of effectiveFrom, but maybe minus 1 day.
+      // Salary config ranges are day-based; the previous active range ends the day before this one.
       const effectiveTo = new Date(data.effectiveFrom)
       effectiveTo.setDate(effectiveTo.getDate() - 1)
 
-      // We actually need to execute the closeCurrentConfig in transaction, but configRepo is likely using the outer prisma
-      // unless we pass tx. For now, we update directly using tx here or ensure repository supports transactions.
-      // Since BaseRepository doesn't inject tx seamlessly by default, we do the manual query:
+      // Close and create inside one transaction so employees never see overlapping active configs.
       await tx.employeeSalaryConfig.updateMany({
         where: { employeeId, effectiveTo: null },
         data: { effectiveTo },
@@ -85,6 +83,71 @@ export class EmployeeSalaryConfigService implements IEmployeeSalaryConfigService
           createdById,
         },
       })
+    })
+  }
+
+  async bulkAssignTemplate(
+    data: IBulkAssignSalaryTemplateDTO,
+    createdById: string,
+  ): Promise<{ assignedCount: number }> {
+    return this.prisma.$transaction(async (tx) => {
+      const employeeIds = Array.from(new Set(data.employeeIds))
+      const template = await tx.payslipTemplate.findFirst({
+        where: { id: data.templateId, isActive: true },
+        select: { id: true },
+      })
+      if (!template) {
+        throw new AppError(
+          PAYROLL_MESSAGES.ERRORS.TEMPLATE_NOT_FOUND_UPDATE,
+          HttpStatusCode.NOT_FOUND,
+          ErrorLayer.SERVICE,
+        )
+      }
+
+      const employees = await tx.employee.findMany({
+        where: { id: { in: employeeIds } },
+        select: { id: true },
+      })
+      if (employees.length !== employeeIds.length) {
+        throw new AppError(
+          "Một số nhân viên không tồn tại",
+          HttpStatusCode.BAD_REQUEST,
+          ErrorLayer.SERVICE,
+        )
+      }
+
+      // Close the currently active range the day before the new template takes effect.
+      const effectiveTo = new Date(data.effectiveFrom)
+      effectiveTo.setDate(effectiveTo.getDate() - 1)
+
+      const activeConfigs = await tx.employeeSalaryConfig.findMany({
+        where: {
+          employeeId: { in: employeeIds },
+          effectiveFrom: { lte: data.effectiveFrom },
+          OR: [{ effectiveTo: null }, { effectiveTo: { gte: data.effectiveFrom } }],
+        },
+        orderBy: { effectiveFrom: "desc" },
+      })
+      // Preserve existing base salary per employee; defaultBaseSalary only fills first-time configs.
+      const activeByEmployee = new Map(activeConfigs.map((config) => [config.employeeId, config]))
+
+      await tx.employeeSalaryConfig.updateMany({
+        where: { id: { in: activeConfigs.map((config) => config.id) } },
+        data: { effectiveTo },
+      })
+
+      await tx.employeeSalaryConfig.createMany({
+        data: employeeIds.map((employeeId) => ({
+          employeeId,
+          templateId: data.templateId,
+          baseSalary: activeByEmployee.get(employeeId)?.baseSalary ?? data.defaultBaseSalary,
+          effectiveFrom: data.effectiveFrom,
+          note: data.note,
+          createdById,
+        })),
+      })
+
+      return { assignedCount: employeeIds.length }
     })
   }
 }

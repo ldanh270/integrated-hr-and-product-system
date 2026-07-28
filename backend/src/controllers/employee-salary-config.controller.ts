@@ -1,6 +1,9 @@
 import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
-import { assignSalaryConfigSchema } from "@/schemas/payroll.schema.ts"
+import {
+  assignSalaryConfigSchema,
+  bulkAssignSalaryTemplateSchema,
+} from "@/schemas/payroll.schema.ts"
 import { AuthenticatedRequest } from "@/types/auth.types.ts"
 import { IEmployeeSalaryConfigService } from "@/types/payroll.types.ts"
 import { AppError } from "@/utils/error.util.ts"
@@ -19,6 +22,7 @@ export class EmployeeSalaryConfigController {
     this.getActiveConfig = this.getActiveConfig.bind(this)
     this.getConfigHistory = this.getConfigHistory.bind(this)
     this.assignConfig = this.assignConfig.bind(this)
+    this.bulkAssignTemplate = this.bulkAssignTemplate.bind(this)
   }
 
   /**
@@ -77,6 +81,20 @@ export class EmployeeSalaryConfigController {
 
       const config = await this.service.assignConfig(id, validatedData, createdById)
       res.status(HttpStatusCode.CREATED).json({ data: config })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  async bulkAssignTemplate(req: Request, res: Response, next: NextFunction) {
+    try {
+      const createdById = (req as AuthenticatedRequest).user.empId
+      if (!createdById)
+        throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.CONTROLLER)
+
+      const validatedData = bulkAssignSalaryTemplateSchema.parse(req.body)
+      const result = await this.service.bulkAssignTemplate(validatedData, createdById)
+      res.status(HttpStatusCode.CREATED).json({ data: result })
     } catch (error) {
       next(error)
     }

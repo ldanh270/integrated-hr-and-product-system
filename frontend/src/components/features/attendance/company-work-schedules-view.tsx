@@ -16,7 +16,6 @@ import { useEmployees } from "@/hooks/employees/queries/useEmployeeQuery"
 import { holidaysApi, schedulesApi } from "@/lib/api/attendance.api"
 import { addDays } from "@/utils/attendance/add-days"
 import { formatDateParam } from "@/utils/attendance/format-date-param"
-import { getScheduleByEmployeeId } from "@/utils/attendance/get-schedule-by-employee-id"
 import { getWeekDates } from "@/utils/attendance/get-week-dates"
 import { getWeekRangeLabel } from "@/utils/attendance/get-week-range-label"
 import { getWeekStart } from "@/utils/attendance/get-week-start"
@@ -49,8 +48,8 @@ export function CompanyWorkSchedulesView() {
   const employees = employeeData?.data ?? []
   const scheduleQueries = useQueries({
     queries: employees.map((employee) => ({
-      queryKey: ["employee-schedule", employee.id, weekStartIso],
-      queryFn: () => schedulesApi.getByEmployee(employee.id, weekStartIso),
+      queryKey: ["employee-planned-week", employee.id, weekStartIso],
+      queryFn: () => schedulesApi.getEmployeePlannedWeek(employee.id, weekStartIso),
       enabled: employees.length > 0,
     })),
   })
@@ -66,7 +65,12 @@ export function CompanyWorkSchedulesView() {
   const isSchedulesError = scheduleQueries.some((query) => query.isError)
   // Preserve every scoped holiday on a date; the employee row chooses the applicable one later.
   const holidaysByDate = groupHolidaysByDate(holidays ?? [])
-  const schedulesByEmployeeId = getScheduleByEmployeeId(scheduleQueries.map((query) => query.data))
+  const plannedWeeksByEmployeeId = new Map(
+    employees.flatMap((employee, index) => {
+      const plannedWeek = scheduleQueries.at(index)?.data
+      return plannedWeek ? [[employee.id, plannedWeek]] : []
+    }),
+  )
 
   const handleDateChange = (value: string) => {
     if (!value) return
@@ -138,7 +142,7 @@ export function CompanyWorkSchedulesView() {
                   <TableRow key={employee.id} className="hover:bg-muted/30">
                     <EmployeeScheduleCells
                       employee={employee}
-                      schedule={schedulesByEmployeeId.get(employee.id)}
+                      plannedWeek={plannedWeeksByEmployeeId.get(employee.id)}
                       weekDates={weekDates}
                       holidaysByDate={holidaysByDate}
                     />

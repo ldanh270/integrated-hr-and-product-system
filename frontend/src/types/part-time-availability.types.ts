@@ -42,6 +42,7 @@ export interface IPartTimeWeeklyAvailability {
   updatedAt: string
   days: IPartTimeAvailabilityDay[]
   assignedDaySummaries?: Partial<Record<number, string>>
+  assignedDaySlots?: Partial<Record<number, Array<{ startTime: string; endTime: string }>>>
   hasAssignedShifts?: boolean
   employee?: {
     id: string
@@ -61,7 +62,12 @@ export interface IUpsertPartTimeAvailabilityPayload {
 
 export interface IAssignPartTimeShiftsPayload {
   /** Null start/end means admin marks the day as off (no shift). */
-  assignments: Array<{ dayOfWeek: number; startTime: string | null; endTime: string | null }>
+  assignments: Array<{
+    dayOfWeek: number
+    assignedDate?: string
+    startTime: string | null
+    endTime: string | null
+  }>
   suggestionDecision?: "accepted" | "edited" | "manual"
 }
 

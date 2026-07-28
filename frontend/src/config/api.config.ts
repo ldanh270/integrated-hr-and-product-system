@@ -11,11 +11,13 @@ export const API_ENDPOINTS = {
   PAYROLL: {
     BASE: "/payrolls",
     MY_PAYSLIPS: "/payrolls/my/payslips",
+    MY_PAYSLIP_FEEDBACK: (payslipId: string) => `/payrolls/my/payslips/${payslipId}/feedback`,
     GENERATE: "/payrolls/generate",
     SETTINGS: "/payrolls/settings",
     SALARY_COMPONENTS: "/salary-components",
     PAYSLIP_TEMPLATES: "/payslip-templates",
     EMPLOYEE_SALARY_CONFIG: "/employees",
+    BULK_ASSIGN_SALARY_TEMPLATE: "/employees/salary-config/bulk-assign",
   },
   ATTENDANCE: {
     BASE: "/attendance",
@@ -39,10 +41,6 @@ export const API_ENDPOINTS = {
     GENERATE_PREVIEW: "/schedules/generate/preview",
     GENERATE: "/schedules/generate",
     SETTINGS: "/schedules/settings",
-    /** FT template attendance patterns — Weekly Schedule Copilot Mode A. */
-    INSIGHTS: "/schedules/insights",
-    SUGGEST_TEMPLATES: "/schedules/suggest-templates",
-    SIMULATE_TEMPLATE: "/schedules/simulate-template",
     EMPLOYEE: (employeeId: string) => `/schedules/employee/${employeeId}`,
     EMPLOYEE_WEEK: (employeeId: string) => `/schedules/employee/${employeeId}/week`,
     EMPLOYEE_ALL: (employeeId: string) => `/schedules/employee/${employeeId}/all`,
