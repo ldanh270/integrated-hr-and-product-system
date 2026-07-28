@@ -44,12 +44,7 @@ export const ATTENDANCE_QUERY_KEYS = {
   SHIFTS: ["shifts"] as const,
 } as const
 
-export const SCHEDULE_INSIGHTS_UI = {
-  DEFAULT_LOOKBACK_DAYS: 90,
-  LOOKBACK_OPTIONS: [30, 60, 90, 180] as const,
-  DEFAULT_SIMULATION_WEEKS: 4,
-  EMPLOYEE_PICKER_LIMIT: 200,
-} as const
+export const ATTENDANCE_EMPLOYEE_PICKER_LIMIT = 200
 
 export const ATTENDANCE_STATUSES = ["on_time", "late", "early_leave", "absent", "overtime"] as const
 export type IAttendanceStatus = (typeof ATTENDANCE_STATUSES)[number]

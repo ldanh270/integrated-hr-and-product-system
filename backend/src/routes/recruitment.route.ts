@@ -29,10 +29,21 @@ router.delete("/requisitions/:id", requirePermission(PERMISSION_CODE.RECRUITMENT
 
 router.post("/job-postings", requirePermission(PERMISSION_CODE.RECRUITMENT_POSTING_MANAGE), (req, res, next) => controller.createJobPosting(req as AuthRequest, res, next))
 router.get("/job-postings", requirePermission(PERMISSION_CODE.RECRUITMENT_JD_READ), (req, res, next) => controller.listJobPostings(req as AuthRequest, res, next))
+router.get("/job-postings/:id/overview", requirePermission(PERMISSION_CODE.RECRUITMENT_JD_READ), (req, res, next) => controller.getJobPostingOverview(req as AuthRequest, res, next))
+router.get("/job-postings/:id/activities", requirePermission(PERMISSION_CODE.RECRUITMENT_JD_READ), (req, res, next) => controller.getJobPostingActivities(req as AuthRequest, res, next))
+router.get("/job-postings/:id/responses", requirePermission(PERMISSION_CODE.RECRUITMENT_JD_READ), (req, res, next) => controller.getJobPostingResponses(req as AuthRequest, res, next))
+router.get("/job-postings/:id/stages", requirePermission(PERMISSION_CODE.RECRUITMENT_READ), (req, res, next) => controller.listPostingStages(req as AuthRequest, res, next))
+router.post("/job-postings/:id/stages", requirePermission(PERMISSION_CODE.RECRUITMENT_POSTING_MANAGE), (req, res, next) => controller.createPostingStage(req as AuthRequest, res, next))
+router.put("/job-postings/:id/stages/reorder", requirePermission(PERMISSION_CODE.RECRUITMENT_POSTING_MANAGE), (req, res, next) => controller.reorderPostingStages(req as AuthRequest, res, next))
+router.patch("/job-postings/:id/stages/:stageId", requirePermission(PERMISSION_CODE.RECRUITMENT_POSTING_MANAGE), (req, res, next) => controller.updatePostingStage(req as AuthRequest, res, next))
+router.delete("/job-postings/:id/stages/:stageId", requirePermission(PERMISSION_CODE.RECRUITMENT_POSTING_MANAGE), (req, res, next) => controller.deletePostingStage(req as AuthRequest, res, next))
+router.post("/job-postings/:id/stages/move", requirePermission(PERMISSION_CODE.RECRUITMENT_UPDATE), (req, res, next) => controller.movePostingApplication(req as AuthRequest, res, next))
+router.post("/job-postings/:id/candidates", requirePermission(PERMISSION_CODE.RECRUITMENT_CREATE), (req, res, next) => controller.createPostingCandidate(req as AuthRequest, res, next))
 router.get("/job-postings/:id", requirePermission(PERMISSION_CODE.RECRUITMENT_JD_READ), (req, res, next) => controller.getJobPosting(req as AuthRequest, res, next))
 router.patch("/job-postings/:id", requirePermission(PERMISSION_CODE.RECRUITMENT_POSTING_MANAGE), (req, res, next) => controller.updateJobPosting(req as AuthRequest, res, next))
 router.post("/job-postings/:id/publish", requirePermission(PERMISSION_CODE.RECRUITMENT_POSTING_MANAGE), (req, res, next) => controller.publishJobPosting(req as AuthRequest, res, next))
 router.post("/job-postings/:id/sync", requirePermission(PERMISSION_CODE.RECRUITMENT_INTAKE_MANAGE), (req, res, next) => controller.syncJobPosting(req as AuthRequest, res, next))
+router.delete("/job-postings/:id", requirePermission(PERMISSION_CODE.RECRUITMENT_POSTING_MANAGE), (req, res, next) => controller.archiveJobPosting(req as AuthRequest, res, next))
 router.post("/intake/import", requirePermission(PERMISSION_CODE.RECRUITMENT_INTAKE_MANAGE), (req, res, next) => controller.importRecruitmentIntake(req as AuthRequest, res, next))
 
 // ── Candidates ─────────────────────────────────────────────────────────────

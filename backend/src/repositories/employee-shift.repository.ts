@@ -10,6 +10,19 @@ import { PrismaClient, ShiftStatus } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
 
+function toUtcMidnight(date: Date | string): Date {
+  const d = typeof date === "string" ? new Date(date) : date
+  if (
+    d.getUTCHours() === 0 &&
+    d.getUTCMinutes() === 0 &&
+    d.getUTCSeconds() === 0 &&
+    d.getUTCMilliseconds() === 0
+  ) {
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
+  }
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+}
+
 /**
  * Repository implementation for employee shift assignments using Prisma.
  */
@@ -28,8 +41,7 @@ export class PrismaEmployeeShiftRepository
   /** Append-only override row — supports multiple shifts per day for part-time assign. */
   async createOverrideShift(data: IOverrideEmployeeShiftDTO): Promise<IEmployeeShiftOverrideRecord> {
     const { employeeId, assignedDate, shiftId, createdById } = data
-    const date = new Date(assignedDate)
-    date.setHours(0, 0, 0, 0)
+    const date = toUtcMidnight(assignedDate)
     // Audit trail: admin assign passes createdById; self-service paths fall back to employee.
     const actorId = createdById ?? employeeId
 
@@ -49,11 +61,7 @@ export class PrismaEmployeeShiftRepository
   async deleteOverridesForEmployeeDates(employeeId: string, dates: Date[]): Promise<void> {
     if (dates.length === 0) return
 
-    const normalizedDates = dates.map((date) => {
-      const next = new Date(date)
-      next.setHours(0, 0, 0, 0)
-      return next
-    })
+    const normalizedDates = dates.map(toUtcMidnight)
 
     await this.prisma.employeeShift.deleteMany({
       where: {
@@ -68,11 +76,7 @@ export class PrismaEmployeeShiftRepository
   async hasOverridesForEmployeeDates(employeeId: string, dates: Date[]): Promise<boolean> {
     if (dates.length === 0) return false
 
-    const normalizedDates = dates.map((date) => {
-      const next = new Date(date)
-      next.setHours(0, 0, 0, 0)
-      return next
-    })
+    const normalizedDates = dates.map(toUtcMidnight)
 
     const count = await this.prisma.employeeShift.count({
       where: {
@@ -94,11 +98,7 @@ export class PrismaEmployeeShiftRepository
     dates: Date[],
     overrides: IOverrideEmployeeShiftDTO[],
   ): Promise<void> {
-    const normalizedDates = dates.map((date) => {
-      const next = new Date(date)
-      next.setHours(0, 0, 0, 0)
-      return next
-    })
+    const normalizedDates = dates.map(toUtcMidnight)
 
     await this.prisma.$transaction(async (tx) => {
       await tx.employeeShift.deleteMany({
@@ -113,8 +113,7 @@ export class PrismaEmployeeShiftRepository
 
       await tx.employeeShift.createMany({
         data: overrides.map((override) => {
-          const assignedDate = new Date(override.assignedDate)
-          assignedDate.setHours(0, 0, 0, 0)
+          const assignedDate = toUtcMidnight(override.assignedDate)
 
           return {
             employeeId: override.employeeId,
@@ -136,8 +135,7 @@ export class PrismaEmployeeShiftRepository
    */
   async overrideShift(data: IOverrideEmployeeShiftDTO): Promise<IEmployeeShiftOverrideRecord> {
     const { employeeId, assignedDate, shiftId, createdById } = data
-    const date = new Date(assignedDate)
-    date.setHours(0, 0, 0, 0)
+    const date = toUtcMidnight(assignedDate)
     // Audit trail: admin assign passes createdById; self-service paths fall back to employee.
     const actorId = createdById ?? employeeId
 
@@ -174,8 +172,7 @@ export class PrismaEmployeeShiftRepository
     date: string | Date,
     options?: { atMinutes?: number },
   ): Promise<IEmployeeShiftWithShift | null> {
-    const targetDate = new Date(date)
-    targetDate.setHours(0, 0, 0, 0)
+    const targetDate = toUtcMidnight(date)
 
     const rows = await this.prisma.employeeShift.findMany({
       where: {
@@ -204,10 +201,8 @@ export class PrismaEmployeeShiftRepository
     startDate: Date,
     endDate: Date,
   ): Promise<IEmployeeShiftWithShift[]> {
-    const start = new Date(startDate)
-    start.setHours(0, 0, 0, 0)
-    const end = new Date(endDate)
-    end.setHours(0, 0, 0, 0)
+    const start = toUtcMidnight(startDate)
+    const end = toUtcMidnight(endDate)
 
     return this.prisma.employeeShift.findMany({
       where: {
@@ -224,8 +219,7 @@ export class PrismaEmployeeShiftRepository
     shiftId: string,
     createdById: string,
   ): Promise<IEmployeeShiftWithShift> {
-    const targetDate = new Date(date)
-    targetDate.setHours(0, 0, 0, 0)
+    const targetDate = toUtcMidnight(date)
 
     const existing = await this.prisma.employeeShift.findFirst({
       where: {
@@ -269,8 +263,7 @@ export class PrismaEmployeeShiftRepository
     scheduleId: string | null,
     createdById: string,
   ): Promise<"created" | "updated" | "skipped"> {
-    const targetDate = new Date(date)
-    targetDate.setHours(0, 0, 0, 0)
+    const targetDate = toUtcMidnight(date)
 
     const existing = await this.prisma.employeeShift.findFirst({
       where: {

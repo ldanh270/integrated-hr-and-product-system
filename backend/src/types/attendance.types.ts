@@ -348,6 +348,7 @@ export interface IAttendanceRecordDTO {
   earlyLeaveMinutes: number
   overtimeMinutes: number
   totalWorkMinutes: number
+  note?: string | null
   employee?: IAttendanceEmployeeDTO | null
   employeeShift?: IAttendanceEmployeeShiftDTO | null
   realShift?: IRealShiftDTO | null

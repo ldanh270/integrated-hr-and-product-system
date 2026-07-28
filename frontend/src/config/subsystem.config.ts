@@ -232,7 +232,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         permissions: [PAYROLL_SUBSYSTEM_PERMISSION],
       },
       {
-        name: "Mẫu bảng lương",
+        name: "Mẫu phiếu lương",
         path: ROUTES.PAYROLL.PAYSLIP_TEMPLATES,
         icon: FileText,
         permissions: [PAYROLL_SUBSYSTEM_PERMISSION],
@@ -278,7 +278,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         permissions: ["recruitment.read"],
       },
       {
-        name: "Đăng tuyển",
+        name: "Bài đăng tuyển dụng",
         path: ROUTES.RECRUITMENT.JOB_POSTINGS,
         icon: Megaphone,
         permissions: ["recruitment.posting.manage"],

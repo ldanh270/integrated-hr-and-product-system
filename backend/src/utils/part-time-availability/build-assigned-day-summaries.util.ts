@@ -14,11 +14,15 @@ import { formatScheduleDateKey } from "@/utils/schedule.util.ts"
 export function buildAssignedDaySummaries(
   weekStart: Date,
   shifts: IEmployeeShiftWithShift[],
-): { summaries: Partial<Record<number, string>>; hasAssigned: boolean } {
+): {
+  summaries: Partial<Record<number, string>>
+  slots: Partial<Record<number, Array<{ startTime: string; endTime: string }>>>
+  hasAssigned: boolean
+} {
   const normalized = normalizeWeekStart(weekStart)
   const overrideShifts = shifts.filter((row) => row.isOverride)
   if (overrideShifts.length === 0) {
-    return { summaries: {}, hasAssigned: false }
+    return { summaries: {}, slots: {}, hasAssigned: false }
   }
 
   const byDate = new Map<string, IEmployeeShiftWithShift[]>()
@@ -30,19 +34,28 @@ export function buildAssignedDaySummaries(
   }
 
   const summaryEntries: Array<[number, string]> = []
+  const slotEntries: [number, { startTime: string; endTime: string }[]][] = []
   for (let dayOfWeek = 0; dayOfWeek <= 6; dayOfWeek++) {
     const dateKey = formatScheduleDateKey(getDateForWeekDay(normalized, dayOfWeek))
     const rows = byDate.get(dateKey) ?? []
     if (rows.length === 0) continue
 
+    const sortedRows = rows.toSorted((a, b) => a.shift.startTime - b.shift.startTime)
+    const slots = sortedRows.map((row) => ({
+      startTime: minutesToTime(row.shift.startTime),
+      endTime: minutesToTime(row.shift.endTime),
+    }))
+
+    slotEntries.push([dayOfWeek, slots])
     summaryEntries.push([
       dayOfWeek,
-      rows
-        .toSorted((a, b) => a.shift.startTime - b.shift.startTime)
-        .map((row) => `${minutesToTime(row.shift.startTime)}–${minutesToTime(row.shift.endTime)}`)
-        .join(", "),
+      slots.map((slot) => `${slot.startTime}–${slot.endTime}`).join(", "),
     ])
   }
 
-  return { summaries: Object.fromEntries(summaryEntries), hasAssigned: summaryEntries.length > 0 }
+  return {
+    summaries: Object.fromEntries(summaryEntries),
+    slots: Object.fromEntries(slotEntries),
+    hasAssigned: summaryEntries.length > 0,
+  }
 }

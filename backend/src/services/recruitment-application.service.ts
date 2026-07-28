@@ -26,35 +26,24 @@ export class RecruitmentApplicationService {
       throw new Error("Cannot apply to unapproved requisitions")
     }
 
-    if (input.postingId) {
-      const posting = await jobPostingRepository.findById(input.postingId)
-      if (!posting || posting.requisitionId !== input.requisitionId) {
-        throw new AppError(
-          "Bài đăng không thuộc Yêu cầu tuyển dụng đã chọn",
-          HttpStatusCode.BAD_REQUEST,
-          LAYER,
-          "POSTING_REQUISITION_MISMATCH",
-        )
-      }
-      if (posting.source !== input.source) {
-        throw new AppError(
-          "Nguồn ứng viên không khớp bài đăng",
-          HttpStatusCode.BAD_REQUEST,
-          LAYER,
-          "POSTING_SOURCE_MISMATCH",
-        )
-      }
-      normalizedInput = { ...input, sourceRef: posting.sourceCode }
+    const posting = await jobPostingRepository.findById(input.postingId)
+    if (!posting || posting.requisitionId !== input.requisitionId) {
+      throw new AppError(
+        "Bài đăng không thuộc Yêu cầu tuyển dụng đã chọn",
+        HttpStatusCode.BAD_REQUEST,
+        LAYER,
+        "POSTING_REQUISITION_MISMATCH",
+      )
     }
-
-    const duplicate = await recruitmentApplicationRepository.findActive(
-      input.requisitionId,
-      input.candidateId,
-      [...TERMINAL_APPLICATION_STATUSES],
-    )
-    if (duplicate) {
-      throw new Error("Candidate has already applied to this requisition")
+    if (posting.source !== input.source) {
+      throw new AppError(
+        "Nguồn ứng viên không khớp bài đăng",
+        HttpStatusCode.BAD_REQUEST,
+        LAYER,
+        "POSTING_SOURCE_MISMATCH",
+      )
     }
+    normalizedInput = { ...input, sourceRef: posting.sourceCode }
 
     return recruitmentApplicationRepository.create(normalizedInput)
   }

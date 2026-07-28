@@ -29,38 +29,34 @@ export class RecruitmentIntakeService {
       )
     }
 
-    let sourceRef: string | null | undefined
-    if (input.postingId) {
-      const posting = await jobPostingRepository.findById(input.postingId)
-      if (!posting) {
-        throw new AppError("Không tìm thấy bài đăng tuyển", HttpStatusCode.NOT_FOUND, LAYER)
-      }
-      if (posting.requisitionId !== input.requisitionId) {
-        throw new AppError(
-          "Bài đăng không thuộc Yêu cầu tuyển dụng đã chọn",
-          HttpStatusCode.BAD_REQUEST,
-          LAYER,
-          "POSTING_REQUISITION_MISMATCH",
-        )
-      }
-      if (posting.source !== input.source) {
-        throw new AppError(
-          "Nguồn ứng viên không khớp bài đăng",
-          HttpStatusCode.BAD_REQUEST,
-          LAYER,
-        )
-      }
-      if (posting.status !== POSTING_STATUS.OPEN) {
-        throw new AppError(
-          "Bài đăng tuyển chưa được mở",
-          HttpStatusCode.CONFLICT,
-          LAYER,
-        )
-      }
-      sourceRef = posting.sourceCode
+    const posting = await jobPostingRepository.findById(input.postingId)
+    if (!posting) {
+      throw new AppError("Không tìm thấy bài đăng tuyển", HttpStatusCode.NOT_FOUND, LAYER)
+    }
+    if (posting.requisitionId !== input.requisitionId) {
+      throw new AppError(
+        "Bài đăng không thuộc Yêu cầu tuyển dụng đã chọn",
+        HttpStatusCode.BAD_REQUEST,
+        LAYER,
+        "POSTING_REQUISITION_MISMATCH",
+      )
+    }
+    if (posting.source !== input.source) {
+      throw new AppError(
+        "Nguồn ứng viên không khớp bài đăng",
+        HttpStatusCode.BAD_REQUEST,
+        LAYER,
+      )
+    }
+    if (posting.status !== POSTING_STATUS.OPEN) {
+      throw new AppError(
+        "Bài đăng tuyển chưa được mở",
+        HttpStatusCode.CONFLICT,
+        LAYER,
+      )
     }
 
-    return recruitmentIntakeRepository.importCandidateBatch(input, sourceRef)
+    return recruitmentIntakeRepository.importCandidateBatch(input, posting.sourceCode)
   }
 }
 

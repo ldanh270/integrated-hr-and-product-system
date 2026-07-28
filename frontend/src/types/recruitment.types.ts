@@ -52,6 +52,7 @@ export interface JobRequisition {
   targetCloseDate: string | null
   createdAt: string
   updatedAt: string
+  candidateFields?: RecruitmentFormField[]
 }
 
 export type PostingChannel =
@@ -68,10 +69,12 @@ export type ConnectorStatus = "not_configured" | "ready" | "error"
 export type RecruitmentFormFieldType = "short_text" | "paragraph"
 
 export interface RecruitmentFormField {
+  id?: string
   key: string
   label: string
   type: RecruitmentFormFieldType
   required: boolean
+  position?: number
 }
 
 export interface JobDescription {
@@ -107,6 +110,17 @@ export interface JobPosting {
   createdAt: string
   updatedAt: string
 }
+
+export interface RecruitmentPostingActivity {
+  id: string
+  type: string
+  metadata: Record<string, unknown> | null
+  createdAt: string
+  actor: { id: string; fullName: string; avatarUrl: string | null } | null
+  application: { id: string; candidate: { id: string; fullName: string } } | null
+}
+
+export interface RecruitmentPipelineStage { id: string; postingId: string; name: string; color: string; position: number; isDefault: boolean; isCompleted: boolean }
 
 export interface ApplicantImportRow {
   fullName: string
@@ -163,6 +177,7 @@ export type ApplicationStatus = (typeof RECRUITMENT_APPLICATION_STATUSES)[number
 export interface RecruitmentApplication {
   id: string
   requisitionId: string
+  postingId: string
   requisition: {
     id: string
     title: string
@@ -192,6 +207,7 @@ export interface RecruitmentApplication {
   offers?: RecruitmentOffer[]
   createdAt: string
   updatedAt: string
+  pipelineStage?: RecruitmentPipelineStage | null
 }
 
 export interface ApplicationNote {
@@ -210,6 +226,8 @@ export interface KanbanApplication {
   source: (typeof RECRUITMENT_SOURCES)[number]
   createdAt: string
   updatedAt: string
+  pipelineStage?: RecruitmentPipelineStage | null
+  assignedTo?: { id: string; fullName: string } | null
   // Nested relations
   candidate: {
     id: string

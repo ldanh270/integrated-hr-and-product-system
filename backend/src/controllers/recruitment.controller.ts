@@ -11,6 +11,8 @@ import { backgroundCheckService } from "@/services/background-check.service"
 import { jobPostingService } from "@/services/job-posting.service"
 import { recruitmentIntakeService } from "@/services/recruitment-intake.service"
 import { recruitmentOAuthAccountService } from "@/services/recruitment-oauth-account.service"
+import { recruitmentPostingActivityService } from "@/services/recruitment-posting-activity.service"
+import { RECRUITMENT_POSTING_ACTIVITY_TYPE } from "@/configs/entities/recruitment.config"
 import { buildGoogleAuthUrl, exchangeGoogleCode, getGoogleOAuthConfig } from "@/configs/system/oauth-google.config"
 import { HttpStatusCode } from "@/configs/system/http.config"
 import { AppError } from "@/utils/error.util"
@@ -22,6 +24,7 @@ import {
   approveRequisitionSchema,
   listRequisitionsQuerySchema,
   createCandidateSchema,
+  createPostingCandidateSchema,
   updateCandidateSchema,
   listCandidatesQuerySchema,
   createApplicationSchema,
@@ -149,7 +152,7 @@ export class RecruitmentController {
   createJobPosting = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const body = this.parseBody(createJobPostingSchema, req.body)
-      this.sendCreated(res, await jobPostingService.create(body))
+      this.sendCreated(res, await jobPostingService.create(body, req.user!.empId))
     } catch (e) { next(e) }
   }
 
@@ -166,23 +169,58 @@ export class RecruitmentController {
     } catch (e) { next(e) }
   }
 
+  getJobPostingOverview = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      this.sendSuccess(res, await jobPostingService.getOverview(req.params.id as string))
+    } catch (e) { next(e) }
+  }
+
+  getJobPostingActivities = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const page = Math.max(1, Number(req.query.page) || 1)
+      const pageSize = Math.min(100, Math.max(1, Number(req.query.pageSize) || 30))
+      await jobPostingService.findById(req.params.id as string)
+      this.sendSuccess(res, await jobPostingService.listActivities(req.params.id as string, page, pageSize))
+    } catch (e) { next(e) }
+  }
+
+  getJobPostingResponses = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      this.sendSuccess(res, await jobPostingService.listConnectorResponses(req.params.id as string))
+    } catch (e) { next(e) }
+  }
+
+  listPostingStages = async (req: AuthRequest, res: Response, next: NextFunction) => { try { this.sendSuccess(res, await jobPostingService.listPipelineStages(req.params.id as string)) } catch (e) { next(e) } }
+  createPostingStage = async (req: AuthRequest, res: Response, next: NextFunction) => { try { const body = z.object({ name: z.string().trim().min(1).max(100), color: z.string().max(32).optional(), isDefault: z.boolean().optional(), isCompleted: z.boolean().optional() }).parse(req.body); this.sendCreated(res, await jobPostingService.createPipelineStage(req.params.id as string, body, req.user!.empId)) } catch (e) { next(e) } }
+  updatePostingStage = async (req: AuthRequest, res: Response, next: NextFunction) => { try { const body = z.object({ name: z.string().trim().min(1).max(100).optional(), color: z.string().max(32).optional(), isDefault: z.boolean().optional(), isCompleted: z.boolean().optional() }).parse(req.body); this.sendSuccess(res, await jobPostingService.updatePipelineStage(req.params.id as string, req.params.stageId as string, body, req.user!.empId)) } catch (e) { next(e) } }
+  deletePostingStage = async (req: AuthRequest, res: Response, next: NextFunction) => { try { const fallbackStageId = z.string().cuid().parse(req.query.fallbackStageId); await jobPostingService.deletePipelineStage(req.params.id as string, req.params.stageId as string, fallbackStageId, req.user!.empId); res.status(204).send() } catch (e) { next(e) } }
+  reorderPostingStages = async (req: AuthRequest, res: Response, next: NextFunction) => { try { const body = z.object({ stageIds: z.array(z.string().cuid()).min(1) }).parse(req.body); this.sendSuccess(res, await jobPostingService.reorderPipelineStages(req.params.id as string, body.stageIds, req.user!.empId)) } catch (e) { next(e) } }
+  movePostingApplication = async (req: AuthRequest, res: Response, next: NextFunction) => { try { const body = z.object({ applicationId: z.string().cuid(), pipelineStageId: z.string().cuid() }).parse(req.body); this.sendSuccess(res, await jobPostingService.moveApplicationToPipelineStage(req.params.id as string, body.applicationId, body.pipelineStageId, req.user!.empId)) } catch (e) { next(e) } }
+  createPostingCandidate = async (req: AuthRequest, res: Response, next: NextFunction) => { try { const body = this.parseBody(createPostingCandidateSchema, req.body); this.sendCreated(res, await jobPostingService.createCandidateApplication(req.params.id as string, body, req.user!.empId)) } catch (e) { next(e) } }
+
   updateJobPosting = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const body = this.parseBody(updateJobPostingSchema, req.body)
-      this.sendSuccess(res, await jobPostingService.update(req.params.id as string, body))
+      this.sendSuccess(res, await jobPostingService.update(req.params.id as string, body, req.user!.empId))
     } catch (e) { next(e) }
   }
 
   publishJobPosting = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const body = this.parseBody(publishJobPostingSchema, req.body)
-      this.sendSuccess(res, await jobPostingService.publish(req.params.id as string, body))
+      this.sendSuccess(res, await jobPostingService.publish(req.params.id as string, body, req.user!.empId))
     } catch (e) { next(e) }
   }
 
   syncJobPosting = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      this.sendSuccess(res, await jobPostingService.sync(req.params.id as string))
+      this.sendSuccess(res, await jobPostingService.sync(req.params.id as string, req.user!.empId))
+    } catch (e) { next(e) }
+  }
+
+  archiveJobPosting = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      this.sendSuccess(res, await jobPostingService.archive(req.params.id as string, req.user!.empId))
     } catch (e) { next(e) }
   }
 
@@ -222,6 +260,17 @@ export class RecruitmentController {
     try {
       const body = this.parseBody(updateCandidateSchema, req.body)
       const result = await candidateService.update(req.params.id as string, body)
+      await Promise.all(
+        result.applications
+          .filter((application) => Boolean(application.postingId))
+          .map((application) => recruitmentPostingActivityService.record(
+            application.postingId!,
+            RECRUITMENT_POSTING_ACTIVITY_TYPE.CANDIDATE_PROFILE_UPDATED,
+            req.user!.empId,
+            { candidateId: result.id, fields: Object.keys(body).filter((field) => field !== "id") },
+            application.id,
+          )),
+      )
       this.sendSuccess(res, result)
     } catch (e) { next(e) }
   }

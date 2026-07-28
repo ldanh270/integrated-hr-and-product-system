@@ -122,7 +122,7 @@ export function AdminPartTimeAvailabilityAssignPanelForm({
     try {
       const result = await assignMutation.mutateAsync({
         id: availability.id,
-        assignments: flattenPartTimeAssignments(assignments),
+        assignments: flattenPartTimeAssignments(assignments, weekDates),
         suggestionDecision: usedSuggestion ? "edited" : "manual",
       })
       if (result.assigned === 0) {
@@ -130,6 +130,7 @@ export function AdminPartTimeAvailabilityAssignPanelForm({
       } else {
         toast.success(`Đã xếp ${result.assigned} ca, bỏ qua ${result.skipped} ngày`)
       }
+      setEditedAssignments(null)
       onAssigned?.()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không thể xếp ca")

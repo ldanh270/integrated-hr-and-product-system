@@ -1,22 +1,14 @@
 import { ErrorCode } from "@/configs/system/error-code.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { ATTENDANCE_ERROR_CODES } from "@/constants/attendance.constants.ts"
-import {
-  SCHEDULE_INSIGHTS,
-  SCHEDULE_VALIDATION_MESSAGES,
-} from "@/configs/entities/attendance.config.ts"
+import { SCHEDULE_VALIDATION_MESSAGES } from "@/configs/entities/attendance.config.ts"
 import { ATTENDANCE_ERROR_MESSAGES } from "@/configs/messages/attendance.message.ts"
 import { AuthRequest } from "@/middlewares/auth.middleware.ts"
 import { assignShiftScheduleSchema, generateShiftsSchema, overrideEmployeeShiftSchema } from "@/schemas/shift.schema.ts"
 import { ApiResponse } from "@/types"
 import {
   IPlannedWeek,
-  IScheduleInsightsResult,
-  IScheduleInsightsService,
   IScheduleService,
-  ISimulateWeeklyTemplateDraft,
-  ISimulateWeeklyTemplateResult,
-  ISuggestWeeklyTemplatesResult,
 } from "@/types/shift.types.ts"
 import { resolvePersonalEmployeeId } from "@/utils/attendance/resolve-personal-employee-id.ts"
 
@@ -30,12 +22,8 @@ export class ScheduleController {
   /**
    * Creates a new ScheduleController instance.
    * @param service - The schedule service implementation.
-   * @param insightsService - Optional read-only attendance pattern insights.
    */
-  constructor(
-    private service: IScheduleService,
-    private insightsService: IScheduleInsightsService,
-  ) {}
+  constructor(private service: IScheduleService) {}
 
   /**
    * Assigns a shift schedule to an employee or a group of employees.
@@ -315,41 +303,4 @@ export class ScheduleController {
     }
   }
 
-  /** Read-only day-of-week attendance patterns for FT employees on active templates. */
-  getInsights = async (req: Request, res: Response<ApiResponse<IScheduleInsightsResult>>) => {
-    const lookbackDays = parseLookbackDays(req.query[SCHEDULE_INSIGHTS.LOOKBACK_QUERY_PARAM])
-    const data = await this.insightsService.getInsights(lookbackDays)
-    res.status(HttpStatusCode.OK).json({ data, error: null })
-  }
-
-  /** Heuristic template candidates from insights + WorkingShift catalog. */
-  suggestTemplates = async (
-    req: Request,
-    res: Response<ApiResponse<ISuggestWeeklyTemplatesResult>>,
-  ) => {
-    const lookbackDays = parseLookbackDays(req.query[SCHEDULE_INSIGHTS.LOOKBACK_QUERY_PARAM])
-    const data = await this.insightsService.suggestTemplates(lookbackDays)
-    res.status(HttpStatusCode.OK).json({ data, error: null })
-  }
-
-  /** What-if risk projection for a draft weekly template. */
-  simulateTemplate = async (
-    req: Request,
-    res: Response<ApiResponse<ISimulateWeeklyTemplateResult>>,
-  ) => {
-    const body = req.body as ISimulateWeeklyTemplateDraft
-    const draft: ISimulateWeeklyTemplateDraft = {
-      cycleWeeks: Number(body.cycleWeeks) || 1,
-      weeks: Array.isArray(body.weeks) ? body.weeks : [],
-      lookbackDays: body.lookbackDays,
-      simulateWeeks: body.simulateWeeks,
-    }
-    const data = await this.insightsService.simulateTemplate(draft)
-    res.status(HttpStatusCode.OK).json({ data, error: null })
-  }
-}
-
-function parseLookbackDays(raw: unknown): number | undefined {
-  if (raw === undefined || raw === "") return undefined
-  return Number(Array.isArray(raw) ? raw[0] : raw)
 }

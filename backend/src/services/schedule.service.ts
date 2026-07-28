@@ -1,4 +1,4 @@
-import { SCHEDULE_INSIGHTS } from "@/configs/entities/attendance.config.ts"
+import { WEEKLY_SCHEDULE_PLANNING } from "@/configs/entities/attendance.config.ts"
 import {
   IAssignShiftScheduleDTO,
   IEmployeeShiftRepository,
@@ -65,7 +65,7 @@ export class ScheduleService implements IScheduleService {
   ): Promise<IPlannedWeek> {
     const start = normalizeScheduleDate(new Date(weekStart))
     const end = new Date(start)
-    end.setDate(end.getDate() + SCHEDULE_INSIGHTS.WEEK_END_OFFSET_DAYS)
+    end.setDate(end.getDate() + WEEKLY_SCHEDULE_PLANNING.WEEK_END_OFFSET_DAYS)
 
     const employeeShifts = await this.employeeShiftRepo.listByEmployeesAndDateRange(
       [employeeId],

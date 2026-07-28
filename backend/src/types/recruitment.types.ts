@@ -27,6 +27,12 @@ import type {
 
 export type RequisitionStatus = (typeof REQUISITION_STATUS)[keyof typeof REQUISITION_STATUS]
 export type RequisitionPriority = (typeof REQUISITION_PRIORITY)[keyof typeof REQUISITION_PRIORITY]
+export interface CandidateSchemaField {
+  key: string
+  label: string
+  type: "short_text" | "paragraph"
+  required: boolean
+}
 
 export interface CreateJobRequisitionInput {
   title: string
@@ -43,6 +49,7 @@ export interface CreateJobRequisitionInput {
   targetCloseDate?: string
   positionId?: string
   approverId: string
+  candidateSchema?: CandidateSchemaField[]
 }
 
 export interface UpdateJobRequisitionInput extends Partial<CreateJobRequisitionInput> {
@@ -103,7 +110,7 @@ export type ApplicationStatus =
 
 export interface CreateApplicationInput {
   requisitionId: string
-  postingId?: string
+  postingId: string
   candidateId: string
   source: RecruitmentSource
   sourceRef?: string
@@ -293,6 +300,7 @@ export interface ListCandidatesQuery {
 
 export interface ListApplicationsQuery {
   requisitionId?: string
+  postingId?: string
   status?: ApplicationStatus
   assignedToId?: string
   page?: number

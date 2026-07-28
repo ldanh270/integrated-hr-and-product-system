@@ -51,10 +51,13 @@ export default function ApplicantIntakePage() {
     reader.onload = () => setRawCsv(String(reader.result ?? ""))
     reader.readAsText(file, "UTF-8")
   }
-  const submit = () => importApplicants.mutate(
-    { requisitionId, postingId: postingId || undefined, source, rows },
-    { onSuccess: setResult },
-  )
+  const submit = () => {
+    if (!postingId) return
+    importApplicants.mutate(
+      { requisitionId, postingId, source, rows },
+      { onSuccess: setResult },
+    )
+  }
 
   return (
     <div className="container flex flex-col gap-6 px-3 py-4 sm:px-6 sm:py-6">
@@ -99,7 +102,7 @@ export default function ApplicantIntakePage() {
         <div className="p-4"><Textarea value={rawCsv} onChange={(event) => setRawCsv(event.target.value)} className="min-h-32 font-mono text-xs rounded-xl" /></div>
         <div className="max-h-80 overflow-auto border-t border-b border-border"><Table><TableHeader className="sticky top-0 bg-muted/40"><TableRow><TableHead className="px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Họ tên</TableHead><TableHead className="px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Email</TableHead><TableHead className="px-4 py-3 text-xs font-medium uppercase text-muted-foreground">Điện thoại</TableHead><TableHead className="px-4 py-3 text-xs font-medium uppercase text-muted-foreground">CV</TableHead></TableRow></TableHeader><TableBody>{rows.slice(0, 50).map((row, index) => <TableRow key={`${row.email}-${index}`} className="transition-colors duration-100 hover:bg-muted/25"><TableCell className="px-4 py-3 font-medium text-foreground">{row.fullName}</TableCell><TableCell className="px-4 py-3">{row.email}</TableCell><TableCell className="px-4 py-3 text-muted-foreground">{row.phone || "—"}</TableCell><TableCell className="px-4 py-3 max-w-52 truncate text-muted-foreground">{row.cvUrl || "—"}</TableCell></TableRow>)}</TableBody></Table></div>
         {validationErrors.length > 0 && <div className="border-t border-border bg-destructive/5 p-4"><p className="text-sm font-medium text-destructive">Cần sửa {validationErrors.length} lỗi trước khi import</p><ul className="mt-2 max-h-28 overflow-auto text-xs text-destructive">{validationErrors.map((error) => <li key={`${error.row}-${error.message}`}>Dòng {error.row}: {error.message}</li>)}</ul></div>}
-        <div className="flex flex-wrap items-center justify-between gap-3 p-4"><p className="text-sm text-muted-foreground">Import sẽ match Candidate theo email, sau đó tạo Application mới gắn đúng Requisition.</p>{hasPermission("recruitment.intake.manage") && <Button className="rounded-full" onClick={submit} disabled={!requisitionId || !source || rows.length === 0 || validationErrors.length > 0 || importApplicants.isPending}><Upload className="mr-2 h-4 w-4" />{importApplicants.isPending ? "Đang tiếp nhận..." : `Tiếp nhận ${rows.length} hồ sơ`}</Button>}</div>
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4"><p className="text-sm text-muted-foreground">Mỗi dòng tạo một Candidate/Application mới trong bài đăng đã chọn; email được phép trùng.</p>{hasPermission("recruitment.intake.manage") && <Button className="rounded-full" onClick={submit} disabled={!requisitionId || !postingId || !source || rows.length === 0 || validationErrors.length > 0 || importApplicants.isPending}><Upload className="mr-2 h-4 w-4" />{importApplicants.isPending ? "Đang tiếp nhận..." : `Tiếp nhận ${rows.length} hồ sơ`}</Button>}</div>
       </PageCard>
       {result && <PageCard><CardHeading title="Kết quả import" /><div className="grid grid-cols-2 gap-4 sm:grid-cols-5"><Result label="Tổng" value={result.total} /><Result label="Application mới" value={result.applicationsCreated} /><Result label="Candidate mới" value={result.candidatesCreated} /><Result label="Candidate đã match" value={result.candidatesMatched} /><Result label="Lỗi" value={result.failed} /></div>{result.errors.length > 0 && <ul className="mt-4 text-sm text-destructive">{result.errors.map((error) => <li key={`${error.row}-${error.message}`}>Dòng {error.row}: {error.message}</li>)}</ul>}</PageCard>}
     </div>

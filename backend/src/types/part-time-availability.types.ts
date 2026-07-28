@@ -39,6 +39,7 @@ export interface IPartTimeWeeklyAvailability {
   days: IPartTimeAvailabilityDay[]
   /** Admin roster: assigned shift times per dayOfWeek when overrides exist for the week. */
   assignedDaySummaries?: Partial<Record<number, string>>
+  assignedDaySlots?: Partial<Record<number, Array<{ startTime: string; endTime: string }>>>
   hasAssignedShifts?: boolean
   employee?: {
     id: string

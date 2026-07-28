@@ -10,15 +10,20 @@ export class RecruitmentApplicationRepository {
   constructor(private readonly db: PrismaClient = prisma) {}
 
   async create(data: CreateApplicationInput): Promise<{ id: string }> {
-    return this.db.recruitmentApplication.create({
-      data: {
-        requisitionId: data.requisitionId,
-        postingId: data.postingId,
-        candidateId: data.candidateId,
-        source: data.source,
-        sourceRef: data.sourceRef,
-      },
-      select: { id: true },
+    return this.db.$transaction(async (tx) => {
+      const defaultStage = await tx.recruitmentPipelineStage.findFirst({ where: { postingId: data.postingId, isDefault: true }, orderBy: { position: "asc" }, select: { id: true } })
+      if (!defaultStage) throw new Error("Bài đăng chưa có giai đoạn mặc định")
+      return tx.recruitmentApplication.create({
+        data: {
+          requisitionId: data.requisitionId,
+          postingId: data.postingId,
+          pipelineStageId: defaultStage.id,
+          candidateId: data.candidateId,
+          source: data.source,
+          sourceRef: data.sourceRef,
+        },
+        select: { id: true },
+      })
     })
   }
 
@@ -74,11 +79,12 @@ export class RecruitmentApplicationRepository {
   }
 
   async list(query: ListApplicationsQuery) {
-    const { requisitionId, status, assignedToId, page = 1, pageSize = 20 } = query
+    const { requisitionId, postingId, status, assignedToId, page = 1, pageSize = 20 } = query
     const skip = (page - 1) * pageSize
 
     const where: Prisma.RecruitmentApplicationWhereInput = {}
     if (requisitionId) where.requisitionId = requisitionId
+    if (postingId) where.postingId = postingId
     if (status) where.status = status
     if (assignedToId) where.assignedToId = assignedToId
 
@@ -107,6 +113,7 @@ export class RecruitmentApplicationRepository {
             },
           },
           assignedTo: { select: { id: true, fullName: true } },
+          pipelineStage: { select: { id: true, name: true, color: true, position: true } },
           _count: { select: { interviewRounds: true } },
         },
       }),
@@ -143,24 +150,13 @@ export class RecruitmentApplicationRepository {
   }
 
   async listKanban(query: ListApplicationsQuery) {
-    const { requisitionId, assignedToId, page = 1, pageSize = 20 } = query
+    const { requisitionId, postingId, assignedToId, page = 1, pageSize = 20 } = query
     const skip = (page - 1) * pageSize
 
     const where: Prisma.RecruitmentApplicationWhereInput = {}
     if (requisitionId) where.requisitionId = requisitionId
+    if (postingId) where.postingId = postingId
     if (assignedToId) where.assignedToId = assignedToId
-
-    // Kanban statuses (non-terminal)
-    const kanbanStatuses: RecruitmentApplicationStatus[] = [
-      "new",
-      "reviewing",
-      "shortlisted",
-      "interviewing",
-      "final_review",
-      "offer_sent",
-      "offer_accepted",
-    ]
-    where.status = { in: kanbanStatuses }
 
     const [items, total] = await Promise.all([
       this.db.recruitmentApplication.findMany({
@@ -188,6 +184,7 @@ export class RecruitmentApplicationRepository {
             },
           },
           assignedTo: { select: { id: true, fullName: true } },
+          pipelineStage: { select: { id: true, name: true, color: true, position: true, isCompleted: true } },
           interviewRounds: {
             select: { id: true, roundNumber: true, status: true },
             orderBy: { roundNumber: "desc" },

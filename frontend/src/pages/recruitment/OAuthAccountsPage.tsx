@@ -1,4 +1,4 @@
-import { AppPagination, DataTableToolbar, PageCard, PageHeader } from "@/components/common"
+import { AppPagination, DataTableToolbar, PageCard, PageHeader, useConfirm } from "@/components/common"
 import { StatusPill } from "@/components/common/status-pill"
 import { Button } from "@/components/ui/button"
 import {
@@ -53,6 +53,7 @@ export default function OAuthAccountsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { data: accounts = [], isLoading } = useOAuthAccounts()
   const deleteMutation = useDeleteOAuthAccount()
+  const confirm = useConfirm()
 
   // State filtering & toolbar
   const [activeTab, setActiveTab] = useState<string>("all")
@@ -175,8 +176,15 @@ export default function OAuthAccountsPage() {
     }
   }
 
-  const handleDelete = (id: string, name: string) => {
-    if (confirm(`Bạn có chắc chắn muốn ngắt kết nối tài khoản "${name}"?`)) {
+  const handleDelete = async (id: string, name: string) => {
+    const isConfirmed = await confirm({
+      title: "Ngắt kết nối tài khoản?",
+      description: `Tài khoản "${name}" sẽ bị xóa khỏi hệ thống. Hành động này không thể hoàn tác.`,
+      confirmText: "Xóa tài khoản",
+      cancelText: "Hủy",
+      variant: "destructive",
+    })
+    if (isConfirmed) {
       deleteMutation.mutate(id)
     }
   }

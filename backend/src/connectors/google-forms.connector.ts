@@ -55,6 +55,7 @@ interface GoogleAnswer {
 
 interface GoogleFormResponse {
   responseId?: string
+  respondentEmail?: string
   answers?: Record<string, GoogleAnswer>
 }
 
@@ -65,7 +66,7 @@ interface GoogleResponsesPage {
 
 type PostingRepository = Pick<
   typeof jobPostingRepository,
-  "findById" | "storeConnectorExternalId"
+  "findById" | "storeConnectorExternalId" | "updateFieldQuestionIds"
 >
 
 export class GoogleFormsConnector implements RecruitmentConnector {
@@ -108,7 +109,7 @@ export class GoogleFormsConnector implements RecruitmentConnector {
     const existingTitles = new Set(
       (existingItems ?? []).map((item) => item.title?.trim()).filter((t): t is string => Boolean(t))
     )
-    const fields = this.formFields(posting.formFields)
+    const fields = this.postingFields(posting)
     const description = this.buildDescription(posting.requisition)
     const requests: Array<Record<string, unknown>> = [
       {
@@ -135,6 +136,10 @@ export class GoogleFormsConnector implements RecruitmentConnector {
     if (!published.responderUri) {
       throw this.apiError("Google Forms không trả về đường dẫn ứng tuyển")
     }
+    const mappings = this.questionIdMappings(fields, published.items ?? [])
+    if (mappings.length > 0) {
+      await this.postingRepository.updateFieldQuestionIds(postingId, mappings)
+    }
     return { externalId: formId, postingUrl: published.responderUri }
   }
 
@@ -160,19 +165,29 @@ export class GoogleFormsConnector implements RecruitmentConnector {
     const config = await this.requireConfig(posting)
     const token = await this.getAccessToken(config)
     const form = await this.request<GoogleForm>(token, `${FORMS_API}/${posting.externalId}`)
-    const fields = this.formFields(posting.formFields)
+    const fields = this.postingFields(posting)
 
-    const questionIdMap = new Map<string, string>()
+    const questionIdMap = new Map(
+      posting.fieldSnapshots
+        .filter((field) => Boolean(field.externalQuestionId))
+        .map((field) => [field.fieldKey, field.externalQuestionId!]),
+    )
     for (const item of form.items ?? []) {
       const qId = item.questionItem?.question?.questionId
       const title = item.title?.trim()
       if (!qId || !title) continue
-      const matchedField = fields.find(
-        (f) => f.label.trim() === title || f.key.trim().toLowerCase() === title.toLowerCase()
-      )
+      const matchedField = fields.find((field) => this.matchesField(field, title))
       if (matchedField) {
         questionIdMap.set(matchedField.key, qId)
       }
+    }
+    const learnedMappings = posting.fieldSnapshots.flatMap((field) => {
+      if (field.externalQuestionId) return []
+      const externalQuestionId = questionIdMap.get(field.fieldKey)
+      return externalQuestionId ? [{ fieldKey: field.fieldKey, externalQuestionId }] : []
+    })
+    if (learnedMappings.length > 0) {
+      await this.postingRepository.updateFieldQuestionIds(postingId, learnedMappings)
     }
 
     const responses: GoogleFormResponse[] = []
@@ -201,7 +216,7 @@ export class GoogleFormsConnector implements RecruitmentConnector {
       const cvQId = questionIdMap.get("cv_url")
       const raw = {
         fullName: responseData.full_name ?? "",
-        email: (responseData.email ?? "").toLowerCase(),
+        email: (responseData.email || response.respondentEmail || "").toLowerCase(),
         phone: responseData.phone || undefined,
         cvUrl: cvQId ? this.cvUrl(response, cvQId) : undefined,
         notes: responseData.notes || undefined,
@@ -210,7 +225,7 @@ export class GoogleFormsConnector implements RecruitmentConnector {
       if (!responseId || !parsed.success) {
         const validationMessage = parsed.success
           ? ""
-          : parsed.error?.issues.map((issue) => issue.message).join("; ")
+          : parsed.error?.issues.map((issue: { message: string }) => issue.message).join("; ")
         errors.push({
           row: index + 1,
           email: raw.email,
@@ -365,6 +380,54 @@ export class GoogleFormsConnector implements RecruitmentConnector {
       if (!parsed.success) throw this.apiError("Cấu hình trường Google Form không hợp lệ")
       return parsed.data
     })
+  }
+
+  private postingFields(posting: {
+    formFields: unknown
+    fieldSnapshots: Array<{ fieldKey: string; label: string; type: "short_text" | "paragraph"; required: boolean }>
+  }): readonly GoogleFormFieldDefinition[] {
+    if (posting.fieldSnapshots.length > 0) {
+      return posting.fieldSnapshots.map((field) => ({
+        key: field.fieldKey,
+        label: field.label,
+        type: field.type,
+        required: field.required,
+      }))
+    }
+    return this.formFields(posting.formFields)
+  }
+
+  private questionIdMappings(
+    fields: readonly GoogleFormFieldDefinition[],
+    items: NonNullable<GoogleForm["items"]>,
+  ): Array<{ fieldKey: string; externalQuestionId: string }> {
+    return fields.flatMap((field) => {
+      const item = items.find((candidate) => {
+        const title = candidate.title?.trim()
+        return title ? this.matchesField(field, title) : false
+      })
+      const externalQuestionId = item?.questionItem?.question?.questionId
+      return externalQuestionId ? [{ fieldKey: field.key, externalQuestionId }] : []
+    })
+  }
+
+  private matchesField(field: GoogleFormFieldDefinition, title: string): boolean {
+    const normalize = (value: string) => value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim()
+    const normalizedTitle = normalize(title)
+    if (normalize(field.label) === normalizedTitle || normalize(field.key) === normalizedTitle) return true
+    const aliases: Record<string, string[]> = {
+      full_name: ["ho va ten", "ho ten", "ten day du", "full name", "name"],
+      email: ["email", "email address", "dia chi email"],
+      phone: ["so dien thoai", "dien thoai", "phone", "phone number"],
+      cv_url: ["cv", "link cv", "duong dan cv", "resume"],
+      notes: ["ghi chu", "thong tin bo sung", "notes", "additional information"],
+    }
+    return aliases[field.key]?.includes(normalizedTitle) ?? false
   }
 
   private apiError(message: string): AppError {

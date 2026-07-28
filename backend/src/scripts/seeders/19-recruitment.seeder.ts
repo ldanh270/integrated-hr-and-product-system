@@ -16,6 +16,7 @@ import {
   BGC_GROUP,
   BGC_STATUS,
   RECRUITMENT_OFFER_STATUS,
+  RECRUITMENT_PIPELINE_STAGE_TEMPLATE,
 } from "@/configs/entities/recruitment.config.ts"
 import { EMPLOYEE_TYPE } from "@/configs/entities/employee.config.ts"
 
@@ -202,6 +203,21 @@ export class RecruitmentSeeder implements ISeeder {
     const qaFacebookPost = createdPostings.find((p) => p.sourceCode === "PUB-FB-002")!
     const frontendLinkedinPost = createdPostings.find((p) => p.sourceCode === "PUB-LN-003")!
 
+    const defaultStageByPosting = new Map<string, string>()
+    for (const posting of createdPostings) {
+      const stageCount = await prisma.recruitmentPipelineStage.count({ where: { postingId: posting.id } })
+      if (stageCount === 0) {
+        await prisma.recruitmentPipelineStage.createMany({
+          data: RECRUITMENT_PIPELINE_STAGE_TEMPLATE.map((stage) => ({ postingId: posting.id, ...stage })),
+        })
+      }
+      const defaultStage = await prisma.recruitmentPipelineStage.findFirstOrThrow({
+        where: { postingId: posting.id, isDefault: true },
+        orderBy: { position: "asc" },
+      })
+      defaultStageByPosting.set(posting.id, defaultStage.id)
+    }
+
     // 4. Create Candidates
     const candidatesData = [
       {
@@ -265,11 +281,8 @@ export class RecruitmentSeeder implements ISeeder {
 
     const createdCandidates = []
     for (const cand of candidatesData) {
-      const created = await prisma.candidate.upsert({
-        where: { email: cand.email },
-        update: {},
-        create: cand,
-      })
+      const existing = await prisma.candidate.findFirst({ where: { email: cand.email } })
+      const created = existing ?? await prisma.candidate.create({ data: cand })
       createdCandidates.push(created)
     }
     console.log(`    Seeded ${createdCandidates.length} Candidates.`)
@@ -288,6 +301,7 @@ export class RecruitmentSeeder implements ISeeder {
         requisitionId: nodejsReq.id,
         candidateId: linhCandidate.id,
         postingId: nodejsLinkedinPost.id,
+        pipelineStageId: defaultStageByPosting.get(nodejsLinkedinPost.id)!,
         status: RECRUITMENT_APPLICATION_STATUS.INTERVIEWING,
         source: RECRUITMENT_SOURCE.LINKEDIN,
         assignedToId: hrManager.id,
@@ -296,6 +310,7 @@ export class RecruitmentSeeder implements ISeeder {
         requisitionId: qaReq.id,
         candidateId: maiCandidate.id,
         postingId: qaFacebookPost.id,
+        pipelineStageId: defaultStageByPosting.get(qaFacebookPost.id)!,
         status: RECRUITMENT_APPLICATION_STATUS.HIRED,
         source: RECRUITMENT_SOURCE.FACEBOOK,
         assignedToId: hrManager.id,
@@ -305,6 +320,7 @@ export class RecruitmentSeeder implements ISeeder {
         requisitionId: nodejsReq.id,
         candidateId: namCandidate.id,
         postingId: nodejsLinkedinPost.id,
+        pipelineStageId: defaultStageByPosting.get(nodejsLinkedinPost.id)!,
         status: RECRUITMENT_APPLICATION_STATUS.OFFER_SENT,
         source: RECRUITMENT_SOURCE.LINKEDIN,
         assignedToId: hrManager.id,
@@ -313,6 +329,7 @@ export class RecruitmentSeeder implements ISeeder {
         requisitionId: frontendReq.id,
         candidateId: ducCandidate.id,
         postingId: frontendLinkedinPost.id,
+        pipelineStageId: defaultStageByPosting.get(frontendLinkedinPost.id)!,
         status: RECRUITMENT_APPLICATION_STATUS.NEW,
         source: RECRUITMENT_SOURCE.LINKEDIN,
         assignedToId: hrManager.id,
@@ -321,6 +338,7 @@ export class RecruitmentSeeder implements ISeeder {
         requisitionId: frontendReq.id,
         candidateId: vietCandidate.id,
         postingId: frontendLinkedinPost.id,
+        pipelineStageId: defaultStageByPosting.get(frontendLinkedinPost.id)!,
         status: RECRUITMENT_APPLICATION_STATUS.REJECTED,
         rejectReason: "Lack of commercial React project experience",
         source: RECRUITMENT_SOURCE.LINKEDIN,
@@ -330,6 +348,7 @@ export class RecruitmentSeeder implements ISeeder {
         requisitionId: qaReq.id,
         candidateId: lanCandidate.id,
         postingId: qaFacebookPost.id,
+        pipelineStageId: defaultStageByPosting.get(qaFacebookPost.id)!,
         status: RECRUITMENT_APPLICATION_STATUS.REVIEWING,
         source: RECRUITMENT_SOURCE.WEBSITE,
         assignedToId: hrManager.id,

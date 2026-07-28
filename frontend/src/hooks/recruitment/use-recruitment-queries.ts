@@ -40,6 +40,14 @@ export function useJobPostings(requisitionId?: string) {
   })
 }
 
+export function useJobPosting(id?: string) {
+  return useQuery({
+    queryKey: ["recruitment", "job-postings", id],
+    queryFn: () => jobPostingApi.getOne(id!),
+    enabled: Boolean(id),
+  })
+}
+
 export function useCreateJobPosting() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -65,6 +73,18 @@ export function usePublishJobPosting() {
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
       toast.error(error.response?.data?.error?.message ?? "Kênh chưa được cấu hình hoặc chưa có đường dẫn bài đăng")
     },
+  })
+}
+
+export function useArchiveJobPosting() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: jobPostingApi.archive,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] })
+      toast.success("Đã lưu trữ bài đăng, ứng viên và lịch sử vẫn được giữ lại")
+    },
+    onError: (error: RecruitmentApiError) => toast.error(getRecruitmentErrorMessage(error, "Không thể lưu trữ bài đăng")),
   })
 }
 
@@ -261,6 +281,7 @@ export function useUpdateCandidate() {
 
 export function useApplications(query?: {
   requisitionId?: string
+  postingId?: string
   status?: string
   assignedToId?: string
   page?: number
@@ -321,6 +342,7 @@ export function useUpdateApplicationStatus() {
 
 export function useKanban(query?: {
   requisitionId?: string
+  postingId?: string
   assignedToId?: string
   page?: number
   pageSize?: number

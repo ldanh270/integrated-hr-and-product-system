@@ -17,7 +17,32 @@ import { GOOGLE_FORM_FIELD_TYPES } from "@/configs/rules/google-form.config"
 
 // ── Requisition Schemas ────────────────────────────────────────────────────────
 
-export const createJobRequisitionSchema = z.object({
+export const googleFormFieldSchema = z.object({
+  key: z.string().regex(/^[a-z][a-z0-9_]{1,49}$/),
+  label: z.string().trim().min(1).max(200),
+  type: z.enum(GOOGLE_FORM_FIELD_TYPES),
+  required: z.boolean(),
+})
+
+const candidateSchemaFields = z.array(googleFormFieldSchema).min(2).max(30)
+const validateCandidateSchema = (
+  fields: z.infer<typeof candidateSchemaFields> | undefined,
+  context: z.RefinementCtx,
+  path: string,
+) => {
+  if (!fields) return
+  const keys = fields.map((field) => field.key)
+  if (new Set(keys).size !== keys.length) {
+    context.addIssue({ code: "custom", path: [path], message: "Field keys must be unique" })
+  }
+  for (const requiredKey of ["full_name", "email"] as const) {
+    if (fields.filter((field) => field.key === requiredKey && field.required).length !== 1) {
+      context.addIssue({ code: "custom", path: [path], message: `${requiredKey} must exist exactly once and be required` })
+    }
+  }
+}
+
+const jobRequisitionFieldsSchema = z.object({
   title: z.string().min(1, "Title is required").max(255),
   department: z.string().max(100).optional(),
   positionLevel: z.string().max(50).optional(),
@@ -32,11 +57,18 @@ export const createJobRequisitionSchema = z.object({
   targetCloseDate: z.string().datetime().optional(),
   positionId: z.string().min(1).optional(),
   approverId: z.string().min(1, "Người duyệt không hợp lệ"),
+  candidateSchema: candidateSchemaFields.optional(),
 })
 
-export const updateJobRequisitionSchema = createJobRequisitionSchema.partial().extend({
+export const createJobRequisitionSchema = jobRequisitionFieldsSchema.superRefine(
+  ({ candidateSchema }, context) => validateCandidateSchema(candidateSchema, context, "candidateSchema"),
+)
+
+export const updateJobRequisitionSchema = jobRequisitionFieldsSchema.partial().extend({
   status: z.enum(REQUISITION_STATUSES).optional(),
-})
+}).superRefine(
+  ({ candidateSchema }, context) => validateCandidateSchema(candidateSchema, context, "candidateSchema"),
+)
 
 export const approveRequisitionSchema = z.object({
   approved: z.boolean(),
@@ -65,33 +97,13 @@ export const listJobDescriptionsQuerySchema = z.object({
   pageSize: z.coerce.number().int().positive().max(100).default(20),
 })
 
-export const googleFormFieldSchema = z.object({
-  key: z.string().regex(/^[a-z][a-z0-9_]{1,49}$/),
-  label: z.string().trim().min(1).max(200),
-  type: z.enum(GOOGLE_FORM_FIELD_TYPES),
-  required: z.boolean(),
-})
-
 export const createJobPostingSchema = z.object({
   requisitionId: z.string().cuid(),
   channel: z.enum(RECRUITMENT_CHANNELS).default("google_form"),
   oauthAccountId: z.string().cuid().optional().nullable(),
-  fields: z.array(googleFormFieldSchema).min(2).max(30),
+  fields: candidateSchemaFields.optional(),
 }).superRefine(({ fields }, context) => {
-  const keys = fields.map((field) => field.key)
-  if (new Set(keys).size !== keys.length) {
-    context.addIssue({ code: "custom", path: ["fields"], message: "Field keys must be unique" })
-  }
-  for (const requiredKey of ["full_name", "email"] as const) {
-    const matches = fields.filter((field) => field.key === requiredKey && field.required)
-    if (matches.length !== 1) {
-      context.addIssue({
-        code: "custom",
-        path: ["fields"],
-        message: `${requiredKey} must exist exactly once and be required`,
-      })
-    }
-  }
+  validateCandidateSchema(fields, context, "fields")
 })
 
 export const updateJobPostingSchema = z.object({
@@ -120,7 +132,7 @@ export const intakeRowSchema = z.object({
 
 export const importRecruitmentIntakeSchema = z.object({
   requisitionId: z.string().cuid(),
-  postingId: z.string().cuid().optional(),
+  postingId: z.string().cuid(),
   source: z.enum(RECRUITMENT_SOURCES),
   rows: z.array(intakeRowSchema).min(1).max(1000),
 })
@@ -146,12 +158,13 @@ export const updateCandidateSchema = createCandidateSchema.partial().extend({
   id: z.string().cuid(),
 })
 
+export const createPostingCandidateSchema = createCandidateSchema.omit({ source: true })
+
 // ── Application Schemas ────────────────────────────────────────────────────────
 
 export const createApplicationSchema = z.object({
   requisitionId: z.string().cuid(),
-  jobDescriptionId: z.string().cuid(),
-  postingId: z.string().cuid().optional(),
+  postingId: z.string().cuid(),
   candidateId: z.string().cuid(),
   source: z.enum(RECRUITMENT_SOURCES),
   sourceRef: z.string().max(255).optional(),
@@ -279,6 +292,7 @@ export const listCandidatesQuerySchema = z.object({
 
 export const listApplicationsQuerySchema = z.object({
   requisitionId: z.string().cuid().optional(),
+  postingId: z.string().cuid().optional(),
   status: z.enum(RECRUITMENT_APPLICATION_STATUSES).optional(),
   assignedToId: z.string().cuid().optional(),
   page: z.coerce.number().int().positive().default(1),
@@ -299,6 +313,7 @@ export type ImportRecruitmentIntakeInput = z.infer<typeof importRecruitmentIntak
 
 export type CreateCandidateInput = z.infer<typeof createCandidateSchema>
 export type UpdateCandidateInput = z.infer<typeof updateCandidateSchema>
+export type CreatePostingCandidateInput = z.infer<typeof createPostingCandidateSchema>
 
 export type CreateApplicationInput = z.infer<typeof createApplicationSchema>
 export type UpdateApplicationStatusInput = z.infer<typeof updateApplicationStatusSchema>

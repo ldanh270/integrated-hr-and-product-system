@@ -6,6 +6,7 @@ import type {
   UpdateJobRequisitionInput,
 } from "@/types/recruitment.types"
 import { generateRequisitionCode } from "@/types/recruitment.types"
+import { GOOGLE_FORM_DEFAULT_FIELDS } from "@/configs/rules/google-form.config"
 
 import { type EmployeeType, Prisma, type PrismaClient } from "@prisma/client"
 
@@ -18,6 +19,7 @@ export class JobRequisitionRepository {
       where: { code: { startsWith: `REQ-${year}` } },
     })
 
+    const candidateSchema = data.candidateSchema ?? GOOGLE_FORM_DEFAULT_FIELDS
     return this.db.jobRequisition.create({
       data: {
         code: generateRequisitionCode(year, count + 1),
@@ -36,6 +38,9 @@ export class JobRequisitionRepository {
         employmentType: data.employmentType as EmployeeType,
         targetHireDate: data.targetHireDate ? new Date(data.targetHireDate) : undefined,
         targetCloseDate: data.targetCloseDate ? new Date(data.targetCloseDate) : undefined,
+        candidateFields: {
+          create: candidateSchema.map((field, position) => ({ ...field, position })),
+        },
       },
       select: { id: true },
     })
@@ -50,6 +55,7 @@ export class JobRequisitionRepository {
         approvedBy: { select: { id: true, fullName: true } },
         position: { select: { id: true, name: true } },
         postings: true,
+        candidateFields: { orderBy: { position: "asc" } },
         _count: { select: { applications: true } },
       },
     })
@@ -86,6 +92,7 @@ export class JobRequisitionRepository {
           approver: { select: { id: true, fullName: true, position: true } },
           approvedBy: { select: { id: true, fullName: true } },
           _count: { select: { applications: true } },
+          candidateFields: { orderBy: { position: "asc" } },
         },
       }),
       this.db.jobRequisition.count({ where }),
@@ -124,14 +131,24 @@ export class JobRequisitionRepository {
         : { disconnect: true }
     }
 
-    return this.db.jobRequisition.update({
-      where: { id },
-      data: updateData,
-      include: {
-        requestedBy: { select: { id: true, fullName: true } },
-        approver: { select: { id: true, fullName: true, position: true } },
-        approvedBy: { select: { id: true, fullName: true } },
-      },
+    const candidateSchema = data.candidateSchema
+    return this.db.$transaction(async (tx) => {
+      if (candidateSchema) {
+        await tx.candidateFieldDefinition.deleteMany({ where: { requisitionId: id } })
+        await tx.candidateFieldDefinition.createMany({
+          data: candidateSchema.map((field, position) => ({ requisitionId: id, ...field, position })),
+        })
+      }
+      return tx.jobRequisition.update({
+        where: { id },
+        data: updateData,
+        include: {
+          requestedBy: { select: { id: true, fullName: true } },
+          approver: { select: { id: true, fullName: true, position: true } },
+          approvedBy: { select: { id: true, fullName: true } },
+          candidateFields: { orderBy: { position: "asc" } },
+        },
+      })
     })
   }
 

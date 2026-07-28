@@ -10,7 +10,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { PAYROLL_STATUS_BADGE, PAYROLL_STATUS_LABELS } from "@/config/entities/payroll.config"
+import {
+  PAYROLL_STATUS_BADGE,
+  PAYROLL_STATUS_LABELS,
+  PAYSLIP_RECEIPT_STATUS_LABELS,
+} from "@/config/entities/payroll.config"
 import { useMyPayslips } from "@/hooks/payroll/use-my-payslips"
 import { formatCurrency } from "@/lib/utils"
 import type { IPayslip } from "@/types/payroll.types"
@@ -53,7 +57,7 @@ export default function MyPayslips() {
     <div className="container px-3 sm:px-6 py-4 sm:py-6">
       <PageHeader
         title="Lương của tôi"
-        description="Lịch sử và chi tiết các phiếu lương của bạn."
+        description="Xem trước lương sắp nhận, lịch sử và chi tiết các phiếu lương của bạn."
       />
 
       <PageCard className="overflow-hidden p-0" noBorder={false}>
@@ -83,7 +87,10 @@ export default function MyPayslips() {
                   Tăng ca
                 </TableHead>
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
-                  Trạng thái
+                  Duyệt lương
+                </TableHead>
+                <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
+                  Nhận lương
                 </TableHead>
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap text-right">
                   Thực lãnh
@@ -94,13 +101,13 @@ export default function MyPayslips() {
             <TableBody className="divide-y divide-border">
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center">
+                  <TableCell colSpan={8} className="h-32 text-center">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                   </TableCell>
                 </TableRow>
               ) : isError ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center">
+                  <TableCell colSpan={8} className="h-32 text-center">
                     <div className="flex flex-col items-center justify-center space-y-2">
                       <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
                         <FileText className="h-5 w-5 text-destructive" />
@@ -113,7 +120,7 @@ export default function MyPayslips() {
                 </TableRow>
               ) : paginatedPayslips.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center">
+                  <TableCell colSpan={8} className="h-32 text-center">
                     <div className="flex flex-col items-center justify-center space-y-2">
                       <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                         <FileText className="h-5 w-5 text-muted-foreground" />
@@ -144,8 +151,13 @@ export default function MyPayslips() {
                           <div className="font-semibold text-foreground">
                             Tháng {payslip.periodMonth}/{payslip.periodYear}
                           </div>
-                          <div className="text-xs text-muted-foreground mt-0.5">
-                            Kỳ lương định kỳ
+                          <div className="text-xs text-muted-foreground mt-1 flex flex-wrap items-center gap-2">
+                            <span>Kỳ lương định kỳ</span>
+                            {payslip.isPreview ? (
+                              <Badge variant="secondary" className="rounded-full shadow-none">
+                                Xem trước
+                              </Badge>
+                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -162,6 +174,13 @@ export default function MyPayslips() {
                         className="rounded-full shadow-none font-medium px-2.5 py-0.5"
                       >
                         {payslip.status ? PAYROLL_STATUS_LABELS[payslip.status] : "Không rõ"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
+                      <Badge variant="outline" className="rounded-full shadow-none font-medium px-2.5 py-0.5">
+                        {payslip.receiptStatus
+                          ? PAYSLIP_RECEIPT_STATUS_LABELS[payslip.receiptStatus]
+                          : "Chưa nhận"}
                       </Badge>
                     </TableCell>
                     <TableCell className="px-4 py-3 text-right">

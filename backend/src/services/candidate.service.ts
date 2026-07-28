@@ -3,12 +3,6 @@ import type { CreateCandidateInput, UpdateCandidateInput, ListCandidatesQuery } 
 
 export class CandidateService {
   async create(input: CreateCandidateInput) {
-    // Check for duplicate email
-    const existing = await candidateRepository.findByEmail(input.email)
-    if (existing) {
-      throw new Error("A candidate with this email already exists")
-    }
-
     return candidateRepository.create(input)
   }
 
@@ -34,14 +28,6 @@ export class CandidateService {
 
   async update(id: string, input: UpdateCandidateInput) {
     const existing = await this.findById(id)
-
-    // Check for duplicate email if email is being changed
-    if (input.email && input.email !== existing.email) {
-      const duplicate = await candidateRepository.findByEmail(input.email)
-      if (duplicate) {
-        throw new Error("A candidate with this email already exists")
-      }
-    }
 
     return candidateRepository.update(id, { ...input, id })
   }

@@ -1,4 +1,3 @@
-import { RecruitmentFormFieldEditor } from "@/components/features/recruitment/recruitment-form-field-editor"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -49,7 +48,10 @@ export function CreateJobPostingDialog({ open, onOpenChange, jobRequisitions, in
   const [requisitionId, setRequisitionId] = useState(initialRequisitionId ?? "")
   const [channel, setChannel] = useState("google_form")
   const [oauthAccountId, setOauthAccountId] = useState<string>("")
-  const [fields, setFields] = useState<RecruitmentFormField[]>(() => DEFAULT_FIELDS.map((field) => ({ ...field })))
+  const selectedRequisition = requisitions.find((item) => item.id === requisitionId)
+  const fields = selectedRequisition?.candidateFields?.length
+    ? selectedRequisition.candidateFields
+    : DEFAULT_FIELDS
 
   const fieldError = useMemo(() => getFieldError(fields), [fields])
 
@@ -72,7 +74,6 @@ export function CreateJobPostingDialog({ open, onOpenChange, jobRequisitions, in
         requisitionId,
         channel,
         oauthAccountId: oauthAccountId || undefined,
-        fields: fields.map((field) => ({ ...field, label: field.label.trim() })),
       },
       { onSuccess: () => onOpenChange(false) },
     )
@@ -190,8 +191,17 @@ export function CreateJobPostingDialog({ open, onOpenChange, jobRequisitions, in
             </div>
           </div>
 
-          {/* Field Editor */}
-          <RecruitmentFormFieldEditor fields={fields} onChange={setFields} />
+          <div className="rounded-xl border border-border p-4">
+            <p className="text-sm font-semibold">Schema ứng viên từ Yêu cầu tuyển dụng</p>
+            <p className="mt-1 text-xs text-muted-foreground">Bài đăng sẽ giữ một snapshot riêng khi được tạo.</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {fields.map((field) => (
+                <span key={field.key} className="rounded-full border border-border px-3 py-1 text-xs">
+                  {field.label}{field.required ? " *" : ""}
+                </span>
+              ))}
+            </div>
+          </div>
           {fieldError && <p role="alert" className="text-sm text-destructive font-medium">{fieldError}</p>}
         </div>
 

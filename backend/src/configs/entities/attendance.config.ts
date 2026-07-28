@@ -198,43 +198,14 @@ export const ATTENDANCE_QUERY_PARAMS = {
   PERSONAL_ONLY: "personalOnly",
 } as const
 
-/** Weekly Schedule Copilot — attendance pattern insights + template suggest/simulate. */
-export const SCHEDULE_INSIGHTS = {
-  DEFAULT_LOOKBACK_DAYS: 90,
-  MIN_LOOKBACK_DAYS: 7,
-  MAX_LOOKBACK_DAYS: 180,
-  HOTSPOT_LIMIT: 3,
-  LOOKBACK_QUERY_PARAM: "lookbackDays",
-  LATE_RATE_THRESHOLD: 0.1,
-  ABSENT_RATE_THRESHOLD: 0.08,
-  WORK_DAYS: [1, 2, 3, 4, 5] as const,
-  CANDIDATE_LIMIT: 2,
-  RATE_PRECISION: 3,
-  TEMPLATE_BASE_SCORE: 88,
-  LATE_RISK_PENALTY: 25,
-  ABSENCE_RISK_PENALTY: 20,
-  MIN_COVERAGE_SCORE: 40,
-  MAX_COVERAGE_SCORE: 99,
-  MIN_SIMULATION_WEEKS: 1,
-  MAX_SIMULATION_WEEKS: 8,
-  DEFAULT_SIMULATION_WEEKS: 4,
+export const WEEKLY_SCHEDULE_PLANNING = {
   WEEK_END_OFFSET_DAYS: 6,
   DEFAULT_GRACE_PERIOD_MINUTES: 0,
 } as const
+
 export const SCHEDULE_VALIDATION_MESSAGES = {
   WEEK_START_REQUIRED: "weekStart is required",
 } as const
-
-/** Short day labels for insights API (0=CN … 6=T7). */
-export const DAY_OF_WEEK_SHORT_LABELS: Record<number, string> = {
-  0: "CN",
-  1: "T2",
-  2: "T3",
-  3: "T4",
-  4: "T5",
-  5: "T6",
-  6: "T7",
-}
 
 export const DAY_OF_WEEK_FULL_LABELS: Record<number, string> = {
   0: "Chủ Nhật",

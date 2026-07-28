@@ -157,10 +157,10 @@ export function CreatePayslipTemplateForm({
         </Button>
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
           {isReadOnly
-            ? "Chi tiết mẫu bảng lương"
+            ? "Chi tiết mẫu phiếu lương"
             : initialData
-              ? "Cập nhật mẫu bảng lương"
-              : "Tạo mới mẫu bảng lương"}
+              ? "Cập nhật mẫu phiếu lương"
+              : "Tạo mới mẫu phiếu lương"}
         </h1>
       </div>
 
@@ -171,10 +171,10 @@ export function CreatePayslipTemplateForm({
             onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-6"
           >
-            {/* Section 1: Thông tin mẫu bảng lương */}
+            {/* Section 1: Thông tin mẫu phiếu lương */}
             <div className="bg-background border border-border rounded-xl overflow-hidden shadow-none">
               <div className="px-6 py-4 border-b border-border bg-muted/50">
-                <h2 className="font-semibold text-foreground">Thông tin mẫu bảng lương</h2>
+                <h2 className="font-semibold text-foreground">Thông tin mẫu phiếu lương</h2>
               </div>
               <div className="p-6 space-y-6">
                 <FormField
@@ -183,11 +183,11 @@ export function CreatePayslipTemplateForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-foreground">
-                        Tên bảng lương mẫu <span className="text-destructive">*</span>
+                        Tên mẫu phiếu lương <span className="text-destructive">*</span>
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Nhập tên mẫu bảng lương"
+                          placeholder="Nhập tên mẫu phiếu lương"
                           {...field}
                           className="rounded-full border-border shadow-none"
                           disabled={isReadOnly}

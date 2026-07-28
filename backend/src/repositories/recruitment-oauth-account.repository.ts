@@ -84,14 +84,11 @@ export class RecruitmentOAuthAccountRepository {
     })
   }
 
-  delete(userId: string, idOrChannel: string) {
+  delete(userId: string, id: string) {
     return prisma.recruitmentOAuthAccount.deleteMany({
       where: {
         userId,
-        OR: [
-          { id: idOrChannel },
-          { channel: idOrChannel as RecruitmentChannel },
-        ],
+        id,
       },
     })
   }

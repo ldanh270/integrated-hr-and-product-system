@@ -33,6 +33,7 @@ import {
   parseTimeToMinutes,
   shiftFitsAvailabilityDay,
 } from "@/utils/part-time-availability.util.ts"
+import { parseUtcDateOnly } from "@/utils/date.util.ts"
 import { buildAssignedDaySummaries } from "@/utils/part-time-availability/build-assigned-day-summaries.util.ts"
 import { AppError } from "@/utils/error.util.ts"
 
@@ -125,10 +126,14 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
 
     return items.map((item) => {
       const employeeShifts = shiftsByEmployee.get(item.employeeId) ?? []
-      const { summaries, hasAssigned } = buildAssignedDaySummaries(normalized, employeeShifts)
+      const { summaries, slots, hasAssigned } = buildAssignedDaySummaries(
+        normalized,
+        employeeShifts,
+      )
       return {
         ...item,
         assignedDaySummaries: summaries,
+        assignedDaySlots: slots,
         hasAssignedShifts: hasAssigned,
       }
     })
@@ -229,7 +234,9 @@ export class PartTimeAvailabilityService implements IPartTimeAvailabilityService
       const shiftId = await this.resolveWorkingShiftId(startTime, endTime, data.createdById)
       pendingOverrides.push({
         employeeId: availability.employeeId,
-        assignedDate: getDateForWeekDay(weekStart, item.dayOfWeek),
+        assignedDate: item.assignedDate
+          ? parseUtcDateOnly(item.assignedDate)
+          : getDateForWeekDay(weekStart, item.dayOfWeek),
         shiftId,
         createdById: data.createdById,
       })

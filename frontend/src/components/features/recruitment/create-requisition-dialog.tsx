@@ -31,8 +31,10 @@ import {
 import type { CreateRequisitionDto } from "@/lib/api/recruitment.api"
 import { cn } from "@/lib/utils"
 import type { JobRequisition } from "@/types/recruitment.types"
+import type { RecruitmentFormField } from "@/types/recruitment.types"
+import { RecruitmentFormFieldEditor } from "@/components/features/recruitment/recruitment-form-field-editor"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import type { ReactNode } from "react"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -91,6 +93,13 @@ const defaultValues: RequisitionFormValues = {
   targetCloseDate: "",
   approverId: "",
 }
+const defaultCandidateSchema: RecruitmentFormField[] = [
+  { key: "full_name", label: "Họ và tên", type: "short_text", required: true },
+  { key: "email", label: "Email", type: "short_text", required: true },
+  { key: "phone", label: "Số điện thoại", type: "short_text", required: false },
+  { key: "cv_url", label: "Đường dẫn CV", type: "short_text", required: false },
+  { key: "notes", label: "Thông tin bổ sung", type: "paragraph", required: false },
+]
 
 const isEmployeeType = (value: string): value is RequisitionFormValues["employmentType"] =>
   (EMPLOYEE_TYPES as readonly string[]).includes(value)
@@ -106,6 +115,7 @@ export function CreateRequisitionDialog({
   const createRequisition = useCreateRequisition()
   const updateRequisition = useUpdateRequisition()
   const { data: approvers = [], isLoading: isLoadingApprovers } = useRequisitionApprovers()
+  const [candidateSchema, setCandidateSchema] = useState<RecruitmentFormField[]>(defaultCandidateSchema)
   const form = useForm<RequisitionFormValues>({
     resolver: zodResolver(requisitionFormSchema),
     defaultValues,
@@ -120,6 +130,11 @@ export function CreateRequisitionDialog({
   useEffect(() => {
     if (open) {
       if (requisition) {
+        setCandidateSchema(
+          requisition.candidateFields?.length
+            ? requisition.candidateFields.map(({ key, label, type, required }) => ({ key, label, type, required }))
+            : defaultCandidateSchema,
+        )
         form.reset({
           title: requisition.title,
           department: requisition.department ?? "",
@@ -144,6 +159,7 @@ export function CreateRequisitionDialog({
         })
       } else {
         form.reset(defaultValues)
+        setCandidateSchema(defaultCandidateSchema.map((field) => ({ ...field })))
       }
     }
   }, [form, open, requisition])
@@ -154,6 +170,7 @@ export function CreateRequisitionDialog({
     const parsed = requisitionFormSchema.parse(values)
     const payload: CreateRequisitionDto = {
       ...parsed,
+      candidateSchema,
       targetHireDate: parsed.targetHireDate
         ? new Date(parsed.targetHireDate).toISOString()
         : undefined,
@@ -321,6 +338,9 @@ export function CreateRequisitionDialog({
                 {...form.register("reason")}
               />
             </Field>
+          </div>
+          <div className="border-t border-border pt-5">
+            <RecruitmentFormFieldEditor fields={candidateSchema} onChange={setCandidateSchema} />
           </div>
 
           <DialogFooter>

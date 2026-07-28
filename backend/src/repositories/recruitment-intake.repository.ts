@@ -1,10 +1,10 @@
 import { prisma } from "@/libs/database"
 import type { ImportRecruitmentIntakeInput } from "@/schemas/recruitment.schema"
-import { TERMINAL_APPLICATION_STATUSES } from "@/configs/entities/recruitment.config"
 import type {
   ConnectorImportInput,
   ConnectorIntakeRow,
 } from "@/types/recruitment-connector.types"
+import type { Prisma } from "@prisma/client"
 
 export interface IntakeRowError {
   row: number
@@ -25,6 +25,15 @@ export class RecruitmentIntakeRepository {
       let skipped = 0
       const errors: IntakeRowError[] = []
       const isConnectorImport = "connectorErrors" in input
+      const defaultStage = await tx.recruitmentPipelineStage.findFirst({
+        where: { postingId: input.postingId, isDefault: true },
+        orderBy: { position: "asc" },
+        select: { id: true },
+      })
+
+      if (!defaultStage) {
+        throw new Error("Bài đăng chưa có giai đoạn mặc định")
+      }
 
       if (isConnectorImport) {
         for (const connectorError of input.connectorErrors) {
@@ -35,11 +44,14 @@ export class RecruitmentIntakeRepository {
                 externalResponseId: connectorError.sourceRef,
               },
             },
-            select: { id: true },
+            select: { id: true, applicationId: true },
           })
           if (imported) {
-            skipped += 1
-            continue
+            if (imported.applicationId) {
+              skipped += 1
+              continue
+            }
+            await tx.recruitmentConnectorResponse.delete({ where: { id: imported.id } })
           }
           await tx.recruitmentConnectorResponse.create({
             data: {
@@ -54,12 +66,12 @@ export class RecruitmentIntakeRepository {
         }
       }
 
-      for (const [index, row] of input.rows.entries()) {
+      for (const row of input.rows) {
         const email = row.email.trim().toLowerCase()
         const externalResponseId = "externalResponseId" in row
           ? (row as ConnectorIntakeRow).externalResponseId
           : undefined
-        if (externalResponseId && input.postingId) {
+        if (externalResponseId) {
           const imported = await tx.recruitmentConnectorResponse.findUnique({
             where: {
               postingId_externalResponseId: {
@@ -67,59 +79,27 @@ export class RecruitmentIntakeRepository {
                 externalResponseId,
               },
             },
-            select: { id: true },
+            select: { id: true, applicationId: true },
           })
           if (imported) {
-            skipped += 1
-            continue
+            if (imported.applicationId) {
+              skipped += 1
+              continue
+            }
+            await tx.recruitmentConnectorResponse.delete({ where: { id: imported.id } })
           }
         }
-        let candidate = await tx.candidate.findUnique({ where: { email } })
-        if (candidate) {
-          matched += 1
-        } else {
-          candidate = await tx.candidate.create({
-            data: {
-              fullName: row.fullName.trim(),
-              email,
-              phone: row.phone,
-              cvUrl: row.cvUrl,
-              notes: row.notes,
-              source: input.source,
-            },
-          })
-          candidatesCreated += 1
-        }
-
-        const duplicate = await tx.recruitmentApplication.findFirst({
-          where: {
-            requisitionId: input.requisitionId,
-            candidateId: candidate.id,
-            status: { notIn: [...TERMINAL_APPLICATION_STATUSES] },
-          },
-          select: { id: true },
-        })
-        if (duplicate) {
-          const duplicateError = {
-            row: index + 1,
+        const candidate = await tx.candidate.create({
+          data: {
+            fullName: row.fullName.trim(),
             email,
-            code: "DUPLICATE_APPLICATION",
-            message: "Ứng viên đã có lượt ứng tuyển cho yêu cầu này",
-          }
-          errors.push(duplicateError)
-          if (externalResponseId && input.postingId) {
-            await tx.recruitmentConnectorResponse.create({
-              data: {
-                postingId: input.postingId,
-                externalResponseId,
-                errorCode: duplicateError.code,
-                errorMessage: duplicateError.message,
-                responseData: (row as ConnectorIntakeRow).responseData,
-              },
-            })
-          }
-          continue
-        }
+            phone: row.phone,
+            cvUrl: row.cvUrl,
+            notes: row.notes,
+            source: input.source,
+          },
+        })
+        candidatesCreated += 1
 
         const application = await tx.recruitmentApplication.create({
           data: {
@@ -128,9 +108,21 @@ export class RecruitmentIntakeRepository {
             postingId: input.postingId,
             source: input.source,
             sourceRef: postingSourceRef ?? row.sourceRef,
+            pipelineStageId: defaultStage.id,
           },
         })
-        if (externalResponseId && input.postingId) {
+        if ("responseData" in row) {
+          await Promise.all(
+            Object.entries((row as ConnectorIntakeRow).responseData as Record<string, string>)
+              .filter(([key, value]) => Boolean(key) && value.trim().length > 0)
+              .map(([metaKey, value]) => tx.candidateMeta.upsert({
+                where: { candidateId_metaKey: { candidateId: candidate.id, metaKey } },
+                create: { candidateId: candidate.id, metaKey, value: value as Prisma.InputJsonValue },
+                update: { value: value as Prisma.InputJsonValue },
+              })),
+          )
+        }
+        if (externalResponseId) {
           await tx.recruitmentConnectorResponse.create({
             data: {
               postingId: input.postingId,

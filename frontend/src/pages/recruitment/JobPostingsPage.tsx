@@ -1,10 +1,9 @@
 import { useMemo, useState } from "react"
 import { ExternalLink, Eye, FileSpreadsheet, Plus, RefreshCw } from "lucide-react"
-import { useSearchParams } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { AppPagination, DataTableToolbar, PageCard, PageHeader } from "@/components/common"
 import { StatusPill } from "@/components/common/status-pill"
 import { CreateJobPostingDialog } from "@/components/features/recruitment/create-job-posting-dialog"
-import { ViewJobPostingDialog } from "@/components/features/recruitment/view-job-posting-dialog"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -24,6 +23,7 @@ const TAB_DEFINITIONS = [
 ]
 
 export default function JobPostingsPage() {
+  const navigate = useNavigate()
   const [params] = useSearchParams()
   const [keyword, setKeyword] = useState("")
   const [activeTab, setActiveTab] = useState("all")
@@ -31,12 +31,10 @@ export default function JobPostingsPage() {
   const [pageSize, setPageSize] = useState(20)
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [initialRequisitionId, setInitialRequisitionId] = useState<string | undefined>(params.get("reqId") ?? undefined)
-  const [selectedPosting, setSelectedPosting] = useState<JobPosting | null>(null)
-  const [viewPostingOpen, setViewPostingOpen] = useState(false)
 
-  const handleViewDetails = (posting: JobPosting) => {
-    setSelectedPosting(posting)
-    setViewPostingOpen(true)
+  const handleOpenWorkspace = (posting: JobPosting) => {
+    sessionStorage.setItem("activeJobPostingId", posting.id)
+    navigate(`/recruitment/job-postings/${posting.id}/overview`)
   }
 
   const { hasPermission } = usePermission()
@@ -77,7 +75,7 @@ export default function JobPostingsPage() {
   return (
     <div className="container flex flex-col gap-6 px-3 py-4 sm:px-6 sm:py-6">
       <PageHeader
-        title="Đăng tuyển"
+        title="Bài đăng tuyển dụng"
         description="Tạo và quản lý bài đăng tuyển dụng trên các kênh (Google Form, LinkedIn, Facebook, v.v.)"
         actions={
           hasPermission("recruitment.posting.manage") ? (
@@ -162,7 +160,15 @@ export default function JobPostingsPage() {
                   return (
                     <TableRow
                       key={posting.id}
-                      onClick={() => handleViewDetails(posting)}
+                      tabIndex={0}
+                      aria-label={`Mở bài đăng ${posting.requisition?.title ?? posting.sourceCode}`}
+                      onClick={() => handleOpenWorkspace(posting)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault()
+                          handleOpenWorkspace(posting)
+                        }
+                      }}
                       className="cursor-pointer transition-colors duration-100 hover:bg-muted/25"
                     >
                       <TableCell className="px-4 py-3">
@@ -187,7 +193,7 @@ export default function JobPostingsPage() {
                         <ConnectorStatus posting={posting} />
                       </TableCell>
                       <TableCell className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                        <PostingActions posting={posting} onViewDetails={() => handleViewDetails(posting)} />
+                        <PostingActions posting={posting} onOpenWorkspace={() => handleOpenWorkspace(posting)} />
                       </TableCell>
                     </TableRow>
                   )
@@ -212,11 +218,6 @@ export default function JobPostingsPage() {
         initialRequisitionId={initialRequisitionId}
         jobRequisitions={requisitions}
       />
-      <ViewJobPostingDialog
-        open={viewPostingOpen}
-        onOpenChange={setViewPostingOpen}
-        posting={selectedPosting}
-      />
     </div>
   )
 }
@@ -233,7 +234,7 @@ function ConnectorStatus({ posting }: { posting: JobPosting }) {
   return <StatusPill label="Chưa cấu hình" variant="warning" />
 }
 
-function PostingActions({ posting, onViewDetails }: { posting: JobPosting; onViewDetails: () => void }) {
+function PostingActions({ posting, onOpenWorkspace }: { posting: JobPosting; onOpenWorkspace: () => void }) {
   const publish = usePublishJobPosting()
   const sync = useSyncJobPosting()
   const { hasPermission } = usePermission()
@@ -249,7 +250,8 @@ function PostingActions({ posting, onViewDetails }: { posting: JobPosting; onVie
           <Button
             size="sm"
             variant="ghost"
-            onClick={onViewDetails}
+            aria-label={`Mở workspace ${posting.requisition?.title ?? posting.sourceCode}`}
+            onClick={onOpenWorkspace}
             className="rounded-full h-8 w-8 p-0 hover:bg-muted"
           >
             <Eye className="h-3.5 w-3.5" />
