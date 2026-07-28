@@ -836,12 +836,15 @@ model SalaryVariable {
 }
 
 model PayrollSettings {
-  id            String   @id @default("GLOBAL")
-  triggerDay    Int
-  triggerHour   Int      @default(0)
-  triggerMinute Int      @default(0)
-  updatedById   String
-  updatedBy     Employee @relation(fields: [updatedById], references: [id], onDelete: Restrict)
+  id             String   @id @default("GLOBAL")
+  triggerDay     Int
+  triggerHour    Int      @default(0)
+  triggerMinute  Int      @default(0)
+  approvalDay    Int      @default(10)
+  approvalHour   Int      @default(0)
+  approvalMinute Int      @default(0)
+  updatedById    String
+  updatedBy      Employee @relation(fields: [updatedById], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

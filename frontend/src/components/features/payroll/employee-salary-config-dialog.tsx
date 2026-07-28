@@ -44,7 +44,7 @@ import { toast } from "sonner"
 import { z } from "zod"
 
 const formSchema = z.object({
-  templateId: z.string().min(1, "Vui lòng chọn mẫu bảng lương"),
+  templateId: z.string().min(1, "Vui lòng chọn mẫu phiếu lương"),
   baseSalary: z.number().min(0, "Lương cơ bản không được âm"),
   effectiveFrom: z.string().min(1, "Vui lòng nhập ngày áp dụng"),
   note: z.string().optional(),
@@ -167,7 +167,7 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
               {canReadConfig && (
                 <>
                   <TabsTrigger value="config" className="rounded-md gap-1.5 py-1.5 px-4 text-xs">
-                    <Save className="h-3.5 w-3.5" /> Gán mẫu lương
+                    <Save className="h-3.5 w-3.5" /> Gán mẫu phiếu lương
                   </TabsTrigger>
                   <TabsTrigger value="history" className="rounded-md gap-1.5 py-1.5 px-4 text-xs">
                     <History className="h-3.5 w-3.5" /> Lịch sử thiết lập
@@ -196,7 +196,7 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
                         render={({ field }) => (
                           <FormItem className="col-span-2 bg-muted/20 p-4 rounded-xl border border-border/50">
                             <FormLabel className="text-sm font-semibold text-foreground">
-                              Mẫu bảng lương áp dụng
+                              Mẫu phiếu lương áp dụng
                             </FormLabel>
                             <FormDescription className="text-xs mb-2">
                               Nhân sự sẽ được tính lương tự động dựa trên các thành phần
@@ -205,7 +205,7 @@ export default function EmployeeSalaryConfigDialog({ open, onOpenChange, employe
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
                                 <SelectTrigger className="rounded-md h-10 bg-background">
-                                  <SelectValue placeholder="-- Chọn mẫu bảng lương --" />
+                                  <SelectValue placeholder="-- Chọn mẫu phiếu lương --" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>

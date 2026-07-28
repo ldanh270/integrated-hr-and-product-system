@@ -1,9 +1,9 @@
 export const PAYROLL_MESSAGES = {
   SUCCESS: {
     UPDATE_SALARY_CONFIG: "Cập nhật cấu hình lương thành công",
-    CREATE_PAYSLIP_TEMPLATE: "Tạo mẫu bảng lương thành công.",
-    UPDATE_PAYSLIP_TEMPLATE: "Cập nhật mẫu bảng lương thành công.",
-    DELETE_PAYSLIP_TEMPLATE: "Xoá mẫu bảng lương thành công",
+    CREATE_PAYSLIP_TEMPLATE: "Tạo mẫu phiếu lương thành công.",
+    UPDATE_PAYSLIP_TEMPLATE: "Cập nhật mẫu phiếu lương thành công.",
+    DELETE_PAYSLIP_TEMPLATE: "Xoá mẫu phiếu lương thành công",
     UPDATE_PAYROLL_CYCLE: "Cập nhật cấu hình thành công",
     GENERATE_PAYROLL: "Tạo bảng lương thành công.",
     APPROVE_PAYROLL: "Duyệt bảng lương thành công.",
@@ -16,8 +16,8 @@ export const PAYROLL_MESSAGES = {
   },
   ERRORS: {
     UPDATE_SALARY_CONFIG: "Có lỗi xảy ra khi cập nhật cấu hình lương",
-    SAVE_PAYSLIP_TEMPLATE: "Lỗi khi lưu mẫu bảng lương. Vui lòng thử lại.",
-    DELETE_PAYSLIP_TEMPLATE: "Lỗi khi xoá mẫu bảng lương",
+    SAVE_PAYSLIP_TEMPLATE: "Lỗi khi lưu mẫu phiếu lương. Vui lòng thử lại.",
+    DELETE_PAYSLIP_TEMPLATE: "Lỗi khi xoá mẫu phiếu lương",
     UPDATE_PAYROLL_CYCLE: "Có lỗi xảy ra khi cập nhật cấu hình",
     GENERATE_PAYROLL: "Lỗi khi tạo bảng lương",
     APPROVE_PAYROLL: "Lỗi khi duyệt bảng lương",

@@ -46,6 +46,10 @@ function getBusinessDates(): Date[] {
   return dates
 }
 
+function getShiftDurationMinutes(startTime: number, endTime: number): number {
+  return endTime >= startTime ? endTime - startTime : endTime + ATTENDANCE_TIME_RULES.MINUTES_PER_DAY - startTime
+}
+
 /** Replaces only script-owned demo records while preserving real attendance. */
 async function seedDemoWeek() {
   const [employees, fallbackShift] = await Promise.all([
@@ -158,7 +162,8 @@ async function seedDemoWeek() {
         lateMinutes: isLate ? variance : 0,
         totalWorkMinutes: isAbsent
           ? 0
-          : employeeShift.shift.endTime - employeeShift.shift.startTime - Math.max(0, variance),
+          : getShiftDurationMinutes(employeeShift.shift.startTime, employeeShift.shift.endTime) -
+            Math.max(0, variance),
         note: DEMO_NOTE,
       }
     }),

@@ -1,4 +1,5 @@
 import { AppPagination, DataTableToolbar, PageCard, PageHeader } from "@/components/common"
+import { BulkAssignPayslipTemplateDialog } from "@/components/features/payroll/bulk-assign-payslip-template-dialog"
 import { CreatePayslipTemplateForm } from "@/components/payroll/CreatePayslipTemplateForm"
 import { Button } from "@/components/ui/button"
 import {
@@ -39,6 +40,7 @@ export default function PayslipTemplates() {
   const [view, setView] = useState<"list" | "create" | "edit" | "view">("list")
   const [selectedTemplate, setSelectedTemplate] = useState<IPayslipTemplate | null>(null)
   const [templateToDelete, setTemplateToDelete] = useState<IPayslipTemplate | null>(null)
+  const [templateToAssign, setTemplateToAssign] = useState<IPayslipTemplate | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
@@ -106,11 +108,11 @@ export default function PayslipTemplates() {
   return (
     <div className="container px-3 sm:px-6 py-4 sm:py-6">
       <PageHeader
-        title="Mẫu bảng lương"
-        description="Quản lý và cấu hình các mẫu bảng lương mẫu cho từng nhóm nhân viên."
+        title="Mẫu phiếu lương"
+        description="Quản lý mẫu phiếu lương và gán nhanh cho nhiều nhân viên."
         actions={
           <Button onClick={handleOpenCreate} className="gap-2">
-            <Plus size={16} /> Tạo mới mẫu bảng lương
+            <Plus size={16} /> Tạo mới mẫu phiếu lương
           </Button>
         }
       />
@@ -145,7 +147,7 @@ export default function PayslipTemplates() {
                   #
                 </TableHead>
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
-                  Tên bảng lương mẫu
+                  Tên mẫu phiếu lương
                 </TableHead>
                 <TableHead className="hidden sm:table-cell px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
                   Ngày tạo
@@ -172,7 +174,7 @@ export default function PayslipTemplates() {
                     colSpan={6}
                     className="text-center py-8 text-muted-foreground border-dashed"
                   >
-                    Không tìm thấy mẫu bảng lương nào.
+                    Không tìm thấy mẫu phiếu lương nào.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -183,7 +185,9 @@ export default function PayslipTemplates() {
                     </TableCell>
                     <TableCell className="px-4 py-3 text-foreground font-medium whitespace-nowrap">
                       <button
-                        onClick={() => handleOpenView(template)}
+                        onClick={() => {
+                          handleOpenView(template)
+                        }}
                         className="hover:text-primary hover:underline focus:outline-none"
                       >
                         {template.name}
@@ -208,12 +212,25 @@ export default function PayslipTemplates() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleOpenEdit(template)}>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setTemplateToAssign(template)
+                            }}
+                          >
+                            Gán cho nhân viên
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              handleOpenEdit(template)
+                            }}
+                          >
                             Chỉnh sửa
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                            onClick={() => setTemplateToDelete(template)}
+                            onClick={() => {
+                              setTemplateToDelete(template)
+                            }}
                           >
                             Xoá
                           </DropdownMenuItem>
@@ -242,12 +259,17 @@ export default function PayslipTemplates() {
         )}
       </PageCard>
 
-      <Dialog open={!!templateToDelete} onOpenChange={() => setTemplateToDelete(null)}>
+      <Dialog
+        open={!!templateToDelete}
+        onOpenChange={() => {
+          setTemplateToDelete(null)
+        }}
+      >
         <DialogContent className="sm:max-w-106.25 rounded-xl border border-border">
           <DialogHeader>
             <DialogTitle className="text-foreground text-xl">Xác nhận xoá</DialogTitle>
             <DialogDescription className="text-muted-foreground mt-4 text-base">
-              Bạn có chắc chắn muốn xoá mẫu bảng lương{" "}
+              Bạn có chắc chắn muốn xoá mẫu phiếu lương{" "}
               <span className="font-semibold text-foreground">{templateToDelete?.name}</span>? Hành
               động này không thể hoàn tác.
             </DialogDescription>
@@ -256,7 +278,9 @@ export default function PayslipTemplates() {
             <Button
               variant="outline"
               className="rounded-full border-border hover:bg-accent px-6 shadow-none"
-              onClick={() => setTemplateToDelete(null)}
+              onClick={() => {
+                setTemplateToDelete(null)
+              }}
               disabled={isDeleting}
             >
               Huỷ bỏ
@@ -272,6 +296,14 @@ export default function PayslipTemplates() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BulkAssignPayslipTemplateDialog
+        template={templateToAssign}
+        open={!!templateToAssign}
+        onOpenChange={(open) => {
+          if (!open) setTemplateToAssign(null)
+        }}
+      />
     </div>
   )
 }

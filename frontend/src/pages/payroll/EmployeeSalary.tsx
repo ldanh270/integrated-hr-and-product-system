@@ -66,7 +66,7 @@ export default function EmployeeSalary() {
     <div className="container px-3 sm:px-6 py-4 sm:py-6">
       <PageHeader
         title="Lương nhân sự"
-        description="Quản lý cấu hình mức lương cơ bản và gán mẫu bảng lương cho nhân viên."
+        description="Quản lý cấu hình mức lương cơ bản và mẫu phiếu lương của nhân viên."
       />
 
       <PageCard className="overflow-hidden p-0" noBorder={false}>
@@ -96,7 +96,7 @@ export default function EmployeeSalary() {
                   Lương cơ bản
                 </TableHead>
                 <TableHead className="px-4 py-3 font-medium text-xs text-muted-foreground uppercase whitespace-nowrap">
-                  Mẫu bảng lương
+                  Mẫu phiếu lương
                 </TableHead>
                 <TableHead className="min-w-12.5 px-4 py-3"></TableHead>
               </TableRow>
@@ -242,7 +242,7 @@ function EmployeeRow({ emp, index, onConfigure, onViewHistory }: RowProps) {
                 })
               }
             >
-              Gán mẫu lương
+              Gán mẫu phiếu lương
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() =>

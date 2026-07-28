@@ -24,10 +24,19 @@ const attendanceRepo = new PrismaAttendanceRepository(prisma)
 // PT payroll lines come from approved Spent Time × project member hourlyRate, not attendance.
 const spentTimeRepo = new PrismaSpentTimeRepository(prisma)
 const employeeRepo = new PrismaEmployeeRepository(prisma)
+const DEFAULT_PAYROLL_SETTINGS = {
+  triggerDay: 1,
+  triggerHour: 0,
+  triggerMinute: 0,
+  approvalDay: 10,
+  approvalHour: 0,
+  approvalMinute: 0,
+}
 const settingsRepo = {
   findGlobal: async () => {
     const s = await prisma.payrollSettings.findUnique({ where: { id: "GLOBAL" } })
-    return s || { triggerDay: 1, triggerHour: 0, triggerMinute: 0 }
+    // Routes and cron share the same defaults until the GLOBAL settings row exists.
+    return s || DEFAULT_PAYROLL_SETTINGS
   },
 }
 
@@ -47,6 +56,7 @@ payrollRoutes.use(authenticate)
 
 // Self / Employee routes
 payrollRoutes.get("/my/payslips", controller.getMyPayslips)
+payrollRoutes.post("/my/payslips/:payslipId/feedback", controller.submitMyPayslipFeedback)
 
 // HR / GM / Admin routes — require payroll.read as baseline
 payrollRoutes.use(requirePermission("payroll.read"))
@@ -58,7 +68,7 @@ payrollRoutes.get(
   async (req, res, next) => {
     try {
       const s = await prisma.payrollSettings.findUnique({ where: { id: "GLOBAL" } })
-      res.json({ data: s || { triggerDay: 1, triggerHour: 0, triggerMinute: 0 } })
+      res.json({ data: s || DEFAULT_PAYROLL_SETTINGS })
     } catch (error) {
       next(error)
     }
@@ -70,14 +80,51 @@ payrollRoutes.put(
   requirePermission("payroll.update"),
   async (req, res, next) => {
     try {
-      const { triggerDay, triggerHour, triggerMinute } = req.body
+      const { triggerDay, triggerHour, triggerMinute, approvalDay, approvalHour, approvalMinute } = req.body
       const updatedById = (req as any).user?.empId
       if (!updatedById)
         throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, ErrorLayer.UNKNOWN)
 
-      if (triggerDay !== undefined && (Number(triggerDay) < 1 || Number(triggerDay) > 28)) {
+      const validateDay = (value: unknown, fieldName: string) => {
+        if (value !== undefined && (Number(value) < 1 || Number(value) > 28)) {
+          throw new AppError(
+            `${fieldName} must be between 1 and 28`,
+            HttpStatusCode.BAD_REQUEST,
+            ErrorLayer.VALIDATION,
+          )
+        }
+      }
+
+      validateDay(triggerDay, "Trigger day")
+      validateDay(approvalDay, "Approval day")
+
+      const validateTime = (value: unknown, max: number, fieldName: string) => {
+        if (value !== undefined && (Number(value) < 0 || Number(value) > max)) {
+          throw new AppError(
+            `${fieldName} is invalid`,
+            HttpStatusCode.BAD_REQUEST,
+            ErrorLayer.VALIDATION,
+          )
+        }
+      }
+
+      validateTime(triggerHour, 23, "Trigger hour")
+      validateTime(approvalHour, 23, "Approval hour")
+      validateTime(triggerMinute, 59, "Trigger minute")
+      validateTime(approvalMinute, 59, "Approval minute")
+
+      if (triggerDay === undefined || approvalDay === undefined) {
         throw new AppError(
-          "Trigger day must be between 1 and 28",
+          "Payroll creation and approval days are required",
+          HttpStatusCode.BAD_REQUEST,
+          ErrorLayer.VALIDATION,
+        )
+      }
+
+      // Approval must happen after preview/generation so employees still have a feedback window.
+      if (Number(approvalDay) < Number(triggerDay)) {
+        throw new AppError(
+          "Approval day must be greater than or equal to payroll creation day",
           HttpStatusCode.BAD_REQUEST,
           ErrorLayer.VALIDATION,
         )
@@ -90,12 +137,18 @@ payrollRoutes.put(
           triggerDay: Number(triggerDay),
           triggerHour: triggerHour !== undefined ? Number(triggerHour) : 0,
           triggerMinute: triggerMinute !== undefined ? Number(triggerMinute) : 0,
+          approvalDay: Number(approvalDay),
+          approvalHour: approvalHour !== undefined ? Number(approvalHour) : 0,
+          approvalMinute: approvalMinute !== undefined ? Number(approvalMinute) : 0,
           updatedById,
         },
         update: {
           triggerDay: Number(triggerDay),
           triggerHour: triggerHour !== undefined ? Number(triggerHour) : undefined,
           triggerMinute: triggerMinute !== undefined ? Number(triggerMinute) : undefined,
+          approvalDay: Number(approvalDay),
+          approvalHour: approvalHour !== undefined ? Number(approvalHour) : undefined,
+          approvalMinute: approvalMinute !== undefined ? Number(approvalMinute) : undefined,
           updatedById,
         },
       })

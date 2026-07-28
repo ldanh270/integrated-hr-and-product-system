@@ -156,6 +156,7 @@ describe('PayrollService', () => {
     mockSettingsRepo = {
       findGlobal: jest.fn(),
     };
+    mockSettingsRepo.findGlobal.mockResolvedValue({ triggerDay: 25 });
     mockPrismaClient = {
       salaryVariable: { findMany: jest.fn() },
       application: { findMany: jest.fn() },
@@ -469,15 +470,20 @@ describe('PayrollService', () => {
       const result = await service.getMyPayslips('emp-1');
 
       // Assert
-      expect(result).toEqual([
-        {
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual(
+        expect.objectContaining({
           id: 'slip-1',
           payroll: { periodMonth: 10, periodYear: 2023, status: 'APPROVED' },
           periodMonth: 10,
           periodYear: 2023,
           status: 'APPROVED',
-        },
-      ]);
+          receiptStatus: 'not_received',
+          isPreview: false,
+          canFeedback: true,
+        }),
+      );
+      expect(result[0].dailyWorkLogs).toHaveLength(31);
     });
 
     it('UTCID02 - should return empty list if employee has no payslips', async () => {

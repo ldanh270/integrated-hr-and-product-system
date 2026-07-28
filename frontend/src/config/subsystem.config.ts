@@ -231,7 +231,7 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         permissions: [PAYROLL_SUBSYSTEM_PERMISSION],
       },
       {
-        name: "Mẫu bảng lương",
+        name: "Mẫu phiếu lương",
         path: ROUTES.PAYROLL.PAYSLIP_TEMPLATES,
         icon: FileText,
         permissions: [PAYROLL_SUBSYSTEM_PERMISSION],

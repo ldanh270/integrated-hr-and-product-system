@@ -16,6 +16,11 @@ const controller = new EmployeeSalaryConfigController(service)
 employeeSalaryConfigRoutes.use(authenticate)
 employeeSalaryConfigRoutes.use(requirePermission("payroll.read"))
 
+employeeSalaryConfigRoutes.post(
+  "/salary-config/bulk-assign",
+  requirePermission("payroll.create"),
+  controller.bulkAssignTemplate,
+)
 employeeSalaryConfigRoutes.get("/:id/salary-config", controller.getActiveConfig)
 employeeSalaryConfigRoutes.get("/:id/salary-config/history", controller.getConfigHistory)
 employeeSalaryConfigRoutes.post("/:id/salary-config", requirePermission("payroll.create"), controller.assignConfig)

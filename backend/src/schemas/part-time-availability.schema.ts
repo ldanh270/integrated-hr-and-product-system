@@ -14,6 +14,9 @@ import { z } from "zod"
 const timeStringSchema = z
   .string()
   .regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, "Format must be HH:mm")
+const dateOnlyStringSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Format must be YYYY-MM-DD")
 
 const slotSchema = z
   .object({
@@ -85,6 +88,7 @@ export const assignPartTimeShiftsSchema = z
         z
           .object({
             dayOfWeek: z.number().int().min(0).max(6),
+            assignedDate: dateOnlyStringSchema.optional(),
             startTime: timeStringSchema.nullable(),
             endTime: timeStringSchema.nullable(),
           })

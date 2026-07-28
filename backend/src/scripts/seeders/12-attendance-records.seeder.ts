@@ -5,6 +5,10 @@ import { registry } from "@/scripts/seeders/seeder.registry.ts"
 
 import { faker } from "@faker-js/faker"
 
+function getShiftDurationMinutes(startTime: number, endTime: number): number {
+  return endTime >= startTime ? endTime - startTime : endTime + 24 * 60 - startTime
+}
+
 export class AttendanceRecordsSeeder implements ISeeder {
   readonly name = "AttendanceRecords"
   readonly order = 12
@@ -43,6 +47,9 @@ export class AttendanceRecordsSeeder implements ISeeder {
       )
 
       const checkOutDate = new Date(shift.assignedDate)
+      if (workingShift.endTime < workingShift.startTime) {
+        checkOutDate.setDate(checkOutDate.getDate() + 1)
+      }
       checkOutDate.setHours(Math.floor(workingShift.endTime / 60), workingShift.endTime % 60, 0, 0)
 
       let checkInAt = null
@@ -65,7 +72,7 @@ export class AttendanceRecordsSeeder implements ISeeder {
         checkOutDate.setMinutes(checkOutDate.getMinutes() + faker.number.int({ min: 0, max: 30 }))
         checkOutAt = checkOutDate
 
-        totalWorkMinutes = workingShift.endTime - workingShift.startTime - lateMinutes
+        totalWorkMinutes = getShiftDurationMinutes(workingShift.startTime, workingShift.endTime) - lateMinutes
       }
 
       recordsToCreate.push({

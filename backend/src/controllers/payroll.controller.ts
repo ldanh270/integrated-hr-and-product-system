@@ -13,6 +13,7 @@ export class PayrollController {
     this.rejectPayroll = this.rejectPayroll.bind(this)
     this.getPayslip = this.getPayslip.bind(this)
     this.getMyPayslips = this.getMyPayslips.bind(this)
+    this.submitMyPayslipFeedback = this.submitMyPayslipFeedback.bind(this)
   }
 
   /**
@@ -147,6 +148,24 @@ export class PayrollController {
       next(error)
     }
   }
+
+  async submitMyPayslipFeedback(req: Request, res: Response, next: NextFunction) {
+    try {
+      const employeeId = (req as AuthenticatedRequest).user.empId
+      const payslipId = req.params.payslipId as string
+      const feedback = await this.service.submitMyPayslipFeedback(employeeId, {
+        payslipId,
+        date: String(req.body.date ?? ""),
+        reason: String(req.body.reason ?? ""),
+        checkInAt: req.body.checkInAt ?? null,
+        checkOutAt: req.body.checkOutAt ?? null,
+      })
+      res.status(HttpStatusCode.CREATED).json({ data: feedback })
+    } catch (error) {
+      next(error)
+    }
+  }
+
   /**
    * Handle the request to retrieve the payslip history for an employee.
    *

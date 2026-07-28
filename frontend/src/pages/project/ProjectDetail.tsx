@@ -28,7 +28,6 @@ import { ProjectIssuesTab } from "./components/project-issues-tab"
 import { ProjectKanbanTab } from "./components/project-kanban-tab"
 import { ProjectActivityTab } from "./components/project-activity-tab"
 import { ProjectGanttTab } from "./components/project-gantt-tab"
-import { ProjectSpentTimeTab } from "./components/project-spent-time-tab"
 import { ProjectPositionRules } from "./components/project-position-rules"
 import { ProjectTaskGeneratorModal } from "./components/project-task-generator-modal"
 import type { ProjectMember } from "@/types/project.types"
@@ -48,7 +47,6 @@ const PROJECT_TABS = {
   ISSUES: "issues",
   KANBAN: "kanban",
   ACTIVITY: "activity",
-  SPENT_TIME: "spent-time",
   GANTT: "gantt",
   RULES: "rules",
 } as const
@@ -321,12 +319,6 @@ export default function ProjectDetail() {
             Hoạt động (Activity)
           </TabsTrigger>
           <TabsTrigger
-            value={PROJECT_TABS.SPENT_TIME}
-            className="rounded-full px-5 py-2 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-          >
-            Giờ làm việc (Spent Time)
-          </TabsTrigger>
-          <TabsTrigger
             value={PROJECT_TABS.GANTT}
             className="rounded-full px-5 py-2 text-xs font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
           >
@@ -376,16 +368,7 @@ export default function ProjectDetail() {
           />
         </TabsContent>
 
-        {/* SPENT TIME TAB */}
-        <TabsContent value={PROJECT_TABS.SPENT_TIME}>
-          {/* Lead approval queue — only approved logs flow into PT payroll */}
-          <ProjectSpentTimeTab
-            projectId={projectId}
-            spentTimes={spentTimes}
-            isLoading={isLoadingSpent}
-            isLeader={isLeader}
-          />
-        </TabsContent>
+
 
         {/* ISSUES TAB */}
         <TabsContent value={PROJECT_TABS.ISSUES}>
