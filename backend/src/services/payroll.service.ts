@@ -149,122 +149,6 @@ export class PayrollService implements IPayrollService {
         endDate: periodEnd.toISOString(),
       })
 
-      // Calculate summary
-      const attendance = {
-        workingDays: 0,
-        absentDays: 0,
-        overtimeMinutes: 0,
-        lateMinutes: 0,
-        earlyLeaveMinutes: 0,
-        totalWorkMinutes: 0,
-        holidayDays: 0,
-      }
-      attendanceRecords.forEach((record) => {
-        if (record.status === ATTENDANCE_STATUS.ON_TIME || record.status === ATTENDANCE_STATUS.LATE)
-          attendance.workingDays += 1
-        if (record.status === ATTENDANCE_STATUS.ABSENT) {
-          if (record.realShift?.isPaidLeave) {
-            attendance.workingDays += 1
-          } else {
-            attendance.absentDays += 1
-          }
-        }
-        if (record.status === ATTENDANCE_STATUS.OVERTIME) attendance.workingDays += 1
-        if (record.status === (EMPLOYEE_SHIFT_STATUS.HOLIDAY_PENDING as string))
-          attendance.holidayDays += 1
-
-        attendance.overtimeMinutes += record.overtimeMinutes || 0
-        attendance.lateMinutes += record.lateMinutes || 0
-        attendance.earlyLeaveMinutes += record.earlyLeaveMinutes || 0
-        attendance.totalWorkMinutes += this.resolveRecordWorkMinutes(record)
-      })
-
-      // Use pre-fetched applications to prevent N+1
-      const approvedApps = appsByEmployeeId.get(employee.id) ?? []
-
-      let excusedLateMinutes = 0
-      let excusedEarlyMinutes = 0
-
-      for (const app of approvedApps) {
-        if (app.type === "late_early" && app.lateEarlyDetail) {
-          if (app.lateEarlyDetail.isLate) {
-            excusedLateMinutes += app.lateEarlyDetail.durationMinutes
-          } else {
-            excusedEarlyMinutes += app.lateEarlyDetail.durationMinutes
-          }
-        }
-      }
-
-      attendance.lateMinutes = Math.max(0, attendance.lateMinutes - excusedLateMinutes)
-      attendance.earlyLeaveMinutes = Math.max(0, attendance.earlyLeaveMinutes - excusedEarlyMinutes)
-
-      // Build context
-      const context: Record<string, unknown> = {
-        baseSalary: Number(config.baseSalary),
-        // Formula denominator is fixed 22; actualWorkingDays carries attendance-based pro-rating.
-        workingDays: 22,
-        actualWorkingDays: attendance.workingDays,
-        absentDays: attendance.absentDays,
-        overtimeMinutes: attendance.overtimeMinutes,
-        lateMinutes: attendance.lateMinutes,
-        earlyLeaveMinutes: attendance.earlyLeaveMinutes,
-        holidayDays: attendance.holidayDays,
-        // Formula authors may choose minute or hour precision; both exclude unpaid shift breaks.
-        totalWorkMinutes: attendance.totalWorkMinutes,
-        totalWorkHours: attendance.totalWorkMinutes / ATTENDANCE_TIME_RULES.MINUTES_PER_HOUR,
-        MAX: Math.max,
-        MIN: Math.min,
-        ...variablesContext,
-      }
-
-      const details = []
-      let totalAdditions = new Prisma.Decimal(0)
-      let totalDeductions = new Prisma.Decimal(0)
-
-      const components = config.template.components
-      for (const tc of components) {
-        context.totalAdditions = Number(totalAdditions)
-        context.totalDeductions = Number(totalDeductions)
-
-        const formula = tc.overrideFormula ?? tc.component.formula
-        let rawValue = 0
-        try {
-          rawValue = math.evaluate(formula, context)
-        } catch (err) {
-          console.error("Error evaluating formula:", formula, "Context:", context)
-          throw err
-        }
-        const value = new Prisma.Decimal(Math.max(0, rawValue))
-
-        details.push({
-          componentId: tc.component.id,
-          name: tc.component.name,
-          type: tc.component.type,
-          value: Number(value.toFixed(2)),
-        })
-
-        if (tc.component.type === SALARY_COMPONENT_TYPES[0]) {
-          totalAdditions = totalAdditions.add(value)
-        } else {
-          totalDeductions = totalDeductions.add(value)
-        }
-      }
-
-      const netSalary = totalAdditions.minus(totalDeductions)
-      totalAmount = totalAmount.add(netSalary)
-
-      await this.payslipRepo.createWithDetails({
-        payrollId: payroll.id,
-        employeeId: employee.id,
-        salaryConfigId: config.id,
-        totalAdditions: Number(totalAdditions.toFixed(2)),
-        totalDeductions: Number(totalDeductions.toFixed(2)),
-        netSalary: Number(netSalary.toFixed(2)),
-        workingDays: attendance.workingDays,
-        absentDays: attendance.absentDays,
-        overtimeMinutes: attendance.overtimeMinutes,
-        details,
-      })
     }
 
     // Phase 2: All writes inside transaction
@@ -358,7 +242,7 @@ export class PayrollService implements IPayrollService {
           attendance.overtimeMinutes += record.overtimeMinutes || 0
           attendance.lateMinutes += record.lateMinutes || 0
           attendance.earlyLeaveMinutes += record.earlyLeaveMinutes || 0
-          attendance.totalWorkMinutes += record.totalWorkMinutes || 0
+          attendance.totalWorkMinutes += this.resolveRecordWorkMinutes(record)
         })
 
         // Use pre-fetched applications
