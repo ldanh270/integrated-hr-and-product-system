@@ -55,6 +55,7 @@ interface GoogleAnswer {
 
 interface GoogleFormResponse {
   responseId?: string
+  respondentEmail?: string
   answers?: Record<string, GoogleAnswer>
 }
 
@@ -167,9 +168,7 @@ export class GoogleFormsConnector implements RecruitmentConnector {
       const qId = item.questionItem?.question?.questionId
       const title = item.title?.trim()
       if (!qId || !title) continue
-      const matchedField = fields.find(
-        (f) => f.label.trim() === title || f.key.trim().toLowerCase() === title.toLowerCase()
-      )
+      const matchedField = fields.find((field) => this.matchesField(field, title))
       if (matchedField) {
         questionIdMap.set(matchedField.key, qId)
       }
@@ -201,7 +200,7 @@ export class GoogleFormsConnector implements RecruitmentConnector {
       const cvQId = questionIdMap.get("cv_url")
       const raw = {
         fullName: responseData.full_name ?? "",
-        email: (responseData.email ?? "").toLowerCase(),
+        email: (responseData.email || response.respondentEmail || "").toLowerCase(),
         phone: responseData.phone || undefined,
         cvUrl: cvQId ? this.cvUrl(response, cvQId) : undefined,
         notes: responseData.notes || undefined,
@@ -210,7 +209,7 @@ export class GoogleFormsConnector implements RecruitmentConnector {
       if (!responseId || !parsed.success) {
         const validationMessage = parsed.success
           ? ""
-          : parsed.error?.issues.map((issue) => issue.message).join("; ")
+          : parsed.error?.issues.map((issue: { message: string }) => issue.message).join("; ")
         errors.push({
           row: index + 1,
           email: raw.email,
@@ -365,6 +364,25 @@ export class GoogleFormsConnector implements RecruitmentConnector {
       if (!parsed.success) throw this.apiError("Cấu hình trường Google Form không hợp lệ")
       return parsed.data
     })
+  }
+
+  private matchesField(field: GoogleFormFieldDefinition, title: string): boolean {
+    const normalize = (value: string) => value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim()
+    const normalizedTitle = normalize(title)
+    if (normalize(field.label) === normalizedTitle || normalize(field.key) === normalizedTitle) return true
+    const aliases: Record<string, string[]> = {
+      full_name: ["ho va ten", "ho ten", "ten day du", "full name", "name"],
+      email: ["email", "email address", "dia chi email"],
+      phone: ["so dien thoai", "dien thoai", "phone", "phone number"],
+      cv_url: ["cv", "link cv", "duong dan cv", "resume"],
+      notes: ["ghi chu", "thong tin bo sung", "notes", "additional information"],
+    }
+    return aliases[field.key]?.includes(normalizedTitle) ?? false
   }
 
   private apiError(message: string): AppError {
