@@ -164,7 +164,7 @@ export function CreateRequisitionDialog({
     }
   }, [form, open, requisition])
 
-  const close = () => onOpenChange(false)
+  const close = () => { onOpenChange(false); }
 
   const onSubmit = (values: RequisitionFormValues) => {
     const parsed = requisitionFormSchema.parse(values)
