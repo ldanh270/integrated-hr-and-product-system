@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query"
+import { useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { format } from "date-fns"
 import {
   Calendar,
@@ -20,6 +21,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { CreateOfferDialog } from "@/components/features/recruitment/create-offer-dialog"
 import {
   INTERVIEW_FORMAT_LABELS,
   INTERVIEW_RESULT_LABELS,
@@ -59,6 +61,9 @@ export function ApplicationDetailPanel({
     queryFn: () => applicationApi.getNotes(applicationId!),
     enabled: Boolean(applicationId) && open,
   })
+
+  const [isOfferDialogOpen, setIsOfferDialogOpen] = useState(false)
+  const queryClient = useQueryClient()
 
   if (!application && isLoading) {
     return (
@@ -133,6 +138,12 @@ export function ApplicationDetailPanel({
                 className="rounded-none border-b-2 border-transparent px-4 py-3 text-xs font-semibold data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
               >
                 Phỏng vấn ({interviews.length})
+              </TabsTrigger>
+              <TabsTrigger
+                value="offers"
+                className="rounded-none border-b-2 border-transparent px-4 py-3 text-xs font-semibold data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              >
+                Offer ({(application as any)?.offers?.length ?? 0})
               </TabsTrigger>
               <TabsTrigger
                 value="notes"
@@ -286,6 +297,60 @@ export function ApplicationDetailPanel({
                 )}
               </TabsContent>
 
+              <TabsContent value="offers" className="m-0 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold">Thông tin Offer</h3>
+                  {canManageInterviews && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 rounded-full text-xs font-semibold"
+                      onClick={() => setIsOfferDialogOpen(true)}
+                    >
+                      <Plus className="mr-1.5 size-3" />
+                      Tạo Offer
+                    </Button>
+                  )}
+                </div>
+
+                {(application as any)?.offers && (application as any).offers.length > 0 ? (
+                  <div className="space-y-3">
+                    {(application as any).offers.map((offer: any) => (
+                      <div
+                        key={offer.id}
+                        className="rounded-xl border border-border/60 bg-card p-4 space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-sm">{offer.jobTitle ?? "Offer"}</span>
+                          <StatusPill label={offer.status} variant={offer.status === "accepted" ? "success" : "neutral"} />
+                        </div>
+                        <p className="text-xs font-semibold text-primary">
+                          Lương: {Number(offer.offeredSalary).toLocaleString()} {offer.currency}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Ngày bắt đầu: {offer.startDate ? format(new Date(offer.startDate), "dd/MM/yyyy") : "—"}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-border/50 py-8 text-center space-y-2">
+                    <p className="text-sm text-muted-foreground">Chưa có offer nào được tạo.</p>
+                    {canManageInterviews && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 rounded-full text-xs font-semibold"
+                        onClick={() => setIsOfferDialogOpen(true)}
+                      >
+                        <Plus className="mr-1.5 size-3" />
+                        Tạo Offer ngay
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+
               <TabsContent value="notes" className="m-0 space-y-4">
                   <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold">Ghi chú</h3>
@@ -309,6 +374,16 @@ export function ApplicationDetailPanel({
             </div>
           </ScrollArea>
         </Tabs>
+        {application && (
+          <CreateOfferDialog
+            open={isOfferDialogOpen}
+            onOpenChange={setIsOfferDialogOpen}
+            applications={[application as any]}
+            onCreated={() => {
+              void queryClient.invalidateQueries({ queryKey: ["recruitment", "application", applicationId] })
+            }}
+          />
+        )}
       </SheetContent>
     </Sheet>
   )
