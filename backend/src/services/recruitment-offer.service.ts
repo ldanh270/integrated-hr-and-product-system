@@ -1,6 +1,5 @@
 import { recruitmentOfferRepository } from "@/repositories/recruitment-offer.repository"
 import { recruitmentApplicationRepository } from "@/repositories/recruitment-application.repository"
-import { backgroundCheckRepository } from "@/repositories/background-check.repository"
 import type { CreateOfferInput, CreateOfferVersionInput } from "@/types/recruitment.types"
 import { recruitmentApplicationService } from "./recruitment-application.service"
 import { getBgcGroupForLevel } from "@/configs/rules/recruitment.config"
@@ -79,27 +78,14 @@ export class RecruitmentOfferService {
   }
 
   private async acceptOffer(id: string, responseNote?: string) {
-    const offer = await recruitmentOfferRepository.accept(id, responseNote)
-
-    // Update application status
-    await recruitmentApplicationService.updateStatus(offer.applicationId, {
-      status: "offer_accepted",
-    })
-
     // Determine BGC group based on position level
-    const application = await recruitmentApplicationRepository.findById(offer.applicationId)
+    const existing = await this.findById(id)
+    const application = await recruitmentApplicationRepository.findById(existing.applicationId)
     if (!application) throw new Error("Application not found")
     const positionLevel = application.requisition?.positionLevel ?? "junior"
     const bgcGroup = getBgcGroupForLevel(positionLevel)
 
-    // Create background check record
-    await backgroundCheckRepository.create({
-      offerId: id,
-      candidateId: offer.candidateId,
-      group: bgcGroup,
-    })
-
-    return offer
+    return recruitmentOfferRepository.acceptAndCreateBackgroundCheck(id, responseNote, bgcGroup)
   }
 
   private async declineOffer(id: string, responseNote?: string) {

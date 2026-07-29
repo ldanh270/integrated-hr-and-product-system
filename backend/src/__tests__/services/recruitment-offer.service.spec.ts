@@ -4,6 +4,13 @@ jest.mock("@/repositories/recruitment-offer.repository", () => ({
     create: jest.fn(),
     findById: jest.fn(),
     sendAndTransition: jest.fn(),
+    acceptAndCreateBackgroundCheck: jest.fn(),
+  },
+}))
+
+jest.mock("@/repositories/recruitment-application.repository", () => ({
+  recruitmentApplicationRepository: {
+    findById: jest.fn(),
   },
 }))
 
@@ -15,6 +22,7 @@ jest.mock("@/services/recruitment-application.service", () => ({
 }))
 
 import { recruitmentOfferRepository } from "@/repositories/recruitment-offer.repository"
+import { recruitmentApplicationRepository } from "@/repositories/recruitment-application.repository"
 import { recruitmentApplicationService } from "@/services/recruitment-application.service"
 import { RecruitmentOfferService } from "@/services/recruitment-offer.service"
 
@@ -53,6 +61,31 @@ describe("RecruitmentOfferService draft workflow", () => {
 
     expect(result).toEqual({ id: "offer-1", status: "sent" })
     expect(recruitmentOfferRepository.sendAndTransition).toHaveBeenCalledWith("offer-1")
+    expect(recruitmentApplicationService.updateStatus).not.toHaveBeenCalled()
+  })
+
+  it("accepts an offer and creates its background check through one command", async () => {
+    jest.mocked(recruitmentOfferRepository.findById).mockResolvedValue({
+      status: "sent",
+      applicationId: "application-1",
+    } as never)
+    jest.mocked(recruitmentApplicationRepository.findById).mockResolvedValue({
+      requisition: { positionLevel: "junior" },
+    } as never)
+    jest.mocked(recruitmentOfferRepository.acceptAndCreateBackgroundCheck).mockResolvedValue({
+      id: "offer-1",
+      status: "accepted",
+    } as never)
+
+    const service = new RecruitmentOfferService()
+    const result = await service.respond("offer-1", "accept", "I accept")
+
+    expect(result).toEqual({ id: "offer-1", status: "accepted" })
+    expect(recruitmentOfferRepository.acceptAndCreateBackgroundCheck).toHaveBeenCalledWith(
+      "offer-1",
+      "I accept",
+      "a",
+    )
     expect(recruitmentApplicationService.updateStatus).not.toHaveBeenCalled()
   })
 })
