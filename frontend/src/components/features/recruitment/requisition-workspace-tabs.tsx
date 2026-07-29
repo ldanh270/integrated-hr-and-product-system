@@ -1,6 +1,7 @@
 import { PageCard } from "@/components/common"
 import { StatusPill } from "@/components/common/status-pill"
 import { Button } from "@/components/ui/button"
+import { CreateOfferDialog } from "@/components/features/recruitment/create-offer-dialog"
 import { ScheduleInterviewDialog } from "@/components/features/recruitment/schedule-interview-dialog"
 import type { KanbanApplication } from "@/types/recruitment.types"
 import { Plus } from "lucide-react"
@@ -51,18 +52,15 @@ export function RequisitionInterviewsTab({ applications, canSchedule, onCreated 
   )
 }
 
-export function RequisitionOffersTab({ applications }: WorkspaceTabProps) {
+export function RequisitionOffersTab({ applications, canCreate, onCreated }: WorkspaceTabProps & { canCreate: boolean; onCreated: () => void }) {
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
   const offers = applications.flatMap((application) =>
     (application.offers ?? []).map((offer) => ({ application, offer })),
   )
 
   return (
     <PageCard padding="sm">
-      <WorkspaceHeader
-        title="Offer"
-        description="Offer của ứng viên trong yêu cầu tuyển dụng này."
-        count={offers.length}
-      />
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3"><WorkspaceHeader title="Offer" description="Offer của ứng viên trong yêu cầu tuyển dụng này." count={offers.length} />{canCreate && <Button className="rounded-full" onClick={() => setIsCreateOpen(true)}><Plus className="mr-2 size-4" />Tạo offer</Button>}</div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="border-b text-left text-muted-foreground">
@@ -81,6 +79,7 @@ export function RequisitionOffersTab({ applications }: WorkspaceTabProps) {
           </tbody>
         </table>
       </div>
+      <CreateOfferDialog applications={applications} open={isCreateOpen} onOpenChange={setIsCreateOpen} onCreated={onCreated} />
     </PageCard>
   )
 }
