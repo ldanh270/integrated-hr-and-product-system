@@ -38,17 +38,20 @@ function StatCard({
   onClick?: () => void
 }) {
   return (
-    <Card className="cursor-pointer hover:shadow-md transition-all rounded-xl" onClick={onClick}>
+    <Card className="cursor-pointer border border-border/60 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-primary/40 rounded-2xl" onClick={onClick}>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-xs font-semibold uppercase text-muted-foreground">{title}</CardTitle>
-        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-          <Icon className="h-4 w-4 text-primary" />
+        <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</CardTitle>
+        <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center transition-transform hover:scale-110">
+          <Icon className="h-4.5 w-4.5 text-primary" />
         </div>
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold text-foreground">{value}</div>
         {description && (
-          <p className="text-xs text-muted-foreground mt-1">{description}</p>
+          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 font-medium">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+            {description}
+          </p>
         )}
       </CardContent>
     </Card>
@@ -86,23 +89,23 @@ function InterviewItem({
   }
 
   return (
-    <div className="flex items-center justify-between py-2.5">
+    <div className="flex items-center justify-between py-3 px-2 rounded-xl transition-colors hover:bg-muted/30">
       <div className="flex items-center gap-3">
-        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-          <span className="text-xs font-semibold text-primary">
+        <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
+          <span className="text-xs font-bold text-primary">
             {candidateName?.charAt(0)?.toUpperCase() ?? "?"}
           </span>
         </div>
         <div>
-          <p className="text-sm font-medium text-foreground">{candidateName}</p>
+          <p className="text-sm font-bold text-foreground">{candidateName}</p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {positionTitle} • Vòng {roundNumber}
+            {positionTitle} • <Badge variant="outline" className="rounded-full text-[10px] px-2 py-0">Vòng {roundNumber}</Badge>
           </p>
         </div>
       </div>
       <div className="text-right">
-        <p className="text-sm font-medium text-foreground">{formatDate(scheduledAt)}</p>
-        <p className="text-xs text-muted-foreground">{formatTime(scheduledAt)}</p>
+        <p className="text-xs font-bold text-foreground">{formatDate(scheduledAt)}</p>
+        <p className="text-[11px] font-mono text-muted-foreground">{formatTime(scheduledAt)}</p>
       </div>
     </div>
   )
@@ -123,16 +126,16 @@ function QuickLink({
 }) {
   return (
     <Card
-      className="cursor-pointer hover:shadow-md transition-all rounded-xl"
+      className="cursor-pointer border border-border/60 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-primary/40 rounded-2xl"
       onClick={() => routerNavigate(to)}
     >
       <CardContent className="flex items-center gap-4 p-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 shrink-0">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 shrink-0 transition-transform hover:scale-105">
           <Icon className="h-5 w-5 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className="font-medium text-sm text-foreground truncate">{title}</p>
+            <p className="font-bold text-sm text-foreground truncate">{title}</p>
             {count !== undefined && count > 0 && (
               <Badge variant="secondary" className="rounded-full text-[10px] font-bold">
                 {count}
@@ -141,7 +144,7 @@ function QuickLink({
           </div>
           <p className="text-xs text-muted-foreground truncate mt-0.5">{description}</p>
         </div>
-        <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+        <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 transition-transform hover:translate-x-1" />
       </CardContent>
     </Card>
   )
@@ -161,21 +164,23 @@ export default function RecruitmentDashboard() {
     isLoadingOfferStats ||
     isLoadingBgcStats
 
+  const totalApps = appStats?.total || 1
+
   return (
     <div className="container flex flex-col gap-6 px-3 py-4 sm:px-6 sm:py-6">
       <PageHeader
         title="Dashboard Tuyển dụng"
-        description="Tổng quan tình hình tuyển dụng"
+        description="Tổng quan tình hình tuyển dụng, tiến độ ứng viên và lịch phỏng vấn"
       />
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {isLoading ? (
           <>
-            <Skeleton className="h-[120px] rounded-xl" />
-            <Skeleton className="h-[120px] rounded-xl" />
-            <Skeleton className="h-[120px] rounded-xl" />
-            <Skeleton className="h-[120px] rounded-xl" />
+            <Skeleton className="h-[120px] rounded-2xl" />
+            <Skeleton className="h-[120px] rounded-2xl" />
+            <Skeleton className="h-[120px] rounded-2xl" />
+            <Skeleton className="h-[120px] rounded-2xl" />
           </>
         ) : (
           <>
@@ -191,7 +196,7 @@ export default function RecruitmentDashboard() {
               value={appStats?.total ?? 0}
               description={`${appStats?.active ?? 0} đang trong quá trình`}
               icon={Users}
-              onClick={() => routerNavigate(ROUTES.RECRUITMENT.REQUISITIONS)}
+              onClick={() => routerNavigate(ROUTES.RECRUITMENT.CANDIDATES)}
             />
             <StatCard
               title="Offer"
@@ -213,17 +218,17 @@ export default function RecruitmentDashboard() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Upcoming Interviews */}
-        <Card className="rounded-xl">
+        <Card className="rounded-2xl border border-border/60 transition-all hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <div>
-              <CardTitle className="text-base font-semibold">Lịch phỏng vấn sắp tới</CardTitle>
+              <CardTitle className="text-base font-bold">Lịch phỏng vấn sắp tới</CardTitle>
               <CardDescription className="text-xs">7 ngày tới</CardDescription>
             </div>
             <Button
               variant="ghost"
               size="sm"
               className="rounded-full text-xs"
-              onClick={() => routerNavigate(ROUTES.RECRUITMENT.REQUISITIONS)}
+              onClick={() => routerNavigate(ROUTES.RECRUITMENT.MY_INTERVIEWS)}
             >
               Xem tất cả
               <ArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -232,12 +237,12 @@ export default function RecruitmentDashboard() {
           <CardContent>
             {isLoadingInterviews ? (
               <div className="space-y-2">
-                <Skeleton className="h-12 rounded-lg" />
-                <Skeleton className="h-12 rounded-lg" />
-                <Skeleton className="h-12 rounded-lg" />
+                <Skeleton className="h-12 rounded-xl" />
+                <Skeleton className="h-12 rounded-xl" />
+                <Skeleton className="h-12 rounded-xl" />
               </div>
             ) : upcomingInterviews && upcomingInterviews.length > 0 ? (
-              <div className="divide-y divide-border">
+              <div className="divide-y divide-border/40">
                 {upcomingInterviews.slice(0, 5).map((interview) => (
                   <InterviewItem
                     key={interview.id}
@@ -250,8 +255,8 @@ export default function RecruitmentDashboard() {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Calendar className="h-8 w-8 text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">
+                <Calendar className="h-8 w-8 text-muted-foreground mb-2 opacity-50" />
+                <p className="text-sm font-medium text-muted-foreground">
                   Không có lịch phỏng vấn nào trong 7 ngày tới
                 </p>
               </div>
@@ -259,12 +264,12 @@ export default function RecruitmentDashboard() {
           </CardContent>
         </Card>
 
-        {/* Application Pipeline Summary */}
-        <Card className="rounded-xl">
+        {/* Application Pipeline Summary with Progress Bars */}
+        <Card className="rounded-2xl border border-border/60 transition-all hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <div>
-              <CardTitle className="text-base font-semibold">Pipeline ứng viên</CardTitle>
-              <CardDescription className="text-xs">Theo trạng thái</CardDescription>
+              <CardTitle className="text-base font-bold">Pipeline ứng viên</CardTitle>
+              <CardDescription className="text-xs">Tỷ lệ theo giai đoạn</CardDescription>
             </div>
             <Button
               variant="ghost"
@@ -272,65 +277,66 @@ export default function RecruitmentDashboard() {
               className="rounded-full text-xs"
               onClick={() => routerNavigate(ROUTES.RECRUITMENT.REQUISITIONS)}
             >
-              Xem Kanban
+              Xem Requisitions
               <ArrowRight className="ml-1 h-3.5 w-3.5" />
             </Button>
           </CardHeader>
           <CardContent>
             {isLoadingAppStats ? (
-              <div className="space-y-2">
-                <Skeleton className="h-8 rounded-lg" />
-                <Skeleton className="h-8 rounded-lg" />
-                <Skeleton className="h-8 rounded-lg" />
+              <div className="space-y-3">
+                <Skeleton className="h-8 rounded-xl" />
+                <Skeleton className="h-8 rounded-xl" />
+                <Skeleton className="h-8 rounded-xl" />
               </div>
             ) : appStats ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-primary" />
-                    <span className="text-sm">Mới</span>
+              <div className="space-y-3.5">
+                {/* Mới */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs font-semibold">
+                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-blue-500" />Ứng viên mới</span>
+                    <span>{appStats.byStatus?.new ?? 0}</span>
                   </div>
-                  <span className="text-sm font-semibold">{appStats.byStatus?.new ?? 0}</span>
+                  <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, Math.round(((appStats.byStatus?.new ?? 0) / totalApps) * 100))}%` }} />
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-primary/70" />
-                    <span className="text-sm">Đang xem xét</span>
+
+                {/* Phỏng vấn */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs font-semibold">
+                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-500" />Đang phỏng vấn</span>
+                    <span>{appStats.byStatus?.interviewing ?? 0}</span>
                   </div>
-                  <span className="text-sm font-semibold">{appStats.byStatus?.reviewing ?? 0}</span>
+                  <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                    <div className="h-full bg-amber-500 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, Math.round(((appStats.byStatus?.interviewing ?? 0) / totalApps) * 100))}%` }} />
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-primary/50" />
-                    <span className="text-sm">Phỏng vấn</span>
+
+                {/* Offer */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs font-semibold">
+                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-purple-500" />Đã gửi Offer</span>
+                    <span>{appStats.byStatus?.offer_sent ?? 0}</span>
                   </div>
-                  <span className="text-sm font-semibold">{appStats.byStatus?.interviewing ?? 0}</span>
+                  <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                    <div className="h-full bg-purple-500 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, Math.round(((appStats.byStatus?.offer_sent ?? 0) / totalApps) * 100))}%` }} />
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-primary/80" />
-                    <span className="text-sm">Offer</span>
+
+                {/* Đã tuyển */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs font-semibold">
+                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-green-500" />Tuyển dụng thành công</span>
+                    <span>{appStats.byStatus?.hired ?? 0}</span>
                   </div>
-                  <span className="text-sm font-semibold">{appStats.byStatus?.offer_sent ?? 0}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-primary font-bold" />
-                    <span className="text-sm">Đã tuyển</span>
+                  <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, Math.round(((appStats.byStatus?.hired ?? 0) / totalApps) * 100))}%` }} />
                   </div>
-                  <span className="text-sm font-semibold">{appStats.byStatus?.hired ?? 0}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-destructive" />
-                    <span className="text-sm">Từ chối</span>
-                  </div>
-                  <span className="text-sm font-semibold">{appStats.rejected ?? 0}</span>
                 </div>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Users className="h-8 w-8 text-muted-foreground mb-2" />
+                <Users className="h-8 w-8 text-muted-foreground mb-2 opacity-50" />
                 <p className="text-sm text-muted-foreground">Không có dữ liệu</p>
               </div>
             )}
@@ -340,7 +346,7 @@ export default function RecruitmentDashboard() {
 
       {/* Quick Links */}
       <div>
-        <h3 className="text-sm font-semibold uppercase text-muted-foreground mb-3">Thao tác nhanh</h3>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Thao tác nhanh</h3>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <QuickLink
             title="Yêu cầu tuyển dụng"
@@ -353,20 +359,19 @@ export default function RecruitmentDashboard() {
             title="Quản lý ứng viên"
             description="Xem danh sách ứng viên"
             icon={Users}
-            to={ROUTES.RECRUITMENT.REQUISITIONS}
+            to={ROUTES.RECRUITMENT.CANDIDATES}
           />
           <QuickLink
-            title="Pipeline Kanban"
-            description="Quản lý theo giai đoạn"
+            title="Lịch phỏng vấn của tôi"
+            description="Đánh giá & chấm điểm"
             icon={TrendingUp}
-            to={ROUTES.RECRUITMENT.REQUISITIONS}
+            to={ROUTES.RECRUITMENT.MY_INTERVIEWS}
           />
           <QuickLink
-            title="Background Check"
-            description="Kiểm tra lý lịch"
+            title="Tiếp nhận ứng viên"
+            description="Nhập ứng viên hàng loạt"
             icon={CheckCircle}
-            to={ROUTES.RECRUITMENT.REQUISITIONS}
-            count={bgcStats?.pending ?? 0}
+            to={ROUTES.RECRUITMENT.APPLICANT_INTAKE}
           />
         </div>
       </div>

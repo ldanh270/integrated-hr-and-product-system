@@ -265,6 +265,7 @@ export interface KanbanApplication {
     durationMinutes: number
     status: string
     result: string
+    interviewers?: { id: string; fullName: string }[]
   }[]
   offers?: {
     id: string

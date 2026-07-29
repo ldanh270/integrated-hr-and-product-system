@@ -28,6 +28,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
 
 import { PageCard, StatusPill } from "@/components/common"
+import { CreateOfferDialog } from "@/components/features/recruitment/create-offer-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -64,6 +65,7 @@ export default function ApplicationDetailPage() {
 
   // State modals
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false)
+  const [isOfferDialogOpen, setIsOfferDialogOpen] = useState(false)
   const [noteText, setNoteText] = useState("")
 
   // Schedule modal form state
@@ -674,9 +676,21 @@ export default function ApplicationDetailPage() {
             {/* TAB 3: OFFERS */}
             <TabsContent value="offers" className="m-0 space-y-4">
               <PageCard className="p-6 border border-border/60">
-                <h3 className="mb-4 font-bold text-base text-foreground border-b border-border pb-2">
-                  Thông tin Offer & Lời mời làm việc
-                </h3>
+                <div className="mb-4 flex items-center justify-between border-b border-border pb-2">
+                  <h3 className="font-bold text-base text-foreground">
+                    Thông tin Offer & Lời mời làm việc
+                  </h3>
+                  {canManage && (
+                    <Button
+                      size="sm"
+                      onClick={() => setIsOfferDialogOpen(true)}
+                      className="rounded-full text-xs font-semibold shadow-xs"
+                    >
+                      <Plus className="mr-1.5 size-3.5" />
+                      Tạo Offer
+                    </Button>
+                  )}
+                </div>
                 {application.offers && application.offers.length > 0 ? (
                   <div className="space-y-4">
                     {application.offers.map((offer) => (
@@ -695,9 +709,32 @@ export default function ApplicationDetailPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground py-6 text-center">Chưa có offer nào được tạo cho ứng viên này.</p>
+                  <div className="py-8 text-center space-y-3">
+                    <p className="text-sm text-muted-foreground">Chưa có offer nào được tạo cho ứng viên này.</p>
+                    {canManage && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setIsOfferDialogOpen(true)}
+                        className="rounded-full text-xs font-semibold"
+                      >
+                        <Plus className="mr-1.5 size-3.5" />
+                        Tạo Offer ngay
+                      </Button>
+                    )}
+                  </div>
                 )}
               </PageCard>
+              {application && (
+                <CreateOfferDialog
+                  open={isOfferDialogOpen}
+                  onOpenChange={setIsOfferDialogOpen}
+                  applications={[application as any]}
+                  onCreated={() => {
+                    void queryClient.invalidateQueries({ queryKey: ["recruitment", "application", id] })
+                  }}
+                />
+              )}
             </TabsContent>
 
             {/* TAB 5: NOTES */}

@@ -1,7 +1,9 @@
 import { useSearchParams } from "react-router-dom"
 import { useState } from "react"
 import type { DragEventHandler, FormEventHandler } from "react"
-import { AlertCircle, Check, FolderKanban, MoreHorizontal, Plus, RefreshCw, Sparkles } from "lucide-react"
+import { format } from "date-fns"
+import { AlertCircle, Calendar, Check, FolderKanban, MoreHorizontal, Plus, RefreshCw, Sparkles } from "lucide-react"
+import { routerNavigate } from "@/lib/router-navigator"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -66,7 +68,7 @@ export default function KanbanPage({ postingId: givenPostingId, requisitionId = 
               {canManageStages && <DropdownMenu><DropdownMenuTrigger asChild><button className="cursor-pointer rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"><MoreHorizontal className="size-4" /></button></DropdownMenuTrigger><DropdownMenuContent align="end" className="rounded-xl border-border bg-popover"><DropdownMenuItem onClick={() => { setSelectedColumn(stage); setColumnName(stage.name); setColumnColor(stage.color); setColumnIsCompleted(stage.isCompleted); setColumnIsDefault(stage.isDefault); setIsEditColumnOpen(true) }} className="cursor-pointer rounded-lg text-xs font-semibold">Cấu hình cột</DropdownMenuItem>{!stage.isDefault && statuses.length > 1 && <DropdownMenuItem onClick={() => { setSelectedColumn(stage); setFallbackColumnId(statuses.find((item) => item.id !== stage.id)?.id ?? ""); setIsDeleteConfirmOpen(true) }} className="cursor-pointer rounded-lg text-xs font-semibold text-destructive">Xóa cột</DropdownMenuItem>}</DropdownMenuContent></DropdownMenu>}
             </div>
             <div className="min-h-[150px] flex-1 space-y-3 overflow-y-auto p-2.5 scrollbar-thin" onDragOver={(event) => { if (canManageStages && !draggingColumnId) event.preventDefault() }} onDrop={(event) => { if (canManageStages && !draggingColumnId) handleDrop(event, stage.id) }}>
-              {applications.length === 0 ? <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border/40 py-10 text-center"><Sparkles className="mb-1 size-5 text-muted-foreground/30" /><p className="text-[10px] font-medium text-muted-foreground/60">Không có ứng viên</p></div> : applications.map((application) => <div className="relative" key={application.id}>{dragOverInfo?.taskId === application.id && dragOverInfo.position === "top" && <DropIndicator className="mb-1" />}<CandidateCard application={application} stages={statuses} canManageStages={canManageStages} isMoving={moveTaskMutation.isPending} onMove={(statusId) => moveTaskMutation.mutate({ taskId: application.id, statusId })} isDragging={draggingTaskId === application.id} draggable={canManageStages} onDragStart={(event) => handleDragStart(event, application)} onDragEnd={handleDragEnd} onDragOver={(event) => handleCardDragOver(event, application.id)} onDragLeave={() => setDragOverInfo(null)} onDrop={(event) => handleCardDrop(event, application)} onClick={() => setSelectedApplicationId(application.id)} />{dragOverInfo?.taskId === application.id && dragOverInfo.position === "bottom" && <DropIndicator className="mt-1" />}</div>)}
+              {applications.length === 0 ? <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border/40 py-10 text-center"><Sparkles className="mb-1 size-5 text-muted-foreground/30" /><p className="text-[10px] font-medium text-muted-foreground/60">Không có ứng viên</p></div> : applications.map((application) => <div className="relative" key={application.id}>{dragOverInfo?.taskId === application.id && dragOverInfo.position === "top" && <DropIndicator className="mb-1" />}<CandidateCard application={application} stages={statuses} canManageStages={canManageStages} isMoving={moveTaskMutation.isPending} onMove={(statusId) => moveTaskMutation.mutate({ taskId: application.id, statusId })} isDragging={draggingTaskId === application.id} draggable={canManageStages} onDragStart={(event) => handleDragStart(event, application)} onDragEnd={handleDragEnd} onDragOver={(event) => handleCardDragOver(event, application.id)} onDragLeave={() => setDragOverInfo(null)} onDrop={(event) => handleCardDrop(event, application)} onClick={() => routerNavigate(`/recruitment/applications/${application.id}`)} />{dragOverInfo?.taskId === application.id && dragOverInfo.position === "bottom" && <DropIndicator className="mt-1" />}</div>)}
             </div>
           </div>
         })}
@@ -82,8 +84,96 @@ export default function KanbanPage({ postingId: givenPostingId, requisitionId = 
 }
 
 function CandidateCard({ application, stages, canManageStages, isMoving, onMove, isDragging, draggable, onClick, ...events }: { application: KanbanApplication; stages: RecruitmentPipelineStage[]; canManageStages: boolean; isMoving: boolean; onMove: (stageId: string) => void; isDragging: boolean; draggable: boolean; onClick?: () => void; onDragStart: DragEventHandler; onDragEnd: DragEventHandler; onDragOver: DragEventHandler; onDragLeave: DragEventHandler; onDrop: DragEventHandler }) {
+  const isInterviewStage = application.pipelineStage?.name?.toLowerCase().includes("phỏng vấn") || application.pipelineStage?.name?.toLowerCase().includes("interview")
+  const latestRound = application.interviewRounds?.[application.interviewRounds.length - 1]
   const completedRounds = application.interviewRounds?.filter((round) => round.status === "completed").length ?? 0
-  return <div draggable={draggable} onClick={onClick} {...events} className={`group/card space-y-3 rounded-xl border border-border/80 bg-card p-3.5 shadow-sm transition-all hover:border-primary/40 hover:shadow-md ${draggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${isDragging ? "scale-[0.98] opacity-40" : ""}`}><div className="flex items-center justify-between gap-2"><Badge variant="outline" className="rounded-full px-1.5 py-0 text-[9px] font-bold uppercase">{application.source}</Badge><Badge variant="outline" className="rounded-full px-1.5 py-0 text-[9px] font-bold">{completedRounds} vòng PV</Badge></div><div><p className="line-clamp-2 text-xs font-bold text-foreground transition-colors group-hover/card:text-primary">{application.candidate.fullName}</p><p className="mt-1 truncate text-[10px] text-muted-foreground">{application.candidate.email}</p></div>{canManageStages && <div onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()}><Label className="sr-only" htmlFor={`move-stage-${application.id}`}>Chuyển {application.candidate.fullName} sang giai đoạn khác</Label><Select value={application.pipelineStage?.id ?? ""} onValueChange={onMove} disabled={isMoving}><SelectTrigger id={`move-stage-${application.id}`} className="h-9 rounded-full text-xs"><SelectValue placeholder="Chuyển giai đoạn" /></SelectTrigger><SelectContent>{stages.map((stage) => <SelectItem key={stage.id} value={stage.id}>{stage.name}</SelectItem>)}</SelectContent></Select></div>}<div className="flex items-center justify-between gap-2 border-t border-border/40 pt-2 text-[10px]"><span className="font-mono font-semibold text-muted-foreground/80">#{application.id.substring(0, 5)}</span><span className="truncate font-semibold text-foreground">{application.assignedTo?.fullName ?? "Chưa phân công"}</span></div></div>
+
+  return (
+    <div draggable={draggable} onClick={onClick} {...events} className={`group/card space-y-3 rounded-xl border border-border/80 bg-card p-3.5 shadow-sm transition-all hover:border-primary/40 hover:shadow-md ${draggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${isDragging ? "scale-[0.98] opacity-40" : ""}`}>
+      <div className="flex items-center justify-between gap-2">
+        <Badge variant="outline" className="rounded-full px-1.5 py-0 text-[9px] font-bold uppercase">{application.source}</Badge>
+
+        {/* Link directly to Interview Rounds Tab in Candidate Details */}
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            routerNavigate(`/recruitment/applications/${application.id}?tab=interviews`)
+          }}
+          className="transition-transform hover:scale-105 focus:outline-none"
+          title="Xem chi tiết các vòng phỏng vấn"
+        >
+          <Badge
+            variant="outline"
+            className={`rounded-full px-2 py-0 text-[9px] font-bold flex items-center gap-1 cursor-pointer transition-colors ${
+              latestRound?.result === "pass"
+                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/20"
+                : isInterviewStage
+                  ? "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+                  : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
+            }`}
+          >
+            <Calendar className="size-2.5" />
+            {latestRound
+              ? `Vòng ${latestRound.roundNumber}: ${
+                  latestRound.result === "pass"
+                    ? "Pass"
+                    : latestRound.result === "fail"
+                      ? "Fail"
+                      : latestRound.status === "completed"
+                        ? "Đã xong"
+                        : "Chờ PV"
+                }`
+              : `${completedRounds} vòng PV`}
+          </Badge>
+        </button>
+      </div>
+
+      <div>
+        <p className="line-clamp-2 text-xs font-bold text-foreground transition-colors group-hover/card:text-primary">{application.candidate.fullName}</p>
+        <p className="mt-1 truncate text-[10px] text-muted-foreground">{application.candidate.email}</p>
+      </div>
+
+      {/* When in an interview stage, render schedule & interviewer preview */}
+      {isInterviewStage && latestRound && (
+        <div className="rounded-lg bg-secondary/35 p-2 text-[10px] space-y-1 border border-border/40">
+          <div className="flex items-center justify-between font-medium text-foreground">
+            <span className="truncate font-semibold">{latestRound.title}</span>
+            <span className="font-mono text-muted-foreground shrink-0 ml-1">
+              {latestRound.scheduledAt ? format(new Date(latestRound.scheduledAt), "HH:mm, dd/MM") : "Chờ xếp lịch"}
+            </span>
+          </div>
+          {latestRound.interviewers && latestRound.interviewers.length > 0 && (
+            <div className="flex items-center gap-1 text-muted-foreground truncate">
+              <span>PV:</span>
+              <span className="font-semibold text-foreground truncate">
+                {latestRound.interviewers.map((i: { fullName: string }) => i.fullName).join(", ")}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {canManageStages && (
+        <div onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()}>
+          <Label className="sr-only" htmlFor={`move-stage-${application.id}`}>Chuyển {application.candidate.fullName} sang giai đoạn khác</Label>
+          <Select value={application.pipelineStage?.id ?? ""} onValueChange={onMove} disabled={isMoving}>
+            <SelectTrigger id={`move-stage-${application.id}`} className="h-9 rounded-full text-xs">
+              <SelectValue placeholder="Chuyển giai đoạn" />
+            </SelectTrigger>
+            <SelectContent>
+              {stages.map((stage) => <SelectItem key={stage.id} value={stage.id}>{stage.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between gap-2 border-t border-border/40 pt-2 text-[10px]">
+        <span className="font-mono font-semibold text-muted-foreground/80">#{application.id.substring(0, 5)}</span>
+        <span className="truncate font-semibold text-foreground">{application.assignedTo?.fullName ?? "Chưa phân công"}</span>
+      </div>
+    </div>
+  )
 }
 
 function StageDialog(props: { open: boolean; onOpenChange: (open: boolean) => void; title: string; submitLabel: string; onSubmit: FormEventHandler; name: string; setName: (name: string) => void; color: string; setColor: (color: string) => void; completed: boolean; setCompleted: (value: boolean) => void; isDefault: boolean; setDefault: (value: boolean) => void; defaultDisabled?: boolean; pending: boolean }) {
