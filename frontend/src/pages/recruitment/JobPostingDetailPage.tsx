@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Archive, ArrowLeft, ExternalLink, FileSpreadsheet, Plus, RefreshCw, Search, Users } from "lucide-react"
@@ -28,13 +28,12 @@ export default function JobPostingDetailPage() {
   const { data: applications } = useQuery({ queryKey: ["recruitment", "applications", "posting", id], queryFn: () => applicationApi.list({ postingId: id, pageSize: 100 }), enabled: Boolean(id) })
   const { data: activities = [] } = useQuery({ queryKey: ["recruitment", "job-postings", id, "activities"], queryFn: () => jobPostingApi.activities(id), enabled: Boolean(id) })
   const { data: responses = [] } = useQuery({ queryKey: ["recruitment", "job-postings", id, "responses"], queryFn: () => jobPostingApi.responses(id), enabled: Boolean(id) })
-  const sync = useSyncJobPosting(); const archive = useArchiveJobPosting(); const confirm = useConfirm(); const syncedOnEntry = useRef<string | null>(null)
+  const sync = useSyncJobPosting(); const archive = useArchiveJobPosting(); const confirm = useConfirm()
   const [query, setQuery] = useState(""); const [isCreateOpen, setIsCreateOpen] = useState(false)
   const candidates = applications?.data ?? []
 
   useEffect(() => { if (id && tab !== activeTab) navigate(`/recruitment/job-postings/${id}/${activeTab}`, { replace: true }) }, [activeTab, id, navigate, tab])
   useEffect(() => { if (posting?.requisitionId) navigate(`/recruitment/requisitions/${posting.requisitionId}/postings?postingId=${id}`, { replace: true }) }, [id, navigate, posting?.requisitionId])
-  useEffect(() => { const shouldSync = posting?.channel === "google_form" && posting.status === "open" && posting.connectorStatus === "ready"; if (shouldSync && syncedOnEntry.current !== id) { syncedOnEntry.current = id; sync.mutate(id) } }, [id, posting?.channel, posting?.connectorStatus, posting?.status, sync])
   if (isLoading) return <RecruitmentWorkspaceSkeleton />
   if (isError || !posting) return <div className="container space-y-3 p-8"><p className="font-semibold text-destructive">Không tải được bài đăng tuyển dụng.</p><Button asChild variant="outline" className="rounded-full"><Link to="/recruitment/requisitions">Quay lại yêu cầu tuyển dụng</Link></Button></div>
   const canSync = posting.channel === "google_form" && posting.status === "open"
