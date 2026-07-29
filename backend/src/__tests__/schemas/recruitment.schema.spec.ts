@@ -1,4 +1,4 @@
-import { approveRequisitionSchema, updateJobPostingSchema, updateJobRequisitionSchema } from "@/schemas/recruitment.schema"
+import { approveRequisitionSchema, updateBackgroundCheckSchema, updateInterviewRoundSchema, updateJobPostingSchema, updateJobRequisitionSchema } from "@/schemas/recruitment.schema"
 
 describe("updateJobRequisitionSchema", () => {
   it("rejects workflow status changes from the generic update boundary", () => {
@@ -30,5 +30,13 @@ describe("updateJobPostingSchema", () => {
     expect(updateJobPostingSchema.safeParse({ postingUrl: "https://careers.example.com/apply" }).success).toBe(true)
     expect(updateJobPostingSchema.safeParse({ postingUrl: "javascript:alert(1)" }).success).toBe(false)
     expect(updateJobPostingSchema.safeParse({ postingUrl: "data:text/html,test" }).success).toBe(false)
+  })
+})
+
+describe("workflow update schemas", () => {
+  it("rejects workflow state changes through generic patch DTOs", () => {
+    expect(updateInterviewRoundSchema.safeParse({ status: "completed" }).success).toBe(false)
+    expect(updateInterviewRoundSchema.safeParse({ result: "pass" }).success).toBe(false)
+    expect(updateBackgroundCheckSchema.safeParse({ status: "passed" }).success).toBe(false)
   })
 })

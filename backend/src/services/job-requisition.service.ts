@@ -42,13 +42,9 @@ export class JobRequisitionService {
 
   async getWorkspace(id: string) {
     const requisition = await this.findById(id)
-    let stages
-    try {
-      stages = await jobRequisitionRepository.ensurePipeline(id)
-    } catch {
-      const legacyPosting = requisition.postings[0]
-      stages = legacyPosting ? await jobPostingRepository.listPipelineStages(legacyPosting.id) : []
-    }
+    const ownStages = await jobRequisitionRepository.listPipelineStages(id)
+    const legacyPosting = requisition.postings[0]
+    const stages = ownStages.length > 0 ? ownStages : legacyPosting ? await jobPostingRepository.listPipelineStages(legacyPosting.id) : []
     const applications = await recruitmentApplicationRepository.listKanban({ requisitionId: id, page: 1, pageSize: 100 })
     return { requisition, stages, applications }
   }
@@ -63,13 +59,10 @@ export class JobRequisitionService {
 
   async listPipelineStages(id: string) {
     const requisition = await this.findById(id)
-    try {
-      await jobRequisitionRepository.ensurePipeline(id)
-      return jobRequisitionRepository.listPipelineStages(id)
-    } catch {
-      const legacyPosting = requisition.postings[0]
-      return legacyPosting ? jobPostingRepository.listPipelineStages(legacyPosting.id) : []
-    }
+    const ownStages = await jobRequisitionRepository.listPipelineStages(id)
+    if (ownStages.length > 0) return ownStages
+    const legacyPosting = requisition.postings[0]
+    return legacyPosting ? jobPostingRepository.listPipelineStages(legacyPosting.id) : []
   }
 
   async createPipelineStage(id: string, data: { name: string; color?: string; isDefault?: boolean; isCompleted?: boolean }, actorId: string) {

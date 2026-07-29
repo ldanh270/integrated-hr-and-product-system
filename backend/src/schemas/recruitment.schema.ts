@@ -203,11 +203,11 @@ export const createInterviewRoundSchema = z.object({
   interviewerIds: z.array(z.string().cuid()).min(1, "At least one interviewer is required"),
 })
 
-export const updateInterviewRoundSchema = createInterviewRoundSchema.partial().extend({
-  status: z.enum(INTERVIEW_ROUND_STATUSES).optional(),
-  result: z.enum(INTERVIEW_RESULTS).optional(),
-  feedback: z.string().max(2000).optional(),
-})
+export const updateInterviewRoundSchema = createInterviewRoundSchema
+  .omit({ applicationId: true, roundNumber: true })
+  .partial()
+  .extend({ feedback: z.string().max(2000).optional() })
+  .strict()
 
 // ── Scorecard Schemas ─────────────────────────────────────────────────────────
 
@@ -268,7 +268,6 @@ export const createBackgroundCheckSchema = z.object({
 })
 
 export const updateBackgroundCheckSchema = z.object({
-  status: z.enum(BGC_STATUSES).optional(),
   idVerified: z.boolean().optional(),
   addressVerified: z.boolean().optional(),
   criminalRecordCheck: z.boolean().optional(),
@@ -279,7 +278,7 @@ export const updateBackgroundCheckSchema = z.object({
   creditScoreCheck: z.boolean().optional(),
   failReason: z.string().max(1000).optional(),
   documents: z.record(z.string(), z.unknown()).optional(),
-})
+}).strict()
 
 // ── Query Schemas ─────────────────────────────────────────────────────────────
 

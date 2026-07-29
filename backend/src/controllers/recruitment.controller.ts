@@ -187,8 +187,9 @@ export class RecruitmentController {
     } catch (e) { next(e) }
   }
 
-  deleteRequisition = async (_req: AuthRequest, res: Response, next: NextFunction) => {
+  deleteRequisition = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
+      await jobRequisitionService.delete(req.params.id as string)
       res.status(204).send()
     } catch (e) { next(e) }
   }
@@ -328,8 +329,9 @@ export class RecruitmentController {
     } catch (e) { next(e) }
   }
 
-  deleteCandidate = async (_req: AuthRequest, res: Response, next: NextFunction) => {
+  deleteCandidate = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
+      await candidateService.delete(req.params.id as string)
       res.status(204).send()
     } catch (e) { next(e) }
   }
