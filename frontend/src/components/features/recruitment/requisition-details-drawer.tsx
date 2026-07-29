@@ -8,7 +8,6 @@ import {
   REQUISITION_PRIORITY_LABELS,
   REQUISITION_STATUS_LABELS,
 } from "@/config/entities/recruitment.config"
-import { ROUTES } from "@/config/routes.config"
 import {
   useApproveRequisition,
   useRequisition,
@@ -247,7 +246,7 @@ export function RequisitionDetailsDrawer({ requisitionId, onClose, onEdit }: Req
                           className="rounded-full gap-1.5 text-primary border-primary/30 hover:bg-primary/10"
                           onClick={() => {
                             onClose()
-                            routerNavigate(`${ROUTES.RECRUITMENT.JOB_POSTINGS}?reqId=${requisition.id}`)
+                            routerNavigate(`/recruitment/requisitions/${requisition.id}/postings?createPosting=1`)
                           }}
                         >
                           <FilePlus2 size={14} /> Tạo bài đăng tuyển dụng

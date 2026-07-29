@@ -37,7 +37,6 @@ import {
 import { useApproveRequisition, useRequisitions, useSubmitRequisitionForApproval } from "@/hooks/recruitment/use-recruitment-queries"
 import { usePermission } from "@/hooks/use-permission"
 import { usePersonalEmployeeId } from "@/hooks/attendance/use-personal-employee-id"
-import { ROUTES } from "@/config/routes.config"
 import { routerNavigate } from "@/lib/router-navigator"
 import type { JobRequisition } from "@/types/recruitment.types"
 
@@ -547,7 +546,7 @@ function RequisitionRow({
                   size="icon"
                   className="rounded-full hover:text-primary hover:bg-primary/10"
                   aria-label={`Tạo bài đăng từ ${requisition.code}`}
-                  onClick={() => routerNavigate(`${ROUTES.RECRUITMENT.JOB_POSTINGS}?reqId=${requisition.id}`)}
+                  onClick={() => routerNavigate(`/recruitment/requisitions/${requisition.id}/postings?createPosting=1`)}
                 >
                   <FilePlus2 className="h-4 w-4" />
                 </Button>

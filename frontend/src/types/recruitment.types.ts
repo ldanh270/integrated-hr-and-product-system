@@ -255,7 +255,29 @@ export interface KanbanApplication {
   candidateName: string
   positionTitle: string
   requisitionCode: string
-  interviewRounds?: { id: string; roundNumber: number; status: string }[]
+  interviewRounds?: {
+    id: string
+    roundNumber: number
+    title: string
+    format: string
+    scheduledAt: string
+    durationMinutes: number
+    status: string
+    result: string
+  }[]
+  offers?: {
+    id: string
+    status: string
+    offeredSalary: number | string
+    currency: string
+    startDate: string
+    jobTitle: string | null
+    backgroundCheck: {
+      id: string
+      status: string
+      group: string
+    } | null
+  }[]
 }
 
 // ── Interview ────────────────────────────────────────────────────────────────
