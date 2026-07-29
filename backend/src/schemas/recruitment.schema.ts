@@ -16,10 +16,20 @@ import {
 } from "@/configs/entities/recruitment.config"
 import { GOOGLE_FORM_FIELD_TYPES } from "@/configs/rules/google-form.config"
 
-const secureExternalUrlSchema = z.string().url("Invalid URL format").refine(
-  (value) => EXTERNAL_URL_PROTOCOLS.includes(new URL(value).protocol as (typeof EXTERNAL_URL_PROTOCOLS)[number]),
-  "Only HTTPS URLs are allowed",
-)
+const secureExternalUrlSchema = z
+  .string()
+  .trim()
+  .refine(
+    (value) => {
+      try {
+        const url = new URL(value)
+        return EXTERNAL_URL_PROTOCOLS.includes(url.protocol as (typeof EXTERNAL_URL_PROTOCOLS)[number])
+      } catch {
+        return false
+      }
+    },
+    "Only HTTPS URLs are allowed",
+  )
 
 // ── Requisition Schemas ────────────────────────────────────────────────────────
 
@@ -131,11 +141,11 @@ export const publishJobPostingSchema = z.object({ mode: z.literal("connector") }
 
 export const intakeRowSchema = z.object({
   fullName: z.string().min(1).max(255),
-  email: z.string().email(),
-  phone: z.string().max(20).optional(),
-  cvUrl: secureExternalUrlSchema.optional(),
-  notes: z.string().max(2000).optional(),
-  sourceRef: z.string().max(255).optional(),
+  email: z.string().trim(),
+  phone: z.string().optional(),
+  cvUrl: z.string().optional(),
+  notes: z.string().optional(),
+  sourceRef: z.string().optional(),
 })
 
 export const importRecruitmentIntakeSchema = z.object({
