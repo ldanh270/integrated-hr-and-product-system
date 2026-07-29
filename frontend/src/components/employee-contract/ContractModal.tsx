@@ -198,20 +198,20 @@ export function ContractModal({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-[540px] rounded-xl bg-card border-border">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-foreground">
             {getTitleText()}
           </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground">
+          <DialogDescription className="text-xs text-muted-foreground">
             {mode === "terminate"
               ? `Chấm dứt hợp đồng số ${contract?.contractNumber}`
               : "Nhập các thông tin chi tiết cho hợp đồng lao động của nhân sự."}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-2">
+        <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4 py-2">
           {mode === "terminate" ? (
             <div className="space-y-4">
               <div className="space-y-2">
@@ -259,7 +259,7 @@ export function ContractModal({
                   <SelectContent>
                     {CONTRACT_TYPES.map((type) => (
                       <SelectItem key={type} value={type}>
-                        {CONTRACT_TYPE_LABELS[type]}
+                        {Object.prototype.hasOwnProperty.call(CONTRACT_TYPE_LABELS, type) ? CONTRACT_TYPE_LABELS[type] : type}
                       </SelectItem>
                     ))}
                   </SelectContent>

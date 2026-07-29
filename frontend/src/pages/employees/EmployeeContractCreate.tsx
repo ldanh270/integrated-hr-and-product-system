@@ -190,7 +190,7 @@ export default function EmployeeContractCreate() {
       submitLabel="Lưu"
       cancelLabel="Huỷ bỏ"
     >
-      <form id="contract-create-form" onSubmit={handleSubmit} className="space-y-6" noValidate>
+      <form id="contract-create-form" onSubmit={(e) => { void handleSubmit(e); }} className="space-y-6" noValidate>
         {/* ── 1. Thông tin nhân sự ────────────────────────────────────────── */}
         <div className="bg-background border border-border rounded-xl overflow-hidden shadow-none">
           <button

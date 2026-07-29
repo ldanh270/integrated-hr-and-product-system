@@ -253,7 +253,7 @@ export default function MyInterviewsPage() {
                 >
                   {/* Day Header */}
                   <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-2">
-                    <span className="text-xs font-bold text-muted-foreground">{WEEKDAY_NAMES[idx]}</span>
+                    <span className="text-xs font-bold text-muted-foreground">{WEEKDAY_NAMES[idx % WEEKDAY_NAMES.length]}</span>
                     <span
                       className={`flex size-6 items-center justify-center rounded-full text-xs font-bold ${
                         dayIsToday
@@ -501,7 +501,7 @@ function InterviewCard({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => routerNavigate(`/recruitment/applications/${interview.application!.id}`)}
+              onClick={() => { if (interview.application?.id) routerNavigate(`/recruitment/applications/${interview.application.id}`); }}
               className="h-8 rounded-full text-xs font-semibold border-border/80 hover:bg-secondary"
             >
               Hồ sơ

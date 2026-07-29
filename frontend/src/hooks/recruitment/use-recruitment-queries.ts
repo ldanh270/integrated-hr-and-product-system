@@ -43,7 +43,7 @@ export function useJobPostings(requisitionId?: string) {
 export function useJobPosting(id?: string) {
   return useQuery({
     queryKey: ["recruitment", "job-postings", id],
-    queryFn: () => jobPostingApi.getOne(id!),
+    queryFn: () => (id ? jobPostingApi.getOne(id) : Promise.reject(new Error("No ID"))),
     enabled: Boolean(id),
   })
 }
