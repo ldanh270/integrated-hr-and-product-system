@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { EXTERNAL_URL_PROTOCOLS } from "@/configs/system/url.config"
 import {
   REQUISITION_STATUSES,
   REQUISITION_PRIORITIES,
@@ -14,6 +15,11 @@ import {
   RECRUITMENT_CHANNELS,
 } from "@/configs/entities/recruitment.config"
 import { GOOGLE_FORM_FIELD_TYPES } from "@/configs/rules/google-form.config"
+
+const secureExternalUrlSchema = z.string().url("Invalid URL format").refine(
+  (value) => EXTERNAL_URL_PROTOCOLS.includes(new URL(value).protocol as (typeof EXTERNAL_URL_PROTOCOLS)[number]),
+  "Only HTTPS URLs are allowed",
+)
 
 // ── Requisition Schemas ────────────────────────────────────────────────────────
 
@@ -110,7 +116,7 @@ export const createJobPostingSchema = z.object({
 
 export const updateJobPostingSchema = z.object({
   status: z.enum(POSTING_STATUSES).optional(),
-  postingUrl: z.string().url().optional(),
+  postingUrl: secureExternalUrlSchema.optional(),
 })
 
 export const listJobPostingsQuerySchema = z.object({
@@ -127,7 +133,7 @@ export const intakeRowSchema = z.object({
   fullName: z.string().min(1).max(255),
   email: z.string().email(),
   phone: z.string().max(20).optional(),
-  cvUrl: z.string().url().optional(),
+  cvUrl: secureExternalUrlSchema.optional(),
   notes: z.string().max(2000).optional(),
   sourceRef: z.string().max(255).optional(),
 })
@@ -149,10 +155,10 @@ export const createCandidateSchema = z.object({
   address: z.string().max(500).optional(),
   nationalId: z.string().max(20).optional(),
   source: z.enum(RECRUITMENT_SOURCES),
-  linkedinUrl: z.string().url().optional(),
-  portfolioUrl: z.string().url().optional(),
-  cvUrl: z.string().url().optional(),
-  avatarUrl: z.string().url().optional(),
+  linkedinUrl: secureExternalUrlSchema.optional(),
+  portfolioUrl: secureExternalUrlSchema.optional(),
+  cvUrl: secureExternalUrlSchema.optional(),
+  avatarUrl: secureExternalUrlSchema.optional(),
   notes: z.string().max(2000).optional(),
 })
 
@@ -193,7 +199,7 @@ export const createInterviewRoundSchema = z.object({
   scheduledAt: z.string().datetime("Invalid datetime format"),
   durationMinutes: z.number().int().positive().default(60),
   location: z.string().max(255).optional(),
-  meetingLink: z.string().url().optional(),
+  meetingLink: secureExternalUrlSchema.optional(),
   interviewerIds: z.array(z.string().cuid()).min(1, "At least one interviewer is required"),
 })
 
