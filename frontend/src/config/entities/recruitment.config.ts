@@ -391,6 +391,10 @@ export const OFFER_RESPONSE_LABELS: Record<string, string> = {
   [OFFER_RESPONSE.NEGOTIATE]: "Đàm phán",
 }
 
+export const APPLICANT_IMPORT_MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
+export const APPLICANT_IMPORT_MAX_FILE_SIZE_LABEL = "5 MB"
+export const APPLICANT_IMPORT_ALLOWED_FILE_PATTERN = /\.(csv|xlsx|xls)$/i
+
 // ── Kanban Columns ─────────────────────────────────────────────────────────────
 
 export interface KanbanColumn {

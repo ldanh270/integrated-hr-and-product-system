@@ -8,10 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
-import { POSTING_CHANNELS } from "@/config/entities/recruitment.config"
+import { APPLICANT_IMPORT_ALLOWED_FILE_PATTERN, APPLICANT_IMPORT_MAX_FILE_SIZE_BYTES, APPLICANT_IMPORT_MAX_FILE_SIZE_LABEL, POSTING_CHANNELS } from "@/config/entities/recruitment.config"
 import { useImportApplicants, useJobPostings, useRequisitions } from "@/hooks/recruitment/use-recruitment-queries"
 import { usePermission } from "@/hooks/use-permission"
 import type { ApplicantImportResult } from "@/types/recruitment.types"
+import { toast } from "sonner"
 
 const SOURCE_OPTIONS = [
   ["website", "Website"], ["linkedin", "LinkedIn"], ["facebook", "Facebook"],
@@ -41,6 +42,14 @@ export default function ApplicantIntakePage() {
   }
   const readFile = async (file?: File) => {
     if (!file) return
+    if (!APPLICANT_IMPORT_ALLOWED_FILE_PATTERN.test(file.name)) {
+      toast.error("Chỉ hỗ trợ file CSV, XLSX hoặc XLS")
+      return
+    }
+    if (file.size > APPLICANT_IMPORT_MAX_FILE_SIZE_BYTES) {
+      toast.error(`File vượt quá giới hạn ${APPLICANT_IMPORT_MAX_FILE_SIZE_LABEL}`)
+      return
+    }
     if (/\.(xlsx|xls)$/i.test(file.name)) {
       const XLSX = await import("xlsx")
       const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" })
@@ -99,7 +108,7 @@ export default function ApplicantIntakePage() {
           <CardHeading title="Import Excel / CSV" description="Đọc sheet đầu tiên, dòng đầu là tiêu đề cột." />
           <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls,text/csv" className="hidden" onChange={(event) => void readFile(event.target.files?.[0])} />
           <Button variant="outline" className="w-full rounded-full" onClick={() => fileRef.current?.click()}><FileSpreadsheet className="mr-2 h-4 w-4" />Chọn file Excel / CSV</Button>
-          <p className="mt-4 text-xs leading-5 text-muted-foreground">Hỗ trợ CSV, XLSX, XLS. Cột bắt buộc: <span className="font-mono">fullName, email</span>. Tùy chọn: <span className="font-mono">phone, cvUrl, notes</span>.</p>
+          <p className="mt-4 text-xs leading-5 text-muted-foreground">Hỗ trợ CSV, XLSX, XLS tối đa {APPLICANT_IMPORT_MAX_FILE_SIZE_LABEL}. Cột bắt buộc: <span className="font-mono">fullName, email</span>. Tùy chọn: <span className="font-mono">phone, cvUrl, notes</span>.</p>
         </PageCard>
       </div>
       <PageCard padding="sm" className="p-0 overflow-hidden">
