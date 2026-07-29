@@ -91,7 +91,7 @@ export function EmployeeDetailsDrawer({ employeeId, onClose }: EmployeeDetailsDr
         },
       })
       toast.dismiss(toastId)
-    } catch (error) {
+    } catch (_error) {
       toast.dismiss(toastId)
     }
   }
@@ -348,4 +348,3 @@ export function EmployeeDetailsDrawer({ employeeId, onClose }: EmployeeDetailsDr
     </AppDrawer>
   )
 }
-

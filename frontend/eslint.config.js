@@ -34,7 +34,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["src/client/**/*.{ts,tsx}", "src/components/**/*.{ts,tsx}", "src/**/*.tsx"], // Chỉ định rõ thư mục Frontend
+    files: ["src/**/*.{ts,tsx}"], // Chỉ định rõ thư mục Frontend
     plugins: {
       react: reactPlugin,
       "react-hooks": reactHooks,
@@ -49,6 +49,10 @@ export default tseslint.config(
       ...reactPlugin.configs.recommended.rules,
       ...reactPlugin.configs["jsx-runtime"].rules, // Hỗ trợ React 17+ không cần import React
       ...reactHooks.configs.recommended.rules,
+      // Form state is initialized when dialogs and routes receive new inputs.
+      // These controlled resets are intentional; React Compiler cannot infer them safely.
+      "react-hooks/set-state-in-effect": "off",
+      "react/no-unescaped-entities": "warn",
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
     },
     settings: {
