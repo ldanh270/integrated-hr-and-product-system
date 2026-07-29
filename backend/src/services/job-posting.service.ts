@@ -46,9 +46,31 @@ export class JobPostingService {
     const channel = input.channel ?? RECRUITMENT_CHANNEL.GOOGLE_FORM
     let oauthAccountId = input.oauthAccountId ?? null
 
-    if (!oauthAccountId && channel === RECRUITMENT_CHANNEL.GOOGLE_FORM) {
-      const defaultOAuth = await recruitmentOAuthAccountRepository.findFirstByChannel(RECRUITMENT_CHANNEL.GOOGLE_FORM)
-      oauthAccountId = defaultOAuth?.id ?? null
+    if (oauthAccountId) {
+      const oauthAccount = await recruitmentOAuthAccountRepository.findByIdForUser(oauthAccountId, actorId)
+      if (!oauthAccount) {
+        throw new AppError(
+          "Tài khoản OAuth không tồn tại hoặc không thuộc quyền sở hữu của bạn",
+          HttpStatusCode.FORBIDDEN,
+          LAYER,
+          "OAUTH_ACCOUNT_FORBIDDEN",
+        )
+      }
+      if (oauthAccount.channel !== channel) {
+        throw new AppError(
+          "Tài khoản OAuth không tương thích với kênh bài đăng",
+          HttpStatusCode.BAD_REQUEST,
+          LAYER,
+          "OAUTH_CHANNEL_MISMATCH",
+        )
+      }
+    } else if (channel === RECRUITMENT_CHANNEL.GOOGLE_FORM) {
+      throw new AppError(
+        "Bài đăng Google Forms phải chọn tài khoản OAuth thuộc tài khoản của bạn",
+        HttpStatusCode.BAD_REQUEST,
+        LAYER,
+        "OAUTH_ACCOUNT_REQUIRED",
+      )
     }
 
     const sourceCode = `${GOOGLE_FORM_SOURCE_CODE_PREFIX}_${randomUUID().replaceAll("-", "")}`
