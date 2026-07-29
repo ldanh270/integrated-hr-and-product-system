@@ -143,7 +143,7 @@ export default function ApplicationDetailPage() {
   const createInterviewMutation = useMutation({
     mutationFn: () => {
       return interviewApi.create({
-        applicationId: id!,
+        applicationId: id ?? "",
         title: roundTitle.trim(),
         roundNumber: interviews.length + 1,
         format: roundFormat,
@@ -1224,9 +1224,9 @@ export default function ApplicationDetailPage() {
                     <div className="space-y-1">
                       <Label className="text-[11px] font-bold text-muted-foreground">Chọn giờ phỏng vấn</Label>
                       <Select
-                        value={editScheduledAt?.split("T")[1]?.substring(0, 5) || "09:00"}
+                        value={editScheduledAt ? editScheduledAt.split("T")[1]?.substring(0, 5) || "09:00" : "09:00"}
                         onValueChange={(timeVal) => {
-                          const dateVal = editScheduledAt?.split("T")[0] || format(new Date(), "yyyy-MM-dd")
+                          const dateVal = editScheduledAt ? editScheduledAt.split("T")[0] : format(new Date(), "yyyy-MM-dd")
                           setEditScheduledAt(`${dateVal}T${timeVal}`)
                         }}
                       >

@@ -218,7 +218,10 @@ export function useEmployeeCreateWizard() {
   const moveToTab = (nextTab: WizardTab) => {
     const tabOrder: Record<WizardTab, number> = { bio: 0, job: 1, family: 2 }
 
-    if (tabOrder[nextTab] > tabOrder[activeTab]) {
+    const nextOrder = Object.prototype.hasOwnProperty.call(tabOrder, nextTab) ? tabOrder[nextTab] : 0
+    const activeOrder = Object.prototype.hasOwnProperty.call(tabOrder, activeTab) ? tabOrder[activeTab] : 0
+
+    if (nextOrder > activeOrder) {
       setHasAttemptedSubmit(true)
       if (!validateTab(activeTab)) return
     }

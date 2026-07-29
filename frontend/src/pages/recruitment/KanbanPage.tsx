@@ -44,8 +44,8 @@ export default function KanbanPage({ postingId: givenPostingId, requisitionId = 
   const defaultStage = statuses.find((stage) => stage.isDefault) ?? statuses[0]
   tasks.forEach((application) => {
     const stageId = application.pipelineStage?.id
-    if (stageId && applicationsByStage[stageId]) applicationsByStage[stageId].push(application)
-    else if (defaultStage) applicationsByStage[defaultStage.id].push(application)
+    if (stageId && Object.prototype.hasOwnProperty.call(applicationsByStage, stageId)) applicationsByStage[stageId].push(application)
+    else if (defaultStage && Object.prototype.hasOwnProperty.call(applicationsByStage, defaultStage.id)) applicationsByStage[defaultStage.id].push(application)
   })
 
   return (

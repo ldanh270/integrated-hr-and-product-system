@@ -73,8 +73,8 @@ export function useCreateContract() {
     mutationFn: (data: ICreateContractPayload) => createContract(data),
     onSuccess: () => {
       toast.success(CONTRACT_MESSAGES.CREATE)
-      queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.LIST })
-      queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.EMPLOYEE("") })
+      void queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.LIST })
+      void queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.EMPLOYEE("") })
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { message?: string } } }

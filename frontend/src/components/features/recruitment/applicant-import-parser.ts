@@ -10,7 +10,7 @@ function parseDelimitedRows(value: string): string[][] {
   const delimiter = value.split(/\r?\n/, 1)[0]?.includes(";") ? ";" : ","
   const rows: string[][] = []; let row: string[] = []; let cell = ""; let quoted = false
   for (let index = 0; index < value.length; index += 1) {
-    const char = value[index]
+    const char = value.charAt(index)
     if (char === '"' && quoted && value[index + 1] === '"') { cell += '"'; index += 1; continue }
     if (char === '"') { quoted = !quoted; continue }
     if (char === delimiter && !quoted) { row.push(cell.trim()); cell = ""; continue }
