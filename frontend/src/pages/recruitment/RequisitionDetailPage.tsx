@@ -65,7 +65,6 @@ export default function RequisitionDetailPage() {
             const completionRate = Math.min(100, Math.round((hiredCount / headcount) * 100))
             const totalAppsCount = applications.length || 1
 
-            let currentAccumulated = 0
             const circumference = 2 * Math.PI * 50
 
             return (
