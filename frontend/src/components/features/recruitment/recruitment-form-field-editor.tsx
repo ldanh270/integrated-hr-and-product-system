@@ -51,7 +51,7 @@ export function RecruitmentFormFieldEditor({ fields, onChange }: Props) {
                   id={`field-label-${index}`}
                   value={field.label}
                   disabled={isSystemField}
-                  onChange={(event) => updateField(index, { label: event.target.value })}
+                  onChange={(event) => { updateField(index, { label: event.target.value }); }}
                   placeholder="Ví dụ: Kinh nghiệm nổi bật"
                 />
               </div>
@@ -59,9 +59,9 @@ export function RecruitmentFormFieldEditor({ fields, onChange }: Props) {
                 <Label htmlFor={`field-key-${index}`}>Mã field <span className="text-destructive" aria-hidden="true">*</span></Label>
                 <Input
                   id={`field-key-${index}`}
-                  value={field.key}
+                  value={field.label ? field.key : ""}
                   disabled={isSystemField}
-                  onChange={(event) => updateField(index, { key: event.target.value.toLowerCase() })}
+                  onChange={(event) => { updateField(index, { key: event.target.value.toLowerCase() }); }}
                   placeholder="kinh_nghiem_noi_bat"
                   className="font-mono"
                 />

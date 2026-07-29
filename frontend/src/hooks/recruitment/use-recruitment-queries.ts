@@ -156,7 +156,7 @@ export function useCreateRequisition() {
   return useMutation({
     mutationFn: requisitionApi.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "requisitions"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "requisitions"] })
       toast.success("Đã tạo yêu cầu tuyển dụng")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -171,8 +171,8 @@ export function useUpdateRequisition() {
     mutationFn: ({ id, data }: { id: string; data: Parameters<typeof requisitionApi.update>[1] }) =>
       requisitionApi.update(id, data),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "requisitions"] })
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "requisitions", id] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "requisitions"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "requisitions", id] })
       toast.success("Đã cập nhật yêu cầu tuyển dụng")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -646,7 +646,7 @@ export function useDeleteOAuthAccount() {
   return useMutation({
     mutationFn: oauthAccountApi.delete,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "oauth-accounts"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "oauth-accounts"] })
       toast.success("Đã xóa cấu hình OAuth")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
