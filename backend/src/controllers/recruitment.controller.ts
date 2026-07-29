@@ -789,12 +789,12 @@ export class RecruitmentController {
         refreshToken: tokens.refreshToken,
       }, accountId)
 
-      res.redirect(redirectUrl("/recruitment/oauth-accounts?success=connected"))
+      res.redirect(buildRedirectUrl("/recruitment/oauth-accounts", "success", "connected"))
       return
     } catch (err: unknown) {
       console.error("Google OAuth callback error:", err)
       const reason = err instanceof Error ? err.message : "token_exchange_failed"
-      res.redirect(redirectUrl(`/recruitment/oauth-accounts?error=${encodeURIComponent(reason)}`))
+      res.redirect(buildRedirectUrl("/recruitment/oauth-accounts", "error", reason))
       return
     }
   }
