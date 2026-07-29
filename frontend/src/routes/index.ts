@@ -249,11 +249,13 @@ const privateRoutes: RouteConfig[] = [
     path: "/recruitment/requisitions/:id/:tab",
     component: lazy(() => import("@/pages/recruitment/RequisitionDetailPage.tsx")),
     layout: MainLayout,
+    permissions: ["recruitment.read"],
   },
   {
     path: "/recruitment/requisitions/:id",
     component: lazy(() => import("@/pages/recruitment/RequisitionDetailPage.tsx")),
     layout: MainLayout,
+    permissions: ["recruitment.read"],
   },
   {
     path: ROUTES.PROJECT.MY_PROJECTS,
