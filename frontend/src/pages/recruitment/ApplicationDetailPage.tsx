@@ -837,7 +837,7 @@ export default function ApplicationDetailPage() {
                 <SelectContent>
                   {RECRUITMENT_APPLICATION_STATUSES.map((statusVal) => (
                     <SelectItem key={statusVal} value={statusVal} className="text-xs font-medium">
-                      {APPLICATION_STATUS_LABELS[statusVal] ?? statusVal}
+                      {Object.prototype.hasOwnProperty.call(APPLICATION_STATUS_LABELS, statusVal) ? APPLICATION_STATUS_LABELS[statusVal] : statusVal}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1013,7 +1013,7 @@ export default function ApplicationDetailPage() {
                       <Select
                         value={roundScheduledAt?.split("T")[1]?.substring(0, 5) || "09:00"}
                         onValueChange={(timeVal) => {
-                          const dateVal = roundScheduledAt?.split("T")[0] || format(new Date(), "yyyy-MM-dd")
+                          const dateVal = roundScheduledAt ? roundScheduledAt.split("T")[0] : format(new Date(), "yyyy-MM-dd")
                           setRoundScheduledAt(`${dateVal}T${timeVal}`)
                         }}
                       >

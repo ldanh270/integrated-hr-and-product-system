@@ -145,9 +145,9 @@ export class RecruitmentSeeder implements ISeeder {
     }
     console.log(`    Seeded ${createdReqs.length} Job Requisitions.`)
 
-    const nodejsReq = createdReqs.find((r) => r.code === "REQ-2026-001")
-    const qaReq = createdReqs.find((r) => r.code === "REQ-2026-002")
-    const frontendReq = createdReqs.find((r) => r.code === "REQ-2026-005")
+    const nodejsReq = createdReqs.find((r) => { return r.code === "REQ-2026-001"; })
+    const qaReq = createdReqs.find((r) => { return r.code === "REQ-2026-002"; })
+    const frontendReq = createdReqs.find((r) => { return r.code === "REQ-2026-005"; })
 
     if (!nodejsReq || !qaReq || !frontendReq) {
       throw new Error("Failed to find seeded requisitions")
@@ -198,9 +198,9 @@ export class RecruitmentSeeder implements ISeeder {
     }
     console.log(`    Seeded ${createdPostings.length} Job Postings.`)
 
-    const nodejsLinkedinPost = createdPostings.find((p) => p.sourceCode === "PUB-LN-001")
-    const qaFacebookPost = createdPostings.find((p) => p.sourceCode === "PUB-FB-002")
-    const frontendLinkedinPost = createdPostings.find((p) => p.sourceCode === "PUB-LN-003")
+    const nodejsLinkedinPost = createdPostings.find((p) => { return p.sourceCode === "PUB-LN-001"; })
+    const qaFacebookPost = createdPostings.find((p) => { return p.sourceCode === "PUB-FB-002"; })
+    const frontendLinkedinPost = createdPostings.find((p) => { return p.sourceCode === "PUB-LN-003"; })
 
     if (!nodejsLinkedinPost || !qaFacebookPost || !frontendLinkedinPost) {
       throw new Error("Failed to find seeded job postings")
@@ -295,12 +295,12 @@ export class RecruitmentSeeder implements ISeeder {
     console.log(`    Seeded ${createdCandidates.length} Candidates.`)
 
     // Extract candidates
-    const linhCandidate = createdCandidates.find((c) => c.email.includes("linh"))
-    const maiCandidate = createdCandidates.find((c) => c.email.includes("mai"))
-    const namCandidate = createdCandidates.find((c) => c.email.includes("nam"))
-    const ducCandidate = createdCandidates.find((c) => c.email.includes("duc"))
-    const vietCandidate = createdCandidates.find((c) => c.email.includes("viet"))
-    const lanCandidate = createdCandidates.find((c) => c.email.includes("lan"))
+    const linhCandidate = createdCandidates.find((c) => { return c.email.includes("linh"); })
+    const maiCandidate = createdCandidates.find((c) => { return c.email.includes("mai"); })
+    const namCandidate = createdCandidates.find((c) => { return c.email.includes("nam"); })
+    const ducCandidate = createdCandidates.find((c) => { return c.email.includes("duc"); })
+    const vietCandidate = createdCandidates.find((c) => { return c.email.includes("viet"); })
+    const lanCandidate = createdCandidates.find((c) => { return c.email.includes("lan"); })
 
     if (!linhCandidate || !maiCandidate || !namCandidate || !ducCandidate || !vietCandidate || !lanCandidate) {
       throw new Error("Failed to find seeded candidates")

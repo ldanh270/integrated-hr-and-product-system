@@ -76,7 +76,7 @@ export function canTransitionApplicationStatus(
 // Get all possible next statuses
 export function getNextApplicationStatuses(status: ApplicationStatus): ApplicationStatus[] {
   if (Object.prototype.hasOwnProperty.call(APPLICATION_STATUS_TRANSITIONS, status)) {
-    return APPLICATION_STATUS_TRANSITIONS[status] ?? []
+    return APPLICATION_STATUS_TRANSITIONS[status]
   }
   return []
 }
