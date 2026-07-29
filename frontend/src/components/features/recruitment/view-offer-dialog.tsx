@@ -51,7 +51,7 @@ export function ViewOfferDialog({ open, onOpenChange, offer }: Props) {
             </Badge>
             <StatusPill
               label={OFFER_STATUS_LABELS[offer.status] || offer.status}
-              variant={statusVariantMap[offer.status] || "neutral"}
+              variant={statusVariantMap[offer.status as keyof typeof statusVariantMap] ?? "neutral"}
             />
           </div>
           <DialogTitle className="mt-2 text-xl font-bold text-foreground flex items-center gap-2">

@@ -30,7 +30,12 @@ export function parseApplicantCsv(value: string): ApplicantImportRow[] {
   const headers = rows[0].map((header) => COLUMN_ALIASES[header.trim().toLowerCase()])
   return rows.slice(1).map((cells) => {
     const row: Partial<ApplicantImportRow> = {}
-    cells.forEach((cell, index) => { const key = headers[index]; if (key) row[key] = cell })
+    cells.forEach((cell, index) => {
+      const key = headers[index]
+      if (key && Object.prototype.hasOwnProperty.call(COLUMN_ALIASES, key) || key === "fullName" || key === "email" || key === "phone" || key === "cvUrl" || key === "notes") {
+        row[key] = cell
+      }
+    })
     return row
   }) as ApplicantImportRow[]
 }

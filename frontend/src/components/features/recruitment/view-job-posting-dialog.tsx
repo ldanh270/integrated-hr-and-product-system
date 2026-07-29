@@ -296,7 +296,7 @@ export function ViewJobPostingDialog({ open, onOpenChange, posting }: Props) {
         </div>
 
         <DialogFooter className="pt-2">
-          <Button variant="outline" className="rounded-full border-border text-foreground hover:bg-muted" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" className="rounded-full border-border text-foreground hover:bg-muted" onClick={() => { onOpenChange(false); }}>
             Đóng
           </Button>
         </DialogFooter>

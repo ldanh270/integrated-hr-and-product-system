@@ -40,7 +40,7 @@ export function InterviewFeedbackPanel({
   // Fetch danh sách scorecards thuộc buổi phỏng vấn này
   const { data: scorecards = [] } = useQuery({
     queryKey: ["recruitment", "interview-scorecards", interview?.id],
-    queryFn: () => scorecardApi.listByInterview(interview!.id),
+    queryFn: () => (interview ? scorecardApi.listByInterview(interview.id) : Promise.resolve([])),
     enabled: Boolean(interview?.id) && open,
   })
 
@@ -177,7 +177,7 @@ export function InterviewFeedbackPanel({
                 placeholder="Ghi nhận điểm mạnh của ứng viên..."
                 className="min-h-[100px] resize-none rounded-xl"
                 value={strengths}
-                onChange={(e) => setStrengths(e.target.value)}
+                onChange={(e) => { setStrengths(e.target.value); }}
               />
             </div>
 
@@ -189,7 +189,7 @@ export function InterviewFeedbackPanel({
                 placeholder="Ghi nhận những điểm cần khắc phục..."
                 className="min-h-[100px] resize-none rounded-xl"
                 value={weaknesses}
-                onChange={(e) => setWeaknesses(e.target.value)}
+                onChange={(e) => { setWeaknesses(e.target.value); }}
               />
             </div>
 
@@ -209,7 +209,7 @@ export function InterviewFeedbackPanel({
                     <button
                       key={option.value}
                       type="button"
-                      onClick={() => setRecommendation(option.value as "hire" | "strong_hire" | "no_hire" | "strong_no_hire")}
+                      onClick={() => { setRecommendation(option.value as "hire" | "strong_hire" | "no_hire" | "strong_no_hire"); }}
                       className={`flex flex-col text-left rounded-xl border p-4 transition-all ${
                         isChecked
                           ? "border-primary bg-primary/5 shadow-sm"

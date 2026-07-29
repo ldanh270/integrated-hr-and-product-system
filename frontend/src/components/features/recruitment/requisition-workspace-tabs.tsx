@@ -28,7 +28,7 @@ export function RequisitionInterviewsTab({ applications, canSchedule, onCreated 
 
   return (
     <PageCard padding="sm">
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3"><WorkspaceHeader title="Lịch phỏng vấn" description="Các vòng phỏng vấn của ứng viên trong yêu cầu tuyển dụng này." count={interviews.length} />{canSchedule && <Button className="rounded-full" onClick={() => setIsScheduleOpen(true)}><Plus className="mr-2 size-4" />Tạo lịch phỏng vấn</Button>}</div>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3"><WorkspaceHeader title="Lịch phỏng vấn" description="Các vòng phỏng vấn của ứng viên trong yêu cầu tuyển dụng này." count={interviews.length} />{canSchedule && <Button className="rounded-full" onClick={() => { setIsScheduleOpen(true); }}><Plus className="mr-2 size-4" />Tạo lịch phỏng vấn</Button>}</div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="border-b text-left text-muted-foreground">

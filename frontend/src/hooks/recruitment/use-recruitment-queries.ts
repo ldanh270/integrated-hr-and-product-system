@@ -53,7 +53,7 @@ export function useCreateJobPosting() {
   return useMutation({
     mutationFn: jobPostingApi.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] })
       toast.success("Đã lưu cấu hình Google Form")
     },
     onError: (error: RecruitmentApiError) => {
@@ -67,7 +67,7 @@ export function usePublishJobPosting() {
   return useMutation({
     mutationFn: jobPostingApi.publish,
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] })
       toast.success(variables.mode === "connector" ? "Đã tạo và public Google Form" : "Đã ghi nhận bài đăng")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -81,7 +81,7 @@ export function useArchiveJobPosting() {
   return useMutation({
     mutationFn: jobPostingApi.archive,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] })
       toast.success("Đã lưu trữ bài đăng, ứng viên và lịch sử vẫn được giữ lại")
     },
     onError: (error: RecruitmentApiError) => toast.error(getRecruitmentErrorMessage(error, "Không thể lưu trữ bài đăng")),
@@ -93,8 +93,8 @@ export function useImportApplicants() {
   return useMutation({
     mutationFn: applicantIntakeApi.import,
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "candidates"] })
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "applications"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "candidates"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "applications"] })
       toast.success(`Đã tạo ${result.applicationsCreated}/${result.total} lượt ứng tuyển`)
     },
   })
@@ -105,9 +105,9 @@ export function useSyncJobPosting() {
   return useMutation({
     mutationFn: jobPostingApi.sync,
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] })
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "candidates"] })
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "applications"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "job-postings"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "candidates"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "applications"] })
       toast.success(`Đã đồng bộ ${result.applicationsCreated}/${result.total} lượt ứng tuyển từ Google Form`)
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -156,7 +156,7 @@ export function useCreateRequisition() {
   return useMutation({
     mutationFn: requisitionApi.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "requisitions"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "requisitions"] })
       toast.success("Đã tạo yêu cầu tuyển dụng")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -171,8 +171,8 @@ export function useUpdateRequisition() {
     mutationFn: ({ id, data }: { id: string; data: Parameters<typeof requisitionApi.update>[1] }) =>
       requisitionApi.update(id, data),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "requisitions"] })
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "requisitions", id] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "requisitions"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "requisitions", id] })
       toast.success("Đã cập nhật yêu cầu tuyển dụng")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -186,7 +186,7 @@ export function useSubmitRequisitionForApproval() {
   return useMutation({
     mutationFn: requisitionApi.submitForApproval,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "requisitions"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "requisitions"] })
       toast.success("Đã gửi yêu cầu phê duyệt")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -201,7 +201,7 @@ export function useApproveRequisition() {
     mutationFn: ({ id, data }: { id: string; data: { approved: boolean; comment?: string } }) =>
       requisitionApi.approve(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "requisitions"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "requisitions"] })
       toast.success("Đã phê duyệt yêu cầu tuyển dụng")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -215,7 +215,7 @@ export function useCloseRequisition() {
   return useMutation({
     mutationFn: requisitionApi.close,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "requisitions"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "requisitions"] })
       toast.success("Đã đóng yêu cầu tuyển dụng")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -252,7 +252,7 @@ export function useCreateCandidate() {
   return useMutation({
     mutationFn: candidateApi.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "candidates"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "candidates"] })
       toast.success("Đã thêm ứng viên")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -267,8 +267,8 @@ export function useUpdateCandidate() {
     mutationFn: ({ id, data }: { id: string; data: Parameters<typeof candidateApi.update>[1] }) =>
       candidateApi.update(id, data),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "candidates"] })
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "candidates", id] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "candidates"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "candidates", id] })
       toast.success("Đã cập nhật ứng viên")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -313,7 +313,7 @@ export function useCreateApplication() {
   return useMutation({
     mutationFn: applicationApi.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "applications"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "applications"] })
       toast.success("Đã tạo đơn ứng tuyển")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -646,7 +646,7 @@ export function useDeleteOAuthAccount() {
   return useMutation({
     mutationFn: oauthAccountApi.delete,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "oauth-accounts"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "oauth-accounts"] })
       toast.success("Đã xóa cấu hình OAuth")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {

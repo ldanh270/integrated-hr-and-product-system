@@ -46,13 +46,13 @@ export function ApplicationDetailPanel({
 
   const { data: application, isLoading } = useQuery({
     queryKey: ["recruitment", "application", applicationId],
-    queryFn: () => applicationApi.getOne(applicationId!),
+    queryFn: () => (applicationId ? applicationApi.getOne(applicationId) : Promise.reject(new Error("No application ID"))),
     enabled: Boolean(applicationId) && open,
   })
 
   const { data: interviews = [], isLoading: isLoadingInterviews } = useQuery({
     queryKey: ["recruitment", "application-interviews", applicationId],
-    queryFn: () => interviewApi.listByApplication(applicationId!),
+    queryFn: () => (applicationId ? interviewApi.listByApplication(applicationId) : Promise.reject(new Error("No application ID"))),
     enabled: Boolean(applicationId) && open,
   })
 
@@ -305,7 +305,7 @@ export function ApplicationDetailPanel({
                       size="sm"
                       variant="outline"
                       className="h-8 rounded-full text-xs font-semibold"
-                      onClick={() => setIsOfferDialogOpen(true)}
+                      onClick={() => { setIsOfferDialogOpen(true); }}
                     >
                       <Plus className="mr-1.5 size-3" />
                       Tạo Offer
