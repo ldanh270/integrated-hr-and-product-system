@@ -214,7 +214,7 @@ export function CreateJobPostingDialog({ open, onOpenChange, jobRequisitions, in
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" className="rounded-full border-border text-foreground hover:bg-muted" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" className="rounded-full border-border text-foreground hover:bg-muted" onClick={() => { onOpenChange(false) }}>
             Hủy
           </Button>
           <Button

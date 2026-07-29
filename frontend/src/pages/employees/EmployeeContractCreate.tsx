@@ -84,8 +84,9 @@ export default function EmployeeContractCreate() {
   const selectedEmployee = employees.find((e) => e.id === selectedEmployeeId)
 
   // 2. Thông tin hợp đồng
-  const defaultContractCode = `HDLD.${Math.floor(100000 + Math.random() * 900000)}`
-  const [contractNumber, setContractNumber] = useState(defaultContractCode)
+  const [contractNumber, setContractNumber] = useState(
+    () => `HDLD.${Math.floor(100000 + Math.random() * 900000)}`,
+  )
   const [referenceContract, setReferenceContract] = useState("")
   const [contractType, setContractType] = useState<ContractType>("definite")
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10))

@@ -20,6 +20,11 @@ import {
 } from "@/configs/entities/recruitment.config.ts"
 import { EMPLOYEE_TYPE } from "@/configs/entities/employee.config.ts"
 
+function requireSeedRecord<T>(record: T | undefined, label: string): T {
+  if (record === undefined) throw new Error(`Failed to find seeded ${label}`)
+  return record
+}
+
 export class RecruitmentSeeder implements ISeeder {
   readonly name = "Recruitment"
   readonly order = 19
@@ -145,13 +150,9 @@ export class RecruitmentSeeder implements ISeeder {
     }
     console.log(`    Seeded ${createdReqs.length} Job Requisitions.`)
 
-    const nodejsReq = createdReqs.find((r) => { return r.code === "REQ-2026-001"; })
-    const qaReq = createdReqs.find((r) => { return r.code === "REQ-2026-002"; })
-    const frontendReq = createdReqs.find((r) => { return r.code === "REQ-2026-005"; })
-
-    if (!nodejsReq || !qaReq || !frontendReq) {
-      throw new Error("Failed to find seeded requisitions")
-    }
+    const nodejsReq = requireSeedRecord(createdReqs.find((requisition) => requisition.code === "REQ-2026-001"), "Node.js requisition")
+    const qaReq = requireSeedRecord(createdReqs.find((requisition) => requisition.code === "REQ-2026-002"), "QA requisition")
+    const frontendReq = requireSeedRecord(createdReqs.find((requisition) => requisition.code === "REQ-2026-005"), "Frontend requisition")
 
     // 3. Create Job Postings
     const postingsToCreate = [
@@ -198,13 +199,9 @@ export class RecruitmentSeeder implements ISeeder {
     }
     console.log(`    Seeded ${createdPostings.length} Job Postings.`)
 
-    const nodejsLinkedinPost = createdPostings.find((p) => { return p.sourceCode === "PUB-LN-001"; })
-    const qaFacebookPost = createdPostings.find((p) => { return p.sourceCode === "PUB-FB-002"; })
-    const frontendLinkedinPost = createdPostings.find((p) => { return p.sourceCode === "PUB-LN-003"; })
-
-    if (!nodejsLinkedinPost || !qaFacebookPost || !frontendLinkedinPost) {
-      throw new Error("Failed to find seeded job postings")
-    }
+    const nodejsLinkedinPost = requireSeedRecord(createdPostings.find((posting) => posting.sourceCode === "PUB-LN-001"), "Node.js LinkedIn posting")
+    const qaFacebookPost = requireSeedRecord(createdPostings.find((posting) => posting.sourceCode === "PUB-FB-002"), "QA Facebook posting")
+    const frontendLinkedinPost = requireSeedRecord(createdPostings.find((posting) => posting.sourceCode === "PUB-LN-003"), "Frontend LinkedIn posting")
 
     const defaultStageByPosting = new Map<string, string>()
     for (const posting of createdPostings) {
@@ -295,16 +292,12 @@ export class RecruitmentSeeder implements ISeeder {
     console.log(`    Seeded ${createdCandidates.length} Candidates.`)
 
     // Extract candidates
-    const linhCandidate = createdCandidates.find((c) => { return c.email.includes("linh"); })
-    const maiCandidate = createdCandidates.find((c) => { return c.email.includes("mai"); })
-    const namCandidate = createdCandidates.find((c) => { return c.email.includes("nam"); })
-    const ducCandidate = createdCandidates.find((c) => { return c.email.includes("duc"); })
-    const vietCandidate = createdCandidates.find((c) => { return c.email.includes("viet"); })
-    const lanCandidate = createdCandidates.find((c) => { return c.email.includes("lan"); })
-
-    if (!linhCandidate || !maiCandidate || !namCandidate || !ducCandidate || !vietCandidate || !lanCandidate) {
-      throw new Error("Failed to find seeded candidates")
-    }
+    const linhCandidate = requireSeedRecord(createdCandidates.find((candidate) => candidate.email.includes("linh")), "Linh candidate")
+    const maiCandidate = requireSeedRecord(createdCandidates.find((candidate) => candidate.email.includes("mai")), "Mai candidate")
+    const namCandidate = requireSeedRecord(createdCandidates.find((candidate) => candidate.email.includes("nam")), "Nam candidate")
+    const ducCandidate = requireSeedRecord(createdCandidates.find((candidate) => candidate.email.includes("duc")), "Duc candidate")
+    const vietCandidate = requireSeedRecord(createdCandidates.find((candidate) => candidate.email.includes("viet")), "Viet candidate")
+    const lanCandidate = requireSeedRecord(createdCandidates.find((candidate) => candidate.email.includes("lan")), "Lan candidate")
 
     const nodejsStageId = defaultStageByPosting.get(nodejsLinkedinPost.id)
     const qaStageId = defaultStageByPosting.get(qaFacebookPost.id)
@@ -388,13 +381,9 @@ export class RecruitmentSeeder implements ISeeder {
     }
     console.log(`    Seeded ${createdApps.length} Recruitment Applications.`)
 
-    const linhApp = createdApps.find((a) => a.candidateId === linhCandidate.id)
-    const maiApp = createdApps.find((a) => a.candidateId === maiCandidate.id)
-    const namApp = createdApps.find((a) => a.candidateId === namCandidate.id)
-
-    if (!linhApp || !maiApp || !namApp) {
-      throw new Error("Failed to find seeded applications")
-    }
+    const linhApp = requireSeedRecord(createdApps.find((application) => application.candidateId === linhCandidate.id), "Linh application")
+    const maiApp = requireSeedRecord(createdApps.find((application) => application.candidateId === maiCandidate.id), "Mai application")
+    const namApp = requireSeedRecord(createdApps.find((application) => application.candidateId === namCandidate.id), "Nam application")
 
     // 6. Create Interview Rounds
     // Linh is interviewing: Round 1 (Completed, Pass), Round 2 (Scheduled)

@@ -187,7 +187,7 @@ export function ContractList({
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => onRenew(contract)}
+                        onClick={() => { onRenew(contract) }}
                       >
                         <RefreshCw className="h-4 w-4" />
                       </Button>

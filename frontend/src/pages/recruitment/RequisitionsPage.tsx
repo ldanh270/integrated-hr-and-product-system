@@ -100,7 +100,7 @@ export default function RequisitionsPage() {
 
   // Fetch requisition list
   const { data, isLoading } = useRequisitions({ page: 1, pageSize: 100 })
-  const allRequisitions = data?.data ?? []
+  const allRequisitions = useMemo(() => data?.data ?? [], [data?.data])
 
   // Count items per tab status
   const tabCounts = useMemo(() => {

@@ -18,11 +18,11 @@ import { IAttendanceRecordDTO, IAttendanceRepository } from "@/types/attendance.
 import { IEmployeeRepository } from "@/types/employee.types.ts"
 import {
   IEmployeeSalaryConfigRepository,
-  IPayslipDailyWorkLog,
-  IPayslipFeedbackDTO,
   IMyPayslipSummary,
   IPayrollRepository,
   IPayrollService,
+  IPayslipDailyWorkLog,
+  IPayslipFeedbackDTO,
   IPayslipRepository,
   PayrollWithPayslips,
   PayslipWithDetails,
@@ -720,37 +720,48 @@ export class PayrollService implements IPayrollService {
       employeeId,
     )) as PayslipWithPayrollRelation[]
 
-    const summaries = await Promise.all(rawPayslips.map(async (payslip) => ({
-      ...payslip,
-      periodMonth: payslip.payroll?.periodMonth,
-      periodYear: payslip.payroll?.periodYear,
-      status: payslip.payroll?.status,
-      receiptStatus: this.resolveReceiptStatus(payslip.payroll?.status),
-      isPreview: false,
-      canFeedback: payslip.payroll?.status !== PAYROLL_STATUS.PAID,
-      dailyWorkLogs:
-        payslip.payroll?.periodMonth && payslip.payroll?.periodYear
-          ? await this.buildDailyWorkLogs(employeeId, payslip.payroll.periodMonth, payslip.payroll.periodYear)
-          : [],
-    })))
+    const summaries = await Promise.all(
+      rawPayslips.map(async (payslip) => ({
+        ...payslip,
+        periodMonth: payslip.payroll?.periodMonth,
+        periodYear: payslip.payroll?.periodYear,
+        status: payslip.payroll?.status,
+        receiptStatus: this.resolveReceiptStatus(payslip.payroll?.status),
+        isPreview: false,
+        canFeedback: payslip.payroll?.status !== PAYROLL_STATUS.PAID,
+        dailyWorkLogs:
+          payslip.payroll?.periodMonth && payslip.payroll?.periodYear
+            ? await this.buildDailyWorkLogs(
+                employeeId,
+                payslip.payroll.periodMonth,
+                payslip.payroll.periodYear,
+              )
+            : [],
+      })),
+    )
 
     // Surface an in-memory current-month preview before payroll generation so employees can flag attendance issues early.
     const preview = await this.buildCurrentPreviewPayslip(employeeId, summaries)
     return preview ? [preview, ...summaries] : summaries
   }
 
-  async submitMyPayslipFeedback(
-    employeeId: string,
-    data: IPayslipFeedbackDTO,
-  ): Promise<unknown> {
+  async submitMyPayslipFeedback(employeeId: string, data: IPayslipFeedbackDTO): Promise<unknown> {
     const reason = data.reason.trim()
     if (!reason) {
-      throw new AppError("Vui lòng nhập nội dung feedback", HttpStatusCode.BAD_REQUEST, ErrorLayer.VALIDATION)
+      throw new AppError(
+        "Vui lòng nhập nội dung feedback",
+        HttpStatusCode.BAD_REQUEST,
+        ErrorLayer.VALIDATION,
+      )
     }
 
     const targetDate = new Date(data.date)
     if (Number.isNaN(targetDate.getTime())) {
-      throw new AppError("Ngày feedback không hợp lệ", HttpStatusCode.BAD_REQUEST, ErrorLayer.VALIDATION)
+      throw new AppError(
+        "Ngày feedback không hợp lệ",
+        HttpStatusCode.BAD_REQUEST,
+        ErrorLayer.VALIDATION,
+      )
     }
 
     const day = new Date(targetDate)
@@ -885,13 +896,19 @@ export class PayrollService implements IPayrollService {
       )
     }
 
-    const attendanceRecords = (await this.attendanceRepo.queryRecords({
-      employeeId,
-      startDate: periodStart.toISOString(),
-      endDate: periodEnd.toISOString(),
-    })) ?? []
+    const attendanceRecords =
+      (await this.attendanceRepo.queryRecords({
+        employeeId,
+        startDate: periodStart.toISOString(),
+        endDate: periodEnd.toISOString(),
+      })) ?? []
     const attendance = this.summarizeAttendance(attendanceRecords)
-    const details: Array<{ componentId: string; name: string; type: ComponentType; value: number }> = []
+    const details: Array<{
+      componentId: string
+      name: string
+      type: ComponentType
+      value: number
+    }> = []
     const context: Record<string, unknown> = {
       baseSalary: Number(config.baseSalary),
       workingDays: 22,
@@ -913,14 +930,17 @@ export class PayrollService implements IPayrollService {
     for (const tc of config.template.components) {
       context.totalAdditions = Number(totalAdditions)
       context.totalDeductions = Number(totalDeductions)
-      const value = new Prisma.Decimal(Math.max(0, math.evaluate(tc.overrideFormula ?? tc.component.formula, context)))
+      const value = new Prisma.Decimal(
+        Math.max(0, math.evaluate(tc.overrideFormula ?? tc.component.formula, context)),
+      )
       details.push({
         componentId: tc.component.id,
         name: tc.component.name,
         type: tc.component.type,
         value: Number(value.toFixed(2)),
       })
-      if (tc.component.type === SALARY_COMPONENT_TYPES[0]) totalAdditions = totalAdditions.add(value)
+      if (tc.component.type === SALARY_COMPONENT_TYPES[0])
+        totalAdditions = totalAdditions.add(value)
       else totalDeductions = totalDeductions.add(value)
     }
 
@@ -965,7 +985,12 @@ export class PayrollService implements IPayrollService {
 
     let totalHours = 0
     let grossPay = 0
-    const details: Array<{ componentId: string; name: string; type: ComponentType; value: number }> = []
+    const details: Array<{
+      componentId: string
+      name: string
+      type: ComponentType
+      value: number
+    }> = []
 
     for (const row of rows) {
       const multiplier =
@@ -988,11 +1013,12 @@ export class PayrollService implements IPayrollService {
 
     if (totalHours === 0) return null
 
-    const attendanceRecords = (await this.attendanceRepo.queryRecords({
-      employeeId,
-      startDate: periodStart.toISOString(),
-      endDate: periodEnd.toISOString(),
-    })) ?? []
+    const attendanceRecords =
+      (await this.attendanceRepo.queryRecords({
+        employeeId,
+        startDate: periodStart.toISOString(),
+        endDate: periodEnd.toISOString(),
+      })) ?? []
     const overtimeMinutes = Math.round(
       rows
         .filter((row) => row.workTimeType === SPENT_TIME_WORK_TIME_TYPE.OVERTIME)
@@ -1031,7 +1057,8 @@ export class PayrollService implements IPayrollService {
         else attendance.absentDays += 1
       }
       if (record.status === ATTENDANCE_STATUS.OVERTIME) attendance.workingDays += 1
-      if (record.status === (EMPLOYEE_SHIFT_STATUS.HOLIDAY_PENDING as string)) attendance.holidayDays += 1
+      if (record.status === (EMPLOYEE_SHIFT_STATUS.HOLIDAY_PENDING as string))
+        attendance.holidayDays += 1
       attendance.overtimeMinutes += record.overtimeMinutes || 0
       attendance.lateMinutes += record.lateMinutes || 0
       attendance.earlyLeaveMinutes += record.earlyLeaveMinutes || 0
@@ -1047,11 +1074,12 @@ export class PayrollService implements IPayrollService {
   ): Promise<IPayslipDailyWorkLog[]> {
     const periodStart = new Date(year, month - 1, 1)
     const periodEnd = new Date(year, month, 0)
-    const records = (await this.attendanceRepo.queryRecords({
-      employeeId,
-      startDate: periodStart.toISOString(),
-      endDate: periodEnd.toISOString(),
-    })) ?? []
+    const records =
+      (await this.attendanceRepo.queryRecords({
+        employeeId,
+        startDate: periodStart.toISOString(),
+        endDate: periodEnd.toISOString(),
+      })) ?? []
     return this.mapDailyWorkLogs(month, year, records)
   }
 
@@ -1088,7 +1116,10 @@ export class PayrollService implements IPayrollService {
         status: this.resolveDailyStatus(dayRecords),
         workMinutes,
         workHours: Number((workMinutes / ATTENDANCE_TIME_RULES.MINUTES_PER_HOUR).toFixed(2)),
-        overtimeMinutes: dayRecords.reduce((total, record) => total + (record.overtimeMinutes ?? 0), 0),
+        overtimeMinutes: dayRecords.reduce(
+          (total, record) => total + (record.overtimeMinutes ?? 0),
+          0,
+        ),
         lateMinutes: dayRecords.reduce((total, record) => total + (record.lateMinutes ?? 0), 0),
         earlyLeaveMinutes: dayRecords.reduce(
           (total, record) => total + (record.earlyLeaveMinutes ?? 0),
@@ -1130,8 +1161,10 @@ export class PayrollService implements IPayrollService {
       ATTENDANCE_STATUS.OVERTIME,
       ATTENDANCE_STATUS.ON_TIME,
     ]
-    return priorities.find((status) => records.some((record) => record.status === status))
-      ?? records[0].status
+    return (
+      priorities.find((status) => records.some((record) => record.status === status)) ??
+      records[0].status
+    )
   }
 
   private resolveDailyShiftName(records: IAttendanceRecordDTO[]): string | null {
@@ -1172,15 +1205,20 @@ export class PayrollService implements IPayrollService {
   ): Date {
     const [hours, minutes] = time.split(":").map(Number)
     const result = new Date(date)
-    result.setHours(Number.isFinite(hours) ? hours : 0, Number.isFinite(minutes) ? minutes : 0, 0, 0)
+    result.setHours(
+      Number.isFinite(hours) ? hours : 0,
+      Number.isFinite(minutes) ? minutes : 0,
+      0,
+      0,
+    )
     const minutesFromMidnight =
-      (Number.isFinite(hours) ? hours : 0) * ATTENDANCE_TIME_RULES.MINUTES_PER_HOUR
-      + (Number.isFinite(minutes) ? minutes : 0)
+      (Number.isFinite(hours) ? hours : 0) * ATTENDANCE_TIME_RULES.MINUTES_PER_HOUR +
+      (Number.isFinite(minutes) ? minutes : 0)
     if (
-      kind === "checkout"
-      && shift
-      && shift.endTime < shift.startTime
-      && minutesFromMidnight <= shift.endTime
+      kind === "checkout" &&
+      shift &&
+      shift.endTime < shift.startTime &&
+      minutesFromMidnight <= shift.endTime
     ) {
       // Overnight shifts store checkout after midnight on the following calendar day.
       result.setDate(result.getDate() + 1)

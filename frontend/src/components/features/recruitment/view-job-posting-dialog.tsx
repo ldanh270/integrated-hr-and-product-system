@@ -233,7 +233,7 @@ export function ViewJobPostingDialog({ open, onOpenChange, posting }: Props) {
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => handleCopy(posting.sourceCode, "code")}
+                  onClick={() => { handleCopy(posting.sourceCode, "code") }}
                   className="h-7 w-7 p-0 rounded-full shrink-0"
                   title="Sao chép Mã nguồn"
                 >

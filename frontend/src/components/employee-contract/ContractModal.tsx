@@ -236,7 +236,7 @@ export function ContractModal({
                   id="terminationReason"
                   placeholder="Nhập lý do chấm dứt hợp đồng..."
                   value={terminationReason}
-                  onChange={(e) => setTerminationReason(e.target.value)}
+                  onChange={(e) => { setTerminationReason(e.target.value) }}
                   className="rounded-xl border-border resize-none"
                   rows={3}
                   required
@@ -301,7 +301,7 @@ export function ContractModal({
                   id="startDate"
                   type="date"
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={(e) => { setStartDate(e.target.value) }}
                   className="rounded-full"
                   required
                 />
@@ -374,7 +374,7 @@ export function ContractModal({
                   id="note"
                   placeholder="Ghi chú thêm về điều khoản..."
                   value={note}
-                  onChange={(e) => setNote(e.target.value)}
+                  onChange={(e) => { setNote(e.target.value) }}
                   className="rounded-xl border-border resize-none"
                   rows={2}
                 />

@@ -164,7 +164,7 @@ export default function InterviewsPage() {
   }
 
   const { data: upcomingData, isLoading } = useUpcomingInterviews(14)
-  const interviews = upcomingData ?? []
+  const interviews = useMemo(() => upcomingData ?? [], [upcomingData])
 
   const tabCounts = useMemo(() => {
     const counts: Record<string, number> = { all: interviews.length }

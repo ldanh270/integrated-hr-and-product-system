@@ -70,15 +70,12 @@ export function canTransitionApplicationStatus(
   from: ApplicationStatus,
   to: ApplicationStatus
 ): boolean {
-  return APPLICATION_STATUS_TRANSITIONS[from]?.includes(to) ?? false
+  return APPLICATION_STATUS_TRANSITIONS[from].includes(to)
 }
 
 // Get all possible next statuses
 export function getNextApplicationStatuses(status: ApplicationStatus): ApplicationStatus[] {
-  if (Object.prototype.hasOwnProperty.call(APPLICATION_STATUS_TRANSITIONS, status)) {
-    return APPLICATION_STATUS_TRANSITIONS[status]
-  }
-  return []
+  return APPLICATION_STATUS_TRANSITIONS[status]
 }
 
 export function isTerminalApplicationStatus(status: ApplicationStatus): boolean {
@@ -90,10 +87,20 @@ export function isTerminalApplicationStatus(status: ApplicationStatus): boolean 
 // Defines which checks are required for each BGC group (A, B, C, D)
 // ═══════════════════════════════════════════════════════════════════════════════
 
+export type BgcCheckField =
+  | "idVerified"
+  | "addressVerified"
+  | "criminalRecordCheck"
+  | "legalStatusCheck"
+  | "certificationVerified"
+  | "employmentHistoryVerified"
+  | "financialCheckCompleted"
+  | "creditScoreCheck"
+
 export interface BgcCheckDefinition {
   name: string
   description: string
-  field: string
+  field: BgcCheckField
   required: boolean
 }
 

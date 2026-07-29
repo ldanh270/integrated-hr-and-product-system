@@ -122,7 +122,7 @@ export default function ContractsPage() {
         },
       })
       toast.dismiss(toastId)
-    } catch (error) {
+    } catch (_error) {
       toast.dismiss(toastId)
     }
   }

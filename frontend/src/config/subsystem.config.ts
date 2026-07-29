@@ -21,8 +21,8 @@ import {
   Settings,
   Settings2,
   ShieldCheck,
-  UserCheck,
   Upload,
+  UserCheck,
   Users,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
@@ -317,6 +317,13 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         path: ROUTES.PROJECT.LIST,
         icon: Briefcase,
         permissions: ["project.read"],
+      },
+      // Admin/PM-only board for weekly Capacity Copilot shortage/surplus overview.
+      {
+        name: "Dự báo capacity",
+        path: ROUTES.PROJECT.CAPACITY_BOARD,
+        icon: BrainCircuit,
+        permissions: ["project.update"],
       },
     ],
   },

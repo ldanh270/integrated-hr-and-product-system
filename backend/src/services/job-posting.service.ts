@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto"
+import type { Prisma, RecruitmentChannel } from "@prisma/client"
 import {
   RECRUITMENT_CHANNEL,
   RECRUITMENT_SOURCE,
@@ -79,10 +80,10 @@ export class JobPostingService {
       : input.fields ?? GOOGLE_FORM_DEFAULT_FIELDS
     const posting = await jobPostingRepository.create({
       requisitionId: input.requisitionId,
-      channel: channel as any,
+      channel: channel as RecruitmentChannel,
       source: RECRUITMENT_SOURCE.GOOGLE_FORM,
       sourceCode,
-      formFields: fields as any,
+      formFields: this.toFormFieldsJson(fields),
       oauthAccountId,
     }, fields)
     await jobRequisitionRepository.ensurePipeline(input.requisitionId)
@@ -298,6 +299,17 @@ export class JobPostingService {
       LAYER,
       "CONNECTOR_NOT_CONFIGURED",
     )
+  }
+
+  private toFormFieldsJson(
+    fields: ReadonlyArray<{ key: string; label: string; type: string; required: boolean }>,
+  ): Prisma.InputJsonArray {
+    return fields.map((field) => ({
+      key: field.key,
+      label: field.label,
+      type: field.type,
+      required: field.required,
+    }))
   }
 
   private async markApiError(id: string, error: unknown) {
