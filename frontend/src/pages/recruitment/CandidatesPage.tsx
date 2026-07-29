@@ -13,7 +13,10 @@ import {
 } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { RECRUITMENT_SOURCE_LABELS } from "@/config/entities/recruitment.config"
+import { ROUTES } from "@/config/routes.config"
 import { useCandidates } from "@/hooks/recruitment/use-recruitment-queries"
+import { usePermission } from "@/hooks/use-permission"
+import { routerNavigate } from "@/lib/router-navigator"
 import type { Candidate } from "@/types/recruitment.types"
 import { Eye, Mail, Phone, Plus } from "lucide-react"
 import { useState } from "react"
@@ -24,6 +27,7 @@ export default function CandidatesPage() {
   const [keyword, setKeyword] = useState("")
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
   const [viewCandidateOpen, setViewCandidateOpen] = useState(false)
+  const { hasPermission } = usePermission()
 
   const { data, isLoading } = useCandidates({
     keyword: keyword || undefined,
@@ -44,12 +48,12 @@ export default function CandidatesPage() {
       <PageHeader
         title="Ứng viên"
         description="Quản lý danh sách ứng viên và hồ sơ"
-        actions={
-          <Button className="rounded-full" onClick={() => setViewCandidateOpen(false)}>
+        actions={hasPermission("recruitment.intake.manage") ? (
+          <Button className="rounded-full" onClick={() => routerNavigate(ROUTES.RECRUITMENT.APPLICANT_INTAKE)}>
             <Plus className="mr-2 h-4 w-4" />
-            Thêm ứng viên
+            Tiếp nhận ứng viên
           </Button>
-        }
+        ) : undefined}
       />
 
       <PageCard padding="sm" className="p-0 overflow-hidden">
