@@ -98,7 +98,6 @@ const defaultCandidateSchema: RecruitmentFormField[] = [
   { key: "email", label: "Email", type: "short_text", required: true },
   { key: "phone", label: "Số điện thoại", type: "short_text", required: false },
   { key: "cv_url", label: "Đường dẫn CV", type: "short_text", required: false },
-  { key: "notes", label: "Thông tin bổ sung", type: "paragraph", required: false },
 ]
 
 const isEmployeeType = (value: string): value is RequisitionFormValues["employmentType"] =>
