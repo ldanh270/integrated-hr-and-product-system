@@ -230,7 +230,7 @@ export function RequisitionDetailsDrawer({ requisitionId, onClose, onEdit }: Req
                             size="sm"
                             className="rounded-full gap-1.5"
                             disabled={approveMutation.isPending}
-                            onClick={() => setIsRejectOpen(true)}
+                            onClick={() => { setIsRejectOpen(true) }}
                           >
                             <X size={14} /> Từ chối
                           </Button>

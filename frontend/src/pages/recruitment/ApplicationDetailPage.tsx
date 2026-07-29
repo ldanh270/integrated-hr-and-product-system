@@ -54,6 +54,7 @@ import { extractErrorMessage } from "@/utils/error-helper"
 
 export default function ApplicationDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const applicationId = id ?? ""
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const defaultTab = searchParams.get("tab") ?? "overview"
@@ -78,21 +79,21 @@ export default function ApplicationDetailPage() {
   // Fetch application data
   const { data: application, isLoading } = useQuery({
     queryKey: ["recruitment", "application", id],
-    queryFn: () => applicationApi.getOne(id!),
+    queryFn: () => applicationApi.getOne(applicationId),
     enabled: Boolean(id),
   })
 
   // Fetch interview rounds
   const { data: interviews = [], isLoading: isLoadingInterviews } = useQuery({
     queryKey: ["recruitment", "application-interviews", id],
-    queryFn: () => interviewApi.listByApplication(id!),
+    queryFn: () => interviewApi.listByApplication(applicationId),
     enabled: Boolean(id),
   })
 
   // Fetch application notes
   const { data: notes = [], isLoading: isLoadingNotes } = useQuery({
     queryKey: ["recruitment", "application-notes", id],
-    queryFn: () => applicationApi.getNotes(id!),
+    queryFn: () => applicationApi.getNotes(applicationId),
     enabled: Boolean(id),
   })
 
@@ -103,14 +104,14 @@ export default function ApplicationDetailPage() {
   // Fetch requisition workspace for dynamic pipeline stages
   const { data: requisitionWorkspace } = useQuery({
     queryKey: ["recruitment", "requisition-workspace", application?.requisitionId],
-    queryFn: () => requisitionApi.workspace(application!.requisitionId),
+    queryFn: () => application?.requisitionId ? requisitionApi.workspace(application.requisitionId) : Promise.reject(new Error("No requisition ID")),
     enabled: Boolean(application?.requisitionId),
   })
   const dynamicStages = requisitionWorkspace?.stages ?? []
 
   // Add Note mutation
   const addNoteMutation = useMutation({
-    mutationFn: (text: string) => applicationApi.addNote(id!, text),
+    mutationFn: (text: string) => applicationApi.addNote(applicationId, text),
     onSuccess: () => {
       toast.success("Đã thêm ghi chú")
       setNoteText("")
@@ -121,7 +122,7 @@ export default function ApplicationDetailPage() {
 
   // Update Application Status mutation
   const updateStatusMutation = useMutation({
-    mutationFn: (status: string) => applicationApi.updateStatus(id!, { status }),
+    mutationFn: (status: string) => applicationApi.updateStatus(applicationId, { status }),
     onSuccess: () => {
       toast.success("Cập nhật trạng thái thành công")
       void queryClient.invalidateQueries({ queryKey: ["recruitment", "application", id] })
@@ -131,7 +132,7 @@ export default function ApplicationDetailPage() {
 
   // Assign Recruiter mutation
   const assignRecruiterMutation = useMutation({
-    mutationFn: (assignedToId: string) => applicationApi.assignRecruiter(id!, assignedToId),
+    mutationFn: (assignedToId: string) => applicationApi.assignRecruiter(applicationId, assignedToId),
     onSuccess: () => {
       toast.success("Đã phân công người phụ trách")
       void queryClient.invalidateQueries({ queryKey: ["recruitment", "application", id] })
@@ -220,7 +221,7 @@ export default function ApplicationDetailPage() {
         <XCircle className="size-12 text-destructive" />
         <h2 className="text-xl font-bold text-foreground">Không tìm thấy ứng viên</h2>
         <p className="text-sm text-muted-foreground">Hồ sơ ứng tuyển không tồn tại hoặc đã bị xóa.</p>
-        <Button onClick={() => navigate(-1)} variant="outline" className="rounded-full">
+        <Button onClick={() => { navigate(-1) }} variant="outline" className="rounded-full">
           Quay lại
         </Button>
       </div>

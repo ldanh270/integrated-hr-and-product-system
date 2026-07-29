@@ -58,7 +58,7 @@ export function ApplicationDetailPanel({
 
   const { data: notes = [] } = useQuery({
     queryKey: ["recruitment", "application-notes", applicationId],
-    queryFn: () => applicationApi.getNotes(applicationId!),
+    queryFn: () => (applicationId ? applicationApi.getNotes(applicationId) : Promise.reject(new Error("No application ID"))),
     enabled: Boolean(applicationId) && open,
   })
 
@@ -143,7 +143,7 @@ export function ApplicationDetailPanel({
                 value="offers"
                 className="rounded-none border-b-2 border-transparent px-4 py-3 text-xs font-semibold data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
               >
-                Offer ({(application as unknown as KanbanApplication)?.offers?.length ?? 0})
+                Offer ({application.offers?.length ?? 0})
               </TabsTrigger>
               <TabsTrigger
                 value="notes"
@@ -313,9 +313,9 @@ export function ApplicationDetailPanel({
                   )}
                 </div>
 
-                {(application as unknown as KanbanApplication)?.offers && (application as unknown as KanbanApplication).offers!.length > 0 ? (
+                {application.offers && application.offers.length > 0 ? (
                   <div className="space-y-3">
-                    {(application as unknown as KanbanApplication).offers!.map((offer) => (
+                    {application.offers.map((offer) => (
                       <div
                         key={offer.id}
                         className="rounded-xl border border-border/60 bg-card p-4 space-y-1.5"
@@ -341,7 +341,7 @@ export function ApplicationDetailPanel({
                         size="sm"
                         variant="outline"
                         className="h-8 rounded-full text-xs font-semibold"
-                        onClick={() => setIsOfferDialogOpen(true)}
+                        onClick={() => { setIsOfferDialogOpen(true) }}
                       >
                         <Plus className="mr-1.5 size-3" />
                         Tạo Offer ngay

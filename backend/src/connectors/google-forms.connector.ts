@@ -168,9 +168,11 @@ export class GoogleFormsConnector implements RecruitmentConnector {
     const fields = this.postingFields(posting)
 
     const questionIdMap = new Map(
-      posting.fieldSnapshots
-        .filter((field) => Boolean(field.externalQuestionId))
-        .map((field) => [field.fieldKey, field.externalQuestionId!]),
+      posting.fieldSnapshots.flatMap((field) =>
+        field.externalQuestionId
+          ? [[field.fieldKey, field.externalQuestionId] as const]
+          : [],
+      ),
     )
     for (const item of form.items ?? []) {
       const qId = item.questionItem?.question?.questionId
@@ -245,11 +247,12 @@ export class GoogleFormsConnector implements RecruitmentConnector {
 
   private async requireConfig(posting: { id?: string; oauthAccountId: string | null; oauthAccount?: { clientId: string; clientSecret: string; refreshToken: string } | null }): Promise<GoogleOAuthCredentials> {
     // Try to use the OAuth account directly linked to the posting first
-    if (posting.oauthAccount?.clientId && posting.oauthAccount?.clientSecret && posting.oauthAccount?.refreshToken) {
+    const oauthAccount = posting.oauthAccount
+    if (oauthAccount?.clientId && oauthAccount.clientSecret && oauthAccount.refreshToken) {
       return {
-        clientId: posting.oauthAccount.clientId,
-        clientSecret: decryptCredential(posting.oauthAccount.clientSecret),
-        refreshToken: decryptCredential(posting.oauthAccount.refreshToken),
+        clientId: oauthAccount.clientId,
+        clientSecret: decryptCredential(oauthAccount.clientSecret),
+        refreshToken: decryptCredential(oauthAccount.refreshToken),
       }
     }
 
@@ -411,18 +414,14 @@ export class GoogleFormsConnector implements RecruitmentConnector {
       .trim()
     const normalizedTitle = normalize(title)
     if (normalize(field.label) === normalizedTitle || normalize(field.key) === normalizedTitle) return true
-    const aliases: Record<string, string[]> = {
-      full_name: ["ho va ten", "ho ten", "ten day du", "full name", "name"],
-      email: ["email", "email address", "dia chi email"],
-      phone: ["so dien thoai", "dien thoai", "phone", "phone number"],
-      cv_url: ["cv", "link cv", "duong dan cv", "resume"],
-      notes: ["ghi chu", "thong tin bo sung", "notes", "additional information"],
-    }
-    const key = field.key
-    if (Object.prototype.hasOwnProperty.call(aliases, key)) {
-      return aliases[key].includes(normalizedTitle)
-    }
-    return false
+    const aliases = new Map<string, readonly string[]>([
+      ["full_name", ["ho va ten", "ho ten", "ten day du", "full name", "name"]],
+      ["email", ["email", "email address", "dia chi email"]],
+      ["phone", ["so dien thoai", "dien thoai", "phone", "phone number"]],
+      ["cv_url", ["cv", "link cv", "duong dan cv", "resume"]],
+      ["notes", ["ghi chu", "thong tin bo sung", "notes", "additional information"]],
+    ])
+    return aliases.get(field.key)?.includes(normalizedTitle) ?? false
   }
 
   private apiError(message: string): AppError {

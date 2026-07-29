@@ -54,7 +54,7 @@ export function InterviewFeedbackPanel({
         setStrengths(myScorecard.strengths ?? "")
         setWeaknesses(myScorecard.weaknesses ?? "")
         setRecommendation(
-          (myScorecard.recommendation as "hire" | "strong_hire" | "no_hire" | "strong_no_hire") || "hire"
+          myScorecard.recommendation as "hire" | "strong_hire" | "no_hire" | "strong_no_hire"
         )
       } else {
         setExistingScorecard(null)
@@ -156,7 +156,7 @@ export function InterviewFeedbackPanel({
                   <button
                     key={value}
                     type="button"
-                    onClick={() => setRating(value)}
+                    onClick={() => { setRating(value) }}
                     className="group rounded-full p-1 transition-transform hover:scale-110"
                   >
                     <Star
@@ -227,11 +227,11 @@ export function InterviewFeedbackPanel({
         </ScrollArea>
 
         <SheetFooter className="border-t border-border/40 p-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-full">
+          <Button variant="outline" onClick={() => { onOpenChange(false) }} className="rounded-full">
             Hủy
           </Button>
           <Button
-            onClick={() => submitScorecardMutation.mutate()}
+            onClick={() => { submitScorecardMutation.mutate() }}
             disabled={rating === 0 || submitScorecardMutation.isPending}
             className="rounded-full"
           >

@@ -1,5 +1,12 @@
 import type { ApplicantImportRow } from "@/types/recruitment.types"
 
+const APPLICANT_FIELDS = ["fullName", "email", "phone", "cvUrl", "notes"] as const
+type ApplicantField = (typeof APPLICANT_FIELDS)[number]
+
+function isApplicantField(value: string | undefined): value is ApplicantField {
+  return APPLICANT_FIELDS.some((field) => field === value)
+}
+
 const COLUMN_ALIASES: Record<string, keyof ApplicantImportRow> = {
   fullname: "fullName", "họ tên": "fullName", "ho ten": "fullName", name: "fullName",
   email: "email", phone: "phone", "số điện thoại": "phone", "so dien thoai": "phone",
@@ -32,7 +39,7 @@ export function parseApplicantCsv(value: string): ApplicantImportRow[] {
     const row: Partial<ApplicantImportRow> = {}
     cells.forEach((cell, index) => {
       const key = headers[index]
-      if (key && Object.prototype.hasOwnProperty.call(COLUMN_ALIASES, key) || key === "fullName" || key === "email" || key === "phone" || key === "cvUrl" || key === "notes") {
+      if (isApplicantField(key)) {
         row[key] = cell
       }
     })

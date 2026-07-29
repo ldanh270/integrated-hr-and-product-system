@@ -60,7 +60,7 @@ export function RequisitionOffersTab({ applications, canCreate, onCreated }: Wor
 
   return (
     <PageCard padding="sm">
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3"><WorkspaceHeader title="Offer" description="Offer của ứng viên trong yêu cầu tuyển dụng này." count={offers.length} />{canCreate && <Button className="rounded-full" onClick={() => setIsCreateOpen(true)}><Plus className="mr-2 size-4" />Tạo offer</Button>}</div>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3"><WorkspaceHeader title="Offer" description="Offer của ứng viên trong yêu cầu tuyển dụng này." count={offers.length} />{canCreate && <Button className="rounded-full" onClick={() => { setIsCreateOpen(true) }}><Plus className="mr-2 size-4" />Tạo offer</Button>}</div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="border-b text-left text-muted-foreground">
