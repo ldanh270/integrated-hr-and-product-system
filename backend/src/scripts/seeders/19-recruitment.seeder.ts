@@ -208,7 +208,11 @@ export class RecruitmentSeeder implements ISeeder {
       const stageCount = await prisma.recruitmentPipelineStage.count({ where: { postingId: posting.id } })
       if (stageCount === 0) {
         await prisma.recruitmentPipelineStage.createMany({
-          data: RECRUITMENT_PIPELINE_STAGE_TEMPLATE.map((stage) => ({ postingId: posting.id, ...stage })),
+          data: RECRUITMENT_PIPELINE_STAGE_TEMPLATE.map((stage) => ({
+            postingId: posting.id,
+            requisitionId: posting.requisitionId,
+            ...stage,
+          })),
         })
       }
       const defaultStage = await prisma.recruitmentPipelineStage.findFirstOrThrow({
