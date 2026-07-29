@@ -61,6 +61,7 @@ export const ROUTES = {
     APPLICANT_INTAKE: "/recruitment/applicant-intake",
     APPLICATIONS: "/recruitment/applications",
     APPLICATION_DETAIL: "/recruitment/applications/:id",
+    CANDIDATES: "/recruitment/candidates",
     MY_INTERVIEWS: "/recruitment/my-interviews",
   },
   SETTINGS: {

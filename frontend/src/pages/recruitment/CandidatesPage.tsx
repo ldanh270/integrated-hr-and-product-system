@@ -39,8 +39,13 @@ export default function CandidatesPage() {
   const meta = data?.meta
 
   const handleViewDetails = (candidate: Candidate) => {
-    setSelectedCandidate(candidate)
-    setViewCandidateOpen(true)
+    const appId = (candidate as { applications?: Array<{ id: string }> }).applications?.[0]?.id
+    if (appId) {
+      routerNavigate(`/recruitment/applications/${appId}`)
+    } else {
+      setSelectedCandidate(candidate)
+      setViewCandidateOpen(true)
+    }
   }
 
   return (
@@ -99,17 +104,21 @@ export default function CandidatesPage() {
                   <TableRow
                     key={candidate.id}
                     onClick={() => handleViewDetails(candidate)}
-                    className="cursor-pointer transition-colors duration-100 hover:bg-muted/25"
+                    className="group cursor-pointer transition-colors duration-150 hover:bg-muted/30"
                   >
                     <TableCell className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
                           <span className="text-xs font-semibold text-primary">
                             {candidate.fullName.charAt(0).toUpperCase()}
                           </span>
                         </div>
                         <div>
-                          <p className="font-medium text-foreground text-sm">{candidate.fullName}</p>
+                          <span
+                            className="font-medium text-foreground group-hover:text-primary group-hover:underline text-left text-sm transition-colors"
+                          >
+                            {candidate.fullName}
+                          </span>
                           {candidate.currentPosition && (
                             <p className="text-xs text-muted-foreground mt-0.5">{candidate.currentPosition}</p>
                           )}
