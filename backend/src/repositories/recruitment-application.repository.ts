@@ -36,7 +36,7 @@ export class RecruitmentApplicationRepository {
   }
 
   async findById(id: string) {
-    return this.db.recruitmentApplication.findUnique({
+    const application = await this.db.recruitmentApplication.findUnique({
       where: { id },
       include: {
         requisition: {
@@ -78,6 +78,24 @@ export class RecruitmentApplicationRepository {
         },
       },
     })
+
+    if (application && application.interviewRounds) {
+      const allInterviewerIds = application.interviewRounds.flatMap((r) => r.interviewerIds || [])
+      if (allInterviewerIds.length > 0) {
+        const employees = await this.db.employee.findMany({
+          where: { id: { in: allInterviewerIds } },
+          select: { id: true, fullName: true, email: true },
+        })
+        const empMap = new Map(employees.map((e) => [e.id, e]))
+        const interviewRoundsWithInterviewers = application.interviewRounds.map((r) => ({
+          ...r,
+          interviewers: (r.interviewerIds || []).map((empId) => empMap.get(empId)).filter(Boolean) as Array<{ id: string; fullName: string; email: string }>,
+        }))
+        return { ...application, interviewRounds: interviewRoundsWithInterviewers }
+      }
+    }
+
+    return application
   }
 
   async list(query: ListApplicationsQuery) {
