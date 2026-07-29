@@ -14,6 +14,7 @@ import { recruitmentOAuthAccountService } from "@/services/recruitment-oauth-acc
 import { recruitmentPostingActivityService } from "@/services/recruitment-posting-activity.service"
 import { RECRUITMENT_POSTING_ACTIVITY_TYPE } from "@/configs/entities/recruitment.config"
 import { buildGoogleAuthUrl, exchangeGoogleCode, getGoogleOAuthConfig } from "@/configs/system/oauth-google.config"
+import { consumeOAuthState, createOAuthState } from "@/utils/oauth-state.util"
 import { HttpStatusCode } from "@/configs/system/http.config"
 import { AppError } from "@/utils/error.util"
 import type { AuthRequest } from "@/middlewares/auth.middleware"
@@ -712,8 +713,7 @@ export class RecruitmentController {
         throw new AppError("Thiếu channel hoặc name", HttpStatusCode.BAD_REQUEST, "OAuthController")
       }
 
-      // Encode userId + channel + name + accountId in state
-      const state = Buffer.from(JSON.stringify({ userId, channel, name, accountId })).toString("base64")
+      const state = createOAuthState({ userId, channel, name, accountId })
       const authUrl = buildGoogleAuthUrl(state)
 
       this.sendSuccess(res, { authUrl })
@@ -732,17 +732,18 @@ export class RecruitmentController {
     }
     const frontendUrl = process.env.FRONTEND_URL ?? "http://localhost:5173"
 
-    if (error) {
-      return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=${encodeURIComponent(error)}`)
-    }
-
-    if (!code || !state) {
+    if (!state || (!code && !error)) {
       return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=missing_params`)
     }
 
     try {
-      // Decode state to get userId + channel + name + accountId
-      const { userId, channel, name, accountId } = JSON.parse(Buffer.from(state, "base64").toString("utf8"))
+      const { userId, channel, name, accountId } = consumeOAuthState(state)
+      if (error) {
+        return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=${encodeURIComponent(error)}`)
+      }
+      if (!code) {
+        return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=missing_code`)
+      }
       const config = getGoogleOAuthConfig()
 
       // Exchange code for tokens
