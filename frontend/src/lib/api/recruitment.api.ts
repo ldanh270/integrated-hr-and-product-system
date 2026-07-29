@@ -409,7 +409,7 @@ export const applicationApi = {
 export interface CreateInterviewDto {
   applicationId: string
   roundNumber: number
-  interviewType: string
+  title: string
   format: string
   scheduledAt?: string
   durationMinutes?: number
