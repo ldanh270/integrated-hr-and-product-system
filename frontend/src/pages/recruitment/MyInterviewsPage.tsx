@@ -1,13 +1,37 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { format } from "date-fns"
-import { Calendar, MapPin, Search, Star, Video } from "lucide-react"
+import {
+  addDays,
+  subDays,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  isSameDay,
+  isToday,
+  format,
+} from "date-fns"
+import {
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Grid,
+  List,
+  MapPin,
+  Search,
+  Star,
+  Video,
+  CheckCircle2,
+  CalendarDays,
+  Layers,
+  ArrowUpRight,
+} from "lucide-react"
 
 import { StatusPill } from "@/components/common/status-pill"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { InterviewFeedbackPanel } from "@/components/features/recruitment/interview-feedback-panel"
 import {
   INTERVIEW_FORMAT_LABELS,
@@ -15,120 +39,373 @@ import {
 } from "@/config/entities/recruitment.config"
 import { interviewApi } from "@/lib/api/recruitment.api"
 import type { InterviewRound } from "@/types/recruitment.types"
+import { routerNavigate } from "@/lib/router-navigator"
+
+const WEEKDAY_NAMES = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ Nhật"]
 
 export default function MyInterviewsPage() {
-  const [activeTab, setActiveTab] = useState("upcoming")
+  const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar")
+  const [activeTab, setActiveTab] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedInterview, setSelectedInterview] = useState<InterviewRound | null>(null)
-
-  const { data: upcomingInterviews = [], isLoading } = useQuery({
-    queryKey: ["recruitment", "upcoming-interviews"],
-    queryFn: () => interviewApi.getUpcoming(), // Backend gets up to 7 days or all upcoming depending on implementation
-  })
-
-  // Lọc theo search
-  const filteredInterviews = upcomingInterviews.filter(
-    (interview) =>
-      interview.application?.candidate?.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      interview.title.toLowerCase().includes(searchQuery.toLowerCase())
+  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() =>
+    startOfWeek(new Date(), { weekStartsOn: 1 })
   )
 
-  const pendingInterviews = filteredInterviews.filter((i) => i.status === "scheduled")
-  const completedInterviews = filteredInterviews.filter((i) => i.status !== "scheduled")
+  const { data: interviews = [], isLoading } = useQuery({
+    queryKey: ["recruitment", "upcoming-interviews"],
+    queryFn: () => interviewApi.getUpcoming(),
+  })
+
+  // Calculates 7-day range for current week
+  const weekDays = useMemo(() => {
+    const start = startOfWeek(currentWeekStart, { weekStartsOn: 1 })
+    const end = endOfWeek(currentWeekStart, { weekStartsOn: 1 })
+    return eachDayOfInterval({ start, end })
+  }, [currentWeekStart])
+
+  // Filtered interviews list
+  const filteredInterviews = useMemo(() => {
+    return interviews.filter((interview) => {
+      const candidateName = interview.application?.candidate?.fullName || ""
+      const title = interview.title || ""
+      const matchesSearch =
+        candidateName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        title.toLowerCase().includes(searchQuery.toLowerCase())
+
+      if (!matchesSearch) return false
+
+      if (activeTab === "upcoming") return interview.status === "scheduled"
+      if (activeTab === "completed") return interview.status === "completed"
+      return true
+    })
+  }, [interviews, searchQuery, activeTab])
+
+  // Statistics
+  const todayCount = useMemo(() => {
+    const today = new Date()
+    return interviews.filter((i) => i.scheduledAt && isSameDay(new Date(i.scheduledAt), today)).length
+  }, [interviews])
+
+  const pendingCount = useMemo(
+    () => interviews.filter((i) => i.status === "scheduled").length,
+    [interviews]
+  )
+
+  const completedCount = useMemo(
+    () => interviews.filter((i) => i.status === "completed").length,
+    [interviews]
+  )
 
   return (
-    <div className="flex h-full flex-col p-8">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Lịch phỏng vấn của tôi</h1>
-          <p className="text-sm text-muted-foreground">Xem lịch phỏng vấn và gửi đánh giá ứng viên</p>
+    <div className="flex h-full flex-col p-6 space-y-6">
+      {/* ── Page Header ───────────────────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-5">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-2xs">
+              <CalendarDays className="size-5" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-foreground">Lịch phỏng vấn của tôi</h1>
+              <p className="text-xs text-muted-foreground">Theo dõi thời khóa biểu và gửi đánh giá ứng viên các vòng phỏng vấn</p>
+            </div>
+          </div>
+        </div>
+
+        {/* View Mode Switcher */}
+        <div className="flex items-center gap-2 rounded-full border border-border/70 bg-card p-1 shadow-2xs">
+          <Button
+            size="sm"
+            variant={viewMode === "calendar" ? "default" : "ghost"}
+            onClick={() => setViewMode("calendar")}
+            className="h-8 rounded-full px-4 text-xs font-bold transition-all"
+          >
+            <Grid className="mr-1.5 size-3.5" />
+            Lịch tuần
+          </Button>
+          <Button
+            size="sm"
+            variant={viewMode === "list" ? "default" : "ghost"}
+            onClick={() => setViewMode("list")}
+            className="h-8 rounded-full px-4 text-xs font-bold transition-all"
+          >
+            <List className="mr-1.5 size-3.5" />
+            Danh sách
+          </Button>
         </div>
       </div>
 
-      <div className="flex flex-col gap-6 lg:flex-row">
-        {/* Left Side: Stats/Summary */}
-        <div className="w-full lg:w-64 shrink-0 space-y-4">
-          <div className="rounded-2xl border border-border/50 bg-card p-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Chờ đánh giá
-            </h3>
-            <p className="mt-2 text-3xl font-black text-primary">{pendingInterviews.length}</p>
+      {/* ── Metric Summary Cards ─────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-2xl border border-border/60 bg-card p-4 transition-all hover:border-primary/40 hover:shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-bold uppercase tracking-wider">Tổng số buổi PV</span>
+            <Layers className="size-4 text-primary" />
           </div>
-          <div className="rounded-2xl border border-border/50 bg-card p-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Đã hoàn thành
-            </h3>
-            <p className="mt-2 text-3xl font-black">{completedInterviews.length}</p>
+          <div className="flex items-baseline justify-between">
+            <span className="text-2xl font-black text-foreground">{interviews.length}</span>
+            <span className="text-[11px] font-semibold text-muted-foreground">Tất cả các vòng</span>
           </div>
         </div>
 
-        {/* Right Side: List */}
-        <div className="flex-1 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="rounded-2xl border border-border/60 bg-card p-4 transition-all hover:border-primary/40 hover:shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-bold uppercase tracking-wider">Hôm nay</span>
+            <Clock className="size-4 text-amber-500" />
+          </div>
+          <div className="flex items-baseline justify-between">
+            <span className="text-2xl font-black text-amber-600 dark:text-amber-400">{todayCount}</span>
+            <span className="text-[11px] font-semibold text-muted-foreground">Buổi phỏng vấn</span>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-border/60 bg-card p-4 transition-all hover:border-primary/40 hover:shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-bold uppercase tracking-wider">Sắp diễn ra</span>
+            <CalendarIcon className="size-4 text-blue-500" />
+          </div>
+          <div className="flex items-baseline justify-between">
+            <span className="text-2xl font-black text-blue-600 dark:text-blue-400">{pendingCount}</span>
+            <span className="text-[11px] font-semibold text-muted-foreground">Chờ đánh giá</span>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-border/60 bg-card p-4 transition-all hover:border-primary/40 hover:shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-bold uppercase tracking-wider">Đã hoàn thành</span>
+            <CheckCircle2 className="size-4 text-emerald-500" />
+          </div>
+          <div className="flex items-baseline justify-between">
+            <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{completedCount}</span>
+            <span className="text-[11px] font-semibold text-muted-foreground">Đã ghi nhận</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Main View Content ────────────────────────────────────────────────────── */}
+      {viewMode === "calendar" ? (
+        /* ── CALENDAR GRID VIEW (Attendance Copy Style) ────────────────────────── */
+        <div className="rounded-3xl border border-border/60 bg-card p-6 shadow-xs space-y-6">
+          {/* Calendar Header with Navigation */}
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-4">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentWeekStart((prev) => subDays(prev, 7))}
+                className="size-8 rounded-full p-0 transition-colors hover:bg-secondary"
+              >
+                <ChevronLeft className="size-4" />
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}
+                className="h-8 rounded-full px-3 text-xs font-bold border-border/80 hover:bg-secondary"
+              >
+                Hôm nay
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentWeekStart((prev) => addDays(prev, 7))}
+                className="size-8 rounded-full p-0 transition-colors hover:bg-secondary"
+              >
+                <ChevronRight className="size-4" />
+              </Button>
+
+              <span className="text-sm font-bold text-foreground">
+                Tuần: {format(weekDays[0], "dd/MM/yyyy")} — {format(weekDays[6], "dd/MM/yyyy")}
+              </span>
+            </div>
+
+            {/* Filter Search */}
+            <div className="relative w-full max-w-xs">
+              <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Lọc ứng viên..."
+                className="h-8 rounded-full pl-8 text-xs"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* 7-Day Weekly Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
+            {weekDays.map((day, idx) => {
+              const dayIsToday = isToday(day)
+              const dayInterviews = filteredInterviews.filter(
+                (i) => i.scheduledAt && isSameDay(new Date(i.scheduledAt), day)
+              )
+
+              return (
+                <div
+                  key={day.toISOString()}
+                  className={`flex flex-col min-h-[220px] rounded-2xl border p-3 transition-all duration-200 ${
+                    dayIsToday
+                      ? "border-primary/50 bg-primary/5 shadow-xs"
+                      : "border-border/60 bg-background/50 hover:border-border"
+                  }`}
+                >
+                  {/* Day Header */}
+                  <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-2">
+                    <span className="text-xs font-bold text-muted-foreground">{WEEKDAY_NAMES[idx]}</span>
+                    <span
+                      className={`flex size-6 items-center justify-center rounded-full text-xs font-bold ${
+                        dayIsToday
+                          ? "bg-primary text-primary-foreground shadow-xs"
+                          : "text-foreground"
+                      }`}
+                    >
+                      {format(day, "d")}
+                    </span>
+                  </div>
+
+                  {/* Day Interview Events */}
+                  <div className="flex-1 space-y-2 overflow-y-auto max-h-[360px] pr-0.5">
+                    {isLoading ? (
+                      <div className="py-4 text-center text-[11px] text-muted-foreground">Tải...</div>
+                    ) : dayInterviews.length === 0 ? (
+                      <div className="h-full flex items-center justify-center py-6 text-[11px] text-muted-foreground/60 italic">
+                        Không có lịch
+                      </div>
+                    ) : (
+                      dayInterviews.map((interview) => (
+                        <div
+                          key={interview.id}
+                          onClick={() => setSelectedInterview(interview)}
+                          className="group relative cursor-pointer rounded-xl border border-border/70 bg-card p-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md space-y-1.5"
+                        >
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-[11px] font-bold text-primary truncate max-w-[100px]">
+                              {interview.title}
+                            </span>
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground shrink-0">
+                              <Clock className="size-3 text-amber-500" />
+                              <span>{interview.scheduledAt ? format(new Date(interview.scheduledAt), "HH:mm") : "--:--"}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex size-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary shrink-0">
+                              {interview.application?.candidate?.fullName?.charAt(0) ?? "U"}
+                            </div>
+                            <span className="text-xs font-bold text-foreground truncate">
+                              {interview.application?.candidate?.fullName}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/30">
+                            <div className="flex items-center gap-1">
+                              {interview.format === "video_call" ? (
+                                <Video className="size-3 text-blue-500" />
+                              ) : (
+                                <MapPin className="size-3 text-emerald-500" />
+                              )}
+                              <span>{INTERVIEW_FORMAT_LABELS[interview.format] ?? interview.format}</span>
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className={`text-[9px] px-1.5 py-0 rounded-full font-bold ${
+                                interview.status === "completed"
+                                  ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                                  : interview.status === "cancelled"
+                                    ? "bg-rose-500/10 text-rose-600 border-rose-500/20"
+                                    : "bg-blue-500/10 text-blue-600 border-blue-500/20"
+                              }`}
+                            >
+                              {interview.status === "completed" ? "Đã xong" : interview.status === "cancelled" ? "Hủy" : "Chờ"}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Calendar Legend Bar */}
+          <div className="flex flex-wrap items-center justify-between border-t border-border/40 pt-4 text-xs text-muted-foreground gap-4">
+            <div className="flex items-center gap-4">
+              <span className="font-bold text-foreground">Ghi chú:</span>
+              <div className="flex items-center gap-1.5">
+                <span className="size-2.5 rounded-full bg-blue-500" />
+                <span>Sắp diễn ra</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="size-2.5 rounded-full bg-emerald-500" />
+                <span>Đã hoàn thành</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="size-2.5 rounded-full bg-rose-500" />
+                <span>Đã hủy</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground italic">
+              Bấm vào bất kỳ thẻ phỏng vấn nào để mở phiếu đánh giá ứng viên
+            </p>
+          </div>
+        </div>
+      ) : (
+        /* ── LIST VIEW ────────────────────────────────────────────────────────── */
+        <div className="space-y-4">
+          {/* Controls Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-4 bg-card border border-border/60 p-4 rounded-2xl">
             <div className="relative w-full max-w-sm">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Tìm kiếm ứng viên, tên vòng..."
-                className="h-10 rounded-full pl-9"
+                placeholder="Tìm kiếm ứng viên, vị trí phỏng vấn..."
+                className="h-10 rounded-full pl-9 text-xs"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
-              <TabsList className="grid w-full grid-cols-2 rounded-full sm:w-[300px]">
+              <TabsList className="grid w-full grid-cols-3 rounded-full sm:w-[320px]">
+                <TabsTrigger value="all" className="rounded-full text-xs font-semibold">
+                  Tất cả ({interviews.length})
+                </TabsTrigger>
                 <TabsTrigger value="upcoming" className="rounded-full text-xs font-semibold">
-                  Sắp tới ({pendingInterviews.length})
+                  Sắp tới ({pendingCount})
                 </TabsTrigger>
                 <TabsTrigger value="completed" className="rounded-full text-xs font-semibold">
-                  Đã qua ({completedInterviews.length})
+                  Đã xong ({completedCount})
                 </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
 
-          <div className="space-y-4">
-            {isLoading ? (
-              <div className="py-8 text-center text-sm text-muted-foreground">Đang tải lịch...</div>
-            ) : (
-              <Tabs value={activeTab} className="w-full">
-                <TabsContent value="upcoming" className="m-0 space-y-4">
-                  {pendingInterviews.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-border/50 py-12 text-center">
-                      <p className="text-sm text-muted-foreground">Không có lịch phỏng vấn sắp tới.</p>
-                    </div>
-                  ) : (
-                    pendingInterviews.map((interview) => (
-                      <InterviewCard
-                        key={interview.id}
-                        interview={interview}
-                        onFeedback={() => setSelectedInterview(interview)}
-                      />
-                    ))
-                  )}
-                </TabsContent>
-                <TabsContent value="completed" className="m-0 space-y-4">
-                  {completedInterviews.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-border/50 py-12 text-center">
-                      <p className="text-sm text-muted-foreground">Không có phỏng vấn nào đã qua.</p>
-                    </div>
-                  ) : (
-                    completedInterviews.map((interview) => (
-                      <InterviewCard
-                        key={interview.id}
-                        interview={interview}
-                        onFeedback={() => setSelectedInterview(interview)}
-                        isCompleted
-                      />
-                    ))
-                  )}
-                </TabsContent>
-              </Tabs>
-            )}
-          </div>
+          {/* Cards List */}
+          {isLoading ? (
+            <div className="py-12 text-center text-sm text-muted-foreground">Đang tải lịch phỏng vấn...</div>
+          ) : filteredInterviews.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-border/60 py-16 text-center space-y-3 bg-card/40">
+              <CalendarXIcon className="mx-auto size-8 text-muted-foreground/50" />
+              <p className="text-sm font-medium text-muted-foreground">Không tìm thấy lịch phỏng vấn nào.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredInterviews.map((interview) => (
+                <InterviewCard
+                  key={interview.id}
+                  interview={interview}
+                  onFeedback={() => setSelectedInterview(interview)}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
+      {/* ── Interview Feedback & Rating Panel (Sheet) ─────────────────────────── */}
       <InterviewFeedbackPanel
         interview={selectedInterview}
         open={Boolean(selectedInterview)}
@@ -140,38 +417,56 @@ export default function MyInterviewsPage() {
   )
 }
 
-function InterviewCard({ interview, onFeedback, isCompleted = false }: { interview: InterviewRound; onFeedback: () => void; isCompleted?: boolean }) {
+function CalendarXIcon({ className }: { className?: string }) {
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-card p-5 transition-colors hover:border-primary/40 sm:flex-row sm:items-center sm:justify-between">
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+  )
+}
+
+function InterviewCard({
+  interview,
+  onFeedback,
+}: {
+  interview: InterviewRound
+  onFeedback: () => void
+}) {
+  const candidate = interview.application?.candidate
+
+  return (
+    <div className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-card p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-4">
-        <div className="flex size-12 items-center justify-center rounded-xl border border-border/50 bg-primary/10 text-lg font-bold text-primary overflow-hidden shrink-0">
-          {interview.application?.candidate?.avatarUrl ? (
-            <img src={interview.application.candidate.avatarUrl} alt={interview.application.candidate.fullName ?? "Ứng viên"} className="size-full object-cover" />
+        <div className="flex size-12 items-center justify-center rounded-2xl border border-border/50 bg-primary/10 text-lg font-bold text-primary overflow-hidden shrink-0 shadow-2xs">
+          {candidate?.avatarUrl ? (
+            <img src={candidate.avatarUrl} alt={candidate.fullName ?? "Ứng viên"} className="size-full object-cover" />
           ) : (
-            interview.application?.candidate?.fullName?.charAt(0).toUpperCase() ?? "U"
+            candidate?.fullName?.charAt(0).toUpperCase() ?? "U"
           )}
         </div>
-        <div>
+        <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h4 className="font-bold text-foreground">{interview.application?.candidate?.fullName}</h4>
-            <Badge variant="outline" className="rounded-full bg-secondary/50 font-medium text-xs">
+            <h4 className="font-bold text-foreground text-base">{candidate?.fullName || "Ứng viên chưa cập nhật"}</h4>
+            <Badge variant="outline" className="rounded-full bg-primary/10 text-primary border-primary/20 font-bold text-xs">
               Vòng {interview.roundNumber}: {interview.title}
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground">{interview.application?.requisition?.title}</p>
-          
-          <div className="mt-3 flex flex-wrap items-center gap-4 text-xs font-medium text-muted-foreground">
-            <div className="flex items-center gap-1.5 rounded-md bg-secondary/30 px-2 py-1">
-              <Calendar className="size-3.5 text-primary" />
-              <span className={isCompleted ? "line-through opacity-50" : ""}>
+          <p className="text-xs font-semibold text-muted-foreground">
+            Yêu cầu tuyển dụng: <span className="text-foreground">{interview.application?.requisition?.title || "N/A"}</span>
+          </p>
+
+          <div className="pt-2 flex flex-wrap items-center gap-4 text-xs font-medium text-muted-foreground">
+            <div className="flex items-center gap-1.5 rounded-full bg-secondary/50 px-3 py-1 text-foreground font-semibold">
+              <CalendarIcon className="size-3.5 text-primary" />
+              <span>
                 {interview.scheduledAt ? format(new Date(interview.scheduledAt), "HH:mm, dd/MM/yyyy") : "Chưa xếp lịch"}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 rounded-md bg-secondary/30 px-2 py-1">
+            <div className="flex items-center gap-1.5 rounded-full bg-secondary/50 px-3 py-1 text-foreground font-semibold">
               {interview.format === "video_call" ? (
                 <Video className="size-3.5 text-blue-500" />
               ) : (
-                <MapPin className="size-3.5 text-green-500" />
+                <MapPin className="size-3.5 text-emerald-500" />
               )}
               <span>{INTERVIEW_FORMAT_LABELS[interview.format] ?? interview.format}</span>
             </div>
@@ -185,10 +480,10 @@ function InterviewCard({ interview, onFeedback, isCompleted = false }: { intervi
             interview.status === "completed"
               ? INTERVIEW_RESULT_LABELS[interview.result as string] ?? "Đã xong"
               : interview.status === "scheduled"
-                ? "Sắp tới"
+                ? "Sắp diễn ra"
                 : interview.status === "cancelled"
                   ? "Đã hủy"
-                  : "Chưa đến"
+                  : "Chưa phỏng vấn"
           }
           variant={
             interview.result === "pass"
@@ -200,17 +495,29 @@ function InterviewCard({ interview, onFeedback, isCompleted = false }: { intervi
                   : "neutral"
           }
         />
-        
-        {interview.status === "scheduled" ? (
-             <Button size="sm" onClick={onFeedback} className="rounded-full shadow-sm hover:shadow-md">
-                <Star className="mr-1.5 size-4 fill-white" />
-                Đánh giá ngay
-             </Button>
-        ) : (
-            <Button variant="outline" size="sm" onClick={onFeedback} className="rounded-full">
-                Xem đánh giá
+
+        <div className="flex items-center gap-2">
+          {interview.application?.id && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => routerNavigate(`/recruitment/applications/${interview.application!.id}`)}
+              className="h-8 rounded-full text-xs font-semibold border-border/80 hover:bg-secondary"
+            >
+              Hồ sơ
+              <ArrowUpRight className="ml-1 size-3.5" />
             </Button>
-        )}
+          )}
+
+          <Button
+            size="sm"
+            onClick={onFeedback}
+            className="h-8 rounded-full px-4 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all duration-200 hover:-translate-y-0.5"
+          >
+            <Star className="mr-1.5 size-3.5 fill-current" />
+            {interview.status === "completed" ? "Xem đánh giá" : "Đánh giá ngay"}
+          </Button>
+        </div>
       </div>
     </div>
   )
