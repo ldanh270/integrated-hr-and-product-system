@@ -145,9 +145,13 @@ export class RecruitmentSeeder implements ISeeder {
     }
     console.log(`    Seeded ${createdReqs.length} Job Requisitions.`)
 
-    const nodejsReq = createdReqs.find((r) => r.code === "REQ-2026-001")!
-    const qaReq = createdReqs.find((r) => r.code === "REQ-2026-002")!
-    const frontendReq = createdReqs.find((r) => r.code === "REQ-2026-005")!
+    const nodejsReq = createdReqs.find((r) => r.code === "REQ-2026-001")
+    const qaReq = createdReqs.find((r) => r.code === "REQ-2026-002")
+    const frontendReq = createdReqs.find((r) => r.code === "REQ-2026-005")
+
+    if (!nodejsReq || !qaReq || !frontendReq) {
+      throw new Error("Failed to find seeded requisitions")
+    }
 
     // 3. Create Job Postings
     const postingsToCreate = [
@@ -158,14 +162,7 @@ export class RecruitmentSeeder implements ISeeder {
         sourceCode: "PUB-LN-001",
         status: POSTING_STATUS.OPEN,
         postingUrl: "https://www.linkedin.com/jobs/view/1001",
-      },
-      {
-        requisitionId: nodejsReq.id,
-        channel: RECRUITMENT_CHANNEL.COMPANY_WEBSITE,
-        source: RECRUITMENT_SOURCE.COMPANY_WEBSITE,
-        sourceCode: "PUB-CW-001",
-        status: POSTING_STATUS.OPEN,
-        postingUrl: "https://company.com/careers/senior-nodejs",
+        publishedAt: new Date(),
       },
       {
         requisitionId: qaReq.id,
@@ -173,7 +170,8 @@ export class RecruitmentSeeder implements ISeeder {
         source: RECRUITMENT_SOURCE.FACEBOOK,
         sourceCode: "PUB-FB-002",
         status: POSTING_STATUS.OPEN,
-        postingUrl: "https://facebook.com/company/jobs/qa-auto",
+        postingUrl: "https://www.facebook.com/jobs/1002",
+        publishedAt: new Date(),
       },
       {
         requisitionId: frontendReq.id,
@@ -182,16 +180,17 @@ export class RecruitmentSeeder implements ISeeder {
         sourceCode: "PUB-LN-003",
         status: POSTING_STATUS.OPEN,
         postingUrl: "https://www.linkedin.com/jobs/view/1003",
+        publishedAt: new Date(),
       },
     ]
 
     const createdPostings = []
-    for (const post of postingsToCreate) {
-      const existing = await prisma.jobPosting.findUnique({
-        where: { sourceCode: post.sourceCode },
+    for (const posting of postingsToCreate) {
+      const existing = await prisma.jobPosting.findFirst({
+        where: { sourceCode: posting.sourceCode },
       })
       if (!existing) {
-        const created = await prisma.jobPosting.create({ data: post })
+        const created = await prisma.jobPosting.create({ data: posting })
         createdPostings.push(created)
       } else {
         createdPostings.push(existing)
@@ -199,9 +198,13 @@ export class RecruitmentSeeder implements ISeeder {
     }
     console.log(`    Seeded ${createdPostings.length} Job Postings.`)
 
-    const nodejsLinkedinPost = createdPostings.find((p) => p.sourceCode === "PUB-LN-001")!
-    const qaFacebookPost = createdPostings.find((p) => p.sourceCode === "PUB-FB-002")!
-    const frontendLinkedinPost = createdPostings.find((p) => p.sourceCode === "PUB-LN-003")!
+    const nodejsLinkedinPost = createdPostings.find((p) => p.sourceCode === "PUB-LN-001")
+    const qaFacebookPost = createdPostings.find((p) => p.sourceCode === "PUB-FB-002")
+    const frontendLinkedinPost = createdPostings.find((p) => p.sourceCode === "PUB-LN-003")
+
+    if (!nodejsLinkedinPost || !qaFacebookPost || !frontendLinkedinPost) {
+      throw new Error("Failed to find seeded job postings")
+    }
 
     const defaultStageByPosting = new Map<string, string>()
     for (const posting of createdPostings) {

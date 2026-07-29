@@ -93,7 +93,7 @@ function InterviewItem({
       <div className="flex items-center gap-3">
         <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
           <span className="text-xs font-bold text-primary">
-            {candidateName?.charAt(0)?.toUpperCase() ?? "?"}
+            {candidateName ? candidateName.charAt(0).toUpperCase() : "?"}
           </span>
         </div>
         <div>

@@ -47,7 +47,7 @@ export function useContracts(params?: {
 export function useContract(id: string | null) {
   return useQuery({
     queryKey: [...CONTRACT_QUERY_KEYS.DETAIL, id],
-    queryFn: () => getContractById(id!),
+    queryFn: () => (id ? getContractById(id) : Promise.reject(new Error("No contract ID"))),
     enabled: !!id,
   })
 }
@@ -55,7 +55,7 @@ export function useContract(id: string | null) {
 export function useEmployeeContracts(employeeId: string | null, includeInactive = false) {
   return useQuery({
     queryKey: [...CONTRACT_QUERY_KEYS.EMPLOYEE(employeeId || ""), includeInactive],
-    queryFn: () => getContractsByEmployee(employeeId!, includeInactive),
+    queryFn: () => (employeeId ? getContractsByEmployee(employeeId, includeInactive) : Promise.reject(new Error("No employee ID"))),
     enabled: !!employeeId,
   })
 }

@@ -738,18 +738,22 @@ export class RecruitmentController {
       error?: string
     }
     const frontendUrl = process.env.FRONTEND_URL ?? "http://localhost:5173"
+    const redirectUrl = (pathWithQuery: string) => `${frontendUrl}${pathWithQuery}`
 
     if (!state || (!code && !error)) {
-      return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=missing_params`)
+      res.redirect(redirectUrl("/recruitment/oauth-accounts?error=missing_params"))
+      return
     }
 
     try {
       const { userId, channel, name, accountId } = await consumeOAuthState(state)
       if (error) {
-        return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=${encodeURIComponent(error)}`)
+        res.redirect(redirectUrl(`/recruitment/oauth-accounts?error=${encodeURIComponent(error)}`))
+        return
       }
       if (!code) {
-        return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=missing_code`)
+        res.redirect(redirectUrl("/recruitment/oauth-accounts?error=missing_code"))
+        return
       }
       
       let config = getGoogleOAuthConfig()
@@ -765,7 +769,8 @@ export class RecruitmentController {
       }
 
       if (!config) {
-        return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=missing_google_oauth_config`)
+        res.redirect(redirectUrl("/recruitment/oauth-accounts?error=missing_google_oauth_config"))
+        return
       }
 
       // Exchange code for tokens
@@ -778,11 +783,13 @@ export class RecruitmentController {
         refreshToken: tokens.refreshToken,
       }, accountId)
 
-      return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?success=connected`)
-    } catch (err: any) {
+      res.redirect(redirectUrl("/recruitment/oauth-accounts?success=connected"))
+      return
+    } catch (err: unknown) {
       console.error("Google OAuth callback error:", err)
-      const reason = err?.message || "token_exchange_failed"
-      return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=${encodeURIComponent(reason)}`)
+      const reason = err instanceof Error ? err.message : "token_exchange_failed"
+      res.redirect(redirectUrl(`/recruitment/oauth-accounts?error=${encodeURIComponent(reason)}`))
+      return
     }
   }
 }

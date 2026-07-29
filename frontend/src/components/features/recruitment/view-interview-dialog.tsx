@@ -39,7 +39,7 @@ export function ViewInterviewDialog({ open, onOpenChange, interview }: Props) {
             {interview.result ? (
               <StatusPill
                 label={INTERVIEW_RESULT_LABELS[interview.result] || interview.result}
-                variant={resultVariantMap[interview.result] || "neutral"}
+                variant={resultVariantMap[interview.result as keyof typeof resultVariantMap] ?? "neutral"}
               />
             ) : (
               <StatusPill label="Chờ phỏng vấn" variant="warning" />

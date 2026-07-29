@@ -33,7 +33,7 @@ export function ViewBackgroundCheckDialog({ open, onOpenChange, backgroundCheck 
             </Badge>
             <StatusPill
               label={BGC_STATUS_LABELS[backgroundCheck.status] || backgroundCheck.status}
-              variant={statusVariantMap[backgroundCheck.status] || "neutral"}
+              variant={statusVariantMap[backgroundCheck.status as keyof typeof statusVariantMap] ?? "neutral"}
             />
           </div>
           <DialogTitle className="mt-2 text-xl font-bold text-foreground flex items-center gap-2">

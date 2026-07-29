@@ -79,10 +79,10 @@ export class JobPostingService {
       : input.fields ?? GOOGLE_FORM_DEFAULT_FIELDS
     const posting = await jobPostingRepository.create({
       requisitionId: input.requisitionId,
-      channel: channel as any,
+      channel: channel as unknown as import("@/configs/entities/recruitment.config").RecruitmentChannel,
       source: RECRUITMENT_SOURCE.GOOGLE_FORM,
       sourceCode,
-      formFields: fields as any,
+      formFields: fields as unknown as import("@/types/recruitment.types").RecruitmentFormField[],
       oauthAccountId,
     }, fields)
     await jobRequisitionRepository.ensurePipeline(input.requisitionId)
