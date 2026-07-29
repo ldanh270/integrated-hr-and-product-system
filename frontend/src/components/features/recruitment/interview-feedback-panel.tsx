@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { ExternalLink, Star } from "lucide-react"
 import { Link } from "react-router-dom"
 import { toast } from "sonner"
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
 import { interviewApi, scorecardApi } from "@/lib/api/recruitment.api"
-import type { InterviewRound } from "@/types/recruitment.types"
+import type { InterviewRound, Scorecard } from "@/types/recruitment.types"
 import { extractErrorMessage } from "@/utils/error-helper"
 
 interface InterviewFeedbackPanelProps {
@@ -31,45 +31,77 @@ export function InterviewFeedbackPanel({
   onOpenChange,
 }: InterviewFeedbackPanelProps) {
   const queryClient = useQueryClient()
+  const [existingScorecard, setExistingScorecard] = useState<Scorecard | null>(null)
   const [rating, setRating] = useState<number>(0)
   const [strengths, setStrengths] = useState("")
   const [weaknesses, setWeaknesses] = useState("")
   const [recommendation, setRecommendation] = useState<"hire" | "strong_hire" | "no_hire" | "strong_no_hire">("hire")
 
-  // Reset form khi mở panel với interview mới
+  // Fetch danh sách scorecards thuộc buổi phỏng vấn này
+  const { data: scorecards = [] } = useQuery({
+    queryKey: ["recruitment", "interview-scorecards", interview?.id],
+    queryFn: () => scorecardApi.listByInterview(interview!.id),
+    enabled: Boolean(interview?.id) && open,
+  })
+
+  // Điền dữ liệu nếu đã có đánh giá trước đó (hoặc reset nếu chưa)
   useEffect(() => {
     if (open && interview) {
+      const myScorecard = scorecards[0] ?? interview.scorecards?.[0] ?? null
+      if (myScorecard) {
+        setExistingScorecard(myScorecard)
+        setRating(myScorecard.overallRating ?? 0)
+        setStrengths(myScorecard.strengths ?? "")
+        setWeaknesses(myScorecard.weaknesses ?? "")
+        setRecommendation(
+          (myScorecard.recommendation as "hire" | "strong_hire" | "no_hire" | "strong_no_hire") || "hire"
+        )
+      } else {
+        setExistingScorecard(null)
         setRating(0)
         setStrengths("")
         setWeaknesses("")
         setRecommendation("hire")
+      }
     }
-  }, [open, interview])
+  }, [open, interview, scorecards])
 
   const submitScorecardMutation = useMutation({
     mutationFn: async () => {
-        if (!interview) return
-        
-        // 1. Submit scorecard
-        await scorecardApi.create({
-            interviewId: interview.id,
-            overallRating: rating,
-            strengths,
-            weaknesses,
-            recommendation,
-        })
+      if (!interview) return
 
-        // 2. Mark interview as complete
-        const result = recommendation.includes("no") ? "fail" : "pass"
-        await interviewApi.complete(interview.id, {
-            result,
-            feedback: "Đã có đánh giá từ Interviewer"
+      if (existingScorecard) {
+        // Cập nhật đánh giá đã tồn tại
+        await scorecardApi.update(existingScorecard.id, {
+          overallRating: rating,
+          strengths,
+          weaknesses,
+          recommendation,
         })
+      } else {
+        // Tạo đánh giá mới
+        await scorecardApi.create({
+          interviewId: interview.id,
+          overallRating: rating,
+          strengths,
+          weaknesses,
+          recommendation,
+        })
+      }
+
+      // Cập nhật trạng thái vòng phỏng vấn thành hoàn thành
+      const result = recommendation.includes("no") ? "fail" : "pass"
+      await interviewApi.complete(interview.id, {
+        result,
+        feedback: "Đã cập nhật đánh giá từ Interviewer",
+      })
     },
     onSuccess: () => {
-      toast.success("Gửi đánh giá thành công")
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "upcoming-interviews"] })
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "application", interview?.applicationId] })
+      toast.success(existingScorecard ? "Cập nhật đánh giá thành công" : "Gửi đánh giá thành công")
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "upcoming-interviews"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "interview-scorecards", interview?.id] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "application", interview?.applicationId] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "application-interviews", interview?.applicationId] })
       onOpenChange(false)
     },
     onError: (error: unknown) => {
@@ -203,7 +235,11 @@ export function InterviewFeedbackPanel({
             disabled={rating === 0 || submitScorecardMutation.isPending}
             className="rounded-full"
           >
-            Gửi đánh giá
+            {submitScorecardMutation.isPending
+              ? "Đang lưu..."
+              : existingScorecard
+                ? "Cập nhật đánh giá"
+                : "Gửi đánh giá"}
           </Button>
         </SheetFooter>
       </SheetContent>

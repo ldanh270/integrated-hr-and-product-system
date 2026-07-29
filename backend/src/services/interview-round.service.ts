@@ -50,8 +50,8 @@ export class InterviewRoundService {
   async markCompleted(id: string, result?: string, feedback?: string) {
     const existing = await this.findById(id)
 
-    if (existing.status === "cancelled" || existing.status === "completed") {
-      throw new Error("Cannot complete a cancelled or already completed interview")
+    if (existing.status === "cancelled") {
+      throw new Error("Cannot complete a cancelled interview")
     }
 
     const interview = await interviewRoundRepository.markCompletedAndTransition(id, result, feedback)
