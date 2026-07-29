@@ -87,7 +87,7 @@ export default function OffersPage() {
   const { data, isLoading, isError, refetch } = useOffers({ page, pageSize })
   const sendOffer = useSendOffer()
 
-  const offers = data?.data ?? []
+  const offers = useMemo(() => data?.data ?? [], [data?.data])
   const meta = data?.meta
 
   const tabCounts = useMemo(() => {

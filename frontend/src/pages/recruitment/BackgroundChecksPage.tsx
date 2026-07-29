@@ -229,7 +229,7 @@ export default function BackgroundChecksPage() {
   const startBgc = useStartBackgroundCheck()
   const completeBgc = useCompleteBackgroundCheck()
 
-  const backgroundChecks = data?.data ?? []
+  const backgroundChecks = useMemo(() => data?.data ?? [], [data?.data])
   const meta = data?.meta
 
   const tabCounts = useMemo(() => {
@@ -250,7 +250,7 @@ export default function BackgroundChecksPage() {
 
       return name.includes(searchStr) || email.includes(searchStr)
     })
-  }, [backgroundChecks, activeTab, keyword])
+  }, [backgroundChecks, keyword])
 
   const handleStart = (id: string) => {
     startBgc.mutate(id)

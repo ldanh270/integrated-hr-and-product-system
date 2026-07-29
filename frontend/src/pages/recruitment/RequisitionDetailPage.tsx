@@ -36,8 +36,8 @@ export default function RequisitionDetailPage() {
   const { data: workspace, isLoading, error } = useQuery({ queryKey: ["recruitment", "requisition-workspace", id], queryFn: () => requisitionApi.workspace(id), enabled: Boolean(id) })
   const { data: activities = [] } = useQuery({ queryKey: ["recruitment", "requisition-activities", id], queryFn: () => requisitionApi.activities(id), enabled: Boolean(id) })
   const postings = workspace?.requisition.postings ?? []
-  const applications = workspace?.applications.data ?? []
-  const stages = workspace?.stages ?? []
+  const applications = useMemo(() => workspace?.applications.data ?? [], [workspace?.applications.data])
+  const stages = useMemo(() => workspace?.stages ?? [], [workspace?.stages])
   const publish = useMutation({
     mutationFn: (postingId: string) => jobPostingApi.publish({ id: postingId, mode: "connector" }),
     onSuccess: () => {
@@ -110,25 +110,28 @@ export default function RequisitionDetailPage() {
                   {/* SVG Donut */}
                   <div className="relative flex items-center justify-center size-36 mt-4 md:mt-0 shrink-0">
                     <svg className="size-32 transform -rotate-90">
-                      {counts.map((stage, idx) => {
-                        const segmentPercent = (stage.count / totalAppsCount) * 100
-                        const accumulatedOffset = -(currentAccumulated / 100) * circumference
-                        currentAccumulated += segmentPercent
-                        return (
-                          <circle
-                            key={idx}
-                            cx="64"
-                            cy="64"
-                            r="50"
-                            style={{ stroke: stage.color || "#3b82f6" }}
-                            className="transition-all duration-300 hover:opacity-80"
-                            strokeWidth="14"
-                            fill="transparent"
-                            strokeDasharray={`${(segmentPercent / 100) * circumference} ${circumference}`}
-                            strokeDashoffset={accumulatedOffset}
-                          />
-                        )
-                      })}
+                      {(() => {
+                        let currentAccumulated = 0;
+                        return counts.map((stage, idx) => {
+                          const segmentPercent = (stage.count / totalAppsCount) * 100
+                          const accumulatedOffset = -(currentAccumulated / 100) * circumference
+                          currentAccumulated += segmentPercent
+                          return (
+                            <circle
+                              key={idx}
+                              cx="64"
+                              cy="64"
+                              r="50"
+                              style={{ stroke: stage.color || "#3b82f6" }}
+                              className="transition-all duration-300 hover:opacity-80"
+                              strokeWidth="14"
+                              fill="transparent"
+                              strokeDasharray={`${(segmentPercent / 100) * circumference} ${circumference}`}
+                              strokeDashoffset={accumulatedOffset}
+                            />
+                          )
+                        })
+                      })()}
                     </svg>
                     <div className="absolute flex flex-col items-center justify-center">
                       <span className="text-2xl font-black text-foreground">{applications.length}</span>
