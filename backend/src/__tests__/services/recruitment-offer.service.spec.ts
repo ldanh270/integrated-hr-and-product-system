@@ -1,0 +1,44 @@
+jest.mock("@/repositories/recruitment-offer.repository", () => ({
+  recruitmentOfferRepository: {
+    findByApplication: jest.fn(),
+    create: jest.fn(),
+  },
+}))
+
+jest.mock("@/services/recruitment-application.service", () => ({
+  recruitmentApplicationService: {
+    findById: jest.fn(),
+    updateStatus: jest.fn(),
+  },
+}))
+
+import { recruitmentOfferRepository } from "@/repositories/recruitment-offer.repository"
+import { recruitmentApplicationService } from "@/services/recruitment-application.service"
+import { RecruitmentOfferService } from "@/services/recruitment-offer.service"
+
+describe("RecruitmentOfferService draft workflow", () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  it("keeps the application in final review while creating a draft offer", async () => {
+    jest.mocked(recruitmentApplicationService.findById).mockResolvedValue({ status: "final_review" } as never)
+    jest.mocked(recruitmentOfferRepository.findByApplication).mockResolvedValue([])
+    jest.mocked(recruitmentOfferRepository.create).mockResolvedValue({ id: "offer-1" })
+
+    const service = new RecruitmentOfferService()
+    const result = await service.create({
+      applicationId: "application-1",
+      candidateId: "candidate-1",
+      offeredSalary: 30_000_000,
+      currency: "VND",
+      startDate: new Date(Date.now() + 86_400_000).toISOString(),
+      employmentType: "full_time",
+    }, "employee-1")
+
+    expect(result).toEqual({ id: "offer-1" })
+    expect(recruitmentOfferRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ applicationId: "application-1" }),
+      "employee-1",
+    )
+    expect(recruitmentApplicationService.updateStatus).not.toHaveBeenCalled()
+  })
+})

@@ -22,14 +22,7 @@ export class RecruitmentOfferService {
       throw new Error("An active offer already exists for this application")
     }
 
-    const offer = await recruitmentOfferRepository.create(input, createdById)
-
-    // Auto-update application status
-    await recruitmentApplicationService.updateStatus(input.applicationId, {
-      status: "offer_sent",
-    })
-
-    return offer
+    return recruitmentOfferRepository.create(input, createdById)
   }
 
   async findById(id: string) {
