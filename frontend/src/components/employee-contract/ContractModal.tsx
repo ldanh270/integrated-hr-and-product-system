@@ -359,7 +359,7 @@ export function ContractModal({
                     id="probationSalary"
                     type="number"
                     value={probationSalary}
-                    onChange={(e) => setProbationSalary(e.target.value)}
+                    onChange={(e) => { setProbationSalary(e.target.value); }}
                     placeholder="0"
                     className="rounded-full"
                   />

@@ -28,7 +28,7 @@ import {
 } from "@/config/entities/recruitment.config"
 import { usePermission } from "@/hooks/use-permission"
 import { applicationApi, interviewApi } from "@/lib/api/recruitment.api"
-import type { ApplicationNote } from "@/types/recruitment.types"
+import type { ApplicationNote, KanbanApplication } from "@/types/recruitment.types"
 
 interface ApplicationDetailPanelProps {
   applicationId: string | null
@@ -143,7 +143,7 @@ export function ApplicationDetailPanel({
                 value="offers"
                 className="rounded-none border-b-2 border-transparent px-4 py-3 text-xs font-semibold data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
               >
-                Offer ({(application as any)?.offers?.length ?? 0})
+                Offer ({(application as unknown as KanbanApplication)?.offers?.length ?? 0})
               </TabsTrigger>
               <TabsTrigger
                 value="notes"
@@ -313,9 +313,9 @@ export function ApplicationDetailPanel({
                   )}
                 </div>
 
-                {(application as any)?.offers && (application as any).offers.length > 0 ? (
+                {(application as unknown as KanbanApplication)?.offers && (application as unknown as KanbanApplication).offers!.length > 0 ? (
                   <div className="space-y-3">
-                    {(application as any).offers.map((offer: any) => (
+                    {(application as unknown as KanbanApplication).offers!.map((offer) => (
                       <div
                         key={offer.id}
                         className="rounded-xl border border-border/60 bg-card p-4 space-y-1.5"
@@ -378,7 +378,7 @@ export function ApplicationDetailPanel({
           <CreateOfferDialog
             open={isOfferDialogOpen}
             onOpenChange={setIsOfferDialogOpen}
-            applications={[application as any]}
+            applications={[application as unknown as KanbanApplication]}
             onCreated={() => {
               void queryClient.invalidateQueries({ queryKey: ["recruitment", "application", applicationId] })
             }}

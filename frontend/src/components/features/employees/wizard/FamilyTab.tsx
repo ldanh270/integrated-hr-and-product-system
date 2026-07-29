@@ -39,7 +39,7 @@ export function FamilyTab({
       <div className="bg-background border border-border rounded-xl overflow-hidden shadow-none">
         <button
           type="button"
-          onClick={() => setOpenFamilyInfo(!openFamilyInfo)}
+          onClick={() => { setOpenFamilyInfo(!openFamilyInfo); }}
           className="w-full px-6 py-4 flex items-center justify-between bg-muted/50 border-b border-border text-left font-semibold text-sm text-foreground"
         >
           <div className="flex items-center gap-2">
@@ -57,7 +57,7 @@ export function FamilyTab({
               <Input
                 placeholder="Nhập mã"
                 value={formData.familyCode}
-                onChange={(e) => updateField("familyCode", e.target.value)}
+                onChange={(e) => { updateField("familyCode", e.target.value); }}
                 className="rounded-full"
               />
             </div>
@@ -67,7 +67,7 @@ export function FamilyTab({
               <Input
                 placeholder="Nhập tên"
                 value={formData.headFullName}
-                onChange={(e) => updateField("headFullName", e.target.value)}
+                onChange={(e) => { updateField("headFullName", e.target.value); }}
                 className="rounded-full"
               />
             </div>
@@ -77,7 +77,7 @@ export function FamilyTab({
               <Input
                 placeholder="Nhập số điện thoại"
                 value={formData.headPhone}
-                onChange={(e) => updateField("headPhone", e.target.value)}
+                onChange={(e) => { updateField("headPhone", e.target.value); }}
                 className="rounded-full"
               />
             </div>
@@ -87,7 +87,7 @@ export function FamilyTab({
               <Input
                 placeholder="Nhập số CCCD/CMND"
                 value={formData.headNationalId}
-                onChange={(e) => updateField("headNationalId", e.target.value)}
+                onChange={(e) => { updateField("headNationalId", e.target.value); }}
                 className="rounded-full"
               />
             </div>
@@ -97,7 +97,7 @@ export function FamilyTab({
               <Input
                 placeholder="Nhập địa chỉ hộ khẩu"
                 value={formData.householdAddress}
-                onChange={(e) => updateField("householdAddress", e.target.value)}
+                onChange={(e) => { updateField("householdAddress", e.target.value); }}
                 className="rounded-full"
               />
             </div>
@@ -107,7 +107,7 @@ export function FamilyTab({
               <Input
                 placeholder="Chọn Tỉnh/Thành phố"
                 value={formData.householdProvince}
-                onChange={(e) => updateField("householdProvince", e.target.value)}
+                onChange={(e) => { updateField("householdProvince", e.target.value); }}
                 className="rounded-full"
               />
             </div>
@@ -117,7 +117,7 @@ export function FamilyTab({
               <Input
                 placeholder="Chọn Xã/Phường"
                 value={formData.householdDistrict}
-                onChange={(e) => updateField("householdDistrict", e.target.value)}
+                onChange={(e) => { updateField("householdDistrict", e.target.value); }}
                 className="rounded-full"
               />
             </div>
@@ -130,7 +130,7 @@ export function FamilyTab({
         <div className="px-6 py-4 flex items-center justify-between bg-muted/50 border-b border-border">
           <button
             type="button"
-            onClick={() => setOpenMembers(!openMembers)}
+            onClick={() => { setOpenMembers(!openMembers); }}
             className="flex items-center gap-2 font-semibold text-sm text-foreground"
           >
             <span className="text-muted-foreground">
@@ -142,7 +142,7 @@ export function FamilyTab({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={addFamilyMember}
+            onClick={() => { addFamilyMember(); }}
             className="text-primary hover:text-primary/90 text-xs font-medium gap-1"
           >
             <PlusCircle size={15} /> Thêm thành viên
@@ -158,7 +158,7 @@ export function FamilyTab({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={addFamilyMember}
+                  onClick={() => { addFamilyMember(); }}
                   className="rounded-full text-xs"
                 >
                   + Thêm dòng thành viên
@@ -179,7 +179,7 @@ export function FamilyTab({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => removeFamilyMember(member.id)}
+                        onClick={() => { removeFamilyMember(member.id); }}
                         className="h-7 px-2 text-destructive hover:bg-destructive/10 gap-1 text-xs"
                       >
                         <Trash2 size={13} /> Xóa
@@ -191,7 +191,7 @@ export function FamilyTab({
                         <Input
                           placeholder="Vd: Bố, Mẹ, Vợ..."
                           value={member.relationship}
-                          onChange={(e) => updateFamilyMember(member.id, "relationship", e.target.value)}
+                          onChange={(e) => { updateFamilyMember(member.id, "relationship", e.target.value); }}
                           className="rounded-full text-xs"
                         />
                       </div>
@@ -200,7 +200,7 @@ export function FamilyTab({
                         <Input
                           placeholder="Nhập số CCCD"
                           value={member.nationalId}
-                          onChange={(e) => updateFamilyMember(member.id, "nationalId", e.target.value)}
+                          onChange={(e) => { updateFamilyMember(member.id, "nationalId", e.target.value); }}
                           className="rounded-full text-xs"
                         />
                       </div>
@@ -208,7 +208,7 @@ export function FamilyTab({
                         <Label className="text-[11px] font-medium text-muted-foreground">Giới tính</Label>
                         <Select
                           value={member.gender}
-                          onValueChange={(val) => updateFamilyMember(member.id, "gender", val)}
+                          onValueChange={(val) => { updateFamilyMember(member.id, "gender", val); }}
                         >
                           <SelectTrigger className="rounded-full text-xs">
                             <SelectValue placeholder="Chọn giới tính" />
@@ -224,7 +224,7 @@ export function FamilyTab({
                         <Input
                           type="date"
                           value={member.dateOfBirth}
-                          onChange={(e) => updateFamilyMember(member.id, "dateOfBirth", e.target.value)}
+                          onChange={(e) => { updateFamilyMember(member.id, "dateOfBirth", e.target.value); }}
                           className="rounded-full text-xs"
                         />
                       </div>
@@ -233,7 +233,7 @@ export function FamilyTab({
                         <Input
                           placeholder="Việt Nam"
                           value={member.nationality}
-                          onChange={(e) => updateFamilyMember(member.id, "nationality", e.target.value)}
+                          onChange={(e) => { updateFamilyMember(member.id, "nationality", e.target.value); }}
                           className="rounded-full text-xs"
                         />
                       </div>
@@ -242,7 +242,7 @@ export function FamilyTab({
                         <Input
                           placeholder="Kinh"
                           value={member.ethnicity}
-                          onChange={(e) => updateFamilyMember(member.id, "ethnicity", e.target.value)}
+                          onChange={(e) => { updateFamilyMember(member.id, "ethnicity", e.target.value); }}
                           className="rounded-full text-xs"
                         />
                       </div>
@@ -251,7 +251,7 @@ export function FamilyTab({
                         <Input
                           placeholder="Nhập địa chỉ khai sinh"
                           value={member.birthAddress}
-                          onChange={(e) => updateFamilyMember(member.id, "birthAddress", e.target.value)}
+                          onChange={(e) => { updateFamilyMember(member.id, "birthAddress", e.target.value); }}
                           className="rounded-full text-xs"
                         />
                       </div>
@@ -260,7 +260,7 @@ export function FamilyTab({
                           type="checkbox"
                           id={`dependent-${member.id}`}
                           checked={member.isDependent}
-                          onChange={(e) => updateFamilyMember(member.id, "isDependent", e.target.checked)}
+                          onChange={(e) => { updateFamilyMember(member.id, "isDependent", e.target.checked); }}
                           className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
                         />
                         <Label htmlFor={`dependent-${member.id}`} className="text-xs cursor-pointer font-medium">

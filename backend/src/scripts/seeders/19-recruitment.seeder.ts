@@ -145,9 +145,13 @@ export class RecruitmentSeeder implements ISeeder {
     }
     console.log(`    Seeded ${createdReqs.length} Job Requisitions.`)
 
-    const nodejsReq = createdReqs.find((r) => r.code === "REQ-2026-001")!
-    const qaReq = createdReqs.find((r) => r.code === "REQ-2026-002")!
-    const frontendReq = createdReqs.find((r) => r.code === "REQ-2026-005")!
+    const nodejsReq = createdReqs.find((r) => r.code === "REQ-2026-001")
+    const qaReq = createdReqs.find((r) => r.code === "REQ-2026-002")
+    const frontendReq = createdReqs.find((r) => r.code === "REQ-2026-005")
+
+    if (!nodejsReq || !qaReq || !frontendReq) {
+      throw new Error("Failed to find seeded requisitions")
+    }
 
     // 3. Create Job Postings
     const postingsToCreate = [
@@ -158,14 +162,7 @@ export class RecruitmentSeeder implements ISeeder {
         sourceCode: "PUB-LN-001",
         status: POSTING_STATUS.OPEN,
         postingUrl: "https://www.linkedin.com/jobs/view/1001",
-      },
-      {
-        requisitionId: nodejsReq.id,
-        channel: RECRUITMENT_CHANNEL.COMPANY_WEBSITE,
-        source: RECRUITMENT_SOURCE.COMPANY_WEBSITE,
-        sourceCode: "PUB-CW-001",
-        status: POSTING_STATUS.OPEN,
-        postingUrl: "https://company.com/careers/senior-nodejs",
+        publishedAt: new Date(),
       },
       {
         requisitionId: qaReq.id,
@@ -173,7 +170,8 @@ export class RecruitmentSeeder implements ISeeder {
         source: RECRUITMENT_SOURCE.FACEBOOK,
         sourceCode: "PUB-FB-002",
         status: POSTING_STATUS.OPEN,
-        postingUrl: "https://facebook.com/company/jobs/qa-auto",
+        postingUrl: "https://www.facebook.com/jobs/1002",
+        publishedAt: new Date(),
       },
       {
         requisitionId: frontendReq.id,
@@ -182,16 +180,17 @@ export class RecruitmentSeeder implements ISeeder {
         sourceCode: "PUB-LN-003",
         status: POSTING_STATUS.OPEN,
         postingUrl: "https://www.linkedin.com/jobs/view/1003",
+        publishedAt: new Date(),
       },
     ]
 
     const createdPostings = []
-    for (const post of postingsToCreate) {
-      const existing = await prisma.jobPosting.findUnique({
-        where: { sourceCode: post.sourceCode },
+    for (const posting of postingsToCreate) {
+      const existing = await prisma.jobPosting.findFirst({
+        where: { sourceCode: posting.sourceCode },
       })
       if (!existing) {
-        const created = await prisma.jobPosting.create({ data: post })
+        const created = await prisma.jobPosting.create({ data: posting })
         createdPostings.push(created)
       } else {
         createdPostings.push(existing)
@@ -199,9 +198,13 @@ export class RecruitmentSeeder implements ISeeder {
     }
     console.log(`    Seeded ${createdPostings.length} Job Postings.`)
 
-    const nodejsLinkedinPost = createdPostings.find((p) => p.sourceCode === "PUB-LN-001")!
-    const qaFacebookPost = createdPostings.find((p) => p.sourceCode === "PUB-FB-002")!
-    const frontendLinkedinPost = createdPostings.find((p) => p.sourceCode === "PUB-LN-003")!
+    const nodejsLinkedinPost = createdPostings.find((p) => p.sourceCode === "PUB-LN-001")
+    const qaFacebookPost = createdPostings.find((p) => p.sourceCode === "PUB-FB-002")
+    const frontendLinkedinPost = createdPostings.find((p) => p.sourceCode === "PUB-LN-003")
+
+    if (!nodejsLinkedinPost || !qaFacebookPost || !frontendLinkedinPost) {
+      throw new Error("Failed to find seeded job postings")
+    }
 
     const defaultStageByPosting = new Map<string, string>()
     for (const posting of createdPostings) {
@@ -292,12 +295,24 @@ export class RecruitmentSeeder implements ISeeder {
     console.log(`    Seeded ${createdCandidates.length} Candidates.`)
 
     // Extract candidates
-    const linhCandidate = createdCandidates.find((c) => c.email.includes("linh"))!
-    const maiCandidate = createdCandidates.find((c) => c.email.includes("mai"))!
-    const namCandidate = createdCandidates.find((c) => c.email.includes("nam"))!
-    const ducCandidate = createdCandidates.find((c) => c.email.includes("duc"))!
-    const vietCandidate = createdCandidates.find((c) => c.email.includes("viet"))!
-    const lanCandidate = createdCandidates.find((c) => c.email.includes("lan"))!
+    const linhCandidate = createdCandidates.find((c) => c.email.includes("linh"))
+    const maiCandidate = createdCandidates.find((c) => c.email.includes("mai"))
+    const namCandidate = createdCandidates.find((c) => c.email.includes("nam"))
+    const ducCandidate = createdCandidates.find((c) => c.email.includes("duc"))
+    const vietCandidate = createdCandidates.find((c) => c.email.includes("viet"))
+    const lanCandidate = createdCandidates.find((c) => c.email.includes("lan"))
+
+    if (!linhCandidate || !maiCandidate || !namCandidate || !ducCandidate || !vietCandidate || !lanCandidate) {
+      throw new Error("Failed to find seeded candidates")
+    }
+
+    const nodejsStageId = defaultStageByPosting.get(nodejsLinkedinPost.id)
+    const qaStageId = defaultStageByPosting.get(qaFacebookPost.id)
+    const frontendStageId = defaultStageByPosting.get(frontendLinkedinPost.id)
+
+    if (!nodejsStageId || !qaStageId || !frontendStageId) {
+      throw new Error("Failed to find default pipeline stages")
+    }
 
     // 5. Create Applications
     const applicationsData = [
@@ -305,7 +320,7 @@ export class RecruitmentSeeder implements ISeeder {
         requisitionId: nodejsReq.id,
         candidateId: linhCandidate.id,
         postingId: nodejsLinkedinPost.id,
-        pipelineStageId: defaultStageByPosting.get(nodejsLinkedinPost.id)!,
+        pipelineStageId: nodejsStageId,
         status: RECRUITMENT_APPLICATION_STATUS.INTERVIEWING,
         source: RECRUITMENT_SOURCE.LINKEDIN,
         assignedToId: hrManager.id,
@@ -314,7 +329,7 @@ export class RecruitmentSeeder implements ISeeder {
         requisitionId: qaReq.id,
         candidateId: maiCandidate.id,
         postingId: qaFacebookPost.id,
-        pipelineStageId: defaultStageByPosting.get(qaFacebookPost.id)!,
+        pipelineStageId: qaStageId,
         status: RECRUITMENT_APPLICATION_STATUS.HIRED,
         source: RECRUITMENT_SOURCE.FACEBOOK,
         assignedToId: hrManager.id,
@@ -324,7 +339,7 @@ export class RecruitmentSeeder implements ISeeder {
         requisitionId: nodejsReq.id,
         candidateId: namCandidate.id,
         postingId: nodejsLinkedinPost.id,
-        pipelineStageId: defaultStageByPosting.get(nodejsLinkedinPost.id)!,
+        pipelineStageId: nodejsStageId,
         status: RECRUITMENT_APPLICATION_STATUS.OFFER_SENT,
         source: RECRUITMENT_SOURCE.LINKEDIN,
         assignedToId: hrManager.id,
@@ -333,7 +348,7 @@ export class RecruitmentSeeder implements ISeeder {
         requisitionId: frontendReq.id,
         candidateId: ducCandidate.id,
         postingId: frontendLinkedinPost.id,
-        pipelineStageId: defaultStageByPosting.get(frontendLinkedinPost.id)!,
+        pipelineStageId: frontendStageId,
         status: RECRUITMENT_APPLICATION_STATUS.NEW,
         source: RECRUITMENT_SOURCE.LINKEDIN,
         assignedToId: hrManager.id,
@@ -342,7 +357,7 @@ export class RecruitmentSeeder implements ISeeder {
         requisitionId: frontendReq.id,
         candidateId: vietCandidate.id,
         postingId: frontendLinkedinPost.id,
-        pipelineStageId: defaultStageByPosting.get(frontendLinkedinPost.id)!,
+        pipelineStageId: frontendStageId,
         status: RECRUITMENT_APPLICATION_STATUS.REJECTED,
         rejectReason: "Lack of commercial React project experience",
         source: RECRUITMENT_SOURCE.LINKEDIN,
@@ -352,7 +367,7 @@ export class RecruitmentSeeder implements ISeeder {
         requisitionId: qaReq.id,
         candidateId: lanCandidate.id,
         postingId: qaFacebookPost.id,
-        pipelineStageId: defaultStageByPosting.get(qaFacebookPost.id)!,
+        pipelineStageId: qaStageId,
         status: RECRUITMENT_APPLICATION_STATUS.REVIEWING,
         source: RECRUITMENT_SOURCE.WEBSITE,
         assignedToId: hrManager.id,
@@ -373,9 +388,13 @@ export class RecruitmentSeeder implements ISeeder {
     }
     console.log(`    Seeded ${createdApps.length} Recruitment Applications.`)
 
-    const linhApp = createdApps.find((a) => a.candidateId === linhCandidate.id)!
-    const maiApp = createdApps.find((a) => a.candidateId === maiCandidate.id)!
-    const namApp = createdApps.find((a) => a.candidateId === namCandidate.id)!
+    const linhApp = createdApps.find((a) => a.candidateId === linhCandidate.id)
+    const maiApp = createdApps.find((a) => a.candidateId === maiCandidate.id)
+    const namApp = createdApps.find((a) => a.candidateId === namCandidate.id)
+
+    if (!linhApp || !maiApp || !namApp) {
+      throw new Error("Failed to find seeded applications")
+    }
 
     // 6. Create Interview Rounds
     // Linh is interviewing: Round 1 (Completed, Pass), Round 2 (Scheduled)
@@ -421,7 +440,10 @@ export class RecruitmentSeeder implements ISeeder {
     }
     console.log(`    Seeded ${createdRounds.length} Interview Rounds.`)
 
-    const codingRound = createdRounds.find((r) => r.roundNumber === 1 && r.applicationId === linhApp.id)!
+    const codingRound = createdRounds.find((r) => r.roundNumber === 1 && r.applicationId === linhApp.id)
+    if (!codingRound) {
+      throw new Error("Failed to find coding round")
+    }
 
     // 7. Create Scorecards for completed interview round
     const scorecardData = {

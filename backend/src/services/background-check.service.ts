@@ -74,7 +74,7 @@ export class BackgroundCheckService {
 
     // Verify all required checks were done
     const allChecksDone = checkFields.every((field) => {
-      const value = (existing as any)[field]
+      const value = (existing as Record<string, unknown>)[field]
       return value === true
     })
 

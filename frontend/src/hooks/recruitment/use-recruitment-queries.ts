@@ -328,8 +328,8 @@ export function useUpdateApplicationStatus() {
     mutationFn: ({ id, data }: { id: string; data: Parameters<typeof applicationApi.updateStatus>[1] }) =>
       applicationApi.updateStatus(id, data),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "applications"] })
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "applications", id] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "applications"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "applications", id] })
       toast.success("Đã cập nhật trạng thái")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -358,8 +358,8 @@ export function useMoveKanban() {
   return useMutation({
     mutationFn: applicationApi.moveKanban,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "kanban"] })
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "applications"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "kanban"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "applications"] })
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
       toast.error(error.response?.data?.error?.message ?? "Lỗi khi di chuyển")
@@ -397,7 +397,7 @@ export function useCreateInterview() {
   return useMutation({
     mutationFn: interviewApi.create,
     onSuccess: (_, data) => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews", data.applicationId] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews", data.applicationId] })
       toast.success("Đã tạo lịch phỏng vấn")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -412,7 +412,7 @@ export function useUpdateInterview() {
     mutationFn: ({ id, data }: { id: string; data: Parameters<typeof interviewApi.update>[1] }) =>
       interviewApi.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews"] })
       toast.success("Đã cập nhật lịch phỏng vấn")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -427,7 +427,7 @@ export function useCompleteInterview() {
     mutationFn: ({ id, data }: { id: string; data: { result?: string; feedback?: string } }) =>
       interviewApi.complete(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "interviews"] })
       toast.success("Đã hoàn thành phỏng vấn")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -451,7 +451,7 @@ export function useCreateScorecard() {
   return useMutation({
     mutationFn: scorecardApi.create,
     onSuccess: (_, data) => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "scorecards", data.interviewId] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "scorecards", data.interviewId] })
       toast.success("Đã tạo đánh giá")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -466,7 +466,7 @@ export function useUpdateScorecard() {
     mutationFn: ({ id, data }: { id: string; data: Parameters<typeof scorecardApi.update>[1] }) =>
       scorecardApi.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "scorecards"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "scorecards"] })
       toast.success("Đã cập nhật đánh giá")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -504,7 +504,7 @@ export function useCreateOffer() {
   return useMutation({
     mutationFn: offerApi.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "offers"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "offers"] })
       toast.success("Đã tạo offer")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -518,8 +518,8 @@ export function useSendOffer() {
   return useMutation({
     mutationFn: offerApi.send,
     onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "offers"] })
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "offers", id] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "offers"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "offers", id] })
       toast.success("Đã gửi offer")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -533,7 +533,7 @@ export function useRespondToOffer() {
   return useMutation({
     mutationFn: offerApi.respond,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "offers"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "offers"] })
       toast.success("Đã phản hồi offer")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -579,7 +579,7 @@ export function useCreateBackgroundCheck() {
   return useMutation({
     mutationFn: backgroundCheckApi.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "background-checks"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "background-checks"] })
       toast.success("Đã tạo kiểm tra background")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -593,8 +593,8 @@ export function useStartBackgroundCheck() {
   return useMutation({
     mutationFn: backgroundCheckApi.start,
     onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "background-checks"] })
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "background-checks", id] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "background-checks"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "background-checks", id] })
       toast.success("Đã bắt đầu kiểm tra background")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -609,7 +609,7 @@ export function useCompleteBackgroundCheck() {
     mutationFn: ({ id, data }: { id: string; data: { passed: boolean; failReason?: string } }) =>
       backgroundCheckApi.complete(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "background-checks"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "background-checks"] })
       toast.success("Đã hoàn thành kiểm tra background")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
@@ -632,7 +632,7 @@ export function useUpsertOAuthAccount() {
   return useMutation({
     mutationFn: oauthAccountApi.upsert,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recruitment", "oauth-accounts"] })
+      void queryClient.invalidateQueries({ queryKey: ["recruitment", "oauth-accounts"] })
       toast.success("Đã lưu cấu hình OAuth")
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
