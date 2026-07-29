@@ -1678,6 +1678,16 @@ model RecruitmentOAuthAccount {
   @@index([channel])
 }
 
+// OAuth callback nonce persisted for one-time consumption across API instances.
+model RecruitmentOAuthStateNonce {
+  nonce     String   @id
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
 // Candidate — Person being recruited
 model Candidate {
   id          String    @id @default(cuid())
@@ -1747,6 +1757,7 @@ model RecruitmentApplication {
   assignedTo   Employee? @relation("RecruitmentAppRecruiter", fields: [assignedToId], references: [id], onDelete: SetNull)
 
   hiredAt   DateTime?
+  version   Int       @default(1)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -1765,6 +1776,7 @@ model RecruitmentApplication {
   @@index([pipelineStageId])
   @@index([postingId, pipelineStageId])
   @@index([postingId, createdAt])
+  @@index([id, version])
 }
 
 model RecruitmentPipelineStage {
