@@ -11,15 +11,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { usePermission } from "@/hooks/use-permission"
 import { usePostingKanban, POSTING_STAGE_COLORS } from "./hooks/use-posting-kanban"
+import { useRequisitionKanban } from "./hooks/use-requisition-kanban"
 import type { KanbanApplication } from "@/types/recruitment.types"
 
-interface KanbanPageProps { postingId?: string; embedded?: boolean }
+interface KanbanPageProps { postingId?: string; requisitionId?: string; embedded?: boolean }
 
-export default function KanbanPage({ postingId: givenPostingId, embedded = false }: KanbanPageProps) {
+export default function KanbanPage({ postingId: givenPostingId, requisitionId = "", embedded = false }: KanbanPageProps) {
   const [searchParams] = useSearchParams()
   const postingId = givenPostingId ?? searchParams.get("postingId") ?? ""
   const { hasPermission } = usePermission()
-  const board = usePostingKanban(postingId, hasPermission("recruitment.posting.manage"))
+  const postingBoard = usePostingKanban(postingId, hasPermission("recruitment.posting.manage"))
+  const requisitionBoard = useRequisitionKanban(requisitionId, hasPermission("recruitment.posting.manage"))
+  const board = requisitionId ? requisitionBoard : postingBoard
   const {
     canManageStages, statuses, tasks, isLoadingStatuses, isLoadingTasks,
     isAddColumnOpen, setIsAddColumnOpen, isEditColumnOpen, setIsEditColumnOpen, isDeleteConfirmOpen, setIsDeleteConfirmOpen,
@@ -28,7 +31,7 @@ export default function KanbanPage({ postingId: givenPostingId, embedded = false
     createStatusMutation, updateStatusMutation, deleteStatusMutation, resetForm, handleDragStart, handleDragEnd, handleCardDragOver, handleCardDrop, handleDrop, handleColumnDragStart, handleColumnDragEnd, handleColumnDragOver, handleColumnDrop,
   } = board
 
-  if (!postingId) return <p className="p-6 text-sm text-muted-foreground">Chọn một bài đăng tuyển dụng để xem Kanban.</p>
+  if (!postingId && !requisitionId) return <p className="p-6 text-sm text-muted-foreground">Chọn một yêu cầu tuyển dụng để xem Kanban.</p>
   if (isLoadingStatuses || isLoadingTasks) return <LoadingBoard />
 
   const applicationsByStage: Record<string, KanbanApplication[]> = Object.fromEntries(statuses.map((stage) => [stage.id, []]))

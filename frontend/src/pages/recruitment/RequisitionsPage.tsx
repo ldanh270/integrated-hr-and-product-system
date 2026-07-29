@@ -306,7 +306,7 @@ export default function RequisitionsPage() {
                         hasPermission("recruitment.update") &&
                         (requisition.status === "draft" || requisition.status === "pending_approval")
                       }
-                      onViewDetails={(id) => setViewingRequisitionId(id)}
+                      onViewDetails={(id) => routerNavigate(`/recruitment/requisitions/${id}/overview`)}
                       onEdit={(req) => {
                         setSelectedRequisition(req)
                         setIsEditOpen(true)

@@ -97,6 +97,21 @@ export const requisitionApi = {
     return response.data.data
   },
 
+  workspace: async (id: string): Promise<{ requisition: JobRequisition; stages: import("@/types/recruitment.types").RecruitmentPipelineStage[]; applications: { data: KanbanApplication[]; meta: { total: number; page: number; pageSize: number } } }> => {
+    const response = await apiClient.get<{ data: { requisition: JobRequisition; stages: import("@/types/recruitment.types").RecruitmentPipelineStage[]; applications: { items: KanbanApplication[]; total: number; page: number; pageSize: number } } }>(`/recruitment/requisitions/${id}/workspace`)
+    return { requisition: response.data.data.requisition, stages: response.data.data.stages, applications: toPaginatedResult(response.data.data.applications) }
+  },
+  activities: async (id: string): Promise<RecruitmentPostingActivity[]> => (await apiClient.get<{ data: PaginatedPayload<RecruitmentPostingActivity> }>(`/recruitment/requisitions/${id}/activities`)).data.data.items,
+
+  stages: async (id: string) => (await apiClient.get<{
+    data: import("@/types/recruitment.types").RecruitmentPipelineStage[]
+  }>(`/recruitment/requisitions/${id}/stages`)).data.data,
+  createStage: async (id: string, data: { name: string; color?: string; isDefault?: boolean; isCompleted?: boolean }) => (await apiClient.post(`/recruitment/requisitions/${id}/stages`, data)).data.data,
+  updateStage: async (id: string, stageId: string, data: Record<string, unknown>) => (await apiClient.patch(`/recruitment/requisitions/${id}/stages/${stageId}`, data)).data.data,
+  deleteStage: async (id: string, stageId: string, fallbackStageId: string) => apiClient.delete(`/recruitment/requisitions/${id}/stages/${stageId}`, { params: { fallbackStageId } }),
+  reorderStages: async (id: string, stageIds: string[]) => (await apiClient.put(`/recruitment/requisitions/${id}/stages/reorder`, { stageIds })).data.data,
+  moveApplicationStage: async (id: string, applicationId: string, pipelineStageId: string) => (await apiClient.post(`/recruitment/requisitions/${id}/stages/move`, { applicationId, pipelineStageId })).data.data,
+
   create: async (data: CreateRequisitionDto): Promise<JobRequisition> => {
     const response = await apiClient.post<{ data: JobRequisition }>("/recruitment/requisitions", data)
     return response.data.data

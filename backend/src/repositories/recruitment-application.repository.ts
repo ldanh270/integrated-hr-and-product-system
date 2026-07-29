@@ -11,7 +11,7 @@ export class RecruitmentApplicationRepository {
 
   async create(data: CreateApplicationInput): Promise<{ id: string }> {
     return this.db.$transaction(async (tx) => {
-      const defaultStage = await tx.recruitmentPipelineStage.findFirst({ where: { postingId: data.postingId, isDefault: true }, orderBy: { position: "asc" }, select: { id: true } })
+      const defaultStage = await tx.recruitmentPipelineStage.findFirst({ where: { requisitionId: data.requisitionId, isDefault: true }, orderBy: { position: "asc" }, select: { id: true } })
       if (!defaultStage) throw new Error("Bài đăng chưa có giai đoạn mặc định")
       return tx.recruitmentApplication.create({
         data: {

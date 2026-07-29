@@ -63,7 +63,7 @@ export class JobPostingService {
       formFields: fields as any,
       oauthAccountId,
     }, fields)
-    await jobPostingRepository.createDefaultPipelineStages(posting.id)
+    await jobRequisitionRepository.ensurePipeline(input.requisitionId)
     await recruitmentPostingActivityService.record(
       posting.id,
       RECRUITMENT_POSTING_ACTIVITY_TYPE.CREATED,
@@ -101,26 +101,28 @@ export class JobPostingService {
     return jobPostingRepository.listConnectorResponses(id)
   }
 
-  async listPipelineStages(id: string) { await this.findById(id); return jobPostingRepository.listPipelineStages(id) }
+  async listPipelineStages(id: string) { const posting = await this.findById(id); await jobRequisitionRepository.ensurePipeline(posting.requisitionId); return jobRequisitionRepository.listPipelineStages(posting.requisitionId) }
 
   async createPipelineStage(id: string, data: { name: string; color?: string; isDefault?: boolean; isCompleted?: boolean }, actorId: string) {
-    await this.findById(id)
-    const stage = await jobPostingRepository.createPipelineStage(id, data)
+    const posting = await this.findById(id)
+    const stage = await jobRequisitionRepository.createPipelineStage(posting.requisitionId, data)
     await recruitmentPostingActivityService.record(id, RECRUITMENT_POSTING_ACTIVITY_TYPE.STAGE_CREATED, actorId, { stageId: stage.id, name: stage.name })
     return stage
   }
 
   async updatePipelineStage(postingId: string, stageId: string, data: { name?: string; color?: string; isDefault?: boolean; isCompleted?: boolean }, actorId: string) {
+    const posting = await this.findById(postingId)
     const stage = await this.getPostingStage(postingId, stageId)
     if (stage.isDefault && data.isDefault === false) {
       throw new AppError("Cần chọn một giai đoạn mặc định khác trước", HttpStatusCode.CONFLICT, LAYER, "DEFAULT_STAGE_REQUIRED")
     }
-    const updated = await jobPostingRepository.updatePipelineStage(stageId, data)
+    const updated = await jobRequisitionRepository.updatePipelineStage(posting.requisitionId, stageId, data)
     await recruitmentPostingActivityService.record(postingId, RECRUITMENT_POSTING_ACTIVITY_TYPE.STAGE_UPDATED, actorId, { stageId, fields: Object.keys(data) })
     return updated
   }
 
   async deletePipelineStage(postingId: string, stageId: string, fallbackStageId: string, actorId: string) {
+    const posting = await this.findById(postingId)
     const stages = await this.listPipelineStages(postingId)
     const stage = stages.find((item) => item.id === stageId)
     const fallback = stages.find((item) => item.id === fallbackStageId)
@@ -133,30 +135,32 @@ export class JobPostingService {
     if (stages.length < 2) {
       throw new AppError("Bài đăng phải có ít nhất một giai đoạn", HttpStatusCode.CONFLICT, LAYER, "LAST_STAGE_DELETE")
     }
-    await jobPostingRepository.deletePipelineStage(stageId, fallbackStageId)
+    await jobRequisitionRepository.deletePipelineStage(posting.requisitionId, stageId, fallbackStageId)
     await recruitmentPostingActivityService.record(postingId, RECRUITMENT_POSTING_ACTIVITY_TYPE.STAGE_DELETED, actorId, { stageId, fallbackStageId, name: stage.name })
   }
 
   async reorderPipelineStages(postingId: string, stageIds: string[], actorId: string) {
-    await this.findById(postingId)
-    const stages = await jobPostingRepository.reorderPipelineStages(postingId, stageIds)
+    const posting = await this.findById(postingId)
+    const stages = await jobRequisitionRepository.reorderPipelineStages(posting.requisitionId, stageIds)
     await recruitmentPostingActivityService.record(postingId, RECRUITMENT_POSTING_ACTIVITY_TYPE.STAGES_REORDERED, actorId, { stageIds })
     return stages
   }
 
   async moveApplicationToPipelineStage(postingId: string, applicationId: string, pipelineStageId: string, actorId: string) {
     const application = await recruitmentApplicationRepository.findById(applicationId)
+    const posting = await this.findById(postingId)
     if (!application || application.postingId !== postingId) {
       throw new AppError("Ứng viên không thuộc bài đăng này", HttpStatusCode.BAD_REQUEST, LAYER, "APPLICATION_POSTING_MISMATCH")
     }
     await this.getPostingStage(postingId, pipelineStageId)
-    const updated = await jobPostingRepository.moveApplicationToPipelineStage(applicationId, pipelineStageId)
+    const updated = await jobRequisitionRepository.moveApplicationToPipelineStage(posting.requisitionId, applicationId, pipelineStageId)
     await recruitmentPostingActivityService.record(postingId, RECRUITMENT_POSTING_ACTIVITY_TYPE.APPLICATION_STAGE_CHANGED, actorId, { pipelineStageId }, applicationId)
     return updated
   }
 
   async createCandidateApplication(postingId: string, input: CreatePostingCandidateInput, actorId: string) {
     const posting = await this.findById(postingId)
+    await jobRequisitionRepository.ensurePipeline(posting.requisitionId)
     const application = await jobPostingRepository.createCandidateApplication(postingId, { ...input, source: posting.source })
     await recruitmentPostingActivityService.record(postingId, RECRUITMENT_POSTING_ACTIVITY_TYPE.CANDIDATE_CREATED, actorId, { candidateId: application.candidateId }, application.id)
     return application
@@ -212,6 +216,7 @@ export class JobPostingService {
     this.syncingPostingIds.add(id)
     try {
       const posting = await this.findById(id)
+      await jobRequisitionRepository.ensurePipeline(posting.requisitionId)
       const connector = this.connectors.get(posting.channel)
       if (!connector) this.throwConnectorNotConfigured(posting.channel)
       await recruitmentPostingActivityService.record(
@@ -283,9 +288,10 @@ export class JobPostingService {
   }
 
   private async getPostingStage(postingId: string, stageId: string) {
-    const stage = (await jobPostingRepository.listPipelineStages(postingId)).find((item) => item.id === stageId)
+    const posting = await this.findById(postingId)
+    const stage = (await jobRequisitionRepository.listPipelineStages(posting.requisitionId)).find((item) => item.id === stageId)
     if (!stage) {
-      throw new AppError("Giai đoạn không thuộc bài đăng này", HttpStatusCode.BAD_REQUEST, LAYER, "STAGE_POSTING_MISMATCH")
+      throw new AppError("Giai đoạn không thuộc yêu cầu tuyển dụng này", HttpStatusCode.BAD_REQUEST, LAYER, "STAGE_REQUISITION_MISMATCH")
     }
     return stage
   }

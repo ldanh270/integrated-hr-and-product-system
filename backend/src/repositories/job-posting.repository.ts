@@ -116,7 +116,7 @@ export class JobPostingRepository {
     return this.db.$transaction(async (tx) => {
       const posting = await tx.jobPosting.findUniqueOrThrow({ where: { id: postingId } })
       const defaultStage = await tx.recruitmentPipelineStage.findFirst({
-        where: { postingId, isDefault: true },
+        where: { requisitionId: posting.requisitionId, isDefault: true },
         orderBy: { position: "asc" },
       })
       if (!defaultStage) throw new Error("Bài đăng chưa có giai đoạn mặc định")

@@ -89,6 +89,58 @@ export class RecruitmentController {
     } catch (e) { next(e) }
   }
 
+  getRequisitionWorkspace = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try { this.sendSuccess(res, await jobRequisitionService.getWorkspace(req.params.id as string)) } catch (e) { next(e) }
+  }
+
+  getRequisitionActivities = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const page = Math.max(1, Number(req.query.page) || 1)
+      const pageSize = Math.min(100, Math.max(1, Number(req.query.pageSize) || 50))
+      this.sendSuccess(res, await jobRequisitionService.listActivities(req.params.id as string, page, pageSize))
+    } catch (e) { next(e) }
+  }
+
+  listRequisitionStages = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try { this.sendSuccess(res, await jobRequisitionService.listPipelineStages(req.params.id as string)) } catch (e) { next(e) }
+  }
+
+  createRequisitionStage = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const body = z.object({ name: z.string().trim().min(1).max(100), color: z.string().max(32).optional(), isDefault: z.boolean().optional(), isCompleted: z.boolean().optional() }).parse(req.body)
+      this.sendCreated(res, await jobRequisitionService.createPipelineStage(req.params.id as string, body, req.user!.empId))
+    } catch (e) { next(e) }
+  }
+
+  updateRequisitionStage = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const body = z.object({ name: z.string().trim().min(1).max(100).optional(), color: z.string().max(32).optional(), isDefault: z.boolean().optional(), isCompleted: z.boolean().optional() }).parse(req.body)
+      this.sendSuccess(res, await jobRequisitionService.updatePipelineStage(req.params.id as string, req.params.stageId as string, body, req.user!.empId))
+    } catch (e) { next(e) }
+  }
+
+  deleteRequisitionStage = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const fallbackStageId = z.string().cuid().parse(req.query.fallbackStageId)
+      await jobRequisitionService.deletePipelineStage(req.params.id as string, req.params.stageId as string, fallbackStageId, req.user!.empId)
+      res.status(204).send()
+    } catch (e) { next(e) }
+  }
+
+  reorderRequisitionStages = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const body = z.object({ stageIds: z.array(z.string().cuid()).min(1) }).parse(req.body)
+      this.sendSuccess(res, await jobRequisitionService.reorderPipelineStages(req.params.id as string, body.stageIds, req.user!.empId))
+    } catch (e) { next(e) }
+  }
+
+  moveRequisitionApplication = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const body = z.object({ applicationId: z.string().cuid(), pipelineStageId: z.string().cuid() }).parse(req.body)
+      this.sendSuccess(res, await jobRequisitionService.moveApplicationToPipelineStage(req.params.id as string, body.applicationId, body.pipelineStageId, req.user!.empId))
+    } catch (e) { next(e) }
+  }
+
   listRequisitionApprovers = async (_req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const result = await jobRequisitionService.listApprovers()

@@ -32,6 +32,7 @@ export default function JobPostingDetailPage() {
   const candidates = applications?.data ?? []
 
   useEffect(() => { if (id && tab !== activeTab) navigate(`/recruitment/job-postings/${id}/${activeTab}`, { replace: true }) }, [activeTab, id, navigate, tab])
+  useEffect(() => { if (posting?.requisitionId) navigate(`/recruitment/requisitions/${posting.requisitionId}/postings?postingId=${id}`, { replace: true }) }, [id, navigate, posting?.requisitionId])
   useEffect(() => { const shouldSync = posting?.channel === "google_form" && posting.status === "open" && posting.connectorStatus === "ready"; if (shouldSync && syncedOnEntry.current !== id) { syncedOnEntry.current = id; sync.mutate(id) } }, [id, posting?.channel, posting?.connectorStatus, posting?.status, sync])
   if (isLoading || !posting) return <div className="container p-8 text-muted-foreground">Đang tải bài đăng tuyển dụng...</div>
   const canSync = posting.channel === "google_form" && posting.status === "open"
