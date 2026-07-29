@@ -71,6 +71,10 @@ export const updateJobRequisitionSchema = jobRequisitionFieldsSchema.partial().s
 export const approveRequisitionSchema = z.object({
   approved: z.boolean(),
   comment: z.string().max(500).optional(),
+}).superRefine(({ approved, comment }, context) => {
+  if (!approved && !comment?.trim()) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["comment"], message: "Rejection reason is required" })
+  }
 })
 
 // ── Job Description Schemas ────────────────────────────────────────────────────

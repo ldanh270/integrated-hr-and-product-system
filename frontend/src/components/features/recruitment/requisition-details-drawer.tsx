@@ -1,4 +1,5 @@
 import { AppDrawer, StatusPill } from "@/components/common"
+import { RejectRequisitionDialog } from "@/components/features/recruitment/reject-requisition-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -35,6 +36,7 @@ import {
   X,
   XCircle,
 } from "lucide-react"
+import { useState } from "react"
 
 interface RequisitionDetailsDrawerProps {
   /** The unique ID of the requisition to load, or null to close the drawer */
@@ -89,6 +91,7 @@ export function RequisitionDetailsDrawer({ requisitionId, onClose, onEdit }: Req
 
   const submitMutation = useSubmitRequisitionForApproval()
   const approveMutation = useApproveRequisition()
+  const [isRejectOpen, setIsRejectOpen] = useState(false)
 
   const canCreateJd = hasPermission("recruitment.jd.create")
   const canSubmit =
@@ -227,7 +230,7 @@ export function RequisitionDetailsDrawer({ requisitionId, onClose, onEdit }: Req
                             size="sm"
                             className="rounded-full gap-1.5"
                             disabled={approveMutation.isPending}
-                            onClick={() => approveMutation.mutate({ id: requisition.id, data: { approved: false } })}
+                            onClick={() => setIsRejectOpen(true)}
                           >
                             <X size={14} /> Từ chối
                           </Button>
@@ -419,6 +422,7 @@ export function RequisitionDetailsDrawer({ requisitionId, onClose, onEdit }: Req
           </div>
         )}
       </TooltipProvider>
+      <RejectRequisitionDialog requisitionCode={requisition?.code ?? ""} open={isRejectOpen} pending={approveMutation.isPending} onOpenChange={setIsRejectOpen} onConfirm={(comment) => requisition && approveMutation.mutate({ id: requisition.id, data: { approved: false, comment } }, { onSuccess: () => setIsRejectOpen(false) })} />
     </AppDrawer>
   )
 }

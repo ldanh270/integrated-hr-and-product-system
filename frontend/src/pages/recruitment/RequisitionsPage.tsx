@@ -3,6 +3,7 @@ import { Check, Eye, FilePlus2, Filter, Pencil, Plus, RotateCcw, Send, X } from 
 import { AppPagination, DataTableToolbar, PageCard, PageHeader } from "@/components/common"
 import { StatusPill } from "@/components/common/status-pill"
 import { CreateRequisitionDialog } from "@/components/features/recruitment/create-requisition-dialog"
+import { RejectRequisitionDialog } from "@/components/features/recruitment/reject-requisition-dialog"
 import { RequisitionDetailsDrawer } from "@/components/features/recruitment/requisition-details-drawer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -376,8 +377,10 @@ function RequisitionRow({
 }) {
   const submit = useSubmitRequisitionForApproval()
   const approve = useApproveRequisition()
+  const [isRejectOpen, setIsRejectOpen] = useState(false)
 
   return (
+    <>
     <TableRow
       onClick={() => onViewDetails(requisition.id)}
       className="cursor-pointer transition-colors duration-100 hover:bg-muted/25"
@@ -526,7 +529,7 @@ function RequisitionRow({
                     size="icon"
                     className="rounded-full text-destructive hover:text-destructive hover:bg-destructive/10"
                     aria-label={`Từ chối ${requisition.code}`}
-                    onClick={() => approve.mutate({ id: requisition.id, data: { approved: false } })}
+                    onClick={() => setIsRejectOpen(true)}
                     disabled={approve.isPending}
                   >
                     <X className="h-4 w-4" />
@@ -557,5 +560,7 @@ function RequisitionRow({
         </div>
       </TableCell>
     </TableRow>
+    <RejectRequisitionDialog requisitionCode={requisition.code} open={isRejectOpen} pending={approve.isPending} onOpenChange={setIsRejectOpen} onConfirm={(comment) => approve.mutate({ id: requisition.id, data: { approved: false, comment } }, { onSuccess: () => setIsRejectOpen(false) })} />
+    </>
   )
 }

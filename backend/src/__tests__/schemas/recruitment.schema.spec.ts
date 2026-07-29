@@ -1,4 +1,4 @@
-import { updateJobRequisitionSchema } from "@/schemas/recruitment.schema"
+import { approveRequisitionSchema, updateJobRequisitionSchema } from "@/schemas/recruitment.schema"
 
 describe("updateJobRequisitionSchema", () => {
   it("rejects workflow status changes from the generic update boundary", () => {
@@ -15,5 +15,12 @@ describe("updateJobRequisitionSchema", () => {
     })
 
     expect(result.success).toBe(true)
+  })
+})
+
+describe("approveRequisitionSchema", () => {
+  it("requires a reason when rejecting a requisition", () => {
+    expect(approveRequisitionSchema.safeParse({ approved: false }).success).toBe(false)
+    expect(approveRequisitionSchema.safeParse({ approved: false, comment: "Budget needs review" }).success).toBe(true)
   })
 })
