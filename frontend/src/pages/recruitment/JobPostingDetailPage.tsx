@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageCard, useConfirm } from "@/components/common"
 import { StatusPill } from "@/components/common/status-pill"
+import { RecruitmentWorkspaceSkeleton } from "@/components/features/recruitment/recruitment-workspace-skeleton"
 import { applicationApi, jobPostingApi } from "@/lib/api/recruitment.api"
 import { useArchiveJobPosting, useJobPosting, useSyncJobPosting } from "@/hooks/recruitment/use-recruitment-queries"
 import { extractErrorMessage } from "@/utils/error-helper"
@@ -21,7 +22,7 @@ export default function JobPostingDetailPage() {
   const { id = "", tab } = useParams<{ id: string; tab?: string }>()
   const navigate = useNavigate()
   const activeTab = TABS.some(([value]) => value === tab) ? tab! : "overview"
-  const { data: posting, isLoading } = useJobPosting(id)
+  const { data: posting, isLoading, isError } = useJobPosting(id)
   const { data: overview } = useQuery({ queryKey: ["recruitment", "job-posting-overview", id], queryFn: () => jobPostingApi.overview(id), enabled: Boolean(id) })
   const { data: stages = [] } = useQuery({ queryKey: ["recruitment", "posting-stages", id], queryFn: () => jobPostingApi.stages(id), enabled: Boolean(id) })
   const { data: applications } = useQuery({ queryKey: ["recruitment", "applications", "posting", id], queryFn: () => applicationApi.list({ postingId: id, pageSize: 100 }), enabled: Boolean(id) })
@@ -34,7 +35,8 @@ export default function JobPostingDetailPage() {
   useEffect(() => { if (id && tab !== activeTab) navigate(`/recruitment/job-postings/${id}/${activeTab}`, { replace: true }) }, [activeTab, id, navigate, tab])
   useEffect(() => { if (posting?.requisitionId) navigate(`/recruitment/requisitions/${posting.requisitionId}/postings?postingId=${id}`, { replace: true }) }, [id, navigate, posting?.requisitionId])
   useEffect(() => { const shouldSync = posting?.channel === "google_form" && posting.status === "open" && posting.connectorStatus === "ready"; if (shouldSync && syncedOnEntry.current !== id) { syncedOnEntry.current = id; sync.mutate(id) } }, [id, posting?.channel, posting?.connectorStatus, posting?.status, sync])
-  if (isLoading || !posting) return <div className="container p-8 text-muted-foreground">Đang tải bài đăng tuyển dụng...</div>
+  if (isLoading) return <RecruitmentWorkspaceSkeleton />
+  if (isError || !posting) return <div className="container space-y-3 p-8"><p className="font-semibold text-destructive">Không tải được bài đăng tuyển dụng.</p><Button asChild variant="outline" className="rounded-full"><Link to="/recruitment/requisitions">Quay lại yêu cầu tuyển dụng</Link></Button></div>
   const canSync = posting.channel === "google_form" && posting.status === "open"
   const invalidResponses = responses.filter((response) => !response.applicationId)
   const filteredCandidates = candidates.filter((application) => `${application.candidate.fullName} ${application.candidate.email} ${application.pipelineStage?.name ?? ""}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))

@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectContent,
@@ -294,27 +295,29 @@ export function CreateRequisitionDialog({
               </Select>
             </Field>
             <Field label="Người duyệt" required error={errors.approverId?.message}>
-              <Select
-                value={approverId}
-                onValueChange={(value) =>
-                  form.setValue("approverId", value, { shouldValidate: true })
-                }
-                disabled={isLoadingApprovers || approvers.length === 0}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue
-                    placeholder={isLoadingApprovers ? "Đang tải..." : "Chọn người có quyền duyệt"}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {approvers.map((approver) => (
-                    <SelectItem key={approver.id} value={approver.id}>
-                      {approver.fullName}
-                      {approver.position ? ` — ${approver.position}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isLoadingApprovers ? (
+                <Skeleton className="h-10 w-full rounded-full" />
+              ) : (
+                <Select
+                  value={approverId}
+                  onValueChange={(value) =>
+                    form.setValue("approverId", value, { shouldValidate: true })
+                  }
+                  disabled={approvers.length === 0}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Chọn người có quyền duyệt" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {approvers.map((approver) => (
+                      <SelectItem key={approver.id} value={approver.id}>
+                        {approver.fullName}
+                        {approver.position ? ` — ${approver.position}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               {!isLoadingApprovers && approvers.length === 0 && (
                 <p className="text-sm text-destructive">
                   Chưa có nhân viên nào được cấp quyền recruitment.requisition.approve.

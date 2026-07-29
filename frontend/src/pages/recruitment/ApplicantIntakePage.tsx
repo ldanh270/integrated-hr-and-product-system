@@ -5,6 +5,7 @@ import { parseApplicantCsv, validateApplicantRows } from "@/components/features/
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import { POSTING_CHANNELS } from "@/config/entities/recruitment.config"
@@ -25,9 +26,9 @@ export default function ApplicantIntakePage() {
   const [source, setSource] = useState("")
   const [rawCsv, setRawCsv] = useState("fullName,email,phone,cvUrl,notes\n")
   const [result, setResult] = useState<ApplicantImportResult>()
-  const { data: requisitionsData } = useRequisitions({ status: "approved" })
+  const { data: requisitionsData, isLoading: isLoadingRequisitions } = useRequisitions({ status: "approved" })
   const requisitions = requisitionsData?.data ?? []
-  const { data: postings = [] } = useJobPostings(requisitionId || undefined)
+  const { data: postings = [], isLoading: isLoadingPostings } = useJobPostings(requisitionId || undefined)
   const importApplicants = useImportApplicants()
   const { hasPermission } = usePermission()
   const rows = useMemo(() => parseApplicantCsv(rawCsv), [rawCsv])
@@ -68,17 +69,21 @@ export default function ApplicantIntakePage() {
           <div className="grid gap-5 md:grid-cols-2">
             <div className="grid gap-2">
               <Label>Yêu cầu tuyển dụng</Label>
-              <Select value={requisitionId} onValueChange={(value) => { setRequisitionId(value); setPostingId(""); setSource("") }}>
-                <SelectTrigger className="w-full rounded-full"><SelectValue placeholder="Chọn yêu cầu tuyển dụng" /></SelectTrigger>
-                <SelectContent>{requisitions.map((req) => <SelectItem key={req.id} value={req.id}>{req.title} · {req.code}</SelectItem>)}</SelectContent>
-              </Select>
+              {isLoadingRequisitions ? <Skeleton className="h-10 w-full rounded-full" /> : (
+                <Select value={requisitionId} onValueChange={(value) => { setRequisitionId(value); setPostingId(""); setSource("") }}>
+                  <SelectTrigger className="w-full rounded-full"><SelectValue placeholder="Chọn yêu cầu tuyển dụng" /></SelectTrigger>
+                  <SelectContent>{requisitions.map((req) => <SelectItem key={req.id} value={req.id}>{req.title} · {req.code}</SelectItem>)}</SelectContent>
+                </Select>
+              )}
             </div>
             <div className="grid gap-2">
               <Label>Điểm đăng tuyển</Label>
-              <Select value={postingId} onValueChange={choosePosting}>
-                <SelectTrigger className="w-full rounded-full"><SelectValue placeholder="Không có / nhập thủ công" /></SelectTrigger>
-                <SelectContent>{postings.map((posting) => <SelectItem key={posting.id} value={posting.id}>{POSTING_CHANNELS.find((item) => item.value === posting.channel)?.label} · {posting.sourceCode}</SelectItem>)}</SelectContent>
-              </Select>
+              {isLoadingPostings ? <Skeleton className="h-10 w-full rounded-full" /> : (
+                <Select value={postingId} onValueChange={choosePosting}>
+                  <SelectTrigger className="w-full rounded-full"><SelectValue placeholder="Không có / nhập thủ công" /></SelectTrigger>
+                  <SelectContent>{postings.map((posting) => <SelectItem key={posting.id} value={posting.id}>{POSTING_CHANNELS.find((item) => item.value === posting.channel)?.label} · {posting.sourceCode}</SelectItem>)}</SelectContent>
+                </Select>
+              )}
             </div>
             <div className="grid gap-2 md:col-span-2">
               <Label>Nguồn Application</Label>
