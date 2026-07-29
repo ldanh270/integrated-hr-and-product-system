@@ -49,7 +49,7 @@ import {
 import { useEmployees } from "@/hooks/employees/queries/useEmployeeQuery"
 import { usePermission } from "@/hooks/use-permission"
 import { applicationApi, interviewApi, requisitionApi } from "@/lib/api/recruitment.api"
-import type { ApplicationNote, InterviewRound, Scorecard } from "@/types/recruitment.types"
+import type { ApplicationNote, InterviewRound, KanbanApplication, Scorecard } from "@/types/recruitment.types"
 import { extractErrorMessage } from "@/utils/error-helper"
 
 export default function ApplicationDetailPage() {
@@ -729,7 +729,7 @@ export default function ApplicationDetailPage() {
                 <CreateOfferDialog
                   open={isOfferDialogOpen}
                   onOpenChange={setIsOfferDialogOpen}
-                  applications={[application as any]}
+                  applications={[application as unknown as KanbanApplication]}
                   onCreated={() => {
                     void queryClient.invalidateQueries({ queryKey: ["recruitment", "application", id] })
                   }}

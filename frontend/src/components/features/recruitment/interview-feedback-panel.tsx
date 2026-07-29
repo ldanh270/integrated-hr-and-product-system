@@ -209,7 +209,7 @@ export function InterviewFeedbackPanel({
                     <button
                       key={option.value}
                       type="button"
-                      onClick={() => setRecommendation(option.value as any)}
+                      onClick={() => setRecommendation(option.value as "hire" | "strong_hire" | "no_hire" | "strong_no_hire")}
                       className={`flex flex-col text-left rounded-xl border p-4 transition-all ${
                         isChecked
                           ? "border-primary bg-primary/5 shadow-sm"
