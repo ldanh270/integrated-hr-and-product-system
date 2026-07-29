@@ -29,7 +29,7 @@ const TABS = [["overview", "Tổng quan"], ["postings", "Bài đăng tuyển d�
 
 export default function RequisitionDetailPage() {
   const { id = "", tab } = useParams<{ id: string; tab?: string }>(); const navigate = useNavigate(); const [searchParams, setSearchParams] = useSearchParams(); const { hasPermission } = usePermission(); const queryClient = useQueryClient(); const [search, setSearch] = useState(""); const [isPostingOpen, setIsPostingOpen] = useState(searchParams.get("createPosting") === "1"); const [selectedPosting, setSelectedPosting] = useState<JobPosting | null>(null); const [selectedAppId, setSelectedAppId] = useState<string | null>(null)
-  const activeTab = TABS.some(([value]) => value === tab) ? tab! : "overview"
+  const activeTab = TABS.some(([value]) => value === tab) ? (tab ?? "overview") : "overview"
   useEffect(() => {
     if (id && tab !== activeTab) navigate(`/recruitment/requisitions/${id}/${activeTab}`, { replace: true })
   }, [activeTab, id, navigate, tab])
