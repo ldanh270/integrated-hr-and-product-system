@@ -34,7 +34,7 @@ export function ViewInterviewDialog({ open, onOpenChange, interview }: Props) {
         <DialogHeader>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="rounded-full border-primary text-primary">
-              Vòng {interview.roundNumber} · {INTERVIEW_TYPE_LABELS[interview.interviewType]}
+              Vòng {interview.roundNumber} · {interview.interviewType ? INTERVIEW_TYPE_LABELS[interview.interviewType] || interview.interviewType : interview.title || "Phỏng vấn"}
             </Badge>
             {interview.result ? (
               <StatusPill
@@ -87,7 +87,7 @@ export function ViewInterviewDialog({ open, onOpenChange, interview }: Props) {
               <span className="text-xs text-muted-foreground block font-medium">Hình thức</span>
               <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground mt-0.5">
                 {isVideo ? <Video className="h-3.5 w-3.5 text-primary" /> : <MapPin className="h-3.5 w-3.5 text-primary" />}
-                <span>{INTERVIEW_FORMAT_LABELS[interview.format]}</span>
+                <span>{INTERVIEW_FORMAT_LABELS[interview.format] || interview.format}</span>
               </div>
             </div>
           </div>

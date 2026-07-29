@@ -198,6 +198,7 @@ export interface RecruitmentApplication {
     phone: string | null
     cvUrl: string | null
     avatarUrl: string | null
+    portfolioUrl?: string | null
   }
   source: (typeof RECRUITMENT_SOURCES)[number]
   status: ApplicationStatus
@@ -290,7 +291,8 @@ export interface InterviewRound {
   id: string
   applicationId: string
   roundNumber: number
-  interviewType: string
+  title: string
+  interviewType?: string
   format: InterviewFormat
   scheduledAt: string | null
   durationMinutes: number | null
@@ -303,9 +305,14 @@ export interface InterviewRound {
   feedback: string | null
   scorecards?: Scorecard[]
   notes?: string
-  // Computed fields for convenience
+  // Computed & nested fields for convenience
   candidateName?: string
   positionTitle?: string
+  application?: {
+    id?: string
+    candidate?: { id?: string; fullName?: string; email?: string; avatarUrl?: string | null }
+    requisition?: { id?: string; title?: string }
+  }
   createdAt: string
   updatedAt: string
 }
