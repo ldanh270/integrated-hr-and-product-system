@@ -77,11 +77,11 @@ const jobRequisitionFieldsSchema = z.object({
 })
 
 export const createJobRequisitionSchema = jobRequisitionFieldsSchema.superRefine(
-  ({ candidateSchema }, context) => validateCandidateSchema(candidateSchema, context, "candidateSchema"),
+  ({ candidateSchema }, context) => { validateCandidateSchema(candidateSchema, context, "candidateSchema") },
 )
 
 export const updateJobRequisitionSchema = jobRequisitionFieldsSchema.partial().strict().superRefine(
-  ({ candidateSchema }, context) => validateCandidateSchema(candidateSchema, context, "candidateSchema"),
+  ({ candidateSchema }, context) => { validateCandidateSchema(candidateSchema, context, "candidateSchema") },
 )
 
 export const approveRequisitionSchema = z.object({

@@ -101,8 +101,8 @@ export function BioTab({
                   <Input
                     placeholder="Nhập họ và tên"
                     value={formData.fullName}
-                    onChange={(e) => updateField("fullName", e.target.value)}
-                    onBlur={() => handleBlur("fullName")}
+                    onChange={(e) => { updateField("fullName", e.target.value); }}
+                    onBlur={() => { handleBlur("fullName"); }}
                     className={cn(
                       "rounded-full",
                       (touchedFields.fullName || hasAttemptedSubmit) && fullNameError && "border-destructive ring-1 ring-destructive"
@@ -118,7 +118,7 @@ export function BioTab({
                   <Label className="text-xs font-medium">Giới tính</Label>
                   <Select
                     value={formData.gender}
-                    onValueChange={(val) => updateField("gender", val)}
+                    onValueChange={(val) => { updateField("gender", val); }}
                   >
                     <SelectTrigger className="rounded-full">
                       <SelectValue placeholder="Chọn giới tính" />
@@ -136,7 +136,7 @@ export function BioTab({
                   <Input
                     type="date"
                     value={formData.dateOfBirth}
-                    onChange={(e) => updateField("dateOfBirth", e.target.value)}
+                    onChange={(e) => { updateField("dateOfBirth", e.target.value); }}
                     className="rounded-full"
                   />
                 </div>
@@ -146,7 +146,7 @@ export function BioTab({
                   <Input
                     placeholder="Chọn nơi sinh"
                     value={formData.placeOfBirth}
-                    onChange={(e) => updateField("placeOfBirth", e.target.value)}
+                    onChange={(e) => { updateField("placeOfBirth", e.target.value); }}
                     className="rounded-full"
                   />
                 </div>
@@ -156,7 +156,7 @@ export function BioTab({
                   <Input
                     placeholder="Việt Nam"
                     value={formData.nationality}
-                    onChange={(e) => updateField("nationality", e.target.value)}
+                    onChange={(e) => { updateField("nationality", e.target.value); }}
                     className="rounded-full"
                   />
                 </div>
@@ -166,7 +166,7 @@ export function BioTab({
                   <Input
                     placeholder="Kinh"
                     value={formData.ethnicity}
-                    onChange={(e) => updateField("ethnicity", e.target.value)}
+                    onChange={(e) => { updateField("ethnicity", e.target.value); }}
                     className="rounded-full"
                   />
                 </div>
@@ -176,7 +176,7 @@ export function BioTab({
                   <Input
                     placeholder="Nhập tôn giáo"
                     value={formData.religion}
-                    onChange={(e) => updateField("religion", e.target.value)}
+                    onChange={(e) => { updateField("religion", e.target.value); }}
                     className="rounded-full"
                   />
                 </div>
@@ -186,7 +186,7 @@ export function BioTab({
                   <Input
                     placeholder="Nhập CMND/CCCD/Hộ chiếu"
                     value={formData.nationalId}
-                    onChange={(e) => updateField("nationalId", e.target.value)}
+                    onChange={(e) => { updateField("nationalId", e.target.value); }}
                     className="rounded-full"
                   />
                 </div>
@@ -196,7 +196,7 @@ export function BioTab({
                   <Input
                     type="date"
                     value={formData.idIssueDate}
-                    onChange={(e) => updateField("idIssueDate", e.target.value)}
+                    onChange={(e) => { updateField("idIssueDate", e.target.value); }}
                     className="rounded-full"
                   />
                 </div>
@@ -206,7 +206,7 @@ export function BioTab({
                   <Input
                     placeholder="Chọn nơi cấp"
                     value={formData.idIssuePlace}
-                    onChange={(e) => updateField("idIssuePlace", e.target.value)}
+                    onChange={(e) => { updateField("idIssuePlace", e.target.value); }}
                     className="rounded-full"
                   />
                 </div>
@@ -216,7 +216,7 @@ export function BioTab({
                   <Input
                     placeholder="Địa chỉ thường trú"
                     value={formData.permanentAddress}
-                    onChange={(e) => updateField("permanentAddress", e.target.value)}
+                    onChange={(e) => { updateField("permanentAddress", e.target.value); }}
                     className="rounded-full"
                   />
                 </div>
@@ -226,7 +226,7 @@ export function BioTab({
                   <Input
                     placeholder="Chọn Tỉnh/Thành phố"
                     value={formData.province}
-                    onChange={(e) => updateField("province", e.target.value)}
+                    onChange={(e) => { updateField("province", e.target.value); }}
                     className="rounded-full"
                   />
                 </div>
@@ -236,7 +236,7 @@ export function BioTab({
                   <Input
                     placeholder="Chọn Xã/Phường"
                     value={formData.district}
-                    onChange={(e) => updateField("district", e.target.value)}
+                    onChange={(e) => { updateField("district", e.target.value); }}
                     className="rounded-full"
                   />
                 </div>
@@ -245,7 +245,7 @@ export function BioTab({
                   <Label className="text-xs font-medium">Tình trạng hôn nhân</Label>
                   <Select
                     value={formData.maritalStatus}
-                    onValueChange={(val) => updateField("maritalStatus", val)}
+                    onValueChange={(val) => { updateField("maritalStatus", val); }}
                   >
                     <SelectTrigger className="rounded-full">
                       <SelectValue placeholder="Chọn tình trạng" />
