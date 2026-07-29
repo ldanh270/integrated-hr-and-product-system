@@ -259,7 +259,7 @@ export function ContractModal({
                   <SelectContent>
                     {CONTRACT_TYPES.map((type) => (
                       <SelectItem key={type} value={type}>
-                        {CONTRACT_TYPE_LABELS[type]}
+                        {Object.prototype.hasOwnProperty.call(CONTRACT_TYPE_LABELS, type) ? CONTRACT_TYPE_LABELS[type] : type}
                       </SelectItem>
                     ))}
                   </SelectContent>

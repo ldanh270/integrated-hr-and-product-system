@@ -501,7 +501,7 @@ function InterviewCard({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => routerNavigate(`/recruitment/applications/${interview.application!.id}`)}
+              onClick={() => { if (interview.application?.id) routerNavigate(`/recruitment/applications/${interview.application.id}`); }}
               className="h-8 rounded-full text-xs font-semibold border-border/80 hover:bg-secondary"
             >
               Hồ sơ

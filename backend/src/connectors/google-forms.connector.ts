@@ -418,7 +418,11 @@ export class GoogleFormsConnector implements RecruitmentConnector {
       cv_url: ["cv", "link cv", "duong dan cv", "resume"],
       notes: ["ghi chu", "thong tin bo sung", "notes", "additional information"],
     }
-    return Boolean(aliases[field.key]?.includes(normalizedTitle))
+    const key = field.key
+    if (Object.prototype.hasOwnProperty.call(aliases, key)) {
+      return aliases[key].includes(normalizedTitle)
+    }
+    return false
   }
 
   private apiError(message: string): AppError {
