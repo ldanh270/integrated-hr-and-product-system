@@ -30,8 +30,8 @@ export function getGoogleOAuthConfig(): GoogleOAuthConfig | null {
   }
 }
 
-export function buildGoogleAuthUrl(state: string): string {
-  const config = getGoogleOAuthConfig()
+export function buildGoogleAuthUrl(state: string, customConfig?: GoogleOAuthConfig | null): string {
+  const config = customConfig || getGoogleOAuthConfig()
   if (!config) throw new Error("Google OAuth chưa được cấu hình")
 
   const params = new URLSearchParams({
@@ -47,12 +47,15 @@ export function buildGoogleAuthUrl(state: string): string {
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
 }
 
-export async function exchangeGoogleCode(code: string): Promise<{
+export async function exchangeGoogleCode(
+  code: string,
+  customConfig?: GoogleOAuthConfig | null,
+): Promise<{
   accessToken: string
   refreshToken: string
   expiresIn: number
 }> {
-  const config = getGoogleOAuthConfig()
+  const config = customConfig || getGoogleOAuthConfig()
   if (!config) throw new Error("Google OAuth chưa được cấu hình")
 
   const response = await fetch("https://oauth2.googleapis.com/token", {
