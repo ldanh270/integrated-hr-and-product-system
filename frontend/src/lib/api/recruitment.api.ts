@@ -237,8 +237,7 @@ export interface OAuthAccount {
   channel: string
   name: string
   clientId: string
-  clientSecret: string
-  refreshToken: string
+  hasRefreshToken: boolean
   createdAt: string
   updatedAt: string
 }
