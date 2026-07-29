@@ -17,7 +17,7 @@ export class InterviewRoundService {
       throw new Error("Interview must be scheduled in the future")
     }
 
-    return interviewRoundRepository.create(input)
+    return interviewRoundRepository.createAndStart(input)
   }
 
   async findById(id: string) {
@@ -54,36 +54,14 @@ export class InterviewRoundService {
   async markCompleted(id: string, result?: string, feedback?: string) {
     const existing = await this.findById(id)
 
-    if (existing.status === "cancelled") {
-      throw new Error("Cannot complete a cancelled interview")
+    if (existing.status === "cancelled" || existing.status === "completed") {
+      throw new Error("Cannot complete a cancelled or already completed interview")
     }
 
-    const interview = await interviewRoundRepository.markCompleted(id, result, feedback)
+    const interview = await interviewRoundRepository.markCompletedAndTransition(id, result, feedback)
 
     // Calculate average rating from scorecards
     const avgRating = await scorecardRepository.getAverageRating(id)
-
-    // Auto-update application status based on interview results
-    if (result === "pass") {
-      // Check if there are more rounds planned
-      const rounds = await interviewRoundRepository.listByApplication(existing.applicationId)
-      const currentRound = rounds.find((r) => r.id === id)
-      const hasMoreRounds = rounds.some((r) => r.roundNumber > currentRound!.roundNumber)
-
-      if (!hasMoreRounds) {
-        // Move to final review if no more rounds
-        await recruitmentApplicationService.updateStatus(existing.applicationId, {
-          status: "final_review",
-        })
-      }
-      // Otherwise stays in interviewing for next round
-    } else if (result === "fail") {
-      // Reject application
-      await recruitmentApplicationService.updateStatus(existing.applicationId, {
-        status: "rejected",
-        rejectReason: "Failed interview",
-      })
-    }
 
     return { ...interview, averageRating: avgRating }
   }

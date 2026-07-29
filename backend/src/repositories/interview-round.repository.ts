@@ -23,6 +23,39 @@ export class InterviewRoundRepository {
     })
   }
 
+  async createAndStart(data: CreateInterviewRoundInput) {
+    return this.db.$transaction(async (tx) => {
+      const application = await tx.recruitmentApplication.findUnique({
+        where: { id: data.applicationId },
+        select: { id: true, status: true },
+      })
+      if (!application) throw new Error("Application not found")
+
+      const interview = await tx.interviewRound.create({
+        data: {
+          applicationId: data.applicationId,
+          roundNumber: data.roundNumber,
+          title: data.title,
+          format: data.format ?? "video_call",
+          scheduledAt: new Date(data.scheduledAt),
+          durationMinutes: data.durationMinutes ?? 60,
+          location: data.location,
+          meetingLink: data.meetingLink,
+          interviewerIds: data.interviewerIds,
+          status: "scheduled",
+        },
+        select: { id: true },
+      })
+
+      await tx.recruitmentApplication.update({
+        where: { id: application.id },
+        data: { status: "interviewing" },
+      })
+
+      return interview
+    })
+  }
+
   async findById(id: string) {
     return this.db.interviewRound.findUnique({
       where: { id },
@@ -96,6 +129,59 @@ export class InterviewRoundRepository {
           },
         },
       },
+    })
+  }
+
+  async markCompletedAndTransition(id: string, result?: string, feedback?: string) {
+    return this.db.$transaction(async (tx) => {
+      const existing = await tx.interviewRound.findUnique({
+        where: { id },
+        select: { id: true, applicationId: true, roundNumber: true, status: true },
+      })
+      if (!existing) throw new Error("Interview round not found")
+
+      const nextStatus = result === "fail"
+        ? "rejected"
+        : result === "pass"
+          ? (await tx.interviewRound.count({
+              where: { applicationId: existing.applicationId, roundNumber: { gt: existing.roundNumber } },
+            })) > 0
+            ? "interviewing"
+            : "final_review"
+          : undefined
+
+      const interview = await tx.interviewRound.update({
+        where: { id },
+        data: {
+          status: "completed",
+          result: (result ?? "pending") as $Enums.InterviewResult,
+          feedback,
+        },
+        include: {
+          application: {
+            include: {
+              candidate: { select: { id: true, fullName: true, email: true } },
+            },
+          },
+          scorecards: {
+            include: {
+              evaluator: { select: { id: true, fullName: true } },
+            },
+          },
+        },
+      })
+
+      if (nextStatus) {
+        await tx.recruitmentApplication.update({
+          where: { id: existing.applicationId },
+          data: {
+            status: nextStatus,
+            ...(nextStatus === "rejected" ? { rejectReason: "Failed interview" } : {}),
+          },
+        })
+      }
+
+      return interview
     })
   }
 
