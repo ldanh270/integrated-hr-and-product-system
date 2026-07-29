@@ -110,7 +110,7 @@ export function CreateOfferDialog({ applications, defaultApplicationId, open, on
             </div>
             <div className="grid gap-2">
               <Label>Ngày bắt đầu</Label>
-              <Input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} className="rounded-full" />
+              <Input type="date" value={startDate} onChange={(event) => { setStartDate(event.target.value) }} className="rounded-full" />
             </div>
           </div>
           <div className="grid gap-2">
@@ -128,7 +128,7 @@ export function CreateOfferDialog({ applications, defaultApplicationId, open, on
           </div>
         </div>
         <DialogFooter>
-          <Button type="button" variant="outline" className="rounded-full" onClick={() => close(false)}>
+          <Button type="button" variant="outline" className="rounded-full" onClick={() => { close(false) }}>
             Hủy
           </Button>
           <Button type="button" className="rounded-full" onClick={submit} disabled={!application || !salary || !startDate || createOffer.isPending}>
