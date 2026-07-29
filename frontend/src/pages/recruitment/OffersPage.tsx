@@ -29,6 +29,9 @@ import {
 } from "@/config/entities/recruitment.config"
 import type { RecruitmentOffer } from "@/types/recruitment.types"
 import { Plus, Send, Eye, DollarSign } from "lucide-react"
+import { usePermission } from "@/hooks/use-permission"
+import { routerNavigate } from "@/lib/router-navigator"
+import { ROUTES } from "@/config/routes.config"
 import { format, parseISO } from "date-fns"
 import { vi } from "date-fns/locale"
 
@@ -68,6 +71,7 @@ const formatCurrency = (amount: number, currency: string = CURRENCY.VND) => {
 }
 
 export default function OffersPage() {
+  const { hasPermission } = usePermission()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [keyword, setKeyword] = useState("")
@@ -80,7 +84,7 @@ export default function OffersPage() {
     setViewOfferOpen(true)
   }
 
-  const { data, isLoading } = useOffers({ page, pageSize })
+  const { data, isLoading, isError, refetch } = useOffers({ page, pageSize })
   const sendOffer = useSendOffer()
 
   const offers = data?.data ?? []
@@ -131,7 +135,7 @@ export default function OffersPage() {
         title="Quản lý Offer"
         description="Tạo và quản lý offer cho ứng viên"
         actions={
-          <Button className="rounded-full">
+          <Button className="rounded-full" onClick={() => routerNavigate(ROUTES.RECRUITMENT.REQUISITIONS)} disabled={!hasPermission("recruitment.create")}>
             <Plus className="mr-2 h-4 w-4" />
             Tạo offer mới
           </Button>
@@ -207,6 +211,8 @@ export default function OffersPage() {
                     </TableCell>
                   </TableRow>
                 ))
+              ) : isError ? (
+                <TableRow><TableCell colSpan={7} className="h-32 text-center"><p className="font-medium text-destructive">Không tải được danh sách offer.</p><Button variant="outline" className="mt-3 rounded-full" onClick={() => void refetch()}>Thử lại</Button></TableCell></TableRow>
               ) : filteredOffers.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
@@ -266,7 +272,7 @@ export default function OffersPage() {
                     </TableCell>
                     <TableCell className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
-                        {offer.status === "draft" && (
+                        {offer.status === "draft" && hasPermission("recruitment.approve") && (
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
@@ -324,4 +330,3 @@ export default function OffersPage() {
     </div>
   )
 }
-

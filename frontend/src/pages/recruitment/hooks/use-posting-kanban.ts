@@ -25,8 +25,10 @@ export function usePostingKanban(postingId: string, canManageStages: boolean) {
   const [dragOverColumnId, setDragOverColumnId] = useState<string | null>(null)
   const stagesKey = ["recruitment", "posting-stages", postingId] as const
   const applicationsKey = ["recruitment", "posting-kanban", postingId] as const
-  const { data: statuses = [], isLoading: isLoadingStatuses } = useQuery({ queryKey: stagesKey, queryFn: () => jobPostingApi.stages(postingId), enabled: Boolean(postingId) })
-  const { data: applicationResult, isLoading: isLoadingTasks } = useQuery({ queryKey: applicationsKey, queryFn: () => applicationApi.listKanban({ postingId, pageSize: 1000 }), enabled: Boolean(postingId) })
+  const stagesQuery = useQuery({ queryKey: stagesKey, queryFn: () => jobPostingApi.stages(postingId), enabled: Boolean(postingId) })
+  const applicationsQuery = useQuery({ queryKey: applicationsKey, queryFn: () => applicationApi.listKanban({ postingId, pageSize: 1000 }), enabled: Boolean(postingId) })
+  const { data: statuses = [], isLoading: isLoadingStatuses } = stagesQuery
+  const { data: applicationResult, isLoading: isLoadingTasks } = applicationsQuery
   const tasks = (applicationResult?.data ?? []) as KanbanApplication[]
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: stagesKey })
@@ -51,7 +53,7 @@ export function usePostingKanban(postingId: string, canManageStages: boolean) {
     queryClient.setQueryData(stagesKey, updated)
     try { await jobPostingApi.reorderStages(postingId, updated.map((stage) => stage.id)); toast.success("Đã cập nhật thứ tự các cột") } catch (error) { if (previous) queryClient.setQueryData(stagesKey, previous); toast.error(extractErrorMessage(error)) } finally { void queryClient.invalidateQueries({ queryKey: stagesKey }) }
   }
-  return { canManageStages, statuses, tasks, isLoadingStatuses, isLoadingTasks, isAddColumnOpen, setIsAddColumnOpen, isEditColumnOpen, setIsEditColumnOpen, isDeleteConfirmOpen, setIsDeleteConfirmOpen, columnName, setColumnName, columnColor, setColumnColor, columnIsCompleted, setColumnIsCompleted, columnIsDefault, setColumnIsDefault, selectedColumn, setSelectedColumn, fallbackColumnId, setFallbackColumnId, dragOverInfo, setDragOverInfo, draggingTaskId, draggingColumnId, setDraggingColumnId, dragOverColumnId, setDragOverColumnId, createStatusMutation, updateStatusMutation, deleteStatusMutation, moveTaskMutation, resetForm, handleReorderColumns,
+  return { canManageStages, statuses, tasks, isLoadingStatuses, isLoadingTasks, isError: stagesQuery.isError || applicationsQuery.isError, refetch: () => { void stagesQuery.refetch(); void applicationsQuery.refetch() }, isAddColumnOpen, setIsAddColumnOpen, isEditColumnOpen, setIsEditColumnOpen, isDeleteConfirmOpen, setIsDeleteConfirmOpen, columnName, setColumnName, columnColor, setColumnColor, columnIsCompleted, setColumnIsCompleted, columnIsDefault, setColumnIsDefault, selectedColumn, setSelectedColumn, fallbackColumnId, setFallbackColumnId, dragOverInfo, setDragOverInfo, draggingTaskId, draggingColumnId, setDraggingColumnId, dragOverColumnId, setDragOverColumnId, createStatusMutation, updateStatusMutation, deleteStatusMutation, moveTaskMutation, resetForm, handleReorderColumns,
     handleDragStart: (event: DragEvent, task: KanbanApplication) => { event.dataTransfer.setData("text/plain", task.id); event.dataTransfer.effectAllowed = "move"; setDraggingTaskId(task.id) },
     handleDragEnd: () => { setDragOverInfo(null); setDraggingTaskId(null) },
     handleCardDragOver: (event: DragEvent, taskId: string) => { if (draggingColumnId) return; event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect(); setDragOverInfo({ taskId, position: event.clientY < rect.top + rect.height / 2 ? "top" : "bottom" }) },

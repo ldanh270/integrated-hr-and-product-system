@@ -37,6 +37,7 @@ import {
 } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { vi } from "date-fns/locale"
+import { usePermission } from "@/hooks/use-permission"
 
 const statusVariantMap: Record<string, "success" | "warning" | "danger" | "info" | "neutral"> = {
   [BGC_STATUS.PENDING]: "warning",
@@ -68,9 +69,11 @@ interface BackgroundCheckRowProps {
   onStart: () => void
   onComplete: (passed: boolean) => void
   onViewDetails: (bgc: BackgroundCheck) => void
+  canStart: boolean
+  canComplete: boolean
 }
 
-function BackgroundCheckRow({ bgc, onStart, onComplete, onViewDetails }: BackgroundCheckRowProps) {
+function BackgroundCheckRow({ bgc, onStart, onComplete, onViewDetails, canStart, canComplete }: BackgroundCheckRowProps) {
   const hasIdVerification = bgc.idVerified !== null && bgc.idVerified !== undefined
   const hasAddressVerification = bgc.addressVerified !== null && bgc.addressVerified !== undefined
   const hasCriminalCheck = bgc.criminalRecordCheck !== null && bgc.criminalRecordCheck !== undefined
@@ -140,7 +143,7 @@ function BackgroundCheckRow({ bgc, onStart, onComplete, onViewDetails }: Backgro
       </TableCell>
       <TableCell className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-end gap-1">
-          {bgc.status === BGC_STATUS.PENDING && (
+          {bgc.status === BGC_STATUS.PENDING && canStart && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -155,7 +158,7 @@ function BackgroundCheckRow({ bgc, onStart, onComplete, onViewDetails }: Backgro
               <TooltipContent>Bắt đầu kiểm tra</TooltipContent>
             </Tooltip>
           )}
-          {bgc.status === BGC_STATUS.IN_PROGRESS && (
+          {bgc.status === BGC_STATUS.IN_PROGRESS && canComplete && (
             <>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -205,6 +208,7 @@ function BackgroundCheckRow({ bgc, onStart, onComplete, onViewDetails }: Backgro
 }
 
 export default function BackgroundChecksPage() {
+  const { hasPermission } = usePermission()
   const [activeTab, setActiveTab] = useState("all")
   const [keyword, setKeyword] = useState("")
   const [page, setPage] = useState(1)
@@ -217,7 +221,7 @@ export default function BackgroundChecksPage() {
     setViewBgcOpen(true)
   }
 
-  const { data, isLoading } = useBackgroundChecks({
+  const { data, isLoading, isError, refetch } = useBackgroundChecks({
     status: activeTab !== "all" ? activeTab : undefined,
     page,
     pageSize,
@@ -238,8 +242,6 @@ export default function BackgroundChecksPage() {
 
   const filteredChecks = useMemo(() => {
     return backgroundChecks.filter((bgc) => {
-      if (activeTab !== "all" && bgc.status !== activeTab) return false
-
       const searchStr = keyword.toLowerCase().trim()
       if (!searchStr) return true
 
@@ -341,6 +343,8 @@ export default function BackgroundChecksPage() {
                     </TableCell>
                   </TableRow>
                 ))
+              ) : isError ? (
+                <TableRow><TableCell colSpan={8} className="h-32 text-center"><p className="font-medium text-destructive">Không tải được danh sách kiểm tra.</p><Button variant="outline" className="mt-3 rounded-full" onClick={() => void refetch()}>Thử lại</Button></TableCell></TableRow>
               ) : filteredChecks.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
@@ -355,6 +359,8 @@ export default function BackgroundChecksPage() {
                     onStart={() => handleStart(bgc.id)}
                     onComplete={(passed) => handleComplete(bgc.id, passed)}
                     onViewDetails={handleViewDetails}
+                    canStart={hasPermission("recruitment.update")}
+                    canComplete={hasPermission("recruitment.approve")}
                   />
                 ))
               )}

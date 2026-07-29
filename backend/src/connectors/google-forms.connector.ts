@@ -14,6 +14,7 @@ import type {
   ConnectorSyncResult,
 } from "@/types/recruitment-connector.types"
 import { AppError } from "@/utils/error.util"
+import { decryptCredential } from "@/utils/credential-encryption.util"
 
 interface GoogleOAuthCredentials {
   clientId: string
@@ -247,8 +248,8 @@ export class GoogleFormsConnector implements RecruitmentConnector {
     if (posting.oauthAccount?.clientId && posting.oauthAccount?.clientSecret && posting.oauthAccount?.refreshToken) {
       return {
         clientId: posting.oauthAccount.clientId,
-        clientSecret: posting.oauthAccount.clientSecret,
-        refreshToken: posting.oauthAccount.refreshToken,
+        clientSecret: decryptCredential(posting.oauthAccount.clientSecret),
+        refreshToken: decryptCredential(posting.oauthAccount.refreshToken),
       }
     }
 
@@ -271,7 +272,11 @@ export class GoogleFormsConnector implements RecruitmentConnector {
         grant_type: "refresh_token",
       }),
     })
-    if (!response.ok) throw this.apiError("Không thể xác thực Google Forms")
+    if (!response.ok) {
+      const errDetail = await response.text().catch(() => "")
+      console.error("[GoogleFormsConnector] Failed to refresh token from Google:", response.status, errDetail)
+      throw this.apiError("Không thể xác thực Google Forms")
+    }
     const body = (await response.json()) as { access_token?: string }
     if (!body.access_token) throw this.apiError("Google OAuth không trả về access token")
     return body.access_token

@@ -77,9 +77,4 @@ export const AUTH_ERRORS = {
 
 export const PROTECTED_PERMISSIONS = process.env.PROTECTED_PERMISSIONS
   ? process.env.PROTECTED_PERMISSIONS.split(",").map((p) => p.trim())
-  : [
-      "role.update",
-      "permission.update",
-      "employee.role.update",
-      "role.permission.update",
-    ]
+  : ["role.update", "permission.update", "employee.role.update", "role.permission.update"]

@@ -694,7 +694,24 @@ export class RecruitmentController {
    */
   initiateGoogleOAuth = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const config = getGoogleOAuthConfig()
+      const userId = req.user!.empId
+      const { channel, name, accountId } = req.query as { channel?: string; name?: string; accountId?: string }
+      if (!channel || !name) {
+        throw new AppError("Thiếu channel hoặc name", HttpStatusCode.BAD_REQUEST, "OAuthController")
+      }
+
+      let config = getGoogleOAuthConfig()
+      if (accountId) {
+        const existingAccount = await recruitmentOAuthAccountService.getByIdWithCredentials(accountId)
+        if (existingAccount && existingAccount.clientId) {
+          config = {
+            clientId: existingAccount.clientId,
+            clientSecret: existingAccount.clientSecret,
+            redirectUri: config?.redirectUri ?? `${process.env.SERVER_URL || "http://localhost:5000"}/api/recruitment/oauth/google/callback`,
+          }
+        }
+      }
+
       if (!config) {
         throw new AppError(
           "Google OAuth chưa được cấu hình phía server. Vui lòng thiết lập GOOGLE_OAUTH_CLIENT_ID và GOOGLE_OAUTH_CLIENT_SECRET.",
@@ -703,14 +720,8 @@ export class RecruitmentController {
         )
       }
 
-      const userId = req.user!.empId
-      const { channel, name, accountId } = req.query as { channel?: string; name?: string; accountId?: string }
-      if (!channel || !name) {
-        throw new AppError("Thiếu channel hoặc name", HttpStatusCode.BAD_REQUEST, "OAuthController")
-      }
-
       const state = await createOAuthState({ userId, channel, name, accountId })
-      const authUrl = buildGoogleAuthUrl(state)
+      const authUrl = buildGoogleAuthUrl(state, config)
 
       this.sendSuccess(res, { authUrl })
     } catch (e) { next(e) }
@@ -740,22 +751,38 @@ export class RecruitmentController {
       if (!code) {
         return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=missing_code`)
       }
-      const config = getGoogleOAuthConfig()
+      
+      let config = getGoogleOAuthConfig()
+      if (accountId) {
+        const existingAccount = await recruitmentOAuthAccountService.getByIdWithCredentials(accountId)
+        if (existingAccount && existingAccount.clientId && existingAccount.clientSecret) {
+          config = {
+            clientId: existingAccount.clientId,
+            clientSecret: existingAccount.clientSecret,
+            redirectUri: config?.redirectUri ?? `${process.env.SERVER_URL || "http://localhost:5000"}/api/recruitment/oauth/google/callback`,
+          }
+        }
+      }
+
+      if (!config) {
+        return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=missing_google_oauth_config`)
+      }
 
       // Exchange code for tokens
-      const tokens = await exchangeGoogleCode(code)
+      const tokens = await exchangeGoogleCode(code, config)
 
       // Save to database with userId
       await recruitmentOAuthAccountService.saveFromOAuthFlow(userId, channel, name, {
-        clientId: config!.clientId,
-        clientSecret: config!.clientSecret,
+        clientId: config.clientId,
+        clientSecret: config.clientSecret,
         refreshToken: tokens.refreshToken,
       }, accountId)
 
       return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?success=connected`)
-    } catch (err) {
+    } catch (err: any) {
       console.error("Google OAuth callback error:", err)
-      return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=token_exchange_failed`)
+      const reason = err?.message || "token_exchange_failed"
+      return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=${encodeURIComponent(reason)}`)
     }
   }
 }
