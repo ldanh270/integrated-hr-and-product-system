@@ -1,5 +1,6 @@
 import {
   RECRUITMENT_APPLICATION_STATUS,
+  TERMINAL_APPLICATION_STATUSES,
   BGC_GROUP,
   BGC_STATUS,
   BGC_GROUPS,
@@ -75,6 +76,10 @@ export function canTransitionApplicationStatus(
 // Get all possible next statuses
 export function getNextApplicationStatuses(status: ApplicationStatus): ApplicationStatus[] {
   return APPLICATION_STATUS_TRANSITIONS[status] ?? []
+}
+
+export function isTerminalApplicationStatus(status: ApplicationStatus): boolean {
+  return (TERMINAL_APPLICATION_STATUSES as readonly ApplicationStatus[]).includes(status)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

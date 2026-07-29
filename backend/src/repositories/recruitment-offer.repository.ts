@@ -6,10 +6,15 @@ export class RecruitmentOfferRepository {
   constructor(private readonly db: PrismaClient = prisma) {}
 
   async create(data: CreateOfferInput, createdById: string): Promise<{ id: string }> {
-    return this.db.recruitmentOffer.create({
-      data: {
-        applicationId: data.applicationId,
-        candidateId: data.candidateId,
+    return this.db.$transaction(async (tx) => {
+      const application = await tx.recruitmentApplication.findUniqueOrThrow({
+        where: { id: data.applicationId },
+        select: { candidateId: true },
+      })
+      return tx.recruitmentOffer.create({
+        data: {
+          applicationId: data.applicationId,
+          candidateId: application.candidateId,
         offeredSalary: new Prisma.Decimal(data.offeredSalary),
         currency: data.currency ?? "VND",
         startDate: new Date(data.startDate),
@@ -24,7 +29,8 @@ export class RecruitmentOfferRepository {
         status: "draft",
         currentVersion: 1,
       },
-      select: { id: true },
+        select: { id: true },
+      })
     })
   }
 

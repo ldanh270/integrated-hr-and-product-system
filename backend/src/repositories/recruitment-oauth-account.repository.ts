@@ -1,4 +1,5 @@
 import { prisma } from "@/libs/database"
+import { decryptCredential, encryptCredential } from "@/utils/credential-encryption.util"
 import { RecruitmentChannel } from "@prisma/client"
 
 export class RecruitmentOAuthAccountRepository {
@@ -15,8 +16,8 @@ export class RecruitmentOAuthAccountRepository {
         channel: data.channel as RecruitmentChannel,
         name: data.name,
         clientId: data.clientId,
-        clientSecret: data.clientSecret,
-        refreshToken: data.refreshToken,
+        clientSecret: encryptCredential(data.clientSecret),
+        refreshToken: encryptCredential(data.refreshToken),
       },
     })
   }
@@ -37,8 +38,8 @@ export class RecruitmentOAuthAccountRepository {
             name: data.name,
             channel: data.channel as RecruitmentChannel,
             clientId: data.clientId,
-            clientSecret: data.clientSecret,
-            refreshToken: data.refreshToken,
+            clientSecret: encryptCredential(data.clientSecret),
+            refreshToken: encryptCredential(data.refreshToken),
           },
         })
       }
@@ -50,6 +51,14 @@ export class RecruitmentOAuthAccountRepository {
     return prisma.recruitmentOAuthAccount.findUnique({
       where: { id },
     })
+  }
+
+  decryptCredentials<T extends { clientSecret: string; refreshToken: string }>(account: T): T {
+    return {
+      ...account,
+      clientSecret: decryptCredential(account.clientSecret),
+      refreshToken: decryptCredential(account.refreshToken),
+    }
   }
 
   findByIdForUser(id: string, userId: string) {

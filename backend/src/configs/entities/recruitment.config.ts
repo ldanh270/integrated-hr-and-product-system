@@ -155,6 +155,10 @@ export const TERMINAL_APPLICATION_STATUSES = [
   RECRUITMENT_APPLICATION_STATUS.CANDIDATE_WITHDREW,
 ] as const
 
+// Applications in these statuses no longer consume the active-application slot.
+// The database partial unique index uses the same exact values.
+export const INACTIVE_APPLICATION_STATUSES = TERMINAL_APPLICATION_STATUSES
+
 // ── Recruitment Source ─────────────────────────────────────────────────────────
 
 export const RECRUITMENT_SOURCE = {

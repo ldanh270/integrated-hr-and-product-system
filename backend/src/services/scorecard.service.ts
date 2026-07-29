@@ -2,8 +2,10 @@ import { scorecardRepository } from "@/repositories/scorecard.repository"
 import { interviewRoundRepository } from "@/repositories/interview-round.repository"
 import type { CreateScorecardInput, UpdateScorecardInput } from "@/types/recruitment.types"
 
+type ScorecardDraftInput = Omit<CreateScorecardInput, "evaluatorId">
+
 export class ScorecardService {
-  async create(input: CreateScorecardInput) {
+  async create(input: ScorecardDraftInput, evaluatorId: string) {
     // Validate interview exists
     const interview = await interviewRoundRepository.findById(input.interviewId)
     if (!interview) {
@@ -11,13 +13,17 @@ export class ScorecardService {
     }
 
     // Check if evaluator already submitted scorecard
+    if (!interview.interviewerIds.includes(evaluatorId)) {
+      throw new Error("Evaluator is not assigned to this interview")
+    }
+
     const existing = await scorecardRepository.findByInterview(input.interviewId)
-    const alreadySubmitted = existing.some((s) => s.evaluator?.id === input.evaluatorId)
+    const alreadySubmitted = existing.some((s) => s.evaluator?.id === evaluatorId)
     if (alreadySubmitted) {
       throw new Error("Evaluator has already submitted a scorecard for this interview")
     }
 
-    return scorecardRepository.create(input)
+    return scorecardRepository.create({ ...input, evaluatorId })
   }
 
   async findById(id: string) {
@@ -36,13 +42,17 @@ export class ScorecardService {
     return scorecardRepository.findByEvaluator(evaluatorId)
   }
 
-  async update(id: string, input: UpdateScorecardInput) {
+  async update(id: string, input: UpdateScorecardInput, evaluatorId: string) {
     const existing = await this.findById(id)
+    if (existing.evaluatorId !== evaluatorId) throw new Error("Only the assigned evaluator can change this scorecard")
+    if (existing.submittedAt) throw new Error("Submitted scorecards are locked")
     return scorecardRepository.update(id, input)
   }
 
-  async delete(id: string) {
+  async delete(id: string, evaluatorId: string) {
     const existing = await this.findById(id)
+    if (existing.evaluatorId !== evaluatorId) throw new Error("Only the assigned evaluator can delete this scorecard")
+    if (existing.submittedAt) throw new Error("Submitted scorecards are locked")
     return scorecardRepository.delete(id)
   }
 

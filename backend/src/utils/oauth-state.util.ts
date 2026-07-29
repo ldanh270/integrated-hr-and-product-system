@@ -1,8 +1,8 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto"
 import { OAUTH_STATE_SECRET } from "@/configs/auth/auth.config"
+import { prisma } from "@/libs/database"
 
 const STATE_TTL_MS = 10 * 60 * 1000
-const consumedNonces = new Map<string, number>()
 
 export interface OAuthStatePayload {
   userId: string
@@ -24,24 +24,23 @@ const getSecret = () => {
 
 const sign = (value: string) => createHmac("sha256", getSecret()).update(value).digest("base64url")
 
-const cleanupConsumedNonces = (now: number) => {
-  for (const [nonce, expiresAt] of consumedNonces) {
-    if (expiresAt <= now) consumedNonces.delete(nonce)
-  }
-}
-
-export function createOAuthState(input: Omit<OAuthStatePayload, "nonce" | "expiresAt">, now = Date.now()) {
+export async function createOAuthState(
+  input: Omit<OAuthStatePayload, "nonce" | "expiresAt">,
+  now = Date.now(),
+) {
   const payload: OAuthStatePayload = {
     ...input,
-    nonce: randomBytes(16).toString("hex"),
+    nonce: randomBytes(32).toString("base64url"),
     expiresAt: now + STATE_TTL_MS,
   }
+  await prisma.recruitmentOAuthStateNonce.create({
+    data: { nonce: payload.nonce, expiresAt: new Date(payload.expiresAt) },
+  })
   const encodedPayload = encode(JSON.stringify(payload))
   return `${encodedPayload}.${sign(encodedPayload)}`
 }
 
-export function consumeOAuthState(state: string, now = Date.now()): OAuthStatePayload {
-  cleanupConsumedNonces(now)
+export async function consumeOAuthState(state: string, now = Date.now()): Promise<OAuthStatePayload> {
   const [encodedPayload, encodedSignature, ...extra] = state.split(".")
   if (!encodedPayload || !encodedSignature || extra.length > 0) {
     throw new Error("Invalid OAuth state format")
@@ -60,14 +59,14 @@ export function consumeOAuthState(state: string, now = Date.now()): OAuthStatePa
   } catch {
     throw new Error("Invalid OAuth state payload")
   }
-
   if (!payload.userId || !payload.channel || !payload.name || !payload.nonce || payload.expiresAt <= now) {
     throw new Error("Expired OAuth state")
   }
-  if (consumedNonces.has(payload.nonce)) {
-    throw new Error("OAuth state has already been consumed")
-  }
 
-  consumedNonces.set(payload.nonce, payload.expiresAt)
+  const consumed = await prisma.recruitmentOAuthStateNonce.updateMany({
+    where: { nonce: payload.nonce, consumedAt: null, expiresAt: { gt: new Date(now) } },
+    data: { consumedAt: new Date(now) },
+  })
+  if (consumed.count !== 1) throw new Error("OAuth state has already been consumed or expired")
   return payload
 }

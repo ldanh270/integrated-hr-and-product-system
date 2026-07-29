@@ -29,6 +29,26 @@ describe("cors middleware", () => {
     expect(next).not.toHaveBeenCalled()
   })
 
+  it("allows both local development loopback origins", () => {
+    process.env.CORS_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+    const response = {
+      setHeader: jest.fn(),
+      sendStatus: jest.fn(),
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    }
+    const next = jest.fn()
+
+    cors(
+      { method: "POST", headers: { origin: "http://localhost:5173" } } as never,
+      response as never,
+      next,
+    )
+
+    expect(response.setHeader).toHaveBeenCalledWith("Access-Control-Allow-Origin", "http://localhost:5173")
+    expect(next).toHaveBeenCalled()
+  })
+
   it("rejects unconfigured origins before routing", () => {
     process.env.CORS_ALLOWED_ORIGINS = "https://hr.example.com"
     const response = {

@@ -178,15 +178,10 @@ export const createApplicationSchema = z.object({
   sourceRef: z.string().max(255).optional(),
 })
 
-export const updateApplicationStatusSchema = z.object({
-  status: z.enum(RECRUITMENT_APPLICATION_STATUSES),
-  rejectReason: z.string().max(1000).optional(),
-  withdrawReason: z.string().max(1000).optional(),
-})
-
 export const moveKanbanSchema = z.object({
   applicationId: z.string().cuid(),
-  targetStatus: z.enum(RECRUITMENT_APPLICATION_STATUSES),
+  pipelineStageId: z.string().cuid(),
+  version: z.number().int().positive().optional(),
 })
 
 // ── Interview Schemas ─────────────────────────────────────────────────────────
@@ -213,7 +208,6 @@ export const updateInterviewRoundSchema = createInterviewRoundSchema
 
 export const createScorecardSchema = z.object({
   interviewId: z.string().cuid(),
-  evaluatorId: z.string().cuid(),
   overallRating: z.number().int().min(1).max(5),
   strengths: z.string().max(1000).optional(),
   weaknesses: z.string().max(1000).optional(),
@@ -222,13 +216,12 @@ export const createScorecardSchema = z.object({
   answers: z.record(z.string(), z.string()).optional(),
 })
 
-export const updateScorecardSchema = createScorecardSchema.omit({ interviewId: true, evaluatorId: true }).partial()
+export const updateScorecardSchema = createScorecardSchema.omit({ interviewId: true }).partial()
 
 // ── Offer Schemas ─────────────────────────────────────────────────────────────
 
 export const createOfferSchema = z.object({
   applicationId: z.string().cuid(),
-  candidateId: z.string().cuid(),
   offeredSalary: z.number().positive("Salary must be positive"),
   currency: z.string().length(3).default("VND"),
   startDate: z.string().datetime("Invalid date format"),
@@ -263,8 +256,20 @@ export const respondToOfferSchema = z.object({
 
 export const createBackgroundCheckSchema = z.object({
   offerId: z.string().cuid(),
-  candidateId: z.string().cuid(),
   group: z.enum(BGC_GROUPS),
+})
+
+export const completeBackgroundCheckSchema = z.object({
+  passed: z.boolean(),
+  failReason: z.string().trim().min(1).max(1000).optional(),
+}).superRefine(({ passed, failReason }, context) => {
+  if (!passed && !failReason) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["failReason"], message: "Lý do không đạt là bắt buộc" })
+  }
+})
+
+export const offerActionReasonSchema = z.object({
+  reason: z.string().trim().min(1).max(1000),
 })
 
 export const updateBackgroundCheckSchema = z.object({
@@ -323,7 +328,6 @@ export type UpdateCandidateInput = z.infer<typeof updateCandidateSchema>
 export type CreatePostingCandidateInput = z.infer<typeof createPostingCandidateSchema>
 
 export type CreateApplicationInput = z.infer<typeof createApplicationSchema>
-export type UpdateApplicationStatusInput = z.infer<typeof updateApplicationStatusSchema>
 export type MoveKanbanInput = z.infer<typeof moveKanbanSchema>
 
 export type CreateInterviewRoundInput = z.infer<typeof createInterviewRoundSchema>
