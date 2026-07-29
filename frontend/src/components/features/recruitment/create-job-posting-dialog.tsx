@@ -95,7 +95,7 @@ export function CreateJobPostingDialog({ open, onOpenChange, jobRequisitions, in
         <div className="grid gap-5 py-2">
           {/* Requisition Select */}
           <div className="grid gap-2">
-            <Label className="text-sm font-medium text-foreground">Yêu cầu tuyển dụng (Requisition APPROVED)</Label>
+            <Label className="text-sm font-medium text-foreground">Yêu cầu tuyển dụng (Requisition APPROVED) <span className="text-destructive" aria-hidden="true">*</span></Label>
             <Select value={requisitionId} onValueChange={setRequisitionId}>
               <SelectTrigger className="h-10 w-full rounded-full border-border bg-background px-4 text-sm">
                 <SelectValue placeholder="Chọn Yêu cầu tuyển dụng..." />
@@ -118,7 +118,7 @@ export function CreateJobPostingDialog({ open, onOpenChange, jobRequisitions, in
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Channel Select */}
             <div className="grid gap-2">
-              <Label className="text-sm font-medium text-foreground">Kênh đăng tuyển</Label>
+              <Label className="text-sm font-medium text-foreground">Kênh đăng tuyển <span className="text-destructive" aria-hidden="true">*</span></Label>
               <Select value={channel} onValueChange={setChannel}>
                 <SelectTrigger className="h-10 w-full rounded-full border-border bg-background px-4 text-sm">
                   <SelectValue placeholder="Chọn Kênh đăng tuyển" />

@@ -206,10 +206,10 @@ export function CreateRequisitionDialog({
           </DialogHeader>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Vị trí cần tuyển" error={errors.title?.message} className="sm:col-span-2">
+            <Field label="Vị trí cần tuyển" required error={errors.title?.message} className="sm:col-span-2">
               <Input placeholder="Ví dụ: Frontend Developer" {...form.register("title")} />
             </Field>
-            <Field label="Loại hình làm việc" error={errors.employmentType?.message}>
+            <Field label="Loại hình làm việc" required error={errors.employmentType?.message}>
               <Select
                 value={employmentType}
                 onValueChange={(value) =>
@@ -232,7 +232,7 @@ export function CreateRequisitionDialog({
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Số lượng" error={errors.headcount?.message}>
+            <Field label="Số lượng" required error={errors.headcount?.message}>
               <Input
                 type="number"
                 inputMode="numeric"
@@ -273,7 +273,7 @@ export function CreateRequisitionDialog({
                 {...form.register("salaryMax")}
               />
             </Field>
-            <Field label="Ưu tiên" error={errors.priority?.message}>
+            <Field label="Ưu tiên" required error={errors.priority?.message}>
               <Select
                 value={priority}
                 onValueChange={(value) =>
@@ -294,7 +294,7 @@ export function CreateRequisitionDialog({
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Người duyệt" error={errors.approverId?.message}>
+            <Field label="Người duyệt" required error={errors.approverId?.message}>
               <Select
                 value={approverId}
                 onValueChange={(value) =>
@@ -365,18 +365,20 @@ export function CreateRequisitionDialog({
 
 function Field({
   label,
+  required,
   error,
   className,
   children,
 }: {
   label: string
+  required?: boolean
   error?: string
   className?: string
   children: ReactNode
 }) {
   return (
     <div className={`grid gap-2 ${className ?? ""}`}>
-      <Label>{label}</Label>
+      <Label>{label}{required && <span className="ml-1 text-destructive" aria-hidden="true">*</span>}</Label>
       {children}
       {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
