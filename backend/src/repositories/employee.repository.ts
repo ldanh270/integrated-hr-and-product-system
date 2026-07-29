@@ -253,7 +253,7 @@ export class PrismaEmployeeRepository extends BaseRepository implements IEmploye
     }
 
     return {
-      data: data.map((employee) => this.mapToDomain(employee as unknown)),
+      data: data.map((employee) => this.mapToDomain(employee as EmployeeWithRoles)),
       meta: {
         total,
         page,
