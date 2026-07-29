@@ -336,7 +336,7 @@ export interface UpdateApplicationStatusDto {
 
 export interface MoveKanbanDto {
   applicationId: string
-  targetStatus: string
+  pipelineStageId: string
 }
 
 export const applicationApi = {
@@ -468,7 +468,6 @@ export const interviewApi = {
 
 export interface CreateScorecardDto {
   interviewId: string
-  evaluatorId: string
   overallRating: number
   strengths?: string
   weaknesses?: string
@@ -507,7 +506,6 @@ export const scorecardApi = {
 
 export interface CreateOfferDto {
   applicationId: string
-  candidateId: string
   offeredSalary: number
   currency?: string
   startDate: string

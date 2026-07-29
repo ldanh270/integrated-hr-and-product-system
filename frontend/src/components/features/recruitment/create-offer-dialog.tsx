@@ -47,7 +47,6 @@ export function CreateOfferDialog({ applications, open, onOpenChange, onCreated 
     if (!application || !salary || !startDate) return
     createOffer.mutate({
       applicationId: application.id,
-      candidateId: application.candidateId,
       offeredSalary: Number(salary),
       currency: "VND",
       startDate: new Date(startDate).toISOString(),
