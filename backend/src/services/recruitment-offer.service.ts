@@ -59,14 +59,7 @@ export class RecruitmentOfferService {
       throw new Error("Only draft offers can be sent")
     }
 
-    const offer = await recruitmentOfferRepository.send(id)
-
-    // Update application status
-    await recruitmentApplicationService.updateStatus(existing.applicationId, {
-      status: "offer_sent",
-    })
-
-    return offer
+    return recruitmentOfferRepository.sendAndTransition(id)
   }
 
   async respond(id: string, response: "accept" | "decline" | "negotiate", responseNote?: string) {

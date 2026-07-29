@@ -2,6 +2,8 @@ jest.mock("@/repositories/recruitment-offer.repository", () => ({
   recruitmentOfferRepository: {
     findByApplication: jest.fn(),
     create: jest.fn(),
+    findById: jest.fn(),
+    sendAndTransition: jest.fn(),
   },
 }))
 
@@ -39,6 +41,18 @@ describe("RecruitmentOfferService draft workflow", () => {
       expect.objectContaining({ applicationId: "application-1" }),
       "employee-1",
     )
+    expect(recruitmentApplicationService.updateStatus).not.toHaveBeenCalled()
+  })
+
+  it("sends the offer and advances the application through one command", async () => {
+    jest.mocked(recruitmentOfferRepository.findById).mockResolvedValue({ status: "draft" } as never)
+    jest.mocked(recruitmentOfferRepository.sendAndTransition).mockResolvedValue({ id: "offer-1", status: "sent" } as never)
+
+    const service = new RecruitmentOfferService()
+    const result = await service.send("offer-1")
+
+    expect(result).toEqual({ id: "offer-1", status: "sent" })
+    expect(recruitmentOfferRepository.sendAndTransition).toHaveBeenCalledWith("offer-1")
     expect(recruitmentApplicationService.updateStatus).not.toHaveBeenCalled()
   })
 })

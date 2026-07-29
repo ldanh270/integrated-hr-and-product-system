@@ -120,6 +120,39 @@ export class RecruitmentOfferRepository {
     })
   }
 
+  async sendAndTransition(id: string) {
+    return this.db.$transaction(async (tx) => {
+      const existing = await tx.recruitmentOffer.findUnique({
+        where: { id },
+        select: { applicationId: true, status: true },
+      })
+      if (!existing) throw new Error("Offer not found")
+
+      const updated = await tx.recruitmentOffer.updateMany({
+        where: { id, status: "draft" },
+        data: { status: "sent", sentAt: new Date() },
+      })
+      if (updated.count !== 1) throw new Error("Only draft offers can be sent")
+
+      await tx.recruitmentApplication.update({
+        where: { id: existing.applicationId },
+        data: { status: "offer_sent" },
+      })
+
+      return tx.recruitmentOffer.findUniqueOrThrow({
+        where: { id },
+        include: {
+          candidate: { select: { id: true, fullName: true, email: true } },
+          application: {
+            include: {
+              candidate: { select: { id: true, fullName: true, email: true } },
+            },
+          },
+        },
+      })
+    })
+  }
+
   async accept(id: string, responseNote?: string) {
     return this.db.recruitmentOffer.update({
       where: { id },
