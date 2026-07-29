@@ -64,9 +64,7 @@ export const createJobRequisitionSchema = jobRequisitionFieldsSchema.superRefine
   ({ candidateSchema }, context) => validateCandidateSchema(candidateSchema, context, "candidateSchema"),
 )
 
-export const updateJobRequisitionSchema = jobRequisitionFieldsSchema.partial().extend({
-  status: z.enum(REQUISITION_STATUSES).optional(),
-}).superRefine(
+export const updateJobRequisitionSchema = jobRequisitionFieldsSchema.partial().strict().superRefine(
   ({ candidateSchema }, context) => validateCandidateSchema(candidateSchema, context, "candidateSchema"),
 )
 

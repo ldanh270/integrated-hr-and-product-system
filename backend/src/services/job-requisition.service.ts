@@ -163,7 +163,6 @@ export class JobRequisitionService {
     if (
       existing.status !== REQUISITION_STATUS.DRAFT &&
       existing.status !== REQUISITION_STATUS.PENDING_APPROVAL &&
-      input.status === undefined &&
       !updatesCandidateSchemaOnly
     ) {
       throw new AppError(
