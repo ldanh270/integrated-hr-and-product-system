@@ -65,6 +65,14 @@ export class RecruitmentController {
     return result.data
   }
 
+  private getActorEmployeeId(req: AuthRequest): string {
+    const employeeId = req.user?.empId
+    if (!employeeId) {
+      throw new AppError("Unauthorized", HttpStatusCode.UNAUTHORIZED, "RecruitmentController")
+    }
+    return employeeId
+  }
+
   private sendSuccess<T>(res: Response, data: T, status = 200) {
     const response: ApiResponse<T> = { data, error: null }
     res.status(status).json(response)
@@ -74,12 +82,16 @@ export class RecruitmentController {
     this.sendSuccess(res, data, 201)
   }
 
+  private redirectToFrontend(res: Response, location: string) {
+    res.status(HttpStatusCode.FOUND).location(location).end()
+  }
+
   // ── Job Requisition ─────────────────────────────────────────────────────────
 
   createRequisition = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const body = this.parseBody(createJobRequisitionSchema, req.body)
-      const result = await jobRequisitionService.create(body, req.user!.empId)
+      const result = await jobRequisitionService.create(body, this.getActorEmployeeId(req))
       this.sendCreated(res, result)
     } catch (e) { next(e) }
   }
@@ -110,21 +122,21 @@ export class RecruitmentController {
   createRequisitionStage = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const body = z.object({ name: z.string().trim().min(1).max(100), color: z.string().max(32).optional(), isDefault: z.boolean().optional(), isCompleted: z.boolean().optional() }).parse(req.body)
-      this.sendCreated(res, await jobRequisitionService.createPipelineStage(req.params.id as string, body, req.user!.empId))
+      this.sendCreated(res, await jobRequisitionService.createPipelineStage(req.params.id as string, body, this.getActorEmployeeId(req)))
     } catch (e) { next(e) }
   }
 
   updateRequisitionStage = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const body = z.object({ name: z.string().trim().min(1).max(100).optional(), color: z.string().max(32).optional(), isDefault: z.boolean().optional(), isCompleted: z.boolean().optional() }).parse(req.body)
-      this.sendSuccess(res, await jobRequisitionService.updatePipelineStage(req.params.id as string, req.params.stageId as string, body, req.user!.empId))
+      this.sendSuccess(res, await jobRequisitionService.updatePipelineStage(req.params.id as string, req.params.stageId as string, body, this.getActorEmployeeId(req)))
     } catch (e) { next(e) }
   }
 
   deleteRequisitionStage = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const fallbackStageId = z.string().cuid().parse(req.query.fallbackStageId)
-      await jobRequisitionService.deletePipelineStage(req.params.id as string, req.params.stageId as string, fallbackStageId, req.user!.empId)
+      await jobRequisitionService.deletePipelineStage(req.params.id as string, req.params.stageId as string, fallbackStageId, this.getActorEmployeeId(req))
       res.status(204).send()
     } catch (e) { next(e) }
   }
@@ -132,14 +144,14 @@ export class RecruitmentController {
   reorderRequisitionStages = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const body = z.object({ stageIds: z.array(z.string().cuid()).min(1) }).parse(req.body)
-      this.sendSuccess(res, await jobRequisitionService.reorderPipelineStages(req.params.id as string, body.stageIds, req.user!.empId))
+      this.sendSuccess(res, await jobRequisitionService.reorderPipelineStages(req.params.id as string, body.stageIds, this.getActorEmployeeId(req)))
     } catch (e) { next(e) }
   }
 
   moveRequisitionApplication = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const body = z.object({ applicationId: z.string().cuid(), pipelineStageId: z.string().cuid() }).parse(req.body)
-      this.sendSuccess(res, await jobRequisitionService.moveApplicationToPipelineStage(req.params.id as string, body.applicationId, body.pipelineStageId, req.user!.empId))
+      this.sendSuccess(res, await jobRequisitionService.moveApplicationToPipelineStage(req.params.id as string, body.applicationId, body.pipelineStageId, this.getActorEmployeeId(req)))
     } catch (e) { next(e) }
   }
 
@@ -176,7 +188,7 @@ export class RecruitmentController {
   approveRequisition = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const body = this.parseBody(approveRequisitionSchema, req.body)
-      const result = await jobRequisitionService.approve(req.params.id as string, body, req.user!.empId)
+      const result = await jobRequisitionService.approve(req.params.id as string, body, this.getActorEmployeeId(req))
       this.sendSuccess(res, result)
     } catch (e) { next(e) }
   }
@@ -207,7 +219,7 @@ export class RecruitmentController {
   createJobPosting = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const body = this.parseBody(createJobPostingSchema, req.body)
-      this.sendCreated(res, await jobPostingService.create(body, req.user!.empId))
+      this.sendCreated(res, await jobPostingService.create(body, this.getActorEmployeeId(req)))
     } catch (e) { next(e) }
   }
 
@@ -246,36 +258,36 @@ export class RecruitmentController {
   }
 
   listPostingStages = async (req: AuthRequest, res: Response, next: NextFunction) => { try { this.sendSuccess(res, await jobPostingService.listPipelineStages(req.params.id as string)) } catch (e) { next(e) } }
-  createPostingStage = async (req: AuthRequest, res: Response, next: NextFunction) => { try { const body = z.object({ name: z.string().trim().min(1).max(100), color: z.string().max(32).optional(), isDefault: z.boolean().optional(), isCompleted: z.boolean().optional() }).parse(req.body); this.sendCreated(res, await jobPostingService.createPipelineStage(req.params.id as string, body, req.user!.empId)) } catch (e) { next(e) } }
-  updatePostingStage = async (req: AuthRequest, res: Response, next: NextFunction) => { try { const body = z.object({ name: z.string().trim().min(1).max(100).optional(), color: z.string().max(32).optional(), isDefault: z.boolean().optional(), isCompleted: z.boolean().optional() }).parse(req.body); this.sendSuccess(res, await jobPostingService.updatePipelineStage(req.params.id as string, req.params.stageId as string, body, req.user!.empId)) } catch (e) { next(e) } }
-  deletePostingStage = async (req: AuthRequest, res: Response, next: NextFunction) => { try { const fallbackStageId = z.string().cuid().parse(req.query.fallbackStageId); await jobPostingService.deletePipelineStage(req.params.id as string, req.params.stageId as string, fallbackStageId, req.user!.empId); res.status(204).send() } catch (e) { next(e) } }
-  reorderPostingStages = async (req: AuthRequest, res: Response, next: NextFunction) => { try { const body = z.object({ stageIds: z.array(z.string().cuid()).min(1) }).parse(req.body); this.sendSuccess(res, await jobPostingService.reorderPipelineStages(req.params.id as string, body.stageIds, req.user!.empId)) } catch (e) { next(e) } }
-  movePostingApplication = async (req: AuthRequest, res: Response, next: NextFunction) => { try { const body = z.object({ applicationId: z.string().cuid(), pipelineStageId: z.string().cuid() }).parse(req.body); this.sendSuccess(res, await jobPostingService.moveApplicationToPipelineStage(req.params.id as string, body.applicationId, body.pipelineStageId, req.user!.empId)) } catch (e) { next(e) } }
-  createPostingCandidate = async (req: AuthRequest, res: Response, next: NextFunction) => { try { const body = this.parseBody(createPostingCandidateSchema, req.body); this.sendCreated(res, await jobPostingService.createCandidateApplication(req.params.id as string, body, req.user!.empId)) } catch (e) { next(e) } }
+  createPostingStage = async (req: AuthRequest, res: Response, next: NextFunction) => { try { const body = z.object({ name: z.string().trim().min(1).max(100), color: z.string().max(32).optional(), isDefault: z.boolean().optional(), isCompleted: z.boolean().optional() }).parse(req.body); this.sendCreated(res, await jobPostingService.createPipelineStage(req.params.id as string, body, this.getActorEmployeeId(req))) } catch (e) { next(e) } }
+  updatePostingStage = async (req: AuthRequest, res: Response, next: NextFunction) => { try { const body = z.object({ name: z.string().trim().min(1).max(100).optional(), color: z.string().max(32).optional(), isDefault: z.boolean().optional(), isCompleted: z.boolean().optional() }).parse(req.body); this.sendSuccess(res, await jobPostingService.updatePipelineStage(req.params.id as string, req.params.stageId as string, body, this.getActorEmployeeId(req))) } catch (e) { next(e) } }
+  deletePostingStage = async (req: AuthRequest, res: Response, next: NextFunction) => { try { const fallbackStageId = z.string().cuid().parse(req.query.fallbackStageId); await jobPostingService.deletePipelineStage(req.params.id as string, req.params.stageId as string, fallbackStageId, this.getActorEmployeeId(req)); res.status(204).send() } catch (e) { next(e) } }
+  reorderPostingStages = async (req: AuthRequest, res: Response, next: NextFunction) => { try { const body = z.object({ stageIds: z.array(z.string().cuid()).min(1) }).parse(req.body); this.sendSuccess(res, await jobPostingService.reorderPipelineStages(req.params.id as string, body.stageIds, this.getActorEmployeeId(req))) } catch (e) { next(e) } }
+  movePostingApplication = async (req: AuthRequest, res: Response, next: NextFunction) => { try { const body = z.object({ applicationId: z.string().cuid(), pipelineStageId: z.string().cuid() }).parse(req.body); this.sendSuccess(res, await jobPostingService.moveApplicationToPipelineStage(req.params.id as string, body.applicationId, body.pipelineStageId, this.getActorEmployeeId(req))) } catch (e) { next(e) } }
+  createPostingCandidate = async (req: AuthRequest, res: Response, next: NextFunction) => { try { const body = this.parseBody(createPostingCandidateSchema, req.body); this.sendCreated(res, await jobPostingService.createCandidateApplication(req.params.id as string, body, this.getActorEmployeeId(req))) } catch (e) { next(e) } }
 
   updateJobPosting = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const body = this.parseBody(updateJobPostingSchema, req.body)
-      this.sendSuccess(res, await jobPostingService.update(req.params.id as string, body, req.user!.empId))
+      this.sendSuccess(res, await jobPostingService.update(req.params.id as string, body, this.getActorEmployeeId(req)))
     } catch (e) { next(e) }
   }
 
   publishJobPosting = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const body = this.parseBody(publishJobPostingSchema, req.body)
-      this.sendSuccess(res, await jobPostingService.publish(req.params.id as string, body, req.user!.empId))
+      this.sendSuccess(res, await jobPostingService.publish(req.params.id as string, body, this.getActorEmployeeId(req)))
     } catch (e) { next(e) }
   }
 
   syncJobPosting = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      this.sendSuccess(res, await jobPostingService.sync(req.params.id as string, req.user!.empId))
+      this.sendSuccess(res, await jobPostingService.sync(req.params.id as string, this.getActorEmployeeId(req)))
     } catch (e) { next(e) }
   }
 
   archiveJobPosting = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      this.sendSuccess(res, await jobPostingService.archive(req.params.id as string, req.user!.empId))
+      this.sendSuccess(res, await jobPostingService.archive(req.params.id as string, this.getActorEmployeeId(req)))
     } catch (e) { next(e) }
   }
 
@@ -321,7 +333,7 @@ export class RecruitmentController {
           .map((application) => recruitmentPostingActivityService.record(
             application.postingId!,
             RECRUITMENT_POSTING_ACTIVITY_TYPE.CANDIDATE_PROFILE_UPDATED,
-            req.user!.empId,
+            this.getActorEmployeeId(req),
             { candidateId: result.id, fields: Object.keys(body).filter((field) => field !== "id") },
             application.id,
           )),
@@ -389,7 +401,7 @@ export class RecruitmentController {
   addApplicationNote = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const note = req.body.note as string
-      const result = await recruitmentApplicationService.addNote(req.params.id as string, note, req.user!.empId)
+      const result = await recruitmentApplicationService.addNote(req.params.id as string, note, this.getActorEmployeeId(req))
       this.sendCreated(res, result)
     } catch (e) { next(e) }
   }
@@ -466,7 +478,7 @@ export class RecruitmentController {
   getUpcomingInterviews = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const days = req.query.days ? parseInt(req.query.days as string) : 7
-      const result = await interviewRoundService.getUpcoming(req.user!.empId, days)
+      const result = await interviewRoundService.getUpcoming(this.getActorEmployeeId(req), days)
       this.sendSuccess(res, result)
     } catch (e) { next(e) }
   }
@@ -476,7 +488,7 @@ export class RecruitmentController {
   createScorecard = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const body = this.parseBody(createScorecardSchema, req.body)
-      const result = await scorecardService.create(body, req.user!.empId)
+      const result = await scorecardService.create(body, this.getActorEmployeeId(req))
       this.sendCreated(res, result)
     } catch (e) { next(e) }
   }
@@ -498,14 +510,14 @@ export class RecruitmentController {
   updateScorecard = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const body = this.parseBody(updateScorecardSchema, req.body)
-      const result = await scorecardService.update(req.params.id as string, body, req.user!.empId)
+      const result = await scorecardService.update(req.params.id as string, body, this.getActorEmployeeId(req))
       this.sendSuccess(res, result)
     } catch (e) { next(e) }
   }
 
   deleteScorecard = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      await scorecardService.delete(req.params.id as string, req.user!.empId)
+      await scorecardService.delete(req.params.id as string, this.getActorEmployeeId(req))
       res.status(204).send()
     } catch (e) { next(e) }
   }
@@ -515,7 +527,7 @@ export class RecruitmentController {
   createOffer = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const body = this.parseBody(createOfferSchema, req.body)
-      const result = await recruitmentOfferService.create(body, req.user!.empId)
+      const result = await recruitmentOfferService.create(body, this.getActorEmployeeId(req))
       this.sendCreated(res, result)
     } catch (e) { next(e) }
   }
@@ -625,7 +637,7 @@ export class RecruitmentController {
   updateBackgroundCheck = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const body = this.parseBody(updateBackgroundCheckSchema, req.body)
-      const result = await backgroundCheckService.update(req.params.id as string, body, req.user!.empId)
+      const result = await backgroundCheckService.update(req.params.id as string, body, this.getActorEmployeeId(req))
       this.sendSuccess(res, result)
     } catch (e) { next(e) }
   }
@@ -640,7 +652,7 @@ export class RecruitmentController {
   completeBackgroundCheck = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const { passed, failReason } = this.parseBody(completeBackgroundCheckSchema, req.body)
-      const result = await backgroundCheckService.complete(req.params.id as string, passed, req.user!.empId, failReason)
+      const result = await backgroundCheckService.complete(req.params.id as string, passed, this.getActorEmployeeId(req), failReason)
       this.sendSuccess(res, result)
     } catch (e) { next(e) }
   }
@@ -663,7 +675,7 @@ export class RecruitmentController {
 
   listOAuthAccounts = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user!.empId
+      const userId = this.getActorEmployeeId(req)
       const result = await recruitmentOAuthAccountService.list(userId)
       this.sendSuccess(res, result)
     } catch (e) { next(e) }
@@ -671,7 +683,7 @@ export class RecruitmentController {
 
   upsertOAuthAccount = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user!.empId
+      const userId = this.getActorEmployeeId(req)
       const { channel, name, clientId, clientSecret, refreshToken } = req.body
       const result = await recruitmentOAuthAccountService.upsert(userId, { channel, name, clientId, clientSecret, refreshToken })
       this.sendSuccess(res, result)
@@ -680,7 +692,7 @@ export class RecruitmentController {
 
   deleteOAuthAccount = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user!.empId
+      const userId = this.getActorEmployeeId(req)
       await recruitmentOAuthAccountService.delete(userId, (req.params.id || req.params.channel) as string)
       res.status(204).send()
     } catch (e) { next(e) }
@@ -694,7 +706,7 @@ export class RecruitmentController {
    */
   initiateGoogleOAuth = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user!.empId
+      const userId = this.getActorEmployeeId(req)
       const { channel, name, accountId } = req.query as { channel?: string; name?: string; accountId?: string }
       if (!channel || !name) {
         throw new AppError("Thiếu channel hoặc name", HttpStatusCode.BAD_REQUEST, "OAuthController")
@@ -738,18 +750,28 @@ export class RecruitmentController {
       error?: string
     }
     const frontendUrl = process.env.FRONTEND_URL ?? "http://localhost:5173"
+    const buildRedirectUrl = (path: string, paramKey?: string, paramVal?: string) => {
+      const url = new URL(path, frontendUrl)
+      if (paramKey && paramVal) {
+        url.searchParams.set(paramKey, paramVal)
+      }
+      return url.toString()
+    }
 
     if (!state || (!code && !error)) {
-      return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=missing_params`)
+      this.redirectToFrontend(res, buildRedirectUrl("/recruitment/oauth-accounts", "error", "missing_params"))
+      return
     }
 
     try {
       const { userId, channel, name, accountId } = await consumeOAuthState(state)
       if (error) {
-        return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=${encodeURIComponent(error)}`)
+        this.redirectToFrontend(res, buildRedirectUrl("/recruitment/oauth-accounts", "error", error))
+        return
       }
       if (!code) {
-        return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=missing_code`)
+        this.redirectToFrontend(res, buildRedirectUrl("/recruitment/oauth-accounts", "error", "missing_code"))
+        return
       }
       
       let config = getGoogleOAuthConfig()
@@ -765,7 +787,8 @@ export class RecruitmentController {
       }
 
       if (!config) {
-        return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=missing_google_oauth_config`)
+        res.redirect(buildRedirectUrl("/recruitment/oauth-accounts", "error", "missing_google_oauth_config"))
+        return
       }
 
       // Exchange code for tokens
@@ -778,11 +801,13 @@ export class RecruitmentController {
         refreshToken: tokens.refreshToken,
       }, accountId)
 
-      return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?success=connected`)
-    } catch (err: any) {
+      this.redirectToFrontend(res, buildRedirectUrl("/recruitment/oauth-accounts", "success", "connected"))
+      return
+    } catch (err: unknown) {
       console.error("Google OAuth callback error:", err)
-      const reason = err?.message || "token_exchange_failed"
-      return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=${encodeURIComponent(reason)}`)
+      const reason = err instanceof Error ? err.message : "token_exchange_failed"
+      res.redirect(buildRedirectUrl("/recruitment/oauth-accounts", "error", reason))
+      return
     }
   }
 }

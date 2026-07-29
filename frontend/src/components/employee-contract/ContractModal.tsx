@@ -198,20 +198,20 @@ export function ContractModal({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-[540px] rounded-xl bg-card border-border">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-foreground">
             {getTitleText()}
           </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground">
+          <DialogDescription className="text-xs text-muted-foreground">
             {mode === "terminate"
               ? `Chấm dứt hợp đồng số ${contract?.contractNumber}`
               : "Nhập các thông tin chi tiết cho hợp đồng lao động của nhân sự."}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-2">
+        <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4 py-2">
           {mode === "terminate" ? (
             <div className="space-y-4">
               <div className="space-y-2">
@@ -236,7 +236,7 @@ export function ContractModal({
                   id="terminationReason"
                   placeholder="Nhập lý do chấm dứt hợp đồng..."
                   value={terminationReason}
-                  onChange={(e) => setTerminationReason(e.target.value)}
+                  onChange={(e) => { setTerminationReason(e.target.value) }}
                   className="rounded-xl border-border resize-none"
                   rows={3}
                   required
@@ -259,7 +259,7 @@ export function ContractModal({
                   <SelectContent>
                     {CONTRACT_TYPES.map((type) => (
                       <SelectItem key={type} value={type}>
-                        {CONTRACT_TYPE_LABELS[type]}
+                        {Object.prototype.hasOwnProperty.call(CONTRACT_TYPE_LABELS, type) ? CONTRACT_TYPE_LABELS[type] : type}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -301,7 +301,7 @@ export function ContractModal({
                   id="startDate"
                   type="date"
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={(e) => { setStartDate(e.target.value) }}
                   className="rounded-full"
                   required
                 />
@@ -359,7 +359,7 @@ export function ContractModal({
                     id="probationSalary"
                     type="number"
                     value={probationSalary}
-                    onChange={(e) => setProbationSalary(e.target.value)}
+                    onChange={(e) => { setProbationSalary(e.target.value); }}
                     placeholder="0"
                     className="rounded-full"
                   />
@@ -374,7 +374,7 @@ export function ContractModal({
                   id="note"
                   placeholder="Ghi chú thêm về điều khoản..."
                   value={note}
-                  onChange={(e) => setNote(e.target.value)}
+                  onChange={(e) => { setNote(e.target.value) }}
                   className="rounded-xl border-border resize-none"
                   rows={2}
                 />

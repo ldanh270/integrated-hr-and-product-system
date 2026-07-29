@@ -1,5 +1,12 @@
 import type { ApplicantImportRow } from "@/types/recruitment.types"
 
+const APPLICANT_FIELDS = ["fullName", "email", "phone", "cvUrl", "notes"] as const
+type ApplicantField = (typeof APPLICANT_FIELDS)[number]
+
+function isApplicantField(value: string | undefined): value is ApplicantField {
+  return APPLICANT_FIELDS.some((field) => field === value)
+}
+
 const COLUMN_ALIASES: Record<string, keyof ApplicantImportRow> = {
   fullname: "fullName", "họ tên": "fullName", "ho ten": "fullName", name: "fullName",
   email: "email", phone: "phone", "số điện thoại": "phone", "so dien thoai": "phone",
@@ -10,7 +17,7 @@ function parseDelimitedRows(value: string): string[][] {
   const delimiter = value.split(/\r?\n/, 1)[0]?.includes(";") ? ";" : ","
   const rows: string[][] = []; let row: string[] = []; let cell = ""; let quoted = false
   for (let index = 0; index < value.length; index += 1) {
-    const char = value[index]
+    const char = value.charAt(index)
     if (char === '"' && quoted && value[index + 1] === '"') { cell += '"'; index += 1; continue }
     if (char === '"') { quoted = !quoted; continue }
     if (char === delimiter && !quoted) { row.push(cell.trim()); cell = ""; continue }
@@ -30,7 +37,12 @@ export function parseApplicantCsv(value: string): ApplicantImportRow[] {
   const headers = rows[0].map((header) => COLUMN_ALIASES[header.trim().toLowerCase()])
   return rows.slice(1).map((cells) => {
     const row: Partial<ApplicantImportRow> = {}
-    cells.forEach((cell, index) => { const key = headers[index]; if (key) row[key] = cell })
+    cells.forEach((cell, index) => {
+      const key = headers[index]
+      if (isApplicantField(key)) {
+        row[key] = cell
+      }
+    })
     return row
   }) as ApplicantImportRow[]
 }

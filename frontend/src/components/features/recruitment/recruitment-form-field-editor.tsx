@@ -25,7 +25,7 @@ export function RecruitmentFormFieldEditor({ fields, onChange }: Props) {
     onChange([...fields, { key: `custom_field_${suffix}`, label: "", type: "short_text", required: false }])
   }
 
-  const removeField = (index: number) => onChange(fields.filter((_, fieldIndex) => fieldIndex !== index))
+  const removeField = (index: number) => { onChange(fields.filter((_, fieldIndex) => fieldIndex !== index)) }
 
   return (
     <div className="grid gap-3">
@@ -51,7 +51,7 @@ export function RecruitmentFormFieldEditor({ fields, onChange }: Props) {
                   id={`field-label-${index}`}
                   value={field.label}
                   disabled={isSystemField}
-                  onChange={(event) => updateField(index, { label: event.target.value })}
+                  onChange={(event) => { updateField(index, { label: event.target.value }); }}
                   placeholder="Ví dụ: Kinh nghiệm nổi bật"
                 />
               </div>
@@ -59,9 +59,9 @@ export function RecruitmentFormFieldEditor({ fields, onChange }: Props) {
                 <Label htmlFor={`field-key-${index}`}>Mã field <span className="text-destructive" aria-hidden="true">*</span></Label>
                 <Input
                   id={`field-key-${index}`}
-                  value={field.key}
+                  value={field.label ? field.key : ""}
                   disabled={isSystemField}
-                  onChange={(event) => updateField(index, { key: event.target.value.toLowerCase() })}
+                  onChange={(event) => { updateField(index, { key: event.target.value.toLowerCase() }); }}
                   placeholder="kinh_nghiem_noi_bat"
                   className="font-mono"
                 />
@@ -71,12 +71,12 @@ export function RecruitmentFormFieldEditor({ fields, onChange }: Props) {
                   <span className="flex h-12 items-center gap-2 text-xs font-medium text-muted-foreground"><LockKeyhole className="h-4 w-4" />Bắt buộc</span>
                 ) : (
                   <div className="flex h-12 items-center gap-2">
-                    <Switch id={`field-required-${index}`} checked={field.required} onCheckedChange={(required) => updateField(index, { required })} />
+                    <Switch id={`field-required-${index}`} checked={field.required} onCheckedChange={(required) => { updateField(index, { required }) }} />
                     <Label htmlFor={`field-required-${index}`} className="text-xs">Bắt buộc</Label>
                   </div>
                 )}
                 {!isSystemField && (
-                  <Button type="button" size="icon" variant="ghost" onClick={() => removeField(index)} aria-label={`Xóa field ${field.label || field.key}`}>
+                  <Button type="button" size="icon" variant="ghost" onClick={() => { removeField(index) }} aria-label={`Xóa field ${field.label || field.key}`}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 )}
@@ -84,7 +84,7 @@ export function RecruitmentFormFieldEditor({ fields, onChange }: Props) {
               {!isSystemField && (
                 <div className="grid gap-2 sm:col-span-2">
                   <Label>Kiểu câu trả lời</Label>
-                  <Select value={field.type} onValueChange={(type) => updateField(index, { type: type as RecruitmentFormFieldType })}>
+                  <Select value={field.type} onValueChange={(type) => { updateField(index, { type: type as RecruitmentFormFieldType }) }}>
                     <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                     <SelectContent>{RECRUITMENT_FORM_FIELD_TYPES.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent>
                   </Select>

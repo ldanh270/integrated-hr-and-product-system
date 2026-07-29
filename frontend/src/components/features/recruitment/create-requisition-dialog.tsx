@@ -164,7 +164,7 @@ export function CreateRequisitionDialog({
     }
   }, [form, open, requisition])
 
-  const close = () => onOpenChange(false)
+  const close = () => { onOpenChange(false); }
 
   const onSubmit = (values: RequisitionFormValues) => {
     const parsed = requisitionFormSchema.parse(values)
@@ -288,7 +288,7 @@ export function CreateRequisitionDialog({
                 <SelectContent>
                   {REQUISITION_PRIORITIES.map((priority) => (
                     <SelectItem key={priority} value={priority}>
-                      {REQUISITION_PRIORITY_LABELS[priority]}
+                      {REQUISITION_PRIORITY_LABELS[priority as keyof typeof REQUISITION_PRIORITY_LABELS] ?? priority}
                     </SelectItem>
                   ))}
                 </SelectContent>

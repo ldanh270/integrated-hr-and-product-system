@@ -47,7 +47,7 @@ export function useContracts(params?: {
 export function useContract(id: string | null) {
   return useQuery({
     queryKey: [...CONTRACT_QUERY_KEYS.DETAIL, id],
-    queryFn: () => getContractById(id!),
+    queryFn: () => (id ? getContractById(id) : Promise.reject(new Error("No contract ID"))),
     enabled: !!id,
   })
 }
@@ -55,7 +55,7 @@ export function useContract(id: string | null) {
 export function useEmployeeContracts(employeeId: string | null, includeInactive = false) {
   return useQuery({
     queryKey: [...CONTRACT_QUERY_KEYS.EMPLOYEE(employeeId || ""), includeInactive],
-    queryFn: () => getContractsByEmployee(employeeId!, includeInactive),
+    queryFn: () => (employeeId ? getContractsByEmployee(employeeId, includeInactive) : Promise.reject(new Error("No employee ID"))),
     enabled: !!employeeId,
   })
 }
@@ -73,8 +73,8 @@ export function useCreateContract() {
     mutationFn: (data: ICreateContractPayload) => createContract(data),
     onSuccess: () => {
       toast.success(CONTRACT_MESSAGES.CREATE)
-      queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.LIST })
-      queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.EMPLOYEE("") })
+      void queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.LIST })
+      void queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.EMPLOYEE("") })
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { message?: string } } }
@@ -90,8 +90,8 @@ export function useUpdateContract() {
       updateContract(id, data),
     onSuccess: () => {
       toast.success(CONTRACT_MESSAGES.UPDATE)
-      queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.LIST })
-      queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.DETAIL })
+      void queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.LIST })
+      void queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.DETAIL })
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { message?: string } } }
@@ -107,8 +107,8 @@ export function useTerminateContract() {
       terminateContract(id, data),
     onSuccess: () => {
       toast.success(CONTRACT_MESSAGES.TERMINATE)
-      queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.LIST })
-      queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.EMPLOYEE("") })
+      void queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.LIST })
+      void queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.EMPLOYEE("") })
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { message?: string } } }
@@ -124,8 +124,8 @@ export function useRenewContract() {
       renewContract(id, data),
     onSuccess: () => {
       toast.success(CONTRACT_MESSAGES.RENEW)
-      queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.LIST })
-      queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.EMPLOYEE("") })
+      void queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.LIST })
+      void queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.EMPLOYEE("") })
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { message?: string } } }

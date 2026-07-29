@@ -155,7 +155,7 @@ export function ContractList({
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={() => onEdit(contract)}
+                      onClick={() => { onEdit(contract) }}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -165,7 +165,7 @@ export function ContractList({
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-primary hover:text-primary-foreground hover:bg-primary/10"
-                      onClick={() => onSign(contract)}
+                      onClick={() => { onSign(contract) }}
                       title="Ký hợp đồng"
                     >
                       <CheckCircle2 className="h-4 w-4" />
@@ -176,7 +176,7 @@ export function ContractList({
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={() => onTerminate(contract)}
+                      onClick={() => { onTerminate(contract) }}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -187,7 +187,7 @@ export function ContractList({
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => onRenew(contract)}
+                        onClick={() => { onRenew(contract) }}
                       >
                         <RefreshCw className="h-4 w-4" />
                       </Button>

@@ -203,30 +203,38 @@ export class InterviewRoundRepository {
     return this.db.interviewRound.delete({ where: { id } })
   }
 
-  async getUpcoming(interviewerId: string, days: number = 7) {
-    const startDate = new Date()
-    const endDate = new Date()
-    endDate.setDate(endDate.getDate() + days)
-
-    return this.db.interviewRound.findMany({
-      where: {
-        interviewerIds: { has: interviewerId },
-        status: "scheduled",
-        scheduledAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
+  async getUpcoming(interviewerId?: string, _days?: number) {
+    const rounds = await this.db.interviewRound.findMany({
       include: {
         application: {
           include: {
-            candidate: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
+            candidate: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true } },
             requisition: { select: { id: true, title: true } },
+          },
+        },
+        scorecards: {
+          include: {
+            evaluator: { select: { id: true, fullName: true } },
           },
         },
       },
       orderBy: { scheduledAt: "asc" },
     })
+
+    const allInterviewerIds = rounds.flatMap((r) => r.interviewerIds || [])
+    if (allInterviewerIds.length > 0) {
+      const employees = await this.db.employee.findMany({
+        where: { id: { in: allInterviewerIds } },
+        select: { id: true, fullName: true, email: true },
+      })
+      const empMap = new Map(employees.map((e) => [e.id, e]))
+      return rounds.map((r) => ({
+        ...r,
+        interviewers: (r.interviewerIds || []).map((empId) => empMap.get(empId)).filter(Boolean) as Array<{ id: string; fullName: string; email: string }>,
+      }))
+    }
+
+    return rounds
   }
 }
 

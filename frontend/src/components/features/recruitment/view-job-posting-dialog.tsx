@@ -67,15 +67,15 @@ export function ViewJobPostingDialog({ open, onOpenChange, posting }: Props) {
       : "Thỏa thuận"
 
   const handleCopy = (text: string, type: "link" | "code") => {
-    navigator.clipboard.writeText(text)
+    void navigator.clipboard.writeText(text)
     if (type === "link") {
       setCopiedLink(true)
       toast.success("Đã sao chép đường dẫn ứng tuyển!")
-      setTimeout(() => setCopiedLink(false), 2000)
+      setTimeout(() => { setCopiedLink(false); }, 2000)
     } else {
       setCopiedCode(true)
       toast.success("Đã sao chép mã nguồn!")
-      setTimeout(() => setCopiedCode(false), 2000)
+      setTimeout(() => { setCopiedCode(false); }, 2000)
     }
   }
 
@@ -197,7 +197,7 @@ export function ViewJobPostingDialog({ open, onOpenChange, posting }: Props) {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleCopy(posting.postingUrl!, "link")}
+                    onClick={() => { handleCopy(posting.postingUrl ?? "", "link"); }}
                     className="rounded-full text-xs gap-1.5 h-8 border-border"
                   >
                     {copiedLink ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
@@ -233,7 +233,7 @@ export function ViewJobPostingDialog({ open, onOpenChange, posting }: Props) {
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => handleCopy(posting.sourceCode, "code")}
+                  onClick={() => { handleCopy(posting.sourceCode, "code") }}
                   className="h-7 w-7 p-0 rounded-full shrink-0"
                   title="Sao chép Mã nguồn"
                 >
@@ -296,7 +296,7 @@ export function ViewJobPostingDialog({ open, onOpenChange, posting }: Props) {
         </div>
 
         <DialogFooter className="pt-2">
-          <Button variant="outline" className="rounded-full border-border text-foreground hover:bg-muted" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" className="rounded-full border-border text-foreground hover:bg-muted" onClick={() => { onOpenChange(false); }}>
             Đóng
           </Button>
         </DialogFooter>

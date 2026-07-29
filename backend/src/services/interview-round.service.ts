@@ -1,3 +1,4 @@
+import { AppError } from "@/utils/error.util"
 import { interviewRoundRepository } from "@/repositories/interview-round.repository"
 import { scorecardRepository } from "@/repositories/scorecard.repository"
 import type { CreateInterviewRoundInput, UpdateInterviewRoundInput } from "@/types/recruitment.types"
@@ -5,16 +6,16 @@ import { recruitmentApplicationService } from "./recruitment-application.service
 
 export class InterviewRoundService {
   async create(input: CreateInterviewRoundInput) {
-    // Validate application exists and is in valid state
+    // Validate application exists and is not closed/terminal
     const application = await recruitmentApplicationService.findById(input.applicationId)
-    if (!["shortlisted", "interviewing"].includes(application.status)) {
-      throw new Error("Application must be in shortlisted or interviewing status to schedule interviews")
+    if (["rejected", "hired", "withdrawn"].includes(application.status)) {
+      throw new AppError("Không thể lên lịch phỏng vấn cho hồ sơ đã từ chối hoặc đã tuyển dụng", 400, "Service")
     }
 
-    // Validate scheduled time is in the future
+    // Validate scheduled date validity
     const scheduledAt = new Date(input.scheduledAt)
-    if (scheduledAt <= new Date()) {
-      throw new Error("Interview must be scheduled in the future")
+    if (isNaN(scheduledAt.getTime())) {
+      throw new AppError("Thời gian phỏng vấn không hợp lệ", 400, "Service")
     }
 
     return interviewRoundRepository.createAndStart(input)
@@ -35,16 +36,11 @@ export class InterviewRoundService {
   async update(id: string, input: UpdateInterviewRoundInput) {
     const existing = await this.findById(id)
 
-    // Cannot update completed or cancelled interviews
-    if (existing.status === "completed" || existing.status === "cancelled") {
-      throw new Error("Cannot update completed or cancelled interviews")
-    }
-
     // Validate scheduled time if being updated
     if (input.scheduledAt) {
       const scheduledAt = new Date(input.scheduledAt)
-      if (scheduledAt <= new Date()) {
-        throw new Error("Interview must be scheduled in the future")
+      if (isNaN(scheduledAt.getTime())) {
+        throw new AppError("Thời gian phỏng vấn không hợp lệ", 400, "Service")
       }
     }
 
@@ -54,8 +50,8 @@ export class InterviewRoundService {
   async markCompleted(id: string, result?: string, feedback?: string) {
     const existing = await this.findById(id)
 
-    if (existing.status === "cancelled" || existing.status === "completed") {
-      throw new Error("Cannot complete a cancelled or already completed interview")
+    if (existing.status === "cancelled") {
+      throw new Error("Cannot complete a cancelled interview")
     }
 
     const interview = await interviewRoundRepository.markCompletedAndTransition(id, result, feedback)
@@ -104,7 +100,7 @@ export class InterviewRoundService {
     return interviewRoundRepository.delete(id)
   }
 
-  async getUpcoming(interviewerId: string, days?: number) {
+  async getUpcoming(interviewerId?: string, days?: number) {
     return interviewRoundRepository.getUpcoming(interviewerId, days)
   }
 }

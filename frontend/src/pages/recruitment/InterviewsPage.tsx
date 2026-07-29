@@ -96,7 +96,7 @@ function InterviewCard({ interview }: InterviewCardProps) {
             Vòng {interview.roundNumber}
           </Badge>
           <Badge variant="secondary" className="rounded-full text-[10px]">
-            {INTERVIEW_TYPE_LABELS[interview.interviewType]}
+            {interview.interviewType ? INTERVIEW_TYPE_LABELS[interview.interviewType] || interview.interviewType : interview.title || "Phỏng vấn"}
           </Badge>
         </div>
         <div className="flex items-center gap-1">
@@ -164,7 +164,7 @@ export default function InterviewsPage() {
   }
 
   const { data: upcomingData, isLoading } = useUpcomingInterviews(14)
-  const interviews = upcomingData ?? []
+  const interviews = useMemo(() => upcomingData ?? [], [upcomingData])
 
   const tabCounts = useMemo(() => {
     const counts: Record<string, number> = { all: interviews.length }
@@ -186,7 +186,7 @@ export default function InterviewsPage() {
       return (
         item.candidateName?.toLowerCase().includes(searchStr) ||
         item.positionTitle?.toLowerCase().includes(searchStr) ||
-        INTERVIEW_TYPE_LABELS[item.interviewType]?.toLowerCase().includes(searchStr)
+        (item.interviewType && INTERVIEW_TYPE_LABELS[item.interviewType]?.toLowerCase().includes(searchStr))
       )
     })
   }, [interviews, activeTab, keyword])
@@ -359,7 +359,7 @@ export default function InterviewsPage() {
                         <Badge variant="outline" className="rounded-full text-[11px]">Vòng {interview.roundNumber}</Badge>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell px-4 py-3 text-sm">
-                        {INTERVIEW_TYPE_LABELS[interview.interviewType]}
+                        {interview.interviewType ? INTERVIEW_TYPE_LABELS[interview.interviewType] || interview.interviewType : interview.title || "Phỏng vấn"}
                       </TableCell>
                       <TableCell className="px-4 py-3">
                         {interview.scheduledAt ? (
@@ -389,7 +389,7 @@ export default function InterviewsPage() {
                           ) : (
                             <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
                           )}
-                          <span>{INTERVIEW_FORMAT_LABELS[interview.format]}</span>
+                          <span>{(interview.format && INTERVIEW_FORMAT_LABELS[interview.format]) || interview.format}</span>
                         </div>
                       </TableCell>
                       <TableCell className="px-4 py-3">

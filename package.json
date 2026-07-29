@@ -22,7 +22,9 @@
     "db:seed:admin": "cd backend && nr seed:admin",
     "db:clear": "cd backend && nr clear",
     "hash-password": "cd backend && nr hash-password",
-    "test": "jest"
+    "test": "jest",
+    "lint:codacy": "bun run --cwd frontend lint && bun run --cwd frontend lint:styles",
+    "quality:codacy": "bun run lint:codacy"
   },
   "dependencies": {
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",

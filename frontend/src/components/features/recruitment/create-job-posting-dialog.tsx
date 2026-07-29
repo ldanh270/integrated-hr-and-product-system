@@ -179,7 +179,7 @@ export function CreateJobPostingDialog({ open, onOpenChange, jobRequisitions, in
                   </p>
                 </div>
               </div>
-              <Link to="/recruitment/oauth-accounts" onClick={() => onOpenChange(false)}>
+              <Link to="/recruitment/oauth-accounts" onClick={() => { onOpenChange(false); }}>
                 <Button size="sm" variant="outline" className="rounded-full border-amber-500/40 text-amber-800 dark:text-amber-200 hover:bg-amber-500/20 text-xs shrink-0 gap-1.5">
                   <ExternalLink className="h-3.5 w-3.5" />
                   Kết nối ngay
@@ -214,7 +214,7 @@ export function CreateJobPostingDialog({ open, onOpenChange, jobRequisitions, in
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" className="rounded-full border-border text-foreground hover:bg-muted" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" className="rounded-full border-border text-foreground hover:bg-muted" onClick={() => { onOpenChange(false) }}>
             Hủy
           </Button>
           <Button

@@ -276,6 +276,17 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
         permissions: ["recruitment.read"],
       },
       {
+        name: "Danh sách ứng viên",
+        path: ROUTES.RECRUITMENT.CANDIDATES,
+        icon: Users,
+        permissions: ["recruitment.read"],
+      },
+      {
+        name: "Lịch phỏng vấn của tôi",
+        path: ROUTES.RECRUITMENT.MY_INTERVIEWS,
+        icon: CalendarClock,
+      },
+      {
         name: "Tài khoản OAuth",
         path: ROUTES.RECRUITMENT.OAUTH_ACCOUNTS,
         icon: Settings,

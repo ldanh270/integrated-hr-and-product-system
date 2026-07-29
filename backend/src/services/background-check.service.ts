@@ -69,14 +69,10 @@ export class BackgroundCheckService {
     }
 
     // Validate that all required checks were performed
-    const requiredChecks = BGC_CHECKS[existing.group as keyof typeof BGC_CHECKS] ?? []
-    const checkFields = requiredChecks.map((c) => c.field)
+    const requiredChecks = BGC_CHECKS[existing.group]
 
     // Verify all required checks were done
-    const allChecksDone = checkFields.every((field) => {
-      const value = (existing as any)[field]
-      return value === true
-    })
+    const allChecksDone = requiredChecks.every(({ field }) => existing[field] === true)
 
     if (!allChecksDone && passed) {
       throw new Error("Not all required checks have been completed")

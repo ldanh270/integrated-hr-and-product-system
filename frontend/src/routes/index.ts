@@ -194,6 +194,29 @@ const privateRoutes: RouteConfig[] = [
     permissions: ["recruitment.intake.manage"],
   },
   {
+    path: ROUTES.RECRUITMENT.APPLICATIONS,
+    component: lazy(() => import("@/pages/recruitment/CandidatesPage.tsx")),
+    layout: MainLayout,
+    permissions: ["recruitment.read"],
+  },
+  {
+    path: ROUTES.RECRUITMENT.CANDIDATES,
+    component: lazy(() => import("@/pages/recruitment/CandidatesPage.tsx")),
+    layout: MainLayout,
+    permissions: ["recruitment.read"],
+  },
+  {
+    path: ROUTES.RECRUITMENT.APPLICATION_DETAIL,
+    component: lazy(() => import("@/pages/recruitment/ApplicationDetailPage.tsx")),
+    layout: MainLayout,
+    permissions: ["recruitment.read"],
+  },
+  {
+    path: ROUTES.RECRUITMENT.MY_INTERVIEWS,
+    component: lazy(() => import("@/pages/recruitment/MyInterviewsPage.tsx")),
+    layout: MainLayout,
+  },
+  {
     path: ROUTES.HRM.DASHBOARD,
     component: lazy(() => import("@/pages/security/SecurityDashboard.tsx")),
     layout: MainLayout,

@@ -32,7 +32,7 @@ export const useEmployeeMaster = () => {
   const page = Number(searchParams.get("page")) || 1
   const limit = Number(searchParams.get("limit")) || SYSTEM_CONFIG.PAGINATION.SMALL_LIMIT
   const search = searchParams.get("search") || ""
-  const activeTab = (searchParams.get("tab") || "all") as any
+  const activeTab = searchParams.get("tab") || "all"
 
   const query: EmployeeListQuery = {
     page,
@@ -41,9 +41,9 @@ export const useEmployeeMaster = () => {
   }
 
   if (activeTab === "locked") {
-    query.status = "locked" as any
+    query.status = "locked" as unknown as typeof query.status
   } else if (activeTab === "terminated") {
-    query.status = EMPLOYEE_STATUS.TERMINATED
+    query.status = "terminated" as unknown as typeof query.status
   } else if (activeTab === EMPLOYEE_LIST_TAB_SCHEDULE_PART_TIME) {
     query.type = "part_time" as EmployeeType
   } else if (activeTab !== "all") {
