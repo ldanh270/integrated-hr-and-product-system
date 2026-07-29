@@ -1,8 +1,8 @@
 import { backgroundCheckRepository } from "@/repositories/background-check.repository"
 import { recruitmentOfferRepository } from "@/repositories/recruitment-offer.repository"
 import type { CreateBackgroundCheckInput, UpdateBackgroundCheckInput } from "@/types/recruitment.types"
-import { recruitmentApplicationService } from "./recruitment-application.service"
 import { BGC_CHECKS } from "@/configs/rules/recruitment.config"
+import { BGC_STATUS } from "@/configs/entities/recruitment.config"
 
 export class BackgroundCheckService {
   async create(input: CreateBackgroundCheckInput) {
@@ -17,7 +17,7 @@ export class BackgroundCheckService {
       throw new Error("Background check can only be created for accepted offers")
     }
 
-    return backgroundCheckRepository.create(input)
+    return backgroundCheckRepository.createForOffer(input.offerId, input.group)
   }
 
   async findById(id: string) {
@@ -44,35 +44,27 @@ export class BackgroundCheckService {
     const existing = await this.findById(id)
 
     // Cannot update completed checks
-    if (existing.status === "completed" || existing.status === "passed" || existing.status === "failed") {
+    if (existing.status !== BGC_STATUS.IN_PROGRESS) {
       throw new Error("Cannot update completed background checks")
     }
-
-    // Validate that required checks for this group are being performed
-    const requiredChecks = BGC_CHECKS[existing.group as keyof typeof BGC_CHECKS] ?? []
-
-    // Start progress if not already started
-    if (existing.status === "pending" && input.status === undefined) {
-      input.status = "in_progress"
-    }
-
+    if (input.status !== undefined) throw new Error("Background check status is changed only by commands")
     return backgroundCheckRepository.update(id, input, checkedById)
   }
 
   async start(id: string) {
     const existing = await this.findById(id)
 
-    if (existing.status !== "pending") {
+    if (existing.status !== BGC_STATUS.PENDING) {
       throw new Error("Background check has already been started")
     }
 
-    return backgroundCheckRepository.update(id, { status: "in_progress" })
+    return backgroundCheckRepository.updateStatus(id, BGC_STATUS.IN_PROGRESS)
   }
 
   async complete(id: string, passed: boolean, completedById: string, failReason?: string) {
     const existing = await this.findById(id)
 
-    if (existing.status !== "in_progress") {
+    if (existing.status !== BGC_STATUS.IN_PROGRESS) {
       throw new Error("Background check must be in progress to complete")
     }
 
@@ -90,23 +82,7 @@ export class BackgroundCheckService {
       throw new Error("Not all required checks have been completed")
     }
 
-    const result = await backgroundCheckRepository.complete(id, passed, completedById, failReason)
-
-    // Auto-update application status based on BGC result
-    const offer = await recruitmentOfferRepository.findById(existing.offerId)
-    if (!offer) throw new Error("Offer not found")
-    if (passed) {
-      await recruitmentApplicationService.updateStatus(offer.applicationId, {
-        status: "pending_onboarding",
-      })
-    } else {
-      await recruitmentApplicationService.updateStatus(offer.applicationId, {
-        status: "offer_rescinded",
-        rejectReason: `Background check failed: ${failReason ?? "Unknown reason"}`,
-      })
-    }
-
-    return result
+    return backgroundCheckRepository.complete(id, passed, completedById, failReason)
   }
 
   async delete(id: string) {

@@ -29,7 +29,6 @@ import {
   updateCandidateSchema,
   listCandidatesQuerySchema,
   createApplicationSchema,
-  updateApplicationStatusSchema,
   moveKanbanSchema,
   createInterviewRoundSchema,
   updateInterviewRoundSchema,
@@ -39,6 +38,8 @@ import {
   respondToOfferSchema,
   createBackgroundCheckSchema,
   updateBackgroundCheckSchema,
+  completeBackgroundCheckSchema,
+  offerActionReasonSchema,
   listApplicationsQuerySchema,
   createJobPostingSchema,
   updateJobPostingSchema,
@@ -369,18 +370,10 @@ export class RecruitmentController {
     } catch (e) { next(e) }
   }
 
-  updateApplicationStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      const body = this.parseBody(updateApplicationStatusSchema, req.body)
-      const result = await recruitmentApplicationService.updateStatus(req.params.id as string, body)
-      this.sendSuccess(res, result)
-    } catch (e) { next(e) }
-  }
-
   moveKanban = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const body = this.parseBody(moveKanbanSchema, req.body)
-      const result = await recruitmentApplicationService.moveKanban(body.applicationId, body.targetStatus)
+      const result = await recruitmentApplicationService.moveKanban(body.applicationId, body.pipelineStageId, body.version)
       this.sendSuccess(res, result)
     } catch (e) { next(e) }
   }
@@ -483,7 +476,7 @@ export class RecruitmentController {
   createScorecard = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const body = this.parseBody(createScorecardSchema, req.body)
-      const result = await scorecardService.create(body)
+      const result = await scorecardService.create(body, req.user!.empId)
       this.sendCreated(res, result)
     } catch (e) { next(e) }
   }
@@ -505,13 +498,14 @@ export class RecruitmentController {
   updateScorecard = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const body = this.parseBody(updateScorecardSchema, req.body)
-      const result = await scorecardService.update(req.params.id as string, body)
+      const result = await scorecardService.update(req.params.id as string, body, req.user!.empId)
       this.sendSuccess(res, result)
     } catch (e) { next(e) }
   }
 
-  deleteScorecard = async (_req: AuthRequest, res: Response, next: NextFunction) => {
+  deleteScorecard = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
+      await scorecardService.delete(req.params.id as string, req.user!.empId)
       res.status(204).send()
     } catch (e) { next(e) }
   }
@@ -567,7 +561,7 @@ export class RecruitmentController {
 
   rescindOffer = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const reason = req.body.reason as string | undefined
+      const { reason } = this.parseBody(offerActionReasonSchema, req.body)
       const result = await recruitmentOfferService.rescind(req.params.id as string, reason)
       this.sendSuccess(res, result)
     } catch (e) { next(e) }
@@ -645,15 +639,15 @@ export class RecruitmentController {
 
   completeBackgroundCheck = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const passed = req.body.passed as boolean
-      const failReason = req.body.failReason as string | undefined
+      const { passed, failReason } = this.parseBody(completeBackgroundCheckSchema, req.body)
       const result = await backgroundCheckService.complete(req.params.id as string, passed, req.user!.empId, failReason)
       this.sendSuccess(res, result)
     } catch (e) { next(e) }
   }
 
-  deleteBackgroundCheck = async (_req: AuthRequest, res: Response, next: NextFunction) => {
+  deleteBackgroundCheck = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
+      await backgroundCheckService.delete(req.params.id as string)
       res.status(204).send()
     } catch (e) { next(e) }
   }
@@ -715,7 +709,7 @@ export class RecruitmentController {
         throw new AppError("Thiếu channel hoặc name", HttpStatusCode.BAD_REQUEST, "OAuthController")
       }
 
-      const state = createOAuthState({ userId, channel, name, accountId })
+      const state = await createOAuthState({ userId, channel, name, accountId })
       const authUrl = buildGoogleAuthUrl(state)
 
       this.sendSuccess(res, { authUrl })
@@ -739,7 +733,7 @@ export class RecruitmentController {
     }
 
     try {
-      const { userId, channel, name, accountId } = consumeOAuthState(state)
+      const { userId, channel, name, accountId } = await consumeOAuthState(state)
       if (error) {
         return res.redirect(`${frontendUrl}/recruitment/oauth-accounts?error=${encodeURIComponent(error)}`)
       }

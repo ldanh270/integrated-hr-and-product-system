@@ -1,5 +1,6 @@
 import { prisma } from "@/libs/database"
 import { Prisma, type PrismaClient, type RecruitmentApplicationStatus } from "@prisma/client"
+import { RECRUITMENT_APPLICATION_STATUS } from "@/configs/entities/recruitment.config"
 import type {
   CreateApplicationInput,
   UpdateApplicationStatusInput,
@@ -61,6 +62,7 @@ export class RecruitmentApplicationRepository {
           },
         },
         assignedTo: { select: { id: true, fullName: true } },
+        pipelineStage: { select: { id: true, name: true, position: true, isCompleted: true } },
         interviewRounds: {
           orderBy: { roundNumber: "asc" },
           include: {
@@ -220,19 +222,61 @@ export class RecruitmentApplicationRepository {
     return { items, total, page, pageSize }
   }
 
-  async updateStatus(id: string, data: UpdateApplicationStatusInput) {
-    const updateData: Prisma.RecruitmentApplicationUpdateInput = { status: data.status }
+  async updateStatus(id: string, data: UpdateApplicationStatusInput, expectedVersion: number) {
+    return this.db.$transaction(async (tx) => {
+      const application = await tx.recruitmentApplication.findUniqueOrThrow({
+        where: { id },
+        select: { requisitionId: true },
+      })
 
-    if (data.rejectReason) updateData.rejectReason = data.rejectReason
-    if (data.withdrawReason) updateData.withdrawReason = data.withdrawReason
+      if (data.status === RECRUITMENT_APPLICATION_STATUS.HIRED) {
+        const reservation = await tx.jobRequisition.updateMany({
+          where: { id: application.requisitionId, filledCount: { lt: tx.jobRequisition.fields.headcount } },
+          data: { filledCount: { increment: 1 } },
+        })
+        if (reservation.count !== 1) throw new Error("HEADCOUNT_FILLED")
+      }
 
-    return this.db.recruitmentApplication.update({
-      where: { id },
-      data: updateData,
-      include: {
-        candidate: { select: { id: true, fullName: true, email: true } },
-        requisition: { select: { id: true, title: true } },
-      },
+      const updated = await tx.recruitmentApplication.updateMany({
+        where: { id, version: expectedVersion },
+        data: {
+          status: data.status,
+          rejectReason: data.rejectReason,
+          withdrawReason: data.withdrawReason,
+          hiredAt: data.status === RECRUITMENT_APPLICATION_STATUS.HIRED ? new Date() : undefined,
+          version: { increment: 1 },
+        },
+      })
+      if (updated.count !== 1) throw new Error("APPLICATION_VERSION_CONFLICT")
+
+      return tx.recruitmentApplication.findUniqueOrThrow({
+        where: { id },
+        include: {
+          candidate: { select: { id: true, fullName: true, email: true } },
+          requisition: { select: { id: true, title: true } },
+        },
+      })
+    })
+  }
+
+  async moveToPipelineStage(id: string, pipelineStageId: string, expectedVersion: number) {
+    return this.db.$transaction(async (tx) => {
+      const application = await tx.recruitmentApplication.findUniqueOrThrow({
+        where: { id },
+        select: { requisitionId: true },
+      })
+      const stage = await tx.recruitmentPipelineStage.findFirst({
+        where: { id: pipelineStageId, requisitionId: application.requisitionId },
+        select: { id: true },
+      })
+      if (!stage) throw new Error("PIPELINE_STAGE_REQUISITION_MISMATCH")
+
+      const updated = await tx.recruitmentApplication.updateMany({
+        where: { id, version: expectedVersion },
+        data: { pipelineStageId: stage.id, version: { increment: 1 } },
+      })
+      if (updated.count !== 1) throw new Error("APPLICATION_VERSION_CONFLICT")
+      return tx.recruitmentApplication.findUniqueOrThrow({ where: { id } })
     })
   }
 

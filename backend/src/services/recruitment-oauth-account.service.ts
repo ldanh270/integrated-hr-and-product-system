@@ -71,10 +71,11 @@ export class RecruitmentOAuthAccountService {
   async getCredentials(userId: string, channel: string) {
     const account = await recruitmentOAuthAccountRepository.findByUserAndChannel(userId, channel)
     if (!account) return null
+    const credentials = recruitmentOAuthAccountRepository.decryptCredentials(account)
     return {
-      clientId: account.clientId,
-      clientSecret: account.clientSecret,
-      refreshToken: account.refreshToken,
+      clientId: credentials.clientId,
+      clientSecret: credentials.clientSecret,
+      refreshToken: credentials.refreshToken,
     }
   }
 

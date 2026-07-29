@@ -37,7 +37,6 @@ describe("RecruitmentOfferService draft workflow", () => {
     const service = new RecruitmentOfferService()
     const result = await service.create({
       applicationId: "application-1",
-      candidateId: "candidate-1",
       offeredSalary: 30_000_000,
       currency: "VND",
       startDate: new Date(Date.now() + 86_400_000).toISOString(),

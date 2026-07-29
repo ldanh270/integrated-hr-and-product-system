@@ -16,35 +16,39 @@ export class JobRequisitionRepository {
 
   async create(data: CreateJobRequisitionInput, requestedById: string): Promise<{ id: string }> {
     const year = new Date().getFullYear()
-    const count = await this.db.jobRequisition.count({
-      where: { code: { startsWith: `REQ-${year}` } },
-    })
-
     const candidateSchema = data.candidateSchema ?? GOOGLE_FORM_DEFAULT_FIELDS
-    return this.db.jobRequisition.create({
-      data: {
-        code: generateRequisitionCode(year, count + 1),
-        title: data.title,
-        department: data.department,
-        positionLevel: data.positionLevel,
-        currency: data.currency,
-        priority: data.priority,
-        reason: data.reason,
-        requestedById,
-        approverId: data.approverId,
-        positionId: data.positionId,
-        salaryMin: data.salaryMin,
-        salaryMax: data.salaryMax,
-        headcount: data.headcount ?? 1,
-        employmentType: data.employmentType as EmployeeType,
-        targetHireDate: data.targetHireDate ? new Date(data.targetHireDate) : undefined,
-        targetCloseDate: data.targetCloseDate ? new Date(data.targetCloseDate) : undefined,
-        candidateFields: {
-          create: candidateSchema.map((field, position) => ({ ...field, position })),
-        },
-      },
-      select: { id: true },
-    })
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        return await this.db.$transaction(async (tx) => {
+          const count = await tx.jobRequisition.count({ where: { code: { startsWith: `REQ-${year}` } } })
+          return tx.jobRequisition.create({
+            data: {
+              code: generateRequisitionCode(year, count + 1),
+              title: data.title,
+              department: data.department,
+              positionLevel: data.positionLevel,
+              currency: data.currency,
+              priority: data.priority,
+              reason: data.reason,
+              requestedById,
+              approverId: data.approverId,
+              positionId: data.positionId,
+              salaryMin: data.salaryMin,
+              salaryMax: data.salaryMax,
+              headcount: data.headcount ?? 1,
+              employmentType: data.employmentType as EmployeeType,
+              targetHireDate: data.targetHireDate ? new Date(data.targetHireDate) : undefined,
+              targetCloseDate: data.targetCloseDate ? new Date(data.targetCloseDate) : undefined,
+              candidateFields: { create: candidateSchema.map((field, position) => ({ ...field, position })) },
+            },
+            select: { id: true },
+          })
+        })
+      } catch (error) {
+        if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002" || attempt === 2) throw error
+      }
+    }
+    throw new Error("Không thể tạo mã yêu cầu tuyển dụng")
   }
 
   async findById(id: string) {

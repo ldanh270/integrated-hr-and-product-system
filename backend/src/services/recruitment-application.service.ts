@@ -7,7 +7,6 @@ import type {
 } from "@/types/recruitment.types"
 import { canTransitionApplicationStatus } from "@/configs/rules/recruitment.config"
 import { TERMINAL_APPLICATION_STATUSES } from "@/configs/entities/recruitment.config"
-import { jobRequisitionService } from "./job-requisition.service"
 import { jobPostingRepository } from "@/repositories/job-posting.repository"
 import { HttpStatusCode } from "@/configs/system/http.config"
 import { AppError } from "@/utils/error.util"
@@ -45,7 +44,19 @@ export class RecruitmentApplicationService {
     }
     normalizedInput = { ...input, sourceRef: posting.sourceCode }
 
-    return recruitmentApplicationRepository.create(normalizedInput)
+    try {
+      return await recruitmentApplicationRepository.create(normalizedInput)
+    } catch (error) {
+      if (this.isUniqueConstraintError(error)) {
+        throw new AppError(
+          "Ứng viên đã có hồ sơ đang xử lý cho yêu cầu tuyển dụng này",
+          HttpStatusCode.CONFLICT,
+          LAYER,
+          "ACTIVE_APPLICATION_EXISTS",
+        )
+      }
+      throw error
+    }
   }
 
   async findById(id: string) {
@@ -74,18 +85,40 @@ export class RecruitmentApplicationService {
       )
     }
 
-    const result = await recruitmentApplicationRepository.updateStatus(id, input)
-
-    // Auto-update requisition filled count if hired
-    if (input.status === "hired") {
-      await jobRequisitionService.incrementFilledCount(application.requisitionId)
+    try {
+      return await recruitmentApplicationRepository.updateStatus(id, input, input.version ?? application.version)
+    } catch (error) {
+      if (error instanceof Error && error.message === "APPLICATION_VERSION_CONFLICT") {
+        throw new AppError("Hồ sơ đã được cập nhật bởi người khác", HttpStatusCode.CONFLICT, LAYER, "APPLICATION_VERSION_CONFLICT")
+      }
+      if (error instanceof Error && error.message === "HEADCOUNT_FILLED") {
+        throw new AppError("Đã đủ chỉ tiêu tuyển dụng", HttpStatusCode.CONFLICT, LAYER, "HEADCOUNT_FILLED")
+      }
+      throw error
     }
-
-    return result
   }
 
-  async moveKanban(applicationId: string, targetStatus: string) {
-    return this.updateStatus(applicationId, { status: targetStatus as any })
+  async moveKanban(applicationId: string, pipelineStageId: string, version?: number) {
+    const application = await this.findById(applicationId)
+    try {
+      return await recruitmentApplicationRepository.moveToPipelineStage(
+        applicationId,
+        pipelineStageId,
+        version ?? application.version,
+      )
+    } catch (error) {
+      if (error instanceof Error && error.message === "APPLICATION_VERSION_CONFLICT") {
+        throw new AppError("Hồ sơ đã được cập nhật bởi người khác", HttpStatusCode.CONFLICT, LAYER, "APPLICATION_VERSION_CONFLICT")
+      }
+      if (error instanceof Error && error.message === "PIPELINE_STAGE_REQUISITION_MISMATCH") {
+        throw new AppError("Giai đoạn không thuộc yêu cầu tuyển dụng của hồ sơ", HttpStatusCode.BAD_REQUEST, LAYER, "PIPELINE_STAGE_REQUISITION_MISMATCH")
+      }
+      throw error
+    }
+  }
+
+  private isUniqueConstraintError(error: unknown): boolean {
+    return typeof error === "object" && error !== null && "code" in error && error.code === "P2002"
   }
 
   async assignRecruiter(id: string, assignedToId: string) {

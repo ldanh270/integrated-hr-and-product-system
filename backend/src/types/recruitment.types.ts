@@ -120,11 +120,14 @@ export interface UpdateApplicationStatusInput {
   status: ApplicationStatus
   rejectReason?: string
   withdrawReason?: string
+  /** Required for external callers; the service also reads the current version. */
+  version?: number
 }
 
 export interface MoveKanbanInput {
   applicationId: string
-  targetStatus: ApplicationStatus
+  pipelineStageId: string
+  version?: number
 }
 
 // ── Interview Types ───────────────────────────────────────────────────────────
@@ -173,7 +176,6 @@ export type OfferStatus = (typeof RECRUITMENT_OFFER_STATUS)[keyof typeof RECRUIT
 
 export interface CreateOfferInput {
   applicationId: string
-  candidateId: string
   offeredSalary: number
   currency?: string
   startDate: string
@@ -211,7 +213,6 @@ export type BgcStatus = (typeof BGC_STATUS)[keyof typeof BGC_STATUS]
 
 export interface CreateBackgroundCheckInput {
   offerId: string
-  candidateId: string
   group: BgcGroup
 }
 

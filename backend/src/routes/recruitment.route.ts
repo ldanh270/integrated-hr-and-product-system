@@ -69,7 +69,6 @@ router.get("/applications", requirePermission(PERMISSION_CODE.RECRUITMENT_READ),
 router.get("/applications/kanban", requirePermission(PERMISSION_CODE.RECRUITMENT_READ), (req, res, next) => controller.listKanban(req as AuthRequest, res, next))
 router.get("/applications/stats", requirePermission(PERMISSION_CODE.RECRUITMENT_READ), (req, res, next) => controller.getApplicationStats(req as AuthRequest, res, next))
 router.get("/applications/:id", requirePermission(PERMISSION_CODE.RECRUITMENT_READ), (req, res, next) => controller.getApplication(req as AuthRequest, res, next))
-router.patch("/applications/:id/status", requirePermission(PERMISSION_CODE.RECRUITMENT_UPDATE), (req, res, next) => controller.updateApplicationStatus(req as AuthRequest, res, next))
 router.post("/applications/kanban/move", requirePermission(PERMISSION_CODE.RECRUITMENT_UPDATE), (req, res, next) => controller.moveKanban(req as AuthRequest, res, next))
 router.patch("/applications/:id/assign", requirePermission(PERMISSION_CODE.RECRUITMENT_UPDATE), (req, res, next) => controller.assignRecruiter(req as AuthRequest, res, next))
 router.post("/applications/:id/notes", requirePermission(PERMISSION_CODE.RECRUITMENT_UPDATE), (req, res, next) => controller.addApplicationNote(req as AuthRequest, res, next))

@@ -1,19 +1,23 @@
 import { prisma } from "@/libs/database"
 import { Prisma, type PrismaClient, $Enums } from "@prisma/client"
 import type { CreateBackgroundCheckInput, UpdateBackgroundCheckInput } from "@/types/recruitment.types"
-import { BGC_STATUS_TRANSITIONS } from "@/configs/rules/recruitment.config"
+import { RECRUITMENT_APPLICATION_STATUS } from "@/configs/entities/recruitment.config"
 
 export class BackgroundCheckRepository {
   constructor(private readonly db: PrismaClient = prisma) {}
 
   async create(data: CreateBackgroundCheckInput): Promise<{ id: string }> {
+    return this.createForOffer(data.offerId, data.group)
+  }
+
+  async createForOffer(offerId: string, group: CreateBackgroundCheckInput["group"]): Promise<{ id: string }> {
+    const offer = await this.db.recruitmentOffer.findUnique({
+      where: { id: offerId },
+      select: { candidateId: true },
+    })
+    if (!offer) throw new Error("Offer not found")
     return this.db.backgroundCheck.create({
-      data: {
-        offerId: data.offerId,
-        candidateId: data.candidateId,
-        group: data.group,
-        status: "pending",
-      },
+      data: { offerId, candidateId: offer.candidateId, group, status: "pending" },
       select: { id: true },
     })
   }
@@ -103,16 +107,8 @@ export class BackgroundCheckRepository {
     const existing = await this.db.backgroundCheck.findUnique({ where: { id } })
     if (!existing) throw new Error("Background check not found")
 
-    if (data.status && existing.status !== data.status) {
-      const validTransitions = BGC_STATUS_TRANSITIONS[existing.status as keyof typeof BGC_STATUS_TRANSITIONS]
-      if (!validTransitions?.includes(data.status)) {
-        throw new Error(`Invalid status transition from ${existing.status} to ${data.status}`)
-      }
-    }
-
     const updateData: Prisma.BackgroundCheckUpdateInput = {}
 
-    if (data.status !== undefined) updateData.status = data.status
     if (data.idVerified !== undefined) updateData.idVerified = data.idVerified
     if (data.addressVerified !== undefined) updateData.addressVerified = data.addressVerified
     if (data.criminalRecordCheck !== undefined) updateData.criminalRecordCheck = data.criminalRecordCheck
@@ -125,23 +121,6 @@ export class BackgroundCheckRepository {
     if (data.documents !== undefined) updateData.documents = (data.documents as unknown) as Prisma.InputJsonValue
     if (checkedById) updateData.checkedBy = { connect: { id: checkedById } }
 
-    // Auto-complete if all checks done
-    if (data.status === "in_progress") {
-      const checks = [
-        data.idVerified,
-        data.addressVerified,
-        data.criminalRecordCheck,
-        data.legalStatusCheck,
-        data.certificationVerified,
-        data.employmentHistoryVerified,
-        data.financialCheckCompleted,
-        data.creditScoreCheck,
-      ]
-      if (checks.every(Boolean)) {
-        updateData.status = "completed"
-      }
-    }
-
     return this.db.backgroundCheck.update({
       where: { id },
       data: updateData,
@@ -152,26 +131,55 @@ export class BackgroundCheckRepository {
     })
   }
 
-  async complete(id: string, passed: boolean, completedById: string, failReason?: string) {
+  async updateStatus(id: string, status: $Enums.BgcStatus) {
     return this.db.backgroundCheck.update({
       where: { id },
-      data: {
-        status: passed ? "passed" : "failed",
-        failReason: passed ? undefined : failReason,
-        completedAt: new Date(),
-        checkedById: completedById,
-      },
+      data: { status },
       include: {
-        offer: {
-          include: {
-            application: {
-              include: {
-                candidate: { select: { id: true, fullName: true, email: true } },
-              },
-            },
-          },
-        },
+        candidate: { select: { id: true, fullName: true, email: true } },
+        checkedBy: { select: { id: true, fullName: true } },
       },
+    })
+  }
+
+  async complete(id: string, passed: boolean, completedById: string, failReason?: string) {
+    return this.db.$transaction(async (tx) => {
+      const bgc = await tx.backgroundCheck.findUnique({
+        where: { id },
+        include: { offer: { select: { applicationId: true } } },
+      })
+      if (!bgc || bgc.status !== "in_progress") throw new Error("Background check must be in progress to complete")
+
+      const nextApplicationStatus = passed
+        ? RECRUITMENT_APPLICATION_STATUS.PENDING_ONBOARDING
+        : RECRUITMENT_APPLICATION_STATUS.OFFER_RESCINDED
+      const application = await tx.recruitmentApplication.updateMany({
+        where: {
+          id: bgc.offer.applicationId,
+          status: RECRUITMENT_APPLICATION_STATUS.BACKGROUND_CHECK,
+        },
+        data: {
+          status: nextApplicationStatus,
+          ...(passed ? {} : { rejectReason: `Background check failed: ${failReason ?? "Unknown reason"}` }),
+        },
+      })
+      if (application.count !== 1) {
+        throw new Error("Application is not in background check state")
+      }
+
+      return tx.backgroundCheck.update({
+        where: { id },
+        data: {
+          status: passed ? "passed" : "failed",
+          failReason: passed ? undefined : failReason,
+          completedAt: new Date(),
+          ...(passed ? { passedAt: new Date() } : { failedAt: new Date() }),
+          checkedById: completedById,
+        },
+        include: {
+          offer: { include: { application: { include: { candidate: { select: { id: true, fullName: true, email: true } } } } } },
+        },
+      })
     })
   }
 
