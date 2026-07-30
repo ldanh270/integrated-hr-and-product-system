@@ -458,7 +458,7 @@ function RequisitionRow({
                 size="icon"
                 className="rounded-full hover:bg-muted hover:text-foreground"
                 aria-label={`Xem chi tiết ${requisition.code}`}
-                onClick={() => onViewDetails(requisition.id)}
+                onClick={() => { onViewDetails(requisition.id); }}
               >
                 <Eye className="h-4 w-4" />
               </Button>
@@ -493,7 +493,7 @@ function RequisitionRow({
                   size="icon"
                   className="rounded-full hover:text-primary hover:bg-primary/10"
                   aria-label={`Gửi duyệt ${requisition.code}`}
-                  onClick={() => submit.mutate(requisition.id)}
+                  onClick={() => { submit.mutate(requisition.id); }}
                   disabled={submit.isPending}
                 >
                   <Send className="h-4 w-4" />
@@ -513,7 +513,7 @@ function RequisitionRow({
                     size="icon"
                     className="rounded-full text-success hover:text-success hover:bg-success/10"
                     aria-label={`Duyệt ${requisition.code}`}
-                    onClick={() => approve.mutate({ id: requisition.id, data: { approved: true } })}
+                    onClick={() => { approve.mutate({ id: requisition.id, data: { approved: true } }); }}
                     disabled={approve.isPending}
                   >
                     <Check className="h-4 w-4" />
