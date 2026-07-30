@@ -61,7 +61,7 @@ export function ContractList({
         variant="outline"
         className={`rounded-full shadow-none font-medium px-2.5 py-0.5 border ${getStatusBadgeClass(status)}`}
       >
-        {CONTRACT_STATUS_LABELS[status]}
+        {new Map(Object.entries(CONTRACT_STATUS_LABELS)).get(status) || status}
       </Badge>
     )
   }

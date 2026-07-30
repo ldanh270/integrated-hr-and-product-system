@@ -72,7 +72,7 @@ export function BioTab({
       <div className="bg-background border border-border rounded-xl overflow-hidden shadow-none">
         <button
           type="button"
-          onClick={() => setOpenPersonal(!openPersonal)}
+          onClick={() => { setOpenPersonal(!openPersonal); }}
           className="w-full px-6 py-4 flex items-center justify-between bg-muted/50 border-b border-border text-left font-semibold text-sm text-foreground"
         >
           <div className="flex items-center gap-2">

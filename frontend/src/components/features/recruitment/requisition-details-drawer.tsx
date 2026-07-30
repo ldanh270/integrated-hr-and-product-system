@@ -422,7 +422,7 @@ export function RequisitionDetailsDrawer({ requisitionId, onClose, onEdit }: Req
           </div>
         )}
       </TooltipProvider>
-      <RejectRequisitionDialog requisitionCode={requisition?.code ?? ""} open={isRejectOpen} pending={approveMutation.isPending} onOpenChange={setIsRejectOpen} onConfirm={(comment) => requisition && approveMutation.mutate({ id: requisition.id, data: { approved: false, comment } }, { onSuccess: () => setIsRejectOpen(false) })} />
+      <RejectRequisitionDialog requisitionCode={requisition?.code ?? ""} open={isRejectOpen} pending={approveMutation.isPending} onOpenChange={setIsRejectOpen} onConfirm={(comment) => { if (requisition) approveMutation.mutate({ id: requisition.id, data: { approved: false, comment } }, { onSuccess: () => { setIsRejectOpen(false); } }); }} />
     </AppDrawer>
   )
 }

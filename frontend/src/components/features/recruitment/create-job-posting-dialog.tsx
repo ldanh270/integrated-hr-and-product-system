@@ -17,6 +17,7 @@ const DEFAULT_FIELDS: RecruitmentFormField[] = [
   { key: "cv_url", label: "Đường dẫn CV", type: "short_text", required: false },
 ]
 
+// eslint-disable-next-line security/detect-unsafe-regex
 const FIELD_KEY_PATTERN = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/
 
 interface Props {
@@ -75,7 +76,7 @@ export function CreateJobPostingDialog({ open, onOpenChange, jobRequisitions, in
         channel,
         oauthAccountId: oauthAccountId || undefined,
       },
-      { onSuccess: () => onOpenChange(false) },
+      { onSuccess: () => { onOpenChange(false); } },
     )
   }
 

@@ -106,7 +106,7 @@ export function CreateOfferDialog({ applications, defaultApplicationId, open, on
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label>Mức lương (VND)</Label>
-              <Input type="number" min="1" value={salary} onChange={(event) => setSalary(event.target.value)} className="rounded-full" />
+              <Input type="number" min="1" value={salary} onChange={(event) => { setSalary(event.target.value); }} className="rounded-full" />
             </div>
             <div className="grid gap-2">
               <Label>Ngày bắt đầu</Label>

@@ -88,7 +88,7 @@ export function RequisitionBackgroundChecksTab({ applications }: WorkspaceTabPro
   const checks = applications.flatMap((application) =>
     (application.offers ?? [])
       .filter((offer) => offer.backgroundCheck)
-      .map((offer) => ({ application, check: offer.backgroundCheck! })),
+      .map((offer) => ({ application, check: offer.backgroundCheck as Exclude<typeof offer.backgroundCheck, null | undefined> })),
   )
 
   return (

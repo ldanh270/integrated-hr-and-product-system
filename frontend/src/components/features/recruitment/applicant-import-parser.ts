@@ -34,7 +34,7 @@ function parseDelimitedRows(value: string): string[][] {
 export function parseApplicantCsv(value: string): ApplicantImportRow[] {
   const rows = parseDelimitedRows(value.replace(/^\uFEFF/, ""))
   if (rows.length < 2) return []
-  const headers = rows[0].map((header) => COLUMN_ALIASES[header.trim().toLowerCase()])
+  const headers = rows[0].map((header) => new Map(Object.entries(COLUMN_ALIASES)).get(header.trim().toLowerCase()) || header.trim().toLowerCase())
   return rows.slice(1).map((cells) => {
     const row: Partial<ApplicantImportRow> = {}
     cells.forEach((cell, index) => {
