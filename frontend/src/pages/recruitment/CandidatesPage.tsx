@@ -172,7 +172,7 @@ export default function CandidatesPage() {
                             variant="ghost"
                             size="icon"
                             className="rounded-full hover:bg-muted"
-                            onClick={() => handleViewDetails(candidate)}
+                            onClick={() => { handleViewDetails(candidate); }}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>

@@ -410,7 +410,7 @@ export default function InterviewsPage() {
                               variant="ghost"
                               size="icon"
                               className="rounded-full hover:bg-muted"
-                              onClick={() => handleViewDetails(interview)}
+                              onClick={() => { handleViewDetails(interview); }}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
