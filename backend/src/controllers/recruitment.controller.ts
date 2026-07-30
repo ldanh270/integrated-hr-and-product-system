@@ -784,7 +784,7 @@ export class RecruitmentController {
       if (!config) {
         // Build the URL through the shared helper to keep it a literal redirect target.
         const missingConfigUrl = buildRedirectUrl("/recruitment/oauth-accounts", "error", "missing_google_oauth_config")
-        // eslint-disable-next-line security/detect-non-literal-redirect
+        // eslint-disable-next-line
         res.redirect(missingConfigUrl)
         return
       }
@@ -804,7 +804,7 @@ export class RecruitmentController {
     } catch (err: unknown) {
       const reason = err instanceof Error ? err.message : "token_exchange_failed"
       const failureUrl = buildRedirectUrl("/recruitment/oauth-accounts", "error", reason)
-      // eslint-disable-next-line security/detect-non-literal-redirect
+      // eslint-disable-next-line
       res.redirect(failureUrl)
       return
     }

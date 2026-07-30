@@ -79,7 +79,7 @@ export default function JobPostingsPage() {
         description="Tạo và quản lý bài đăng tuyển dụng trên các kênh (Google Form, LinkedIn, Facebook, v.v.)"
         actions={
           hasPermission("recruitment.posting.manage") ? (
-            <Button className="rounded-full" onClick={() => handleOpenCreate()}>
+            <Button className="rounded-full" onClick={() => { handleOpenCreate(); }}>
               <Plus className="mr-2 h-4 w-4" />
               Tạo bài đăng
             </Button>
@@ -162,7 +162,7 @@ export default function JobPostingsPage() {
                       key={posting.id}
                       tabIndex={0}
                       aria-label={`Mở bài đăng ${posting.requisition?.title ?? posting.sourceCode}`}
-                      onClick={() => handleOpenWorkspace(posting)}
+                      onClick={() => { handleOpenWorkspace(posting); }}
                       onKeyDown={(event) => {
                         if (event.key === "Enter" || event.key === " ") {
                           event.preventDefault()
@@ -193,7 +193,7 @@ export default function JobPostingsPage() {
                         <ConnectorStatus posting={posting} />
                       </TableCell>
                       <TableCell className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                        <PostingActions posting={posting} onOpenWorkspace={() => handleOpenWorkspace(posting)} />
+                        <PostingActions posting={posting} onOpenWorkspace={() => { handleOpenWorkspace(posting); }} />
                       </TableCell>
                     </TableRow>
                   )

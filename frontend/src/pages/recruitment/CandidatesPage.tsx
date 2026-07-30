@@ -103,7 +103,7 @@ export default function CandidatesPage() {
                 candidates.map((candidate: Candidate) => (
                   <TableRow
                     key={candidate.id}
-                    onClick={() => handleViewDetails(candidate)}
+                    onClick={() => { handleViewDetails(candidate); }}
                     className="group cursor-pointer transition-colors duration-150 hover:bg-muted/30"
                   >
                     <TableCell className="px-4 py-3">

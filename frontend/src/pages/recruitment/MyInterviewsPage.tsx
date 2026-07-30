@@ -118,7 +118,7 @@ export default function MyInterviewsPage() {
           <Button
             size="sm"
             variant={viewMode === "calendar" ? "default" : "ghost"}
-            onClick={() => setViewMode("calendar")}
+            onClick={() => { setViewMode("calendar"); }}
             className="h-8 rounded-full px-4 text-xs font-bold transition-all"
           >
             <Grid className="mr-1.5 size-3.5" />
@@ -127,7 +127,7 @@ export default function MyInterviewsPage() {
           <Button
             size="sm"
             variant={viewMode === "list" ? "default" : "ghost"}
-            onClick={() => setViewMode("list")}
+            onClick={() => { setViewMode("list"); }}
             className="h-8 rounded-full px-4 text-xs font-bold transition-all"
           >
             <List className="mr-1.5 size-3.5" />
@@ -193,7 +193,7 @@ export default function MyInterviewsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentWeekStart((prev) => subDays(prev, 7))}
+                onClick={() => { setCurrentWeekStart((prev) => subDays(prev, 7)); }}
                 className="size-8 rounded-full p-0 transition-colors hover:bg-secondary"
               >
                 <ChevronLeft className="size-4" />
@@ -202,7 +202,7 @@ export default function MyInterviewsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}
+                onClick={() => { setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 })); }}
                 className="h-8 rounded-full px-3 text-xs font-bold border-border/80 hover:bg-secondary"
               >
                 Hôm nay
@@ -211,7 +211,7 @@ export default function MyInterviewsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentWeekStart((prev) => addDays(prev, 7))}
+                onClick={() => { setCurrentWeekStart((prev) => addDays(prev, 7)); }}
                 className="size-8 rounded-full p-0 transition-colors hover:bg-secondary"
               >
                 <ChevronRight className="size-4" />
@@ -229,7 +229,7 @@ export default function MyInterviewsPage() {
                 placeholder="Lọc ứng viên..."
                 className="h-8 rounded-full pl-8 text-xs"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => { setSearchQuery(e.target.value); }}
               />
             </div>
           </div>
@@ -277,7 +277,7 @@ export default function MyInterviewsPage() {
                       dayInterviews.map((interview) => (
                         <div
                           key={interview.id}
-                          onClick={() => setSelectedInterview(interview)}
+                          onClick={() => { setSelectedInterview(interview); }}
                           className="group relative cursor-pointer rounded-xl border border-border/70 bg-card p-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md space-y-1.5"
                         >
                           <div className="flex items-center justify-between gap-1">
@@ -364,7 +364,7 @@ export default function MyInterviewsPage() {
                 placeholder="Tìm kiếm ứng viên, vị trí phỏng vấn..."
                 className="h-10 rounded-full pl-9 text-xs"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => { setSearchQuery(e.target.value); }}
               />
             </div>
 
@@ -397,7 +397,7 @@ export default function MyInterviewsPage() {
                 <InterviewCard
                   key={interview.id}
                   interview={interview}
-                  onFeedback={() => setSelectedInterview(interview)}
+                  onFeedback={() => { setSelectedInterview(interview); }}
                 />
               ))}
             </div>

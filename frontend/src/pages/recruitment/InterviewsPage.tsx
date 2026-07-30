@@ -167,12 +167,13 @@ export default function InterviewsPage() {
   const interviews = useMemo(() => upcomingData ?? [], [upcomingData])
 
   const tabCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: interviews.length }
+    const counts = new Map<string, number>()
+    counts.set("all", interviews.length)
     for (const item of interviews) {
       const key = item.result || INTERVIEW_RESULT.PENDING
-      counts[key] = (counts[key] || 0) + 1
+      counts.set(key, (counts.get(key) || 0) + 1)
     }
-    return counts
+    return Object.fromEntries(counts)
   }, [interviews])
 
   const filteredInterviews = useMemo(() => {
@@ -261,7 +262,7 @@ export default function InterviewsPage() {
                   <Button
                     variant={viewMode === "table" ? "secondary" : "ghost"}
                     size="sm"
-                    onClick={() => setViewMode("table")}
+                    onClick={() => { setViewMode("table"); }}
                     className="h-7 px-3 rounded-full text-xs gap-1.5"
                   >
                     <List className="h-3.5 w-3.5" />
@@ -275,7 +276,7 @@ export default function InterviewsPage() {
                   <Button
                     variant={viewMode === "cards" ? "secondary" : "ghost"}
                     size="sm"
-                    onClick={() => setViewMode("cards")}
+                    onClick={() => { setViewMode("cards"); }}
                     className="h-7 px-3 rounded-full text-xs gap-1.5"
                   >
                     <LayoutGrid className="h-3.5 w-3.5" />
@@ -346,7 +347,7 @@ export default function InterviewsPage() {
                   paginatedInterviews.map((interview: InterviewRound) => (
                     <TableRow
                       key={interview.id}
-                      onClick={() => handleViewDetails(interview)}
+                      onClick={() => { handleViewDetails(interview); }}
                       className="cursor-pointer transition-colors duration-100 hover:bg-muted/25"
                     >
                       <TableCell className="px-4 py-3 font-medium text-foreground">

@@ -329,7 +329,7 @@ export default function ContractsPage() {
                           )}
                           {contract.status === "pending_signature" && (
                             <DropdownMenuItem
-                              onClick={() => { handleSign(contract); }}
+                              onClick={() => { void handleSign(contract); }}
                               className="text-primary font-medium"
                             >
                               Ký hợp đồng
