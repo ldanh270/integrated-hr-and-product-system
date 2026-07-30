@@ -223,7 +223,7 @@ export default function OffersPage() {
                 filteredOffers.map((offer: RecruitmentOffer) => (
                   <TableRow
                     key={offer.id}
-                    onClick={() => handleViewDetails(offer)}
+                    onClick={() => { handleViewDetails(offer); }}
                     className="cursor-pointer transition-colors duration-100 hover:bg-muted/25"
                   >
                     <TableCell className="px-4 py-3">
