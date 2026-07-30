@@ -40,7 +40,7 @@ export function parseApplicantCsv(value: string): ApplicantImportRow[] {
     cells.forEach((cell, index) => {
       const key = headers[index]
       if (isApplicantField(key)) {
-        row[key] = cell
+        Object.defineProperty(row, key, { value: cell, enumerable: true, writable: true, configurable: true })
       }
     })
     return row

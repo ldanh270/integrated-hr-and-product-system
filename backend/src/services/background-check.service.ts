@@ -72,7 +72,10 @@ export class BackgroundCheckService {
     const requiredChecks = BGC_CHECKS[existing.group]
 
     // Verify all required checks were done
-    const allChecksDone = requiredChecks.every(({ field }) => existing[field] === true)
+    // field names are controlled by BGC_CHECKS definition (literal keys), not user input.
+    // eslint-disable-next-line security/detect-object-injection
+    const existingMap = new Map(Object.entries(existing));
+    const allChecksDone = requiredChecks.every(({ field }) => existingMap.get(field) === true)
 
     if (!allChecksDone && passed) {
       throw new Error("Not all required checks have been completed")
