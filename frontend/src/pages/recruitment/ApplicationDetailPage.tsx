@@ -748,7 +748,7 @@ export default function ApplicationDetailPage() {
                 <div className="space-y-3">
                   <Textarea
                     value={noteText}
-                    onChange={(e) => setNoteText(e.target.value)}
+                    onChange={(e) => { setNoteText(e.target.value); }}
                     placeholder="Nhập ghi chú hoặc thảo luận về ứng viên này..."
                     className="min-h-[90px] rounded-xl text-xs transition-all focus:border-primary/60"
                   />
@@ -829,7 +829,7 @@ export default function ApplicationDetailPage() {
               <Label className="text-xs font-semibold text-foreground">Trạng thái hồ sơ</Label>
               <Select
                 value={application.status}
-                onValueChange={(val) => updateStatusMutation.mutate(val)}
+                onValueChange={(val) => { updateStatusMutation.mutate(val); }}
                 disabled={updateStatusMutation.isPending}
               >
                 <SelectTrigger className="h-9 rounded-full text-xs transition-all hover:border-primary/50">
@@ -838,7 +838,7 @@ export default function ApplicationDetailPage() {
                 <SelectContent>
                   {RECRUITMENT_APPLICATION_STATUSES.map((statusVal) => (
                     <SelectItem key={statusVal} value={statusVal} className="text-xs font-medium">
-                      {Object.prototype.hasOwnProperty.call(APPLICATION_STATUS_LABELS, statusVal) ? APPLICATION_STATUS_LABELS[statusVal] : statusVal}
+                      {new Map(Object.entries(APPLICATION_STATUS_LABELS)).get(statusVal) || statusVal}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -849,7 +849,7 @@ export default function ApplicationDetailPage() {
               <Label className="text-xs font-semibold text-foreground">Người phụ trách (Recruiter)</Label>
               <Select
                 value={application.assignedToId ?? ""}
-                onValueChange={(empId) => assignRecruiterMutation.mutate(empId)}
+                onValueChange={(empId) => { assignRecruiterMutation.mutate(empId); }}
                 disabled={assignRecruiterMutation.isPending}
               >
                 <SelectTrigger className="h-9 rounded-full text-xs transition-all hover:border-primary/50">
@@ -912,7 +912,7 @@ export default function ApplicationDetailPage() {
               ) : (
                 <Input
                   value={roundTitle}
-                  onChange={(e) => setRoundTitle(e.target.value)}
+                  onChange={(e) => { setRoundTitle(e.target.value); }}
                   placeholder="Ví dụ: Phỏng vấn vòng 1, Phỏng vấn vòng 2"
                   className="h-10 rounded-2xl border-border/70 bg-background text-xs font-semibold"
                 />
@@ -1003,7 +1003,7 @@ export default function ApplicationDetailPage() {
                         value={roundScheduledAt ? roundScheduledAt.split("T")[0] : ""}
                         onChange={(e) => {
                           const dateVal = e.target.value
-                          const timeVal = roundScheduledAt?.split("T")[1] || "09:00"
+                          const timeVal = roundScheduledAt.split("T")[1] || "09:00"
                           setRoundScheduledAt(dateVal ? `${dateVal}T${timeVal}` : "")
                         }}
                         className="h-9 rounded-xl border-border/70 text-xs font-semibold"
@@ -1012,7 +1012,7 @@ export default function ApplicationDetailPage() {
                     <div className="space-y-1">
                       <Label className="text-[11px] font-bold text-muted-foreground">Chọn giờ phỏng vấn</Label>
                       <Select
-                        value={roundScheduledAt?.split("T")[1]?.substring(0, 5) || "09:00"}
+                        value={roundScheduledAt.split("T")[1]?.substring(0, 5) || "09:00"}
                         onValueChange={(timeVal) => {
                           const dateVal = roundScheduledAt ? roundScheduledAt.split("T")[0] : format(new Date(), "yyyy-MM-dd")
                           setRoundScheduledAt(`${dateVal}T${timeVal}`)
@@ -1065,14 +1065,14 @@ export default function ApplicationDetailPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setIsScheduleModalOpen(false)}
+              onClick={() => { setIsScheduleModalOpen(false); }}
               className="h-9 rounded-full px-5 text-xs font-bold border-border/80 hover:bg-secondary"
             >
               Hủy
             </Button>
             <Button
               type="button"
-              onClick={() => createInterviewMutation.mutate()}
+              onClick={() => { createInterviewMutation.mutate(); }}
               disabled={!roundTitle.trim() || !roundScheduledAt || createInterviewMutation.isPending}
               className="h-9 rounded-full px-6 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all duration-200 hover:-translate-y-0.5"
             >
@@ -1125,7 +1125,7 @@ export default function ApplicationDetailPage() {
               ) : (
                 <Input
                   value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
+                  onChange={(e) => { setEditTitle(e.target.value); }}
                   placeholder="Ví dụ: Phỏng vấn vòng 1, Phỏng vấn vòng 2"
                   className="h-10 rounded-2xl border-border/70 bg-background text-xs font-semibold"
                 />
@@ -1216,7 +1216,7 @@ export default function ApplicationDetailPage() {
                         value={editScheduledAt ? editScheduledAt.split("T")[0] : ""}
                         onChange={(e) => {
                           const dateVal = e.target.value
-                          const timeVal = editScheduledAt?.split("T")[1] || "09:00"
+                          const timeVal = editScheduledAt.split("T")[1] || "09:00"
                           setEditScheduledAt(dateVal ? `${dateVal}T${timeVal}` : "")
                         }}
                         className="h-9 rounded-xl border-border/70 text-xs font-semibold"
@@ -1278,14 +1278,14 @@ export default function ApplicationDetailPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setIsEditModalOpen(false)}
+              onClick={() => { setIsEditModalOpen(false); }}
               className="h-9 rounded-full px-5 text-xs font-bold border-border/80 hover:bg-secondary"
             >
               Hủy
             </Button>
             <Button
               type="button"
-              onClick={() => updateInterviewRoundMutation.mutate()}
+              onClick={() => { updateInterviewRoundMutation.mutate(); }}
               disabled={!editTitle.trim() || !editScheduledAt || updateInterviewRoundMutation.isPending}
               className="h-9 rounded-full px-6 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all duration-200 hover:-translate-y-0.5"
             >

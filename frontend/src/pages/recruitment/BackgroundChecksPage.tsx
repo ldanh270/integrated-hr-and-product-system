@@ -166,7 +166,7 @@ function BackgroundCheckRow({ bgc, onStart, onComplete, onViewDetails, canStart,
                     variant="ghost"
                     size="icon"
                     className="rounded-full hover:bg-muted"
-                    onClick={() => onComplete(true)}
+                    onClick={() => { onComplete(true); }}
                   >
                     <CheckCircle className="h-4 w-4 text-green-500" />
                   </Button>
@@ -179,7 +179,7 @@ function BackgroundCheckRow({ bgc, onStart, onComplete, onViewDetails, canStart,
                     variant="ghost"
                     size="icon"
                     className="rounded-full hover:bg-muted"
-                    onClick={() => onComplete(false)}
+                    onClick={() => { onComplete(false); }}
                   >
                     <XCircle className="h-4 w-4 text-red-500" />
                   </Button>

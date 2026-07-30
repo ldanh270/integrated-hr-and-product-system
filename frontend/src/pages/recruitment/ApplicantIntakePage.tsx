@@ -58,7 +58,7 @@ export default function ApplicantIntakePage() {
       return
     }
     const reader = new FileReader()
-    reader.onload = () => setRawCsv(String(reader.result ?? ""))
+    reader.onload = () => { setRawCsv(String(reader.result ?? "")); }
     reader.readAsText(file, "UTF-8")
   }
   const submit = () => {
