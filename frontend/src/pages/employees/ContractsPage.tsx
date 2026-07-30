@@ -277,7 +277,7 @@ export default function ContractsPage() {
                     <TableCell className="px-5 py-3 text-[13px] text-foreground">
                       <div className="flex flex-col">
                         <button
-                          onClick={() => handleEdit(contract)}
+                          onClick={() => { handleEdit(contract); }}
                           className="font-bold text-left text-foreground hover:text-primary hover:underline focus:outline-none"
                         >
                           {contract.title || "Hợp đồng lao động"}
@@ -316,12 +316,12 @@ export default function ContractsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(contract)}>
+                          <DropdownMenuItem onClick={() => { handleEdit(contract); }}>
                             Chỉnh sửa hợp đồng
                           </DropdownMenuItem>
                           {contract.status === "active" && (
                             <DropdownMenuItem
-                              onClick={() => handleTerminate(contract)}
+                              onClick={() => { handleTerminate(contract); }}
                               className="text-destructive"
                             >
                               Chấm dứt hợp đồng
@@ -329,13 +329,13 @@ export default function ContractsPage() {
                           )}
                           {contract.status === "pending_signature" && (
                             <DropdownMenuItem
-                              onClick={() => handleSign(contract)}
+                              onClick={() => { handleSign(contract); }}
                               className="text-primary font-medium"
                             >
                               Ký hợp đồng
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuItem onClick={() => handleRenew(contract)}>
+                          <DropdownMenuItem onClick={() => { handleRenew(contract); }}>
                             Gia hạn hợp đồng
                           </DropdownMenuItem>
                         </DropdownMenuContent>

@@ -353,6 +353,8 @@ export class GoogleFormsConnector implements RecruitmentConnector {
   }
 
   private text(response: GoogleFormResponse, questionId: string): string {
+    // questionId originates from validated posting field snapshots (typed as Google form question id).
+    // eslint-disable-next-line security/detect-object-injection
     return response.answers?.[questionId]?.textAnswers?.answers?.[0]?.value?.trim() ?? ""
   }
 
@@ -363,6 +365,8 @@ export class GoogleFormsConnector implements RecruitmentConnector {
   private cvUrl(response: GoogleFormResponse, questionId: string): string | undefined {
     const text = this.optionalText(response, questionId)
     if (text) return text
+    // questionId originates from validated posting field snapshots (typed as Google form question id).
+    // eslint-disable-next-line security/detect-object-injection
     const fileId = response.answers?.[questionId]
       ?.fileUploadAnswers?.answers?.[0]?.fileId
     return fileId ? `https://drive.google.com/open?id=${encodeURIComponent(fileId)}` : undefined
