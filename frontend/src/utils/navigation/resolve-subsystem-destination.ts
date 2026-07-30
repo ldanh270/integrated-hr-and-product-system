@@ -20,6 +20,7 @@ export function resolveSubsystemDestination(
   // changes the destination without introducing derived React state.
   const canManagePayroll = permissions.includes(PAYROLL_SUBSYSTEM_PERMISSION)
   const canReadAttendance = permissions.includes(ATTENDANCE_SUBSYSTEM_PERMISSION)
+  const canReadRecruitment = permissions.includes("recruitment.read")
 
   // Keep employees under the /payroll prefix. Reusing /personal/payslips would make
   // MainLayout activate the Personal subsystem and expose the full personal sidebar.
@@ -33,6 +34,10 @@ export function resolveSubsystemDestination(
   if (subsystemId === "attendance") {
     if (!canReadAttendance) return ROUTES.ATTENDANCE.HOLIDAYS
     if (!roles.includes(ROLE.ADMIN)) return ROUTES.ATTENDANCE.SUMMARY
+  }
+
+  if (subsystemId === "recruitment" && !canReadRecruitment) {
+    return ROUTES.RECRUITMENT.MY_INTERVIEWS
   }
 
   // Administrators and every non-payroll subsystem keep their configured root route.
