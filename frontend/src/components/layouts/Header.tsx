@@ -24,7 +24,7 @@ export default function Header() {
   if (!isAuthenticated) return null
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 w-full items-center border-b border-border bg-background px-4 text-foreground shadow-none md:px-6">
+    <header className="sticky top-0 z-40 flex h-16 w-full items-center border-b border-border bg-background px-4 text-foreground shadow-none md:px-6">
       <div className="flex w-full items-center justify-between">
         {/* Left: Mobile Trigger + Desktop Toggle + Breadcrumb */}
         <div className="flex items-center gap-2 md:gap-4">
