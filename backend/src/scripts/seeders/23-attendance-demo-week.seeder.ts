@@ -12,7 +12,7 @@ import {
   toAttendanceInstant,
 } from "@/utils/attendance/attendance-time-zone.util.ts"
 
-import { SeedContext } from "./seed-context.ts"
+import { SeedContext, createEmptyContext } from "./seed-context.ts"
 import { ISeeder } from "./seeder.interface.ts"
 import { registry } from "./seeder.registry.ts"
 
@@ -211,6 +211,6 @@ registry.register(new AttendanceDemoWeekSeeder())
 
 if (import.meta.main) {
   const seeder = new AttendanceDemoWeekSeeder()
-  await seeder.run({} as any)
+  await seeder.run(createEmptyContext())
   await prisma.$disconnect()
 }
