@@ -85,7 +85,7 @@ export default function EmployeeContractCreate() {
 
   // 2. Thông tin hợp đồng
   const [contractNumber, setContractNumber] = useState(
-    () => `HDLD.${Math.floor(100000 + Math.random() * 900000)}`,
+    () => `HDLD.${100000 + (window.crypto.getRandomValues(new Uint32Array(1))[0] % 900000)}`,
   )
   const [referenceContract, setReferenceContract] = useState("")
   const [contractType, setContractType] = useState<ContractType>("definite")
@@ -304,7 +304,7 @@ export default function EmployeeContractCreate() {
         <div className="bg-background border border-border rounded-xl overflow-hidden shadow-none">
           <button
             type="button"
-            onClick={() => setOpenContractInfo(!openContractInfo)}
+            onClick={() => { setOpenContractInfo(!openContractInfo); }}
             className="w-full px-6 py-4 flex items-center justify-between bg-muted/50 border-b border-border text-left font-semibold text-sm text-foreground"
           >
             <div className="flex items-center gap-2">
@@ -629,7 +629,7 @@ export default function EmployeeContractCreate() {
             <Input
               placeholder="VD: Phụ cấp độc hại, Phụ cấp chuyên cần..."
               value={newAllowanceName}
-              onChange={(e) => setNewAllowanceName(e.target.value)}
+              onChange={(e) => { setNewAllowanceName(e.target.value); }}
               className="rounded-full"
             />
           </div>
@@ -637,7 +637,7 @@ export default function EmployeeContractCreate() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setIsCustomAllowanceModalOpen(false)}
+              onClick={() => { setIsCustomAllowanceModalOpen(false); }}
               className="rounded-full"
             >
               Hủy

@@ -25,7 +25,7 @@ export function decryptCredential(value: string): string {
   const [, , ivValue, authTagValue, encryptedValue] = value.split(":")
   if (!ivValue || !authTagValue || !encryptedValue) throw new Error("Invalid encrypted credential format")
 
-  const decipher = createDecipheriv(ALGORITHM, getKey(), Buffer.from(ivValue, "base64url"))
+  const decipher = createDecipheriv(ALGORITHM, getKey(), Buffer.from(ivValue, "base64url"), { authTagLength: 16 })
   decipher.setAuthTag(Buffer.from(authTagValue, "base64url"))
   return Buffer.concat([
     decipher.update(Buffer.from(encryptedValue, "base64url")),
