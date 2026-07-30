@@ -318,6 +318,7 @@ export class JobPostingService {
       await jobPostingRepository.markConnectorError(id)
     } catch {
       // Preserve the actionable upstream error if status persistence also fails.
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     }
   }
 
