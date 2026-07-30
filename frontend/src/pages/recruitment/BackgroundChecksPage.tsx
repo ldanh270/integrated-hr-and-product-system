@@ -194,7 +194,7 @@ function BackgroundCheckRow({ bgc, onStart, onComplete, onViewDetails, canStart,
                 variant="ghost"
                 size="icon"
                 className="rounded-full hover:bg-muted"
-                onClick={() => onViewDetails(bgc)}
+                onClick={() => { onViewDetails(bgc); }}
               >
                 <Eye className="h-4 w-4" />
               </Button>
@@ -356,8 +356,8 @@ export default function BackgroundChecksPage() {
                   <BackgroundCheckRow
                     key={bgc.id}
                     bgc={bgc}
-                    onStart={() => handleStart(bgc.id)}
-                    onComplete={(passed) => handleComplete(bgc.id, passed)}
+                    onStart={() => { handleStart(bgc.id); }}
+                    onComplete={(passed) => { handleComplete(bgc.id, passed); }}
                     onViewDetails={handleViewDetails}
                     canStart={hasPermission("recruitment.update")}
                     canComplete={hasPermission("recruitment.approve")}

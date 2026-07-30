@@ -103,7 +103,7 @@ export function ViewOfferDialog({ open, onOpenChange, offer }: Props) {
             {offer.response ? (
               <StatusPill
                 label={OFFER_RESPONSE_LABELS[offer.response] || offer.response}
-                variant={responseVariantMap[offer.response] || "neutral"}
+                variant={responseVariantMap[offer.response] ?? "neutral"}
               />
             ) : (
               <span className="text-xs text-muted-foreground font-medium">Chưa phản hồi</span>

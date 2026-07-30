@@ -79,7 +79,7 @@ export function ContractModal({
 
     const generateDefaultContractNumber = () => {
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "")
-      const randomSuffix = Math.floor(1000 + Math.random() * 9000)
+      const randomSuffix = 1000 + (window.crypto.getRandomValues(new Uint32Array(1))[0] % 9000)
       return `HD-${dateStr}-${randomSuffix}`
     }
 
@@ -251,7 +251,7 @@ export function ContractModal({
                 </Label>
                 <Select
                   value={contractType}
-                  onValueChange={(val) => setContractType(val as ContractType)}
+                  onValueChange={(val) => { setContractType(val as ContractType); }}
                 >
                   <SelectTrigger className="rounded-full">
                     <SelectValue placeholder="Chọn loại HĐ" />
@@ -329,7 +329,7 @@ export function ContractModal({
                     id="trialEndDate"
                     type="date"
                     value={trialEndDate}
-                    onChange={(e) => setTrialEndDate(e.target.value)}
+                    onChange={(e) => { setTrialEndDate(e.target.value); }}
                     className="rounded-full"
                   />
                 </div>

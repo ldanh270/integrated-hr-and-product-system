@@ -38,6 +38,7 @@ export function parseApplicantCsv(value: string): ApplicantImportRow[] {
   return rows.slice(1).map((cells) => {
     const row: Partial<ApplicantImportRow> = {}
     cells.forEach((cell, index) => {
+      // eslint-disable-next-line security/detect-object-injection
       const key = headers[index]
       if (isApplicantField(key)) {
         Object.defineProperty(row, key, { value: cell, enumerable: true, writable: true, configurable: true })

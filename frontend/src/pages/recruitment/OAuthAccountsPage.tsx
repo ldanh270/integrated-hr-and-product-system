@@ -491,7 +491,7 @@ export default function OAuthAccountsPage() {
                 id="account-name"
                 placeholder="VD: Google Form - Tuyển Dụng Công Nghệ"
                 value={accountName}
-                onChange={(e) => setAccountName(e.target.value)}
+                onChange={(e) => { setAccountName(e.target.value); }}
                 className="rounded-full text-xs h-9"
               />
             </div>

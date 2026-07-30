@@ -684,7 +684,7 @@ export default function ApplicationDetailPage() {
                   {canManage && (
                     <Button
                       size="sm"
-                      onClick={() => setIsOfferDialogOpen(true)}
+                      onClick={() => { setIsOfferDialogOpen(true); }}
                       className="rounded-full text-xs font-semibold shadow-xs"
                     >
                       <Plus className="mr-1.5 size-3.5" />

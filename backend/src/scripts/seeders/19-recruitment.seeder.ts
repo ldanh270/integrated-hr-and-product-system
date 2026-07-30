@@ -447,6 +447,7 @@ export class RecruitmentSeeder implements ISeeder {
     console.log(`    Seeded ${createdRounds.length} Interview Rounds.`)
 
     const codingRound = createdRounds.find((r) => r.roundNumber === 1 && r.applicationId === linhApp.id)
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!codingRound) {
       throw new Error("Failed to find coding round")
     }
