@@ -103,9 +103,9 @@ export class EmployeesSeeder implements ISeeder {
       console.log(`  [!] Created part-time account: ${partTimeUsername}`)
     }
 
-    // Seed 15 random employees
+    // Seed 6 random employees
     const passwordHash = await HashUtil.hash(getSeedPassword("SEED_EMPLOYEE_PASSWORD"))
-    const numEmployeesToCreate = 15
+    const numEmployeesToCreate = 6
     const employeesData = Array.from({ length: numEmployeesToCreate }).map((_, index) => {
       const firstName = faker.person.firstName()
       const lastName = faker.person.lastName()

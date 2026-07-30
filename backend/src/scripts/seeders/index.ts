@@ -28,3 +28,6 @@ export { registry } from "./seeder.registry.ts"
 export type { ISeeder } from "./seeder.interface.ts"
 export type { SeedContext } from "./seed-context.ts"
 export { createEmptyContext } from "./seed-context.ts"
+
+import "./22-capacity-demo.seeder.ts"
+import "./23-attendance-demo-week.seeder.ts"

@@ -24,17 +24,49 @@ export class AttendanceRecordsSeeder implements ISeeder {
 
     const shifts = await prisma.employeeShift.findMany({
       where: { id: { in: employeeShiftIds } },
-      include: { shift: true },
+      include: { shift: true, employee: { select: { username: true } } },
     })
 
     const recordsToCreate = []
+    const currentMonth = new Date().getMonth()
+    const coreUsernames = ["admin", "hr_manager", "general_manager", "team_leader", "employee"]
+    const counters: Record<string, { late: number; overtime: number; absent: number }> = {}
 
     for (const shift of shifts) {
       // Don't seed attendance for future dates
       if (shift.assignedDate > new Date()) continue
 
-      const isAbsent = Math.random() < 0.05 // 5% absent
-      const isLate = !isAbsent && Math.random() < 0.1 // 10% late
+      const isCoreUser = coreUsernames.includes(shift.employee.username)
+      // Apply interesting data to both current month and previous month
+      const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1
+      const isTargetMonth =
+        shift.assignedDate.getMonth() === currentMonth ||
+        shift.assignedDate.getMonth() === prevMonth
+
+      let isAbsent = Math.random() < 0.05
+      let isLate = !isAbsent && Math.random() < 0.1
+      let isOvertime = false
+      let overtimeMinutes = 0
+
+      if (isCoreUser && isTargetMonth) {
+        if (!counters[shift.employeeId])
+          counters[shift.employeeId] = { late: 0, overtime: 0, absent: 0 }
+        const c = counters[shift.employeeId]
+
+        isAbsent = false
+        isLate = false
+
+        if (c.absent < 2 && Math.random() < 0.1) {
+          isAbsent = true
+          c.absent++
+        } else if (c.late < 4 && Math.random() < 0.2) {
+          isLate = true
+          c.late++
+        } else if (c.overtime < 4 && Math.random() < 0.2) {
+          isOvertime = true
+          c.overtime++
+        }
+      }
 
       const workingShift = shift.shift
 
@@ -62,17 +94,26 @@ export class AttendanceRecordsSeeder implements ISeeder {
         status = "absent" as any
       } else {
         if (isLate) {
-          lateMinutes = faker.number.int({ min: 10, max: 60 })
+          lateMinutes = faker.number.int({ min: 15, max: 45 })
           checkInDate.setMinutes(checkInDate.getMinutes() + lateMinutes)
           status = "late" as any
         }
 
+        if (isOvertime) {
+          overtimeMinutes = faker.number.int({ min: 120, max: 240 }) // 2-4 hours overtime
+          checkOutDate.setMinutes(checkOutDate.getMinutes() + overtimeMinutes)
+        } else {
+          // Random check out within 30 minutes after end time (not counted as overtime)
+          checkOutDate.setMinutes(checkOutDate.getMinutes() + faker.number.int({ min: 0, max: 30 }))
+        }
+
         checkInAt = checkInDate
-        // Random check out within 30 minutes after end time
-        checkOutDate.setMinutes(checkOutDate.getMinutes() + faker.number.int({ min: 0, max: 30 }))
         checkOutAt = checkOutDate
 
-        totalWorkMinutes = getShiftDurationMinutes(workingShift.startTime, workingShift.endTime) - lateMinutes
+        totalWorkMinutes =
+          getShiftDurationMinutes(workingShift.startTime, workingShift.endTime) -
+          lateMinutes +
+          overtimeMinutes
       }
 
       recordsToCreate.push({
@@ -118,16 +159,15 @@ export class AttendanceRecordsSeeder implements ISeeder {
     const realShiftsToCreate = seededRecords.flatMap((record) => {
       if (!record.checkInAt) return []
 
-      const actualStartTime =
-        record.checkInAt.getHours() * 60 + record.checkInAt.getMinutes()
+      const actualStartTime = record.checkInAt.getHours() * 60 + record.checkInAt.getMinutes()
       const actualEndTime = record.checkOutAt
         ? record.checkOutAt.getHours() * 60 + record.checkOutAt.getMinutes()
         : null
       const shift = record.employeeShift.shift
       const isMatched = Boolean(
         actualEndTime != null &&
-          actualStartTime === shift.startTime &&
-          actualEndTime === shift.endTime,
+        actualStartTime === shift.startTime &&
+        actualEndTime === shift.endTime,
       )
 
       return [
