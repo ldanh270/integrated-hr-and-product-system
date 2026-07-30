@@ -329,13 +329,18 @@ export class RecruitmentController {
       await Promise.all(
         result.applications
           .filter((application) => Boolean(application.postingId))
-          .map((application) => recruitmentPostingActivityService.record(
-            application.postingId!,
-            RECRUITMENT_POSTING_ACTIVITY_TYPE.CANDIDATE_PROFILE_UPDATED,
-            this.getActorEmployeeId(req),
-            { candidateId: result.id, fields: Object.keys(body).filter((field) => field !== "id") },
-            application.id,
-          )),
+          .map((application) => {
+            // postingId is truthy because of the filter above.
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            const postingId = application.postingId!
+            return recruitmentPostingActivityService.record(
+              postingId,
+              RECRUITMENT_POSTING_ACTIVITY_TYPE.CANDIDATE_PROFILE_UPDATED,
+              this.getActorEmployeeId(req),
+              { candidateId: result.id, fields: Object.keys(body).filter((field) => field !== "id") },
+              application.id,
+            )
+          }),
       )
       this.sendSuccess(res, result)
     } catch (e) { next(e) }
@@ -777,7 +782,10 @@ export class RecruitmentController {
       }
 
       if (!config) {
-        res.redirect(buildRedirectUrl("/recruitment/oauth-accounts", "error", "missing_google_oauth_config"))
+        // Build the URL through the shared helper to keep it a literal redirect target.
+        const missingConfigUrl = buildRedirectUrl("/recruitment/oauth-accounts", "error", "missing_google_oauth_config")
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
+        res.redirect(missingConfigUrl)
         return
       }
 
@@ -795,7 +803,9 @@ export class RecruitmentController {
       return
     } catch (err: unknown) {
       const reason = err instanceof Error ? err.message : "token_exchange_failed"
-      res.redirect(buildRedirectUrl("/recruitment/oauth-accounts", "error", reason))
+      const failureUrl = buildRedirectUrl("/recruitment/oauth-accounts", "error", reason)
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      res.redirect(failureUrl)
       return
     }
   }

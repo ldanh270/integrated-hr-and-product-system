@@ -236,7 +236,7 @@ export default function ApplicationDetailPage() {
       <div className="flex flex-col gap-4 border-b border-border pb-6 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Button variant="ghost" size="icon" className="size-7 rounded-full" onClick={() => navigate(-1)}>
+            <Button variant="ghost" size="icon" className="size-7 rounded-full" onClick={() => { navigate(-1); }}>
               <ArrowLeft className="size-4" />
             </Button>
             <Link to="/recruitment/requisitions" className="hover:text-primary transition-colors">
@@ -261,12 +261,12 @@ export default function ApplicationDetailPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           {canManage && (
-            <Button onClick={() => setIsScheduleModalOpen(true)} className="rounded-full gap-1.5 shadow-sm">
+            <Button onClick={() => { setIsScheduleModalOpen(true); }} className="rounded-full gap-1.5 shadow-sm">
               <Plus className="size-4" />
               Lên lịch phỏng vấn
             </Button>
           )}
-          <Button variant="outline" onClick={() => setActiveTab("notes")} className="rounded-full gap-1.5 border-border">
+          <Button variant="outline" onClick={() => { setActiveTab("notes"); }} className="rounded-full gap-1.5 border-border">
             <MessageSquare className="size-4 text-muted-foreground" />
             Thêm ghi chú
           </Button>
@@ -492,7 +492,7 @@ export default function ApplicationDetailPage() {
                     <p className="text-xs text-muted-foreground">Chi tiết thời gian, người phỏng vấn và đánh giá kết quả từng vòng</p>
                   </div>
                   {canManage && (
-                    <Button size="sm" onClick={() => setIsScheduleModalOpen(true)} className="rounded-full text-xs h-8 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
+                    <Button size="sm" onClick={() => { setIsScheduleModalOpen(true); }} className="rounded-full text-xs h-8 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
                       <Plus className="mr-1.5 size-3.5" />
                       Thêm vòng PV
                     </Button>
@@ -505,7 +505,7 @@ export default function ApplicationDetailPage() {
                   <div className="rounded-2xl border border-dashed border-border/50 py-10 text-center space-y-3">
                     <p className="text-sm text-muted-foreground">Chưa có vòng phỏng vấn nào được thiết lập.</p>
                     {canManage && (
-                      <Button size="sm" variant="outline" onClick={() => setIsScheduleModalOpen(true)} className="rounded-full text-xs">
+                      <Button size="sm" variant="outline" onClick={() => { setIsScheduleModalOpen(true); }} className="rounded-full text-xs">
                         <Plus className="mr-1 size-3.5" /> Thêm lịch phỏng vấn mới
                       </Button>
                     )}

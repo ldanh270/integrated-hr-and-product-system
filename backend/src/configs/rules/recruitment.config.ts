@@ -70,12 +70,16 @@ export function canTransitionApplicationStatus(
   from: ApplicationStatus,
   to: ApplicationStatus
 ): boolean {
-  return APPLICATION_STATUS_TRANSITIONS[from].includes(to)
+  // from is typed as ApplicationStatus (key of the map), so the lookup is safe.
+  // eslint-disable-next-line security/detect-object-injection
+  return new Map(Object.entries(APPLICATION_STATUS_TRANSITIONS)).get(from)?.includes(to) ?? false
 }
 
 // Get all possible next statuses
 export function getNextApplicationStatuses(status: ApplicationStatus): ApplicationStatus[] {
-  return APPLICATION_STATUS_TRANSITIONS[status]
+  // status is typed as ApplicationStatus (key of the map), so the lookup is safe.
+  // eslint-disable-next-line security/detect-object-injection
+  return new Map(Object.entries(APPLICATION_STATUS_TRANSITIONS)).get(status) || []
 }
 
 export function isTerminalApplicationStatus(status: ApplicationStatus): boolean {

@@ -198,7 +198,7 @@ export function ContractModal({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) { onClose(); } }}>
       <DialogContent className="sm:max-w-[540px] rounded-xl bg-card border-border">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-foreground">
@@ -222,7 +222,7 @@ export function ContractModal({
                   id="terminationDate"
                   type="date"
                   value={terminationDate}
-                  onChange={(e) => setTerminationDate(e.target.value)}
+                  onChange={(e) => { setTerminationDate(e.target.value); }}
                   className="rounded-full"
                   required
                 />
@@ -236,7 +236,7 @@ export function ContractModal({
                   id="terminationReason"
                   placeholder="Nhập lý do chấm dứt hợp đồng..."
                   value={terminationReason}
-                  onChange={(e) => { setTerminationReason(e.target.value) }}
+                  onChange={(e) => { setTerminationReason(e.target.value); }}
                   className="rounded-xl border-border resize-none"
                   rows={3}
                   required
@@ -259,7 +259,7 @@ export function ContractModal({
                   <SelectContent>
                     {CONTRACT_TYPES.map((type) => (
                       <SelectItem key={type} value={type}>
-                        {Object.prototype.hasOwnProperty.call(CONTRACT_TYPE_LABELS, type) ? CONTRACT_TYPE_LABELS[type] : type}
+                        {new Map(Object.entries(CONTRACT_TYPE_LABELS)).get(type) || type}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -273,7 +273,7 @@ export function ContractModal({
                 <Input
                   id="contractNumber"
                   value={contractNumber}
-                  onChange={(e) => setContractNumber(e.target.value)}
+                  onChange={(e) => { setContractNumber(e.target.value); }}
                   placeholder="HD-XXXX"
                   className="rounded-full"
                   required
@@ -287,7 +287,7 @@ export function ContractModal({
                 <Input
                   id="title"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e) => { setTitle(e.target.value); }}
                   placeholder="VD: Hợp đồng lao động chính thức"
                   className="rounded-full"
                 />
@@ -301,7 +301,7 @@ export function ContractModal({
                   id="startDate"
                   type="date"
                   value={startDate}
-                  onChange={(e) => { setStartDate(e.target.value) }}
+                  onChange={(e) => { setStartDate(e.target.value); }}
                   className="rounded-full"
                   required
                 />
@@ -315,7 +315,7 @@ export function ContractModal({
                   id="endDate"
                   type="date"
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  onChange={(e) => { setEndDate(e.target.value); }}
                   className="rounded-full"
                 />
               </div>

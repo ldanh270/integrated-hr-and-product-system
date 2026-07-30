@@ -323,8 +323,8 @@ export default function EmployeeContractCreate() {
                 </Label>
                 <Input
                   value={contractNumber}
-                  onChange={(e) => setContractNumber(e.target.value)}
-                  onBlur={() => handleBlur("contractNumber")}
+                  onChange={(e) => { setContractNumber(e.target.value); }}
+                  onBlur={() => { handleBlur("contractNumber"); }}
                   placeholder="HDLD.000018"
                   className={cn(
                     "rounded-full font-mono",
@@ -341,7 +341,7 @@ export default function EmployeeContractCreate() {
                 <Label className="text-xs font-medium">Hợp đồng tham chiếu</Label>
                 <Input
                   value={referenceContract}
-                  onChange={(e) => setReferenceContract(e.target.value)}
+                  onChange={(e) => { setReferenceContract(e.target.value); }}
                   placeholder="Hợp đồng tham chiếu"
                   className="rounded-full bg-muted/20"
                 />
@@ -353,7 +353,7 @@ export default function EmployeeContractCreate() {
                 </Label>
                 <Select
                   value={contractType}
-                  onValueChange={(val) => setContractType(val as ContractType)}
+                  onValueChange={(val) => { setContractType(val as ContractType); }}
                 >
                   <SelectTrigger className="rounded-full">
                     <SelectValue placeholder="Loại hợp đồng" />
@@ -361,7 +361,7 @@ export default function EmployeeContractCreate() {
                   <SelectContent>
                     {CONTRACT_TYPES.map((type) => (
                       <SelectItem key={type} value={type}>
-                        {CONTRACT_TYPE_LABELS[type]}
+                        {new Map(Object.entries(CONTRACT_TYPE_LABELS)).get(type) || type}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -375,7 +375,7 @@ export default function EmployeeContractCreate() {
                 <Input
                   type="date"
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={(e) => { setStartDate(e.target.value); }}
                   className="rounded-full"
                   required
                 />
@@ -386,7 +386,7 @@ export default function EmployeeContractCreate() {
                 <Input
                   type="date"
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  onChange={(e) => { setEndDate(e.target.value); }}
                   className="rounded-full"
                 />
               </div>
@@ -416,7 +416,7 @@ export default function EmployeeContractCreate() {
                 <Input
                   type="date"
                   value={signedDate}
-                  onChange={(e) => setSignedDate(e.target.value)}
+                  onChange={(e) => { setSignedDate(e.target.value); }}
                   className="rounded-full"
                   required
                 />
@@ -427,7 +427,7 @@ export default function EmployeeContractCreate() {
                 <div className="relative">
                   <Input
                     value={attachmentName}
-                    onChange={(e) => setAttachmentName(e.target.value)}
+                    onChange={(e) => { setAttachmentName(e.target.value); }}
                     placeholder="Tải lên tệp hợp đồng..."
                     className="rounded-full pr-10"
                   />
@@ -445,7 +445,7 @@ export default function EmployeeContractCreate() {
         <div className="bg-background border border-border rounded-xl overflow-hidden shadow-none">
           <button
             type="button"
-            onClick={() => setOpenSalaryInfo(!openSalaryInfo)}
+            onClick={() => { setOpenSalaryInfo(!openSalaryInfo); }}
             className="w-full px-6 py-4 flex items-center justify-between bg-muted/50 border-b border-border text-left font-semibold text-sm text-foreground"
           >
             <div className="flex items-center gap-2">
@@ -466,9 +466,9 @@ export default function EmployeeContractCreate() {
                   <Input
                     type="number"
                     value={salary}
-                    onChange={(e) =>
-                      setSalary(e.target.value === "" ? "" : Number(e.target.value))
-                    }
+                    onChange={(e) => {
+                      setSalary(e.target.value === "" ? "" : Number(e.target.value));
+                    }}
                     placeholder="0"
                     className="rounded-full pr-8 text-right font-mono"
                     required
@@ -483,11 +483,11 @@ export default function EmployeeContractCreate() {
                 <Input
                   type="number"
                   value={probationSalaryRate}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setProbationSalaryRate(
                       e.target.value === "" ? "" : Number(e.target.value)
-                    )
-                  }
+                    );
+                  }}
                   placeholder="100"
                   className="rounded-full text-right font-mono"
                   required
@@ -501,9 +501,9 @@ export default function EmployeeContractCreate() {
                 <Input
                   type="number"
                   value={insuranceSalary}
-                  onChange={(e) =>
-                    setInsuranceSalary(e.target.value === "" ? "" : Number(e.target.value))
-                  }
+                  onChange={(e) => {
+                    setInsuranceSalary(e.target.value === "" ? "" : Number(e.target.value));
+                  }}
                   placeholder="0"
                   className="rounded-full text-right font-mono"
                   required
@@ -518,7 +518,7 @@ export default function EmployeeContractCreate() {
           <div className="px-6 py-4 flex items-center justify-between bg-muted/50 border-b border-border">
             <button
               type="button"
-              onClick={() => setOpenAllowanceInfo(!openAllowanceInfo)}
+              onClick={() => { setOpenAllowanceInfo(!openAllowanceInfo); }}
               className="flex items-center gap-2 font-semibold text-sm text-foreground"
             >
               <span className="text-muted-foreground">
@@ -577,7 +577,7 @@ export default function EmployeeContractCreate() {
                             <div className="p-1 border-t border-border mt-1">
                               <button
                                 type="button"
-                                onClick={() => setIsCustomAllowanceModalOpen(true)}
+                                onClick={() => { setIsCustomAllowanceModalOpen(true); }}
                                 className="w-full py-2 px-3 text-xs font-medium text-emerald-700 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 rounded-lg flex items-center justify-center gap-1 transition-colors"
                               >
                                 + Tạo mới khoản phụ cấp
@@ -590,9 +590,9 @@ export default function EmployeeContractCreate() {
                         <Input
                           type="number"
                           value={row.value}
-                          onChange={(e) =>
-                            handleUpdateAllowanceRow(row.id, "value", Number(e.target.value) || 0)
-                          }
+                          onChange={(e) => {
+                            handleUpdateAllowanceRow(row.id, "value", Number(e.target.value) || 0);
+                          }}
                           className="rounded-full text-right font-mono"
                           placeholder="0"
                         />
@@ -602,7 +602,7 @@ export default function EmployeeContractCreate() {
                           type="button"
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleRemoveAllowanceRow(row.id)}
+                          onClick={() => { handleRemoveAllowanceRow(row.id); }}
                           className="h-8 w-8 text-destructive"
                         >
                           <Trash2 size={14} />

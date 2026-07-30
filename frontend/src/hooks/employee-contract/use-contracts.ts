@@ -140,8 +140,8 @@ export function useDeleteContract() {
     mutationFn: (id: string) => deleteContract(id),
     onSuccess: () => {
       toast.success(CONTRACT_MESSAGES.DELETE)
-      queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.LIST })
-      queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.EMPLOYEE("") })
+      void queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.LIST })
+      void queryClient.invalidateQueries({ queryKey: CONTRACT_QUERY_KEYS.EMPLOYEE("") })
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { message?: string } } }
