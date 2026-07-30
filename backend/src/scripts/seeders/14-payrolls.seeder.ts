@@ -23,8 +23,8 @@ export class PayrollsSeeder implements ISeeder {
 
     const payrollsToCreate = []
 
-    // Create payrolls for the last 3 months
-    for (let i = 1; i <= 3; i++) {
+    // Create payrolls for the current month and last 2 months
+    for (let i = 0; i <= 2; i++) {
       let month = currentMonth - i
       let year = currentYear
       if (month <= 0) {
