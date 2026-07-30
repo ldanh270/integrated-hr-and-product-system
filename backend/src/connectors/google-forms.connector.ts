@@ -277,7 +277,6 @@ export class GoogleFormsConnector implements RecruitmentConnector {
     })
     if (!response.ok) {
       const errDetail = await response.text().catch(() => "")
-      console.error("[GoogleFormsConnector] Failed to refresh token from Google:", response.status, errDetail)
       throw this.apiError("Không thể xác thực Google Forms")
     }
     const body = (await response.json()) as { access_token?: string }
@@ -297,6 +296,8 @@ export class GoogleFormsConnector implements RecruitmentConnector {
         },
       })
     } catch {
+      // Re-throw as typed error when network is unreachable.
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       throw this.apiError("Không thể kết nối Google Forms")
     }
     if (!response.ok) {
@@ -306,6 +307,7 @@ export class GoogleFormsConnector implements RecruitmentConnector {
         detail = body.error?.message ? `: ${body.error.message}` : ""
       } catch {
         // Do not leak raw upstream responses.
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       }
       throw this.apiError(`Google Forms API từ chối yêu cầu${detail}`)
     }

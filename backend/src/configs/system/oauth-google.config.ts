@@ -15,9 +15,16 @@ const schema = z.object({
   GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
   GOOGLE_OAUTH_CLIENT_SECRET: z.string().optional(),
   SERVER_URL: z.string().default("http://localhost:5000"),
+  FRONTEND_URL: z.string().default("http://localhost:5173"),
 })
 
 const env = schema.parse(process.env)
+
+export const FRONTEND_URL = env.FRONTEND_URL
+
+export function getGoogleOAuthRedirectUri(): string {
+  return `${env.SERVER_URL}/api/recruitment/oauth/google/callback`
+}
 
 export function getGoogleOAuthConfig(): GoogleOAuthConfig | null {
   if (!env.GOOGLE_OAUTH_CLIENT_ID || !env.GOOGLE_OAUTH_CLIENT_SECRET) {
