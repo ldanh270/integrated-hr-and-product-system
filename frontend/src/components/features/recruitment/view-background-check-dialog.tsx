@@ -93,7 +93,7 @@ export function ViewBackgroundCheckDialog({ open, onOpenChange, backgroundCheck 
         </div>
 
         <DialogFooter>
-          <Button variant="outline" className="rounded-full border-border text-foreground hover:bg-muted" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" className="rounded-full border-border text-foreground hover:bg-muted" onClick={() => { onOpenChange(false); }}>
             Đóng
           </Button>
         </DialogFooter>

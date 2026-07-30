@@ -140,6 +140,7 @@ export class RecruitmentApplicationService {
     const application = await this.findById(id)
 
     // Only allow deletion of terminal applications
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (!TERMINAL_APPLICATION_STATUSES.includes(application.status as any)) {
       throw new Error("Only terminal applications can be deleted")
     }

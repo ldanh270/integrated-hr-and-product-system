@@ -216,7 +216,7 @@ export function ScheduleInterviewDialog({ applications, open, onOpenChange, onCr
                       value={scheduledAt ? scheduledAt.split("T")[0] : ""}
                       onChange={(e) => {
                         const dateVal = e.target.value
-                        const timeVal = scheduledAt?.split("T")[1] || "09:00"
+                        const timeVal = scheduledAt.split("T")[1] || "09:00"
                         setScheduledAt(dateVal ? `${dateVal}T${timeVal}` : "")
                       }}
                       className="h-9 rounded-xl border-border/70 text-xs font-semibold"
@@ -225,9 +225,9 @@ export function ScheduleInterviewDialog({ applications, open, onOpenChange, onCr
                   <div className="space-y-1">
                     <Label className="text-[11px] font-bold text-muted-foreground">Chọn giờ phỏng vấn</Label>
                     <Select
-                      value={scheduledAt?.split("T")[1]?.substring(0, 5) || "09:00"}
+                      value={scheduledAt.split("T")[1]?.substring(0, 5) || "09:00"}
                       onValueChange={(timeVal) => {
-                        const dateVal = scheduledAt?.split("T")[0] || new Date().toISOString().split("T")[0]
+                        const dateVal = scheduledAt.split("T")[0] || new Date().toISOString().split("T")[0]
                         setScheduledAt(`${dateVal}T${timeVal}`)
                       }}
                     >
