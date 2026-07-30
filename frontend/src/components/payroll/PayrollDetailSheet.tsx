@@ -144,7 +144,7 @@ export function PayrollDetailSheet({ payrollId, onClose }: PayrollDetailSheetPro
                       <TableRow 
                         key={ps.id} 
                         className="hover:bg-muted/50 cursor-pointer group transition-colors"
-                        onClick={() => setSelectedPayslip(ps)}
+                        onClick={() => { setSelectedPayslip(ps) }}
                       >
                         <TableCell className="px-4 py-3 text-center text-muted-foreground">
                           {index + 1}
@@ -201,13 +201,13 @@ export function PayrollDetailSheet({ payrollId, onClose }: PayrollDetailSheetPro
         </SheetContent>
       </Sheet>
 
-      <Sheet open={!!selectedPayslip} onOpenChange={(open) => !open && setSelectedPayslip(null)}>
+      <Sheet open={!!selectedPayslip} onOpenChange={(open) => { if (!open) setSelectedPayslip(null) }}>
         <SheetContent className="w-[95vw] max-w-[95vw]! sm:max-w-[1000px]! p-0 overflow-hidden">
           {selectedPayslip && (
             <div className="h-full overflow-y-auto">
               <PayslipDetailPage 
                 payslip={selectedPayslip} 
-                onClose={() => setSelectedPayslip(null)} 
+                onClose={() => { setSelectedPayslip(null) }} 
               />
             </div>
           )}

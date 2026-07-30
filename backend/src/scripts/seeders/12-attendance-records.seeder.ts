@@ -43,26 +43,26 @@ export class AttendanceRecordsSeeder implements ISeeder {
         shift.assignedDate.getMonth() === currentMonth ||
         shift.assignedDate.getMonth() === prevMonth
 
-      let isAbsent = Math.random() < 0.05
-      let isLate = !isAbsent && Math.random() < 0.1
+      let isAbsent = faker.number.float({ min: 0, max: 1 }) < 0.05
+      let isLate = !isAbsent && faker.number.float({ min: 0, max: 1 }) < 0.1
       let isOvertime = false
       let overtimeMinutes = 0
 
       if (isCoreUser && isTargetMonth) {
-        if (!counters[shift.employeeId])
+        if (counters[shift.employeeId] === undefined)
           counters[shift.employeeId] = { late: 0, overtime: 0, absent: 0 }
         const c = counters[shift.employeeId]
 
         isAbsent = false
         isLate = false
 
-        if (c.absent < 2 && Math.random() < 0.1) {
+        if (c.absent < 2 && faker.number.float({ min: 0, max: 1 }) < 0.1) {
           isAbsent = true
           c.absent++
-        } else if (c.late < 4 && Math.random() < 0.2) {
+        } else if (c.late < 4 && faker.number.float({ min: 0, max: 1 }) < 0.2) {
           isLate = true
           c.late++
-        } else if (c.overtime < 4 && Math.random() < 0.2) {
+        } else if (c.overtime < 4 && faker.number.float({ min: 0, max: 1 }) < 0.2) {
           isOvertime = true
           c.overtime++
         }
