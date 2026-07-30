@@ -1,6 +1,5 @@
 import { Response, NextFunction } from "express"
 import { z } from "zod"
-import { randomUUID } from "node:crypto"
 import { jobRequisitionService } from "@/services/job-requisition.service"
 import { candidateService } from "@/services/candidate.service"
 import { recruitmentApplicationService } from "@/services/recruitment-application.service"
@@ -13,7 +12,7 @@ import { recruitmentIntakeService } from "@/services/recruitment-intake.service"
 import { recruitmentOAuthAccountService } from "@/services/recruitment-oauth-account.service"
 import { recruitmentPostingActivityService } from "@/services/recruitment-posting-activity.service"
 import { RECRUITMENT_POSTING_ACTIVITY_TYPE } from "@/configs/entities/recruitment.config"
-import { buildGoogleAuthUrl, exchangeGoogleCode, getGoogleOAuthConfig } from "@/configs/system/oauth-google.config"
+import { buildGoogleAuthUrl, exchangeGoogleCode, getGoogleOAuthConfig, getGoogleOAuthRedirectUri, FRONTEND_URL } from "@/configs/system/oauth-google.config"
 import { consumeOAuthState, createOAuthState } from "@/utils/oauth-state.util"
 import { HttpStatusCode } from "@/configs/system/http.config"
 import { AppError } from "@/utils/error.util"
@@ -715,21 +714,13 @@ export class RecruitmentController {
       let config = getGoogleOAuthConfig()
       if (accountId) {
         const existingAccount = await recruitmentOAuthAccountService.getByIdWithCredentials(accountId)
-        if (existingAccount && existingAccount.clientId) {
+        if (existingAccount && existingAccount.userId === userId && existingAccount.clientId) {
           config = {
             clientId: existingAccount.clientId,
             clientSecret: existingAccount.clientSecret,
-            redirectUri: config?.redirectUri ?? `${process.env.SERVER_URL || "http://localhost:5000"}/api/recruitment/oauth/google/callback`,
+            redirectUri: config?.redirectUri ?? getGoogleOAuthRedirectUri(),
           }
         }
-      }
-
-      if (!config) {
-        throw new AppError(
-          "Google OAuth chưa được cấu hình phía server. Vui lòng thiết lập GOOGLE_OAUTH_CLIENT_ID và GOOGLE_OAUTH_CLIENT_SECRET.",
-          HttpStatusCode.CONFLICT,
-          "OAuthController",
-        )
       }
 
       const state = await createOAuthState({ userId, channel, name, accountId })
@@ -749,9 +740,8 @@ export class RecruitmentController {
       state?: string
       error?: string
     }
-    const frontendUrl = process.env.FRONTEND_URL ?? "http://localhost:5173"
     const buildRedirectUrl = (path: string, paramKey?: string, paramVal?: string) => {
-      const url = new URL(path, frontendUrl)
+      const url = new URL(path, FRONTEND_URL)
       if (paramKey && paramVal) {
         url.searchParams.set(paramKey, paramVal)
       }
@@ -777,11 +767,11 @@ export class RecruitmentController {
       let config = getGoogleOAuthConfig()
       if (accountId) {
         const existingAccount = await recruitmentOAuthAccountService.getByIdWithCredentials(accountId)
-        if (existingAccount && existingAccount.clientId && existingAccount.clientSecret) {
+        if (existingAccount && existingAccount.userId === userId && existingAccount.clientId && existingAccount.clientSecret) {
           config = {
             clientId: existingAccount.clientId,
             clientSecret: existingAccount.clientSecret,
-            redirectUri: config?.redirectUri ?? `${process.env.SERVER_URL || "http://localhost:5000"}/api/recruitment/oauth/google/callback`,
+            redirectUri: config?.redirectUri ?? getGoogleOAuthRedirectUri(),
           }
         }
       }
@@ -804,7 +794,6 @@ export class RecruitmentController {
       this.redirectToFrontend(res, buildRedirectUrl("/recruitment/oauth-accounts", "success", "connected"))
       return
     } catch (err: unknown) {
-      console.error("Google OAuth callback error:", err)
       const reason = err instanceof Error ? err.message : "token_exchange_failed"
       res.redirect(buildRedirectUrl("/recruitment/oauth-accounts", "error", reason))
       return
