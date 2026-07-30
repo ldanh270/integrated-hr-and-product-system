@@ -77,7 +77,7 @@ export class SpentTimeController {
       }
 
       const data = createSpentTimeSchema.parse(body)
-      const spentTime = await this.service.createSpentTime(data, req.user.empId)
+      const spentTime = await this.service.createSpentTime({ ...data, date: data.date ?? new Date() }, req.user.empId)
       res.status(HttpStatusCode.CREATED).json({ data: spentTime, error: null })
     } catch (error) {
       if (error instanceof z.ZodError) {

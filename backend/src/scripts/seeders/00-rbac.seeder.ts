@@ -269,6 +269,73 @@ export class RBACSeeder implements ISeeder {
         module: "role",
         description: "Assign roles to employees",
       },
+      // Recruitment
+      {
+        name: "Read Recruitment",
+        code: "recruitment.read",
+        module: "recruitment",
+        description: "View recruitment requisitions and candidate pipeline",
+      },
+      {
+        name: "Create Recruitment",
+        code: "recruitment.create",
+        module: "recruitment",
+        description: "Create recruitment requisitions and records",
+      },
+      {
+        name: "Update Recruitment",
+        code: "recruitment.update",
+        module: "recruitment",
+        description: "Update recruitment requisitions and pipeline records",
+      },
+      {
+        name: "Delete Recruitment",
+        code: "recruitment.delete",
+        module: "recruitment",
+        description: "Delete recruitment records",
+      },
+      {
+        name: "Approve Recruitment",
+        code: "recruitment.approve",
+        module: "recruitment",
+        description: "Approve recruitment actions other than requisitions",
+      },
+      {
+        name: "Approve Recruitment Requisition",
+        code: "recruitment.requisition.approve",
+        module: "recruitment",
+        description: "Approve or reject assigned job requisitions",
+      },
+      {
+        name: "Read Recruitment Job Descriptions",
+        code: "recruitment.jd.read",
+        module: "recruitment",
+        description: "View recruitment job descriptions and their postings",
+      },
+      {
+        name: "Create Recruitment Job Descriptions",
+        code: "recruitment.jd.create",
+        module: "recruitment",
+        description: "Create job descriptions from approved requisitions",
+      },
+      {
+        name: "Update Recruitment Job Descriptions",
+        code: "recruitment.jd.update",
+        module: "recruitment",
+        description: "Update recruitment job description content",
+      },
+      {
+        name: "Manage Recruitment Postings",
+        code: "recruitment.posting.manage",
+        module: "recruitment",
+        description: "Create, publish and synchronize channel postings",
+      },
+      {
+        name: "Manage Recruitment Intake",
+        code: "recruitment.intake.manage",
+        module: "recruitment",
+        description: "Import and synchronize candidate applications",
+      },
     ]
 
     // Create permissions
@@ -362,6 +429,18 @@ export class RBACSeeder implements ISeeder {
         "payroll.salary_config.read",
         "role.read",
         "audit.read",
+        // Recruitment
+        "recruitment.read",
+        "recruitment.create",
+        "recruitment.update",
+        "recruitment.delete",
+        "recruitment.approve",
+        "recruitment.requisition.approve",
+        "recruitment.jd.read",
+        "recruitment.jd.create",
+        "recruitment.jd.update",
+        "recruitment.posting.manage",
+        "recruitment.intake.manage",
       ],
       general_manager: [
         "employee.read",
@@ -403,6 +482,7 @@ export class RBACSeeder implements ISeeder {
     if (rolePermissionsData.length > 0) {
       await prisma.rolePermission.createMany({
         data: rolePermissionsData,
+        skipDuplicates: true,
       })
     }
     console.info(`    [✓] Linked ${rolePermissionsData.length} role-permission mappings.`)

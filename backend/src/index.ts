@@ -16,11 +16,13 @@ import customQueryRoutes from "@/routes/custom-query.route.ts"
 import debugRoutes from "@/routes/debug.route.ts"
 import employeeSalaryConfigRoutes from "@/routes/employee-salary-config.route.ts"
 import employeeRoutes from "@/routes/employee.route.ts"
+import employeeContractRoutes from "@/routes/employee-contract.route.ts"
 import holidayRoutes from "@/routes/holiday.route.ts"
 import partTimeAvailabilityRoutes from "@/routes/part-time-availability.route.ts"
 import payrollRoutes from "@/routes/payroll.route.ts"
 import payslipTemplateRoutes from "@/routes/payslip-template.route.ts"
 import permissionRoutes from "@/routes/permission.route.ts"
+import recruitmentRoutes from "@/routes/recruitment.route"
 import positionRoutes from "@/routes/position.route.ts"
 import profileRoutes from "@/routes/profile.route.ts"
 import projectRoutes from "@/routes/project.route.ts"
@@ -71,6 +73,7 @@ app.get("/", async (req, res) =>
 app.use("/api/auth", authRoutes)
 app.use("/api/security", securityRoutes)
 app.use("/api/employees", employeeRoutes)
+app.use("/api/employee-contracts", employeeContractRoutes)
 app.use("/api/profile", profileRoutes)
 
 // Attendance & Scheduling routes
@@ -85,6 +88,9 @@ app.use("/api/weekly-schedule-templates", weeklyScheduleTemplateRoutes)
 // PT weekly availability — separate from full-time shift templates; employee declares, admin assigns.
 app.use("/api/part-time-availabilities", partTimeAvailabilityRoutes)
 app.use("/api/approvals", approvalRoutes)
+
+// Recruitment routes
+app.use("/api/recruitment", recruitmentRoutes)
 
 // Payroll routes
 app.use("/api/salary-components", salaryComponentRoutes)

@@ -102,14 +102,14 @@ const ProtectedRoute = ({
   if (requiredPermissions && user) {
     const hasPermission = requiredPermissions.every((p) => user.permissions?.includes(p))
     if (!hasPermission) {
-      return <Navigate to={ROUTES.PERSONAL.BASE} replace />
+      return <Navigate to={ROUTES.ATTENDANCE.MY_SCHEDULE} replace />
     }
   }
 
   if (requiredRoles && user) {
     const hasRole = requiredRoles.some((role) => user.roles?.includes(role))
     if (!hasRole) {
-      return <Navigate to={ROUTES.PERSONAL.BASE} replace />
+      return <Navigate to={ROUTES.ATTENDANCE.MY_SCHEDULE} replace />
     }
   }
 
@@ -118,16 +118,16 @@ const ProtectedRoute = ({
 
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  return isAuthenticated ? <Navigate to={ROUTES.PERSONAL.BASE} replace /> : <>{children}</>
+  return isAuthenticated ? <Navigate to={ROUTES.ATTENDANCE.MY_SCHEDULE} replace /> : <>{children}</>
 }
 
 /**
  * RootRedirect component
- * Redirects to /personal if authenticated, otherwise to /login
+ * Redirects to default schedule route if authenticated, otherwise to /login
  */
 const RootRedirect = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  return <Navigate to={isAuthenticated ? ROUTES.PERSONAL.BASE : ROUTES.AUTH.LOGIN} replace />
+  return <Navigate to={isAuthenticated ? ROUTES.ATTENDANCE.MY_SCHEDULE : ROUTES.AUTH.LOGIN} replace />
 }
 
 const SubsystemRootRedirect = ({ subsystem }: { subsystem: SubsystemConfig }) => {
@@ -241,11 +241,52 @@ const App = () => {
 
             {privateRoutes.map((route, index) => renderPrivateRoute(route, index, "private"))}
 
+            {/* Legacy route redirects */}
             <Route
-              path={ROUTES.ATTENDANCE.MY_SCHEDULE}
+              path="/personal/schedule"
               element={
                 <ProtectedRoute>
-                  <Navigate to={ROUTES.PERSONAL.SCHEDULE} replace />
+                  <Navigate to={ROUTES.ATTENDANCE.MY_SCHEDULE} replace />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/personal/availability"
+              element={
+                <ProtectedRoute>
+                  <Navigate to={ROUTES.ATTENDANCE.MY_AVAILABILITY} replace />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/personal/payslips"
+              element={
+                <ProtectedRoute>
+                  <Navigate to={ROUTES.PAYROLL.MY_PAYSLIPS} replace />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/personal/projects"
+              element={
+                <ProtectedRoute>
+                  <Navigate to={ROUTES.PROJECT.MY_PROJECTS} replace />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/personal/applications"
+              element={
+                <ProtectedRoute>
+                  <Navigate to={ROUTES.APPLICATION.MY_APPLICATIONS} replace />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/personal"
+              element={
+                <ProtectedRoute>
+                  <Navigate to={ROUTES.ATTENDANCE.MY_SCHEDULE} replace />
                 </ProtectedRoute>
               }
             />
@@ -253,15 +294,7 @@ const App = () => {
               path={ROUTES.PROJECT.DASHBOARD}
               element={
                 <ProtectedRoute>
-                  <Navigate to={ROUTES.PERSONAL.PROJECTS} replace />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={ROUTES.PERSONAL.BASE}
-              element={
-                <ProtectedRoute>
-                  <Navigate to={ROUTES.PERSONAL.SCHEDULE} replace />
+                  <Navigate to={ROUTES.PROJECT.MY_PROJECTS} replace />
                 </ProtectedRoute>
               }
             />

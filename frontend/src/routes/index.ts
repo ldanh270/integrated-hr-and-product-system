@@ -34,6 +34,26 @@ const privateRoutes: RouteConfig[] = [
     layout: MainLayout,
   },
   {
+    path: ROUTES.HRM.CREATE_EMPLOYEE,
+    component: lazy(() => import("@/pages/employees/EmployeeCreate.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: ROUTES.HRM.CONTRACTS,
+    component: lazy(() => import("@/pages/employees/ContractsPage.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: ROUTES.HRM.CREATE_CONTRACT,
+    component: lazy(() => import("@/pages/employees/EmployeeContractCreate.tsx")),
+    layout: MainLayout,
+  },
+  {
+    path: ROUTES.HRM.INSURANCE,
+    component: lazy(() => import("@/pages/employees/InsurancePage.tsx")),
+    layout: MainLayout,
+  },
+  {
     path: ROUTES.HRM.PROFILE,
     component: lazy(() => import("@/pages/Profile.tsx")),
     layout: MainLayout,
@@ -153,6 +173,48 @@ const privateRoutes: RouteConfig[] = [
     path: ROUTES.RECRUITMENT.DASHBOARD,
     component: lazy(() => import("@/pages/recruitment/RecruitmentDashboard.tsx")),
     layout: MainLayout,
+    permissions: ["recruitment.read"],
+  },
+  {
+    path: ROUTES.RECRUITMENT.REQUISITIONS,
+    component: lazy(() => import("@/pages/recruitment/RequisitionsPage.tsx")),
+    layout: MainLayout,
+    permissions: ["recruitment.read"],
+  },
+  {
+    path: ROUTES.RECRUITMENT.OAUTH_ACCOUNTS,
+    component: lazy(() => import("@/pages/recruitment/OAuthAccountsPage.tsx")),
+    layout: MainLayout,
+    permissions: ["recruitment.posting.manage"],
+  },
+  {
+    path: ROUTES.RECRUITMENT.APPLICANT_INTAKE,
+    component: lazy(() => import("@/pages/recruitment/ApplicantIntakePage.tsx")),
+    layout: MainLayout,
+    permissions: ["recruitment.intake.manage"],
+  },
+  {
+    path: ROUTES.RECRUITMENT.APPLICATIONS,
+    component: lazy(() => import("@/pages/recruitment/CandidatesPage.tsx")),
+    layout: MainLayout,
+    permissions: ["recruitment.read"],
+  },
+  {
+    path: ROUTES.RECRUITMENT.CANDIDATES,
+    component: lazy(() => import("@/pages/recruitment/CandidatesPage.tsx")),
+    layout: MainLayout,
+    permissions: ["recruitment.read"],
+  },
+  {
+    path: ROUTES.RECRUITMENT.APPLICATION_DETAIL,
+    component: lazy(() => import("@/pages/recruitment/ApplicationDetailPage.tsx")),
+    layout: MainLayout,
+    permissions: ["recruitment.read"],
+  },
+  {
+    path: ROUTES.RECRUITMENT.MY_INTERVIEWS,
+    component: lazy(() => import("@/pages/recruitment/MyInterviewsPage.tsx")),
+    layout: MainLayout,
   },
   {
     path: ROUTES.HRM.DASHBOARD,
@@ -191,36 +253,40 @@ const privateRoutes: RouteConfig[] = [
     permissions: ["role.read"],
   },
   {
-    path: ROUTES.PERSONAL.SCHEDULE,
+    path: ROUTES.ATTENDANCE.MY_SCHEDULE,
     component: lazy(() => import("@/pages/attendance/MySchedule.tsx")),
     layout: MainLayout,
   },
   {
-    path: ROUTES.PERSONAL.AVAILABILITY,
+    path: ROUTES.ATTENDANCE.MY_AVAILABILITY,
     component: lazy(() => import("@/pages/personal/MyPartTimeAvailability.tsx")),
     layout: MainLayout,
     // Page-level guard redirects full-time employees to schedule view.
   },
   {
-    // Personal navigation keeps the page inside the Personal subsystem.
-    path: ROUTES.PERSONAL.PAYSLIPS,
-    component: lazy(() => import("@/pages/payroll/MyPayslips.tsx")),
-    layout: MainLayout,
-  },
-  {
-    // Same self-service page under /payroll so employees see only the payroll sidebar.
-    // API authorization still limits the response to the authenticated employee.
     path: ROUTES.PAYROLL.MY_PAYSLIPS,
     component: lazy(() => import("@/pages/payroll/MyPayslips.tsx")),
     layout: MainLayout,
   },
   {
-    path: ROUTES.PERSONAL.PROJECTS,
+    path: "/recruitment/requisitions/:id/:tab",
+    component: lazy(() => import("@/pages/recruitment/RequisitionDetailPage.tsx")),
+    layout: MainLayout,
+    permissions: ["recruitment.read"],
+  },
+  {
+    path: "/recruitment/requisitions/:id",
+    component: lazy(() => import("@/pages/recruitment/RequisitionDetailPage.tsx")),
+    layout: MainLayout,
+    permissions: ["recruitment.read"],
+  },
+  {
+    path: ROUTES.PROJECT.MY_PROJECTS,
     component: lazy(() => import("@/pages/project/ProjectDashboard.tsx")),
     layout: MainLayout,
   },
   {
-    path: ROUTES.PERSONAL.APPLICATIONS,
+    path: ROUTES.APPLICATION.MY_APPLICATIONS,
     component: lazy(() => import("@/pages/application/ApplicationDashboard.tsx")),
     layout: MainLayout,
   },

@@ -1,5 +1,8 @@
 export const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET || ""
 export const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || ""
+export const OAUTH_STATE_SECRET = process.env.OAUTH_STATE_SECRET || ACCESS_TOKEN_SECRET
+/** 32-byte base64 key used to encrypt third-party OAuth credentials at rest. */
+export const OAUTH_CREDENTIAL_ENCRYPTION_KEY = process.env.OAUTH_CREDENTIAL_ENCRYPTION_KEY || ""
 
 export const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000 // 15 phút
 export const ACCESS_TOKEN_TTL = "15m"
@@ -74,10 +77,4 @@ export const AUTH_ERRORS = {
 
 export const PROTECTED_PERMISSIONS = process.env.PROTECTED_PERMISSIONS
   ? process.env.PROTECTED_PERMISSIONS.split(",").map((p) => p.trim())
-  : [
-      "role.update",
-      "permission.update",
-      "employee.role.update",
-      "role.permission.update",
-    ]
-
+  : ["role.update", "permission.update", "employee.role.update", "role.permission.update"]

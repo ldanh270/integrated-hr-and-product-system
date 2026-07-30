@@ -15,6 +15,7 @@
 4. **Code Standards:** Strictly follow **SOLID** and **Design Patterns**. Reference `docs/solid-principles.md` and `docs/design-patterns.md`.
 5. **Efficiency:** Surgical edits only. No redundant refactors. Prefer running tools over generating repetitive code.
 6. **Communication:** Terse caveman speak. No fluff.
+7. **Commit Handoff:** Do NOT commit directly. After every completed change, always provide an exact Conventional Commit message plus exact `git add` and `git commit` commands (single-line, NO backslashes `\`) for the user to copy-paste. Group unrelated changes into separate commits.
 
 ---
 
@@ -178,6 +179,38 @@ Rules:
 - NEVER define enum values in frontend that differ from backend/DB values
 - Zod schemas must use the exported `*_VALUES` or `*_TYPES` array from config, not inline literals
 - New Prisma enum values must be added to backend config FIRST, then mirrored to frontend config
+
+---
+
+## 5 · Payroll Module Analysis (2026-07-19)
+
+### Summary
+Phân tích toàn bộ payroll module và tìm 16 issues theo severity:
+
+| Severity | Count | Examples |
+|----------|-------|----------|
+| 🔴 CRITICAL | 4 | Transaction, Race condition, Missing status validation |
+| 🟠 HIGH | 5 | No input validation, Part-time silent skip, Missing workflow |
+| 🟡 MEDIUM | 4 | API naming confusion, Hardcoded 22 days, No pagination |
+| 🟢 LOW | 3 | CSV broken, No formula validation, Cron miss |
+
+### Fixed (Phase 1 - Critical)
+- **C1**: Wrap generatePayroll in Prisma transaction - atomic all-or-nothing
+- **C2**: Race condition protection - duplicate check inside transaction  
+- **C3**: Status validation before approvePayroll
+- **C4**: Status validation before rejectPayroll
+
+### Files Modified
+- `backend/src/services/payroll.service.ts`
+
+### Pending (Phase 2-4)
+- H1: Input validation (month/year)
+- H2: Part-time employee silent skip
+- H3: MathJS formula error handling
+- H4: Missing PENDING_APPROVAL workflow
+- H5: Cannot regenerate payroll
+- M1-M4: API naming, hardcoded values, pagination, audit
+- L1-L3: CSV export, formula validation, cron recovery
 
 ---
 

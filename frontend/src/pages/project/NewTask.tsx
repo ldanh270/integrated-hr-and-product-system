@@ -580,7 +580,7 @@ export default function NewTask() {
                   <SelectItem value="none" className="rounded-lg">Không có</SelectItem>
                   {projectTasks.map((t) => (
                     <SelectItem key={t.id} value={t.id} className="rounded-lg">
-                      #{t.id.slice(-4)} - {t.title}
+                      #{t?.id ? t.id.slice(-4) : "—"} - {t.title}
                     </SelectItem>
                   ))}
                 </SelectContent>

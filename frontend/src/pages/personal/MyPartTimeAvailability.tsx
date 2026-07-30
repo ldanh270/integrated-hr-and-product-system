@@ -19,7 +19,7 @@ export default function MyPartTimeAvailability() {
 
   if (!profile || !isPartTimeWorkSchedule(profile)) {
     // Full-time employees use fixed weekly schedule, not availability submission.
-    return <Navigate to={ROUTES.PERSONAL.SCHEDULE} replace />
+    return <Navigate to={ROUTES.ATTENDANCE.MY_SCHEDULE} replace />
   }
 
   return (

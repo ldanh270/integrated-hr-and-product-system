@@ -1,6 +1,13 @@
 import { AppPagination, EmptyState, StatusPill } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   APPLICATION_STATUS,
@@ -14,7 +21,7 @@ import type { IApplicationListItem } from "@/lib/api/application.api"
 
 import { useEffect, useState } from "react"
 
-import { ChevronRight, Filter, RotateCcw, Search } from "lucide-react"
+import { Filter, RotateCcw, Search } from "lucide-react"
 
 type StatusVariant = "success" | "warning" | "danger" | "neutral"
 
@@ -170,27 +177,27 @@ export function ApplicationList({ mode, onRowClick, hookState }: ApplicationList
                 <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               </div>
 
-              <div className="relative min-w-[160px]">
-                <select
+              <div className="min-w-[180px]">
+                <Select
                   value={typeFilter}
-                  onChange={(e) => {
+                  onValueChange={(value) => {
                     beginTransition()
-                    setTypeFilter(e.target.value)
+                    setTypeFilter(value)
                     setPage(1)
                   }}
-                  aria-label="Lọc theo loại đơn"
-                  className="h-11 w-full appearance-none rounded-full border border-input bg-background pl-4 pr-9 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
                 >
-                  <option value="all">Loại đơn</option>
-                  {Object.values(APPLICATION_TYPES).map((t) => (
-                    <option key={t.LABEL} value={t.LABEL}>
-                      {t.DESCRIPTION}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <ChevronRight className="text-muted-foreground rotate-90" size={14} />
-                </div>
+                  <SelectTrigger aria-label="Lọc theo loại đơn" className="h-11 bg-background px-4">
+                    <SelectValue placeholder="Loại đơn" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Loại đơn</SelectItem>
+                    {Object.values(APPLICATION_TYPES).map((t) => (
+                      <SelectItem key={t.LABEL} value={t.LABEL}>
+                        {t.DESCRIPTION}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <Button

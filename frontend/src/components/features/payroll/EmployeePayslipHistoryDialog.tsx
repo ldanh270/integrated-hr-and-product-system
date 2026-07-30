@@ -52,7 +52,7 @@ export default function EmployeePayslipHistoryDialog({ open, onOpenChange, emplo
                   Lịch sử phiếu lương: {employee?.fullName}
                 </DialogTitle>
                 <DialogDescription className="text-xs">
-                  {employee?.position || "Nhân viên"} • ID: {employee?.id.slice(-6).toUpperCase()}
+                  {employee?.position || "Nhân viên"} • ID: {employee?.id ? employee.id.slice(-6).toUpperCase() : "—"}
                 </DialogDescription>
               </div>
             </div>

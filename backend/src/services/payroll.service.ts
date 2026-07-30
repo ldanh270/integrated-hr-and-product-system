@@ -18,11 +18,11 @@ import { IAttendanceRecordDTO, IAttendanceRepository } from "@/types/attendance.
 import { IEmployeeRepository } from "@/types/employee.types.ts"
 import {
   IEmployeeSalaryConfigRepository,
-  IPayslipDailyWorkLog,
-  IPayslipFeedbackDTO,
   IMyPayslipSummary,
   IPayrollRepository,
   IPayrollService,
+  IPayslipDailyWorkLog,
+  IPayslipFeedbackDTO,
   IPayslipRepository,
   PayrollWithPayslips,
   PayslipWithDetails,
@@ -66,6 +66,7 @@ export class PayrollService implements IPayrollService {
 
   /**
    * Initialize a new payroll for a specific month and year.
+   * Uses transaction to ensure atomicity - all or nothing.
    *
    * @param month - The month parameter
    * @param year - The year parameter
@@ -75,6 +76,8 @@ export class PayrollService implements IPayrollService {
    */
   async generatePayroll(month: number, year: number, name?: string): Promise<Payroll> {
     const finalName = name || generateDefaultPayrollName(month, year)
+
+    // Phase 1: All reads (outside transaction)
     const existing = await this.payrollRepo.findByPeriod(month, year, finalName)
     if (existing) {
       throw new AppError(
@@ -92,13 +95,7 @@ export class PayrollService implements IPayrollService {
 
     // Date range of the month
     const periodStart = new Date(year, month - 1, 1)
-    const periodEnd = new Date(year, month, 0) // last day of the month
-
-    const payroll = await this.payrollRepo.create({
-      periodMonth: month,
-      periodYear: year,
-      name: finalName,
-    })
+    const periodEnd = new Date(year, month, 0)
 
     // Fetch all active global salary variables
     const globalVariables = await this.prisma.salaryVariable.findMany({
@@ -107,9 +104,8 @@ export class PayrollService implements IPayrollService {
     const variablesContext: Record<string, number> = Object.fromEntries(
       globalVariables.map((variable) => [variable.code, Number(variable.value)]),
     )
-    let totalAmount = new Prisma.Decimal(0)
 
-    // Fetch all approved applications for the period ONCE (N+1 fix)
+    // Fetch all approved applications for the period ONCE
     const allApprovedApps = await this.prisma.application.findMany({
       where: {
         employeeId: { in: employees.map((e) => e.id) },
@@ -122,165 +118,240 @@ export class PayrollService implements IPayrollService {
     })
 
     // Group by employeeId in memory
-    type ApprovedApplication = (typeof allApprovedApps)[number]
-    const appsByEmployeeId = new Map<string, ApprovedApplication[]>()
+    const appsByEmployeeId = new Map<string, typeof allApprovedApps>()
     allApprovedApps.forEach((app) => {
-      const existing = appsByEmployeeId.get(app.employeeId) ?? []
-      existing.push(app)
-      appsByEmployeeId.set(app.employeeId, existing)
+      const existingApps = appsByEmployeeId.get(app.employeeId) ?? []
+      existingApps.push(app)
+      appsByEmployeeId.set(app.employeeId, existingApps)
     })
 
+    // Pre-fetch configs for all employees
+    const configsByEmployeeId = new Map<
+      string,
+      Awaited<ReturnType<typeof this.salaryConfigRepo.findActiveByEmployee>>
+    >()
     for (const employee of employees) {
       const config = await this.salaryConfigRepo.findActiveByEmployee(employee.id, periodStart)
-      if (!config) {
-        console.warn(`[PayrollService] No active config for employee ${employee.id}`)
-        continue
+      if (config) {
+        configsByEmployeeId.set(employee.id, config)
       }
+    }
 
-      // PT payroll branch: skip attendance workingDays — salary from approved SpentTime only.
-      if (isPartTimeWorkSchedule(employee)) {
-        const ptResult = await this.buildPartTimePayslip(
-          payroll.id,
-          employee.id,
-          config.id,
-          periodStart,
-          periodEnd,
-          variablesContext,
-        )
-        if (ptResult) {
-          totalAmount = totalAmount.add(ptResult.netSalary)
-        }
-        continue
-      }
-
-      // Aggregate attendance
-      // Assuming attendanceRepo.queryRecords supports date range filtering
-      const attendanceRecords = await this.attendanceRepo.queryRecords({
+    // Pre-fetch attendance for all employees
+    const attendanceByEmployeeId = new Map<
+      string,
+      Awaited<ReturnType<typeof this.attendanceRepo.queryRecords>>
+    >()
+    for (const employee of employees) {
+      const records = await this.attendanceRepo.queryRecords({
         employeeId: employee.id,
         startDate: periodStart.toISOString(),
         endDate: periodEnd.toISOString(),
       })
 
-      // Calculate summary
-      const attendance = {
-        workingDays: 0,
-        absentDays: 0,
-        overtimeMinutes: 0,
-        lateMinutes: 0,
-        earlyLeaveMinutes: 0,
-        totalWorkMinutes: 0,
-        holidayDays: 0,
-      }
-      attendanceRecords.forEach((record) => {
-        if (record.status === ATTENDANCE_STATUS.ON_TIME || record.status === ATTENDANCE_STATUS.LATE)
-          attendance.workingDays += 1
-        if (record.status === ATTENDANCE_STATUS.ABSENT) {
-          if (record.realShift?.isPaidLeave) {
-            attendance.workingDays += 1
-          } else {
-            attendance.absentDays += 1
-          }
-        }
-        if (record.status === ATTENDANCE_STATUS.OVERTIME) attendance.workingDays += 1
-        if (record.status === (EMPLOYEE_SHIFT_STATUS.HOLIDAY_PENDING as string))
-          attendance.holidayDays += 1
-
-        attendance.overtimeMinutes += record.overtimeMinutes || 0
-        attendance.lateMinutes += record.lateMinutes || 0
-        attendance.earlyLeaveMinutes += record.earlyLeaveMinutes || 0
-        attendance.totalWorkMinutes += this.resolveRecordWorkMinutes(record)
-      })
-
-      // Use pre-fetched applications to prevent N+1
-      const approvedApps = appsByEmployeeId.get(employee.id) ?? []
-
-      let excusedLateMinutes = 0
-      let excusedEarlyMinutes = 0
-
-      for (const app of approvedApps) {
-        if (app.type === "late_early" && app.lateEarlyDetail) {
-          if (app.lateEarlyDetail.isLate) {
-            excusedLateMinutes += app.lateEarlyDetail.durationMinutes
-          } else {
-            excusedEarlyMinutes += app.lateEarlyDetail.durationMinutes
-          }
-        }
-      }
-
-      attendance.lateMinutes = Math.max(0, attendance.lateMinutes - excusedLateMinutes)
-      attendance.earlyLeaveMinutes = Math.max(0, attendance.earlyLeaveMinutes - excusedEarlyMinutes)
-
-      // Build context
-      const context: Record<string, unknown> = {
-        baseSalary: Number(config.baseSalary),
-        // Formula denominator is fixed 22; actualWorkingDays carries attendance-based pro-rating.
-        workingDays: 22,
-        actualWorkingDays: attendance.workingDays,
-        absentDays: attendance.absentDays,
-        overtimeMinutes: attendance.overtimeMinutes,
-        lateMinutes: attendance.lateMinutes,
-        earlyLeaveMinutes: attendance.earlyLeaveMinutes,
-        holidayDays: attendance.holidayDays,
-        // Formula authors may choose minute or hour precision; both exclude unpaid shift breaks.
-        totalWorkMinutes: attendance.totalWorkMinutes,
-        totalWorkHours: attendance.totalWorkMinutes / ATTENDANCE_TIME_RULES.MINUTES_PER_HOUR,
-        MAX: Math.max,
-        MIN: Math.min,
-        ...variablesContext,
-      }
-
-      const details = []
-      let totalAdditions = new Prisma.Decimal(0)
-      let totalDeductions = new Prisma.Decimal(0)
-
-      const components = config.template.components
-      for (const tc of components) {
-        context.totalAdditions = Number(totalAdditions)
-        context.totalDeductions = Number(totalDeductions)
-
-        const formula = tc.overrideFormula ?? tc.component.formula
-        let rawValue = 0
-        try {
-          rawValue = math.evaluate(formula, context)
-        } catch (err) {
-          console.error("Error evaluating formula:", formula, "Context:", context)
-          throw err
-        }
-        const value = new Prisma.Decimal(Math.max(0, rawValue))
-
-        details.push({
-          componentId: tc.component.id,
-          name: tc.component.name,
-          type: tc.component.type,
-          value: Number(value.toFixed(2)),
-        })
-
-        if (tc.component.type === SALARY_COMPONENT_TYPES[0]) {
-          totalAdditions = totalAdditions.add(value)
-        } else {
-          totalDeductions = totalDeductions.add(value)
-        }
-      }
-
-      const netSalary = totalAdditions.minus(totalDeductions)
-      totalAmount = totalAmount.add(netSalary)
-
-      await this.payslipRepo.createWithDetails({
-        payrollId: payroll.id,
-        employeeId: employee.id,
-        salaryConfigId: config.id,
-        totalAdditions: Number(totalAdditions.toFixed(2)),
-        totalDeductions: Number(totalDeductions.toFixed(2)),
-        netSalary: Number(netSalary.toFixed(2)),
-        workingDays: attendance.workingDays,
-        absentDays: attendance.absentDays,
-        overtimeMinutes: attendance.overtimeMinutes,
-        details,
-      })
     }
 
-    await this.payrollRepo.updateTotalAmount(payroll.id, totalAmount)
-    return { ...payroll, totalAmount }
+    // Phase 2: All writes inside transaction
+    // C1 FIX: Use transaction to ensure atomicity
+    return await this.prisma.$transaction(async (tx) => {
+      // C2 FIX: Check again inside transaction to prevent race condition
+      const existingInTx = await tx.payroll.findUnique({
+        where: {
+          periodYear_periodMonth_name: {
+            periodMonth: month,
+            periodYear: year,
+            name: finalName,
+          },
+        },
+      })
+
+      if (existingInTx) {
+        throw new AppError(
+          PAYROLL_MESSAGES.ERRORS.PAYROLL_ALREADY_EXISTS,
+          HttpStatusCode.CONFLICT,
+          ErrorLayer.SERVICE,
+        )
+      }
+
+      const payroll = await tx.payroll.create({
+        data: {
+          periodMonth: month,
+          periodYear: year,
+          name: finalName,
+          status: PAYROLL_STATUS.DRAFT,
+          totalAmount: 0,
+        },
+      })
+
+      let totalAmount = new Prisma.Decimal(0)
+
+      for (const employee of employees) {
+        const config = configsByEmployeeId.get(employee.id)
+        if (!config) {
+          console.warn(`[PayrollService] No active config for employee ${employee.id}`)
+          continue
+        }
+
+        // PT payroll branch
+        if (isPartTimeWorkSchedule(employee)) {
+          const ptResult = await this.buildPartTimePayslipWithTx(
+            tx,
+            payroll.id,
+            employee.id,
+            config.id,
+            periodStart,
+            periodEnd,
+            variablesContext,
+          )
+          if (ptResult) {
+            totalAmount = totalAmount.add(ptResult.netSalary)
+          }
+          continue
+        }
+
+        // Use pre-fetched attendance
+        const attendanceRecords = attendanceByEmployeeId.get(employee.id) ?? []
+
+        // Calculate summary
+        const attendance = {
+          workingDays: 0,
+          absentDays: 0,
+          overtimeMinutes: 0,
+          lateMinutes: 0,
+          earlyLeaveMinutes: 0,
+          totalWorkMinutes: 0,
+          holidayDays: 0,
+        }
+        attendanceRecords.forEach((record) => {
+          if (
+            record.status === ATTENDANCE_STATUS.ON_TIME ||
+            record.status === ATTENDANCE_STATUS.LATE
+          )
+            attendance.workingDays += 1
+          if (record.status === ATTENDANCE_STATUS.ABSENT) {
+            if (record.realShift?.isPaidLeave) {
+              attendance.workingDays += 1
+            } else {
+              attendance.absentDays += 1
+            }
+          }
+          if (record.status === ATTENDANCE_STATUS.OVERTIME) attendance.workingDays += 1
+          if (record.status === (EMPLOYEE_SHIFT_STATUS.HOLIDAY_PENDING as string))
+            attendance.holidayDays += 1
+
+          attendance.overtimeMinutes += record.overtimeMinutes || 0
+          attendance.lateMinutes += record.lateMinutes || 0
+          attendance.earlyLeaveMinutes += record.earlyLeaveMinutes || 0
+          attendance.totalWorkMinutes += this.resolveRecordWorkMinutes(record)
+        })
+
+        // Use pre-fetched applications
+        const approvedApps = appsByEmployeeId.get(employee.id) ?? []
+
+        let excusedLateMinutes = 0
+        let excusedEarlyMinutes = 0
+
+        for (const app of approvedApps) {
+          if (app.type === "late_early" && app.lateEarlyDetail) {
+            if (app.lateEarlyDetail.isLate) {
+              excusedLateMinutes += app.lateEarlyDetail.durationMinutes
+            } else {
+              excusedEarlyMinutes += app.lateEarlyDetail.durationMinutes
+            }
+          }
+        }
+
+        attendance.lateMinutes = Math.max(0, attendance.lateMinutes - excusedLateMinutes)
+        attendance.earlyLeaveMinutes = Math.max(
+          0,
+          attendance.earlyLeaveMinutes - excusedEarlyMinutes,
+        )
+
+        // Build context
+        const context: Record<string, unknown> = {
+          baseSalary: Number(config.baseSalary),
+          workingDays: 22,
+          actualWorkingDays: attendance.workingDays,
+          absentDays: attendance.absentDays,
+          overtimeMinutes: attendance.overtimeMinutes,
+          lateMinutes: attendance.lateMinutes,
+          earlyLeaveMinutes: attendance.earlyLeaveMinutes,
+          holidayDays: attendance.holidayDays,
+          totalWorkMinutes: attendance.totalWorkMinutes,
+          totalWorkHours: attendance.totalWorkMinutes / ATTENDANCE_TIME_RULES.MINUTES_PER_HOUR,
+          MAX: Math.max,
+          MIN: Math.min,
+          ...variablesContext,
+        }
+
+        const details = []
+        let totalAdditions = new Prisma.Decimal(0)
+        let totalDeductions = new Prisma.Decimal(0)
+
+        const components = config.template.components
+        for (const tc of components) {
+          context.totalAdditions = Number(totalAdditions)
+          context.totalDeductions = Number(totalDeductions)
+
+          const formula = tc.overrideFormula ?? tc.component.formula
+          let rawValue = 0
+          try {
+            rawValue = math.evaluate(formula, context)
+          } catch (err) {
+            console.error("Error evaluating formula:", formula, "Context:", context)
+            throw err
+          }
+          const value = new Prisma.Decimal(Math.max(0, rawValue))
+
+          details.push({
+            componentId: tc.component.id,
+            name: tc.component.name,
+            type: tc.component.type,
+            value: Number(value.toFixed(2)),
+          })
+
+          if (tc.component.type === SALARY_COMPONENT_TYPES[0]) {
+            totalAdditions = totalAdditions.add(value)
+          } else {
+            totalDeductions = totalDeductions.add(value)
+          }
+        }
+
+        const netSalary = totalAdditions.minus(totalDeductions)
+        totalAmount = totalAmount.add(netSalary)
+
+        // C1 FIX: Create payslip inside transaction
+        await tx.payslip.create({
+          data: {
+            payrollId: payroll.id,
+            employeeId: employee.id,
+            salaryConfigId: config.id,
+            totalAdditions: Number(totalAdditions.toFixed(2)),
+            totalDeductions: Number(totalDeductions.toFixed(2)),
+            netSalary: Number(netSalary.toFixed(2)),
+            workingDays: attendance.workingDays,
+            absentDays: attendance.absentDays,
+            overtimeMinutes: attendance.overtimeMinutes,
+            details: {
+              create: details.map((d) => ({
+                componentId: d.componentId,
+                name: d.name,
+                type: d.type,
+                value: d.value,
+              })),
+            },
+          },
+        })
+      }
+
+      // Update total amount inside transaction
+      await tx.payroll.update({
+        where: { id: payroll.id },
+        data: { totalAmount },
+      })
+
+      return { ...payroll, totalAmount }
+    })
   }
 
   /** Builds payslip from approved SpentTime rows; skips employees with no approved hours in period. */
@@ -359,6 +430,88 @@ export class PayrollService implements IPayrollService {
     return { netSalary }
   }
 
+  /** Builds payslip from approved SpentTime rows inside transaction */
+  private async buildPartTimePayslipWithTx(
+    tx: Prisma.TransactionClient,
+    payrollId: string,
+    employeeId: string,
+    salaryConfigId: string,
+    periodStart: Date,
+    periodEnd: Date,
+    variablesContext: Record<string, number>,
+  ): Promise<{ netSalary: Prisma.Decimal } | null> {
+    const ptVariables = resolvePartTimePayrollVariables(
+      pickPartTimePayrollContext(variablesContext),
+    )
+    const rows = await this.spentTimeRepo.listApprovedForPayroll(employeeId, periodStart, periodEnd)
+    if (rows.length === 0) {
+      console.warn(`[PayrollService] No approved spent time for PT employee ${employeeId}`)
+      return null
+    }
+
+    let totalHours = 0
+    let grossPay = 0
+    const details: { componentId: string; name: string; type: ComponentType; value: number }[] = []
+
+    for (const row of rows) {
+      const multiplier =
+        row.workTimeType === SPENT_TIME_WORK_TIME_TYPE.OVERTIME
+          ? ptVariables.overtimeMultiplier
+          : ptVariables.workingDayMultiplier
+      const hourlyRate = row.hourlyRate ?? ptVariables.defaultHourlyRate
+      if (!hourlyRate || hourlyRate <= 0) {
+        console.warn(
+          `[PayrollService] Skip PT line ${row.id}: missing hourlyRate and no partTimeDefaultHourlyRate`,
+        )
+        continue
+      }
+      const linePay = row.hours * hourlyRate * multiplier
+      totalHours += row.hours
+      grossPay += linePay
+      details.push({
+        componentId: row.id,
+        name: `Dự án ${row.projectId}`,
+        type: SALARY_COMPONENT_TYPES[0] as ComponentType,
+        value: Number(linePay.toFixed(2)),
+      })
+    }
+
+    if (totalHours === 0) {
+      console.warn(`[PayrollService] No billable PT hours for employee ${employeeId}`)
+      return null
+    }
+
+    const netSalary = new Prisma.Decimal(Number(grossPay.toFixed(2)))
+
+    await tx.payslip.create({
+      data: {
+        payrollId,
+        employeeId,
+        salaryConfigId,
+        totalAdditions: Number(grossPay.toFixed(2)),
+        totalDeductions: 0,
+        netSalary: Number(grossPay.toFixed(2)),
+        workingDays: 0,
+        absentDays: 0,
+        overtimeMinutes: Math.round(
+          rows
+            .filter((r) => r.workTimeType === SPENT_TIME_WORK_TIME_TYPE.OVERTIME)
+            .reduce((sum, r) => sum + r.hours * ATTENDANCE_TIME_RULES.MINUTES_PER_HOUR, 0),
+        ),
+        details: {
+          create: details.map((d) => ({
+            componentId: d.componentId,
+            name: d.name,
+            type: d.type,
+            value: d.value,
+          })),
+        },
+      },
+    })
+
+    return { netSalary }
+  }
+
   /**
    * Process business logic for getPayroll.
    *
@@ -416,12 +569,58 @@ export class PayrollService implements IPayrollService {
 
   /**
    * Approve a payroll, changing its status to approved.
+   * C3 FIX: Validates status before approval to prevent invalid state transitions.
    *
    * @param payrollId - The payrollId parameter
    * @param approverId - The approverId parameter
    * @returns Returns the result of type Promise<{ name: string; id: string; periodMonth: number; periodYear: number; status: $Enums.PayrollStatus; totalAmount: Decimal; approvedById: string | null; approvedAt: Date | null; rejectReason: string | null; createdAt: Date; updatedAt: Date; }>
+   * @throws AppError if payroll not found or invalid status transition
    */
   async approvePayroll(payrollId: string, approverId: string): Promise<Payroll> {
+    // C3 FIX: Fetch payroll first to validate status
+    const payroll = await this.payrollRepo.findById(payrollId)
+    if (!payroll) {
+      throw new AppError(
+        PAYROLL_MESSAGES.ERRORS.PAYROLL_NOT_FOUND,
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+      )
+    }
+
+    // Validate status transitions
+    if (payroll.status === PAYROLL_STATUS.APPROVED) {
+      throw new AppError(
+        "Bảng lương đã được phê duyệt trước đó",
+        HttpStatusCode.CONFLICT,
+        ErrorLayer.SERVICE,
+      )
+    }
+
+    if (payroll.status === PAYROLL_STATUS.PAID) {
+      throw new AppError(
+        "Không thể phê duyệt bảng lương đã thanh toán",
+        HttpStatusCode.BAD_REQUEST,
+        ErrorLayer.SERVICE,
+      )
+    }
+
+    if (payroll.status === PAYROLL_STATUS.REJECTED) {
+      throw new AppError(
+        "Không thể phê duyệt bảng lương đã bị từ chối",
+        HttpStatusCode.BAD_REQUEST,
+        ErrorLayer.SERVICE,
+      )
+    }
+
+    // Optional: Require PENDING_APPROVAL status (uncomment if workflow requires it)
+    // if (payroll.status !== PAYROLL_STATUS.PENDING_APPROVAL) {
+    //   throw new AppError(
+    //     "Bảng lương cần được gửi phê duyệt trước",
+    //     HttpStatusCode.BAD_REQUEST,
+    //     ErrorLayer.SERVICE,
+    //   )
+    // }
+
     return this.payrollRepo.updateStatus(payrollId, {
       status: PAYROLL_STATUS.APPROVED,
       approvedById: approverId,
@@ -431,13 +630,54 @@ export class PayrollService implements IPayrollService {
 
   /**
    * Reject a payroll and record the rejection reason.
+   * C4 FIX: Validates status before rejection to prevent invalid state transitions.
    *
    * @param payrollId - The payrollId parameter
    * @param approverId - The approverId parameter
    * @param reason - The reason parameter
    * @returns Returns the result of type Promise<{ name: string; id: string; periodMonth: number; periodYear: number; status: $Enums.PayrollStatus; totalAmount: Decimal; approvedById: string | null; approvedAt: Date | null; rejectReason: string | null; createdAt: Date; updatedAt: Date; }>
+   * @throws AppError if payroll not found or invalid status transition
    */
   async rejectPayroll(payrollId: string, approverId: string, reason: string): Promise<Payroll> {
+    // C4 FIX: Fetch payroll first to validate status
+    const payroll = await this.payrollRepo.findById(payrollId)
+    if (!payroll) {
+      throw new AppError(
+        PAYROLL_MESSAGES.ERRORS.PAYROLL_NOT_FOUND,
+        HttpStatusCode.NOT_FOUND,
+        ErrorLayer.SERVICE,
+      )
+    }
+
+    // Validate status transitions
+    if (payroll.status === PAYROLL_STATUS.APPROVED) {
+      throw new AppError(
+        "Không thể từ chối bảng lương đã được phê duyệt",
+        HttpStatusCode.CONFLICT,
+        ErrorLayer.SERVICE,
+      )
+    }
+
+    if (payroll.status === PAYROLL_STATUS.PAID) {
+      throw new AppError(
+        "Không thể từ chối bảng lương đã thanh toán",
+        HttpStatusCode.BAD_REQUEST,
+        ErrorLayer.SERVICE,
+      )
+    }
+
+    // Only DRAFT or PENDING_APPROVAL can be rejected
+    if (
+      payroll.status !== PAYROLL_STATUS.DRAFT &&
+      payroll.status !== PAYROLL_STATUS.PENDING_APPROVAL
+    ) {
+      throw new AppError(
+        "Chỉ có thể từ chối bảng lương ở trạng thái nháp hoặc chờ phê duyệt",
+        HttpStatusCode.BAD_REQUEST,
+        ErrorLayer.SERVICE,
+      )
+    }
+
     return this.payrollRepo.updateStatus(payrollId, {
       status: PAYROLL_STATUS.REJECTED,
       approvedById: approverId,
@@ -480,37 +720,48 @@ export class PayrollService implements IPayrollService {
       employeeId,
     )) as PayslipWithPayrollRelation[]
 
-    const summaries = await Promise.all(rawPayslips.map(async (payslip) => ({
-      ...payslip,
-      periodMonth: payslip.payroll?.periodMonth,
-      periodYear: payslip.payroll?.periodYear,
-      status: payslip.payroll?.status,
-      receiptStatus: this.resolveReceiptStatus(payslip.payroll?.status),
-      isPreview: false,
-      canFeedback: payslip.payroll?.status !== PAYROLL_STATUS.PAID,
-      dailyWorkLogs:
-        payslip.payroll?.periodMonth && payslip.payroll?.periodYear
-          ? await this.buildDailyWorkLogs(employeeId, payslip.payroll.periodMonth, payslip.payroll.periodYear)
-          : [],
-    })))
+    const summaries = await Promise.all(
+      rawPayslips.map(async (payslip) => ({
+        ...payslip,
+        periodMonth: payslip.payroll?.periodMonth,
+        periodYear: payslip.payroll?.periodYear,
+        status: payslip.payroll?.status,
+        receiptStatus: this.resolveReceiptStatus(payslip.payroll?.status),
+        isPreview: false,
+        canFeedback: payslip.payroll?.status !== PAYROLL_STATUS.PAID,
+        dailyWorkLogs:
+          payslip.payroll?.periodMonth && payslip.payroll?.periodYear
+            ? await this.buildDailyWorkLogs(
+                employeeId,
+                payslip.payroll.periodMonth,
+                payslip.payroll.periodYear,
+              )
+            : [],
+      })),
+    )
 
     // Surface an in-memory current-month preview before payroll generation so employees can flag attendance issues early.
     const preview = await this.buildCurrentPreviewPayslip(employeeId, summaries)
     return preview ? [preview, ...summaries] : summaries
   }
 
-  async submitMyPayslipFeedback(
-    employeeId: string,
-    data: IPayslipFeedbackDTO,
-  ): Promise<unknown> {
+  async submitMyPayslipFeedback(employeeId: string, data: IPayslipFeedbackDTO): Promise<unknown> {
     const reason = data.reason.trim()
     if (!reason) {
-      throw new AppError("Vui lòng nhập nội dung feedback", HttpStatusCode.BAD_REQUEST, ErrorLayer.VALIDATION)
+      throw new AppError(
+        "Vui lòng nhập nội dung feedback",
+        HttpStatusCode.BAD_REQUEST,
+        ErrorLayer.VALIDATION,
+      )
     }
 
     const targetDate = new Date(data.date)
     if (Number.isNaN(targetDate.getTime())) {
-      throw new AppError("Ngày feedback không hợp lệ", HttpStatusCode.BAD_REQUEST, ErrorLayer.VALIDATION)
+      throw new AppError(
+        "Ngày feedback không hợp lệ",
+        HttpStatusCode.BAD_REQUEST,
+        ErrorLayer.VALIDATION,
+      )
     }
 
     const day = new Date(targetDate)
@@ -645,13 +896,19 @@ export class PayrollService implements IPayrollService {
       )
     }
 
-    const attendanceRecords = (await this.attendanceRepo.queryRecords({
-      employeeId,
-      startDate: periodStart.toISOString(),
-      endDate: periodEnd.toISOString(),
-    })) ?? []
+    const attendanceRecords =
+      (await this.attendanceRepo.queryRecords({
+        employeeId,
+        startDate: periodStart.toISOString(),
+        endDate: periodEnd.toISOString(),
+      })) ?? []
     const attendance = this.summarizeAttendance(attendanceRecords)
-    const details: Array<{ componentId: string; name: string; type: ComponentType; value: number }> = []
+    const details: Array<{
+      componentId: string
+      name: string
+      type: ComponentType
+      value: number
+    }> = []
     const context: Record<string, unknown> = {
       baseSalary: Number(config.baseSalary),
       workingDays: 22,
@@ -673,14 +930,17 @@ export class PayrollService implements IPayrollService {
     for (const tc of config.template.components) {
       context.totalAdditions = Number(totalAdditions)
       context.totalDeductions = Number(totalDeductions)
-      const value = new Prisma.Decimal(Math.max(0, math.evaluate(tc.overrideFormula ?? tc.component.formula, context)))
+      const value = new Prisma.Decimal(
+        Math.max(0, math.evaluate(tc.overrideFormula ?? tc.component.formula, context)),
+      )
       details.push({
         componentId: tc.component.id,
         name: tc.component.name,
         type: tc.component.type,
         value: Number(value.toFixed(2)),
       })
-      if (tc.component.type === SALARY_COMPONENT_TYPES[0]) totalAdditions = totalAdditions.add(value)
+      if (tc.component.type === SALARY_COMPONENT_TYPES[0])
+        totalAdditions = totalAdditions.add(value)
       else totalDeductions = totalDeductions.add(value)
     }
 
@@ -725,7 +985,12 @@ export class PayrollService implements IPayrollService {
 
     let totalHours = 0
     let grossPay = 0
-    const details: Array<{ componentId: string; name: string; type: ComponentType; value: number }> = []
+    const details: Array<{
+      componentId: string
+      name: string
+      type: ComponentType
+      value: number
+    }> = []
 
     for (const row of rows) {
       const multiplier =
@@ -748,11 +1013,12 @@ export class PayrollService implements IPayrollService {
 
     if (totalHours === 0) return null
 
-    const attendanceRecords = (await this.attendanceRepo.queryRecords({
-      employeeId,
-      startDate: periodStart.toISOString(),
-      endDate: periodEnd.toISOString(),
-    })) ?? []
+    const attendanceRecords =
+      (await this.attendanceRepo.queryRecords({
+        employeeId,
+        startDate: periodStart.toISOString(),
+        endDate: periodEnd.toISOString(),
+      })) ?? []
     const overtimeMinutes = Math.round(
       rows
         .filter((row) => row.workTimeType === SPENT_TIME_WORK_TIME_TYPE.OVERTIME)
@@ -791,7 +1057,8 @@ export class PayrollService implements IPayrollService {
         else attendance.absentDays += 1
       }
       if (record.status === ATTENDANCE_STATUS.OVERTIME) attendance.workingDays += 1
-      if (record.status === (EMPLOYEE_SHIFT_STATUS.HOLIDAY_PENDING as string)) attendance.holidayDays += 1
+      if (record.status === (EMPLOYEE_SHIFT_STATUS.HOLIDAY_PENDING as string))
+        attendance.holidayDays += 1
       attendance.overtimeMinutes += record.overtimeMinutes || 0
       attendance.lateMinutes += record.lateMinutes || 0
       attendance.earlyLeaveMinutes += record.earlyLeaveMinutes || 0
@@ -807,11 +1074,12 @@ export class PayrollService implements IPayrollService {
   ): Promise<IPayslipDailyWorkLog[]> {
     const periodStart = new Date(year, month - 1, 1)
     const periodEnd = new Date(year, month, 0)
-    const records = (await this.attendanceRepo.queryRecords({
-      employeeId,
-      startDate: periodStart.toISOString(),
-      endDate: periodEnd.toISOString(),
-    })) ?? []
+    const records =
+      (await this.attendanceRepo.queryRecords({
+        employeeId,
+        startDate: periodStart.toISOString(),
+        endDate: periodEnd.toISOString(),
+      })) ?? []
     return this.mapDailyWorkLogs(month, year, records)
   }
 
@@ -848,7 +1116,10 @@ export class PayrollService implements IPayrollService {
         status: this.resolveDailyStatus(dayRecords),
         workMinutes,
         workHours: Number((workMinutes / ATTENDANCE_TIME_RULES.MINUTES_PER_HOUR).toFixed(2)),
-        overtimeMinutes: dayRecords.reduce((total, record) => total + (record.overtimeMinutes ?? 0), 0),
+        overtimeMinutes: dayRecords.reduce(
+          (total, record) => total + (record.overtimeMinutes ?? 0),
+          0,
+        ),
         lateMinutes: dayRecords.reduce((total, record) => total + (record.lateMinutes ?? 0), 0),
         earlyLeaveMinutes: dayRecords.reduce(
           (total, record) => total + (record.earlyLeaveMinutes ?? 0),
@@ -890,8 +1161,10 @@ export class PayrollService implements IPayrollService {
       ATTENDANCE_STATUS.OVERTIME,
       ATTENDANCE_STATUS.ON_TIME,
     ]
-    return priorities.find((status) => records.some((record) => record.status === status))
-      ?? records[0].status
+    return (
+      priorities.find((status) => records.some((record) => record.status === status)) ??
+      records[0].status
+    )
   }
 
   private resolveDailyShiftName(records: IAttendanceRecordDTO[]): string | null {
@@ -932,15 +1205,20 @@ export class PayrollService implements IPayrollService {
   ): Date {
     const [hours, minutes] = time.split(":").map(Number)
     const result = new Date(date)
-    result.setHours(Number.isFinite(hours) ? hours : 0, Number.isFinite(minutes) ? minutes : 0, 0, 0)
+    result.setHours(
+      Number.isFinite(hours) ? hours : 0,
+      Number.isFinite(minutes) ? minutes : 0,
+      0,
+      0,
+    )
     const minutesFromMidnight =
-      (Number.isFinite(hours) ? hours : 0) * ATTENDANCE_TIME_RULES.MINUTES_PER_HOUR
-      + (Number.isFinite(minutes) ? minutes : 0)
+      (Number.isFinite(hours) ? hours : 0) * ATTENDANCE_TIME_RULES.MINUTES_PER_HOUR +
+      (Number.isFinite(minutes) ? minutes : 0)
     if (
-      kind === "checkout"
-      && shift
-      && shift.endTime < shift.startTime
-      && minutesFromMidnight <= shift.endTime
+      kind === "checkout" &&
+      shift &&
+      shift.endTime < shift.startTime &&
+      minutesFromMidnight <= shift.endTime
     ) {
       // Overnight shifts store checkout after midnight on the following calendar day.
       result.setDate(result.getDate() + 1)
