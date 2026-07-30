@@ -279,7 +279,7 @@ export default function OffersPage() {
                                 variant="ghost"
                                 size="icon"
                                 className="rounded-full hover:bg-muted"
-                                onClick={() => sendOffer.mutate(offer.id)}
+                                onClick={() => { sendOffer.mutate(offer.id); }}
                               >
                                 <Send className="h-4 w-4" />
                               </Button>
@@ -293,7 +293,7 @@ export default function OffersPage() {
                               variant="ghost"
                               size="icon"
                               className="rounded-full hover:bg-muted"
-                              onClick={() => handleViewDetails(offer)}
+                              onClick={() => { handleViewDetails(offer); }}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>

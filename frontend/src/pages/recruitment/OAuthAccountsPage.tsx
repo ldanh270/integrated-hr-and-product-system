@@ -525,7 +525,7 @@ export default function OAuthAccountsPage() {
               variant="outline"
               size="sm"
               className="rounded-full text-xs"
-              onClick={() => setIsConnectModalOpen(false)}
+              onClick={() => { setIsConnectModalOpen(false); }}
             >
               Hủy
             </Button>
