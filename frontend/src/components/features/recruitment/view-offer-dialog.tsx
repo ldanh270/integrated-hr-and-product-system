@@ -103,6 +103,7 @@ export function ViewOfferDialog({ open, onOpenChange, offer }: Props) {
             {offer.response ? (
               <StatusPill
                 label={OFFER_RESPONSE_LABELS[offer.response] || offer.response}
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                 variant={responseVariantMap[offer.response] ?? "neutral"}
               />
             ) : (

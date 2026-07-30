@@ -716,7 +716,7 @@ export default function ApplicationDetailPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => setIsOfferDialogOpen(true)}
+                        onClick={() => { setIsOfferDialogOpen(true); }}
                         className="rounded-full text-xs font-semibold"
                       >
                         <Plus className="mr-1.5 size-3.5" />

@@ -159,7 +159,7 @@ export default function RequisitionsPage() {
           description="Theo dõi nhu cầu tuyển dụng, người duyệt và tiến độ mở vị trí."
           actions={
             hasPermission("recruitment.create") ? (
-              <Button onClick={() => setIsCreateOpen(true)} className="rounded-full">
+              <Button onClick={() => { setIsCreateOpen(true); }} className="rounded-full">
                 <Plus className="mr-2 h-4 w-4" />
                 Tạo yêu cầu mới
               </Button>
@@ -347,7 +347,7 @@ export default function RequisitionsPage() {
         {/* Slide-out Drawer view details */}
         <RequisitionDetailsDrawer
           requisitionId={viewingRequisitionId}
-          onClose={() => setViewingRequisitionId(null)}
+          onClose={() => { setViewingRequisitionId(null); }}
           onEdit={(req) => {
             setSelectedRequisition(req)
             setIsEditOpen(true)
@@ -382,7 +382,7 @@ function RequisitionRow({
   return (
     <>
     <TableRow
-      onClick={() => onViewDetails(requisition.id)}
+      onClick={() => { onViewDetails(requisition.id); }}
       className="cursor-pointer transition-colors duration-100 hover:bg-muted/25"
     >
       {/* Code */}
@@ -475,7 +475,7 @@ function RequisitionRow({
                   size="icon"
                   className="rounded-full hover:text-primary hover:bg-primary/10"
                   aria-label={`Sửa ${requisition.code}`}
-                  onClick={() => onEdit(requisition)}
+                  onClick={() => { onEdit(requisition); }}
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
@@ -529,7 +529,7 @@ function RequisitionRow({
                     size="icon"
                     className="rounded-full text-destructive hover:text-destructive hover:bg-destructive/10"
                     aria-label={`Từ chối ${requisition.code}`}
-                    onClick={() => setIsRejectOpen(true)}
+                    onClick={() => { setIsRejectOpen(true); }}
                     disabled={approve.isPending}
                   >
                     <X className="h-4 w-4" />
@@ -560,7 +560,7 @@ function RequisitionRow({
         </div>
       </TableCell>
     </TableRow>
-    <RejectRequisitionDialog requisitionCode={requisition.code} open={isRejectOpen} pending={approve.isPending} onOpenChange={setIsRejectOpen} onConfirm={(comment) => approve.mutate({ id: requisition.id, data: { approved: false, comment } }, { onSuccess: () => setIsRejectOpen(false) })} />
+    <RejectRequisitionDialog requisitionCode={requisition.code} open={isRejectOpen} pending={approve.isPending} onOpenChange={setIsRejectOpen} onConfirm={(comment) => { approve.mutate({ id: requisition.id, data: { approved: false, comment } }, { onSuccess: () => { setIsRejectOpen(false); } }); }} />
     </>
   )
 }
