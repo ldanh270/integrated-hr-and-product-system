@@ -60,12 +60,12 @@ export default function SubsystemDropdown() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className={`flex h-12 min-w-0 items-center gap-2 rounded-full px-2 text-sm font-medium transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-            isCollapsed ? "w-full justify-center" : "w-full justify-between"
+          className={`flex h-12 min-w-0 items-center rounded-xl text-sm font-medium transition-all duration-300 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+            isCollapsed ? "w-full justify-center px-0" : "w-full justify-between px-2 gap-2"
           }`}
           title={isCollapsed ? activeConfig?.name : undefined}
         >
-          <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+          <div className={`flex min-w-0 items-center overflow-hidden ${isCollapsed ? "justify-center" : "flex-1 gap-2"}`}>
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-medium text-primary-foreground shadow-sm transition-all duration-150">
               <span className="font-bold text-xs">HRP</span>
             </div>
