@@ -43,12 +43,12 @@ export default function UserMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className={`flex items-center gap-3 rounded-lg p-2 text-sm transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-            isCollapsed ? "w-full justify-center" : "w-full justify-between"
+          className={`flex items-center rounded-lg text-sm transition-all duration-300 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+            isCollapsed ? "w-full justify-center p-0" : "w-full justify-between p-2 gap-3"
           }`}
           title={isCollapsed ? user?.fullName : undefined}
         >
-          <div className="flex items-center gap-3 overflow-hidden">
+          <div className={`flex items-center overflow-hidden ${isCollapsed ? "justify-center" : "gap-3"}`}>
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
               {userInitial}
             </div>
