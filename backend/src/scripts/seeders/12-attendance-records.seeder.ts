@@ -1,4 +1,5 @@
 import { prisma } from "@/libs/database.ts"
+import { isPayrollDemoAttendanceDate } from "@/scripts/seeders/payroll-demo.config.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
 import { ISeeder } from "@/scripts/seeders/seeder.interface.ts"
 import { registry } from "@/scripts/seeders/seeder.registry.ts"
@@ -35,6 +36,8 @@ export class AttendanceRecordsSeeder implements ISeeder {
     for (const shift of shifts) {
       // Don't seed attendance for future dates
       if (shift.assignedDate > new Date()) continue
+      // Payroll demo attendance is seeded deterministically by AttendanceDemoWeekSeeder.
+      if (isPayrollDemoAttendanceDate(shift.assignedDate)) continue
 
       const isCoreUser = coreUsernames.includes(shift.employee.username)
       // Apply interesting data to both current month and previous month
