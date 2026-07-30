@@ -49,8 +49,9 @@ export class AttendanceRecordsSeeder implements ISeeder {
       let overtimeMinutes = 0
 
       if (isCoreUser && isTargetMonth) {
-        if (counters[shift.employeeId] === undefined)
+        if (!(shift.employeeId in counters)) {
           counters[shift.employeeId] = { late: 0, overtime: 0, absent: 0 }
+        }
         const c = counters[shift.employeeId]
 
         isAbsent = false
