@@ -372,7 +372,7 @@ export default function ContractsPage() {
       {/* Contract Modal */}
       <ContractModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => { setIsModalOpen(false); }}
         employeeId={selectedContract?.employeeId || ""}
         mode={modalMode}
         contract={selectedContract}

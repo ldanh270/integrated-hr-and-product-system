@@ -343,7 +343,7 @@ export function ContractModal({
                   id="salary"
                   type="number"
                   value={salary}
-                  onChange={(e) => setSalary(e.target.value)}
+                  onChange={(e) => { setSalary(e.target.value); }}
                   placeholder="0"
                   className="rounded-full"
                   required

@@ -226,7 +226,7 @@ export function CreateRequisitionDialog({
                 <SelectContent>
                   {EMPLOYEE_TYPES.map((type) => (
                     <SelectItem key={type} value={type}>
-                      {EMPLOYEE_TYPE_LABELS[type]}
+                      {new Map(Object.entries(EMPLOYEE_TYPE_LABELS)).get(type) || type}
                     </SelectItem>
                   ))}
                 </SelectContent>

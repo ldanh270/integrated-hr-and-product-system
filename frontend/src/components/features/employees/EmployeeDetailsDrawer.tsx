@@ -339,7 +339,7 @@ export function EmployeeDetailsDrawer({ employeeId, onClose }: EmployeeDetailsDr
       {employee && (
         <ContractModal
           isOpen={isContractModalOpen}
-          onClose={() => setIsContractModalOpen(false)}
+          onClose={() => { setIsContractModalOpen(false); }}
           employeeId={employee.id}
           mode={contractModalMode}
           contract={selectedContract}

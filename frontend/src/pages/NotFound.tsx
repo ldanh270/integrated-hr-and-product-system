@@ -154,7 +154,7 @@ export default function NotFound() {
                     <button
                       key={link.path}
                       type="button"
-                      onClick={() => navigate(link.path)}
+                      onClick={() => { navigate(link.path); }}
                       className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground whitespace-nowrap transition-colors hover:bg-muted hover:text-foreground"
                     >
                       <Icon className="h-3.5 w-3.5 text-primary" />
