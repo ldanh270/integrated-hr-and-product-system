@@ -38,10 +38,38 @@ export class PayslipsSeeder implements ISeeder {
         const configId = salaryConfigMap[emp.id]
         if (!configId) continue
 
-        // Mock some values for the payslip
-        const workingDays = faker.number.int({ min: 18, max: 22 })
-        const absentDays = 22 - workingDays
-        const overtimeMinutes = faker.number.int({ min: 0, max: 600 }) // up to 10 hours
+        const startDate = new Date(payroll.periodYear, payroll.periodMonth - 1, 1)
+        const endDate = new Date(payroll.periodYear, payroll.periodMonth, 0)
+
+        const attendanceRecords = await prisma.attendanceRecord.findMany({
+          where: {
+            employeeId: emp.id,
+            date: {
+              gte: startDate,
+              lte: endDate,
+            },
+          },
+        })
+
+        let workingDays = 0
+        let absentDays = 0
+        let overtimeMinutes = 0
+        let lateMinutes = 0
+
+        for (const record of attendanceRecords) {
+          if (record.status === "absent") {
+            absentDays++
+          } else {
+            workingDays++
+            overtimeMinutes += record.overtimeMinutes
+            lateMinutes += record.lateMinutes
+          }
+        }
+
+        // Fallback if no records found (e.g. employee joined later or script ran out of sync)
+        if (workingDays === 0 && absentDays === 0) {
+          workingDays = 22
+        }
 
         let totalAdditions = 0
         let totalDeductions = 0
@@ -104,7 +132,7 @@ export class PayslipsSeeder implements ISeeder {
           console.error(`Does employee exist in DB?`, !!dbEmployee)
           const dbConfig = await prisma.employeeSalaryConfig.findUnique({ where: { id: configId } })
           console.error(`Does config exist in DB?`, !!dbConfig)
-          throw err;
+          throw err
         }
         totalPayslipsSeeded++
       }
@@ -126,7 +154,9 @@ registry.register(new PayslipsSeeder())
 
 if (import.meta.main) {
   const seeder = new PayslipsSeeder()
-  const emps = await prisma.employee.findMany({ select: { id: true, position: true, username: true } })
+  const emps = await prisma.employee.findMany({
+    select: { id: true, position: true, username: true },
+  })
   const payrolls = await prisma.payroll.findMany()
   const configs = await prisma.employeeSalaryConfig.findMany()
 

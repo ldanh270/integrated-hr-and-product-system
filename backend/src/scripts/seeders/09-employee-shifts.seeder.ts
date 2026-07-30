@@ -53,9 +53,12 @@ export class EmployeeShiftsSeeder implements ISeeder {
         return acc
       }, {})
 
-      // Generate shifts from start of month to today
-      for (let d = 1; d <= today.getDate(); d++) {
-        const date = new Date(currentYear, currentMonth, d)
+      // Generate shifts from 3 months ago to today
+      const startDate = new Date(currentYear, currentMonth - 3, 1)
+      const endDate = new Date(currentYear, currentMonth, today.getDate())
+
+      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        const date = new Date(d)
         const dayOfWeek = date.getDay()
 
         const shiftId = dayMap[dayOfWeek]
@@ -98,7 +101,9 @@ if (import.meta.main) {
   const seeder = new EmployeeShiftsSeeder()
   // Mock context
   const admin = await prisma.employee.findFirst({ where: { username: "admin" } })
-  const emps = await prisma.employee.findMany({ select: { id: true, position: true, username: true } })
+  const emps = await prisma.employee.findMany({
+    select: { id: true, position: true, username: true },
+  })
   const schedules = await prisma.shiftSchedule.findMany()
 
   const ctx = createEmptyContext()
