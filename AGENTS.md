@@ -9,7 +9,10 @@
 
 ## 0 · Core Agent Mandates
 
-1. **Package Manager:** Use **Bun** for all installs and scripts.
+1. **Package Manager:** Use the following fallback order:
+   - **Dependency installation:** `pnpm` → `bun` → `yarn` → `npm`.
+   - **Commands and scripts** (`dev`, `build`, `test`, `lint`, etc.): `bun` → `pnpm` → `yarn` → `npm`.
+   - Respect the repository lockfile when it clearly identifies an existing package manager; only fall back when the preferred tool or matching lockfile is unavailable.
 2. **Planning:** Every complex task MUST have a plan file in `plans/` or a task plan in the topic summary.
 3. **Verification:** Use **Playwright** to verify behavior. Task not DONE until tests green.
 4. **Code Standards:** Strictly follow **SOLID** and **Design Patterns**. Reference `docs/solid-principles.md` and `docs/design-patterns.md`.
