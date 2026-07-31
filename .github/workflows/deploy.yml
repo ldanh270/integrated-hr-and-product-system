@@ -30,7 +30,7 @@ jobs:
   # ============================================================
   build:
     name: 🏗️ Build Images
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       packages: write
@@ -92,7 +92,7 @@ jobs:
   # ============================================================
   deploy:
     name: 🚀 Deploy to EC2
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     environment: production
