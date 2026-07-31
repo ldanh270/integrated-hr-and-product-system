@@ -1,0 +1,55 @@
+name: ⏮️ Rollback Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: "Short SHA to rollback to (e.g. a1b2c3d)"
+        required: true
+        type: string
+      service:
+        description: "Service to rollback (or 'all')"
+        required: true
+        type: choice
+        options:
+          - all
+          - backend
+          - mcp
+          - gateway
+        default: all
+
+jobs:
+  rollback:
+    name: ⏮️ Rollback to ${{ inputs.commit_sha }}
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: 🔐 Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+
+      - name: 📋 Add EC2 to known hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: ⏮️ Rollback on EC2
+        run: |
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << ENDSSH
+            set -e
+            cd ~/hrp
+
+            echo "⏮️ Rolling back to ${{ inputs.commit_sha }}..."
+
+            IMAGE_TAG=${{ inputs.commit_sha }} \
+            GITHUB_REPO=${{ github.repository }} \
+            docker compose -f docker-compose.prod.yml pull
+
+            IMAGE_TAG=${{ inputs.commit_sha }} \
+            GITHUB_REPO=${{ github.repository }} \
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            echo "✅ Rollback complete!"
+            docker compose -f docker-compose.prod.yml ps
+          ENDSSH
