@@ -11,4 +11,3 @@ Dockerfile
 .dockerignore
 README.md
 jest.config.cjs
-tsconfig.json
