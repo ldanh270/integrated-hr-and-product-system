@@ -1,3 +1,10 @@
+const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim()
+
+/** Absolute backend URL in production; same-origin /api when no env is configured. */
+export const API_BASE_URL = configuredApiBaseUrl
+  ? `${configuredApiBaseUrl.replace(/\/$/, "")}${configuredApiBaseUrl.endsWith("/api") ? "" : "/api"}`
+  : "/api"
+
 export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: "/auth/login",

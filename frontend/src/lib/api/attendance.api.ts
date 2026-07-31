@@ -1,4 +1,4 @@
-import { API_ENDPOINTS } from "@/config/api.config"
+import { API_BASE_URL, API_ENDPOINTS } from "@/config/api.config"
 import { ATTENDANCE_QUERY_PARAMS } from "@/constants/attendance.constants"
 import apiClient from "@/lib/api-client"
 import type {
@@ -237,9 +237,8 @@ export const attendanceApi = {
     if (query?.endDate) params.set(ATTENDANCE_QUERY_PARAMS.END_DATE, query.endDate)
     if (query?.employeeId) params.set(ATTENDANCE_QUERY_PARAMS.EMPLOYEE_ID, query.employeeId)
     if (query?.status) params.set(ATTENDANCE_QUERY_PARAMS.STATUS, query.status)
-    const base = import.meta.env.VITE_API_BASE_URL ?? ""
     const qs = params.toString()
-    return `${base}/api${API_ENDPOINTS.ATTENDANCE.EXPORT}${qs ? `?${qs}` : ""}`
+    return `${API_BASE_URL}${API_ENDPOINTS.ATTENDANCE.EXPORT}${qs ? `?${qs}` : ""}`
   },
 }
 
