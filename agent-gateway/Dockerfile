@@ -38,6 +38,9 @@ COPY --from=builder /app/dist ./dist
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
   CMD wget -qO- http://localhost:${PORT:-3002}/health || exit 1
 
+# Run as non-root node user
+USER node
+
 EXPOSE 3002
 
 CMD ["node", "dist/app.js"]
