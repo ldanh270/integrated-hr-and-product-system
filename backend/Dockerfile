@@ -1,19 +1,35 @@
-FROM oven/bun:1
-
+# ============================================================
+# Backend — Bun + Express + Prisma (multi-stage)
+# ============================================================
+FROM oven/bun:1 AS base
 WORKDIR /app
 
+# ---- Dependencies ----
+FROM base AS deps
+COPY package.json bun.lock* ./
+COPY prisma ./prisma
+# Install all deps (including dev for prisma generate)
+RUN bun install
+
+# ---- Prisma generate (requires devDeps) ----
+FROM deps AS builder
+RUN bunx prisma generate
+
+# ---- Production runner ----
+FROM base AS runner
 ENV NODE_ENV=production
 ENV PORT=5000
 
-COPY package.json bun.lock ./
-COPY prisma ./prisma
+# Copy prisma schema + generated client
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/prisma ./prisma
 
-RUN bun install --frozen-lockfile --production
-
+# Copy source
 COPY src ./src
 
 EXPOSE 5000
 
+# Run as non-root bun user
 USER bun
 
 CMD ["bun", "run", "src/index.ts"]

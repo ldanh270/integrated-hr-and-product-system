@@ -1,0 +1,133 @@
+version: "3.9"
+
+# ============================================================
+# HRP Production Stack — EC2 Deployment
+# Services: backend, mcp-server, agent-gateway, redis, nginx
+#
+# Images are pulled from GHCR (GitHub Container Registry).
+# Env vars are injected via .env files on the EC2 host.
+# ============================================================
+
+services:
+  # ----------------------------------------------------------
+  # Nginx — Reverse proxy & SSL termination
+  # ----------------------------------------------------------
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: hrp-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot_www:/var/www/certbot:ro
+      - certbot_conf:/etc/letsencrypt:ro
+    depends_on:
+      - backend
+      - mcp
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ----------------------------------------------------------
+  # Redis — Cache & session store for agent-gateway
+  # ----------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: hrp-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass "${REDIS_PASSWORD}"
+    volumes:
+      - redis_data:/data
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------
+  # Backend — HRP REST API (Bun + Express + Prisma)
+  # ----------------------------------------------------------
+  backend:
+    image: ghcr.io/${GITHUB_REPO}/hrp-backend:${IMAGE_TAG:-latest}
+    container_name: hrp-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend.env
+    environment:
+      NODE_ENV: production
+      PORT: "5000"
+    expose:
+      - "5000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ----------------------------------------------------------
+  # MCP Server — HR tool registry (SSE)
+  # ----------------------------------------------------------
+  mcp:
+    image: ghcr.io/${GITHUB_REPO}/hrp-mcp:${IMAGE_TAG:-latest}
+    container_name: hrp-mcp
+    restart: unless-stopped
+    env_file:
+      - ./mcp.env
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+    expose:
+      - "3001"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/mcp/sse", "--spider"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ----------------------------------------------------------
+  # Agent Gateway — Telegram AI Bot
+  # ----------------------------------------------------------
+  agent-gateway:
+    image: ghcr.io/${GITHUB_REPO}/hrp-agent-gateway:${IMAGE_TAG:-latest}
+    container_name: hrp-agent-gateway
+    restart: unless-stopped
+    env_file:
+      - ./gateway.env
+    environment:
+      NODE_ENV: production
+      MCP_SSE_URL: http://mcp:3001/mcp/sse
+      MCP_MESSAGE_URL: http://mcp:3001/mcp/message
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+    expose:
+      - "3002"
+    depends_on:
+      redis:
+        condition: service_healthy
+      mcp:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+# ============================================================
+# Volumes
+# ============================================================
+volumes:
+  redis_data:
+    driver: local
+  certbot_www:
+    driver: local
+  certbot_conf:
+    driver: local

@@ -1,0 +1,84 @@
+version: "3.9"
+
+# ============================================================
+# HRP Full Stack — Docker Compose
+# Services: redis, mcp-server, agent-gateway
+# ============================================================
+
+services:
+  # ----------------------------------------------------------
+  # Redis — Shared cache for agent-gateway
+  # ----------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: hrp-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ----------------------------------------------------------
+  # MCP Server — HRP business logic & tool registry
+  # ----------------------------------------------------------
+  mcp:
+    build:
+      context: ./mcp-server
+      dockerfile: Dockerfile
+    container_name: hrp-mcp
+    restart: unless-stopped
+    env_file:
+      - ./mcp-server/.env
+    environment:
+      # Override PORT for Docker networking
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/mcp/sse", "--spider"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ----------------------------------------------------------
+  # Agent Gateway — Telegram AI Bot
+  # ----------------------------------------------------------
+  agent-gateway:
+    build:
+      context: ./agent-gateway
+      dockerfile: Dockerfile
+    container_name: hrp-agent-gateway
+    restart: unless-stopped
+    env_file:
+      - ./agent-gateway/.env
+    environment:
+      # Docker internal network URLs (override .env if needed)
+      MCP_SSE_URL: http://mcp:3001/mcp/sse
+      MCP_MESSAGE_URL: http://mcp:3001/mcp/message
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "3002:3002"
+    depends_on:
+      redis:
+        condition: service_healthy
+      mcp:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+# ============================================================
+# Volumes
+# ============================================================
+volumes:
+  redis_data:
+    driver: local

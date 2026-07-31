@@ -3,11 +3,9 @@ dist
 .env
 .env.*
 !.env.example
-coverage
 *.log
 .git
 .gitignore
 Dockerfile
 .dockerignore
 README.md
-jest.config.cjs
