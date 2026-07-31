@@ -9,4 +9,3 @@ dist
 Dockerfile
 .dockerignore
 README.md
-tsconfig.json
