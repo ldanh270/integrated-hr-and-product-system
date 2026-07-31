@@ -1,38 +1,36 @@
 # ============================================================
 # Stage 1: Builder
 # ============================================================
-FROM node:24-alpine AS builder
+FROM oven/bun:1 AS builder
 
 WORKDIR /app
 
-RUN npm install -g pnpm@11.8.0
-
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --no-frozen-lockfile
+COPY package.json bun.lock* ./
+RUN bun install
 
 COPY tsconfig.json ./
 COPY src ./src
-RUN pnpm build
+RUN bun run build
 
 # ============================================================
 # Stage 2: Runner
 # ============================================================
-FROM node:24-alpine AS runner
+FROM oven/bun:1 AS runner
 
 WORKDIR /app
 
-RUN npm install -g pnpm@11.8.0
+ENV NODE_ENV=production
+ENV PORT=3001
 
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --prod --no-frozen-lockfile
+COPY package.json bun.lock* ./
+RUN bun install --production
 
 COPY --from=builder /app/dist ./dist
 # Auth page HTML is served statically at runtime
 COPY --from=builder /app/src/auth ./dist/auth
 
-# Run as non-root node user
-USER node
+USER bun
 
 EXPOSE 3001
 
-CMD ["node", "dist/server.js"]
+CMD ["bun", "run", "dist/server.js"]
