@@ -6,10 +6,10 @@ WORKDIR /app
 
 # ---- Dependencies ----
 FROM base AS deps
-COPY package.json bun.lock ./
+COPY package.json bun.lock* ./
 COPY prisma ./prisma
 # Install all deps (including dev for prisma generate)
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # ---- Prisma generate (requires devDeps) ----
 FROM deps AS builder
