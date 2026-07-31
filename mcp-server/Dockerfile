@@ -3,36 +3,32 @@
 # ============================================================
 FROM node:24-alpine AS builder
 
-WORKDIR /workspace
+WORKDIR /app
 
 RUN npm install -g pnpm@11.8.0
 
-COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
-COPY mcp-server/package.json ./mcp-server/package.json
-RUN pnpm install --frozen-lockfile --filter @ldanh270/hrp-mcp-server...
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install --no-frozen-lockfile
 
-COPY mcp-server/tsconfig.json ./mcp-server/tsconfig.json
-COPY mcp-server/src ./mcp-server/src
-RUN pnpm --filter @ldanh270/hrp-mcp-server build
+COPY tsconfig.json ./
+COPY src ./src
+RUN pnpm build
 
 # ============================================================
 # Stage 2: Runner
 # ============================================================
 FROM node:24-alpine AS runner
 
-WORKDIR /workspace
+WORKDIR /app
 
 RUN npm install -g pnpm@11.8.0
 
-COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
-COPY mcp-server/package.json ./mcp-server/package.json
-RUN pnpm install --frozen-lockfile --prod --filter @ldanh270/hrp-mcp-server...
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install --prod --no-frozen-lockfile
 
-COPY --from=builder /workspace/mcp-server/dist ./mcp-server/dist
+COPY --from=builder /app/dist ./dist
 # Auth page HTML is served statically at runtime
-COPY --from=builder /workspace/mcp-server/src/auth ./mcp-server/dist/auth
-
-WORKDIR /workspace/mcp-server
+COPY --from=builder /app/src/auth ./dist/auth
 
 # Run as non-root node user
 USER node

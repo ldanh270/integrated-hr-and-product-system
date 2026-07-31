@@ -3,40 +3,36 @@
 # ============================================================
 FROM node:24-alpine AS builder
 
-WORKDIR /workspace
+WORKDIR /app
 
 # Install pnpm
 RUN npm install -g pnpm@11.8.0
 
 # Copy package manifests and install deps
-COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
-COPY agent-gateway/package.json ./agent-gateway/package.json
-RUN pnpm install --frozen-lockfile --filter @ldanh270/hrp-agent-gateway...
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install --no-frozen-lockfile
 
 # Copy source and compile TypeScript
-COPY agent-gateway/tsconfig.json ./agent-gateway/tsconfig.json
-COPY agent-gateway/src ./agent-gateway/src
-RUN pnpm --filter @ldanh270/hrp-agent-gateway build
+COPY tsconfig.json ./
+COPY src ./src
+RUN pnpm build
 
 # ============================================================
 # Stage 2: Runner
 # ============================================================
 FROM node:24-alpine AS runner
 
-WORKDIR /workspace
+WORKDIR /app
 
 # Install pnpm for production install
 RUN npm install -g pnpm@11.8.0
 
 # Copy package manifests and install production deps only
-COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
-COPY agent-gateway/package.json ./agent-gateway/package.json
-RUN pnpm install --frozen-lockfile --prod --filter @ldanh270/hrp-agent-gateway...
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install --prod --no-frozen-lockfile
 
 # Copy compiled output from builder
-COPY --from=builder /workspace/agent-gateway/dist ./agent-gateway/dist
-
-WORKDIR /workspace/agent-gateway
+COPY --from=builder /app/dist ./dist
 
 # Run as non-root node user
 USER node
