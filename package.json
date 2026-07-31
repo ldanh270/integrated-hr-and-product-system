@@ -3,13 +3,16 @@
     "dev": "concurrently \"nr dev:backend\" \"nr dev:frontend\"",
     "dev:stage": "concurrently \"nr dev:backend\" \"nr dev:frontend\" \"nr dev:mcp\"",
     "dev:all": "concurrently \"nr dev:backend\" \"nr dev:frontend\" \"nr dev:mcp\" \"nr db:studio\"",
-    "i:all": "concurrently \"nr i:backend\" \"nr i:frontend\" \"nr i:mcp\"",
+    "i:all": "concurrently \"nr i:backend\" \"nr i:frontend\" \"nr i:mcp\" \"nr i:gateway\"",
     "i:backend": "cd backend && ni",
     "i:frontend": "cd frontend && ni",
     "i:mcp": "cd mcp-server && ni",
+    "i:gateway": "cd agent-gateway && ni",
     "dev:backend": "cd backend && nr dev",
     "dev:frontend": "cd frontend && nr dev",
     "dev:mcp": "cd mcp-server && nr dev",
+    "dev:gateway": "cd agent-gateway && nr dev",
+    "dev:full": "concurrently \"nr dev:mcp\" \"nr dev:gateway\"",
     "build": "nr db:reset:force && nr db:deploy && nr build:frontend",
     "build:frontend": "cd frontend && nr build",
     "db:deploy": "cd backend && nlx prisma generate && nlx prisma migrate deploy",
@@ -35,7 +38,7 @@
   "devDependencies": {
     "@antfu/ni": "^30.1.0",
     "@ldanh270/aatest": "^1.0.19",
-    "concurrently": "^9.2.1",
+    "concurrently": "^9.2.4",
     "jest": "^30.4.2",
     "supertest": "^7.2.2"
   }
