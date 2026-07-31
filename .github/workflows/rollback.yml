@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: 🔐 Setup SSH
-        uses: webfactory/ssh-agent@dc323e667b291f435747cfb7709e0241aed51d56 # v0.9.0
+        uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
 
