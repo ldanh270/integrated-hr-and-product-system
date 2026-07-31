@@ -7,7 +7,7 @@ WORKDIR /workspace
 
 RUN npm install -g pnpm@11.8.0
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
 COPY mcp-server/package.json ./mcp-server/package.json
 RUN pnpm install --frozen-lockfile --filter @ldanh270/hrp-mcp-server...
 
@@ -24,7 +24,7 @@ WORKDIR /workspace
 
 RUN npm install -g pnpm@11.8.0
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
 COPY mcp-server/package.json ./mcp-server/package.json
 RUN pnpm install --frozen-lockfile --prod --filter @ldanh270/hrp-mcp-server...
 

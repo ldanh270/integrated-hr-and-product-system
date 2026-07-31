@@ -9,7 +9,7 @@ WORKDIR /workspace
 RUN npm install -g pnpm@11.8.0
 
 # Copy package manifests and install deps
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
 COPY agent-gateway/package.json ./agent-gateway/package.json
 RUN pnpm install --frozen-lockfile --filter @ldanh270/hrp-agent-gateway...
 
@@ -29,7 +29,7 @@ WORKDIR /workspace
 RUN npm install -g pnpm@11.8.0
 
 # Copy package manifests and install production deps only
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
 COPY agent-gateway/package.json ./agent-gateway/package.json
 RUN pnpm install --frozen-lockfile --prod --filter @ldanh270/hrp-agent-gateway...
 
@@ -38,12 +38,12 @@ COPY --from=builder /workspace/agent-gateway/dist ./agent-gateway/dist
 
 WORKDIR /workspace/agent-gateway
 
+# Run as non-root node user
+USER node
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
   CMD wget -qO- http://localhost:${PORT:-3002}/health || exit 1
-
-# Run as non-root node user
-USER node
 
 EXPOSE 3002
 
