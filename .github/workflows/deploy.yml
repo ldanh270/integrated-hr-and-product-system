@@ -44,11 +44,11 @@ jobs:
             dockerfile: ./backend/Dockerfile
             image: hrp-backend
           - service: mcp
-            context: .
+            context: ./mcp-server
             dockerfile: ./mcp-server/Dockerfile
             image: hrp-mcp
           - service: gateway
-            context: .
+            context: ./agent-gateway
             dockerfile: ./agent-gateway/Dockerfile
             image: hrp-agent-gateway
 
