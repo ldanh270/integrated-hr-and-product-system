@@ -30,6 +30,9 @@ COPY --from=builder /app/dist ./dist
 # Auth page HTML is served statically at runtime
 COPY --from=builder /app/src/auth ./dist/auth
 
+# Run as non-root node user
+USER node
+
 EXPOSE 3001
 
 CMD ["node", "dist/server.js"]
