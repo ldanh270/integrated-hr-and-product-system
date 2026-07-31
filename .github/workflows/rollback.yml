@@ -21,7 +21,7 @@ on:
 jobs:
   rollback:
     name: ⏮️ Rollback to ${{ inputs.commit_sha }}
-    runs-on: self-hosted
+    runs-on: [self-hosted, Linux, X64]
     environment: production
 
     steps:
