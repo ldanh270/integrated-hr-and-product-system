@@ -27,7 +27,8 @@ export const registerAuthTools = () => {
             "Set PUBLIC_BASE_URL in .env (must include scheme, e.g. https://your-domain or http://localhost:3001 for dev).",
           )
         }
-        const loginUrl = `${publicBase}/auth/login?id=${loginId}`
+        const mcpBase = publicBase.endsWith("/mcp") ? publicBase : `${publicBase}/mcp`
+        const loginUrl = `${mcpBase}/auth/login?id=${loginId}`
 
         return buildSuccess({
           message:
