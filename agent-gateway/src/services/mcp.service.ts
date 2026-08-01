@@ -147,13 +147,10 @@ class McpService implements IMcpService {
   // --- Login flow helpers ---
 
   async startLogin(): Promise<ToolCallResult<LoginStartResult>> {
-    const result = await withMcpClient(async (client) => {
-      return client.callTool({ name: "login_start", arguments: {} })
-    }).catch((err: unknown) => this.classifyError(err))
+    const result = await this.callTool("login_start", {}, "")
+    if (!result.success) return result
 
-    if ("error" in result && !("data" in result)) return result as ToolCallResult<LoginStartResult>
-
-    const data = (result as { success: true; data: Record<string, unknown> }).data as Record<string, unknown>
+    const data = result.data as Record<string, unknown>
     const innerData = (data?.data ?? data) as Record<string, unknown>
 
     if (!innerData.loginId || !innerData.loginUrl) {
@@ -170,13 +167,10 @@ class McpService implements IMcpService {
   }
 
   async pollLoginStatus(loginId: string): Promise<ToolCallResult<LoginStatusResult>> {
-    const result = await withMcpClient(async (client) => {
-      return client.callTool({ name: "login_status", arguments: { loginId } })
-    }).catch((err: unknown) => this.classifyError(err))
+    const result = await this.callTool("login_status", { loginId }, "")
+    if (!result.success) return result
 
-    if ("error" in result && !("data" in result)) return result as ToolCallResult<LoginStatusResult>
-
-    const data = (result as { success: true; data: Record<string, unknown> }).data as Record<string, unknown>
+    const data = result.data as Record<string, unknown>
     const innerData = (data?.data ?? data) as Record<string, unknown>
 
     return {
