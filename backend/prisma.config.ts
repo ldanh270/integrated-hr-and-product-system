@@ -3,12 +3,20 @@
 import "dotenv/config"
 import { defineConfig } from "prisma/config"
 
+const sanitizeUrl = (raw?: string) => {
+  if (!raw) return ""
+  // Strip quotes, whitespace, or invalid wrapping
+  return raw.trim().replace(/^["']|["']$/g, "")
+}
+
+const dbUrl = sanitizeUrl(process.env["DIRECT_URL"] || process.env["DATABASE_URL"])
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url: dbUrl,
   },
 })
