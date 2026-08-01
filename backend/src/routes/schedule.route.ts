@@ -49,7 +49,7 @@ scheduleRoutes.get(
 )
 scheduleRoutes.get(
   "/employee/:employeeId/shifts",
-  authenticate,
+  requirePermission("attendance.read"),
   controller.getShiftsByEmployee,
 )
 

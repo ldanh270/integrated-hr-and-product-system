@@ -1,4 +1,7 @@
-import { ATTENDANCE_GPS_RULES } from "@/configs/rules/attendance.config.ts"
+import {
+  ATTENDANCE_GPS_RULES,
+  DEFAULT_ATTENDANCE_LOCATION,
+} from "@/configs/rules/attendance.config.ts"
 import { ATTENDANCE_ERROR_MESSAGES } from "@/configs/messages/attendance.message.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { ATTENDANCE_LAYERS } from "@/constants/attendance.constants.ts"
@@ -28,21 +31,26 @@ function getDistanceMeters(
   )
 }
 
-/** Rejects check-in/out when client GPS is outside the shift geofence; no-op when shift has no GPS config. */
+/** Rejects check-in/out when client GPS is outside the shift geofence. */
 export function assertWithinShiftGps(
   location: { lat: number; lng: number },
   shift: IAttendanceShiftDTO | null | undefined,
 ): void {
-  if (!shift || shift.gpsLat == null || shift.gpsLng == null || shift.gpsRadiusMeters == null) {
+  if (!shift) {
     return
   }
 
+  // Legacy/demo shifts may not persist GPS. Keep enforcement deterministic by falling back
+  // to the company default location instead of silently disabling geofence validation.
+  const gpsLat = shift.gpsLat ?? DEFAULT_ATTENDANCE_LOCATION.LATITUDE
+  const gpsLng = shift.gpsLng ?? DEFAULT_ATTENDANCE_LOCATION.LONGITUDE
+  const gpsRadiusMeters = shift.gpsRadiusMeters ?? DEFAULT_ATTENDANCE_LOCATION.RADIUS_METERS
   const distanceMeters = getDistanceMeters(location, {
-    lat: shift.gpsLat,
-    lng: shift.gpsLng,
+    lat: gpsLat,
+    lng: gpsLng,
   })
 
-  if (distanceMeters > shift.gpsRadiusMeters) {
+  if (distanceMeters > gpsRadiusMeters) {
     throw new AppError(
       ATTENDANCE_ERROR_MESSAGES.OUTSIDE_GPS_RADIUS,
       HttpStatusCode.BAD_REQUEST,
