@@ -9,7 +9,10 @@ const router = Router()
 // Instantiate controller
 const controller = new RecruitmentController()
 
-// Apply auth middleware to all routes
+// ── Public Routes (No authentication required) ────────────────────────────────
+router.get("/oauth/google/callback", (req, res, next) => controller.handleGoogleOAuthCallback(req as AuthRequest, res, next))
+
+// Apply auth middleware to all remaining routes
 router.use(authenticate)
 
 // ── Job Requisitions ────────────────────────────────────────────────────────
@@ -127,6 +130,5 @@ router.delete("/oauth-accounts/:id", requirePermission(PERMISSION_CODE.RECRUITME
 // ── Google OAuth Flow ─────────────────────────────────────────────────────
 
 router.get("/oauth/google/connect", requirePermission(PERMISSION_CODE.RECRUITMENT_POSTING_MANAGE), (req, res, next) => controller.initiateGoogleOAuth(req as AuthRequest, res, next))
-router.get("/oauth/google/callback", (req, res, next) => controller.handleGoogleOAuthCallback(req as AuthRequest, res, next))
 
 export default router
