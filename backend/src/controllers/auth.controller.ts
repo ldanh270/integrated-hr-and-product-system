@@ -42,7 +42,10 @@ export class AuthController {
 
       // Return successful response
       res.status(HttpStatusCode.OK).json({
-        data: authData,
+        data: {
+          ...authData,
+          accessToken,
+        },
         error: null,
       })
     } catch (error) {
@@ -119,7 +122,10 @@ export class AuthController {
       CookieUtil.setRefreshToken(res, refreshToken, refreshExpiresAt)
 
       res.status(HttpStatusCode.OK).json({
-        data: authData,
+        data: {
+          ...authData,
+          accessToken,
+        },
         error: null,
       })
     } catch (error) {
