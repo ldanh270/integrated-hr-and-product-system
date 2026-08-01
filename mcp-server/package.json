@@ -13,7 +13,7 @@
   "scripts": {
     "dev": "tsx src/server.ts",
     "build": "tsc",
-    "test": "tsx --test src/contracts/*.test.ts",
+    "test": "tsx --test src/contracts/*.test.ts src/schemas/application.schema.test.ts",
     "start": "node dist/server.js",
     "prepublishOnly": "nr build"
   },

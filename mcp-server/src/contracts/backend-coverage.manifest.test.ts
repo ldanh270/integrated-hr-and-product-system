@@ -22,19 +22,23 @@ test('covers every backend route module exactly once', () => {
 test('baseline tool inventory is explicit and internally consistent', () => {
   assert.deepEqual(Object.keys(CURRENT_MCP_TOOL_COUNTS).sort(), [
     'application',
+    'approval',
     'attendance',
     'auth',
     'employee',
+    'employee-contract',
     'holiday',
+    'part-time-availability',
     'payroll',
     'profile',
     'project',
+    'regime-category',
     'schedule',
     'shift',
     'shift-change',
     'weekly-template',
   ])
-  assert.equal(CURRENT_MCP_TOOL_COUNT, 108)
+  assert.equal(CURRENT_MCP_TOOL_COUNT, 116)
 })
 
 test('every baseline MCP group has a backend contract', () => {

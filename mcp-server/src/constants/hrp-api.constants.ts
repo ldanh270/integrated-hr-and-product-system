@@ -37,6 +37,24 @@ export const HRP_API_CONSTANTS = {
       REJECT: (id: string) => `/api/applications/${id}/reject`,
       BY_EMPLOYEE: (employeeId: string) => `/api/applications/employee/${employeeId}`,
     },
+    APPROVAL: {
+      BASE: "/api/approvals",
+      PROCESS: (category: string, id: string) => `/api/approvals/${category}/${id}`,
+    },
+    REGIME_CATEGORY: {
+      BASE: "/api/regime-categories",
+      BY_ID: (id: string) => `/api/regime-categories/${id}`,
+    },
+    EMPLOYEE_CONTRACT: {
+      BASE: "/api/employee-contracts",
+      EXPIRING: "/api/employee-contracts/expiring",
+      BY_EMPLOYEE: (id: string) => `/api/employee-contracts/employee/${id}`,
+    },
+    PART_TIME_AVAILABILITY: {
+      MINE: "/api/part-time-availabilities/mine",
+      BASE: "/api/part-time-availabilities",
+      BY_EMPLOYEE: (id: string) => `/api/part-time-availabilities/employee/${id}`,
+    },
     ATTENDANCE: {
       BASE: "/api/attendance",
       CHECK_IN: "/api/attendance/check-in",
