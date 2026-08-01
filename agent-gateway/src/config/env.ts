@@ -23,6 +23,7 @@ const EnvSchema = z.object({
   // App
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   PORT: z.coerce.number().int().positive().default(3002),
+  AGENT_TIMEOUT_MS: z.coerce.number().int().positive().default(60_000),
 })
 
 // ---------------------------------------------------------------------------
