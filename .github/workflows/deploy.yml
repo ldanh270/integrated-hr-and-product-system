@@ -126,7 +126,16 @@ jobs:
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
       - name: 📁 Prepare deployment directory
-        run: ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p ~/hrp"
+        run: |
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+            mkdir -p ~/hrp
+            if [ -d ~/hrp/nginx/nginx.conf ]; then
+              sudo rm -rf ~/hrp/nginx/nginx.conf
+            fi
+            if [ -d ~/hrp/nginx ]; then
+              sudo chown -R ${{ secrets.EC2_USER }}:${{ secrets.EC2_USER }} ~/hrp/nginx
+            fi
+          "
 
       - name: 📂 Copy compose files to EC2
         run: |
@@ -142,11 +151,6 @@ jobs:
             set -e
 
             cd ~/hrp
-
-            # Clean up invalid directory if Docker previously created nginx.conf as a folder
-            if [ -d ~/hrp/nginx/nginx.conf ]; then
-              rm -rf ~/hrp/nginx/nginx.conf
-            fi
 
             compose() {
               if docker compose version >/dev/null 2>&1; then
