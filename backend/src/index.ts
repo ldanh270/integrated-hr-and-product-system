@@ -70,6 +70,10 @@ app.get("/", async (req, res) =>
   res.status(HttpStatusCode.OK).json({ message: "Connect to server successfully" }),
 )
 
+app.get("/health", (_req, res) =>
+  res.status(HttpStatusCode.OK).json({ status: "ok", service: "hrp-backend" }),
+)
+
 app.use("/api/auth", authRoutes)
 app.use("/api/security", securityRoutes)
 app.use("/api/employees", employeeRoutes)
