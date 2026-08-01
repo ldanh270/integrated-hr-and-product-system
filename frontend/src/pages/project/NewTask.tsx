@@ -185,9 +185,12 @@ export default function NewTask() {
 
     const isAdminOrGM = hasAnyPermission(["project.update", "project.task.approve"])
 
-    const currentMember = members?.find((m) => m.employeeId === profile?.personalEmployeeId)
+    const currentEmpId = profile?.personalEmployeeId || user?.personalEmployeeId || profile?.id || user?.id
+    const currentMember = members?.find((m) => m.employeeId === currentEmpId)
     const isLeader = project?.teamLeaderId === user?.personalEmployeeId ||
                      project?.teamLeaderId === profile?.personalEmployeeId ||
+                     project?.teamLeaderId === user?.id ||
+                     project?.teamLeaderId === profile?.id ||
                      currentMember?.role?.code === PROJECT_ROLE.LEADER
 
     if (isAdminOrGM || isLeader) {
