@@ -1,11 +1,13 @@
 import { ATTENDANCE_MESSAGES } from "@/config/messages/attendance.message"
-import { ATTENDANCE_TIME_RULES } from "@/config/rules/attendance.config"
+import { MAP_INITIAL_CENTER } from "@/config/map.config"
+import { ATTENDANCE_GPS_RULES, ATTENDANCE_TIME_RULES } from "@/config/rules/attendance.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import type { IAttendanceRecord, IWorkingShift } from "@/types/attendance.types"
-import { formatDateParam } from "@/utils/attendance/format-date-param"
 import { minutesToDayTime } from "@/utils/attendance/minutes-to-day-time"
 
 const LOCATION_CACHE_TTL_MS = 30 * 60 * 1000
+const FPT_UNIVERSITY_DA_NANG_LOCATION = "Trường Đại học FPT Đà Nẵng"
+const LOCATION_MATCH_PRECISION = 0.0001
 export const GEOLOCATION_TIMEOUT_MS = 10_000
 
 export type ScanAction = "check_in" | "check_out"
@@ -30,6 +32,7 @@ export function readCachedScannerLocation(): { lat: number; lng: number } | null
   try {
     const decoded = atob(cached)
     const parsed = JSON.parse(decoded) as { lat: number; lng: number; timestamp?: number }
+    // Cached GPS is only a UI hint; each scan still requests a fresh browser position.
     if (Date.now() - (parsed.timestamp ?? 0) > LOCATION_CACHE_TTL_MS) {
       localStorage.removeItem(SYSTEM_CONFIG.STORAGE_KEYS.LOCATION_CACHE)
       return null
@@ -73,21 +76,28 @@ function buildScannerGpsLabel(
   lat: number | null | undefined,
   lng: number | null | undefined,
 ): string {
-  if (radius == null || lat == null || lng == null) {
-    return ATTENDANCE_MESSAGES.SCANNER.NO_GPS_CONFIGURED
-  }
+  const resolvedRadius = radius ?? ATTENDANCE_GPS_RULES.DEFAULT_RADIUS_METERS
+  const resolvedLat = lat ?? MAP_INITIAL_CENTER.lat
+  const resolvedLng = lng ?? MAP_INITIAL_CENTER.lng
 
-  return ATTENDANCE_MESSAGES.SCANNER.GPS_RADIUS_LABEL(radius, lat, lng)
+  // Show the campus name for the configured default geofence; raw coordinates are only
+  // useful for custom locations that HR deliberately configured.
+  const locationName =
+    Math.abs(resolvedLat - MAP_INITIAL_CENTER.lat) <= LOCATION_MATCH_PRECISION &&
+    Math.abs(resolvedLng - MAP_INITIAL_CENTER.lng) <= LOCATION_MATCH_PRECISION
+      ? FPT_UNIVERSITY_DA_NANG_LOCATION
+      : ATTENDANCE_MESSAGES.SCANNER.GPS_COORDINATE_LABEL(resolvedLat, resolvedLng)
+
+  return ATTENDANCE_MESSAGES.SCANNER.GPS_RADIUS_LABEL(resolvedRadius, locationName)
 }
 
 export function resolveNextScanAction(records?: IAttendanceRecord[]): ScanAction {
+  // Only an open record flips the button to Checkout. Completed same-day records must not
+  // trap the scanner in checkout mode after a successful checkout.
   const openRecord = records?.find((record) => record.checkInAt && !record.checkOutAt)
   if (openRecord) return "check_out"
 
-  const todayKey = formatDateParam(new Date())
-  const todayRecord = records?.find((record) => formatDateParam(new Date(record.date)) === todayKey)
-
-  return todayRecord?.checkInAt ? "check_out" : "check_in"
+  return "check_in"
 }
 
 export function getCurrentScannerLocation(): Promise<{ lat: number; lng: number }> {

@@ -12,6 +12,8 @@ export function VirtualScanner() {
     isProcessing,
     nextActionLabel,
     todayShift,
+    canScan,
+    scanDisabledLabel,
     isShiftLoading,
     handleScan,
   } = useVirtualScanner()
@@ -73,6 +75,7 @@ export function VirtualScanner() {
           )}
         </div>
 
+        {/* The green success state intentionally hides raw coordinates; shift card owns geofence detail. */}
         {locating ? (
           <div className="flex items-center justify-center gap-2 rounded-lg border border-warning/20 bg-warning/10 py-2 text-sm font-medium text-warning">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -81,7 +84,7 @@ export function VirtualScanner() {
         ) : location ? (
           <div className="flex items-center justify-center gap-2 rounded-lg border border-success/20 bg-success/10 py-2 text-sm font-medium text-success">
             <CheckCircle2 className="h-4 w-4" />
-            <span>{ATTENDANCE_MESSAGES.SCANNER.GEO_READY(location.lat, location.lng)}</span>
+            <span>{ATTENDANCE_MESSAGES.SCANNER.GEO_READY}</span>
           </div>
         ) : (
           <div className="flex items-center justify-center gap-2 rounded-lg border border-warning/20 bg-warning/10 px-2 py-2 text-xs text-warning">
@@ -93,7 +96,7 @@ export function VirtualScanner() {
         <div className="pt-4 border-t">
           <button
             onClick={handleScan}
-            disabled={isProcessing || locating}
+            disabled={isProcessing || locating || !canScan}
             className="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
           >
             {isProcessing ? (
@@ -104,7 +107,7 @@ export function VirtualScanner() {
             <span>
               {isProcessing
                 ? ATTENDANCE_MESSAGES.SCANNER.PROCESSING(nextActionLabel)
-                : nextActionLabel}
+                : scanDisabledLabel ?? nextActionLabel}
             </span>
           </button>
         </div>
