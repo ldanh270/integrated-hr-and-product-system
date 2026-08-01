@@ -66,9 +66,11 @@ export default function SubsystemDropdown() {
           title={isCollapsed ? activeConfig?.name : undefined}
         >
           <div className={`flex min-w-0 items-center overflow-hidden ${isCollapsed ? "justify-center" : "flex-1 gap-2"}`}>
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-medium text-primary-foreground shadow-sm transition-all duration-150">
-              <span className="font-bold text-xs">HRP</span>
-            </div>
+            <img
+              src="/logo.png"
+              alt="Integrated HR & Product System"
+              className="size-10 shrink-0 rounded-xl object-cover object-center shadow-sm"
+            />
             {!isCollapsed && (
               <div className="flex min-w-0 flex-1 flex-col items-start overflow-hidden text-left leading-tight">
                 <span className="max-w-full truncate font-semibold text-foreground">
