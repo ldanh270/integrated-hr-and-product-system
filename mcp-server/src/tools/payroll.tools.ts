@@ -344,14 +344,16 @@ export const registerPayrollTools = () => {
 
   mcpServer.tool(
     "salary_config_set",
-    "Set a new salary configuration for an employee. Restricted to Admin and HR Manager.",
+    "Create a new salary configuration for one employee. Ask for employee ID, active payslip template ID, non-negative base salary, and the effective date. The backend automatically closes the prior active configuration; do not ask for an end date. Restricted to users with payroll.create permission.",
     {
       sessionId: z.string().describe("Active session ID"),
       employeeId: z.string().describe("ID of the employee"),
-      templateId: z.string().describe("ID of the payslip template to apply"),
-      baseSalary: z.number().positive().describe("Base salary amount"),
-      effectiveFrom: z.string().datetime().describe("Effective from date (ISO 8601)"),
-      effectiveTo: z.string().datetime().optional().describe("Effective to date (ISO 8601)"),
+      templateId: z.string().min(1).describe("ID of the active payslip template to apply"),
+      baseSalary: z.number().min(0).describe("Non-negative base salary amount"),
+      effectiveFrom: z
+        .string()
+        .refine((value) => !Number.isNaN(Date.parse(value)), "Invalid effective date")
+        .describe("Effective date, preferably YYYY-MM-DD"),
       note: z.string().optional().describe("Notes for this configuration change"),
     },
     async ({ sessionId, employeeId, ...payload }) => {
@@ -388,14 +390,14 @@ export const registerPayrollTools = () => {
 
   mcpServer.tool(
     "payroll_update_settings",
-    "Update payroll automated generation schedule settings. Restricted to Admin and HR Manager.",
+    "Update the complete payroll generation and approval schedule. Ask for all six fields. Both days must be 1-28, and the approval day cannot be before the generation day. Restricted to users with payroll.update permission.",
     {
       sessionId: z.string().describe("Active session ID"),
       triggerDay: z
         .number()
         .int()
         .min(1)
-        .max(31)
+        .max(28)
         .describe("Day of the month to trigger payroll generation"),
       triggerHour: z.number().int().min(0).max(23).describe("Hour to trigger payroll generation"),
       triggerMinute: z
@@ -404,11 +406,34 @@ export const registerPayrollTools = () => {
         .min(0)
         .max(59)
         .describe("Minute to trigger payroll generation"),
+      approvalDay: z
+        .number()
+        .int()
+        .min(1)
+        .max(28)
+        .describe("Day of the month to automatically approve payroll; must be on or after triggerDay"),
+      approvalHour: z.number().int().min(0).max(23).describe("Hour to automatically approve payroll"),
+      approvalMinute: z
+        .number()
+        .int()
+        .min(0)
+        .max(59)
+        .describe("Minute to automatically approve payroll"),
     },
-    async ({ sessionId, ...payload }) => {
+    async ({ sessionId, triggerDay, approvalDay, ...payload }) => {
       try {
+        if (approvalDay < triggerDay) {
+          return buildError(
+            "Invalid payroll schedule",
+            "approvalDay must be greater than or equal to triggerDay",
+          )
+        }
         const session = requireSession(sessionId)
-        const data = await payrollService.updatePayrollSettings(session, payload)
+        const data = await payrollService.updatePayrollSettings(session, {
+          triggerDay,
+          approvalDay,
+          ...payload,
+        })
         return buildSuccess(data)
       } catch (error: any) {
         return buildError("Failed to update payroll settings", error.message)
@@ -418,12 +443,16 @@ export const registerPayrollTools = () => {
 
   mcpServer.tool(
     "payroll_generate",
-    "Manually trigger the generation of a new payroll period. Restricted to Admin and HR Manager.",
+    "Manually generate a payroll for a month and year. Ask for month and year; name is optional because the backend creates the default Vietnamese payroll name when omitted. Restricted to users with payroll.create permission.",
     {
       sessionId: z.string().describe("Active session ID"),
       periodMonth: z.number().int().min(1).max(12).describe("Month of the payroll period (1-12)"),
       periodYear: z.number().int().min(2000).describe("Year of the payroll period (e.g. 2026)"),
-      name: z.string().min(1).describe('Name of this payroll run (e.g. "Bảng lương tháng 6/2026")'),
+      name: z
+        .string()
+        .min(1)
+        .optional()
+        .describe('Optional payroll name; defaults to "Bảng lương tháng {month}/{year}"'),
     },
     async ({ sessionId, ...payload }) => {
       try {
@@ -438,7 +467,7 @@ export const registerPayrollTools = () => {
 
   mcpServer.tool(
     "payroll_list",
-    "Get a list of generated payrolls. Restricted to Admin, HR Manager, and General Manager.",
+    "Get generated payrolls. Restricted to users with payroll.read permission.",
     {
       sessionId: z.string().describe("Active session ID"),
     },
@@ -491,16 +520,16 @@ export const registerPayrollTools = () => {
 
   mcpServer.tool(
     "payroll_reject",
-    "Reject a payroll run with a reason. Restricted to Admin and General Manager.",
+    "Reject a payroll run with a non-empty reason. Restricted to users with payroll.approve permission.",
     {
       sessionId: z.string().describe("Active session ID"),
       payrollId: z.string().describe("ID of the payroll run to reject"),
-      rejectReason: z.string().min(1).describe("Reason for rejection"),
+      reason: z.string().min(1).describe("Reason for rejection"),
     },
-    async ({ sessionId, payrollId, rejectReason }) => {
+    async ({ sessionId, payrollId, reason }) => {
       try {
         const session = requireSession(sessionId)
-        const data = await payrollService.rejectPayroll(session, payrollId, { rejectReason })
+        const data = await payrollService.rejectPayroll(session, payrollId, { reason })
         return buildSuccess(data)
       } catch (error: any) {
         return buildError("Failed to reject payroll", error.message)
