@@ -23,7 +23,8 @@ const env = schema.parse(process.env)
 export const FRONTEND_URL = env.FRONTEND_URL
 
 export function getGoogleOAuthRedirectUri(): string {
-  return `${env.SERVER_URL}/api/recruitment/oauth/google/callback`
+  const baseUrl = env.SERVER_URL.replace(/\/+$/, "")
+  return `${baseUrl}/api/recruitment/oauth/google/callback`
 }
 
 export function getGoogleOAuthConfig(): GoogleOAuthConfig | null {
@@ -33,7 +34,7 @@ export function getGoogleOAuthConfig(): GoogleOAuthConfig | null {
   return {
     clientId: env.GOOGLE_OAUTH_CLIENT_ID,
     clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
-    redirectUri: `${env.SERVER_URL}/api/recruitment/oauth/google/callback`,
+    redirectUri: getGoogleOAuthRedirectUri(),
   }
 }
 
