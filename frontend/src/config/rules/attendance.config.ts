@@ -27,4 +27,6 @@ export const WORKING_SHIFT_FORM_RULES = {
 export const ATTENDANCE_GPS_RULES = {
   /** Minimum radius (m) before GPS jitter rejects valid onsite PT / full-time check-ins. */
   MIN_GEOFENCE_RADIUS_METERS: 10,
+  /** Default company geofence shown when a shift has no custom GPS radius. */
+  DEFAULT_RADIUS_METERS: 500,
 } as const
