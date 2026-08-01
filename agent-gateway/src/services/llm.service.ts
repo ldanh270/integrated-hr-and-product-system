@@ -1,6 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai"
 import type { CoreMessage, CoreTool } from "ai"
-import { generateText, tool } from "ai"
+import { streamText, tool } from "ai"
 import { z } from "zod"
 
 import { env } from "../config/env.js"
@@ -115,7 +115,10 @@ export async function generateAgentResponse(
 ): Promise<GenerateResult> {
   const { history, tools, abortSignal } = options
 
-  const result = await generateText({
+  // The local OpenAI-compatible proxy always responds using SSE, including
+  // tool-call responses. `streamText` uses the provider's streaming parser;
+  // `generateText` expects a JSON body and fails on `data: ...` chunks.
+  const result = streamText({
     model: nineRouter(env.NINE_ROUTER_MODEL),
     system: SYSTEM_PROMPT,
     messages: history,
@@ -127,10 +130,15 @@ export async function generateAgentResponse(
 
   // AI SDK v4: result.response.messages contains all messages from the run
   // (tool calls, tool results, and assistant turns)
-  const responseMessages = result.response.messages as CoreMessage[]
+  // `streamText` is lazy. Consume the stream so tool calls and follow-up
+  // generations complete before reading its aggregate result promises.
+  await result.consumeStream()
+
+  const [text, response] = await Promise.all([result.text, result.response])
+  const responseMessages = response.messages as CoreMessage[]
 
   return {
-    text: result.text,
+    text,
     messages: responseMessages,
   }
 }
