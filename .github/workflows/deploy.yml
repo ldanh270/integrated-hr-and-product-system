@@ -37,6 +37,10 @@ jobs:
 
     strategy:
       fail-fast: false
+      # Self-hosted runners share the same workspace root; building these Docker
+      # contexts in parallel can make one matrix job clean files while another
+      # job is still calculating the build context.
+      max-parallel: 1
       matrix:
         include:
           - service: backend
