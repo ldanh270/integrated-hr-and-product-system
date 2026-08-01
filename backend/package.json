@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "jest --config jest.config.cjs --passWithNoTests",
     "seed": "tsx src/scripts/seed-all.ts",
+    "seed:capacity-demo": "tsx src/scripts/seeders/22-capacity-demo.seeder.ts",
     "clear": "tsx src/scripts/clear-db.ts",
     "repair:admin": "tsx src/scripts/repair-admin.ts",
     "hash-password": "tsx src/scripts/hash-password.ts"
