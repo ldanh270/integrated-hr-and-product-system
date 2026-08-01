@@ -136,11 +136,19 @@ jobs:
 
             cd ~/hrp
 
+            compose() {
+              if docker compose version >/dev/null 2>&1; then
+                docker compose "$@"
+              else
+                docker-compose "$@"
+              fi
+            }
+
             # Pull latest images
             echo "📥 Pulling images..."
             IMAGE_TAG=${{ steps.sha.outputs.SHORT_SHA }} \
             GITHUB_REPO=${{ github.repository }} \
-            docker compose -f docker-compose.prod.yml pull
+            compose -f docker-compose.prod.yml pull
 
             # Run DB migrations (backend Prisma)
             echo "🗄️ Running DB migrations..."
@@ -153,14 +161,14 @@ jobs:
             echo "♻️ Updating services..."
             IMAGE_TAG=${{ steps.sha.outputs.SHORT_SHA }} \
             GITHUB_REPO=${{ github.repository }} \
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            compose -f docker-compose.prod.yml up -d --remove-orphans
 
             # Wait for health checks
             echo "🏥 Waiting for health checks..."
             sleep 15
 
             # Show running containers
-            docker compose -f docker-compose.prod.yml ps
+            compose -f docker-compose.prod.yml ps
 
             # Prune old images
             docker image prune -f
