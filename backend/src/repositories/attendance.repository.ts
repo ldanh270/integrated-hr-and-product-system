@@ -1,4 +1,9 @@
 import {
+  ATTENDANCE_ERROR_MESSAGES,
+} from "@/configs/messages/attendance.message.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
+import { ATTENDANCE_LAYERS } from "@/constants/attendance.constants.ts"
+import {
   IAttendanceMetricsDTO,
   IAttendanceRecordDTO,
   IAttendanceRecordQueryDTO,
@@ -6,14 +11,15 @@ import {
   IGpsScanDTO,
   IRealShiftUpsertDTO,
 } from "@/types/attendance.types.ts"
+import {
+  getAttendanceClockMinutes,
+  getAttendanceDateOnly,
+} from "@/utils/attendance/attendance-time-zone.util.ts"
+import { AppError } from "@/utils/error.util.ts"
 
 import { AttendanceStatus, Prisma, PrismaClient } from "@prisma/client"
 
 import { BaseRepository } from "./base.repository.ts"
-
-function getMinutesFromDateTime(date: Date): number {
-  return date.getHours() * 60 + date.getMinutes()
-}
 
 /**
  * Repository implementation for attendance-related data using Prisma.
@@ -38,34 +44,56 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
     employeeId: string,
     location: IGpsScanDTO,
     employeeShiftId: string,
+    metrics: IAttendanceMetricsDTO = {},
   ): Promise<IAttendanceRecordDTO> {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    const checkInAt = new Date()
+    const today = getAttendanceDateOnly(checkInAt)
+    const existingRecord = await this.prisma.attendanceRecord.findUnique({
+      where: { employeeShiftId },
+      select: { id: true, checkOutAt: true },
+    })
 
-    // Using employeeShiftId for upsert since it is @unique
+    // Do not upsert over a completed attendance row. A new scan after checkout must use
+    // another EmployeeShift, otherwise check-in coordinates/time would corrupt history.
+    if (existingRecord?.checkOutAt) {
+      throw new AppError(
+        ATTENDANCE_ERROR_MESSAGES.ALREADY_CHECKED_OUT,
+        HttpStatusCode.CONFLICT,
+        ATTENDANCE_LAYERS.REPOSITORY,
+      )
+    }
+
+    // employeeShiftId is unique, so repeated check-in requests for the same open shift
+    // update only the open record instead of creating duplicate attendance rows.
     const record = await this.prisma.attendanceRecord.upsert({
       where: { employeeShiftId },
       update: {
-        checkInAt: new Date(),
+        checkInAt,
         checkInLat: location.lat,
         checkInLng: location.lng,
+        ...metrics,
       },
       create: {
         employeeId,
         employeeShiftId,
         date: today,
-        checkInAt: new Date(),
+        checkInAt,
         checkInLat: location.lat,
         checkInLng: location.lng,
-        status: AttendanceStatus.absent, // Default status, will be recalculated later
+        status: metrics.status ?? AttendanceStatus.absent,
+        lateMinutes: metrics.lateMinutes,
+        earlyLeaveMinutes: metrics.earlyLeaveMinutes,
+        overtimeMinutes: metrics.overtimeMinutes,
+        totalWorkMinutes: metrics.totalWorkMinutes,
       },
     })
 
-    const checkInAt = record.checkInAt ?? new Date()
+    // RealShift mirrors the actual clock window for payroll/matrix matching.
+    const persistedCheckInAt = record.checkInAt ?? checkInAt
     await this.prisma.realShift.upsert({
       where: { attendanceRecordId: record.id },
       update: {
-        actualStartTime: getMinutesFromDateTime(checkInAt),
+        actualStartTime: getAttendanceClockMinutes(persistedCheckInAt),
         actualEndTime: null,
         isMatched: false,
       },
@@ -73,7 +101,7 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
         employeeId,
         attendanceRecordId: record.id,
         date: today,
-        actualStartTime: getMinutesFromDateTime(checkInAt),
+        actualStartTime: getAttendanceClockMinutes(persistedCheckInAt),
         isMatched: false,
       },
     })
@@ -120,7 +148,7 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
             employeeId: record.employeeId,
             attendanceRecordId: recordId,
             date: record.date,
-            actualStartTime: getMinutesFromDateTime(checkInAt),
+            actualStartTime: getAttendanceClockMinutes(checkInAt),
             actualEndTime: realShift.actualEndTime,
             isMatched: realShift.isMatched ?? false,
           },
@@ -141,11 +169,31 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
     employeeId: string,
     date: string | Date,
   ): Promise<IAttendanceRecordDTO | null> {
-    const targetDate = new Date(date)
-    targetDate.setHours(0, 0, 0, 0)
+    const targetDate = getAttendanceDateOnly(date)
 
     return this.prisma.attendanceRecord.findFirst({
       where: { employeeId, date: targetDate },
+      include: {
+        employeeShift: {
+          include: {
+            shift: true,
+          },
+        },
+        realShift: true,
+      },
+    })
+  }
+
+  async findOpenByEmployeeAndDate(
+    employeeId: string,
+    date: string | Date,
+  ): Promise<IAttendanceRecordDTO | null> {
+    const targetDate = getAttendanceDateOnly(date)
+
+    // Scanner toggle depends on the open session, not merely "any record today".
+    // A checked-out record would make the UI show Checkout forever.
+    return this.prisma.attendanceRecord.findFirst({
+      where: { employeeId, date: targetDate, checkInAt: { not: null }, checkOutAt: null },
       include: {
         employeeShift: {
           include: {
@@ -176,11 +224,11 @@ export class PrismaAttendanceRepository extends BaseRepository implements IAtten
     if (query.startDate || query.endDate) {
       where.date = {}
       if (query.startDate) {
-        const startDate = new Date(query.startDate)
+        const startDate = getAttendanceDateOnly(query.startDate)
         if (!Number.isNaN(startDate.getTime())) where.date.gte = startDate
       }
       if (query.endDate) {
-        const endDate = new Date(query.endDate)
+        const endDate = getAttendanceDateOnly(query.endDate)
         if (!Number.isNaN(endDate.getTime())) where.date.lte = endDate
       }
     }

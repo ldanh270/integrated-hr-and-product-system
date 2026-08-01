@@ -6,6 +6,7 @@ import type {
   IAttendanceShiftDTO,
 } from "@/types/attendance.types.ts"
 import { getShiftDateTimes } from "@/utils/attendance/attendance-shift.util.ts"
+import { toAttendanceInstant } from "@/utils/attendance/attendance-time-zone.util.ts"
 
 function getBreakMinutesWithinAttendance(
   checkInAt: Date,
@@ -17,10 +18,8 @@ function getBreakMinutesWithinAttendance(
   if (shift.breakStartTime == null || shift.breakEndTime == null) return 0
 
   // Break minutes share the shift's scheduled calendar day, not the checkout day.
-  const breakStart = new Date(scheduledStart)
-  breakStart.setHours(0, shift.breakStartTime, 0, 0)
-  const breakEnd = new Date(scheduledStart)
-  breakEnd.setHours(0, shift.breakEndTime, 0, 0)
+  const breakStart = toAttendanceInstant(scheduledStart, shift.breakStartTime)
+  const breakEnd = toAttendanceInstant(scheduledStart, shift.breakEndTime)
   const overlapStart = Math.max(checkInAt.getTime(), breakStart.getTime())
   const overlapEnd = Math.min(checkOutAt.getTime(), breakEnd.getTime())
 

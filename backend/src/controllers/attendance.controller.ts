@@ -19,6 +19,7 @@ import {
   IAttendanceRecordDTO,
   IAttendanceService,
 } from "@/types/attendance.types.ts"
+import { formatAttendanceClockTime } from "@/utils/attendance/attendance-time-zone.util.ts"
 import { resolvePersonalEmployeeId } from "@/utils/attendance/resolve-personal-employee-id.ts"
 
 import { Request, Response } from "express"
@@ -170,7 +171,7 @@ export class AttendanceController {
       const authContext = await authorizationService.getAuthorizationContext(userId)
       // attendance.read belongs to regular employees for personal records; only the
       // explicit admin role may remove the employee scope and query workforce history.
-      const canViewAll = authContext.roles.has(APP_ROLE.ADMIN)
+      const canViewAll = authContext.isDynamicAdmin || authContext.roles.has(APP_ROLE.ADMIN)
 
       if (query.personalOnly) {
         query.employeeId = await resolvePersonalEmployeeId(userId)
@@ -247,10 +248,10 @@ export class AttendanceController {
         }
 
         const checkInStr = record.checkInAt
-          ? new Date(record.checkInAt).toLocaleTimeString("en-US", { hour12: false })
+          ? formatAttendanceClockTime(record.checkInAt)
           : ""
         const checkOutStr = record.checkOutAt
-          ? new Date(record.checkOutAt).toLocaleTimeString("en-US", { hour12: false })
+          ? formatAttendanceClockTime(record.checkOutAt)
           : ""
 
         const row = [
