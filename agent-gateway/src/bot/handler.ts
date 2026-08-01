@@ -1,12 +1,10 @@
 import type { CoreMessage } from "ai"
 import type { Context } from "telegraf"
 
+import { env } from "../config/env.js"
 import { mcpService } from "../services/mcp.service.js"
 import { redisService } from "../services/redis.service.js"
 import { convertMcpToolsToAiSdk, generateAgentResponse } from "../services/llm.service.js"
-
-// Timeout for the entire agent response (15 seconds)
-const AGENT_TIMEOUT_MS = 15_000
 
 // ---------------------------------------------------------------------------
 // Main Agent Handler
@@ -62,7 +60,7 @@ export async function handleAgentMessage(ctx: Context): Promise<void> {
 
   // 4. Set up timeout with AbortController
   const controller = new AbortController()
-  const timeoutHandle = setTimeout(() => controller.abort(), AGENT_TIMEOUT_MS)
+  const timeoutHandle = setTimeout(() => controller.abort(), env.AGENT_TIMEOUT_MS)
 
   try {
     const { text, messages: newMessages } = await generateAgentResponse({
@@ -83,7 +81,7 @@ export async function handleAgentMessage(ctx: Context): Promise<void> {
       (err.name === "AbortError" || err.message.includes("aborted"))
 
     if (isAborted) {
-      await ctx.reply("⏱ Hệ thống đang bận, xin thử lại sau.")
+      await ctx.reply("⏱ Yêu cầu xử lý quá lâu. Vui lòng thử lại hoặc gửi yêu cầu ngắn hơn.")
     } else {
       console.error("[Handler] Unexpected agent error:", err)
       await ctx.reply("❌ Đã xảy ra lỗi không mong muốn. Xin thử lại.")
