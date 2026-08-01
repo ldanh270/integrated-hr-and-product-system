@@ -1,6 +1,6 @@
 import App from "@/App.tsx"
-import { Providers } from "@/components/Providers.tsx"
 import { ErrorBoundary } from "@/components/ErrorBoundary.tsx"
+import { Providers } from "@/components/Providers.tsx"
 
 import { StrictMode } from "react"
 

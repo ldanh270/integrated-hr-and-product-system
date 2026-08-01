@@ -127,7 +127,9 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
  */
 const RootRedirect = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  return <Navigate to={isAuthenticated ? ROUTES.ATTENDANCE.MY_SCHEDULE : ROUTES.AUTH.LOGIN} replace />
+  return (
+    <Navigate to={isAuthenticated ? ROUTES.ATTENDANCE.MY_SCHEDULE : ROUTES.AUTH.LOGIN} replace />
+  )
 }
 
 const SubsystemRootRedirect = ({ subsystem }: { subsystem: SubsystemConfig }) => {
