@@ -1,14 +1,14 @@
-import { aiClient } from "@/utils/ai-client.util.ts"
+import { ErrorLayer } from "@/configs/system/error-code.config.ts"
+import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import {
-  ITaskRepository,
-  IProjectRepository,
   IEmployeeRepository,
+  IProjectRepository,
   ISpentTimeRepository,
+  ITaskRepository,
 } from "@/types"
 import { IApplicationRepository } from "@/types/attendance.types.ts"
+import { aiClient } from "@/utils/ai-client.util.ts"
 import { AppError } from "@/utils/error.util.ts"
-import { HttpStatusCode } from "@/configs/system/http.config.ts"
-import { ErrorLayer } from "@/configs/system/error-code.config.ts"
 
 const LAYER_NAME = "TaskEstimateAiService"
 
@@ -184,11 +184,13 @@ export class TaskEstimateAiService {
         Chú ý: Trả về duy nhất dữ liệu JSON sạch, không thêm bất kỳ dòng chữ giải thích nào ngoài JSON.
       `
 
-      const geminiResults = await aiClient.generateJson<Array<{
-        employeeId: string
-        skillScore: number
-        reasons: string[]
-      }>>(prompt)
+      const geminiResults = await aiClient.generateJson<
+        Array<{
+          employeeId: string
+          skillScore: number
+          reasons: string[]
+        }>
+      >(prompt)
 
       // Map Gemini results back to suggestions and compute finalScore
       for (const s of suggestions) {
@@ -220,7 +222,8 @@ export class TaskEstimateAiService {
         const skillScore = 60
         const velocity = velocities.get(s.employeeId) || 1.0
         const adjustedSkillScore = Math.min(100, skillScore * velocity)
-        const finalScore = (s.availabilityScore / 100) * (0.7 * adjustedSkillScore + 0.3 * s.workloadScore)
+        const finalScore =
+          (s.availabilityScore / 100) * (0.7 * adjustedSkillScore + 0.3 * s.workloadScore)
         s.skillScore = skillScore
         s.finalScore = Math.round(finalScore * 10) / 10
         s.reasons = ["Gặp lỗi khi gọi AI API. Đây là điểm số dự phòng có tính đến tốc độ."]
@@ -242,7 +245,7 @@ export class TaskEstimateAiService {
     }
 
     const prompt = `
-      Bạn là Tech Lead dự án. Hãy phân rã dự án sau đây thành một danh sách gồm 5 đến 8 công việc (Tasks) cụ thể, chi tiết cần làm để hoàn thành dự án.
+      Bạn là Tech Lead dự án. Hãy phân rã dự án sau đây thành một danh sách gồm 2 đến 4 công việc (Tasks) cụ thể, chi tiết cần làm để hoàn thành dự án.
 
       Thông tin dự án:
       - Tên dự án: "${project.name}"
