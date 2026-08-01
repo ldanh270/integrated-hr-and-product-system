@@ -5,6 +5,26 @@ import { redisService } from "./services/redis.service.js"
 import { mcpService } from "./services/mcp.service.js"
 import { createBot } from "./bot/index.js"
 
+const MCP_CONNECTION_MAX_ATTEMPTS = 20
+const MCP_CONNECTION_RETRY_DELAY_MS = 1_000
+
+const waitForMcpServer = async (): Promise<void> => {
+  for (let attempt = 1; attempt <= MCP_CONNECTION_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      const tools = await mcpService.getTools()
+      console.log(`[App] ✅ MCP Server connected — ${tools.length} tools available`)
+      return
+    } catch (err) {
+      if (attempt === MCP_CONNECTION_MAX_ATTEMPTS) {
+        throw err
+      }
+
+      console.log(`[App] Waiting for MCP Server (${attempt}/${MCP_CONNECTION_MAX_ATTEMPTS})...`)
+      await new Promise((resolve) => setTimeout(resolve, MCP_CONNECTION_RETRY_DELAY_MS))
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Startup
 // ---------------------------------------------------------------------------
@@ -22,8 +42,7 @@ async function main(): Promise<void> {
 
   // 2. Verify MCP Server connectivity by fetching tools
   try {
-    const tools = await mcpService.getTools()
-    console.log(`[App] ✅ MCP Server connected — ${tools.length} tools available`)
+    await waitForMcpServer()
   } catch (err) {
     console.error("[App] ❌ MCP Server connection failed:", err)
     console.error("[App] Ensure MCP_SSE_URL is correct and mcp-server is running.")
@@ -43,10 +62,17 @@ async function main(): Promise<void> {
   })
 
   // 5. Launch bot
-  await bot.launch({
-    allowedUpdates: ["message", "callback_query"],
-  })
-  console.log("[App] ✅ Telegram bot is running (long polling)")
+  void bot
+    .launch(
+      {
+        allowedUpdates: ["message", "callback_query"],
+      },
+      () => console.log("[App] ✅ Telegram bot is running (long polling)"),
+    )
+    .catch((err: unknown) => {
+      console.error("[App] ❌ Telegram bot failed:", err)
+      process.exit(1)
+    })
 
   // 6. Graceful shutdown
   const shutdown = async (signal: string): Promise<void> => {
