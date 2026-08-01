@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { PROJECT_STATUSES, TASK_CREATION_POLICIES } from "@/config/entities/project.config"
-import { CAPACITY_COPILOT_RULES } from "@/config/rules/capacity-copilot.config"
 import { projectApi } from "@/lib/api/project.api"
 import {
   useCreateProjectTracker,
@@ -190,7 +189,8 @@ export function EditProjectModal({
         teamLeaderId: editProjectLeader === SELECT_NONE_VALUE ? null : editProjectLeader,
         startDate: editProjectStart || null,
         expectedEndDate: editProjectEnd || null,
-        dealTargetPercent: editProjectDealTarget ? Number(editProjectDealTarget) : null,
+        // dealTargetPercent is intentionally omitted: customer deal target is fixed
+        // after project creation and only read by Capacity Copilot forecasts.
         allowedTaskTrackers: editProjectTrackers,
       })
     },
@@ -359,17 +359,12 @@ export function EditProjectModal({
             <Input
               id="editProjDealTarget"
               type="number"
-              min={CAPACITY_COPILOT_RULES.DEAL_TARGET_PERCENT_MIN}
-              max={CAPACITY_COPILOT_RULES.DEAL_TARGET_PERCENT_MAX}
               value={editProjectDealTarget}
-              onChange={(e) => {
-                setEditProjectDealTarget(e.target.value)
-              }}
-              className="h-10 text-sm border-border rounded-full px-4"
-              placeholder={CAPACITY_COPILOT_RULES.DEAL_TARGET_PERCENT_PLACEHOLDER}
+              readOnly
+              className="h-10 cursor-not-allowed rounded-full border-border bg-muted/40 px-4 text-sm text-muted-foreground"
             />
             <p className="text-[10px] text-muted-foreground">
-              Capacity Copilot dùng số này làm target % khi forecast delivery tuần.
+              Deal đã chốt với khách hàng nên không chỉnh sửa tại đây.
             </p>
           </div>
 
@@ -435,7 +430,7 @@ export function EditProjectModal({
                           onClick={() => {
                             setTempTrackers([])
                           }}
-                          className="text-[9px] font-extrabold text-muted-foreground hover:text-red-500 hover:underline cursor-pointer"
+                          className="text-[9px] font-extrabold text-muted-foreground hover:text-destructive hover:underline cursor-pointer"
                         >
                           Xóa tất cả
                         </button>
@@ -535,7 +530,7 @@ export function EditProjectModal({
                                   e.stopPropagation()
                                   handleDeleteTracker(tracker.id, tracker.code)
                                 }}
-                                className="p-1 hover:text-red-500 text-muted-foreground rounded-full cursor-pointer"
+                                className="p-1 hover:text-destructive text-muted-foreground rounded-full cursor-pointer"
                               >
                                 <Trash2 className="size-3" />
                               </button>

@@ -23,7 +23,6 @@ import {
 } from "@/types/attendance.types.ts"
 import { IPositionService } from "@/types/position.types.ts"
 import { AppError } from "@/utils/error.util.ts"
-import { formatScheduleDateKey } from "@/utils/schedule.util.ts"
 
 /**
  * Service managing organizational application requests (leaves, overtime, late/early checkins, shift swaps).
