@@ -48,13 +48,17 @@ export const BACKEND_MODULE_CONTRACTS = [
 ] as const satisfies readonly BackendModuleContract[]
 
 export const CURRENT_MCP_TOOL_COUNTS = {
-  application: 12,
+  application: 13,
+  approval: 2,
   attendance: 4,
   auth: 3,
   employee: 7,
+  'employee-contract': 2,
   holiday: 6,
   payroll: 26,
+  'part-time-availability': 2,
   profile: 3,
+  'regime-category': 1,
   project: 22,
   schedule: 10,
   'shift-change': 4,

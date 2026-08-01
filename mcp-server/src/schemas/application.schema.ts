@@ -31,6 +31,7 @@ export const OvertimeDetailSchema = z
 // work_from_home
 export const WFHDetailSchema = z
   .object({
+    employeeShiftId: z.string().cuid("Invalid shift ID"),
     location: z.string().max(255).optional(),
   })
   .strict()
@@ -54,6 +55,29 @@ export const LateEarlyDetailSchema = z
   })
   .strict()
 
+export const ForgotCardDetailSchema = z.object({
+  employeeShiftId: z.string().cuid("Invalid shift ID"),
+  checkInAt: z.string().refine((value) => !Number.isNaN(Date.parse(value)), "Invalid check-in time").nullable().optional(),
+  checkOutAt: z.string().refine((value) => !Number.isNaN(Date.parse(value)), "Invalid check-out time").nullable().optional(),
+  documentUrl: z.string().url().nullable().optional(),
+}).refine(({ checkInAt, checkOutAt }) => Boolean(checkInAt || checkOutAt), {
+  message: "At least one of checkInAt or checkOutAt is required",
+})
+
+export const RegimeDetailSchema = z.object({
+  regimeCategoryId: z.string().cuid("Invalid regime category ID"),
+  lateMinutes: z.number().int().min(0).max(480).default(0),
+  earlyMinutes: z.number().int().min(0).max(480).default(0),
+  documentUrl: z.string().url().nullable().optional(),
+})
+
+export const RecruitmentDetailSchema = z.object({
+  positionId: z.string().cuid("Invalid position ID").optional(),
+  positionName: z.string().min(1),
+  quantity: z.number().int().min(1),
+  requirements: z.string().optional(),
+})
+
 // resignation
 export const ResignationDetailSchema = z.object({}).strict()
 
@@ -66,6 +90,23 @@ export const ApplicationBaseOptionalSchema = z
     assignedToId: z.string().optional(),
   })
   .strict()
+
+const applicationDates = {
+  startDate: z.string().refine((value) => !Number.isNaN(Date.parse(value)), "Invalid date format"),
+  endDate: z.string().refine((value) => !Number.isNaN(Date.parse(value)), "Invalid date format").optional(),
+}
+
+export const ApplicationFormSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("leave"), ...applicationDates, endDate: applicationDates.endDate.unwrap(), ...ApplicationBaseOptionalSchema.shape, detail: LeaveDetailSchema }).strict(),
+  z.object({ type: z.literal("overtime"), ...applicationDates, ...ApplicationBaseOptionalSchema.shape, detail: OvertimeDetailSchema }).strict(),
+  z.object({ type: z.literal("work_from_home"), ...applicationDates, ...ApplicationBaseOptionalSchema.shape, detail: WFHDetailSchema }).strict(),
+  z.object({ type: z.literal("shift_swap"), ...applicationDates, ...ApplicationBaseOptionalSchema.shape, detail: ShiftSwapDetailSchema }).strict(),
+  z.object({ type: z.literal("late_early"), ...applicationDates, ...ApplicationBaseOptionalSchema.shape, detail: LateEarlyDetailSchema }).strict(),
+  z.object({ type: z.literal("forgot_card"), ...applicationDates, ...ApplicationBaseOptionalSchema.shape, detail: ForgotCardDetailSchema }).strict(),
+  z.object({ type: z.literal("regime"), ...applicationDates, endDate: applicationDates.endDate.unwrap(), ...ApplicationBaseOptionalSchema.shape, detail: RegimeDetailSchema }).strict(),
+  z.object({ type: z.literal("resignation"), ...applicationDates, ...ApplicationBaseOptionalSchema.shape, detail: ResignationDetailSchema }).strict(),
+  z.object({ type: z.literal("recruitment"), ...applicationDates, ...ApplicationBaseOptionalSchema.shape, detail: RecruitmentDetailSchema }).strict(),
+])
 
 // ─── List filter schema ───────────────────────────────────────────────────────
 export const ListApplicationsSchema = z
@@ -108,6 +149,9 @@ export type CreateApplicationPayload = {
     | z.infer<typeof WFHDetailSchema>
     | z.infer<typeof ShiftSwapDetailSchema>
     | z.infer<typeof LateEarlyDetailSchema>
+    | z.infer<typeof ForgotCardDetailSchema>
+    | z.infer<typeof RegimeDetailSchema>
+    | z.infer<typeof RecruitmentDetailSchema>
     | z.infer<typeof ResignationDetailSchema>
 }
 

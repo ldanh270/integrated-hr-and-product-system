@@ -58,23 +58,7 @@ export function convertMcpToolsToAiSdk(
 
       const prop = propDef as Record<string, unknown>
       const description = (prop.description as string | undefined) ?? key
-
-      let zodType: z.ZodTypeAny
-
-      switch (prop.type) {
-        case "number":
-        case "integer":
-          zodType = z.number().describe(description)
-          break
-        case "boolean":
-          zodType = z.boolean().describe(description)
-          break
-        case "array":
-          zodType = z.array(z.unknown()).describe(description)
-          break
-        default:
-          zodType = z.string().describe(description)
-      }
+      let zodType = zodFromJsonSchema(prop, description)
 
       // Make optional if not in required list
       schemaShape[key] = required.includes(key) ? zodType : zodType.optional()
@@ -90,6 +74,60 @@ export function convertMcpToolsToAiSdk(
   }
 
   return aiTools
+}
+
+function zodFromJsonSchema(schema: Record<string, unknown>, fallbackDescription: string): z.ZodTypeAny {
+  if (Array.isArray(schema.enum) && schema.enum.length > 0) {
+    const values = schema.enum.filter((value): value is string => typeof value === "string")
+    if (values.length === schema.enum.length) return z.enum(values as [string, ...string[]]).describe(fallbackDescription)
+  }
+
+  if (Array.isArray(schema.oneOf) || Array.isArray(schema.anyOf)) {
+    const variants = (schema.oneOf ?? schema.anyOf) as Array<Record<string, unknown>>
+    const parsed = variants.map((variant) => zodFromJsonSchema(variant, fallbackDescription))
+    if (parsed.length > 1) return z.union(parsed as [z.ZodTypeAny, z.ZodTypeAny, ...z.ZodTypeAny[]])
+    if (parsed.length === 1) return parsed[0]
+  }
+
+  let result: z.ZodTypeAny
+  switch (schema.type) {
+    case "number":
+    case "integer": {
+      let number = z.number()
+      if (typeof schema.minimum === "number") number = number.min(schema.minimum)
+      if (typeof schema.maximum === "number") number = number.max(schema.maximum)
+      result = number
+      break
+    }
+    case "boolean":
+      result = z.boolean()
+      break
+    case "array": {
+      const itemSchema = (schema.items as Record<string, unknown> | undefined) ?? {}
+      let array = z.array(zodFromJsonSchema(itemSchema, fallbackDescription))
+      if (typeof schema.minItems === "number") array = array.min(schema.minItems)
+      if (typeof schema.maxItems === "number") array = array.max(schema.maxItems)
+      result = array
+      break
+    }
+    case "object": {
+      const childProperties = (schema.properties as Record<string, unknown> | undefined) ?? {}
+      const childRequired = new Set(Array.isArray(schema.required) ? schema.required.filter((value): value is string => typeof value === "string") : [])
+      const shape: Record<string, z.ZodTypeAny> = {}
+      for (const [childKey, childSchema] of Object.entries(childProperties)) {
+        const child = zodFromJsonSchema(childSchema as Record<string, unknown>, childKey)
+        shape[childKey] = childRequired.has(childKey) ? child : child.optional()
+      }
+      result = z.object(shape)
+      break
+    }
+    default:
+      result = z.string()
+  }
+
+  if (typeof schema.minLength === "number" && result instanceof z.ZodString) result = result.min(schema.minLength)
+  if (typeof schema.maxLength === "number" && result instanceof z.ZodString) result = result.max(schema.maxLength)
+  return result.describe(fallbackDescription)
 }
 
 // ---------------------------------------------------------------------------

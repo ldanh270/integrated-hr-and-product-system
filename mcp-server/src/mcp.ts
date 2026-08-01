@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 
 import { registerApplicationTools } from "./tools/application.tools.js"
+import { registerApprovalTools } from "./tools/approval.tools.js"
 import { registerAttendanceTools } from "./tools/attendance.tools.js"
 import { registerAuthTools } from "./tools/auth.tools.js"
 import { registerEmployeeTools } from "./tools/employee.tools.js"
@@ -12,6 +13,8 @@ import { registerScheduleTools } from "./tools/schedule.tools.js"
 import { registerShiftChangeRequestTools } from "./tools/shift-change-request.tools.js"
 import { registerShiftTools } from "./tools/shift.tools.js"
 import { registerWeeklyTemplateTools } from "./tools/weekly-template.tools.js"
+import { registerRegimeCategoryTools } from "./tools/regime-category.tools.js"
+import { registerWorkforceTools } from "./tools/workforce.tools.js"
 
 // Initialize MCP Server
 export const mcpServer = new McpServer({
@@ -33,4 +36,7 @@ export const registerTools = () => {
   registerWeeklyTemplateTools()
   registerHolidayTools()
   registerShiftChangeRequestTools()
+  registerApprovalTools()
+  registerRegimeCategoryTools()
+  registerWorkforceTools()
 }
