@@ -11,6 +11,7 @@ import { runIncrementalSeed } from "./seed-incremental.util.ts"
 import { SeedContext, createEmptyContext, registry } from "./seeders/index.ts"
 
 const isIncremental = process.argv.includes("--incremental")
+const isFreshSeedConfirmed = process.argv.includes("--force-clear")
 
 /** Wipe DB then run every registered seeder — default first-time / reset flow. */
 async function runFreshSeed(): Promise<void> {
@@ -23,7 +24,7 @@ async function runFreshSeed(): Promise<void> {
     return
   }
 
-  await clearDatabase()
+  await clearDatabase({ force: isFreshSeedConfirmed })
 
   for (const seeder of sortedSeeders) {
     console.log(`\n[→] Running: ${seeder.name}`)

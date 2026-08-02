@@ -1,6 +1,24 @@
 import { prisma } from "../libs/database.ts"
 
-export async function clearDatabase() {
+const FORCE_CLEAR_ARG = "--force-clear"
+const FORCE_CLEAR_ENV = "ALLOW_DATABASE_CLEAR"
+const FORCE_CLEAR_ENV_VALUE = "true"
+
+function assertClearAllowed(force = false) {
+  const isAllowed =
+    force ||
+    process.argv.includes(FORCE_CLEAR_ARG) ||
+    process.env[FORCE_CLEAR_ENV] === FORCE_CLEAR_ENV_VALUE
+
+  if (!isAllowed) {
+    throw new Error(
+      `Database clear blocked. Re-run with ${FORCE_CLEAR_ARG} or set ${FORCE_CLEAR_ENV}=${FORCE_CLEAR_ENV_VALUE}.`,
+    )
+  }
+}
+
+export async function clearDatabase(options: { force?: boolean } = {}) {
+  assertClearAllowed(options.force)
   console.log("Clearing database...")
   const tableNames = [
     "PasswordResetRequest",
