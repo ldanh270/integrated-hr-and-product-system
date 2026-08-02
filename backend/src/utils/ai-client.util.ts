@@ -151,7 +151,19 @@ export const aiClient = {
         .replace(/\s*```$/, "")
     }
 
-    return JSON.parse(responseText.trim()) as T
+    const parsed = JSON.parse(responseText.trim())
+
+    // If an object is returned wrapping an array property (e.g. { tasks: [...] } or { suggestions: [...] }), unwrap it
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      const keys = Object.keys(parsed)
+      for (const key of keys) {
+        if (Array.isArray((parsed as Record<string, unknown>)[key])) {
+          return (parsed as Record<string, unknown>)[key] as T
+        }
+      }
+    }
+
+    return parsed as T
   },
 
   generateText: async (prompt: string, systemPrompt?: string): Promise<string> => {
