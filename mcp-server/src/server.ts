@@ -95,6 +95,10 @@ const startSSEServer = () => {
   const app = express()
   const PORT = process.env.PORT || 3001
 
+  app.get("/health", (_req, res) => {
+    res.json({ status: "ok", service: "hrp-mcp" })
+  })
+
   // Build a sub-router that exposes all HTTP routes under the /mcp prefix.
   // This is required for deployments behind reverse proxies / ngrok where
   // PUBLIC_BASE_URL includes a path prefix (e.g. https://x.ngrok-free.dev/mcp).
@@ -170,6 +174,10 @@ const startSSEServer = () => {
 const startStdioServer = async () => {
   const app = express()
   const PORT = process.env.PORT || 3001
+
+  app.get("/health", (_req, res) => {
+    res.json({ status: "ok", service: "hrp-mcp" })
+  })
 
   const apiRouter = express.Router()
   mountAuthRoutes(apiRouter)

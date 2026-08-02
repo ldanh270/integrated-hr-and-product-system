@@ -25,6 +25,7 @@ ENV PORT=5000
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY tsconfig.json ./tsconfig.json
 
 # Copy source
 COPY src ./src

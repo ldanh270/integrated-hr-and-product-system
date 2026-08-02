@@ -56,10 +56,9 @@ export const UpdatePayslipTemplateSchema = z
 // ─── Employee Salary Config ───────────────────────────────────────────────────
 export const SetSalaryConfigSchema = z
   .object({
-    templateId: z.string(),
-    baseSalary: z.number().positive(),
-    effectiveFrom: z.string().datetime(),
-    effectiveTo: z.string().datetime().nullable().optional(),
+    templateId: z.string().min(1),
+    baseSalary: z.number().min(0),
+    effectiveFrom: z.string().refine((value) => !Number.isNaN(Date.parse(value))),
     note: z.string().optional(),
   })
   .strict()
@@ -69,21 +68,28 @@ export const GeneratePayrollSchema = z
   .object({
     periodMonth: z.number().int().min(1).max(12),
     periodYear: z.number().int().min(2000),
-    name: z.string().min(1),
+    name: z.string().min(1).optional(),
   })
   .strict()
 
 export const UpdatePayrollSettingsSchema = z
   .object({
-    triggerDay: z.number().int().min(1).max(31),
+    triggerDay: z.number().int().min(1).max(28),
     triggerHour: z.number().int().min(0).max(23),
     triggerMinute: z.number().int().min(0).max(59),
+    approvalDay: z.number().int().min(1).max(28),
+    approvalHour: z.number().int().min(0).max(23),
+    approvalMinute: z.number().int().min(0).max(59),
+  })
+  .refine((data) => data.approvalDay >= data.triggerDay, {
+    message: "approvalDay must be greater than or equal to triggerDay",
+    path: ["approvalDay"],
   })
   .strict()
 
 export const RejectPayrollSchema = z
   .object({
-    rejectReason: z.string().min(1),
+    reason: z.string().min(1),
   })
   .strict()
 
