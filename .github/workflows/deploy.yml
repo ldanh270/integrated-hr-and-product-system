@@ -126,12 +126,18 @@ jobs:
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
       - name: 📁 Prepare deployment directory
-        run: ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p ~/hrp/nginx"
+        run: |
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+            mkdir -p ~/hrp/caddy
+            if [ -d ~/hrp/caddy ]; then
+              sudo chown -R ${{ secrets.EC2_USER }}:${{ secrets.EC2_USER }} ~/hrp/caddy
+            fi
+          "
 
       - name: 📂 Copy compose files to EC2
         run: |
           scp docker-compose.prod.yml ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/hrp/docker-compose.prod.yml
-          scp -r nginx/ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/hrp/nginx/
+          scp caddy/Caddyfile ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/hrp/caddy/Caddyfile
 
       - name: 🚀 Deploy on EC2
         env:

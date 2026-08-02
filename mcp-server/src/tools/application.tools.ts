@@ -2,11 +2,29 @@ import { z } from "zod"
 
 import { LEAVE_TYPE_VALUES, REGIME_TYPES } from "../constants/entities/attendance.config.js"
 import { mcpServer } from "../mcp.js"
+import { ApplicationFormSchema } from "../schemas/application.schema.js"
 import { applicationService } from "../services/application.service.js"
 import { requireSession } from "../utils/session-guard.js"
 import { buildError, buildSuccess } from "../utils/tool-response.js"
 
 export const registerApplicationTools = () => {
+  mcpServer.tool(
+    "application_create",
+    "Create any HR application using the exact backend form schema, including forgot card, regime, recruitment, and resignation.",
+    {
+      sessionId: z.string().describe("Active session ID"),
+      form: ApplicationFormSchema.describe("Exact application form accepted by the HRP backend"),
+    },
+    async ({ sessionId, form }) => {
+      try {
+        const session = requireSession(sessionId)
+        return buildSuccess(await applicationService.createApplication(session, form))
+      } catch (error: unknown) {
+        return buildError("Failed to create application", error instanceof Error ? error.message : String(error))
+      }
+    },
+  )
+
   // ═══════════════════════════════════════════════════════════════════════════
   // GROUP A — CREATE APPLICATION (7 tools, 1 tool per type)
   // ═══════════════════════════════════════════════════════════════════════════
@@ -93,13 +111,14 @@ export const registerApplicationTools = () => {
     "Create a work from home application (đơn làm việc tại nhà).",
     {
       sessionId: z.string().describe("Active session ID"),
-      startDate: z.string().datetime().describe("Start date (ISO 8601)"),
+      startDate: z.string().refine((value) => !Number.isNaN(Date.parse(value)), "Invalid date format").describe("Start date (ISO 8601 or YYYY-MM-DD)"),
+      employeeShiftId: z.string().describe("ID of the employee shift"),
       location: z.string().max(255).optional().describe("Work location"),
       reason: z.string().min(5).max(500).optional().describe("Reason for application"),
       note: z.string().max(1000).optional().describe("Additional notes"),
       assignedToId: z.string().optional().describe("ID of employee to assign tasks to"),
     },
-    async ({ sessionId, startDate, location, reason, note, assignedToId }) => {
+    async ({ sessionId, startDate, employeeShiftId, location, reason, note, assignedToId }) => {
       try {
         const session = requireSession(sessionId)
         const payload = {
@@ -108,7 +127,7 @@ export const registerApplicationTools = () => {
           reason,
           note,
           assignedToId,
-          detail: { ...(location && { location }) },
+          detail: { employeeShiftId, ...(location && { location }) },
         }
         const data = await applicationService.createApplication(session, payload)
         return buildSuccess(data)
