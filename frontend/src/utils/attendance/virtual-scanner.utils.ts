@@ -1,5 +1,5 @@
-import { ATTENDANCE_MESSAGES } from "@/config/messages/attendance.message"
 import { MAP_INITIAL_CENTER } from "@/config/map.config"
+import { ATTENDANCE_MESSAGES } from "@/config/messages/attendance.message"
 import { ATTENDANCE_GPS_RULES, ATTENDANCE_TIME_RULES } from "@/config/rules/attendance.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import type { IAttendanceRecord, IWorkingShift } from "@/types/attendance.types"
@@ -57,7 +57,8 @@ export function buildTodayShiftInfo(scheduleShift?: Partial<IWorkingShift>): Tod
     return null
   }
 
-  const gracePeriod = scheduleShift.gracePeriodMinutes ?? ATTENDANCE_TIME_RULES.DEFAULT_WINDOW_MINUTES
+  const gracePeriod =
+    scheduleShift.gracePeriodMinutes ?? ATTENDANCE_TIME_RULES.DEFAULT_WINDOW_MINUTES
   const radius = scheduleShift.gpsRadiusMeters
   const lat = scheduleShift.gpsLat
   const lng = scheduleShift.gpsLng
@@ -66,7 +67,7 @@ export function buildTodayShiftInfo(scheduleShift?: Partial<IWorkingShift>): Tod
     name: shiftName,
     workWindow: `${minutesToDayTime(startTime)} - ${minutesToDayTime(endTime)}`,
     checkInWindow: `${minutesToDayTime(startTime - gracePeriod)} - ${minutesToDayTime(startTime + gracePeriod)}`,
-    checkOutWindow: `${ATTENDANCE_MESSAGES.SCANNER.CHECK_OUT_FROM} ${minutesToDayTime(endTime - gracePeriod)}`,
+    checkOutWindow: `${ATTENDANCE_MESSAGES.SCANNER.CHECK_OUT_FROM} ${minutesToDayTime(endTime)}`,
     gpsLabel: buildScannerGpsLabel(radius, lat, lng),
   }
 }
