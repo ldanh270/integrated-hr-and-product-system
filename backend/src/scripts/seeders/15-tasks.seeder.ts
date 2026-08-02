@@ -1,9 +1,14 @@
+import { APPLICATION_STATUS, APPLICATION_TYPES } from "@/configs/entities/attendance.config.ts"
+import {
+  SPENT_TIME_ACTIVITY,
+  TASK_PRIORITY,
+  TASK_STATUS,
+  TASK_TRACKER,
+} from "@/configs/entities/project.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
 import { ISeeder } from "@/scripts/seeders/seeder.interface.ts"
 import { registry } from "@/scripts/seeders/seeder.registry.ts"
-import { TASK_PRIORITY, TASK_STATUS, TASK_TRACKER, SPENT_TIME_ACTIVITY } from "@/configs/entities/project.config.ts"
-import { APPLICATION_STATUS, APPLICATION_TYPES } from "@/configs/entities/attendance.config.ts"
 
 export class TasksSeeder implements ISeeder {
   readonly name = "Tasks"
@@ -19,8 +24,11 @@ export class TasksSeeder implements ISeeder {
       throw new Error("Missing required context (admin or projects).")
     }
 
-    // Clear existing tasks first to avoid duplicated seeding errors
-    await prisma.task.deleteMany()
+    // Clear only tasks for the projects owned by this seed context to avoid deleting live data
+    // when the task seeder is run standalone against a shared demo database.
+    await prisma.task.deleteMany({
+      where: { projectId: { in: projectIds } },
+    })
 
     for (const projectId of projectIds) {
       // Find members of this project
@@ -52,13 +60,21 @@ export class TasksSeeder implements ISeeder {
 
       // Define structured parent features to demonstrate the subtask tree
       const parentFeatures = [
-        { title: "Feature: [201001] Admin - Danh sách doanh nghiệp", tracker: TASK_TRACKER.FEATURE },
-        { title: "Feature: [201002] Admin - Tạo/Sửa/Xóa doanh nghiệp", tracker: TASK_TRACKER.FEATURE },
-        { title: "Feature: [201003] User - Đăng ký thông tin doanh nghiệp", tracker: TASK_TRACKER.FEATURE },
+        {
+          title: "Feature: [201001] Admin - Danh sách doanh nghiệp",
+          tracker: TASK_TRACKER.FEATURE,
+        },
+        {
+          title: "Feature: [201002] Admin - Tạo/Sửa/Xóa doanh nghiệp",
+          tracker: TASK_TRACKER.FEATURE,
+        },
+        {
+          title: "Feature: [201003] User - Đăng ký thông tin doanh nghiệp",
+          tracker: TASK_TRACKER.FEATURE,
+        },
       ]
 
       for (const [fIdx, feat] of parentFeatures.entries()) {
-        
         // 1. Create Parent Feature Task
         const parentTask = await prisma.task.create({
           data: {
@@ -75,7 +91,7 @@ export class TasksSeeder implements ISeeder {
             estimatedTime: 40,
             progress: 30,
             tracker: TASK_TRACKER.FEATURE,
-          }
+          },
         })
 
         // 2. Create Child Subtasks for this feature
@@ -105,9 +121,9 @@ export class TasksSeeder implements ISeeder {
                 comment: "Hoàn thành code UI danh sách sớm hơn dự kiến",
                 activity: SPENT_TIME_ACTIVITY.DEVELOP,
                 date: projStart,
-              }
-            }
-          }
+              },
+            },
+          },
         })
 
         // Subtask 2: In Review Task (status = in_review, with link deliverables)
@@ -129,7 +145,7 @@ export class TasksSeeder implements ISeeder {
             parentTaskId: parentTask.id,
             resultUrl: "https://github.com/ldanh270/integrated-hr-and-product-system/pull/42",
             resultNotes: "Đã pass toàn bộ test case ở local. Nhờ Team Leader review hộ.",
-          }
+          },
         })
 
         // Subtask 3: Overdue Task (progress < 100, status = in_progress, current date is after dueDate)
@@ -152,19 +168,20 @@ export class TasksSeeder implements ISeeder {
             progress: 60, // Not finished yet (Overdue)
             tracker: TASK_TRACKER.TASK,
             parentTaskId: parentTask.id,
-          }
+          },
         })
 
         // Subtask 4: Task with HR Leave Conflict (overlaps with approved leave days)
         // Fetch if the employee has any approved leave days
-        const assigneeIdForConflict = members.length > 1 ? members[1].employeeId : members[0].employeeId
+        const assigneeIdForConflict =
+          members.length > 1 ? members[1].employeeId : members[0].employeeId
         const employeeLeaves = await prisma.application.findMany({
           where: {
             employeeId: assigneeIdForConflict,
             status: APPLICATION_STATUS.APPROVED,
             type: APPLICATION_TYPES.LEAVE.LABEL,
           },
-          take: 1
+          take: 1,
         })
 
         let conflictStart = new Date(projStart.getTime() + 10 * 24 * 60 * 60 * 1000)
@@ -192,7 +209,7 @@ export class TasksSeeder implements ISeeder {
             progress: 0,
             tracker: TASK_TRACKER.SUPPORT,
             parentTaskId: parentTask.id,
-          }
+          },
         })
       }
     }
