@@ -3,6 +3,28 @@ import { useVirtualScanner } from "@/hooks/attendance/useVirtualScanner"
 
 import { AlertCircle, CheckCircle2, Clock, Fingerprint, Loader2, MapPin } from "lucide-react"
 
+interface ShiftInfoRowProps {
+  label: string
+  value: string
+  strong?: boolean
+}
+
+function ShiftInfoRow({ label, value, strong = false }: ShiftInfoRowProps) {
+  return (
+    <div className="grid grid-cols-[7rem_1fr] items-start gap-3">
+      <span className="text-muted-foreground">{label}</span>
+      <span
+        className={[
+          "min-w-0 text-right leading-5 text-foreground",
+          strong ? "font-semibold" : "font-medium",
+        ].join(" ")}
+      >
+        {value}
+      </span>
+    </div>
+  )
+}
+
 export function VirtualScanner() {
   const {
     user,
@@ -46,26 +68,27 @@ export function VirtualScanner() {
           </div>
 
           {todayShift ? (
-            <div className="mt-3 space-y-2 text-xs text-muted-foreground">
-              <div className="flex items-center justify-between gap-3">
-                <span>{ATTENDANCE_MESSAGES.SCANNER.SHIFT_NAME}</span>
-                <span className="font-semibold text-foreground">{todayShift.name}</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span>{ATTENDANCE_MESSAGES.SCANNER.WORK_WINDOW}</span>
-                <span className="font-mono text-foreground">{todayShift.workWindow}</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span>{ATTENDANCE_MESSAGES.SCANNER.CHECK_IN_WINDOW}</span>
-                <span className="font-mono text-foreground">{todayShift.checkInWindow}</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span>{ATTENDANCE_MESSAGES.SCANNER.CHECK_OUT_WINDOW}</span>
-                <span className="font-mono text-foreground">{todayShift.checkOutWindow}</span>
-              </div>
-              <div className="flex items-start gap-2 pt-2">
-                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                <span>{todayShift.gpsLabel}</span>
+            <div className="mt-4 space-y-2.5 text-xs">
+              <ShiftInfoRow
+                label={ATTENDANCE_MESSAGES.SCANNER.SHIFT_NAME}
+                value={todayShift.name}
+                strong
+              />
+              <ShiftInfoRow
+                label={ATTENDANCE_MESSAGES.SCANNER.WORK_WINDOW}
+                value={todayShift.workWindow}
+              />
+              <ShiftInfoRow
+                label={ATTENDANCE_MESSAGES.SCANNER.CHECK_IN_WINDOW}
+                value={todayShift.checkInWindow}
+              />
+              <ShiftInfoRow
+                label={ATTENDANCE_MESSAGES.SCANNER.CHECK_OUT_WINDOW}
+                value={todayShift.checkOutWindow}
+              />
+              <div className="mt-3 flex items-start gap-2 rounded-lg bg-background/70 px-3 py-2 text-muted-foreground">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span className="leading-5">{todayShift.gpsLabel}</span>
               </div>
             </div>
           ) : (

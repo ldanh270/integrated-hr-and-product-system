@@ -1,5 +1,5 @@
-import { ATTENDANCE_TIME_RULES } from "@/configs/rules/attendance.config.ts"
 import { ATTENDANCE_ERROR_MESSAGES } from "@/configs/messages/attendance.message.ts"
+import { ATTENDANCE_TIME_RULES } from "@/configs/rules/attendance.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { ATTENDANCE_LAYERS } from "@/constants/attendance.constants.ts"
 import type { IAttendanceRecordDTO, IAttendanceShiftDTO } from "@/types/attendance.types.ts"
@@ -40,9 +40,7 @@ export function isActualShiftMatched(
   actualEndTime: number,
   shift: IAttendanceShiftDTO | null | undefined,
 ): boolean {
-  return Boolean(
-    shift && actualStartTime === shift.startTime && actualEndTime === shift.endTime,
-  )
+  return Boolean(shift && actualStartTime === shift.startTime && actualEndTime === shift.endTime)
 }
 
 /** Grace period before/after shift boundaries — defaults from ATTENDANCE_TIME_RULES when unset. */
@@ -112,7 +110,7 @@ export function assertCheckInWindow(
   }
 }
 
-/** Block checkout until grace window opens — prevents premature scan/check-out. */
+/** Block checkout until the scheduled shift end — prevents premature scan/check-out. */
 export function isBeforeCheckOutWindow(
   now: Date,
   record: IAttendanceRecordDTO,
@@ -121,10 +119,8 @@ export function isBeforeCheckOutWindow(
   if (!shift) return false
 
   const { end } = getShiftDateTimes(new Date(record.date), shift)
-  const windowStart = new Date(end)
-  windowStart.setUTCMinutes(windowStart.getUTCMinutes() - getWindowMinutes(shift))
 
-  return now.getTime() < windowStart.getTime()
+  return now.getTime() < end.getTime()
 }
 
 /** Extend active session lookup into the next calendar day for overnight shift checkout. */

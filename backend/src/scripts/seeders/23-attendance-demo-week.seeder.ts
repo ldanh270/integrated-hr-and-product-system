@@ -17,9 +17,10 @@ import { ISeeder } from "./seeder.interface.ts"
 import { registry } from "./seeder.registry.ts"
 
 const LEGACY_DEMO_NOTE = "Demo attendance week 13-19/07/2026"
-const DEMO_NOTE = "Demo attendance 01/06-18/07/2026"
+const PREVIOUS_DEMO_NOTE = "Demo attendance 01/06-18/07/2026"
+const DEMO_NOTE = "Demo attendance 01/06-02/08/2026"
 const DEMO_START = new Date("2026-06-01T00:00:00.000Z")
-const DEMO_END = new Date("2026-07-18T00:00:00.000Z")
+const DEMO_END = new Date("2026-08-02T00:00:00.000Z")
 
 /** Deterministic demo distribution; production attendance never consumes these values. */
 const DEMO_ATTENDANCE_RULES = {
@@ -58,7 +59,7 @@ function getShiftDurationMinutes(startTime: number, endTime: number): number {
 
 export class AttendanceDemoWeekSeeder implements ISeeder {
   readonly name = "AttendanceDemoWeek"
-  readonly order = 23
+  readonly order = 18.2
 
   async run(context: SeedContext): Promise<Partial<SeedContext>> {
     const [employees, fallbackShift] = await Promise.all([
@@ -101,7 +102,11 @@ export class AttendanceDemoWeekSeeder implements ISeeder {
 
     // Remove only rows owned by this demo script, including an older timezone-shifted run.
     await prisma.employeeShift.deleteMany({
-      where: { attendanceRecord: { is: { note: { in: [LEGACY_DEMO_NOTE, DEMO_NOTE] } } } },
+      where: {
+        attendanceRecord: {
+          is: { note: { in: [LEGACY_DEMO_NOTE, PREVIOUS_DEMO_NOTE, DEMO_NOTE] } },
+        },
+      },
     })
 
     await prisma.employeeShift.createMany({
@@ -202,7 +207,7 @@ export class AttendanceDemoWeekSeeder implements ISeeder {
       skipDuplicates: true,
     })
 
-    console.log(`Demo attendance ready: ${assignedShifts.length} employee-days, 01/06-18/07/2026`)
+    console.log(`Demo attendance ready: ${assignedShifts.length} employee-days, 01/06-02/08/2026`)
     return {}
   }
 }

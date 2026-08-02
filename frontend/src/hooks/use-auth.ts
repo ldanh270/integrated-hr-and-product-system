@@ -20,8 +20,8 @@ export const useAuth = () => {
       const { data } = await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, credentials)
       return data.data // Following ApiResponse envelope
     },
-    onSuccess: (data: { employee: User }) => {
-      setAuth(data.employee)
+    onSuccess: (data: { employee: User; accessToken?: string }) => {
+      setAuth(data.employee, data.accessToken)
     },
   })
 
