@@ -1,6 +1,6 @@
 # ============================================================
 # HRP Production Stack — EC2 Deployment
-# Services: backend, mcp-server, agent-gateway, redis, nginx
+# Services: backend, mcp-server, agent-gateway, redis, caddy
 #
 # Images are pulled from GHCR (GitHub Container Registry).
 # Env vars are injected via .env files on the EC2 host.
@@ -8,25 +8,29 @@
 
 services:
   # ----------------------------------------------------------
-  # Nginx — Reverse proxy & SSL termination
+  # Caddy — Reverse proxy & automatic HTTPS
   # ----------------------------------------------------------
-  nginx:
-    image: nginx:1.27-alpine
-    container_name: hrp-nginx
+  caddy:
+    image: caddy:2-alpine
+    container_name: hrp-caddy
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
+      - "443:443/udp"
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST}
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - certbot_www:/var/www/certbot:ro
-      - certbot_conf:/etc/letsencrypt:ro
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
     depends_on:
-      - backend
-      - mcp
+      backend:
+        condition: service_healthy
+      mcp:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "nginx", "-t"]
+      test: ["CMD", "caddy", "validate", "--config", "/etc/caddy/Caddyfile"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -125,7 +129,7 @@ services:
 volumes:
   redis_data:
     driver: local
-  certbot_www:
+  caddy_data:
     driver: local
-  certbot_conf:
+  caddy_config:
     driver: local
