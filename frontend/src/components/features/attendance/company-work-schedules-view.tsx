@@ -2,14 +2,6 @@
 import { PageCard } from "@/components/common"
 import { EmployeeScheduleCells } from "@/components/features/attendance/employee-schedule-cells"
 import { WorkScheduleToolbar } from "@/components/features/attendance/work-schedule-toolbar"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { CALENDAR_WEEK_DAY_COUNT } from "@/config/rules/calendar.config"
 import { SYSTEM_CONFIG } from "@/config/system.config"
 import { useEmployees } from "@/hooks/employees/queries/useEmployeeQuery"
@@ -26,7 +18,7 @@ import { useState } from "react"
 import { useQueries, useQuery } from "@tanstack/react-query"
 import { Loader2 } from "lucide-react"
 
-const SCHEDULE_TABLE_COLUMN_COUNT = CALENDAR_WEEK_DAY_COUNT + 1
+const SCHEDULE_GRID_COLUMNS = "minmax(150px, 0.9fr) repeat(7, minmax(0, 1fr))"
 
 export function CompanyWorkSchedulesView() {
   const [selectedDate, setSelectedDate] = useState(() => new Date())
@@ -93,64 +85,55 @@ export function CompanyWorkSchedulesView() {
       />
 
       <PageCard className="overflow-hidden p-0" noBorder={false}>
-        <div className="overflow-x-auto">
-          <Table className="text-sm">
-            <TableHeader className="bg-muted/40">
-              <TableRow className="hover:bg-transparent border-b">
-                <TableHead className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase whitespace-nowrap">
-                  Nhân viên
-                </TableHead>
-                {weekDates.map((day) => (
-                  <TableHead
-                    key={day.dateKey}
-                    className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase whitespace-nowrap"
-                  >
-                    <p>{day.label}</p>
-                    <p className="mt-1 text-[11px] text-primary">{day.shortDate}</p>
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
+        <div className="w-full overflow-hidden text-sm">
+          <div
+            className="grid border-b bg-muted/40"
+            style={{ gridTemplateColumns: SCHEDULE_GRID_COLUMNS }}
+          >
+            <div className="min-w-0 px-4 py-3 text-xs font-medium text-muted-foreground uppercase">
+              <span className="block truncate">Nhân viên</span>
+            </div>
+            {weekDates.map((day) => (
+              <div
+                key={day.dateKey}
+                className="min-w-0 px-3 py-3 text-xs font-medium text-muted-foreground uppercase"
+              >
+                <p className="truncate">{day.label}</p>
+                <p className="mt-1 truncate text-[11px] text-primary">{day.shortDate}</p>
+              </div>
+            ))}
+          </div>
 
-            <TableBody className="divide-y divide-border">
-              {isEmployeesLoading || isSchedulesLoading || isHolidaysLoading ? (
-                <TableRow>
-                  <TableCell colSpan={SCHEDULE_TABLE_COLUMN_COUNT} className="h-24 text-center">
-                    <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
-                  </TableCell>
-                </TableRow>
-              ) : isEmployeesError || isSchedulesError || isHolidaysError ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={SCHEDULE_TABLE_COLUMN_COUNT}
-                    className="h-24 text-center text-destructive"
-                  >
-                    Lỗi khi tải lịch làm việc nhân viên.
-                  </TableCell>
-                </TableRow>
-              ) : employees.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={SCHEDULE_TABLE_COLUMN_COUNT}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    Không có nhân viên nào.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                employees.map((employee) => (
-                  <TableRow key={employee.id} className="hover:bg-muted/30">
-                    <EmployeeScheduleCells
-                      employee={employee}
-                      plannedWeek={plannedWeeksByEmployeeId.get(employee.id)}
-                      weekDates={weekDates}
-                      holidaysByDate={holidaysByDate}
-                    />
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          <div className="divide-y divide-border">
+            {isEmployeesLoading || isSchedulesLoading || isHolidaysLoading ? (
+              <div className="flex h-24 items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : isEmployeesError || isSchedulesError || isHolidaysError ? (
+              <div className="flex h-24 items-center justify-center text-destructive">
+                Lỗi khi tải lịch làm việc nhân viên.
+              </div>
+            ) : employees.length === 0 ? (
+              <div className="flex h-24 items-center justify-center text-muted-foreground">
+                Không có nhân viên nào.
+              </div>
+            ) : (
+              employees.map((employee) => (
+                <div
+                  key={employee.id}
+                  className="grid min-w-0 transition-colors hover:bg-muted/30"
+                  style={{ gridTemplateColumns: SCHEDULE_GRID_COLUMNS }}
+                >
+                  <EmployeeScheduleCells
+                    employee={employee}
+                    plannedWeek={plannedWeeksByEmployeeId.get(employee.id)}
+                    weekDates={weekDates}
+                    holidaysByDate={holidaysByDate}
+                  />
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </PageCard>
     </div>
