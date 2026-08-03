@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { ATTENDANCE_MESSAGES } from "@/config/messages/attendance.message"
+import { MAP_INITIAL_CENTER } from "@/config/map.config"
 import { ATTENDANCE_GPS_RULES, WORKING_SHIFT_FORM_RULES } from "@/config/rules/attendance.config"
 import { useCreateShift, useUpdateShift } from "@/hooks/attendance/use-shifts"
 import { minutesToTime } from "@/lib/utils"
@@ -132,9 +133,9 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
       breakStartTime: DEFAULT_BREAK_START_TIME,
       breakEndTime: DEFAULT_BREAK_END_TIME,
       gracePeriodMinutes: String(DEFAULT_GRACE_PERIOD_MINUTES),
-      gpsLat: undefined,
-      gpsLng: undefined,
-      gpsRadiusMeters: undefined,
+      gpsLat: MAP_INITIAL_CENTER.lat,
+      gpsLng: MAP_INITIAL_CENTER.lng,
+      gpsRadiusMeters: ATTENDANCE_GPS_RULES.DEFAULT_RADIUS_METERS,
       isActive: true,
     },
   })
@@ -179,9 +180,9 @@ export function ShiftDialog({ open, onOpenChange, initialData }: Props) {
         breakStartTime: DEFAULT_BREAK_START_TIME,
         breakEndTime: DEFAULT_BREAK_END_TIME,
         gracePeriodMinutes: String(DEFAULT_GRACE_PERIOD_MINUTES),
-        gpsLat: undefined,
-        gpsLng: undefined,
-        gpsRadiusMeters: undefined,
+        gpsLat: MAP_INITIAL_CENTER.lat,
+        gpsLng: MAP_INITIAL_CENTER.lng,
+        gpsRadiusMeters: ATTENDANCE_GPS_RULES.DEFAULT_RADIUS_METERS,
         isActive: true,
       })
     }

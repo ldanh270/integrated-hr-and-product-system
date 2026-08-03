@@ -8,6 +8,7 @@ WORKDIR /app
 FROM base AS deps
 COPY package.json bun.lock* ./
 COPY prisma ./prisma
+COPY prisma.config.ts ./
 # Install all deps (including dev for prisma generate)
 RUN bun install
 
@@ -20,9 +21,11 @@ FROM base AS runner
 ENV NODE_ENV=production
 ENV PORT=5000
 
-# Copy prisma schema + generated client
+# Copy prisma schema + config + generated client
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY tsconfig.json ./tsconfig.json
 
 # Copy source
 COPY src ./src

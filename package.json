@@ -1,9 +1,9 @@
 {
   "scripts": {
-    "dev": "concurrently \"nr dev:backend\" \"nr dev:frontend\"",
+    "dev": "concurrently \"nr dev:backend\" \"nr dev:frontend\" \"nr dev:mcp\" \"nr dev:gateway\"",
     "dev:stage": "concurrently \"nr dev:backend\" \"nr dev:frontend\" \"nr dev:mcp\"",
     "dev:all": "concurrently \"nr dev:backend\" \"nr dev:frontend\" \"nr dev:mcp\" \"nr db:studio\"",
-    "i:all": "concurrently \"nr i:backend\" \"nr i:frontend\" \"nr i:mcp\" \"nr i:gateway\"",
+    "i:all": "pnpm install",
     "i:backend": "cd backend && ni",
     "i:frontend": "cd frontend && ni",
     "i:mcp": "cd mcp-server && ni",
@@ -22,6 +22,8 @@
     "db:reset:force": "cd backend && nlx prisma migrate reset --force",
     "db:studio": "cd backend && nlx prisma studio",
     "db:seed": "cd backend && nr seed",
+    "db:seed:fresh": "cd backend && nr seed:fresh",
+    "db:seed:incremental": "cd backend && nr seed:incremental",
     "db:seed:admin": "cd backend && nr seed:admin",
     "db:clear": "cd backend && nr clear",
     "hash-password": "cd backend && nr hash-password",

@@ -53,6 +53,10 @@ import express from "express"
 dotenv.config() // Create config for using .env variables
 const app = express()
 
+// Production traffic reaches Express through the single Caddy reverse-proxy hop.
+// This lets express-rate-limit derive the client IP from X-Forwarded-For safely.
+app.set("trust proxy", 1)
+
 /**
  * Middleware
  */
@@ -68,6 +72,10 @@ app.use(express.json())
 // Public routes
 app.get("/", async (req, res) =>
   res.status(HttpStatusCode.OK).json({ message: "Connect to server successfully" }),
+)
+
+app.get("/health", (_req, res) =>
+  res.status(HttpStatusCode.OK).json({ status: "ok", service: "hrp-backend" }),
 )
 
 app.use("/api/auth", authRoutes)

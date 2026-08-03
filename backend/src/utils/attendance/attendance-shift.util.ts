@@ -1,8 +1,12 @@
-import { ATTENDANCE_TIME_RULES } from "@/configs/rules/attendance.config.ts"
 import { ATTENDANCE_ERROR_MESSAGES } from "@/configs/messages/attendance.message.ts"
+import { ATTENDANCE_TIME_RULES } from "@/configs/rules/attendance.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { ATTENDANCE_LAYERS } from "@/constants/attendance.constants.ts"
 import type { IAttendanceRecordDTO, IAttendanceShiftDTO } from "@/types/attendance.types.ts"
+import {
+  getAttendanceClockMinutes,
+  toAttendanceInstant,
+} from "@/utils/attendance/attendance-time-zone.util.ts"
 import { AppError } from "@/utils/error.util.ts"
 
 /** Shift duration in minutes — handles overnight shifts that cross midnight. */
@@ -27,7 +31,7 @@ export function isWithinShiftWindow(
 
 /** Extract minutes-since-midnight from a Date — used for PT multi-slot day selection. */
 export function getMinutesFromDateTime(date: Date): number {
-  return date.getHours() * 60 + date.getMinutes()
+  return getAttendanceClockMinutes(date)
 }
 
 /** Exact match check for scheduled vs actual start/end — drives isMatched flag on checkout. */
@@ -36,9 +40,7 @@ export function isActualShiftMatched(
   actualEndTime: number,
   shift: IAttendanceShiftDTO | null | undefined,
 ): boolean {
-  return Boolean(
-    shift && actualStartTime === shift.startTime && actualEndTime === shift.endTime,
-  )
+  return Boolean(shift && actualStartTime === shift.startTime && actualEndTime === shift.endTime)
 }
 
 /** Grace period before/after shift boundaries — defaults from ATTENDANCE_TIME_RULES when unset. */
@@ -58,13 +60,10 @@ export function getShiftDateTimes(
   baseDate: Date,
   shift: IAttendanceShiftDTO,
 ): { start: Date; end: Date } {
-  const start = new Date(baseDate)
-  start.setHours(Math.floor(shift.startTime / 60), shift.startTime % 60, 0, 0)
-
-  const end = new Date(baseDate)
-  end.setHours(Math.floor(shift.endTime / 60), shift.endTime % 60, 0, 0)
+  const start = toAttendanceInstant(baseDate, shift.startTime)
+  const end = toAttendanceInstant(baseDate, shift.endTime)
   if (shift.endTime < shift.startTime) {
-    end.setDate(end.getDate() + 1)
+    end.setUTCDate(end.getUTCDate() + 1)
   }
 
   return { start, end }
@@ -92,7 +91,7 @@ export function assertCheckInWindow(
 
   const { start, end } = getShiftDateTimes(date, shift)
   const windowStart = new Date(start)
-  windowStart.setMinutes(windowStart.getMinutes() - getWindowMinutes(shift))
+  windowStart.setUTCMinutes(windowStart.getUTCMinutes() - getWindowMinutes(shift))
 
   if (now.getTime() < windowStart.getTime()) {
     throw new AppError(
@@ -111,7 +110,7 @@ export function assertCheckInWindow(
   }
 }
 
-/** Block checkout until grace window opens — prevents premature scan/check-out. */
+/** Block checkout until the scheduled shift end — prevents premature scan/check-out. */
 export function isBeforeCheckOutWindow(
   now: Date,
   record: IAttendanceRecordDTO,
@@ -120,10 +119,8 @@ export function isBeforeCheckOutWindow(
   if (!shift) return false
 
   const { end } = getShiftDateTimes(new Date(record.date), shift)
-  const windowStart = new Date(end)
-  windowStart.setMinutes(windowStart.getMinutes() - getWindowMinutes(shift))
 
-  return now.getTime() < windowStart.getTime()
+  return now.getTime() < end.getTime()
 }
 
 /** Extend active session lookup into the next calendar day for overnight shift checkout. */
@@ -136,8 +133,8 @@ export function isWithinOvernightCarryover(
 
   const { end } = getShiftDateTimes(new Date(record.date), shift)
   const latestCheckoutAt = new Date(end)
-  latestCheckoutAt.setMinutes(
-    latestCheckoutAt.getMinutes() + getShiftDurationMinutes(shift.startTime, shift.endTime),
+  latestCheckoutAt.setUTCMinutes(
+    latestCheckoutAt.getUTCMinutes() + getShiftDurationMinutes(shift.startTime, shift.endTime),
   )
 
   return now.getTime() <= latestCheckoutAt.getTime()

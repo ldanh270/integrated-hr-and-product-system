@@ -5,6 +5,8 @@ import { useAuthStore } from "@/store/auth-store"
 import type { User } from "@/store/auth-store"
 import { addDays } from "@/utils/attendance/add-days"
 import { formatDateParam } from "@/utils/attendance/format-date-param"
+import { getWeekStart } from "@/utils/attendance/get-week-start"
+import { mapPlannedWeekToScheduleDays } from "@/utils/attendance/map-planned-week-to-schedule-days.util"
 import { resolveScheduleDay } from "@/utils/attendance/resolve-schedule-day"
 import {
   buildTodayShiftInfo,
@@ -32,6 +34,8 @@ export function useVirtualScanner(): {
   nextAction: ScanAction
   nextActionLabel: string
   todayShift: TodayShiftInfo | null
+  canScan: boolean
+  scanDisabledLabel: string | null
   isShiftLoading: boolean
   handleScan: () => Promise<void>
 } {
@@ -45,6 +49,12 @@ export function useVirtualScanner(): {
   const [isProcessing, setIsProcessing] = useState(false)
   const today = formatDateParam(currentTime)
   const yesterday = formatDateParam(addDays(currentTime, -1))
+  const weekStartIso = formatDateParam(getWeekStart(currentTime))
+  const { data: plannedWeek, isLoading: isPlannedWeekLoading } = useQuery({
+    queryKey: ["my-planned-week", weekStartIso],
+    queryFn: () => schedulesApi.getMyPlannedWeek(weekStartIso),
+    enabled: Boolean(user),
+  })
   const { data: schedule, isLoading: isScheduleLoading } = useQuery({
     queryKey: ["my-schedule", today],
     queryFn: () => schedulesApi.getMy(today),
@@ -57,14 +67,25 @@ export function useVirtualScanner(): {
     enabled: Boolean(user),
   })
   const todayShift = useMemo(() => {
+    // Prefer admin-generated planned week because PT assigned shifts live there first.
+    // Weekly schedule is only a fallback for regular full-time template shifts.
+    const plannedDay = mapPlannedWeekToScheduleDays(plannedWeek).get(currentTime.getDay())
+    if (plannedDay?.shift) {
+      return buildTodayShiftInfo(plannedDay.shift)
+    }
+
     const scheduleDay = resolveScheduleDay(schedule, currentTime)
     return buildTodayShiftInfo(scheduleDay?.shift)
-  }, [currentTime, schedule])
+  }, [currentTime, plannedWeek, schedule])
   const nextAction = resolveNextScanAction(records)
   const nextActionLabel =
     nextAction === "check_in"
       ? ATTENDANCE_MESSAGES.SCANNER.CHECK_IN_LABEL
       : ATTENDANCE_MESSAGES.SCANNER.CHECK_OUT_LABEL
+  // Checkout remains enabled even if today's shift cannot be resolved, because the open
+  // record already proves the employee is inside a valid attendance session.
+  const canScan = Boolean(todayShift) || nextAction === "check_out"
+  const scanDisabledLabel = canScan ? null : ATTENDANCE_MESSAGES.SCANNER.NO_SHIFT_ACTION_LABEL
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -96,6 +117,11 @@ export function useVirtualScanner(): {
   }, [])
 
   const handleScan = async () => {
+    if (!canScan) {
+      toast.warning(ATTENDANCE_MESSAGES.SCANNER.NO_SHIFT_TODAY)
+      return
+    }
+
     setIsProcessing(true)
     setLocating(true)
 
@@ -128,7 +154,9 @@ export function useVirtualScanner(): {
     nextAction,
     nextActionLabel,
     todayShift,
-    isShiftLoading: isScheduleLoading || isRecordsLoading,
+    canScan,
+    scanDisabledLabel,
+    isShiftLoading: isPlannedWeekLoading || isScheduleLoading || isRecordsLoading,
     handleScan,
   }
 }

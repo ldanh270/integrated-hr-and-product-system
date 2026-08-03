@@ -3,6 +3,28 @@ import { useVirtualScanner } from "@/hooks/attendance/useVirtualScanner"
 
 import { AlertCircle, CheckCircle2, Clock, Fingerprint, Loader2, MapPin } from "lucide-react"
 
+interface ShiftInfoRowProps {
+  label: string
+  value: string
+  strong?: boolean
+}
+
+function ShiftInfoRow({ label, value, strong = false }: ShiftInfoRowProps) {
+  return (
+    <div className="grid grid-cols-[7rem_1fr] items-start gap-3">
+      <span className="text-muted-foreground">{label}</span>
+      <span
+        className={[
+          "min-w-0 text-right leading-5 text-foreground",
+          strong ? "font-semibold" : "font-medium",
+        ].join(" ")}
+      >
+        {value}
+      </span>
+    </div>
+  )
+}
+
 export function VirtualScanner() {
   const {
     user,
@@ -12,6 +34,8 @@ export function VirtualScanner() {
     isProcessing,
     nextActionLabel,
     todayShift,
+    canScan,
+    scanDisabledLabel,
     isShiftLoading,
     handleScan,
   } = useVirtualScanner()
@@ -44,26 +68,27 @@ export function VirtualScanner() {
           </div>
 
           {todayShift ? (
-            <div className="mt-3 space-y-2 text-xs text-muted-foreground">
-              <div className="flex items-center justify-between gap-3">
-                <span>{ATTENDANCE_MESSAGES.SCANNER.SHIFT_NAME}</span>
-                <span className="font-semibold text-foreground">{todayShift.name}</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span>{ATTENDANCE_MESSAGES.SCANNER.WORK_WINDOW}</span>
-                <span className="font-mono text-foreground">{todayShift.workWindow}</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span>{ATTENDANCE_MESSAGES.SCANNER.CHECK_IN_WINDOW}</span>
-                <span className="font-mono text-foreground">{todayShift.checkInWindow}</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span>{ATTENDANCE_MESSAGES.SCANNER.CHECK_OUT_WINDOW}</span>
-                <span className="font-mono text-foreground">{todayShift.checkOutWindow}</span>
-              </div>
-              <div className="flex items-start gap-2 pt-2">
-                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                <span>{todayShift.gpsLabel}</span>
+            <div className="mt-4 space-y-2.5 text-xs">
+              <ShiftInfoRow
+                label={ATTENDANCE_MESSAGES.SCANNER.SHIFT_NAME}
+                value={todayShift.name}
+                strong
+              />
+              <ShiftInfoRow
+                label={ATTENDANCE_MESSAGES.SCANNER.WORK_WINDOW}
+                value={todayShift.workWindow}
+              />
+              <ShiftInfoRow
+                label={ATTENDANCE_MESSAGES.SCANNER.CHECK_IN_WINDOW}
+                value={todayShift.checkInWindow}
+              />
+              <ShiftInfoRow
+                label={ATTENDANCE_MESSAGES.SCANNER.CHECK_OUT_WINDOW}
+                value={todayShift.checkOutWindow}
+              />
+              <div className="mt-3 flex items-start gap-2 rounded-lg bg-background/70 px-3 py-2 text-muted-foreground">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span className="leading-5">{todayShift.gpsLabel}</span>
               </div>
             </div>
           ) : (
@@ -73,6 +98,7 @@ export function VirtualScanner() {
           )}
         </div>
 
+        {/* The green success state intentionally hides raw coordinates; shift card owns geofence detail. */}
         {locating ? (
           <div className="flex items-center justify-center gap-2 rounded-lg border border-warning/20 bg-warning/10 py-2 text-sm font-medium text-warning">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -81,7 +107,7 @@ export function VirtualScanner() {
         ) : location ? (
           <div className="flex items-center justify-center gap-2 rounded-lg border border-success/20 bg-success/10 py-2 text-sm font-medium text-success">
             <CheckCircle2 className="h-4 w-4" />
-            <span>{ATTENDANCE_MESSAGES.SCANNER.GEO_READY(location.lat, location.lng)}</span>
+            <span>{ATTENDANCE_MESSAGES.SCANNER.GEO_READY}</span>
           </div>
         ) : (
           <div className="flex items-center justify-center gap-2 rounded-lg border border-warning/20 bg-warning/10 px-2 py-2 text-xs text-warning">
@@ -93,7 +119,7 @@ export function VirtualScanner() {
         <div className="pt-4 border-t">
           <button
             onClick={handleScan}
-            disabled={isProcessing || locating}
+            disabled={isProcessing || locating || !canScan}
             className="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
           >
             {isProcessing ? (
@@ -104,7 +130,7 @@ export function VirtualScanner() {
             <span>
               {isProcessing
                 ? ATTENDANCE_MESSAGES.SCANNER.PROCESSING(nextActionLabel)
-                : nextActionLabel}
+                : scanDisabledLabel ?? nextActionLabel}
             </span>
           </button>
         </div>

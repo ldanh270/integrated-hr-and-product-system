@@ -56,6 +56,10 @@ const isPublicAuthPath = (url?: string): boolean => {
  */
 apiClient.interceptors.request.use(
   (config) => {
+    const accessToken = useAuthStore.getState().accessToken
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`
+    }
     return config
   },
   (error) => {
@@ -97,7 +101,12 @@ apiClient.interceptors.response.use(
     isRefreshing = true
 
     try {
-      await apiClient.post("/auth/refresh")
+      const refreshResponse = await apiClient.post("/auth/refresh")
+      const refreshedToken = refreshResponse.data?.data?.accessToken
+      const refreshedEmployee = refreshResponse.data?.data?.employee
+      if (refreshedToken && refreshedEmployee) {
+        useAuthStore.getState().setAuth(refreshedEmployee, refreshedToken)
+      }
       processQueue(null)
       return apiClient(originalRequest)
     } catch (refreshError) {

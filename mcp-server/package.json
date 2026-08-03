@@ -11,8 +11,9 @@
     "README.md"
   ],
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx src/server.ts",
     "build": "tsc",
+    "test": "tsx --test src/contracts/*.test.ts src/schemas/application.schema.test.ts",
     "start": "node dist/server.js",
     "prepublishOnly": "nr build"
   },

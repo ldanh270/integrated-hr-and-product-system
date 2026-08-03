@@ -1,6 +1,6 @@
 import { AuthorizationUnavailable } from "@/components/auth/authorization-unavailable"
 import { ConfirmProvider } from "@/components/common"
-import { API_ENDPOINTS } from "@/config/api.config"
+import { API_BASE_URL, API_ENDPOINTS } from "@/config/api.config"
 import { AUTHORIZATION_STATUS } from "@/config/entities/auth.config"
 import { ROUTES } from "@/config/routes.config"
 import { SUBSYSTEMS } from "@/config/subsystem.config"
@@ -11,7 +11,7 @@ import { type RouteConfig, privateRoutes, publicRoutes } from "@/routes"
 import { useAuthStore } from "@/store/auth-store.ts"
 import { resolveSubsystemDestination } from "@/utils/navigation/resolve-subsystem-destination"
 
-import { Fragment, type ReactNode, Suspense, lazy, useEffect } from "react"
+import { Fragment, type ReactNode, Suspense, lazy, useEffect, useState } from "react"
 
 import axios from "axios"
 import {
@@ -118,7 +118,54 @@ const ProtectedRoute = ({
 
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  return isAuthenticated ? <Navigate to={ROUTES.ATTENDANCE.MY_SCHEDULE} replace /> : <>{children}</>
+  const setAuth = useAuthStore((state) => state.setAuth)
+  const clearAuth = useAuthStore((state) => state.clearAuth)
+  const [isCheckingSession, setIsCheckingSession] = useState(isAuthenticated)
+  const [hasValidSession, setHasValidSession] = useState(false)
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setIsCheckingSession(false)
+      setHasValidSession(false)
+      return
+    }
+
+    let isMounted = true
+
+    // Public pages may load with stale persisted auth after a deploy/incognito session.
+    // Validate the cookie first so /login does not bounce through ProtectedRoute and show
+    // a noisy "session expired" toast before the user actually submits the login form.
+    void axios
+      .get(`${API_BASE_URL}${API_ENDPOINTS.AUTH.ME}`, { withCredentials: true })
+      .then((res) => {
+        if (!isMounted) return
+        setAuth(res.data.data.employee)
+        setHasValidSession(true)
+      })
+      .catch(() => {
+        if (!isMounted) return
+        clearAuth()
+        localStorage.removeItem("auth-storage")
+        setHasValidSession(false)
+      })
+      .finally(() => {
+        if (isMounted) setIsCheckingSession(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [clearAuth, isAuthenticated, setAuth])
+
+  if (isCheckingSession) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    )
+  }
+
+  return hasValidSession ? <Navigate to={ROUTES.ATTENDANCE.MY_SCHEDULE} replace /> : <>{children}</>
 }
 
 /**
@@ -127,7 +174,9 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
  */
 const RootRedirect = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  return <Navigate to={isAuthenticated ? ROUTES.ATTENDANCE.MY_SCHEDULE : ROUTES.AUTH.LOGIN} replace />
+  return (
+    <Navigate to={isAuthenticated ? ROUTES.ATTENDANCE.MY_SCHEDULE : ROUTES.AUTH.LOGIN} replace />
+  )
 }
 
 const SubsystemRootRedirect = ({ subsystem }: { subsystem: SubsystemConfig }) => {

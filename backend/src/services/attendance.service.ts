@@ -1,6 +1,8 @@
 import { isPartTimeWorkSchedule } from "@/utils/employee/is-part-time-work-schedule.util.ts"
+import { ATTENDANCE_STATUS } from "@/configs/entities/attendance.config.ts"
 import { ATTENDANCE_ERROR_MESSAGES } from "@/configs/messages/attendance.message.ts"
 import { ATTENDANCE_MATRIX_RULES } from "@/configs/rules/attendance.config.ts"
+import { ATTENDANCE_TIME_RULES } from "@/configs/rules/attendance.config.ts"
 import { HttpStatusCode } from "@/configs/system/http.config.ts"
 import { ATTENDANCE_LAYERS } from "@/constants/attendance.constants.ts"
 import {
@@ -10,6 +12,7 @@ import {
   IAttendanceRepository,
   IAttendanceRecordDTO,
   IAttendanceScheduleDTO,
+  IAttendanceShiftDTO,
   IAttendanceService,
   IHolidayRepository,
 } from "@/types/attendance.types.ts"
@@ -31,10 +34,10 @@ import {
 } from "@/utils/attendance/attendance-record.util.ts"
 import {
   assertCheckInWindow,
+  getShiftDateTimes,
   getMinutesFromDateTime,
   isActualShiftMatched,
   isBeforeCheckOutWindow,
-  isWithinShiftSelectionWindow,
 } from "@/utils/attendance/attendance-shift.util.ts"
 import { AppError } from "@/utils/error.util.ts"
 import { resolveShiftFromSchedule } from "@/utils/schedule.util.ts"
@@ -77,18 +80,27 @@ export class AttendanceService implements IAttendanceService {
     return undefined
   }
 
-  /** Last-resort FT shift when employee has no override and no weekly template. */
-  private async resolveFallbackShiftId(date: Date): Promise<string | undefined> {
-    const activeShifts = (await this.workingShiftRepo.listAll()).filter((shift) => shift.isActive)
-    if (activeShifts.length === 0) return undefined
+  /** Derive provisional status when the employee checks in. */
+  private getCheckInMetrics(
+    now: Date,
+    date: Date,
+    shift: IAttendanceShiftDTO | null | undefined,
+  ) {
+    if (!shift) return { status: ATTENDANCE_STATUS.ON_TIME, lateMinutes: 0 }
 
-    const currentMinutes = date.getHours() * 60 + date.getMinutes()
-    // FT with no schedule today: pick shift whose window contains now, else first active shift.
-    const matchingShift = activeShifts.find((shift) =>
-      isWithinShiftSelectionWindow(currentMinutes, shift),
+    const { start } = getShiftDateTimes(date, shift)
+    const gracePeriod = shift.gracePeriodMinutes ?? 0
+    const lateMinutes = Math.max(
+      0,
+      Math.round(
+        (now.getTime() - start.getTime()) / ATTENDANCE_TIME_RULES.MILLISECONDS_PER_MINUTE,
+      ) - gracePeriod,
     )
 
-    return matchingShift?.id ?? activeShifts[0]?.id
+    return {
+      status: lateMinutes > 0 ? ATTENDANCE_STATUS.LATE : ATTENDANCE_STATUS.ON_TIME,
+      lateMinutes,
+    }
   }
 
   /**
@@ -149,7 +161,12 @@ export class AttendanceService implements IAttendanceService {
       assertWithinShiftGps(location, shift)
 
       // Link attendance to EmployeeShift row — preserves override vs template provenance for PT multi-slot days.
-      return this.attendanceRepo.checkIn(employeeId, location, employeeShift.id)
+      return this.attendanceRepo.checkIn(
+        employeeId,
+        location,
+        employeeShift.id,
+        this.getCheckInMetrics(now, today, shift),
+      )
     }
 
     let shiftId = employeeShift?.shiftId
@@ -163,11 +180,7 @@ export class AttendanceService implements IAttendanceService {
       shiftId = this.resolveShiftIdFromSchedule(schedule, today)
     }
 
-    if (!shiftId && !schedule) {
-      shiftId = await this.resolveFallbackShiftId(now)
-    }
-
-    if (!shiftId && schedule) {
+    if (!shiftId) {
       throw new AppError(
         ATTENDANCE_ERROR_MESSAGES.NO_SCHEDULE_TODAY,
         HttpStatusCode.BAD_REQUEST,
@@ -205,7 +218,12 @@ export class AttendanceService implements IAttendanceService {
     }
 
     // Same EmployeeShift linkage as PT branch — traceable shift assignment on the record.
-    return this.attendanceRepo.checkIn(employeeId, location, employeeShift.id)
+    return this.attendanceRepo.checkIn(
+      employeeId,
+      location,
+      employeeShift.id,
+      this.getCheckInMetrics(now, today, shift),
+    )
   }
 
   /**
@@ -261,6 +279,14 @@ export class AttendanceService implements IAttendanceService {
 
     if (!record || !record.checkInAt) {
       return this.checkIn(employeeId, location, createdById)
+    }
+
+    if (record.checkOutAt) {
+      throw new AppError(
+        ATTENDANCE_ERROR_MESSAGES.ALREADY_CHECKED_OUT,
+        HttpStatusCode.CONFLICT,
+        ATTENDANCE_LAYERS.SERVICE,
+      )
     }
 
     const shift = record.employeeShift?.shift

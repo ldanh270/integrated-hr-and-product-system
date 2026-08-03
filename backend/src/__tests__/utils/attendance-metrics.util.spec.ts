@@ -2,12 +2,16 @@ import { ATTENDANCE_STATUS } from "@/configs/entities/attendance.config.ts"
 import type { IAttendanceRecordDTO, IAttendanceShiftDTO } from "@/types/attendance.types.ts"
 import { computeAttendanceMetrics } from "@/utils/attendance/attendance-metrics.util.ts"
 
+function attendanceInstant(year: number, monthIndex: number, day: number, hour: number, minute = 0) {
+  return new Date(Date.UTC(year, monthIndex, day, hour - 7, minute))
+}
+
 const record = {
   id: "attendance-1",
   employeeId: "employee-1",
   employeeShiftId: "employee-shift-1",
-  date: new Date(2026, 6, 16),
-  checkInAt: new Date(2026, 6, 16, 8, 0),
+  date: new Date(Date.UTC(2026, 6, 16)),
+  checkInAt: attendanceInstant(2026, 6, 16, 8),
   status: ATTENDANCE_STATUS.ON_TIME,
   lateMinutes: 0,
   earlyLeaveMinutes: 0,
@@ -25,7 +29,7 @@ const shift = {
 
 describe("computeAttendanceMetrics break deduction", () => {
   it("deducts the full break from an 08:00-17:00 attendance", () => {
-    const metrics = computeAttendanceMetrics(record, shift, new Date(2026, 6, 16, 17, 0))
+    const metrics = computeAttendanceMetrics(record, shift, attendanceInstant(2026, 6, 16, 17))
 
     expect(metrics.totalWorkMinutes).toBe(8 * 60)
   })
@@ -34,13 +38,13 @@ describe("computeAttendanceMetrics break deduction", () => {
     // Check-in during lunch deducts only the remaining overlap, not the full configured break.
     const partialRecord = {
       ...record,
-      checkInAt: new Date(2026, 6, 16, 12, 30),
+      checkInAt: attendanceInstant(2026, 6, 16, 12, 30),
     }
 
     const metrics = computeAttendanceMetrics(
       partialRecord,
       shift,
-      new Date(2026, 6, 16, 17, 0),
+      attendanceInstant(2026, 6, 16, 17),
     )
 
     expect(metrics.totalWorkMinutes).toBe(4 * 60)
@@ -50,7 +54,7 @@ describe("computeAttendanceMetrics break deduction", () => {
     const metrics = computeAttendanceMetrics(
       record,
       { ...shift, breakStartTime: null, breakEndTime: null },
-      new Date(2026, 6, 16, 17, 0),
+      attendanceInstant(2026, 6, 16, 17),
     )
 
     expect(metrics.totalWorkMinutes).toBe(9 * 60)

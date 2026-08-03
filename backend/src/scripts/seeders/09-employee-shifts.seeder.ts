@@ -1,7 +1,12 @@
+import { EMPLOYEE_SHIFT_STATUS } from "@/configs/entities/attendance.config.ts"
 import { prisma } from "@/libs/database.ts"
 import { SeedContext, createEmptyContext } from "@/scripts/seeders/seed-context.ts"
 import { ISeeder } from "@/scripts/seeders/seeder.interface.ts"
 import { registry } from "@/scripts/seeders/seeder.registry.ts"
+
+const DEMO_SUNDAY_SHIFT_DATE = new Date("2026-08-02T00:00:00.000Z")
+const DEMO_SUNDAY = 0
+const DEMO_REFERENCE_WORKDAY = 1
 
 export class EmployeeShiftsSeeder implements ISeeder {
   readonly name = "EmployeeShifts"
@@ -69,11 +74,32 @@ export class EmployeeShiftsSeeder implements ISeeder {
             shiftId,
             assignedDate: date,
             scheduleId,
-            status: "scheduled" as any,
+            status: EMPLOYEE_SHIFT_STATUS.SCHEDULED,
             createdById: adminId,
           })
         }
       }
+    }
+
+    const adminEmployee = employees.find((employee) => employee.username === "admin")
+    const adminScheduleId = adminEmployee ? shiftScheduleMap[adminEmployee.id] : null
+    const adminSchedule = adminScheduleId ? schedulesById[adminScheduleId] : null
+    const adminDemoShiftId =
+      adminSchedule?.days.find(
+        (day: { dayOfWeek: number }) => day.dayOfWeek === DEMO_REFERENCE_WORKDAY,
+      )?.shiftId ??
+      adminSchedule?.days.find((day: { dayOfWeek: number }) => day.dayOfWeek !== DEMO_SUNDAY)
+        ?.shiftId
+
+    if (adminEmployee && adminScheduleId && adminDemoShiftId) {
+      shiftsToCreate.push({
+        employeeId: adminEmployee.id,
+        shiftId: adminDemoShiftId,
+        assignedDate: DEMO_SUNDAY_SHIFT_DATE,
+        scheduleId: adminScheduleId,
+        status: EMPLOYEE_SHIFT_STATUS.SCHEDULED,
+        createdById: adminId,
+      })
     }
 
     // Insert in chunks if too large, but for 15 employees * ~20 days = 300 records, single transaction is fine

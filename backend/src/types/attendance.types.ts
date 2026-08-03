@@ -363,6 +363,7 @@ export interface IAttendanceRepository {
     employeeId: string,
     location: IGpsScanDTO,
     employeeShiftId: string,
+    metrics?: IAttendanceMetricsDTO,
   ): Promise<IAttendanceRecordDTO>
   /** Records a check-out. */
   checkOut(
@@ -373,6 +374,11 @@ export interface IAttendanceRepository {
   ): Promise<IAttendanceRecordDTO>
   /** Finds record by employee and date. */
   findByEmployeeAndDate(
+    employeeId: string,
+    date: string | Date,
+  ): Promise<IAttendanceRecordDTO | null>
+  /** Finds an open attendance record by employee and date. */
+  findOpenByEmployeeAndDate?(
     employeeId: string,
     date: string | Date,
   ): Promise<IAttendanceRecordDTO | null>

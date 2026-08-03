@@ -1,4 +1,7 @@
-import { ATTENDANCE_TIME_RULES } from "@/configs/rules/attendance.config.ts"
+import {
+  ATTENDANCE_TIME_RULES,
+  DEFAULT_ATTENDANCE_LOCATION,
+} from "@/configs/rules/attendance.config.ts"
 import {
   ICreateWorkingShiftDTO,
   IUpdateWorkingShiftDTO,
@@ -41,6 +44,17 @@ export class PrismaWorkingShiftRepository
    * @returns The created working shift.
    */
   async create(data: ICreateWorkingShiftDTO): Promise<any> {
+    // Create flow defaults to the company geofence so newly created shifts can be scanned
+    // immediately. Passing gps: null remains the explicit opt-out for legacy/no-GPS shifts.
+    const gps =
+      data.gps === null
+        ? null
+        : (data.gps ?? {
+            lat: DEFAULT_ATTENDANCE_LOCATION.LATITUDE,
+            lng: DEFAULT_ATTENDANCE_LOCATION.LONGITUDE,
+            radiusMeters: DEFAULT_ATTENDANCE_LOCATION.RADIUS_METERS,
+          })
+
     return this.prisma.workingShift.create({
       data: {
         name: data.name,
@@ -50,9 +64,9 @@ export class PrismaWorkingShiftRepository
         breakStartTime: this.parseTime(data.breakStartTime ?? undefined),
         breakEndTime: this.parseTime(data.breakEndTime ?? undefined),
         gracePeriodMinutes: data.gracePeriodMinutes || 0,
-        gpsLat: data.gps?.lat,
-        gpsLng: data.gps?.lng,
-        gpsRadiusMeters: data.gps?.radiusMeters,
+        gpsLat: gps?.lat,
+        gpsLng: gps?.lng,
+        gpsRadiusMeters: gps?.radiusMeters,
         isActive: data.isActive ?? true,
         createdById: data.createdById || "system", // Fallback if missing
       },
