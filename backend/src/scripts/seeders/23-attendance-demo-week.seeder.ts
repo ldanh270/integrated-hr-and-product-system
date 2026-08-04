@@ -1,8 +1,13 @@
 /** Seeds deterministic attendance demo records without modifying real employee attendance. */
 import { ATTENDANCE_STATUS, EMPLOYEE_SHIFT_STATUS } from "@/configs/entities/attendance.config.ts"
 import { EMPLOYEE_STATUS } from "@/configs/entities/employee.config.ts"
-import { ATTENDANCE_TIME_RULES } from "@/configs/rules/attendance.config.ts"
 import { prisma } from "@/libs/database.ts"
+import {
+  getPayrollDemoBusinessDates,
+  getPayrollDemoScenario,
+  getPayrollDemoShiftDuration,
+} from "@/scripts/seeders/payroll-demo-attendance.util.ts"
+import { PAYROLL_DEMO } from "@/scripts/seeders/payroll-demo.config.ts"
 import {
   buildDemoShiftSelections,
   demoAssignmentKey,
@@ -16,55 +21,14 @@ import { SeedContext, createEmptyContext } from "./seed-context.ts"
 import { ISeeder } from "./seeder.interface.ts"
 import { registry } from "./seeder.registry.ts"
 
-const LEGACY_DEMO_NOTE = "Demo attendance week 13-19/07/2026"
-const PREVIOUS_DEMO_NOTE = "Demo attendance 01/06-18/07/2026"
-const DEMO_NOTE = "Demo attendance 01/06-02/08/2026"
-const DEMO_START = new Date("2026-06-01T00:00:00.000Z")
-const DEMO_END = new Date("2026-08-02T00:00:00.000Z")
-
-/** Deterministic demo distribution; production attendance never consumes these values. */
-const DEMO_ATTENDANCE_RULES = {
-  ABSENCE_INTERVAL: 11,
-  LATE_INTERVAL: 4,
-  EARLY_INTERVAL: 5,
-  LATE_MINUTES: 15,
-  EARLY_MINUTES: -10,
-  CHECKOUT_BUFFER_MINUTES: 5,
-  SUNDAY: 0,
-  SATURDAY: 6,
-} as const
-
-/** Returns weekdays in the configured demo interval. */
-function getBusinessDates(): Date[] {
-  const dates: Date[] = []
-  for (
-    let time = DEMO_START.getTime();
-    time <= DEMO_END.getTime();
-    time += ATTENDANCE_TIME_RULES.MILLISECONDS_PER_DAY
-  ) {
-    const date = new Date(time)
-    const weekday = date.getUTCDay()
-    if (weekday !== DEMO_ATTENDANCE_RULES.SUNDAY && weekday !== DEMO_ATTENDANCE_RULES.SATURDAY) {
-      dates.push(date)
-    }
-  }
-  return dates
-}
-
-function getShiftDurationMinutes(startTime: number, endTime: number): number {
-  return endTime >= startTime
-    ? endTime - startTime
-    : endTime + ATTENDANCE_TIME_RULES.MINUTES_PER_DAY - startTime
-}
-
 export class AttendanceDemoWeekSeeder implements ISeeder {
   readonly name = "AttendanceDemoWeek"
-  readonly order = 18.2
+  readonly order = 12.5
 
   async run(context: SeedContext): Promise<Partial<SeedContext>> {
     const [employees, fallbackShift] = await Promise.all([
       prisma.employee.findMany({
-        where: { deletedAt: null, status: { not: EMPLOYEE_STATUS.TERMINATED } },
+        where: { deletedAt: null, status: EMPLOYEE_STATUS.ACTIVE },
         orderBy: { fullName: "asc" },
       }),
       prisma.workingShift.findFirst({ where: { isActive: true }, orderBy: { startTime: "asc" } }),
@@ -74,12 +38,12 @@ export class AttendanceDemoWeekSeeder implements ISeeder {
     }
 
     const creator = employees.find((employee) => employee.username === "admin") ?? employees[0]
-    const dates = getBusinessDates()
+    const dates = getPayrollDemoBusinessDates()
     const schedules = await prisma.shiftSchedule.findMany({
       where: {
         employeeId: { in: employees.map((employee) => employee.id) },
-        validFrom: { lte: DEMO_END },
-        OR: [{ validTo: null }, { validTo: { gte: DEMO_START } }],
+        validFrom: { lte: PAYROLL_DEMO.ATTENDANCE_END },
+        OR: [{ validTo: null }, { validTo: { gte: PAYROLL_DEMO.ATTENDANCE_START } }],
       },
       include: { days: { include: { shift: true } } },
       orderBy: { validFrom: "desc" },
@@ -104,7 +68,11 @@ export class AttendanceDemoWeekSeeder implements ISeeder {
     await prisma.employeeShift.deleteMany({
       where: {
         attendanceRecord: {
-          is: { note: { in: [LEGACY_DEMO_NOTE, PREVIOUS_DEMO_NOTE, DEMO_NOTE] } },
+          is: {
+            note: {
+              in: [...PAYROLL_DEMO.LEGACY_ATTENDANCE_NOTES, PAYROLL_DEMO.ATTENDANCE_NOTE],
+            },
+          },
         },
       },
     })
@@ -131,27 +99,21 @@ export class AttendanceDemoWeekSeeder implements ISeeder {
         ),
       ),
     )
-    const employeeOrder = new Map<string, number>(
-      employees.map((employee, index): [string, number] => [employee.id, index]),
+    const employeeUsernames = new Map<string, string>(
+      employees.map((employee): [string, string] => [employee.id, employee.username]),
     )
 
     await prisma.attendanceRecord.createMany({
       data: assignedShifts.map((employeeShift) => {
-        const employeeIndex = employeeOrder.get(employeeShift.employeeId) ?? 0
-        const dayIndex = Math.round(
-          (employeeShift.assignedDate.getTime() - DEMO_START.getTime()) /
-            ATTENDANCE_TIME_RULES.MILLISECONDS_PER_DAY,
+        const scenario = getPayrollDemoScenario(
+          employeeUsernames.get(employeeShift.employeeId) ?? "",
+          employeeShift.assignedDate,
         )
-        const sequence = employeeIndex + dayIndex
-        const isAbsent = sequence % DEMO_ATTENDANCE_RULES.ABSENCE_INTERVAL === 0
-        const isLate = !isAbsent && sequence % DEMO_ATTENDANCE_RULES.LATE_INTERVAL === 0
-        const isEarly =
-          !isAbsent && !isLate && sequence % DEMO_ATTENDANCE_RULES.EARLY_INTERVAL === 0
-        const variance = isLate
-          ? DEMO_ATTENDANCE_RULES.LATE_MINUTES
-          : isEarly
-            ? DEMO_ATTENDANCE_RULES.EARLY_MINUTES
-            : 0
+        const isAbsent = scenario.status === ATTENDANCE_STATUS.ABSENT
+        const shiftDuration = getPayrollDemoShiftDuration(
+          employeeShift.shift.startTime,
+          employeeShift.shift.endTime,
+        )
 
         return {
           employeeId: employeeShift.employeeId,
@@ -161,32 +123,29 @@ export class AttendanceDemoWeekSeeder implements ISeeder {
             ? null
             : toAttendanceInstant(
                 employeeShift.assignedDate,
-                employeeShift.shift.startTime + variance,
+                employeeShift.shift.startTime + scenario.checkInVariance,
               ),
           checkOutAt: isAbsent
             ? null
             : toAttendanceInstant(
                 employeeShift.assignedDate,
-                employeeShift.shift.endTime + DEMO_ATTENDANCE_RULES.CHECKOUT_BUFFER_MINUTES,
+                employeeShift.shift.endTime + scenario.checkOutVariance,
               ),
-          status: isAbsent
-            ? ATTENDANCE_STATUS.ABSENT
-            : isLate
-              ? ATTENDANCE_STATUS.LATE
-              : ATTENDANCE_STATUS.ON_TIME,
-          lateMinutes: isLate ? variance : 0,
+          status: scenario.status,
+          lateMinutes: scenario.lateMinutes,
+          earlyLeaveMinutes: scenario.earlyLeaveMinutes,
+          overtimeMinutes: scenario.overtimeMinutes,
           totalWorkMinutes: isAbsent
             ? 0
-            : getShiftDurationMinutes(employeeShift.shift.startTime, employeeShift.shift.endTime) -
-              Math.max(0, variance),
-          note: DEMO_NOTE,
+            : shiftDuration - scenario.lateMinutes - scenario.earlyLeaveMinutes + scenario.overtimeMinutes,
+          note: PAYROLL_DEMO.ATTENDANCE_NOTE,
         }
       }),
       skipDuplicates: true,
     })
 
     const records = await prisma.attendanceRecord.findMany({
-      where: { note: DEMO_NOTE, checkInAt: { not: null } },
+      where: { note: PAYROLL_DEMO.ATTENDANCE_NOTE, checkInAt: { not: null } },
     })
     await prisma.realShift.createMany({
       data: records.flatMap((record) => {
@@ -207,7 +166,7 @@ export class AttendanceDemoWeekSeeder implements ISeeder {
       skipDuplicates: true,
     })
 
-    console.log(`Demo attendance ready: ${assignedShifts.length} employee-days, 01/06-02/08/2026`)
+    console.log(`Payroll demo attendance ready: ${assignedShifts.length} employee-days, 01/05-31/07/2026`)
     return {}
   }
 }
